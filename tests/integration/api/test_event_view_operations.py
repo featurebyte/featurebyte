@@ -462,53 +462,13 @@ def new_user_id_entity_fixture():
     return entity
 
 
-@pytest.mark.parametrize(
-    "in_out_formats",
-    [
-        ("dataframe", "dataframe"),
-        ("dataframe", "table"),
-        ("table", "table"),  # input is observation table
-        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
-    ],
-)
-@pytest.mark.usefixtures("patched_num_features_per_query")
-@pytest.mark.asyncio
-async def test_get_historical_features(
-    session,
-    data_source,
-    feature_group,
-    feature_group_per_category,
-    in_out_formats,
-    user_entity,
-    new_user_id_entity,
-):
-    """
-    Test getting historical features from FeatureList
-    """
-    _ = user_entity, new_user_id_entity
-    input_format, output_format = in_out_formats
-    assert input_format in {"dataframe", "table", "uploaded_table"}
-    assert output_format in {"dataframe", "table"}
-
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+def get_training_events_and_expected_result():
+    """Returns training events and expected historical result"""
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
             "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
-    )
-    feature_list = FeatureList(
-        [
-            feature_group["COUNT_2h"],
-            feature_group["COUNT_24h"],
-            feature_group_per_category["COUNT_BY_ACTION_24h"],
-            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
-            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
-            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h / COUNT_24h"],
-            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
-        ],
-        name="My FeatureList",
     )
     df_historical_expected = pd.DataFrame(
         {
@@ -579,6 +539,54 @@ async def test_get_historical_features(
             ],
         }
     )
+    return df_training_events, df_historical_expected
+
+
+@pytest.mark.parametrize(
+    "in_out_formats",
+    [
+        ("dataframe", "dataframe"),
+        ("dataframe", "table"),
+        ("table", "table"),  # input is observation table
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
+    ],
+)
+@pytest.mark.usefixtures("patched_num_features_per_query")
+@pytest.mark.asyncio
+async def test_get_historical_features(
+    session,
+    data_source,
+    feature_group,
+    feature_group_per_category,
+    in_out_formats,
+    user_entity,
+    new_user_id_entity,
+):
+    """
+    Test getting historical features from FeatureList
+    """
+    _ = user_entity, new_user_id_entity
+    input_format, output_format = in_out_formats
+    assert input_format in {"dataframe", "table", "uploaded_table"}
+    assert output_format in {"dataframe", "table"}
+
+    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_list = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+        ],
+        name="My FeatureList",
+    )
+
+    df_training_events, df_historical_expected = get_training_events_and_expected_result()
+
     if "table" in input_format:
         df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
@@ -727,6 +735,96 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     Assert that two datetime series are almost equal with difference of up to 1 microsecond
     """
     assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
+
+
+@pytest.mark.parametrize("input_format", ["table", "uploaded_table"])
+@pytest.mark.asyncio
+async def test_get_historical_features__feature_table_cache(
+    session,
+    data_source,
+    feature_group,
+    feature_group_per_category,
+    user_entity,
+    new_user_id_entity,
+    input_format,
+):
+    """Test feature table cache create/update"""
+    _ = user_entity, new_user_id_entity
+
+    # feature table cache is only supported for observation tables
+    assert input_format in {"table", "uploaded_table"}
+
+    feature_list_1 = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+        ],
+        name="My FeatureList 1",
+    )
+
+    feature_list_2 = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+        ],
+        name="My FeatureList 2",
+    )
+
+    df_training_events, df_historical_expected = get_training_events_and_expected_result()
+    if "table" in input_format:
+        df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
+
+    df_historical_features_1 = await compute_historical_feature_table_dataframe_helper(
+        feature_list=feature_list_1,
+        df_observation_set=df_training_events,
+        session=session,
+        data_source=data_source,
+        input_format=input_format,
+    )
+
+    expected_cols = [
+        "__FB_TABLE_ROW_INDEX",
+        "POINT_IN_TIME",
+        "üser id",
+    ] + feature_list_1.feature_names
+    _df_historical_expected = df_historical_expected[
+        [col for col in df_historical_expected.columns if col in expected_cols]
+    ]
+    fb_assert_frame_equal(
+        df_historical_features_1,
+        _df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )
+
+    expected_cols = [
+        "__FB_TABLE_ROW_INDEX",
+        "POINT_IN_TIME",
+        "üser id",
+    ] + feature_list_2.feature_names
+    _df_historical_expected = df_historical_expected[
+        [col for col in df_historical_expected.columns if col in expected_cols]
+    ]
+    df_historical_features_2 = await compute_historical_feature_table_dataframe_helper(
+        feature_list=feature_list_2,
+        df_observation_set=df_training_events,
+        session=session,
+        data_source=data_source,
+        input_format=input_format,
+    )
+    fb_assert_frame_equal(
+        df_historical_features_2,
+        _df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )
 
 
 def test_datetime_operations(event_view, source_type):
