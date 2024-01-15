@@ -1251,7 +1251,7 @@ def historical_feature_table_fixture(
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
     with patch(
-        "featurebyte.service.historical_features.compute_tiles_on_demand",
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
     ):
         historical_feature_table = feature_list.compute_historical_feature_table(
             observation_table_from_source, "my_historical_feature_table"

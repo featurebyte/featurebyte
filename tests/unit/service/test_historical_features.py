@@ -23,7 +23,7 @@ def mock_get_historical_features():
         "featurebyte.service.historical_features.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         with patch(
-            "featurebyte.service.historical_features.get_historical_features"
+            "featurebyte.service.historical_features_and_target.get_historical_features"
         ) as mock_get_historical_features:
             mock_get_feature_store_session.return_value = Mock()
             yield mock_get_historical_features

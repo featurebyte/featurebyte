@@ -391,6 +391,7 @@ async def test_create_view_from_cache__create_cache(
         graph=feature_list.feature_clusters[0].graph,
         nodes=feature_list.feature_clusters[0].nodes,
         output_view_details=output_view_details,
+        is_target=False,
         feature_list_id=feature_list.id,
     )
 
@@ -418,6 +419,7 @@ async def test_create_view_from_cache__create_cache(
     assert sqls[1] == (
         'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
         '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
@@ -447,6 +449,7 @@ async def test_create_view_from_cache__update_cache(
         graph=feature_list.feature_clusters[0].graph,
         nodes=feature_list.feature_clusters[0].nodes[:1],
         output_view_details=output_view_details,
+        is_target=False,
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
@@ -462,6 +465,7 @@ async def test_create_view_from_cache__update_cache(
         graph=feature_list.feature_clusters[0].graph,
         nodes=feature_list.feature_clusters[0].nodes,
         output_view_details=output_view_details,
+        is_target=False,
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
@@ -495,6 +499,7 @@ async def test_create_view_from_cache__update_cache(
     assert sqls[2] == (
         'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
         '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'

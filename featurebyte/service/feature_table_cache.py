@@ -100,7 +100,7 @@ class FeatureTableCacheService:
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
 
-    async def nodes_to_defition_hashes(
+    async def definition_hashes_to_nodes(
         self,
         graph: QueryGraph,
         nodes: List[Node],
@@ -167,7 +167,7 @@ class FeatureTableCacheService:
         List[Tuple[Node, CachedFeatureDefinition]]
             List of non cached nodes and respective newly-created cached feature definitions
         """
-        hashes = await self.nodes_to_defition_hashes(graph, nodes)
+        hashes = await self.definition_hashes_to_nodes(graph, nodes)
 
         cached_hashes = {
             feat.definition_hash: feat for feat in feature_table_cache_metadata.feature_definitions
@@ -522,7 +522,7 @@ class FeatureTableCacheService:
         graph: QueryGraph,
         nodes: List[Node],
         output_view_details: TableDetails,
-        is_target: bool = False,
+        is_target: bool,
         feature_list_id: Optional[PydanticObjectId] = None,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         progress_callback: Optional[
@@ -573,7 +573,7 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-        hashes = await self.nodes_to_defition_hashes(graph, nodes)
+        hashes = await self.definition_hashes_to_nodes(graph, nodes)
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
@@ -587,13 +587,17 @@ class FeatureTableCacheService:
             )
             for definition_hash, node in hashes.items()
         ]
-        select_expr = expressions.select(*columns_expr).from_(
-            get_fully_qualified_table_name(
-                {
-                    "database_name": db_session.database_name,
-                    "schema_name": db_session.schema_name,
-                    "table_name": cache_metadata.table_name,
-                }
+        select_expr = (
+            expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+            .select(*columns_expr)
+            .from_(
+                get_fully_qualified_table_name(
+                    {
+                        "database_name": db_session.database_name,
+                        "schema_name": db_session.schema_name,
+                        "table_name": cache_metadata.table_name,
+                    }
+                )
             )
         )
         create_view_exr = expressions.Create(

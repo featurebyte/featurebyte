@@ -67,6 +67,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 output_view_details=executor_params.output_table_details,
+                is_target=True,
                 serving_names_mapping=executor_params.serving_names_mapping,
             )
         else:

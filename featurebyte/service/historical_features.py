@@ -70,6 +70,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 output_view_details=executor_params.output_table_details,
+                is_target=False,
                 feature_list_id=executor_params.feature_list_id,
                 serving_names_mapping=executor_params.serving_names_mapping,
                 progress_callback=executor_params.progress_callback,
