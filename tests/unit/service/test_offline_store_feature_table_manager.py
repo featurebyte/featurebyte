@@ -227,7 +227,7 @@ async def test_feature_table_one_feature_deployed(
     """
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_230525_271fb0_cust_id_30m_5m_10m_ttl"]
+    feature_table = feature_tables["fb_230525_271fb0_cust_id_30m_5m_10m_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -317,7 +317,7 @@ async def test_feature_table_two_features_deployed(
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": f"fb_230525_271fb0_cust_id_30m_5m_10m_ttl",
+        "name": "fb_230525_271fb0_cust_id_30m_5m_10m_ttl",
         "output_column_names": ["sum_1d_V231227", "sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -357,7 +357,7 @@ async def test_feature_table_undeploy(
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_230525_271fb0_cust_id_30m_5m_10m_ttl"]
+    feature_table = feature_tables["fb_230525_271fb0_cust_id_30m_5m_10m_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -525,7 +525,7 @@ async def test_feature_table_without_entity(
     """
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_230525_271fb0_1d_1h_2h_ttl"]
+    feature_table = feature_tables["fb_230525_271fb0_1d_1h_2h_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -661,7 +661,7 @@ async def test_aggregate_asat_feature(
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={f"fb_230525_271fb0_gender_1d_0s_0s"},
+        expected_feature_views={"fb_230525_271fb0_gender_1d_0s_0s"},
         expected_feature_services={"asat_gender_count_list"},
     )
 
@@ -674,7 +674,6 @@ async def test_new_deployment_when_all_features_already_deployed(
     """
     Test enabling a new deployment when all the underlying features are already deployed
     """
-    catalog_id = app_container.catalog_id
     await check_feast_registry(
         app_container,
         expected_feature_views={"fb_230525_271fb0_cust_id_30m_5m_10m_ttl"},

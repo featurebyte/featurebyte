@@ -300,7 +300,6 @@ async def test_scheduled_materialize_features_if_materialized_before(
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_does_not_exist(
-    app_container,
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
@@ -345,7 +344,6 @@ async def test_initialize_new_columns__table_does_not_exist(
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_exists(
-    app_container,
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
