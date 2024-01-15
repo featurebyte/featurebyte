@@ -417,6 +417,9 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
             ):
                 await self.drop_object("PROCEDURE", func_name_with_args)
 
+        for name in await self.list_droppable_views_in_working_schema():
+            await self.drop_object("VIEW", name)
+
         for name in await self.list_droppable_tables_in_working_schema():
             await self.drop_object("TABLE", name)
 
