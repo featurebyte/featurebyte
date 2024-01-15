@@ -57,6 +57,16 @@ class SQLiteSession(BaseSession):
                 output.append(TableSpec(name=name))
         return output
 
+    async def list_views(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[TableSpec]:
+        tables = await self.execute_query("SELECT name FROM sqlite_master WHERE type = 'view'")
+        output = []
+        if tables is not None:
+            for _, (name,) in tables[["name"]].iterrows():
+                output.append(TableSpec(name=name))
+        return output
+
     @staticmethod
     def _convert_to_internal_variable_type(sqlite_data_type: str) -> DBVarType:
         if "INT" in sqlite_data_type:

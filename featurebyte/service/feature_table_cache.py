@@ -612,7 +612,7 @@ class FeatureTableCacheService:
             ),
             kind="VIEW",
             expression=select_expr,
-            replace=True,
+            replace=False,
         )
         sql = sql_to_string(create_view_exr, source_type=db_session.source_type)
         await db_session.execute_query(sql)

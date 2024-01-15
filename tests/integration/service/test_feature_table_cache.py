@@ -5,6 +5,7 @@ import time
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from sqlglot import parse_one
 
 from featurebyte import FeatureList
@@ -261,7 +262,7 @@ async def test_create_view_from_cache(
     view_details = TableDetails(
         database_name=session.database_name,
         schema_name=session.schema_name,
-        table_name="RESULT_VIEW",
+        table_name=f"RESULT_VIEW_{ObjectId()}",
     )
     feature_cluster = feature_list_model.feature_clusters[0]
     nodes = feature_cluster.nodes[:5]
@@ -291,6 +292,11 @@ async def test_create_view_from_cache(
         [InternalName.TABLE_ROW_INDEX] + feature_names + observation_table_cols
     )
 
+    view_details = TableDetails(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=f"RESULT_VIEW_{ObjectId()}",
+    )
     # update cache table with second feature list
     await feature_table_cache_service.create_view_from_cache(
         feature_store=feature_store_model,

@@ -19,6 +19,7 @@ from featurebyte import (
     SourceType,
     to_timedelta,
 )
+from featurebyte.enum import InternalName
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -741,7 +742,6 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
 
 
-@pytest.mark.parametrize("input_format", ["table", "uploaded_table"])
 @pytest.mark.asyncio
 async def test_get_historical_features__feature_table_cache(
     session,
@@ -750,14 +750,10 @@ async def test_get_historical_features__feature_table_cache(
     feature_group_per_category,
     user_entity,
     new_user_id_entity,
-    input_format,
     feature_table_cache_metadata_service,
 ):
     """Test feature table cache create/update"""
     _ = user_entity, new_user_id_entity
-
-    # feature table cache is only supported for observation tables
-    assert input_format in {"table", "uploaded_table"}
 
     feature_list_1 = FeatureList(
         [
@@ -782,8 +778,7 @@ async def test_get_historical_features__feature_table_cache(
     )
 
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
-    if "table" in input_format:
-        df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
+    df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
     observation_table = await create_observation_table_from_dataframe(
         session,
@@ -799,6 +794,14 @@ async def test_get_historical_features__feature_table_cache(
     df_historical_features_1 = await get_dataframe_from_materialized_table(
         session, historical_feature_table
     )
+    df = historical_feature_table.to_pandas()
+    assert df.shape[1] == df_historical_features_1.shape[1] - 1  # no row index
+    cols = [
+        col
+        for col in df_historical_features_1.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
+    assert df.columns.tolist() == cols
 
     expected_cols = [
         "__FB_TABLE_ROW_INDEX",
@@ -823,6 +826,15 @@ async def test_get_historical_features__feature_table_cache(
     df_historical_features_2 = await get_dataframe_from_materialized_table(
         session, historical_feature_table
     )
+    df = historical_feature_table.to_pandas()
+    assert df.shape[1] == df_historical_features_2.shape[1] - 1  # no row index
+    cols = [
+        col
+        for col in df_historical_features_2.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
+    assert df.columns.tolist() == cols
+
     expected_cols = [
         "__FB_TABLE_ROW_INDEX",
         "POINT_IN_TIME",

@@ -183,6 +183,25 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
+    async def list_views(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[TableSpec]:
+        """
+        Execute SQL query to retrieve views
+
+        Parameters
+        ----------
+        database_name: str | None
+            Database name
+        schema_name: str | None
+            Schema name
+
+        Returns
+        -------
+        list[TableSpec]
+        """
+
+    @abstractmethod
     async def list_table_schema(
         self,
         table_name: str | None,
@@ -832,6 +851,19 @@ class BaseSchemaInitializer(ABC):
             else:
                 out.append(table_name)
         return out
+
+    async def list_droppable_views_in_working_schema(self) -> list[str]:
+        """
+        List views in the working schema that can be dropped without losing data. These are the
+        views that will be reinstated by WorkingSchemaService when recreating the working schema.
+
+        Returns
+        -------
+        list[str]
+        """
+        views = await self.session.list_views(self.session.database_name, self.session.schema_name)
+        views_names = [view.name for view in views]
+        return self.remove_materialized_tables(views_names)
 
     async def list_droppable_tables_in_working_schema(self) -> list[str]:
         """

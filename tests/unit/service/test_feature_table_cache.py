@@ -423,7 +423,7 @@ async def test_create_view_from_cache__create_cache(
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )
     assert sqls[1] == (
-        'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
+        'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
         '  "POINT_IN_TIME",\n'
@@ -505,7 +505,7 @@ async def test_create_view_from_cache__update_cache(
         'partial_features."sum_2h"'
     )
     assert sqls[2] == (
-        'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
+        'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
         '  "POINT_IN_TIME",\n'
