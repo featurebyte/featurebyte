@@ -518,6 +518,7 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
+        is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -532,6 +533,8 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+        is_view : bool
+            If True - it is view not table.
         """
         fully_qualified_table_name = get_fully_qualified_table_name(
             {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
@@ -539,7 +542,7 @@ class BaseSession(BaseModel):
         query = sql_to_string(
             expressions.Drop(
                 this=expressions.Table(this=fully_qualified_table_name),
-                kind="TABLE",
+                kind="VIEW" if is_view else "TABLE",
                 exists=if_exists,
             ),
             source_type=self.source_type,
