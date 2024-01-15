@@ -22,6 +22,9 @@ public class CountDictTransformsTest {
       ObjectInspectorFactory.getStandardMapObjectInspector(
           PrimitiveObjectInspectorFactory.writableStringObjectInspector,
           PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+
+  private final ObjectInspector nullValueOI =
+      PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
   private final ObjectInspector stringValueOI =
       PrimitiveObjectInspectorFactory.javaStringObjectInspector;
   private final ObjectInspector boolValueOI =
@@ -45,11 +48,12 @@ public class CountDictTransformsTest {
     countDictOther.put("orange", new DoubleWritable(110));
     countDictOther.put("watermelon", new DoubleWritable(Double.NaN));
     countDictOther.put("kiwi", null);
+    countDictOther.put("pineapple", new DoubleWritable(0));
   }
 
   @Test
   public void testCountDictEntropy() throws HiveException {
-    CountDictEntropy udf = new CountDictEntropy();
+    CountDictEntropyV2 udf = new CountDictEntropyV2();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -58,8 +62,18 @@ public class CountDictTransformsTest {
   }
 
   @Test
+  public void testCountDictEntropyZeroCounts() throws HiveException {
+    CountDictEntropyV2 udf = new CountDictEntropyV2();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDictOther)};
+    DoubleWritable output = (DoubleWritable) udf.evaluate(args);
+    assertEquals(output.get(), 0.6920129648318738);
+  }
+
+  @Test
   public void testCountDictMostFrequent() throws HiveException {
-    CountDictMostFrequent udf = new CountDictMostFrequent();
+    CountDictMostFrequentV1 udf = new CountDictMostFrequentV1();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -69,7 +83,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictMostFrequentValue() throws HiveException {
-    CountDictMostFrequentValue udf = new CountDictMostFrequentValue();
+    CountDictMostFrequentValueV1 udf = new CountDictMostFrequentValueV1();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -79,7 +93,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictLeastFrequent() throws HiveException {
-    CountDictLeastFrequent udf = new CountDictLeastFrequent();
+    CountDictLeastFrequentV1 udf = new CountDictLeastFrequentV1();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -89,7 +103,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictNumUnique() throws HiveException {
-    CountDictNumUnique udf = new CountDictNumUnique();
+    CountDictNumUniqueV1 udf = new CountDictNumUniqueV1();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -98,8 +112,18 @@ public class CountDictTransformsTest {
   }
 
   @Test
+  public void testCountDictNumUniqueNullArg() throws HiveException {
+    CountDictNumUniqueV1 udf = new CountDictNumUniqueV1();
+    ObjectInspector[] arguments = {nullValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(null)};
+    IntWritable output = (IntWritable) udf.evaluate(args);
+    assertEquals(output.get(), 0);
+  }
+
+  @Test
   public void testCountDictDeleteKey() throws HiveException {
-    ObjectDelete udf = new ObjectDelete();
+    ObjectDeleteV1 udf = new ObjectDeleteV1();
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
@@ -113,7 +137,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictCosineSimilarity() throws HiveException {
-    CountDictCosineSimilarity udf = new CountDictCosineSimilarity();
+    CountDictCosineSimilarityV1 udf = new CountDictCosineSimilarityV1();
     ObjectInspector[] arguments = {mapValueOI, mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
@@ -126,7 +150,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictRelativeFrequency() throws HiveException {
-    CountDictRelativeFrequency udf = new CountDictRelativeFrequency();
+    CountDictRelativeFrequencyV1 udf = new CountDictRelativeFrequencyV1();
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
@@ -138,7 +162,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictRank() throws HiveException {
-    CountDictRank udf = new CountDictRank();
+    CountDictRankV1 udf = new CountDictRankV1();
     ObjectInspector[] arguments = {mapValueOI, stringValueOI, boolValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {

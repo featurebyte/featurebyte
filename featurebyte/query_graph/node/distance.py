@@ -3,23 +3,31 @@ Distance node module
 """
 from typing import List, Literal, Sequence, Tuple
 
+import textwrap
+
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    ExpressionStr,
+    StatementStr,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
 )
 
 
-class Haversine(BaseSeriesOutputNode):
+class HaversineNode(BaseSeriesOutputNode):
     """Haversine class"""
 
     class Parameters(BaseModel):
@@ -64,11 +72,52 @@ class Haversine(BaseSeriesOutputNode):
         statements.append((var_name, obj))
         return statements, var_name
 
+    def _derive_on_demand_view_or_function_code_helper(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements: List[StatementT] = []
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        func_name = "haversine_distance"
+        if var_name_generator.should_insert_function(function_name=func_name):
+            func_string = f"""
+            def {func_name}(lat1, lon1, lat2, lon2):
+                R = 6371.0
+                lat1_rad, lon1_rad = np.radians(lat1), np.radians(lon1)
+                lat2_rad, lon2_rad = np.radians(lat2), np.radians(lon2)
+                dlat = lat2_rad - lat1_rad
+                dlon = lon2_rad - lon1_rad
+                a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+                c = 2 * np.arcsin(np.sqrt(a))
+                distance = R * c
+                return distance
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+
+        lat_1 = input_var_name_expressions[0]
+        lon_1 = input_var_name_expressions[1]
+        lat_2 = input_var_name_expressions[2]
+        lon_2 = input_var_name_expressions[3]
+        dist_expr = ExpressionStr(f"{func_name}({lat_1}, {lon_1}, {lat_2}, {lon_2})")
+        return statements, dist_expr
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this (DEV-2797)
-        raise NotImplementedError()
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )

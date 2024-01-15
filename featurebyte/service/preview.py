@@ -8,14 +8,16 @@ from typing import Any, AsyncGenerator, Optional, Tuple
 import os
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
+from featurebyte.enum import InternalName
 from featurebyte.exception import LimitExceededError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature_store import (
@@ -49,7 +51,7 @@ class PreviewService:
         self.session_manager_service = session_manager_service
 
     async def _get_feature_store_session(
-        self, graph: QueryGraph, node_name: str
+        self, graph: QueryGraph, node_name: str, feature_store_id: Optional[ObjectId]
     ) -> Tuple[FeatureStoreModel, BaseSession]:
         """
         Get feature store and session from a graph
@@ -60,22 +62,31 @@ class PreviewService:
             Query graph to use
         node_name: str
             Name of node to use
+        feature_store_id: Optional[ObjectId]
+            Feature store id to use
 
         Returns
         -------
         Tuple[FeatureStoreModel, BaseSession]
         """
-        feature_store_dict = graph.get_input_node(node_name).parameters.feature_store_details.dict()
-
         # get feature store
-        feature_stores = self.feature_store_service.list_documents_iterator(
-            query_filter={
-                "type": feature_store_dict["type"],
-                "details": feature_store_dict["details"],
-            }
-        )
-        feature_store = await feature_stores.__anext__()
-        assert feature_store
+        if feature_store_id:
+            feature_store = await self.feature_store_service.get_document(
+                document_id=feature_store_id
+            )
+            assert feature_store
+        else:
+            feature_store_dict = graph.get_input_node(
+                node_name
+            ).parameters.feature_store_details.dict()
+            feature_stores = self.feature_store_service.list_documents_iterator(
+                query_filter={
+                    "type": feature_store_dict["type"],
+                    "details": feature_store_dict["details"],
+                }
+            )
+            feature_store = await feature_stores.__anext__()
+            assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
@@ -99,6 +110,7 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
+            feature_store_id=preview.feature_store_id,
         )
         shape_sql, num_cols = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -130,6 +142,7 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
+            feature_store_id=preview.feature_store_id,
         )
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -158,6 +171,7 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
+            feature_store_id=sample.feature_store_id,
         )
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
@@ -193,6 +207,7 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
+            feature_store_id=sample.feature_store_id,
         )
 
         describe_sql, type_conversions, row_names, columns = GraphInterpreter(
@@ -245,6 +260,7 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
+            feature_store_id=preview.feature_store_id,
         )
         value_counts_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -296,6 +312,12 @@ class PreviewService:
         result = await db_session.execute_query(sql)
         assert result is not None
         columns = await db_session.list_table_schema(**location.table_details.json_dict())
+        has_row_index = InternalName.TABLE_ROW_INDEX in columns
+        columns = {  # type: ignore[assignment]
+            col_name: v
+            for (col_name, v) in columns.items()
+            if col_name != InternalName.TABLE_ROW_INDEX
+        }
         shape = (result["row_count"].iloc[0], len(columns))
 
         logger.debug(
@@ -309,7 +331,9 @@ class PreviewService:
         if shape[0] * shape[0] > MAX_TABLE_CELLS:
             raise LimitExceededError(f"Table size {shape} exceeds download limit.")
 
-        sql_expr = get_source_expr(source=location.table_details)
+        sql_expr = get_source_expr(source=location.table_details, column_names=list(columns.keys()))
+        if has_row_index:
+            sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
         sql = sql_to_string(
             sql_expr,
             source_type=db_session.source_type,

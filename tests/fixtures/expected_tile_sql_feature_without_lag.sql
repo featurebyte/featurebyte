@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM("col_float") AS value_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481
+  SUM("col_float") AS value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
 FROM (
   SELECT
     *,

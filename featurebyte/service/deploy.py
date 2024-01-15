@@ -11,11 +11,8 @@ from featurebyte.exception import DocumentCreationError, DocumentError, Document
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-)
+from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.schema.deployment import DeploymentUpdate
@@ -95,11 +92,10 @@ class DeployService(OpsServiceMixin):
             feature_list=feature_list, document=document
         )
         online_enabled = len(deployed_feature_list_ids) > 0
-        if document.online_enabled != online_enabled:
-            document = await self.online_enable_service.update_feature(
-                feature_id=feature_id,
-                online_enabled=online_enabled,
-            )
+        document = await self.online_enable_service.update_feature(
+            feature_id=feature_id,
+            online_enabled=online_enabled,
+        )
 
         await self.feature_service.update_document(
             document_id=feature_id,
@@ -196,14 +192,16 @@ class DeployService(OpsServiceMixin):
         # revert all online enabled status back before raising exception
         for feature_id, online_enabled in feature_online_enabled_map.items():
             async with self.persistent.start_transaction():
+                document_before_update = await self.feature_service.get_document(
+                    document_id=feature_id,
+                )
                 document = await self.online_enable_service.update_feature(
                     feature_id=feature_id,
                     online_enabled=online_enabled,
                 )
-            # move update warehouse and backfill tiles to outside of transaction
             await self.online_enable_service.update_data_warehouse(
                 updated_feature=document,
-                online_enabled_before_update=online_enabled,
+                online_enabled_before_update=document_before_update.online_enabled,
             )
 
         # update feature list namespace again
@@ -383,7 +381,7 @@ class DeployService(OpsServiceMixin):
     async def _update_offline_store_feature_tables(
         self, feature_models: List[FeatureModel], is_online_enabling: bool
     ) -> None:
-        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED and feature_models:
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
             if is_online_enabling:
                 await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
                     feature_models

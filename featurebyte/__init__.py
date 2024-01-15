@@ -4,7 +4,6 @@ from typing import Any, List, Optional
 import os
 import shutil
 import sys
-from http import HTTPStatus
 
 import pandas as pd
 import yaml
@@ -32,6 +31,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.request_column import RequestColumn
@@ -55,11 +55,7 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.exception import (
-    FeatureByteException,
-    InvalidSettingsError,
-    RecordRetrievalException,
-)
+from featurebyte.exception import FeatureByteException, InvalidSettingsError
 from featurebyte.list_utility import list_deployments, list_unsaved_features
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
@@ -70,10 +66,11 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
+from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -89,7 +86,6 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
-from featurebyte.schema.deployment import DeploymentSummary
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -279,9 +275,9 @@ def list_credentials(
 
     Examples
     --------
-    >>> fb.list_credentials()[["feature_store", "database_credential_type", "storage_credential_type"]]
-      feature_store database_credential_type storage_credential_type
-    0    playground                     None                    None
+    >>> fb.list_credentials()[["feature_store", "database_credential", "storage_credential"]]
+      feature_store database_credential storage_credential
+    0    playground                None               None
     """
     return Credential.list(include_id=include_id)
 
@@ -454,6 +450,7 @@ __all__ = [
     "ItemTable",
     "ItemView",
     "ObservationTable",
+    "OnlineStore",
     "Relationship",
     "RequestColumn",
     "SCDTable",
@@ -506,17 +503,15 @@ __all__ = [
     "list_deployments",
     "list_unsaved_features",
     "UDF",
+    # online store config
+    "RedisOnlineStoreDetails",
+    "MySQLOnlineStoreDetails",
 ]
 
 
 def log_env_summary() -> None:
     """
     Print environment summary.
-
-    Raises
-    ------
-    RecordRetrievalException
-        Failed to fetch deployment summary.
     """
 
     # configuration informaton
@@ -532,17 +527,6 @@ def log_env_summary() -> None:
         logger.info("No catalog activated.")
     else:
         logger.info(f"Active catalog: {current_catalog.name}")
-
-    # list deployments
-    client = conf.get_client()
-    response = client.get("/deployment/summary/")
-    if response.status_code != HTTPStatus.OK:
-        raise RecordRetrievalException(response, "Failed to fetch deployment summary")
-    summary = DeploymentSummary(**response.json())
-    logger.info(
-        f"{summary.num_feature_list} feature list{'s' if summary.num_feature_list else ''}, "
-        f"{summary.num_feature} feature{'s' if summary.num_feature else ''} deployed"
-    )
 
 
 if is_notebook():

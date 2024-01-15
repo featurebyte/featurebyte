@@ -10,16 +10,16 @@ WITH "REQUEST_TABLE_order_id" AS (
   FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    REQ."__FB_ROW_INDEX_FOR_JOIN",
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1",
-    "T1"."_fb_internal_as_at_count_None_membership_status_None_input_2" AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
+    "T0"."_fb_internal_item_count_None_order_id_None_input_4" AS "_fb_internal_item_count_None_order_id_None_input_4",
+    "T1"."_fb_internal_as_at_count_None_membership_status_None_input_3" AS "_fb_internal_as_at_count_None_membership_status_None_input_3"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
+      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_4"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -38,7 +38,7 @@ WITH "REQUEST_TABLE_order_id" AS (
     SELECT
       REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
       REQ."MEMBERSHIP_STATUS" AS "MEMBERSHIP_STATUS",
-      COUNT(*) AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
+      COUNT(*) AS "_fb_internal_as_at_count_None_membership_status_None_input_3"
     FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
     INNER JOIN (
       SELECT
@@ -67,9 +67,9 @@ WITH "REQUEST_TABLE_order_id" AS (
     AND REQ."MEMBERSHIP_STATUS" = T1."MEMBERSHIP_STATUS"
 )
 SELECT
-  AGG."__FB_ROW_INDEX_FOR_JOIN",
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_as_at_count_None_membership_status_None_input_2" AS "asat_feature",
-  "_fb_internal_item_count_None_order_id_None_input_1" AS "order_size"
+  "_fb_internal_as_at_count_None_membership_status_None_input_3" AS "asat_feature",
+  "_fb_internal_item_count_None_order_id_None_input_4" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

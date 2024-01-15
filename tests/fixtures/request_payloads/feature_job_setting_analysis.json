@@ -8,6 +8,7 @@
     "analysis_date": null,
     "analysis_length": 2419200,
     "blind_spot_buffer_setting": 5,
+    "event_table_candidate": null,
     "event_table_id": "6337f9651050ee7d5980660d",
     "exclude_late_job": false,
     "job_time_buffer_setting": "auto",

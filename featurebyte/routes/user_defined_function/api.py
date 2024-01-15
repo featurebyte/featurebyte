@@ -9,7 +9,6 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -26,6 +25,7 @@ from featurebyte.schema.info import UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
+    UserDefinedFunctionResponse,
     UserDefinedFunctionUpdate,
 )
 
@@ -41,44 +41,46 @@ class UserDefinedFunctionRouter(BaseRouter):
         super().__init__(router=router)
 
 
-@router.post("", response_model=UserDefinedFunctionModel, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=UserDefinedFunctionResponse, status_code=HTTPStatus.CREATED)
 async def create_user_defined_function(
     request: Request, data: UserDefinedFunctionCreate
-) -> UserDefinedFunctionModel:
+) -> UserDefinedFunctionResponse:
     """
     Create UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionModel = await controller.create_user_defined_function(
-        data=data
+    user_defined_function: UserDefinedFunctionResponse = (
+        await controller.create_user_defined_function(data=data)
     )
     return user_defined_function
 
 
-@router.get("/{user_defined_function_id}", response_model=UserDefinedFunctionModel)
+@router.get("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
 async def get_user_defined_function(
     request: Request, user_defined_function_id: PydanticObjectId
-) -> UserDefinedFunctionModel:
+) -> UserDefinedFunctionResponse:
     """
     Get UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionModel = await controller.get(
+    user_defined_function: UserDefinedFunctionResponse = await controller.get(
         document_id=user_defined_function_id
     )
     return user_defined_function
 
 
-@router.patch("/{user_defined_function_id}", response_model=UserDefinedFunctionModel)
+@router.patch("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
 async def update_user_defined_function(
     request: Request, user_defined_function_id: PydanticObjectId, data: UserDefinedFunctionUpdate
-) -> UserDefinedFunctionModel:
+) -> UserDefinedFunctionResponse:
     """
     Update UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionModel = await controller.update_user_defined_function(
-        document_id=user_defined_function_id, data=data
+    user_defined_function: UserDefinedFunctionResponse = (
+        await controller.update_user_defined_function(
+            document_id=user_defined_function_id, data=data
+        )
     )
     return user_defined_function
 
@@ -159,17 +161,17 @@ async def get_user_defined_function_info(
     return cast(UserDefinedFunctionInfo, info)
 
 
-@router.patch("/{user_defined_function_id}/description", response_model=UserDefinedFunctionModel)
+@router.patch("/{user_defined_function_id}/description", response_model=UserDefinedFunctionResponse)
 async def update_user_defined_function_description(
     request: Request,
     user_defined_function_id: PydanticObjectId,
     data: DescriptionUpdate,
-) -> UserDefinedFunctionModel:
+) -> UserDefinedFunctionResponse:
     """
     Update user_defined_function description
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionModel = await controller.update_description(
+    user_defined_function: UserDefinedFunctionResponse = await controller.update_description(
         document_id=user_defined_function_id,
         description=data.description,
     )

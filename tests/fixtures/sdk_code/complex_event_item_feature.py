@@ -35,22 +35,6 @@ joined_view_1 = event_view.add_feature(
     entity_column="cust_id",
 )
 grouped = joined_view_1.groupby(
-    by_keys=["cust_id"], category="col_int"
-).aggregate_over(
-    value_column=None,
-    method="count",
-    windows=["24h"],
-    feature_names=["count_a_24h_per_col_int"],
-    feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
-    ),
-    skip_fill_na=True,
-)
-feat_1 = grouped["count_a_24h_per_col_int"]
-feat_2 = feat_1.cd.unique_count(include_missing=True)
-feat_3 = feat_1.cd.unique_count(include_missing=False)
-feat_4 = (feat_1.cd.entropy()) * (feat_1.cd.most_frequent()).str.len()
-grouped_1 = joined_view_1.groupby(
     by_keys=["cust_id"], category=None
 ).aggregate_over(
     value_column="non_time_sum_feature",
@@ -62,5 +46,21 @@ grouped_1 = joined_view_1.groupby(
     ),
     skip_fill_na=True,
 )
-feat_5 = grouped_1["sum_a_24h"]
-output = (feat_5 + feat_4) - (feat_3 / feat_2)
+feat_1 = grouped["sum_a_24h"]
+grouped_1 = joined_view_1.groupby(
+    by_keys=["cust_id"], category="col_int"
+).aggregate_over(
+    value_column=None,
+    method="count",
+    windows=["24h"],
+    feature_names=["count_a_24h_per_col_int"],
+    feature_job_setting=FeatureJobSetting(
+        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+    ),
+    skip_fill_na=True,
+)
+feat_2 = grouped_1["count_a_24h_per_col_int"]
+feat_3 = (feat_2.cd.entropy()) * (feat_2.cd.most_frequent()).str.len()
+feat_4 = feat_2.cd.unique_count(include_missing=False)
+feat_5 = feat_2.cd.unique_count(include_missing=True)
+output = (feat_1 + feat_3) - (feat_4 / feat_5)

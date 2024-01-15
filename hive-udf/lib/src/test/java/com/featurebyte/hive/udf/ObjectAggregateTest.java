@@ -13,7 +13,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.junit.jupiter.api.Test;
 
 public class ObjectAggregateTest {
-  ObjectAggregate udaf = new ObjectAggregate();
+  ObjectAggregateV1 udaf = new ObjectAggregateV1();
 
   @Test
   public void testObjectAggregate() throws HiveException {

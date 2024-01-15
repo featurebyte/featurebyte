@@ -19,6 +19,7 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
+from featurebyte import MySQLOnlineStoreDetails, OnlineStore, UsernamePasswordCredential
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -93,6 +94,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_relationships", Relationship, "list"),
         MethodMetadata("list_feature_job_setting_analyses", FeatureJobSettingAnalysis, "list"),
         MethodMetadata("list_feature_stores", FeatureStore, "list"),
+        MethodMetadata("list_online_stores", OnlineStore, "list"),
         MethodMetadata("list_entities", Entity, "list"),
         MethodMetadata("list_periodic_tasks", PeriodicTask, "list"),
         MethodMetadata("list_observation_tables", ObservationTable, "list"),
@@ -116,6 +118,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_relationship", Relationship, "get"),
         MethodMetadata("get_feature_job_setting_analysis", FeatureJobSettingAnalysis, "get"),
         MethodMetadata("get_feature_store", FeatureStore, "get"),
+        MethodMetadata("get_online_store", OnlineStore, "get"),
         MethodMetadata("get_entity", Entity, "get"),
         MethodMetadata("get_periodic_task", PeriodicTask, "get"),
         MethodMetadata("get_observation_table", ObservationTable, "get"),
@@ -221,6 +224,15 @@ def test_get_data_source(snowflake_feature_store):
     catalog = Catalog.get_or_create("test", snowflake_feature_store.name)
     data_source = catalog.get_data_source()
     assert data_source.type == "snowflake"
+
+
+def test_online_store(snowflake_feature_store, mysql_online_store):
+    """
+    Test that get_data_source returns the correct data source.
+    """
+    catalog = Catalog.get_or_create("test", snowflake_feature_store.name, mysql_online_store.name)
+    online_store = catalog.online_store
+    assert online_store.details == mysql_online_store.details
 
 
 def test_get_view(snowflake_event_table):
@@ -396,6 +408,44 @@ def test_catalog__update_name(new_catalog):
     assert another_catalog.saved is False
 
 
+def test_catalog__update_online_store(new_catalog):
+    """
+    Test update_online_store in Catalog class
+    """
+    # test update online store (saved object)
+    assert new_catalog.online_store_id is None
+    online_store = OnlineStore.create(
+        name="test_online_store",
+        details=MySQLOnlineStoreDetails(
+            host="localhost",
+            database="test",
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
+        ),
+    )
+    new_catalog.update_online_store("test_online_store")
+    assert new_catalog.online_store_id == online_store.id
+    assert new_catalog.saved is True
+
+    new_catalog.update_online_store(None)
+    assert new_catalog.online_store_id is None
+    assert new_catalog.saved is True
+
+    # test update online store (non-saved object)
+    another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
+    with pytest.raises(RecordRetrievalException) as exc:
+        Catalog.get("CreditCard")
+    expected_msg = (
+        'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
+    )
+    assert expected_msg in str(exc.value)
+    with pytest.raises(AssertionError) as exc:
+        another_catalog.update_online_store("test_online_store")
+    assert "Catalog must be saved before updating online store" in str(exc.value)
+
+
 def test_info(new_catalog):
     """
     Test info
@@ -404,6 +454,8 @@ def test_info(new_catalog):
     expected_info = {
         "name": "grocery",
         "updated_at": None,
+        "feature_store_name": None,
+        "online_store_name": None,
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -465,6 +517,7 @@ def test_catalog_update_name(new_catalog):
             ("INSERT", 'insert: "grocery"', "description", np.nan, None),
             ("INSERT", 'insert: "grocery"', "is_deleted", np.nan, False),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
+            ("INSERT", 'insert: "grocery"', "online_store_id", np.nan, None),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "grocery"', "user_id", np.nan, None),
         ],

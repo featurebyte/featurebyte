@@ -125,8 +125,9 @@ class TestContextApi(BaseCatalogApiTestSuite):
                 "feature_store_details": {
                     "details": {
                         "account": "sf_account",
-                        "database": "sf_database",
-                        "sf_schema": "sf_schema",
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "role_name": "TESTING",
                         "warehouse": "sf_warehouse",
                     },
                     "type": "snowflake",

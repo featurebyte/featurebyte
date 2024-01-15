@@ -62,6 +62,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
+        "entity_dtypes": ["INT"],
         "table_ids": [ObjectId(api_object_to_id["event_table"])],
         "feature_list_ids": [],
         "feature_namespace_id": feature_dict["feature_namespace_id"],
@@ -118,11 +119,11 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "primary_table_ids": [ObjectId(api_object_to_id["event_table"])],
         "user_defined_function_ids": [],
         "block_modification_by": [],
-        "aggregation_ids": ["sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"],
+        "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "aggregation_result_names": [
-            "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
-            "_fb_internal_window_w7200_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
-            "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+            "_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+            "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ],
         "description": None,
         "definition_hash": None,
@@ -202,6 +203,7 @@ def test_extract_operation_structure(feature_model_dict):
 
 def test_ingest_graph_and_node(feature_model_dict):
     """Test ingest_graph_and_node method"""
+    feature_model_dict["version"] = {"name": "V231231", "suffix": None}
     feature = FeatureModel(**feature_model_dict)
     feature.initialize_offline_store_info(entity_id_to_serving_name={})
     offline_store_info = feature.offline_store_info
@@ -209,11 +211,11 @@ def test_ingest_graph_and_node(feature_model_dict):
 
     ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]
 
-    # case 1: query graph is original feature graph
+    # case 1: no decomposed graph
     assert ingest_query_graph.ref_node_name is None
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
-    assert ingest_node.type == "project"
-    assert ingest_node.parameters.columns == [feature.name]
+    assert ingest_node.type == "alias"
+    assert ingest_node.parameters.name == feature.versioned_name
 
     # case 2: set ref_node_name to make it likes a decomposed graph (output is non-alias node)
     assert feature.node.type != "alias"
@@ -221,7 +223,7 @@ def test_ingest_graph_and_node(feature_model_dict):
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
-    assert ingest_node.parameters.name == feature.name
+    assert ingest_node.parameters.name == feature.versioned_name
 
     # case 3: set ref_node_name to make it likes a decomposed graph (output is alias node)
     input_node = ingest_query_graph.graph.get_node_by_name(ingest_query_graph.node_name)
@@ -237,4 +239,4 @@ def test_ingest_graph_and_node(feature_model_dict):
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
     # check the alias node name is the feature name
-    assert ingest_node.parameters.name == feature.name
+    assert ingest_node.parameters.name == feature.versioned_name

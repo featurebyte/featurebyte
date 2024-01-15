@@ -11,7 +11,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
         **float_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "aed233b0e8a6e1c1e0d5427b126b03c949609481"
+    aggregation_id = "e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -59,7 +59,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
             entity_column_names=["cust_id"],
             value_column_names=[f"value_sum_{aggregation_id}"],
             value_column_types=["FLOAT"],
-            tile_id="TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
+            tile_id="TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
             aggregation_id=f"sum_{aggregation_id}",
             feature_store_id=snowflake_feature_store.id,
             parent_column_name="col_float",
@@ -77,7 +77,7 @@ def test_extended_feature_model__agg_per_category_feature(
         **agg_per_category_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "f691705e069ebb67363cafadbea0942d51be4af7"
+    aggregation_id = "254bde514925221168a524ba7467c9b6ef83685d"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -127,7 +127,7 @@ def test_extended_feature_model__agg_per_category_feature(
             entity_column_names=["cust_id", "col_int"],
             value_column_names=[f"value_sum_{aggregation_id}"],
             value_column_types=["FLOAT"],
-            tile_id="TILE_F1800_M300_B600_560AD973F72FB4645D798EBD83E4B0450B2A5C7B",
+            tile_id="TILE_F1800_M300_B600_CFA168FB306C25C7A0F11C47778B85C5A0C0DD36",
             aggregation_id=f"sum_{aggregation_id}",
             category_column_name="col_int",
             feature_store_id=snowflake_feature_store.id,

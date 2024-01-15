@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import time
 from dataclasses import dataclass
+from datetime import datetime
 
 import pandas as pd
 from sqlglot import expressions
@@ -23,6 +24,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
@@ -107,6 +109,7 @@ def get_online_store_retrieval_template(
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    request_timestamp: Optional[datetime] = None,
 ) -> OnlineStoreRetrievalTemplate:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -127,6 +130,8 @@ def get_online_store_retrieval_template(
         Select statement for the request table
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    request_timestamp: Optional[datetime]
+        Request timestamp to use if provided
 
     Returns
     -------
@@ -143,8 +148,12 @@ def get_online_store_retrieval_template(
     # Form a request table as a common table expression (CTE) and add the point in time column
     expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
     adapter = get_sql_adapter(source_type)
+    if request_timestamp is None:
+        current_timestamp_expr = adapter.current_timestamp()
+    else:
+        current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     expr = expr.select(
-        expressions.alias_(adapter.current_timestamp(), alias=SpecialColumnName.POINT_IN_TIME)
+        expressions.alias_(current_timestamp_expr, alias=SpecialColumnName.POINT_IN_TIME)
     )
     request_table_columns.append(SpecialColumnName.POINT_IN_TIME)
 
@@ -194,6 +203,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
     online_store_table_version_service: OnlineStoreTableVersionService,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
+    request_timestamp: Optional[datetime] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -217,6 +227,8 @@ async def get_online_features(  # pylint: disable=too-many-locals
     output_table_details: Optional[TableDetails]
         Optional output table details to write the results to. If this parameter is provided, the
         function will return None (intended to be used when handling asynchronous batch online feature requests).
+    request_timestamp: Optional[datetime]
+        Request timestamp to use if provided
 
     Returns
     -------
@@ -225,7 +237,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
     tic = time.time()
 
     if isinstance(request_data, pd.DataFrame):
-        request_data[InternalName.ROW_INDEX] = range(request_data.shape[0])
+        request_data[InternalName.DATAFRAME_ROW_INDEX] = range(request_data.shape[0])
         request_table_expr = construct_dataframe_sql_expr(request_data, date_cols=[])
         request_table_columns = request_data.columns.tolist()
     else:
@@ -246,6 +258,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
         request_table_columns=request_table_columns,
         request_table_expr=request_table_expr,
         parent_serving_preparation=parent_serving_preparation,
+        request_timestamp=request_timestamp,
     )
     versions = await online_store_table_version_service.get_versions(
         retrieval_template.aggregation_result_names
@@ -260,8 +273,8 @@ async def get_online_features(  # pylint: disable=too-many-locals
         assert df_features is not None
         assert isinstance(request_data, pd.DataFrame)
 
-        df_features = df_features.sort_values(InternalName.ROW_INDEX).drop(
-            InternalName.ROW_INDEX, axis=1
+        df_features = df_features.sort_values(InternalName.DATAFRAME_ROW_INDEX).drop(
+            InternalName.DATAFRAME_ROW_INDEX, axis=1
         )
         df_features.index = request_data.index
 

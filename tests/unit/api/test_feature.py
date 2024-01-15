@@ -59,7 +59,7 @@ from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSu
 from tests.util.helper import (
     check_aggressively_pruned_graph,
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
     check_sdk_code_generation,
     get_node,
 )
@@ -317,7 +317,7 @@ def saved_feature_fixture(
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
     assert float_feature.saved is True
-    assert float_feature.cached_model.definition_hash == "83cebcee6c7f34bfe4bb4289441c2ee70361e3a3"
+    assert float_feature.cached_model.definition_hash == "e2778a5f89053e279269b5b177e33f3ac51c18b8"
 
     # check the groupby node after feature is saved (node parameters should get pruned)
     graph = QueryGraphModel(**float_feature.dict()["graph"])
@@ -326,9 +326,9 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
+        == "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+    assert groupby_node.parameters.aggregation_id == "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
 
     assert float_feature.name == "sum_1d"
     return float_feature
@@ -412,6 +412,10 @@ def test_info(saved_feature):
         "readiness",
         "created_at",
     }, verbose_info_dict
+
+    # check database details at input node are not included
+    node = saved_feature.cached_model.graph.get_node_by_name("input_1")
+    assert node.parameters.feature_store_details.details is None
 
 
 def test_feature_save__exception_due_to_feature_saved_before(float_feature, saved_feature):
@@ -517,6 +521,7 @@ def test_get_feature(saved_feature):
         "feature_namespace_id",
         "online_enabled",
         "created_at",
+        "entity_dtypes",
         "entity_ids",
         "version.name",
         "feature_list_ids",
@@ -833,7 +838,9 @@ def check_offline_store_ingest_graph_on_composite_feature(
         ingest_query_graph1 = ingest_query_graphs[1]
         ingest_query_graph2 = ingest_query_graphs[0]
 
-    assert ingest_query_graph1.output_column_name.startswith("__composite_feature__part")
+    assert ingest_query_graph1.output_column_name.startswith(
+        f"__{feature_model.versioned_name}__part"
+    )
     assert ingest_query_graph1.primary_entity_ids == [transaction_entity_id]
     assert ingest_query_graph1.graph.edges_map == {
         "input_1": ["graph_1"],
@@ -845,7 +852,9 @@ def check_offline_store_ingest_graph_on_composite_feature(
     assert out_node.parameters.columns == ["sum_30m_by_binary"]
 
     # check the second offline store ingest query graph
-    assert ingest_query_graph2.output_column_name.startswith("__composite_feature__part")
+    assert ingest_query_graph2.output_column_name.startswith(
+        f"__{feature_model.versioned_name}__part"
+    )
     assert ingest_query_graph2.node_name == "add_1"
     assert ingest_query_graph2.primary_entity_ids == [cust_entity_id]
     groupby_node1 = ingest_query_graph2.graph.get_node_by_name("groupby_1")
@@ -862,6 +871,8 @@ def check_offline_store_ingest_graph_on_composite_feature(
         relationships_info=feature_model.relationships_info,
         entity_id_to_serving_name={},
         feature_name=feature_model.name,
+        feature_version=feature_model.version.to_str(),
+        catalog_id=feature_model.catalog_id,
     )
     assert output.graph.edges_map == {
         "graph_1": ["add_1"],
@@ -871,7 +882,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
 
     # check the output node hash before and after decomposition
     check_decomposed_graph_output_node_hash(feature_model=feature_model, output=output)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids
@@ -906,7 +917,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
     assert ingest_query_graph.graph == new_feature_model.graph
     assert ingest_query_graph.ref_node_name is None
     assert ingest_query_graph.primary_entity_ids == new_feature_model.primary_entity_ids
-    assert ingest_query_graph.output_column_name == "composite_feature"
+    assert ingest_query_graph.output_column_name == feature_model.versioned_name
 
 
 def test_composite_features(
@@ -1078,7 +1089,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_1d"\n'
+        'SELECT\n  "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 
@@ -1246,7 +1257,7 @@ def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs
     assert job_status_result.job_session_logs.shape == (1, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -1276,7 +1287,7 @@ def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
     assert job_status_result.job_session_logs.shape == (0, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

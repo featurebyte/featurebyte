@@ -1,10 +1,10 @@
 """
 UserDefinedFunction API payload schema
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -13,7 +13,7 @@ from featurebyte.query_graph.node.validator import construct_unique_name_validat
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
-class UserDefinedFunctionCreate(FeatureByteBaseModel):
+class UserDefinedFunctionCreateBase(FeatureByteBaseModel):
     """
     UserDefinedFunction creation schema
     """
@@ -23,13 +23,28 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
     sql_function_name: StrictStr
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
-    catalog_id: Optional[PydanticObjectId]
-    feature_store_id: PydanticObjectId
 
-    # pydanctic validator
+    # pydantic validator
     _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
         construct_unique_name_validator(field="name")
     )
+
+
+class UserDefinedFunctionCreate(UserDefinedFunctionCreateBase):
+    """
+    UserDefinedFunction creation schema
+    """
+
+    is_global: bool = Field(default=False)
+
+
+class UserDefinedFunctionServiceCreate(UserDefinedFunctionCreateBase):
+    """
+    UserDefinedFunction service creation schema
+    """
+
+    catalog_id: Optional[PydanticObjectId]
+    feature_store_id: PydanticObjectId
 
 
 class UserDefinedFunctionUpdate(FeatureByteBaseModel):
@@ -55,9 +70,23 @@ class UserDefinedFunctionServiceUpdate(UserDefinedFunctionUpdate, BaseDocumentSe
     signature: StrictStr
 
 
+class UserDefinedFunctionResponse(UserDefinedFunctionModel):
+    """
+    UserDefinedFunction response schema
+    """
+
+    is_global: bool = Field(default=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_is_global(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["is_global"] = values.get("catalog_id") is None
+        return values
+
+
 class UserDefinedFunctionList(PaginationMixin):
     """
     Paginated list of UserDefinedFunction
     """
 
-    data: List[UserDefinedFunctionModel]
+    data: List[UserDefinedFunctionResponse]

@@ -229,6 +229,17 @@ class DBVarType(StrEnum):
         """
         return {cls.ARRAY, cls.EMBEDDING}
 
+    @classmethod
+    def json_conversion_types(cls) -> set[DBVarType]:
+        """
+        Types for json conversion
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return cls.dictionary_types().union({cls.FLAT_DICT}).union(cls.array_types())
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string
@@ -361,7 +372,8 @@ class InternalName(StrEnum):
     POINT_IN_TIME_SQL_PLACEHOLDER = "__FB_POINT_IN_TIME_SQL_PLACEHOLDER"
 
     MIGRATION_VERSION = "MIGRATION_VERSION"
-    ROW_INDEX = "__FB_ROW_INDEX"
+    DATAFRAME_ROW_INDEX = "__FB_DATAFRAME_ROW_INDEX"
+    TABLE_ROW_INDEX = "__FB_TABLE_ROW_INDEX"
 
     ONLINE_STORE_RESULT_NAME_COLUMN = "AGGREGATION_RESULT_NAME"
     ONLINE_STORE_VALUE_COLUMN = "VALUE"
@@ -445,6 +457,7 @@ class MaterializedTableNamePrefix(StrEnum):
     BATCH_REQUEST_TABLE = "BATCH_REQUEST_TABLE"
     BATCH_FEATURE_TABLE = "BATCH_FEATURE_TABLE"
     TARGET_TABLE = "TARGET_TABLE"
+    FEATURE_TABLE_CACHE = "FEATURE_TABLE_CACHE"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -472,6 +485,24 @@ class UploadFileFormat(StrEnum):
 
     CSV = "csv"
     PARQUET = "parquet"
+
+
+class OnlineStoreType(StrEnum):
+    """
+    Online store type
+    """
+
+    REDIS = "redis"
+    MYSQL = "mysql"
+
+
+class RedisType(str, Enum):
+    """
+    Redis type
+    """
+
+    REDIS = "redis"
+    REDIS_CLUSTER = "redis_cluster"
 
 
 # enum used for handle conflict when saving object to persistent storage

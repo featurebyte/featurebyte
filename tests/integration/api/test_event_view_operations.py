@@ -26,6 +26,7 @@ from tests.util.helper import (
     fb_assert_frame_equal,
     get_lagged_series_pandas,
     iet_entropy,
+    tz_localize_if_needed,
 )
 
 
@@ -105,73 +106,6 @@ def get_mocked_session_manager(session):
         yield
 
 
-@pytest.fixture(name="event_view")
-def event_view_fixture(event_table):
-    # create event view
-    event_view = event_table.get_view()
-    assert event_view.columns == [
-        "ËVENT_TIMESTAMP",
-        "CREATED_AT",
-        "CUST_ID",
-        "ÜSER ID",
-        "PRODUCT_ACTION",
-        "SESSION_ID",
-        "ÀMOUNT",
-        "TZ_OFFSET",
-        "TRANSACTION_ID",
-        "EMBEDDING_ARRAY",
-        "ARRAY",
-        "FLAT_DICT",
-        "NESTED_DICT",
-    ]
-    return event_view
-
-
-@pytest.fixture(name="feature_group")
-def feature_group_fixture(event_view):
-    """
-    Fixture for a simple FeatureGroup with count features
-    """
-    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
-    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
-        method="count",
-        windows=["2h", "24h"],
-        feature_names=["COUNT_2h", "COUNT_24h"],
-    )
-    return feature_group
-
-
-@pytest.fixture(name="feature_group_per_category")
-def feature_group_per_category_fixture(event_view):
-    """
-    Fixture for a FeatureGroup with dictionary features
-    """
-
-    feature_group_per_category = event_view.groupby(
-        "ÜSER ID", category="PRODUCT_ACTION"
-    ).aggregate_over(
-        method="count",
-        windows=["2h", "24h"],
-        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
-    )
-    # add features based on transformations on count per category
-    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
-    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
-    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
-    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
-    feature_group_per_category[
-        "NUM_UNIQUE_ACTION_24h_exclude_missing"
-    ] = feature_counts_24h.cd.unique_count(include_missing=False)
-
-    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category[
-        "ACTION_SIMILARITY_2h_to_24h"
-    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
-
-    return feature_group_per_category
-
-
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     """
     Test operations that can be performed on an EventView before creating features
@@ -216,7 +150,6 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__feature_group_preview(feature_group):
     """
     Test operations on Feature objects
@@ -262,7 +195,6 @@ def test_feature_operations__feature_group_preview(feature_group):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
     """
     Test previewing features when the same entity has multiple point in times in the request data
@@ -285,7 +217,6 @@ def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
     fb_assert_frame_equal(df_feature_preview, df_expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_isnull_compare_with_bool(event_view):
     """
     Test a special case of using isnull with bool literal
@@ -295,7 +226,6 @@ def test_isnull_compare_with_bool(event_view):
     assert df["ÀMOUNT"].notnull().all()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__conditional_assign(feature_group):
     """
     Test operations on Feature objects - conditional assignment
@@ -303,7 +233,6 @@ def test_feature_operations__conditional_assign(feature_group):
     run_test_conditional_assign_feature(feature_group)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__complex_feature_preview(
     event_view, feature_group, feature_group_per_category
 ):
@@ -362,7 +291,6 @@ def test_feature_operations__complex_feature_preview(
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
     """
     Test operations on Feature objects
@@ -426,7 +354,6 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__check_day_of_week_counts(event_view):
     """
     Test operations on Feature objects - check day of week counts
@@ -540,10 +467,10 @@ def new_user_id_entity_fixture():
     [
         ("dataframe", "dataframe"),
         ("dataframe", "table"),
-        ("table", "table"),
+        ("table", "table"),  # input is observation table
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
     ],
 )
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
@@ -560,7 +487,7 @@ async def test_get_historical_features(
     """
     _ = user_entity, new_user_id_entity
     input_format, output_format = in_out_formats
-    assert input_format in {"dataframe", "table"}
+    assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
@@ -652,6 +579,8 @@ async def test_get_historical_features(
             ],
         }
     )
+    if "table" in input_format:
+        df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
     if output_format == "table":
         df_historical_features = await compute_historical_feature_table_dataframe_helper(
@@ -800,7 +729,6 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_datetime_operations(event_view, source_type):
     """Test datetime operations"""
     event_view = event_view.copy()
@@ -932,7 +860,7 @@ def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
         timestamp_series = df[timestamp_column].apply(
             lambda x: x.tz_convert("UTC").tz_localize(None)
@@ -956,7 +884,7 @@ def test_datetime_comparison__fixed_timestamp_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         fixed_timestamp = fixed_timestamp_with_tz
     else:
         # Spark returns timestamp converted to UTC and without timezone. To allow comparison,
@@ -1101,7 +1029,6 @@ def get_non_time_based_feature_fixture(item_table):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_add_feature(event_view, non_time_based_feature, scd_table, source_type):
     """
     Test add feature
@@ -1157,8 +1084,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
 
     def _check_first_row_matches(df, expected_dict):
         # databricks return POINT_IN_TIME with "Etc/UTC" timezone
-        if source_type == "databricks":
-            df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+        tz_localize_if_needed(df, source_type)
         assert df.iloc[0].to_dict() == expected_dict
 
     _check_first_row_matches(
@@ -1184,7 +1110,6 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_feature):
     """
     Test add feature when the input EventView involves a join
@@ -1231,7 +1156,6 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_latest_per_category_aggregation(event_view):
     """
     Test latest per category aggregation with value column of string type
@@ -1249,7 +1173,6 @@ def test_latest_per_category_aggregation(event_view):
     assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues

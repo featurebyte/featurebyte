@@ -7,8 +7,8 @@ import textwrap
 import pytest
 from bson import ObjectId
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.catalog import Catalog, Entity
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import activate_catalog
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource

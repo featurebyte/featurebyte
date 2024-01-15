@@ -2,17 +2,15 @@
 This module contains unit tests for FeatureManagerSnowflake
 """
 from unittest import mock
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pandas as pd
 import pytest
 
-from featurebyte import SourceType
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
-from featurebyte.models.online_store import OnlineFeatureSpec
-from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 
 
 @pytest.fixture(name="mock_snowflake_feature")

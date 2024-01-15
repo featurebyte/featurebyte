@@ -54,8 +54,9 @@ class SnowflakeSession(BaseSession):
 
     account: str
     warehouse: str
-    database: str
-    sf_schema: str
+    database_name: str
+    schema_name: str
+    role_name: str
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
@@ -65,10 +66,11 @@ class SnowflakeSession(BaseSession):
             self._connection = connector.connect(
                 user=self.database_credential.username,
                 password=self.database_credential.password,
-                account=data["account"],
-                warehouse=data["warehouse"],
-                database=data["database"],
-                schema=data["sf_schema"],
+                account=self.account,
+                warehouse=self.warehouse,
+                database=self.database_name,
+                schema=self.schema_name,
+                role_name=self.role_name,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
@@ -77,6 +79,7 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
+        await self.execute_query(f'USE ROLE "{self.role_name}"')
         await super().initialize()
         # set timezone to UTC
         await self.execute_query(
@@ -85,14 +88,6 @@ class SnowflakeSession(BaseSession):
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.sf_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.database
 
     @classmethod
     def is_threadsafe(cls) -> bool:
@@ -375,7 +370,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 31
+        return 32
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'

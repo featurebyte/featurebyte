@@ -1,7 +1,7 @@
 """
 Document model for stored credentials
 """
-from typing import Dict, List, Literal, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import base64  # pylint: disable=wrong-import-order
@@ -24,6 +24,7 @@ from featurebyte.models.base import (
 PASSWORD_SECRET = os.environ.get(
     "CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI="
 )
+HIDDEN_VALUE = "********"
 
 
 def encrypt_value(value: str) -> str:
@@ -67,13 +68,18 @@ class BaseCredential(FeatureByteBaseModel):
     Base Credential class
     """
 
-    def encrypt(self) -> None:
+    def _apply_to_values(self, func: Callable[[str], str]) -> None:
         """
-        Encrypt credentials
+        Apply function to all fields
+
+        Parameters
+        ----------
+        func: Callable[[str], str]
+            Function to apply
         """
         for field in self.__fields__.values():
             if field.type_ == StrictStr:
-                setattr(self, field.name, encrypt_value(getattr(self, field.name)))
+                setattr(self, field.name, func(getattr(self, field.name)))
             elif field.type_ == str:
                 # pydantic captures dict field type as str
                 field_value = getattr(self, field.name)
@@ -82,26 +88,26 @@ class BaseCredential(FeatureByteBaseModel):
                     setattr(
                         self,
                         field.name,
-                        {key: encrypt_value(value) for key, value in field_value.items()},
+                        {key: func(value) for key, value in field_value.items()},
                     )
 
-    def decrypt(self) -> None:
+    def encrypt_values(self) -> None:
+        """
+        Encrypt credentials
+        """
+        self._apply_to_values(encrypt_value)
+
+    def decrypt_values(self) -> None:
         """
         Decrypt credentials
         """
-        for field in self.__fields__.values():
-            if field.type_ == StrictStr:
-                setattr(self, field.name, decrypt_value(getattr(self, field.name)))
-            elif field.type_ == str:
-                # pydantic captures dict field type as str
-                field_value = getattr(self, field.name)
-                if isinstance(field_value, dict):
-                    # Decrypt each value in the dict
-                    setattr(
-                        self,
-                        field.name,
-                        {key: decrypt_value(value) for key, value in field_value.items()},
-                    )
+        self._apply_to_values(decrypt_value)
+
+    def hide_values(self) -> None:
+        """
+        Hide values in the credential
+        """
+        self._apply_to_values(lambda _: HIDDEN_VALUE)
 
 
 # Database Credentials
@@ -316,23 +322,32 @@ class CredentialModel(FeatureByteBaseDocumentModel):
     database_credential: Optional[DatabaseCredential]
     storage_credential: Optional[StorageCredential]
 
-    def encrypt(self) -> None:
+    def encrypt_credentials(self) -> None:
         """
         Encrypt credentials
         """
         if self.database_credential:
-            self.database_credential.encrypt()
+            self.database_credential.encrypt_values()
         if self.storage_credential:
-            self.storage_credential.encrypt()
+            self.storage_credential.encrypt_values()
 
-    def decrypt(self) -> None:
+    def decrypt_credentials(self) -> None:
         """
         Decrypt credentials
         """
         if self.database_credential:
-            self.database_credential.decrypt()
+            self.database_credential.decrypt_values()
         if self.storage_credential:
-            self.storage_credential.decrypt()
+            self.storage_credential.decrypt_values()
+
+    def hide_credentials(self) -> None:
+        """
+        Hide credentials
+        """
+        if self.database_credential:
+            self.database_credential.hide_values()
+        if self.storage_credential:
+            self.storage_credential.hide_values()
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

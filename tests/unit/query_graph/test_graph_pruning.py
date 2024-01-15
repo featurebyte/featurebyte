@@ -225,10 +225,10 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
     # expected values
     common_column_params = {"filter": False, "table_id": None, "type": "source"}
-    input_1_params = {"node_name": "input_1", "node_names": {"input_1"}, "table_type": "item_table"}
+    input_1_params = {"node_name": "input_2", "node_names": {"input_2"}, "table_type": "item_table"}
     input_2_params = {
-        "node_name": "input_2",
-        "node_names": {"input_2"},
+        "node_name": "input_1",
+        "node_names": {"input_1"},
         "table_type": "event_table",
     }
     expected_op_struct_columns = [
@@ -237,7 +237,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
             "filter": False,
             "name": "cust_id",
             "node_name": "join_1",
-            "node_names": {"input_2", "join_1"},
+            "node_names": {"input_1", "join_1"},
             "table_id": None,
             "table_type": "event_table",
             "type": "source",

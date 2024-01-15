@@ -7,11 +7,11 @@ import pytest
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import (
-    DocumentCreationError,
     RecordCreationException,
     RecordDeletionException,
     RecordUpdateException,
 )
+from featurebyte.models.base import activate_catalog
 from featurebyte.models.user_defined_function import FunctionParameter
 from tests.util.helper import check_sdk_code_generation
 
@@ -84,7 +84,8 @@ def date_sub_udf_fixture(catalog):
 
 def test_create_user_defined_function__default_catalog():
     """Test create_user_defined_function (default catalog)"""
-    with pytest.raises(DocumentCreationError) as exc:
+    activate_catalog(None)
+    with pytest.raises(RecordCreationException) as exc:
         UserDefinedFunction.create(
             name="udf_func",
             sql_function_name="cos",
@@ -93,10 +94,7 @@ def test_create_user_defined_function__default_catalog():
             is_global=True,
         )
 
-    expected_error = (
-        "Current active catalog does not have a default feature store. "
-        "Please activate a catalog with a default feature store first before creating a user-defined function."
-    )
+    expected_error = "Catalog not specified. Please specify a catalog."
     assert expected_error in str(exc.value)
 
 
@@ -107,6 +105,7 @@ def test_create_user_defined_function(catalog, cos_udf):
     assert cos_udf.output_dtype == "FLOAT"
     assert cos_udf.catalog_id is None
     assert cos_udf.feature_store_id == catalog.default_feature_store_ids[0]
+    assert cos_udf.is_global is True
     assert cos_udf.function_parameters == [FunctionParameter(name="x", dtype="FLOAT")]
 
     # check the UDF class has the function now

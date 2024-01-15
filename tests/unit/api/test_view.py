@@ -303,8 +303,9 @@ def get_generic_input_node_params_fixture():
             "details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     }

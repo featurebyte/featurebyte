@@ -37,6 +37,8 @@ from featurebyte import (
     Configurations,
     DatabricksDetails,
     FeatureJobSetting,
+    OnlineStore,
+    RedisOnlineStoreDetails,
     SnowflakeDetails,
 )
 from featurebyte.api.entity import Entity
@@ -63,10 +65,13 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
 
 
@@ -312,7 +317,7 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
+@pytest.fixture(name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type_fixture(request):
     """
     Fixture for the source_type parameter used to create all the other fixtures
@@ -353,8 +358,9 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return SnowflakeDetails(
             account=os.getenv("SNOWFLAKE_ACCOUNT"),
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            sf_schema=temp_schema_name,
-            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema_name=temp_schema_name,
+            database_name=os.getenv("SNOWFLAKE_DATABASE"),
+            role_name="TESTING",
         )
 
     if source_type == "databricks":
@@ -363,9 +369,10 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_CATALOG"),
+            schema_name=temp_schema_name,
+            group_name="testing",
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
@@ -374,9 +381,10 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
+            schema_name=temp_schema_name,
+            group_name="developers",
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":
@@ -389,9 +397,9 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             use_http_transport=False,
             storage_type=StorageType.FILE,
             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
-            storage_spark_url=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema=temp_schema_name,
+            storage_path=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
+            catalog_name="spark_catalog",
+            schema_name=temp_schema_name,
         )
 
     if source_type == "sqlite":
@@ -425,15 +433,15 @@ def data_warehouse_initialization_fixture(
     """
     Data warehouse initialization fixture
     """
-    if source_type == "databricks":
+    if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
         # wait for databricks compute cluster to be ready
         databricks_details = cast(DatabricksDetails, feature_store_details)
         databricks_sql.connect(
             server_hostname=databricks_details.host,
             http_path=databricks_details.http_path,
             access_token=feature_store_credential.database_credential.access_token,
-            catalog=databricks_details.featurebyte_catalog,
-            schema=databricks_details.featurebyte_schema,
+            catalog=databricks_details.catalog_name,
+            schema=databricks_details.schema_name,
         )
 
 
@@ -470,11 +478,15 @@ def data_source_fixture(catalog):
 
 
 @pytest.fixture(name="catalog", scope="session")
-def catalog_fixture(feature_store):
+def catalog_fixture(feature_store, online_store):
     """
     Catalog fixture
     """
-    return Catalog.create(name="default", feature_store_name=feature_store.name)
+    return Catalog.create(
+        name="default",
+        feature_store_name=feature_store.name,
+        online_store_name=online_store.name,
+    )
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -667,12 +679,6 @@ def scd_dataframe_fixture(transaction_data):
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
-    index = data.index
-    current_flag = data.groupby("User ID", as_index=False).agg({"Effective Timestamp": "max"})
-    current_flag["Current Flag"] = True
-    data = pd.merge(data, current_flag, on=["User ID", "Effective Timestamp"], how="left")
-    data["Current Flag"] = data["Current Flag"].fillna(False)
-    data.index = index
     yield data
 
 
@@ -1196,6 +1202,28 @@ def event_table_fixture(
     return event_table
 
 
+@pytest.fixture(name="event_view")
+def event_view_fixture(event_table):
+    """Event view fixture"""
+    event_view = event_table.get_view()
+    assert event_view.columns == [
+        "ËVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "ÜSER ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+        "ÀMOUNT",
+        "TZ_OFFSET",
+        "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "FLAT_DICT",
+        "NESTED_DICT",
+    ]
+    return event_view
+
+
 @pytest.fixture(name="item_table_name", scope="session")
 def item_table_name_fixture(source_type):
     """
@@ -1309,7 +1337,6 @@ def scd_table_fixture(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
-        current_flag_column="Current Flag",
         surrogate_key_column="ID",
     )
     scd_table["User ID"].as_entity(user_entity.name)
@@ -1518,3 +1545,97 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     Online store compute query service fixture
     """
     return app_container.online_store_compute_query_service
+
+
+@pytest.fixture(name="feature_store_service")
+def feature_store_service_fixture(app_container):
+    """FeatureStore service"""
+    return app_container.feature_store_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
+@pytest.fixture(name="observation_table_service")
+def observation_table_service_fixture(app_container):
+    """ObservationTableService fixture"""
+    return app_container.observation_table_service
+
+
+@pytest.fixture(name="feature_list_service")
+def feature_list_service_fixture(app_container):
+    """FeatureListService fixture"""
+    return app_container.feature_list_service
+
+
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_service")
+def feature_service_fixture(app_container):
+    """FeatureService fixture"""
+    return app_container.feature_service
+
+
+@pytest.fixture(name="online_store", scope="session")
+def online_store_fixture():
+    """
+    Fixture for an OnlineStore
+    """
+    return OnlineStore.create(
+        name="My Online Store",
+        details=RedisOnlineStoreDetails(
+            redis_type="redis",
+            connection_string=REDIS_URI.replace("redis://", ""),
+        ),
+    )
+
+
+@pytest.fixture(name="feature_group")
+def feature_group_fixture(event_view):
+    """
+    Fixture for a simple FeatureGroup with count features
+    """
+    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+    return feature_group
+
+
+@pytest.fixture(name="feature_group_per_category")
+def feature_group_per_category_fixture(event_view):
+    """
+    Fixture for a FeatureGroup with dictionary features
+    """
+
+    feature_group_per_category = event_view.groupby(
+        "ÜSER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
+    )
+    # add features based on transformations on count per category
+    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
+    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
+    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
+    feature_group_per_category[
+        "NUM_UNIQUE_ACTION_24h_exclude_missing"
+    ] = feature_counts_24h.cd.unique_count(include_missing=False)
+
+    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
+    feature_group_per_category[
+        "ACTION_SIMILARITY_2h_to_24h"
+    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+
+    return feature_group_per_category

@@ -16,7 +16,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import construct_node
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
 from tests.util.helper import add_groupby_operation, reset_global_graph
 
 
@@ -52,8 +52,9 @@ def input_details_fixture(request):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -71,12 +72,21 @@ def input_details_fixture(request):
                 "details": {
                     "host": "databricks-hostname",
                     "http_path": "databricks-http-path",
-                    "featurebyte_schema": "public",
-                    "featurebyte_catalog": "hive_metastore",
+                    "schema_name": "public",
+                    "catalog_name": "hive_metastore",
                 },
             },
         }
     return input_details
+
+
+@pytest.fixture(name="database_details")
+def database_details_fixture(input_details):
+    """
+    Fixture for database details
+    """
+    database_details = input_details["feature_store_details"]["details"]
+    return SnowflakeDetails(**database_details)
 
 
 @pytest.fixture(name="entity_id")
@@ -428,7 +438,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
+    assert aggregation_id == "f37862722c21105449ad882409cf62a1ff7f5b35"
     return aggregation_id
 
 
@@ -1314,8 +1324,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -1425,7 +1436,7 @@ def parent_serving_preparation_fixture():
 
 
 @pytest.fixture
-def expected_pruned_graph_and_node_1():
+def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
     """
     Fixture for the expected pruned graph and node
     """
@@ -1457,8 +1468,9 @@ def expected_pruned_graph_and_node_1():
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",
@@ -1487,7 +1499,7 @@ def expected_pruned_graph_and_node_1():
                         "frequency": 3600,
                         "names": ["a_2h_average"],
                         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                        "aggregation_id": "avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
+                        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
                     },
                 },
                 {
@@ -1514,7 +1526,7 @@ def expected_pruned_graph_and_node_1():
 
 
 @pytest.fixture
-def expected_pruned_graph_and_node_2():
+def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
     graph = QueryGraphModel(
         **{
             "edges": [
@@ -1543,8 +1555,9 @@ def expected_pruned_graph_and_node_2():
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",
@@ -1573,7 +1586,7 @@ def expected_pruned_graph_and_node_2():
                         "frequency": 3600,
                         "names": ["a_48h_average"],
                         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                        "aggregation_id": "avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
+                        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
                     },
                 },
                 {

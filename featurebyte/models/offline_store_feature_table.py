@@ -1,74 +1,29 @@
 """
 OfflineStoreFeatureTableModel class
 """
-from typing import List, Literal, Optional, Union
+from __future__ import annotations
+
+from typing import List, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
-from pydantic import Field
-from sqlglot import expressions
-from sqlglot.expressions import Select, select
 
-from featurebyte.enum import DBVarType, StrEnum
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
-    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueValuesConstraint,
 )
 from featurebyte.models.entity import EntityModel
+from featurebyte.models.entity_universe import EntityUniverseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
-
-
-class EntityUniverseType(StrEnum):
-    """
-    EntityUniverseType enum
-    """
-
-    WINDOW_AGGREGATE = "window_aggregate"
-
-
-class WindowAggregateEntityUniverse(FeatureByteBaseModel):
-    """
-    WindowAggregateEntityUniverse class
-    """
-
-    serving_names: List[str]
-    aggregate_result_table_names: List[str] = Field(min_length=1)
-    type: Literal[EntityUniverseType.WINDOW_AGGREGATE] = Field(
-        EntityUniverseType.WINDOW_AGGREGATE, const=True
-    )
-
-    def get_entity_universe_expr(self) -> Select:
-        """
-        Get the SQL expression for the entity universe
-
-        Returns
-        -------
-        Select
-        """
-        assert len(self.aggregate_result_table_names) > 0
-
-        # select distinct serving names across all aggregation result tables
-        distinct_serving_names_from_tables = [
-            select(*[quoted_identifier(serving_name) for serving_name in self.serving_names])
-            .distinct()
-            .from_(table_name)
-            for table_name in self.aggregate_result_table_names
-        ]
-
-        union_expr = distinct_serving_names_from_tables[0]
-        for expr in distinct_serving_names_from_tables[1:]:
-            union_expr = expressions.Union(this=expr, distinct=True, expression=union_expr)  # type: ignore
-
-        return union_expr
 
 
 class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
@@ -87,7 +42,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    entity_universe: WindowAggregateEntityUniverse
+    entity_universe: EntityUniverseModel
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -121,7 +76,7 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    entity_universe: WindowAggregateEntityUniverse
+    entity_universe: EntityUniverseModel
 
 
 class LastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
@@ -144,6 +99,7 @@ class OfflineIngestGraphMetadata:
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
+    offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
 
 
 def get_combined_ingest_graph(
@@ -175,6 +131,7 @@ def get_combined_ingest_graph(
     output_nodes = []
     output_column_names = []
     output_dtypes = []
+    all_offline_ingest_graphs = []
 
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
     for feature in features:
@@ -197,6 +154,7 @@ def get_combined_ingest_graph(
             output_nodes.append(local_query_graph.get_node_by_name(local_name_map[node.name]))
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
+            all_offline_ingest_graphs.append(offline_ingest_graph)
 
     feature_cluster = FeatureCluster(
         feature_store_id=features[0].tabular_source.feature_store_id,
@@ -208,64 +166,5 @@ def get_combined_ingest_graph(
         feature_cluster=feature_cluster,
         output_column_names=output_column_names,
         output_dtypes=output_dtypes,
-    )
-
-
-def get_offline_store_feature_table_model(
-    feature_table_name: str,
-    features: List[FeatureModel],
-    aggregate_result_table_names: List[str],
-    primary_entities: List[EntityModel],
-    has_ttl: bool,
-    feature_job_setting: Optional[FeatureJobSetting],
-) -> OfflineStoreFeatureTableModel:
-    """
-    Returns a OfflineStoreFeatureTableModel for a feature table
-
-    Parameters
-    ----------
-    feature_table_name : str
-        Feature table name
-    features : List[FeatureModel]
-        List of features
-    aggregate_result_table_names : List[str]
-        List of aggregate result table names
-    primary_entities : List[EntityModel]
-        List of primary entities
-    has_ttl : bool
-        Whether the feature table has TTL
-    feature_job_setting : Optional[FeatureJobSetting]
-        Feature job setting of the feature table
-
-    Returns
-    -------
-    OfflineStoreFeatureTableModel
-    """
-    ingest_graph_metadata = get_combined_ingest_graph(
-        features=features,
-        primary_entities=primary_entities,
-        has_ttl=has_ttl,
-        feature_job_setting=feature_job_setting,
-    )
-
-    # TODO: handle feature types that are currently not being precomputed, e.g. lookup
-    #  features, asat aggregates, etc.
-    assert len(aggregate_result_table_names) > 0
-    entity_universe = WindowAggregateEntityUniverse(
-        serving_names=[entity.serving_names[0] for entity in primary_entities],
-        aggregate_result_table_names=aggregate_result_table_names,
-    )
-
-    return OfflineStoreFeatureTableModel(
-        name=feature_table_name,
-        feature_ids=[feature.id for feature in features],
-        primary_entity_ids=[entity.id for entity in primary_entities],
-        # FIXME: consolidate all the offline store serving names (get_entity_id_to_serving_name_for_offline_store)
-        serving_names=[entity.serving_names[0] for entity in primary_entities],
-        feature_cluster=ingest_graph_metadata.feature_cluster,
-        output_column_names=ingest_graph_metadata.output_column_names,
-        output_dtypes=ingest_graph_metadata.output_dtypes,
-        entity_universe=entity_universe,
-        has_ttl=has_ttl,
-        feature_job_setting=feature_job_setting,
+        offline_ingest_graphs=all_offline_ingest_graphs,
     )

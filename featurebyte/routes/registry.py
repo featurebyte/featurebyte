@@ -49,6 +49,7 @@ from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
+from featurebyte.routes.online_store.controller import OnlineStoreController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
@@ -90,6 +91,8 @@ from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.feature_table_cache import FeatureTableCacheService
+from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
@@ -99,11 +102,15 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_construction import (
+    OfflineStoreFeatureTableConstructionService,
+)
 from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -242,6 +249,8 @@ app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
+app_container_config.register_class(FeatureTableCacheService)
+app_container_config.register_class(FeatureTableCacheMetadataService)
 app_container_config.register_class(HistoricalFeatureExecutor)
 app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(HistoricalFeatureTableService)
@@ -256,10 +265,13 @@ app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
+app_container_config.register_class(OfflineStoreFeatureTableConstructionService)
 app_container_config.register_class(OfflineStoreFeatureTableService)
 app_container_config.register_class(OfflineStoreFeatureTableManagerService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)
+app_container_config.register_class(OnlineStoreService)
+app_container_config.register_class(OnlineStoreController)
 app_container_config.register_class(OnlineStoreCleanupService)
 app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)

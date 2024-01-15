@@ -3,8 +3,17 @@ Test feast registry service
 """
 import pytest
 import pytest_asyncio
+from google.protobuf.json_format import MessageToDict
 
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
+
+
+@pytest.fixture(autouse=True)
+def always_configure_online_store(catalog, mysql_online_store):
+    """Configure online store for all tests in this directory"""
+    catalog.update_online_store(mysql_online_store.name)
+    yield
+    catalog.update_online_store(None)
 
 
 @pytest.fixture(name="feast_registry_service")
@@ -51,7 +60,15 @@ async def test_create_and_retrieve_feast_registry(
 
 
 @pytest.mark.asyncio
-async def test_update_feast_registry(feast_registry_service, feast_registry, feature_list):
+async def test_update_feast_registry(
+    feast_registry_service,
+    feast_registry,
+    feature_list,
+    expected_entity_names,
+    expected_data_source_names,
+    expected_feature_view_name_to_ttl,
+    expected_on_demand_feature_view_names,
+):
     """Test update feast registry"""
     updated_doc = await feast_registry_service.update_document(
         document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
@@ -60,36 +77,57 @@ async def test_update_feast_registry(feast_registry_service, feast_registry, fea
     assert registry_proto.feature_services == []
     assert registry_proto.feature_views == []
     assert registry_proto.data_sources == []
-    assert registry_proto.entities == []
+
+    registry_dict = MessageToDict(registry_proto)
+    assert registry_dict["entities"] == [
+        {
+            "meta": registry_dict["entities"][0]["meta"],
+            "spec": {"joinKey": "__dummy_id", "name": "__dummy", "project": "test_project"},
+        }
+    ]
 
     feature_list_model = feature_list.cached_model
     updated_doc = await feast_registry_service.update_document(
         document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[feature_list_model])
     )
     registry_proto = updated_doc.registry_proto()
-    assert len(registry_proto.feature_services) == 1
-    assert registry_proto.feature_services[0].spec.name == "test_feature_list"
-    assert len(registry_proto.feature_views) == 2
-    assert len(registry_proto.data_sources) == 2
-    assert len(registry_proto.entities) == 2
+    assert {entity.spec.name for entity in registry_proto.entities} == expected_entity_names
+    assert {ds.name for ds in registry_proto.data_sources} == expected_data_source_names
+    assert {fv.spec.name for fv in registry_proto.feature_views} == set(
+        expected_feature_view_name_to_ttl
+    )
+    assert {
+        odfv.spec.name for odfv in registry_proto.on_demand_feature_views
+    } == expected_on_demand_feature_view_names
+    assert {fs.spec.name for fs in registry_proto.feature_services} == {"test_feature_list"}
 
 
 @pytest.mark.asyncio
-async def test_get_feast_feature_store(feast_feature_store_service, feast_registry):
+async def test_get_feast_feature_store(
+    feast_feature_store_service,
+    feast_registry,
+    expected_entity_names,
+    expected_data_source_names,
+    expected_feature_view_name_to_ttl,
+    expected_on_demand_feature_view_names,
+):
     """Test get feast feature store"""
     feast_fs = await feast_feature_store_service.get_feast_feature_store(
         feast_registry_id=feast_registry.id
     )
 
     # check that assets in the registry can be retrieved
+    entity_names = {entity.name for entity in feast_fs.list_entities()}
+    assert entity_names == {name for name in expected_entity_names if name != "__dummy"}
+
     data_src_names = [data_source.name for data_source in feast_fs.list_data_sources()]
-    assert set(data_src_names) == {
-        "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "fb_entity_transaction_id",
-    }
-    entity_names = [entity.name for entity in feast_fs.list_entities()]
-    assert set(entity_names) == {"cust_id", "transaction_id"}
-    fv_names = [feature_view.name for feature_view in feast_fs.list_feature_views()]
-    assert set(fv_names) == {"fb_entity_cust_id_fjs_1800_300_600_ttl", "fb_entity_transaction_id"}
-    fs_names = [feature_service.name for feature_service in feast_fs.list_feature_services()]
-    assert fs_names == ["test_feature_list"]
+    assert set(data_src_names) == expected_data_source_names
+
+    fv_name_to_ttl = {fv.name: fv.ttl for fv in feast_fs.list_feature_views()}
+    assert fv_name_to_ttl == expected_feature_view_name_to_ttl
+
+    odfv_names = {odfv.name for odfv in feast_fs.list_on_demand_feature_views()}
+    assert odfv_names == expected_on_demand_feature_view_names
+
+    fs_names = {feature_service.name for feature_service in feast_fs.list_feature_services()}
+    assert fs_names == {"test_feature_list"}

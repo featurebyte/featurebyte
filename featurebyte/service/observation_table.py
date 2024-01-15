@@ -17,6 +17,7 @@ from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import (
     DBVarType,
+    InternalName,
     MaterializedTableNamePrefix,
     SourceType,
     SpecialColumnName,
@@ -26,6 +27,7 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
     ObservationTableInvalidUseCaseError,
+    ObservationTableMissingColumnsError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -246,6 +248,11 @@ class ObservationTableService(
         Returns
         -------
         ObservationTableUploadTaskPayload
+
+        Raises
+        ------
+        ObservationTableMissingColumnsError
+            If the observation set dataframe is missing required columns.
         """
 
         # Check any conflict with existing documents
@@ -253,6 +260,20 @@ class ObservationTableService(
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
+
+        # Check if required column names are provided
+        missing_columns = []
+        available_columns = set(observation_set_dataframe.columns.tolist())
+        if SpecialColumnName.POINT_IN_TIME not in observation_set_dataframe.columns:
+            missing_columns.append(str(SpecialColumnName.POINT_IN_TIME))
+        for entity_id in data.primary_entity_ids:
+            entity = await self.entity_service.get_document(document_id=entity_id)
+            if not set(entity.serving_names).intersection(available_columns):
+                missing_columns.append("/".join(entity.serving_names))
+        if missing_columns:
+            raise ObservationTableMissingColumnsError(
+                f"Required columns not found: {', '.join(missing_columns)}"
+            )
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
@@ -413,6 +434,7 @@ class ObservationTableService(
             graph=graph,
             node_name=node.name,
             stats_names=["unique", "max", "min"],
+            feature_store_id=feature_store.id,
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)
@@ -503,6 +525,43 @@ class ObservationTableService(
             "entity_column_name_to_count": column_name_to_count,
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
+
+    @staticmethod
+    async def add_row_index_column(
+        session: BaseSession,
+        table_details: TableDetails,
+    ) -> None:
+        """
+        Add a row index column of running integers to a materialized table
+
+        Parameters
+        ----------
+        session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        """
+        row_number_expr = expressions.alias_(
+            expressions.Window(
+                this=expressions.Anonymous(this="ROW_NUMBER"),
+                order=expressions.Order(expressions=[expressions.Literal.number(1)]),
+            ),
+            alias=InternalName.TABLE_ROW_INDEX,
+            quoted=True,
+        )
+        adapter = get_sql_adapter(session.source_type)
+        query = sql_to_string(
+            adapter.create_table_as(
+                table_details,
+                expressions.select(
+                    row_number_expr,
+                    expressions.Star(),
+                ).from_(quoted_identifier(table_details.table_name)),
+                replace=True,
+            ),
+            source_type=session.source_type,
+        )
+        await session.execute_query(query)
 
     async def update_observation_table(  # pylint: disable=too-many-branches
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate

@@ -42,7 +42,7 @@ from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.target import TargetCreate, TargetUpdate
+from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_table import TargetTableCreate
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
@@ -72,7 +72,6 @@ class Target(
 
     # class variables
     _route = "/target"
-    _update_schema_class = TargetUpdate
     _list_schema = TargetModel
     _get_schema = TargetModel
     _list_fields = ["name", "entities"]

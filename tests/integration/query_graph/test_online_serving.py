@@ -11,11 +11,12 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureList, RecordRetrievalException
+from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.enum import InternalName
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
@@ -87,7 +88,6 @@ def features_fixture(event_table, source_type):
     return features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_serving_sql(
     features,

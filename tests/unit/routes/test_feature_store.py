@@ -90,8 +90,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                 "source": "snowflake",
                 "database_details": {
                     "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "role_name": "TESTING",
                     "warehouse": "sf_warehouse",
                 },
             }.items()
@@ -783,8 +784,16 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response_dict["total"] == 1
         credential_dict = response_dict["data"][0]
         assert credential_dict["feature_store_id"] == payload["_id"]
-        assert credential_dict["database_credential_type"] == "USERNAME_PASSWORD"
-        assert credential_dict["storage_credential_type"] == "S3"
+        assert credential_dict["database_credential"] == {
+            "type": "USERNAME_PASSWORD",
+            "username": "********",
+            "password": "********",
+        }
+        assert credential_dict["storage_credential"] == {
+            "type": "S3",
+            "s3_access_key_id": "********",
+            "s3_secret_access_key": "********",
+        }
 
     def test_delete_200(self, test_api_client_persistent, create_success_response):
         """Test delete feature store"""

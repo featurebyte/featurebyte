@@ -32,8 +32,9 @@ def node_input_fixture(graph):
         "feature_store_details": {
             "type": "snowflake",
             "details": {
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role_name",
                 "account": "account",
                 "warehouse": "warehouse",
             },

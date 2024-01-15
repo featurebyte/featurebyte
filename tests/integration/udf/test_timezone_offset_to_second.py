@@ -4,14 +4,8 @@ This module contains integration tests for F_TIMEZONE_OFFSET_TO_SECOND
 import pytest
 
 from featurebyte.session.base import BaseSession
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 
 
-@pytest.mark.parametrize(
-    "source_type",
-    SNOWFLAKE_SPARK_DATABRICKS,
-    indirect=True,
-)
 @pytest.mark.parametrize(
     "timezone_offset, expected",
     [
@@ -31,11 +25,6 @@ async def test_timezone_offset_to_second__valid(session, timezone_offset, expect
     assert res == expected
 
 
-@pytest.mark.parametrize(
-    "source_type",
-    SNOWFLAKE_SPARK_DATABRICKS,
-    indirect=True,
-)
 @pytest.mark.parametrize(
     "timezone_offset",
     [

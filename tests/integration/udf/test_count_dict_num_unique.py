@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "dictionary, expected",
     [

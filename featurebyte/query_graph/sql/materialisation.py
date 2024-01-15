@@ -3,7 +3,7 @@ SQL generation related to materialising tables such as ObservationTable
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 def get_source_expr(
     source: TableDetails,
+    column_names: Optional[List[str]] = None,
 ) -> Select:
     """
     Construct SQL query to materialize a table from a source table
@@ -29,12 +30,19 @@ def get_source_expr(
     ----------
     source: TableDetails
         Source table details
+    column_names: Optional[List[str]]
+        List of column names to select if specified
 
     Returns
     -------
     Select
     """
-    return expressions.select("*").from_(get_fully_qualified_table_name(source.dict()))
+    select_expr = expressions.select().from_(get_fully_qualified_table_name(source.dict()))
+    if column_names:
+        select_expr = select_expr.select(*[quoted_identifier(col) for col in column_names])
+    else:
+        select_expr = select_expr.select("*")
+    return select_expr
 
 
 def get_source_count_expr(

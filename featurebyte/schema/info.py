@@ -7,18 +7,16 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.credential import DatabaseCredentialType, StorageCredentialType
-from featurebyte.models.feature_list import (
-    FeatureListStatus,
-    FeatureReadinessDistribution,
-    FeatureTypeFeatureCount,
-)
+from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -374,6 +372,9 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     Catalog info schema
     """
 
+    feature_store_name: Optional[str]
+    online_store_name: Optional[str]
+
 
 class CredentialBriefInfo(BaseBriefInfo):
     """
@@ -525,3 +526,30 @@ class ContextInfo(BaseInfo):
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None
+
+
+class OnlineStoreInfo(BaseInfo):
+    """
+    OnlineStore in schema
+    """
+
+    details: OnlineStoreDetails
+    catalogs: List[CatalogBriefInfo]
+
+    @validator("details")
+    @classmethod
+    def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
+        """
+        Hide credentials in the details field
+
+        Parameters
+        ----------
+        value: OnlineStoreDetails
+            Online store details
+
+        Returns
+        -------
+        OnlineStoreDetails
+        """
+        value.hide_details_credentials()
+        return value

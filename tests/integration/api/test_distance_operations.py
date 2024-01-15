@@ -75,7 +75,6 @@ async def register_table_with_array_column(
     return event_table
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_haversine_operation(event_table_with_distances):
     """
     Test haversine operations

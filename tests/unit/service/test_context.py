@@ -33,8 +33,9 @@ def input_event_table_node_fixture(event_table):
             "feature_store_details": {
                 "details": {
                     "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "role_name": "TESTING",
                     "warehouse": "sf_warehouse",
                 },
                 "type": "snowflake",
@@ -72,8 +73,9 @@ def input_item_table_node_fixture(item_table, event_table):
             "feature_store_details": {
                 "details": {
                     "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "role_name": "TESTING",
                     "warehouse": "sf_warehouse",
                 },
                 "type": "snowflake",

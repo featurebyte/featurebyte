@@ -20,6 +20,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
         catalog_service: CatalogService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__()
         self.temp_storage = temp_storage
@@ -45,6 +47,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
         self.catalog_service = catalog_service
+        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: ObservationTableUploadTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from {payload.file_format} file.'
@@ -60,6 +63,10 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             Path(payload.observation_set_storage_path)
         )
 
+        await self.task_progress_updater.update_progress(
+            percent=20, message="Creating observation table"
+        )
+
         # Get location for the new observation table
         location = await self.observation_table_service.generate_materialized_table_location(
             feature_store_id
@@ -68,6 +75,9 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         # Write the file to the warehouse
         await db_session.register_table(
             location.table_details.table_name, uploaded_dataframe, temporary=False
+        )
+        await self.observation_table_service.add_row_index_column(
+            db_session, location.table_details
         )
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
@@ -94,6 +104,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                 ),
                 purpose=payload.purpose,
                 primary_entity_ids=payload.primary_entity_ids,
+                has_row_index=True,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

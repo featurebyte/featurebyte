@@ -37,6 +37,9 @@ class EventTableTimestampFilter:
 
     timestamp_column_name: str
     event_table_id: ObjectId
+    start_timestamp_placeholder_name: Optional[str] = None
+    end_timestamp_placeholder_name: Optional[str] = None
+    to_cast_placeholders: Optional[bool] = True
 
 
 @dataclass

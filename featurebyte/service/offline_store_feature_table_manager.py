@@ -19,15 +19,19 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import (
     FeaturesUpdate,
     OfflineStoreFeatureTableModel,
-    get_offline_store_feature_table_model,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_construction import (
+    OfflineStoreFeatureTableConstructionService,
+)
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
 
@@ -65,6 +69,7 @@ class OfflineIngestGraphContainer:
             all_feature_entity_ids.update(feature.entity_ids)
 
         # Group features by offline store feature table name
+        offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
         offline_store_table_name_to_graphs = defaultdict(list)
         for feature in features:
@@ -73,12 +78,11 @@ class OfflineIngestGraphContainer:
             )
 
             for offline_ingest_graph in offline_ingest_graphs:
-                offline_store_table_name_to_features[
-                    offline_ingest_graph.offline_store_table_name
-                ].append(feature)
-                offline_store_table_name_to_graphs[
-                    offline_ingest_graph.offline_store_table_name
-                ].append(offline_ingest_graph)
+                table_name = offline_ingest_graph.offline_store_table_name
+                if feature.id not in offline_store_table_name_to_feature_ids[table_name]:
+                    offline_store_table_name_to_feature_ids[table_name].add(feature.id)
+                    offline_store_table_name_to_features[table_name].append(feature)
+                offline_store_table_name_to_graphs[table_name].append(offline_ingest_graph)
 
         return cls(
             offline_store_table_name_to_features=offline_store_table_name_to_features,
@@ -115,14 +119,18 @@ class OfflineIngestGraphContainer:
             yield table_name, features
 
 
-class OfflineStoreFeatureTableManagerService:
+class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes,too-many-arguments
     """
     OfflineStoreFeatureTableManagerService class
     """
 
     def __init__(
         self,
+        catalog_id: ObjectId,
+        catalog_service: CatalogService,
+        feature_store_service: FeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
@@ -131,7 +139,13 @@ class OfflineStoreFeatureTableManagerService:
         feast_registry_service: FeastRegistryService,
         feature_list_service: FeatureListService,
     ):
+        self.catalog_id = catalog_id
+        self.catalog_service = catalog_service
+        self.feature_store_service = feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.offline_store_feature_table_construction_service = (
+            offline_store_feature_table_construction_service
+        )
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
@@ -188,11 +202,20 @@ class OfflineStoreFeatureTableManagerService:
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
 
             if feature_table_model is not None:
+                # Note: might need to defer updating feast registry till initialization is done to
+                # prevent concurrency issues (scheduled job started while new column's
+                # initialization is still in progress)
                 await self._create_or_update_feast_registry()
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
+
+        if not features:
+            # If all the features are already online enabled, i.e. the offline feature store tables
+            # are up-to-date. But registry still needs to be updated because there could be a new
+            # feature service that needs to be created.
+            await self._create_or_update_feast_registry()
 
     async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
@@ -204,28 +227,47 @@ class OfflineStoreFeatureTableManagerService:
         features: FeatureModel
             Model of the feature to be disabled for online serving
         """
-        feature_ids = {feature.id for feature in features}
+        feature_ids_to_remove = {feature.id for feature in features}
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={"feature_ids": {"$in": list(feature_ids)}},
+            query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
         for feature_table_dict in feature_table_data["data"]:
             updated_feature_ids = [
                 feature_id
                 for feature_id in feature_table_dict["feature_ids"]
-                if feature_id not in feature_ids
+                if feature_id not in feature_ids_to_remove
             ]
             if updated_feature_ids:
-                await self._update_offline_store_feature_table(
+                updated_feature_table = await self._update_offline_store_feature_table(
                     feature_table_dict, updated_feature_ids
                 )
+                await self.feature_materialize_service.drop_columns(
+                    updated_feature_table, self._get_offline_store_feature_table_columns(features)
+                )
             else:
+                await self.feature_materialize_service.drop_table(
+                    await self.offline_store_feature_table_service.get_document(
+                        feature_table_dict["_id"],
+                    )
+                )
                 await self.feature_materialize_scheduler_service.stop_job(
                     feature_table_dict["_id"],
                 )
                 await self.offline_store_feature_table_service.delete_document(
                     document_id=feature_table_dict["_id"],
                 )
-            await self._create_or_update_feast_registry()
+        await self._create_or_update_feast_registry()
+
+    @staticmethod
+    def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
+        for feature_model in features:
+            info = feature_model.offline_store_info
+            assert info is not None
+            output_column_names = []
+            for ingest_query_graph in info.extract_offline_store_ingest_query_graphs():
+                output_column_names.append(ingest_query_graph.output_column_name)
+            return output_column_names
+        return []
 
     async def _get_compatible_existing_feature_table(
         self, table_name: str
@@ -280,13 +322,19 @@ class OfflineStoreFeatureTableManagerService:
             primary_entity_serving_names=[entity.serving_names[0] for entity in primary_entities],
         )
 
-        return get_offline_store_feature_table_model(
+        catalog_model = await self.catalog_service.get_document(self.catalog_id)
+        feature_store_model = await self.feature_store_service.get_document(
+            catalog_model.default_feature_store_ids[0]
+        )
+
+        return await self.offline_store_feature_table_construction_service.get_offline_store_feature_table_model(
             feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
             aggregate_result_table_names=required_aggregate_result_tables,
             primary_entities=primary_entities,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
+            source_type=feature_store_model.type,
         )
 
     async def _get_required_aggregate_result_tables(
@@ -301,13 +349,19 @@ class OfflineStoreFeatureTableManagerService:
 
         # Get aggregate result tables
         filtered_table_names = []
-        query_filter = {
-            "table_name": {"$in": aggregate_result_table_names},
-            "serving_names": {
-                "$all": primary_entity_serving_names,
-                "$size": len(primary_entity_serving_names),
-            },
-        }
+        if primary_entity_serving_names:
+            query_filter = {
+                "table_name": {"$in": aggregate_result_table_names},
+                "serving_names": {
+                    "$all": primary_entity_serving_names,
+                    "$size": len(primary_entity_serving_names),
+                },
+            }
+        else:
+            query_filter = {
+                "table_name": {"$in": aggregate_result_table_names},
+            }
+
         async for online_store_compute_query_model in self.online_store_compute_query_service.list_documents_iterator(
             query_filter=query_filter
         ):
@@ -316,6 +370,9 @@ class OfflineStoreFeatureTableManagerService:
         return sorted(set(filtered_table_names))
 
     async def _create_or_update_feast_registry(self) -> None:
+        if not await self.feast_registry_service.is_source_type_supported():
+            return
+
         feature_lists = []
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_lists.append(FeatureListModel(**feature_list_dict))
@@ -323,7 +380,7 @@ class OfflineStoreFeatureTableManagerService:
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             await self.feast_registry_service.create_document(
-                FeastRegistryCreate(project_name="featurebyte", feature_lists=feature_lists)
+                FeastRegistryCreate(project_name=str(self.catalog_id), feature_lists=feature_lists)
             )
         else:
             await self.feast_registry_service.update_document(

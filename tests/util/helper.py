@@ -1,6 +1,10 @@
 """
 This module contains utility functions used in tests
 """
+from __future__ import annotations
+
+from typing import Generator
+
 import importlib
 import json
 import os
@@ -14,17 +18,18 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+import pytest
 from bson import ObjectId, json_util
 from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
+import featurebyte as fb
 from featurebyte import get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
-from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
@@ -219,7 +224,9 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     # execute SDK code & generate output object
     local_vars = {}
     sdk_code = query_object._generate_code(
-        to_format=to_format, to_use_saved_data=to_use_saved_data, table_id_to_info=table_id_to_info
+        to_format=to_format,
+        to_use_saved_data=to_use_saved_data,
+        table_id_to_info=table_id_to_info,
     )
     exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
@@ -440,6 +447,17 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     return await session.execute_query(query)
 
 
+def create_observation_table_by_upload(df):
+    """
+    Create an Observation Table using the upload SDK method
+    """
+    with tempfile.NamedTemporaryFile() as temp_file:
+        filename = temp_file.name + ".parquet"
+        df.to_parquet(filename, index=False)
+        observation_table = fb.ObservationTable.upload(filename, name=str(ObjectId()))
+    return observation_table
+
+
 async def compute_historical_feature_table_dataframe_helper(
     feature_list, df_observation_set, session, data_source, input_format, **kwargs
 ):
@@ -454,7 +472,10 @@ async def compute_historical_feature_table_dataframe_helper(
             data_source,
             serving_names_mapping=kwargs.get("serving_names_mapping"),
         )
+    elif input_format == "uploaded_table":
+        observation_table = create_observation_table_by_upload(df_observation_set)
     else:
+        assert input_format == "dataframe"
         observation_table = df_observation_set
 
     historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
@@ -498,6 +519,8 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
             entity_id_to_serving_name={},
             relationships_info=feature_model.relationships_info,
             feature_name=feature_model.name,
+            feature_version=feature_model.version.to_str(),
+            catalog_id=feature_model.catalog_id,
         )
 
     if output.is_decomposed is False:
@@ -566,31 +589,97 @@ def generate_column_data(var_type, row_number=10):
         return np.random.choice(["foo", "bar"], size=row_number)
     if var_type in DBVarType.BOOL:
         return np.random.choice([True, False], size=row_number)
+    if var_type in DBVarType.dictionary_types().union([DBVarType.FLAT_DICT]):
+        selections = [
+            None,
+            np.nan,
+            json.dumps({}),
+            json.dumps({"foo": 1, "bar": 2}),
+            json.dumps({"你好": 1, "世界": 2}),
+            json.dumps({"foo": 1, "bar": 2, "baz": 3}),
+        ]
+        return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
 
 
-def check_on_demand_feature_view_code_execution(odfv_codes, df):
-    """Check on demand feature view code execution"""
+@contextmanager
+def add_sys_path(path: str) -> Generator[None, None, None]:
+    """
+    Temporarily add the given path to `sys.path`.
+
+    Parameters
+    ----------
+    path: str
+        Path to add to `sys.path`
+
+    Yields
+    ------
+    None
+        This context manager yields nothing and is used for its side effects only.
+    """
+    path = os.fspath(path)
+    sys.path.insert(0, path)
+    try:
+        yield
+    finally:
+        sys.path.remove(path)
+
+
+def get_on_demand_feature_function(codes, function_name):
+    """Construct on demand feature function based on the input codes"""
     # create a temporary directory to write the generated code
     with tempfile.TemporaryDirectory() as temp_dir:
         with add_sys_path(temp_dir):
             # write the generated code to a file
-            module_name = f"odfv_{ObjectId()}"  # use a random module name to avoid conflict
+            module_name = f"mod_{ObjectId()}"  # use a random module name to avoid conflict
             with open(os.path.join(temp_dir, f"{module_name}.py"), "w") as file_handle:
-                file_handle.write(odfv_codes)
+                file_handle.write(codes)
 
             # import the function & execute it on the input dataframe, check output column name
             module = importlib.import_module(module_name)
-            try:
-                output = module.on_demand_feature_view(df)
-                return output
-            except Exception as e:
-                print("Error: ", e)
-                print("Generated code: ", odfv_codes)
-                raise e
+            return getattr(module, function_name)
 
 
-def check_on_demand_feature_view_code_generation(feature_model):
+def check_on_demand_feature_view_code_execution(odfv_codes, df, function_name):
+    """Check on demand feature view code execution"""
+    on_demand_feature_func = get_on_demand_feature_function(odfv_codes, function_name)
+    try:
+        output = on_demand_feature_func(df)
+        return output
+    except Exception as e:
+        print("Error: ", e)
+        print("Generated code: ", odfv_codes)
+        raise e
+
+
+def check_on_demand_feature_function_code_execution(udf_code_state, df):
+    """Check on demand feature function code execution"""
+    udf_codes = udf_code_state.generate_code()
+
+    # get input parameters
+    input_args = []
+    for _, row in df.iterrows():
+        input_kwargs = {
+            input_arg_name: row[input_info.column_name]
+            for input_arg_name, input_info in sorted(udf_code_state.input_var_name_to_info.items())
+        }
+        input_args.append(input_kwargs)
+
+    user_defined_func = get_on_demand_feature_function(udf_codes, "user_defined_function")
+    try:
+        output = []
+        for input_arg in input_args:
+            output.append(user_defined_func(**input_arg))
+        return pd.Series(output)
+    except Exception as e:
+        print("Error: ", e)
+        print("Generated code: ", udf_codes)
+        raise e
+
+
+def check_on_demand_feature_code_generation(
+    feature_model, sql_fixture_path=None, update_fixtures=False
+):
     """Check on demand feature view code generation"""
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
@@ -613,33 +702,72 @@ def check_on_demand_feature_view_code_generation(feature_model):
         assert isinstance(node, RequestColumnNode)
         df[node.parameters.column_name] = generate_column_data(node.parameters.dtype)
 
+    # add a timestamp column & a feature timestamp column
+    if "POINT_IN_TIME" not in df.columns:
+        df["POINT_IN_TIME"] = pd.date_range("2020-01-01", freq="1h", periods=df.shape[0])
+    df["__feature_timestamp"] = pd.to_datetime(df["POINT_IN_TIME"]) - pd.Timedelta(seconds=10)
+
     # generate on demand feature view code
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    odfv_codes = fv_global_state.generate_code()
+    odfv_codes = offline_store_info.odfv_info.codes
 
     # check the generated code can be executed successfully
-    output = check_on_demand_feature_view_code_execution(odfv_codes, df)
-    assert output.columns == [feature_model.name]
+    odfv_output = check_on_demand_feature_view_code_execution(
+        odfv_codes, df, function_name=offline_store_info.odfv_info.function_name
+    )
+    exp_col_name = feature_model.versioned_name
+    assert odfv_output.columns == [exp_col_name]
+
+    udf_code_state = offline_store_info._generate_databricks_user_defined_function_code(
+        output_dtype=feature_model.dtype,
+    )
+
+    # check the generated code can be executed successfully
+    udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
+
+    # check the consistency between on demand feature view & on demand feature function
+    pd.testing.assert_series_equal(
+        odfv_output[exp_col_name], udf_output, check_names=False, check_dtype=False
+    )
+
+    # check generated sql code
+    if sql_fixture_path:
+        udf_codes = offline_store_info.generate_databricks_user_defined_function_code(
+            output_dtype=feature_model.dtype, to_sql=True
+        )
+        if update_fixtures:
+            with open(sql_fixture_path, mode="w", encoding="utf-8") as file_handle:
+                file_handle.write(udf_codes)
+        else:
+            with open(sql_fixture_path, mode="r", encoding="utf-8") as file_handle:
+                expected = file_handle.read()
+                assert expected.strip() == udf_codes.strip(), udf_codes
 
 
-async def deploy_feature(app_container, feature, return_type="feature"):
+async def deploy_feature(
+    app_container,
+    feature,
+    return_type="feature",
+    feature_list_name_override=None,
+):
     """
     Helper function to create deploy a single feature using services
     """
     assert return_type in {"feature", "feature_list"}
 
     # Create feature and make production ready
-    feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
-    await app_container.feature_service.create_document(data=feature_create_payload)
-    await app_container.feature_readiness_service.update_feature(
-        feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
-    )
+    if not feature.saved:
+        feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
+        await app_container.feature_service.create_document(data=feature_create_payload)
+        await app_container.feature_readiness_service.update_feature(
+            feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
+        )
 
     # Create feature list and deploy
-    data = FeatureListServiceCreate(
-        name=f"{feature.name}_list",
-        feature_ids=[feature.id],
-    )
+    if feature_list_name_override is None:
+        feature_list_name = f"{feature.name}_list"
+    else:
+        feature_list_name = feature_list_name_override
+    data = FeatureListServiceCreate(name=feature_list_name, feature_ids=[feature.id])
     feature_list_model = await app_container.feature_list_service.create_document(data)
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
@@ -659,3 +787,53 @@ def undeploy_feature(feature):
     """
     deployment: Deployment = Deployment.get(f"{feature.name}_list")
     deployment.disable()  # pylint: disable=no-member
+
+
+def tz_localize_if_needed(df, source_type):
+    """
+    Helper function to localize datetime columns for easier comparison.
+
+    Parameters
+    ----------
+    df: DataFrame
+        Result of feature requests (preview / historical)
+    source_type: SourceType
+        Source type
+    """
+    if source_type not in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
+        # Only databricks needs timezone localization
+        return
+
+    df["POINT_IN_TIME"] = df["POINT_IN_TIME"].dt.tz_localize(None)
+
+
+def assert_dict_approx_equal(actual, expected):
+    """Assert two dicts are approximately equal"""
+    if isinstance(expected, dict):
+        assert actual.keys() == expected.keys()
+        for key in expected:
+            assert_dict_approx_equal(actual[key], expected[key])
+    elif isinstance(expected, list):
+        assert len(actual) == len(expected)
+        for act_item, exp_item in zip(actual, expected):
+            assert_dict_approx_equal(act_item, exp_item)
+    elif isinstance(expected, float):
+        assert actual == pytest.approx(expected)
+    else:
+        assert actual == expected
+
+
+def dict_to_tuple(d):
+    """Recursively convert dictionary to a hashable tuple."""
+    if isinstance(d, dict):
+        return tuple((k, dict_to_tuple(v)) for k, v in sorted(d.items()))
+    if isinstance(d, list):
+        return tuple(sorted(dict_to_tuple(v) for v in d))
+    return d
+
+
+def assert_lists_of_dicts_equal(list1, list2):
+    """Compare two lists of dictionaries without considering the order, handling nested structures."""
+    set1 = {dict_to_tuple(d) for d in list1}
+    set2 = {dict_to_tuple(d) for d in list2}
+    assert set1 == set2, f"Expected {set1}, got {set2}"

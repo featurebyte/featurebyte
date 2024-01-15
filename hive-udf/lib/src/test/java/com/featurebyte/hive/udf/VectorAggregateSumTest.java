@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class VectorAggregateSumTest extends BaseVectorAggregateListTest {
-  protected BaseVectorAggregate getAggregator() {
-    return new VectorAggregateSum();
+  protected BaseVectorAggregateV1 getAggregator() {
+    return new VectorAggregateSumV1();
   }
 
   protected List<Double> getResults() {

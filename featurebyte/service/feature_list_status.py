@@ -7,7 +7,7 @@ import json
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService

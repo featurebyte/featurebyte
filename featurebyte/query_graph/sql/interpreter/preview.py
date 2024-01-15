@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    MISSING_VALUE_REPLACEMENT,
     CteStatement,
     SQLType,
     construct_cte_sql,
@@ -551,15 +552,21 @@ class PreviewMixin(BaseGraphInterpreter):
         expressions.Select
         """
         cat_counts = self._get_cat_counts(col_expr)
+        col_expr_filled_null = expressions.Case(
+            ifs=[
+                expressions.If(
+                    this=expressions.Is(this=col_expr, expression=expressions.Null()),
+                    true=make_literal_value(MISSING_VALUE_REPLACEMENT),
+                )
+            ],
+            default=col_expr,
+        )
+        object_agg_expr = self.adapter.object_agg(
+            col_expr_filled_null, quoted_identifier(CATEGORY_COUNT_COLUMN_NAME)
+        )
         cat_count_dict = expressions.select(
             expressions.alias_(
-                expression=expressions.Anonymous(
-                    this="object_agg",
-                    expressions=[
-                        col_expr,
-                        quoted_identifier(CATEGORY_COUNT_COLUMN_NAME),
-                    ],
-                ),
+                expression=object_agg_expr,
                 alias="COUNT_DICT",
                 quoted=True,
             )

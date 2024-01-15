@@ -9,7 +9,7 @@ import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
@@ -104,6 +104,9 @@ class FeaturePreviewService(PreviewService):
                     f"Observation table must have {FEATURE_PREVIEW_ROW_LIMIT} rows or less"
                 )
 
+            # TODO: Ideally, we shouldn't have to download the observation table and then
+            #  re-register it as a request table. Instead we should use the materialized observation
+            #  table as the request table directly.
             feature_store = await self.feature_store_service.get_document(
                 document_id=observation_table.location.feature_store_id
             )
@@ -117,6 +120,8 @@ class FeaturePreviewService(PreviewService):
             )
             observation_set_dataframe = await db_session.execute_query(sql)
             assert observation_set_dataframe is not None
+            if InternalName.TABLE_ROW_INDEX in observation_set_dataframe:
+                observation_set_dataframe.drop(InternalName.TABLE_ROW_INDEX, axis=1, inplace=True)
             point_in_time_and_serving_name_list = observation_set_dataframe.to_dict(
                 orient="records"
             )
@@ -188,6 +193,7 @@ class FeaturePreviewService(PreviewService):
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=node_name,
+            feature_store_id=feature_or_target_preview.feature_store_id,
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
@@ -231,6 +237,7 @@ class FeaturePreviewService(PreviewService):
             document = await self.feature_service.get_document(feature_preview.feature_id)
             params["graph"] = document.graph
             params["node_name"] = document.node_name
+            params["feature_store_id"] = document.tabular_source.feature_store_id
         return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_target(self, target_preview: TargetPreview) -> dict[str, Any]:
@@ -252,6 +259,7 @@ class FeaturePreviewService(PreviewService):
             document = await self.target_service.get_document(target_preview.target_id)
             params["graph"] = document.graph
             params["node_name"] = document.node_name
+            params["feature_store_id"] = document.tabular_source.feature_store_id
         return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:

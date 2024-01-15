@@ -162,6 +162,9 @@ class QueryGraphModel(FeatureByteBaseModel):
             # from affecting the graph hash (node name could be different if the insert order is different)
             # even if the final graph is the same
             node_parameters.pop("output_node_name")
+        if node.type == NodeType.INPUT:
+            # exclude feature_store_details.details from input node hash if it exists
+            node_parameters["feature_store_details"].pop("details", None)
         return node_parameters
 
     @classmethod

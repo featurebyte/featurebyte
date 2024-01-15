@@ -15,8 +15,8 @@ from pandas.testing import assert_frame_equal
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
 

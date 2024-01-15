@@ -24,7 +24,10 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__1"
   FROM (
     SELECT
-      OBJECT_AGG("cust_id", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(
+        CASE WHEN "cust_id" IS NULL THEN '__MISSING__' ELSE "cust_id" END,
+        TO_VARIANT("__FB_COUNTS")
+      ) AS "COUNT_DICT"
     FROM (
       SELECT
         "cust_id",

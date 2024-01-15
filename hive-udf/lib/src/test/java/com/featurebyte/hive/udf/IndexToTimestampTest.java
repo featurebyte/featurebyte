@@ -11,7 +11,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.Test;
 
 public class IndexToTimestampTest {
-  IndexToTimestamp udf = new IndexToTimestamp();
+  IndexToTimestampV1 udf = new IndexToTimestampV1();
 
   @Test
   public void testConvertIndexToTimestamp() throws HiveException {

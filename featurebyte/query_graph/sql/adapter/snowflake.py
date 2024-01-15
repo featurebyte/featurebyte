@@ -163,7 +163,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return re.sub("(?<!')'(?!')", "''", query)
 
     @classmethod
-    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
+    def create_table_as(
+        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+    ) -> Expression:
         """
         Construct query to create a table using a select statement
 
@@ -173,6 +175,8 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             TableDetails of the table to be created
         select_expr: Select
             Select expression
+        replace: bool
+            Whether to replace the table if exists
 
         Returns
         -------
@@ -183,6 +187,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             this=expressions.Table(this=destination_expr),
             kind="TABLE",
             expression=select_expr,
+            replace=replace,
         )
 
     @classmethod
@@ -195,7 +200,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # In Snowflake, we use the MAX aggregation function when pivoting the online store table
         # which doesn't support OBJECT type. Therefore, we need to convert the OBJECT type to a
         # string type.
-        if dtype == DBVarType.OBJECT:
+        if dtype in DBVarType.json_conversion_types():
             return cast(
                 Expression,
                 alias_(
@@ -220,7 +225,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         agg_result_name_expr = quoted_identifier(f"'{agg_result_name}'")
 
         # Convert string type to OBJECT type if needed
-        if dtype == DBVarType.OBJECT:
+        if dtype in DBVarType.json_conversion_types():
             return expressions.Anonymous(
                 this="PARSE_JSON",
                 expressions=[agg_result_name_expr],

@@ -151,7 +151,7 @@ class BaseCountAggFunc(BaseAggFunc):
     def _derive_output_var_type(
         self, input_var_type: DBVarType, category: Optional[str] = None
     ) -> DBVarType:
-        return DBVarType.FLOAT
+        return DBVarType.INT
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
         return True

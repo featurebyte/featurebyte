@@ -136,9 +136,10 @@ class ObservationTableController(
                 pd.read_csv, observation_set_file.file
             )
             # Convert point_in_time column to datetime
-            observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-                observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
-            )
+            if SpecialColumnName.POINT_IN_TIME in observation_set_dataframe.columns:
+                observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+                    observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
+                )
         else:
             file_format = UploadFileFormat.PARQUET
             observation_set_dataframe = try_read_as_dataframe(

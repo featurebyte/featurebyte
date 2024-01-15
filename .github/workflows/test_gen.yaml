@@ -257,6 +257,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
   test-integration-databricks:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
@@ -310,11 +311,10 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
   test-integration-databricks-unity:
-    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 135
     strategy:
       matrix:
         python-version:

@@ -4,13 +4,10 @@ Tests for snowflake get relative frequency UDF
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
-
 same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.parametrize(
     "dictionary, key, expected",
     [

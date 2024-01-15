@@ -24,4 +24,6 @@ nested_description_allowed_classes = {
     "unexpectedvalueimputation",
     "usernamepasswordcredential",
     "valuebeyondendpointimputation",
+    "mysqlonlinestoredetails",
+    "redisonlinestoredetails",
 }

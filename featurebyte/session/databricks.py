@@ -17,6 +17,7 @@ from bson import ObjectId
 from pydantic import Field, PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
+from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import SourceType
 from featurebyte.session.base_spark import BaseSparkSession
 
@@ -91,13 +92,13 @@ class DatabricksSession(BaseSparkSession):
             server_hostname=data["host"],
             http_path=data["http_path"],
             access_token=self.database_credential.access_token,
-            catalog=self.featurebyte_catalog,
-            schema=self.featurebyte_schema,
+            catalog=self.catalog_name,
+            schema=self.schema_name,
         )
 
     def _initialize_storage(self) -> None:
-        self.storage_spark_url = self.storage_spark_url.rstrip("/")
-        self._storage_base_path = self.storage_spark_url.lstrip("dbfs:")
+        self.storage_path = self.storage_path.rstrip("/")
+        self._storage_base_path = self.storage_path.lstrip("dbfs:")
         # ensure google credentials not in environment variables to avoid conflict
         os.environ.pop("GOOGLE_CREDENTIALS", None)
         workspace_client = WorkspaceClient(
@@ -159,10 +160,15 @@ class DatabricksSession(BaseSparkSession):
         if schema:
             post_processor = ArrowTablePostProcessor(schema=schema)
             # fetch results in batches
+            counter = 0
             while True:
                 dataframe = post_processor.to_dataframe(cursor.fetchmany_arrow(size=1000))
                 arrow_table = pa.Table.from_pandas(dataframe)
                 if arrow_table.num_rows == 0:
+                    if counter == 0:
+                        # return empty dataframe with correct schema
+                        yield pa_table_to_record_batches(arrow_table)[0]
                     break
                 for record_batch in arrow_table.to_batches():
+                    counter += 1
                     yield record_batch

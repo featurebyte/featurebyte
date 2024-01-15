@@ -65,7 +65,9 @@ def mock_session_for_online_serving_fixture():
 
     async def mock_execute_query(query):
         _ = query
-        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_ROW_INDEX": [0]})
+        return pd.DataFrame(
+            {"cust_id": [1], "feature_value": [123.0], "__FB_DATAFRAME_ROW_INDEX": [0]}
+        )
 
     return Mock(
         name="mock_session_for_online_serving",
@@ -84,28 +86,28 @@ def expected_online_feature_query_fixture():
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
+            REQ."__FB_DATAFRAME_ROW_INDEX",
             SYSDATE() AS POINT_IN_TIME
           FROM (
             SELECT
               1 AS "cust_id",
-              0 AS "__FB_ROW_INDEX"
+              0 AS "__FB_DATAFRAME_ROW_INDEX"
           ) AS REQ
         ), _FB_AGGREGATED AS (
           SELECT
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
+            REQ."__FB_DATAFRAME_ROW_INDEX",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -119,23 +121,23 @@ def expected_online_feature_query_fixture():
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481', _fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
           AGG."cust_id",
-          AGG."__FB_ROW_INDEX",
-          "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"
+          AGG."__FB_DATAFRAME_ROW_INDEX",
+          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
@@ -270,16 +272,16 @@ async def test_feature_list_deployed_with_batch_request_table(
           SELECT
             REQ."cust_id",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -293,22 +295,22 @@ async def test_feature_list_deployed_with_batch_request_table(
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481', _fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
           AGG."cust_id",
-          "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"
+          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()

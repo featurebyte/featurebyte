@@ -206,6 +206,33 @@ def test_get_historical_feature_query_set__multiple_batches(
     )
 
 
+def test_get_historical_feature_query_set__output_include_row_index(
+    float_feature, output_table_details, fixed_object_id, update_fixtures
+):
+    """
+    Test historical features table include row index column if specified
+    """
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        request_table_columns=request_table_columns,
+        source_type=SourceType.SNOWFLAKE,
+        output_table_details=output_table_details,
+        output_feature_names=[float_feature.node.name],
+        output_include_row_index=True,
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    )
+    assert query_set.feature_queries == []
+    assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
+    assert_equal_with_expected_fixture(
+        query_set.output_query,
+        "tests/fixtures/expected_historical_requests_output_row_index.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 @pytest.mark.parametrize(
     "progress_message", [PROGRESS_MESSAGE_COMPUTING_FEATURES, PROGRESS_MESSAGE_COMPUTING_TARGET]
 )

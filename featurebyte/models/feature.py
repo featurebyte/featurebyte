@@ -23,12 +23,17 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.mixin import QueryGraphMixin
-from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo, OfflineStoreInfoMetadata
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreInfo,
+    OfflineStoreInfoMetadata,
+    ServingNameInfo,
+)
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -96,6 +101,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    entity_dtypes: List[DBVarType] = Field(allow_mutation=False, default_factory=list)
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -159,9 +165,18 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 graph_dict = graph_dict.dict(by_alias=True)
             graph = QueryGraph(**graph_dict)
             node_name = values["node_name"]
+            decompose_state = graph.get_decompose_state(
+                node_name=node_name, relationships_info=None
+            )
+            entity_ids = decompose_state.primary_entity_ids
+
+            values["entity_ids"] = entity_ids
+            values["entity_dtypes"] = [
+                decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
+                for entity_id in entity_ids
+            ]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
             values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
                 node_name=node_name
             )
@@ -221,6 +236,17 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
+
+    @property
+    def versioned_name(self) -> str:
+        """
+        Retrieve feature name with version info
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.name}_{self.version.to_str()}"
 
     @property
     def offline_store_info(self) -> OfflineStoreInfo:
@@ -453,6 +479,8 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             entity_id_to_serving_name=entity_id_to_serving_name,
             relationships_info=self.relationships_info or [],
             feature_name=self.name,
+            feature_version=self.version.to_str(),
+            catalog_id=self.catalog_id,
         )
 
         if result.is_decomposed:
@@ -462,9 +490,15 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         else:
             decomposed_graph = self.graph
             output_node_name = self.node.name
-            feature_job_setting = None
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
+            else:
+                # TODO: Remove this once the default are specified in the graph
+                feature_job_setting = FeatureJobSetting(
+                    frequency="1d",
+                    time_modulo_frequency="0s",
+                    blind_spot="0s",
+                )
 
             has_ttl = bool(
                 next(
@@ -478,26 +512,47 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 ],
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
+                catalog_id=self.catalog_id,
             )
 
+            assert len(self.entity_ids) == len(
+                self.entity_dtypes
+            ), "entity_ids & entity_dtypes must match"
+            entity_id_to_dtype = dict(zip(self.entity_ids, self.entity_dtypes))
             metadata = OfflineStoreInfoMetadata(
                 aggregation_nodes_info=self._extract_aggregation_nodes_info(),
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
-                output_column_name=self.name,
+                output_column_name=self.versioned_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,
+                primary_entity_dtypes=[
+                    entity_id_to_dtype[entity_id] for entity_id in self.primary_entity_ids
+                ],
             )
 
         # populate offline store info
-        self.internal_offline_store_info = OfflineStoreInfo(
+        offline_store_info = OfflineStoreInfo(
             graph=decomposed_graph,
             node_name=output_node_name,
             node_name_map=result.node_name_map,
             is_decomposed=result.is_decomposed,
             metadata=metadata,
-        ).dict(by_alias=True)
+            serving_names_info=[
+                ServingNameInfo(serving_name=serving_name, entity_id=entity_id)
+                for entity_id, serving_name in entity_id_to_serving_name.items()
+            ],
+        )
+        offline_store_info.initialize(
+            feature_versioned_name=self.versioned_name,
+            feature_dtype=self.dtype,
+            feature_job_settings=[
+                setting.feature_job_setting for setting in self.table_id_feature_job_settings
+            ],
+            feature_id=self.id,
+        )
+        self.internal_offline_store_info = offline_store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

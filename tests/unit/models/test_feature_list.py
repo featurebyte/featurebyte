@@ -4,14 +4,14 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import FeatureListStatus
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_list import (
     FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
     FeatureReadinessDistribution,
     FeatureReadinessTransition,
 )
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 
 
 @pytest.fixture(name="feature_list_model_dict")
@@ -33,6 +33,7 @@ def feature_list_model_dict_fixture():
         "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "relationships_info": None,
+        "store_info": None,
         "supported_serving_entity_ids": [],
         "block_modification_by": [],
         "description": None,

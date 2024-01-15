@@ -21,11 +21,12 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
-from featurebyte.schema.catalog import CatalogCreate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -171,6 +172,18 @@ def feature_list_service_fixture(app_container):
     return app_container.feature_list_service
 
 
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
 @pytest.fixture(name="table_columns_info_service")
 def table_columns_info_service_fixture(app_container):
     """TableColumnsInfoService fixture"""
@@ -212,7 +225,11 @@ def preview_service_fixture(app_container, feature_store, mock_snowflake_session
     """PreviewService fixture"""
     with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
         mocked.return_value = feature_store, mock_snowflake_session
-        yield app_container.preview_service
+        with patch(
+            "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+        ) as mock_get_feature_store_session:
+            mock_get_feature_store_session.return_value = mock_snowflake_session
+            yield app_container.preview_service
 
 
 @pytest.fixture(name="feature_preview_service")
@@ -579,6 +596,21 @@ async def feature_list_fixture(test_dir, feature, feature_list_service):
     """Feature list model"""
     _ = feature
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature_list = await feature_list_service.create_document(
+            data=FeatureListServiceCreate(**payload)
+        )
+        return feature_list
+
+
+@pytest_asyncio.fixture(name="feature_list_repeated")
+async def feature_list_repeated_fixture(test_dir, feature, feature_list_service):
+    """Feature list model that has the same underlying features as feature_list"""
+    _ = feature
+    fixture_path = os.path.join(
+        test_dir, "fixtures/request_payloads/feature_list_single_repeated.json"
+    )
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_list = await feature_list_service.create_document(
@@ -1016,12 +1048,46 @@ def feature_materialize_service_fixture(app_container):
     return app_container.feature_materialize_service
 
 
-@pytest.fixture(name="mock_initialize_new_columns")
-def mock_initialize_new_columns_fixture():
+@pytest.fixture(name="mock_feature_materialize_service")
+def mock_feature_materialize_service_fixture():
     """
-    Fixture to mock FeatureMaterializeService.initialize_new_columns
+    Fixture to mock FeatureMaterializeService's methods where the actual queries are executed
     """
-    with patch(
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
-    ) as patched:
-        yield patched
+    patched = {}
+    service_name = (
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService"
+    )
+    for method_name in ["initialize_new_columns", "drop_columns", "drop_table"]:
+        patcher = patch(f"{service_name}.{method_name}")
+        patched[method_name] = patcher.start()
+    yield patched
+    for patcher in patched.values():
+        patcher.stop()
+
+
+@pytest_asyncio.fixture(name="online_store")
+async def online_store_fixture(app_container):
+    """
+    Fixture to return an online store model
+    """
+    online_store_model = await app_container.online_store_service.create_document(
+        OnlineStoreModel(
+            name="redis_online_store",
+            details=RedisOnlineStoreDetails(
+                redis_type="redis",
+            ),
+        )
+    )
+    return online_store_model
+
+
+@pytest_asyncio.fixture(name="catalog_with_online_store")
+async def catalog_with_online_store_fixture(app_container, catalog, online_store):
+    """
+    Fixture for a catalog with an online store
+    """
+    catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+    catalog = await app_container.catalog_service.update_document(
+        document_id=catalog.id, data=catalog_update
+    )
+    return catalog

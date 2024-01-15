@@ -100,9 +100,9 @@ class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetail
         return SnowflakeSource(
             name=name,
             timestamp_field=timestamp_field,
-            database=self.database,
+            database=self.database_name,
             warehouse=self.warehouse,
-            schema=self.sf_schema,
+            schema=self.schema_name,
             table=table_name,
             created_timestamp_column=created_timestamp_column,
         )
@@ -118,10 +118,10 @@ class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetail
             account=self.account,
             user=username,
             password=password,
-            role=None,
+            role=self.role_name,
             warehouse=self.warehouse,
-            database=self.database,
-            schema_=self.sf_schema,
+            database=self.database_name,
+            schema_=self.schema_name,
         )
 
 

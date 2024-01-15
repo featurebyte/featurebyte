@@ -15,7 +15,7 @@ from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
@@ -36,7 +36,6 @@ from featurebyte.session.base import BaseSession
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 NUM_FEATURES_PER_QUERY = 50
-FB_ROW_INDEX_FOR_JOIN = "__FB_ROW_INDEX_FOR_JOIN"
 
 PROGRESS_MESSAGE_COMPUTING_FEATURES = "Computing features"
 PROGRESS_MESSAGE_COMPUTING_TARGET = "Computing target"
@@ -86,7 +85,7 @@ class ObservationSet(ABC):
         request_table_name : str
             Request table name
         add_row_index : bool
-            Whether to add row index column FB_ROW_INDEX_FOR_JOIN to the request table. This is
+            Whether to add row index column TABLE_ROW_INDEX to the request table. This is
             needed when the historical features are materialized in batches.
         """
 
@@ -111,7 +110,7 @@ class DataFrameObservationSet(ObservationSet):
         self, session: BaseSession, request_table_name: str, add_row_index: bool
     ) -> None:
         if add_row_index:
-            self.dataframe[FB_ROW_INDEX_FOR_JOIN] = np.arange(self.dataframe.shape[0])
+            self.dataframe[InternalName.TABLE_ROW_INDEX] = np.arange(self.dataframe.shape[0])
         await session.register_table(request_table_name, self.dataframe)
 
 
@@ -136,13 +135,13 @@ class MaterializedTableObservationSet(ObservationSet):
     ) -> None:
         columns = ["*"]
 
-        if add_row_index:
+        if add_row_index and not self.observation_table.has_row_index:
             row_number = expressions.Window(
                 this=expressions.Anonymous(this="ROW_NUMBER"),
                 order=expressions.Order(expressions=[expressions.Literal.number(1)]),
             )
             columns.append(
-                expressions.alias_(row_number, alias=FB_ROW_INDEX_FOR_JOIN, quoted=True),
+                expressions.alias_(row_number, alias=InternalName.TABLE_ROW_INDEX, quoted=True),
             )
 
         query = sql_to_string(
@@ -422,11 +421,20 @@ def split_nodes(
     return result
 
 
+def _maybe_add_row_index_column(
+    request_table_columns: list[str], to_include_row_index_column: bool
+) -> list[str]:
+    if to_include_row_index_column:
+        return [InternalName.TABLE_ROW_INDEX.value] + request_table_columns
+    return request_table_columns[:]
+
+
 def construct_join_feature_sets_query(
     feature_queries: list[FeatureQuery],
     output_feature_names: list[str],
     request_table_name: str,
     request_table_columns: list[str],
+    output_include_row_index: bool,
 ) -> expressions.Select:
     """
     Construct the SQL code that joins the results of intermediate feature queries
@@ -440,15 +448,20 @@ def construct_join_feature_sets_query(
     request_table_name : str
         Name of request table
     request_table_columns : list[str]
-        List of column names in the request table. This should exclude the FB_ROW_INDEX_FOR_JOIN
+        List of column names in the request table. This should exclude the TABLE_ROW_INDEX
         column which is only used for joining.
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
 
     Returns
     -------
     expressions.Select
     """
     expr = expressions.select(
-        *(get_qualified_column_identifier(col, "REQ") for col in request_table_columns)
+        *(
+            get_qualified_column_identifier(col, "REQ")
+            for col in _maybe_add_row_index_column(request_table_columns, output_include_row_index)
+        )
     ).from_(f"{request_table_name} AS REQ")
 
     table_alias_by_feature = {}
@@ -461,8 +474,10 @@ def construct_join_feature_sets_query(
             ),
             join_type="left",
             on=expressions.EQ(
-                this=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, "REQ"),
-                expression=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, table_alias),
+                this=get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "REQ"),
+                expression=get_qualified_column_identifier(
+                    InternalName.TABLE_ROW_INDEX, table_alias
+                ),
             ),
         )
         for feature_name in feature_set.feature_names:
@@ -476,7 +491,7 @@ def construct_join_feature_sets_query(
     )
 
 
-def get_historical_features_query_set(  # pylint: disable=too-many-locals
+def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-many-arguments
     request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],
@@ -486,6 +501,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> HistoricalFeatureQuerySet:
     """Construct the SQL code that extracts historical features
@@ -510,8 +526,10 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
-        Customised progress message which will be send to a client.
+        Customised progress message which will be sent to a client.
 
     Returns
     -------
@@ -525,7 +543,9 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
             nodes=nodes,
-            request_table_columns=request_table_columns,
+            request_table_columns=_maybe_add_row_index_column(
+                request_table_columns, output_include_row_index
+            ),
             serving_names_mapping=serving_names_mapping,
             source_type=source_type,
             request_table_name=request_table_name,
@@ -551,7 +571,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         feature_set_expr, feature_names = get_historical_features_expr(
             graph=graph,
             nodes=nodes_group,
-            request_table_columns=[FB_ROW_INDEX_FOR_JOIN] + request_table_columns,
+            request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + request_table_columns,
             serving_names_mapping=serving_names_mapping,
             source_type=source_type,
             request_table_name=request_table_name,
@@ -577,6 +597,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         output_feature_names=output_feature_names,
         request_table_name=request_table_name,
         request_table_columns=request_table_columns,
+        output_include_row_index=output_include_row_index,
     )
     output_query = sql_to_string(
         get_sql_adapter(source_type).create_table_as(

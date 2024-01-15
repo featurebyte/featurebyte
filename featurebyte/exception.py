@@ -473,3 +473,9 @@ class EntityTaggingIsNotAllowedError(BaseUnprocessableEntityError):
     Raise when entity tagging is not allowed for a specific columns,
     for example scd surrogate key
     """
+
+
+class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table is missing required columns
+    """

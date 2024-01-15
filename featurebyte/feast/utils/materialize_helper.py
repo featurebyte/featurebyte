@@ -10,6 +10,8 @@ from unittest.mock import patch
 from feast import FeatureStore, FeatureView, utils
 from tqdm import tqdm
 
+from featurebyte.enum import InternalName
+
 DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
 
 
@@ -37,6 +39,7 @@ def materialize_partial(
     columns: List[str],
     end_date: datetime,
     start_date: Optional[datetime] = None,
+    with_feature_timestamp: bool = False,
 ) -> None:
     """
     Materialize a FeatureView partially for only the selected columns
@@ -53,9 +56,14 @@ def materialize_partial(
         End date of materialization
     start_date : Optional[datetime]
         Start date of materialization
+    with_feature_timestamp : bool
+        Whether to include the feature timestamp in the materialization
     """
     if start_date is None:
         start_date = DEFAULT_MATERIALIZE_START_DATE
+
+    if with_feature_timestamp and InternalName.FEATURE_TIMESTAMP_COLUMN not in columns:
+        columns = list(columns) + [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
 
     start_date = utils.make_tzaware(start_date)
     end_date = utils.make_tzaware(end_date)

@@ -2,7 +2,7 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence
+from typing import List, Literal, Sequence, Tuple
 
 from pydantic import Field
 
@@ -11,13 +11,22 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
-    BinaryLogicalOpNode,
-    BinaryRelationalOpNode,
+    BinaryOpWithBoolOutputNode,
+)
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ExpressionStr,
+    StatementT,
+    VariableNameGenerator,
+    VarNameExpressionInfo,
+)
 
 
-class AndNode(BinaryLogicalOpNode):
+class AndNode(BinaryOpWithBoolOutputNode):
     """AndNode class"""
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
@@ -29,7 +38,7 @@ class AndNode(BinaryLogicalOpNode):
         return f"{left_operand} & {right_operand}"
 
 
-class OrNode(BinaryLogicalOpNode):
+class OrNode(BinaryOpWithBoolOutputNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
@@ -41,7 +50,7 @@ class OrNode(BinaryLogicalOpNode):
         return f"{left_operand} | {right_operand}"
 
 
-class EqualNode(BinaryRelationalOpNode):
+class EqualNode(BinaryOpWithBoolOutputNode):
     """EqualNode class"""
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
@@ -53,7 +62,7 @@ class EqualNode(BinaryRelationalOpNode):
         return f"{left_operand} == {right_operand}"
 
 
-class NotEqualNode(BinaryRelationalOpNode):
+class NotEqualNode(BinaryOpWithBoolOutputNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
@@ -65,7 +74,7 @@ class NotEqualNode(BinaryRelationalOpNode):
         return f"{left_operand} != {right_operand}"
 
 
-class GreaterThanNode(BinaryRelationalOpNode):
+class GreaterThanNode(BinaryOpWithBoolOutputNode):
     """GreaterThanNode class"""
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
@@ -74,7 +83,7 @@ class GreaterThanNode(BinaryRelationalOpNode):
         return f"{left_operand} > {right_operand}"
 
 
-class GreaterEqualNode(BinaryRelationalOpNode):
+class GreaterEqualNode(BinaryOpWithBoolOutputNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
@@ -83,7 +92,7 @@ class GreaterEqualNode(BinaryRelationalOpNode):
         return f"{left_operand} >= {right_operand}"
 
 
-class LessThanNode(BinaryRelationalOpNode):
+class LessThanNode(BinaryOpWithBoolOutputNode):
     """LessThanNode class"""
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
@@ -92,7 +101,7 @@ class LessThanNode(BinaryRelationalOpNode):
         return f"{left_operand} < {right_operand}"
 
 
-class LessEqualNode(BinaryRelationalOpNode):
+class LessEqualNode(BinaryOpWithBoolOutputNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
@@ -142,6 +151,12 @@ class DivideNode(BinaryArithmeticOpNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
 
+    def generate_odfv_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.divide({left_operand}, {right_operand})"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.divide({left_operand}, {right_operand})"
+
 
 class ModuloNode(BinaryArithmeticOpNode):
     """ModuloNode class"""
@@ -163,6 +178,9 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
 
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.power({left_operand}, {right_operand})"
+
 
 class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
@@ -183,3 +201,49 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} in {right_operand}"
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_op: str = input_var_name_expressions[0].as_input()
+        if len(node_inputs) == 1:
+            stats, out_expr = super()._derive_on_demand_view_code(
+                node_inputs, var_name_generator, config
+            )
+            # cast to boolean
+            expr = ExpressionStr(f"{out_expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))")
+            return stats, expr
+
+        # handle case when right_operand is an array feature (constructed from count dictionary feature)
+        right_op: str = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(
+            f"{left_op}.combine({right_op}, lambda x, y: False if pd.isna(x) or not isinstance(y, list) else x in y)"
+        )
+        return [], expr
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            return super()._derive_user_defined_function_code(
+                node_inputs, var_name_generator, config
+            )
+
+        # handle case when right_operand is an array feature (constructed from count dictionary feature)
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_op: str = input_var_name_expressions[0].as_input()
+        right_op: str = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(
+            f"False if pd.isna({left_op}) or not isinstance({right_op}, list) else {left_op} in {right_op}"
+        )
+        return [], expr

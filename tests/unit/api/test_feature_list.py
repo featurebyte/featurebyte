@@ -23,7 +23,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -107,7 +107,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
 
     # Check compute_historical_feature_table() is called correctly
     expected_dataframe = dataframe.copy()
-    expected_dataframe[InternalName.ROW_INDEX] = [0, 1]
+    expected_dataframe[InternalName.DATAFRAME_ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
     assert expected_dataframe.equals(kwargs["observation_set"])
     assert (
@@ -511,6 +511,7 @@ def test_get_feature_list(
             ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
             ("relationships_info", audit_history.new_value.iloc[15]),
+            ("store_info", None),
             (
                 "supported_serving_entity_ids",
                 sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),
@@ -912,16 +913,16 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
           ) AS "production_ready_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
@@ -1055,7 +1056,7 @@ def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fi
     # check feature_job_summary content
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 23},
             "max_duration(s)": {0: 1582.072},
@@ -1399,7 +1400,6 @@ def test_feature_list_entity_relationship_validation(
     snowflake_event_table_with_entity,
     cust_id_entity,
     transaction_entity,
-    arbitrary_default_feature_job_setting,
 ):
     """Test feature list entity relationship validation"""
     event_view = snowflake_event_table_with_entity.get_view()

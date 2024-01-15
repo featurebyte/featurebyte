@@ -36,17 +36,20 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
@@ -507,8 +510,9 @@ def snowflake_feature_store_params_fixture():
         "details": SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            sf_schema="sf_schema",
-            database="sf_database",
+            schema_name="sf_schema",
+            database_name="sf_database",
+            role_name="TESTING",
         ),
         "database_credential": UsernamePasswordCredential(
             username="sf_user",
@@ -925,6 +929,17 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
     yield entity
 
 
+@pytest.fixture(name="gender_entity")
+def gender_entity_fixture(catalog):
+    """
+    Gender entity fixture
+    """
+    _ = catalog
+    entity = Entity(name="gender", serving_names=["gender"])
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
     snowflake_event_table,
@@ -971,9 +986,10 @@ def snowflake_feature_store_details_dict_fixture():
         "type": "snowflake",
         "details": {
             "account": "sf_account",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
             "warehouse": "sf_warehouse",
+            "role_name": "TESTING",
         },
     }
 
@@ -1400,6 +1416,24 @@ def get_non_time_based_feature_fixture(non_time_based_features):
     return non_time_based_features[0]
 
 
+@pytest.fixture(name="filtered_non_time_based_feature")
+def filtered_non_time_based_feature_fixture(snowflake_item_table, transaction_entity):
+    """
+    Get a non-time-based feature that is from a filtered ItemView
+    """
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
+    item_view = item_table.get_view(event_suffix="_event_table")
+    item_view = item_view[item_view["item_amount"] > 10]
+    feature = item_view.groupby("event_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature_gt10",
+    )
+    feature.save()
+    return feature
+
+
 @pytest.fixture(name="float_feature")
 def float_feature_fixture(feature_group):
     """
@@ -1554,6 +1588,49 @@ def multiple_scd_joined_feature_fixture(
         ),
     )["state_code_counts_30d"]
     yield feature
+
+
+@pytest.fixture(name="feature_without_entity")
+def feature_without_entity_fixture(snowflake_event_table):
+    """
+    Fixture to get a feature without entity
+    """
+    event_view = snowflake_event_table.get_view()
+    feature_group = event_view.groupby([]).aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["1d"],
+        feature_job_setting=FeatureJobSetting(
+            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
+        ),
+        feature_names=["count_1d"],
+    )
+    yield feature_group["count_1d"]
+
+
+@pytest.fixture(name="scd_lookup_feature")
+def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get a lookup feature from SCD table
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view["col_boolean"].as_feature("some_lookup_feature")
+    return feature
+
+
+@pytest.fixture(name="aggregate_asat_feature")
+def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+    """
+    Fixture to get a lookup feature from SCD table
+    """
+    snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby("col_boolean").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count",
+    )
+    return feature
 
 
 @pytest.fixture(name="session_manager")
@@ -1725,6 +1802,30 @@ def user(user_id):
     return user
 
 
+@pytest.fixture(name="catalog_id", scope="session")
+def catalog_id_fixture():
+    """
+    User ID fixture
+    """
+    return ObjectId("63f9506dd478b94127123480")
+
+
+@pytest.fixture(name="patched_catalog_get_create_payload")
+def patched_catalog_get_create_payload_fixture(catalog_id, snowflake_feature_store):
+    """
+    Patch catalog get create payload
+    """
+    with mock.patch(
+        "featurebyte.api.catalog.Catalog._get_create_payload"
+    ) as mock_get_create_payload:
+        mock_get_create_payload.return_value = CatalogCreate(
+            _id=catalog_id,
+            name="catalog",
+            default_feature_store_ids=[snowflake_feature_store.id],
+        ).json_dict()
+        yield
+
+
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """
@@ -1772,7 +1873,7 @@ async def insert_credential_fixture(persistent, user, snowflake_feature_store_id
         ),
         user_id=user.id,
     )
-    credential_model.encrypt()
+    credential_model.encrypt_credentials()
     await persistent.insert_one(
         collection_name=CredentialModel.collection_name(),
         document=credential_model.dict(by_alias=True),
@@ -1907,3 +2008,42 @@ def mock_detect_and_update_column_dtypes_fixture():
         "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"
     ):
         yield
+
+
+@pytest.fixture(name="mysql_online_store_config")
+def mysql_online_store_config_fixture():
+    """
+    MySQL online store config fixture
+    """
+    return {
+        "name": "mysql_online_store",
+        "details": MySQLOnlineStoreDetails(
+            host="mysql_host",
+            database="mysql_database",
+            port=3306,
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
+        ).dict(),
+    }
+
+
+@pytest.fixture(name="mysql_online_store_id")
+def mysql_online_store_id_fixture():
+    """MySQL online store id"""
+    return ObjectId("646f6c190ed28a5271fb02b9")
+
+
+@pytest.fixture(name="mysql_online_store")
+def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id):
+    """
+    Snowflake database source fixture
+    """
+    try:
+        mysql_online_store_config["_id"] = mysql_online_store_id
+        online_store = OnlineStore(**mysql_online_store_config)
+        online_store.save()
+        return online_store
+    except (DuplicatedRecordException, ObjectHasBeenSavedError):
+        return OnlineStore.get(mysql_online_store_config["name"])

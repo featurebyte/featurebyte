@@ -30,26 +30,19 @@ class BaseSparkSession(BaseSession, ABC):
 
     host: str
     http_path: str
-    featurebyte_catalog: str
-    featurebyte_schema: str
-    storage_spark_url: str
+    storage_path: str
+    catalog_name: str
+    schema_name: str
 
     region_name: Optional[str]
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
+        self.database_name = self.catalog_name
         self._initialize_storage()
 
     def initializer(self) -> BaseSchemaInitializer:
         return BaseSparkSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.featurebyte_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.featurebyte_catalog
 
     @abstractmethod
     def _initialize_storage(self) -> None:
@@ -172,7 +165,7 @@ class BaseSparkSession(BaseSession, ABC):
                 # create cached temp view
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
                 # cache table so we can remove the temp file
                 await self.execute_query(f"CACHE TABLE `{table_name}`")
@@ -182,7 +175,7 @@ class BaseSparkSession(BaseSession, ABC):
                 temp_view_name = f"__TEMP_TABLE_{request_id}"
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
 
                 await self.execute_query(
@@ -330,7 +323,8 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 10
+        # NOTE: Please also update the version in hive-udf/lib/build.gradle
+        return 12
 
     @property
     def sql_directory_name(self) -> str:
@@ -376,10 +370,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         str
         """
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        return f"{self.session.storage_spark_url}/{udf_jar_file_name}"  # type: ignore[attr-defined]
+        return f"{self.session.storage_path}/{udf_jar_file_name}"  # type: ignore[attr-defined]
 
     async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        create_schema_query = f"CREATE SCHEMA `{self.session.schema_name}`"
         await self.session.execute_query(create_schema_query)
 
     async def drop_object(self, object_type: str, name: str) -> None:
@@ -437,33 +431,33 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         # To ensure functionality is updated for a function we should create a new class
         # and re-register the function with the new class
         udf_functions = [
-            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarity"),
-            ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMax"),
-            ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSum"),
-            ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverage"),
+            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarityV1"),
+            ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMaxV1"),
+            ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSumV1"),
+            ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverageV1"),
             (
                 "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
-                "com.featurebyte.hive.udf.VectorAggregateSimpleAverage",
+                "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
             ),
-            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
-            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
-            ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
-            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestamp"),
+            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregateV1"),
+            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDeleteV1"),
+            ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndexV1"),
+            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),
             (
                 "F_COUNT_DICT_COSINE_SIMILARITY",
-                "com.featurebyte.hive.udf.CountDictCosineSimilarity",
+                "com.featurebyte.hive.udf.CountDictCosineSimilarityV1",
             ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropy"),
-            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequent"),
+            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV2"),
+            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                "com.featurebyte.hive.udf.CountDictMostFrequentValue",
+                "com.featurebyte.hive.udf.CountDictMostFrequentValueV1",
             ),
-            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequent"),
-            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUnique"),
-            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequency"),
-            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRank"),
-            ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecond"),
+            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequentV1"),
+            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUniqueV1"),
+            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequencyV1"),
+            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRankV1"),
+            ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1"),
         ]
         for function_name, class_name in udf_functions:
             logger.debug(

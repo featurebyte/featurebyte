@@ -1357,7 +1357,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
             == textwrap.dedent(
                 f"""
                 SELECT
-                  *
+                  "colA"
                 FROM "sf_database"."sf_schema"."{table_name}"
                 """
             ).strip()

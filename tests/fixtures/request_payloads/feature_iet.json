@@ -44,20 +44,20 @@
                 "target": "timedelta_extract_1"
             },
             {
-                "source": "timedelta_extract_1",
-                "target": "add_1"
-            },
-            {
-                "source": "add_1",
-                "target": "log_1"
-            },
-            {
                 "source": "graph_1",
                 "target": "assign_1"
             },
             {
                 "source": "timedelta_extract_1",
                 "target": "assign_1"
+            },
+            {
+                "source": "timedelta_extract_1",
+                "target": "add_1"
+            },
+            {
+                "source": "add_1",
+                "target": "log_1"
             },
             {
                 "source": "timedelta_extract_1",
@@ -96,20 +96,20 @@
                 "target": "project_4"
             },
             {
-                "source": "mul_2",
-                "target": "div_1"
-            },
-            {
-                "source": "project_4",
-                "target": "div_1"
-            },
-            {
                 "source": "project_4",
                 "target": "add_2"
             },
             {
                 "source": "add_2",
                 "target": "log_2"
+            },
+            {
+                "source": "mul_2",
+                "target": "div_1"
+            },
+            {
+                "source": "project_4",
+                "target": "div_1"
             },
             {
                 "source": "div_1",
@@ -170,12 +170,7 @@
                     "event_timestamp_timezone_offset": null,
                     "event_timestamp_timezone_offset_column": null,
                     "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database": "sf_database",
-                            "sf_schema": "sf_schema",
-                            "warehouse": "sf_warehouse"
-                        },
+                        "details": null,
                         "type": "snowflake"
                     },
                     "id": "6337f9651050ee7d5980660d",
@@ -289,6 +284,15 @@
                 "type": "timedelta_extract"
             },
             {
+                "name": "assign_1",
+                "output_type": "frame",
+                "parameters": {
+                    "name": "a",
+                    "value": null
+                },
+                "type": "assign"
+            },
+            {
                 "name": "add_1",
                 "output_type": "series",
                 "parameters": {
@@ -302,15 +306,6 @@
                 "output_type": "series",
                 "parameters": {},
                 "type": "log"
-            },
-            {
-                "name": "assign_1",
-                "output_type": "frame",
-                "parameters": {
-                    "name": "a",
-                    "value": null
-                },
-                "type": "assign"
             },
             {
                 "name": "mul_1",
@@ -335,7 +330,7 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_4adb91a4cc83b795e308c1f283b67f068097eae7",
+                    "aggregation_id": "sum_5075a32b3ad63ef26b142fed42003f7722022559",
                     "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
@@ -351,7 +346,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_B32DAB803F3C21C339BF36DFFD659BE906FE9DCA",
+                    "tile_id": "TILE_F21600_M10800_B10800_0231EB5AFD24BC0E316565E34C4210D2694985CE",
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -385,7 +380,7 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_7ace41ba592a7ba79754b1b612470aaf95e9cdc8",
+                    "aggregation_id": "sum_fa3804c2f2ab322422fb47867a04f7ac554dcc5e",
                     "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
@@ -401,7 +396,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_B32DAB803F3C21C339BF36DFFD659BE906FE9DCA",
+                    "tile_id": "TILE_F21600_M10800_B10800_0231EB5AFD24BC0E316565E34C4210D2694985CE",
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -422,15 +417,6 @@
                 "type": "project"
             },
             {
-                "name": "div_1",
-                "output_type": "series",
-                "parameters": {
-                    "right_op": false,
-                    "value": null
-                },
-                "type": "div"
-            },
-            {
                 "name": "add_2",
                 "output_type": "series",
                 "parameters": {
@@ -444,6 +430,15 @@
                 "output_type": "series",
                 "parameters": {},
                 "type": "log"
+            },
+            {
+                "name": "div_1",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": null
+                },
+                "type": "div"
             },
             {
                 "name": "add_3",

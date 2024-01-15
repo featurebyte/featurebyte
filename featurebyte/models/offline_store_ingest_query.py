@@ -3,10 +3,14 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from pydantic import validator
+import datetime
 
+from bson import ObjectId
+from pydantic import Field, validator
+
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -15,16 +19,38 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.sdk_code import CodeGenerator, VariableNameGenerator
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreMetadata,
 )
-from featurebyte.query_graph.transform.on_demand_view import (
-    OnDemandFeatureViewExtractor,
-    OnDemandFeatureViewGlobalState,
+from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.query_graph.transform.on_demand_function import (
+    OnDemandFeatureFunctionExtractor,
+    OnDemandFeatureFunctionGlobalState,
+    SQLInputArgumentInfo,
 )
+from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+
+
+def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
+    """
+    Get time-to-live (TTL) in seconds for the time aggregate operation
+
+    Parameters
+    ----------
+    feature_job_setting: FeatureJobSetting
+        FeatureJobSetting
+
+    Returns
+    -------
+    int
+        Time-to-live (TTL) in seconds
+    """
+    return 2 * feature_job_setting.frequency_seconds
 
 
 class OfflineStoreInfoMetadata(OfflineStoreMetadata):
@@ -34,6 +60,14 @@ class OfflineStoreInfoMetadata(OfflineStoreMetadata):
 
     output_column_name: str
     primary_entity_ids: List[PydanticObjectId]
+
+
+class OfflineStoreEntityInfo(ColumnSpec):
+    """
+    EntityInfo object stores the entity information of the feature.
+    """
+
+    id: PydanticObjectId
 
 
 class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
@@ -60,6 +94,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # feature job setting of the offline store ingest query graph
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
+    primary_entity_dtypes: List[DBVarType]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
 
@@ -96,6 +131,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             output_column_name=graph_node_param.output_column_name,
             output_dtype=graph_node_param.output_dtype,
             primary_entity_ids=graph_node_param.primary_entity_ids,
+            primary_entity_dtypes=graph_node_param.primary_entity_dtypes,
             feature_job_setting=graph_node_param.feature_job_setting,
             has_ttl=graph_node_param.has_ttl,
         )
@@ -130,9 +166,38 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             output_column_name=metadata.output_column_name,
             output_dtype=metadata.output_dtype,
             primary_entity_ids=metadata.primary_entity_ids,
+            primary_entity_dtypes=metadata.primary_entity_dtypes,
             feature_job_setting=metadata.feature_job_setting,
             has_ttl=metadata.has_ttl,
         )
+
+    def get_primary_entity_info(
+        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
+    ) -> List[OfflineStoreEntityInfo]:
+        """
+        Get primary entity info of the offline store ingest query graph
+
+        Parameters
+        ----------
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Map from entity id to serving name
+
+        Returns
+        -------
+        List[OfflineStoreEntityInfo]
+            List of EntityInfo
+        """
+        output = []
+        for entity_id, entity_dtype in zip(self.primary_entity_ids, self.primary_entity_dtypes):
+            serving_name = entity_id_to_serving_name[entity_id]
+            output.append(
+                OfflineStoreEntityInfo(
+                    id=entity_id,
+                    name=serving_name,
+                    dtype=entity_dtype,
+                )
+            )
+        return output
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
@@ -144,9 +209,6 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             Ingest graph and node
         """
         output_node = self.graph.get_node_by_name(self.node_name)
-        if self.ref_node_name is None:
-            # if the query graph is not decomposed, return the original graph & node
-            return self.graph, output_node
 
         # if the query graph is decomposed, update the graph output column name to match output_column_name
         if output_node.type != NodeType.ALIAS:
@@ -169,6 +231,42 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         return graph, output_node
 
 
+class ServingNameInfo(FeatureByteBaseModel):
+    """
+    ServingNameInfo object stores the serving name information of the feature.
+    """
+
+    serving_name: str
+    entity_id: PydanticObjectId
+
+
+class OnDemandFeatureViewInfo(FeatureByteBaseModel):
+    """
+    OnDemandFeatureViewInfo object stores the on configuration used to generate the on demand feature view code.
+    """
+
+    feature_versioned_name: str
+    input_df_name: str
+    output_df_name: str
+    function_name: str
+    codes: str = Field(default="")
+
+
+class UserDefinedFunctionInfo(FeatureByteBaseModel):
+    """
+    UserDefinedFunctionInfo object stores the user defined function information of the feature.
+    """
+
+    sql_function_name: str
+    sql_input_var_prefix: str
+    sql_request_input_var_prefix: str
+    function_name: str
+    input_var_prefix: str
+    request_input_var_prefix: str
+    sql_inputs_info: List[SQLInputArgumentInfo] = Field(default_factory=list)
+    codes: str = Field(default="")
+
+
 class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     """
     OfflineStoreInfo object stores the offline store table information of the feature or target.
@@ -186,6 +284,95 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
     # if the feature's or target's query graph is not decomposed, metadata will be populated.
     metadata: Optional[OfflineStoreInfoMetadata]
+
+    # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
+    serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
+    time_to_live_in_secs: Optional[int] = Field(default=None)
+    odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
+    udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
+
+    @property
+    def time_to_live_delta(self) -> Optional[datetime.timedelta]:
+        """
+        Time-to-live (TTL) in datetime.timedelta
+
+        Returns
+        -------
+        Optional[datetime.timedelta]
+            Time-to-live (TTL) in datetime.timedelta
+        """
+        if not self.time_to_live_in_secs:
+            return None
+        return datetime.timedelta(seconds=self.time_to_live_in_secs)
+
+    def initialize(
+        self,
+        feature_versioned_name: str,
+        feature_dtype: DBVarType,
+        feature_job_settings: List[FeatureJobSetting],
+        feature_id: ObjectId,
+    ) -> None:
+        """
+        Initialize offline store info by populating the on demand feature view info and user defined function info
+
+        Parameters
+        ----------
+        feature_versioned_name: str
+            Feature versioned name
+        feature_dtype: DBVarType
+            Output dtype of the feature
+        feature_job_settings: List[FeatureJobSetting]
+            List of feature job settings used by the feature
+        feature_id: ObjectId
+            Feature ID
+        """
+        self.time_to_live_in_secs = None
+        if feature_job_settings:
+            self.time_to_live_in_secs = min(
+                get_time_aggregate_ttl_in_secs(feature_job_setting)
+                for feature_job_setting in feature_job_settings
+            )
+
+        unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
+        if self.is_decomposed or self.time_to_live_in_secs:
+            # initialize the on demand feature view info
+            odfv_info = OnDemandFeatureViewInfo(
+                feature_versioned_name=feature_versioned_name,
+                input_df_name="inputs",
+                output_df_name="df",
+                function_name=f"odfv_{unique_func_name}",
+            )
+            odfv_info.codes = self.generate_on_demand_feature_view_code(
+                feature_versioned_name=feature_versioned_name,
+                input_df_name=odfv_info.input_df_name,
+                output_df_name=odfv_info.output_df_name,
+                function_name=odfv_info.function_name,
+                ttl_seconds=self.time_to_live_in_secs,
+            )
+            self.odfv_info = odfv_info
+
+        if self.is_decomposed:
+            # initialize the user defined function info
+            udf_info = UserDefinedFunctionInfo(
+                sql_function_name=f"udf_{unique_func_name}",
+                sql_input_var_prefix="x",
+                sql_request_input_var_prefix="r",
+                function_name="user_defined_function",
+                input_var_prefix="col",
+                request_input_var_prefix="request_col",
+            )
+            udf_code_state = self._generate_databricks_user_defined_function_code(
+                output_dtype=feature_dtype,
+                sql_function_name=udf_info.sql_function_name,
+                sql_input_var_prefix=udf_info.sql_input_var_prefix,
+                sql_request_input_var_prefix=udf_info.sql_request_input_var_prefix,
+                function_name=udf_info.function_name,
+                input_var_prefix=udf_info.input_var_prefix,
+                request_input_var_prefix=udf_info.request_input_var_prefix,
+            )
+            udf_info.sql_inputs_info = udf_code_state.sql_inputs_info
+            udf_info.codes = udf_code_state.generate_code(to_sql=True)
+            self.udf_info = udf_info
 
     def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
         """
@@ -220,45 +407,148 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
         return output
 
-    def extract_on_demand_feature_view_code_generation(
+    def generate_on_demand_feature_view_code(
         self,
+        feature_versioned_name: str,
         input_df_name: str = "inputs",
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
-        **kwargs: Any,
-    ) -> OnDemandFeatureViewGlobalState:
+        ttl_seconds: Optional[int] = None,
+    ) -> str:
         """
         Extract on demand view graphs from the feature or target query graph
 
         Parameters
         ----------
+        feature_versioned_name: str
+            Feature name
         input_df_name: str
             Input dataframe name
         output_df_name: str
             Output dataframe name
         function_name: str
             Function name
-        kwargs: Any
-            Other code generation config kwargs
+        ttl_seconds: Optional[int]
+            Time-to-live (TTL) in seconds
 
         Returns
         -------
-        OnDemandFeatureViewGlobalState
-            OnDemandFeatureViewGlobalState
-
-        Raises
-        ------
-        ValueError
-            If the feature or target query graph is not decomposed
+        str
+            Generated code
         """
-        if not self.is_decomposed:
-            raise ValueError("On demand view can only be extracted from decomposed query graph")
+        if self.is_decomposed:
+            node = self.graph.get_node_by_name(self.node_name)
+            codegen_state = OnDemandFeatureViewExtractor(graph=self.graph).extract(
+                node=node,
+                input_df_name=input_df_name,
+                output_df_name=output_df_name,
+                on_demand_function_name=function_name,
+                ttl_seconds=ttl_seconds,
+                feature_name_version=feature_versioned_name,
+            )
+            code_generator = codegen_state.code_generator
+        else:
+            assert ttl_seconds is not None, "TTL is not set"
+            code_generator = CodeGenerator(template="on_demand_view.tpl")
+            statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
+                feature_name_version=feature_versioned_name,
+                input_df_name=input_df_name,
+                output_df_name=output_df_name,
+                input_column_expr=subset_frame_column_expr(
+                    input_df_name,
+                    feature_versioned_name,
+                ),
+                ttl_seconds=ttl_seconds,
+                var_name_generator=VariableNameGenerator(),
+            )
+            code_generator.add_statements(statements=[statements])
 
-        node = self.graph.get_node_by_name(self.node_name)
-        return OnDemandFeatureViewExtractor(graph=self.graph).extract(
-            node=node,
+        codes = code_generator.generate(
+            to_format=True,
             input_df_name=input_df_name,
             output_df_name=output_df_name,
-            on_demand_function_name=function_name,
-            **kwargs,
+            function_name=function_name,
         )
+        return codes
+
+    def _generate_databricks_user_defined_function_code(
+        self,
+        output_dtype: DBVarType,
+        sql_function_name: str = "udf_func",
+        sql_input_var_prefix: str = "x",
+        sql_request_input_var_prefix: str = "r",
+        sql_comment: str = "",
+        function_name: str = "user_defined_function",
+        input_var_prefix: str = "col",
+        request_input_var_prefix: str = "request_col",
+    ) -> OnDemandFeatureFunctionGlobalState:
+        if not self.is_decomposed:
+            raise ValueError(
+                "Cannot generate on demand feature function code for non-decomposed query graph"
+            )
+
+        node = self.graph.get_node_by_name(self.node_name)
+        codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
+            node=node,
+            sql_function_name=sql_function_name,
+            sql_input_var_prefix=sql_input_var_prefix,
+            sql_request_input_var_prefix=sql_request_input_var_prefix,
+            sql_comment=sql_comment,
+            function_name=function_name,
+            input_var_prefix=input_var_prefix,
+            request_input_var_prefix=request_input_var_prefix,
+            output_dtype=output_dtype,
+        )
+        return codegen_state
+
+    def generate_databricks_user_defined_function_code(
+        self,
+        output_dtype: DBVarType,
+        to_sql: bool = False,
+        sql_function_name: str = "udf_func",
+        sql_input_var_prefix: str = "x",
+        sql_request_input_var_prefix: str = "r",
+        sql_comment: str = "",
+        function_name: str = "user_defined_function",
+        input_var_prefix: str = "col",
+        request_input_var_prefix: str = "request_col",
+    ) -> str:
+        """
+        Generate on demand feature function code
+
+        Parameters
+        ----------
+        output_dtype: DBVarType
+            Output dtype of the on demand feature
+        to_sql: bool
+            Whether to generate SQL code (True) or Python code (False)
+        sql_function_name: str
+            SQL function name (only used when generate_full_code is True)
+        sql_input_var_prefix: str
+            SQL input variable prefix (only used when generate_full_code is True)
+        sql_request_input_var_prefix: str
+            SQL request input variable prefix (only used when generate_full_code is True)
+        sql_comment: str
+            SQL comment (only used when generate_full_code is True)
+        function_name: str
+            Python function name
+        input_var_prefix: str
+            Python input variable prefix
+        request_input_var_prefix: str
+            Python request input variable prefix
+
+        Returns
+        -------
+        str
+        """
+        codegen_state = self._generate_databricks_user_defined_function_code(
+            output_dtype=output_dtype,
+            sql_function_name=sql_function_name,
+            sql_input_var_prefix=sql_input_var_prefix,
+            sql_request_input_var_prefix=sql_request_input_var_prefix,
+            sql_comment=sql_comment,
+            function_name=function_name,
+            input_var_prefix=input_var_prefix,
+            request_input_var_prefix=request_input_var_prefix,
+        )
+        return codegen_state.generate_code(to_sql=to_sql)
