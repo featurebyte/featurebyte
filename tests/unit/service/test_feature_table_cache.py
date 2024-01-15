@@ -191,6 +191,8 @@ async def test_create_feature_table_cache(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
         '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
@@ -237,6 +239,8 @@ async def test_update_feature_table_cache(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )
@@ -412,6 +416,8 @@ async def test_create_view_from_cache__create_cache(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
         '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
@@ -420,6 +426,8 @@ async def test_create_view_from_cache__create_cache(
         'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
@@ -500,6 +508,8 @@ async def test_create_view_from_cache__update_cache(
         'CREATE OR REPLACE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
@@ -548,6 +558,8 @@ async def test_create_feature_table_cache__with_target(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "cust_id",\n'
         '  "float_target" AS "FEATURE_dfbe0388b776a0bd4e78b6e538889b9b9eea7bb1"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )

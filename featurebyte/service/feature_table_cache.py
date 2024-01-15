@@ -272,6 +272,8 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
+            request_column_names = sorted({col.name for col in observation_table.columns_info})
+            request_columns = [quoted_identifier(col) for col in request_column_names]
             feature_names = [
                 expressions.alias_(
                     quoted_identifier(cast(str, graph.get_node_output_column_name(node.name))),
@@ -290,6 +292,7 @@ class FeatureTableCacheService:
                     ),
                     select_expr=(
                         expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+                        .select(*request_columns)
                         .select(*feature_names)
                         .from_(quoted_identifier(intermediate_table_name))
                     ),
@@ -579,6 +582,8 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
 
+        request_column_names = sorted({col.name for col in observation_table.columns_info})
+        request_columns = [quoted_identifier(col) for col in request_column_names]
         columns_expr = [
             expressions.alias_(
                 quoted_identifier(cast(str, cached_features[definition_hash])),
@@ -589,6 +594,7 @@ class FeatureTableCacheService:
         ]
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+            .select(*request_columns)
             .select(*columns_expr)
             .from_(
                 get_fully_qualified_table_name(
