@@ -30,16 +30,6 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
       with:
@@ -48,6 +38,11 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -83,16 +78,6 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
       with:
@@ -101,6 +86,11 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -136,16 +126,6 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
       with:
@@ -154,6 +134,11 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
