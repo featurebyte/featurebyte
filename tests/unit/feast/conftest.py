@@ -109,25 +109,25 @@ def expected_entity_names_fixture():
 
 
 @pytest.fixture(name="expected_data_source_names")
-def expected_data_source_names_fixture(catalog_id):
+def expected_data_source_names_fixture():
     """Fixture for expected data source names"""
     return {
         "POINT_IN_TIME",
-        f"fb_entity_transaction_id_{catalog_id}",
-        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-        f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+        "fb_230225_127123_1d_1h_2h_ttl",
+        "fb_230225_127123_cust_id_30m_5m_10m_ttl",
+        "fb_230225_127123_transaction_id",
+        "fb_230225_127123_transaction_id_1d_0s_0s",
     }
 
 
 @pytest.fixture(name="expected_feature_view_name_to_ttl")
-def expected_feature_view_name_to_ttl_fixture(catalog_id):
+def expected_feature_view_name_to_ttl_fixture():
     """Fixture for expected feature view name to TTL"""
     return {
-        f"fb_entity_transaction_id_{catalog_id}": datetime.timedelta(seconds=0),
-        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}": datetime.timedelta(seconds=0),
-        f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}": datetime.timedelta(days=2),
-        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}": datetime.timedelta(seconds=3600),
+        "fb_230225_127123_1d_1h_2h_ttl": datetime.timedelta(days=2),
+        "fb_230225_127123_cust_id_30m_5m_10m_ttl": datetime.timedelta(seconds=3600),
+        "fb_230225_127123_transaction_id": datetime.timedelta(seconds=0),
+        "fb_230225_127123_transaction_id_1d_0s_0s": datetime.timedelta(seconds=0),
     }
 
 

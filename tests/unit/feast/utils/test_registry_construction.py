@@ -47,7 +47,6 @@ def test_feast_registry_construction__with_post_processing_features(
     float_feature,
     non_time_based_feature,
     latest_event_timestamp_feature,
-    catalog_id,
     mock_pymysql_connect,
 ):
     """Test the construction of the feast register (with post processing features)"""
@@ -78,8 +77,8 @@ def test_feast_registry_construction__with_post_processing_features(
     assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
-        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-        f"fb_entity_transaction_id_{catalog_id}",
+        "fb_230225_127123_cust_id_30m_5m_10m_ttl",
+        "fb_230225_127123_transaction_id",
     }
 
     data_sources = feast_registry_dict["dataSources"]
@@ -162,7 +161,7 @@ def expected_data_sources_fixture(expected_data_source_names):
 
 
 @pytest.fixture(name="expected_feature_view_specs")
-def expected_feature_view_specs_fixture(catalog_id):
+def expected_feature_view_specs_fixture():
     """Expected feature view specs"""
     common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
     common_batch_source = {
@@ -175,13 +174,13 @@ def expected_feature_view_specs_fixture(catalog_id):
     return [
         {
             **common_params,
-            "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+            "name": "fb_230225_127123_transaction_id_1d_0s_0s",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                "name": "fb_230225_127123_transaction_id_1d_0s_0s",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                    "table": "fb_230225_127123_transaction_id_1d_0s_0s",
                 },
             },
             "entities": ["transaction_id"],
@@ -195,32 +194,13 @@ def expected_feature_view_specs_fixture(catalog_id):
         },
         {
             **common_params,
-            "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+            "name": "fb_230225_127123_cust_id_30m_5m_10m_ttl",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+                "name": "fb_230225_127123_cust_id_30m_5m_10m_ttl",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
-                },
-            },
-            "entities": ["__dummy"],
-            "entityColumns": [{"name": "__dummy_id", "valueType": "STRING"}],
-            "features": [
-                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"count_1d_{version}", "valueType": "INT64"},
-            ],
-            "ttl": "172800s",
-        },
-        {
-            **common_params,
-            "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-            "batchSource": {
-                **common_batch_source,
-                "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                "snowflakeOptions": {
-                    **common_snowflake_options,
-                    "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+                    "table": "fb_230225_127123_cust_id_30m_5m_10m_ttl",
                 },
             },
             "entities": ["cust_id"],
@@ -241,13 +221,13 @@ def expected_feature_view_specs_fixture(catalog_id):
         },
         {
             **common_params,
-            "name": f"fb_entity_transaction_id_{catalog_id}",
+            "name": "fb_230225_127123_transaction_id",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_transaction_id_{catalog_id}",
+                "name": "fb_230225_127123_transaction_id",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_transaction_id_{catalog_id}",
+                    "table": "fb_230225_127123_transaction_id",
                 },
             },
             "entities": ["transaction_id"],
@@ -256,12 +236,31 @@ def expected_feature_view_specs_fixture(catalog_id):
                 {"name": f"__composite_feature_ttl_req_col_{version}__part1", "valueType": "DOUBLE"}
             ],
         },
+        {
+            **common_params,
+            "name": "fb_230225_127123_1d_1h_2h_ttl",
+            "batchSource": {
+                **common_batch_source,
+                "name": "fb_230225_127123_1d_1h_2h_ttl",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": "fb_230225_127123_1d_1h_2h_ttl",
+                },
+            },
+            "entities": ["__dummy"],
+            "entityColumns": [{"name": "__dummy_id", "valueType": "STRING"}],
+            "features": [
+                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                {"name": f"count_1d_{version}", "valueType": "INT64"},
+            ],
+            "ttl": "172800s",
+        },
     ]
 
 
 @pytest.fixture(name="expected_feature_service_spec")
 def expected_feature_service_spec_fixture(
-    catalog_id, float_feature, feature_without_entity, composite_feature_ttl_req_col
+    float_feature, feature_without_entity, composite_feature_ttl_req_col
 ):
     """Expected feature service spec"""
     comp_feat_id = composite_feature_ttl_req_col.id
@@ -295,7 +294,7 @@ def expected_feature_service_spec_fixture(
                             "valueType": "DOUBLE",
                         }
                     ],
-                    "featureViewName": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                    "featureViewName": "fb_230225_127123_transaction_id_1d_0s_0s",
                 },
             ],
         }

@@ -1,3 +1,3 @@
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"   DROP COLUMN "a";
+ALTER TABLE "fb_230525_271fb0_cust_id_30m_5m_10m_ttl"   DROP COLUMN "a";
 
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"   DROP COLUMN "b";
+ALTER TABLE "fb_230525_271fb0_cust_id_30m_5m_10m_ttl"   DROP COLUMN "b";

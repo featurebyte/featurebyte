@@ -210,18 +210,18 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = request_col + (request_col - request_col)
+        feat = request_col + (request_col - request_col)
+        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         feat_2 = pd.Series(
             np.where(
-                pd.isna(((feat_1 - feat).dt.seconds // 86400))
+                pd.isna(((feat - feat_1).dt.seconds // 86400))
                 | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat_1 - feat).dt.seconds // 86400)
+                ((feat - feat_1).dt.seconds // 86400)
                 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat_1 - feat).dt.seconds // 86400).index,
+            index=((feat - feat_1).dt.seconds // 86400).index,
         )
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -573,10 +573,10 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
 
     def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -587,17 +587,17 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_1)
+        feat_4 = get_relative_frequency(feat_3, key=col_2)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
             np.nan
-            if pd.isna(feat_2) or pd.isna(feat_4)
-            else np.divide(feat_2, feat_4)
+            if pd.isna(feat_4) or pd.isna(feat_2)
+            else np.divide(feat_4, feat_2)
         )
         return feat_5
 
@@ -618,7 +618,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
     ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
@@ -639,7 +639,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         mask = feat_1.isnull()
         feat_1[mask] = 0
         feat_2 = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
         feat_3 = feat_2.combine(
             inputs[
@@ -651,9 +651,9 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feat_3[mask_1] = 0
         feat_4 = pd.Series(
             np.where(
-                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
+                pd.isna(feat_3) | pd.isna(feat_1), np.nan, np.divide(feat_3, feat_1)
             ),
-            index=feat_1.index,
+            index=feat_3.index,
         )
         # TTL handling for TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -732,7 +732,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_230225_127123_cust_id_30m_5m_10m_ttl",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -744,7 +744,7 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_230225_127123_transaction_id_1d_0s_0s",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -754,7 +754,7 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_transaction_id_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_230225_127123_transaction_id",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -764,8 +764,8 @@ def test_databricks_specs(
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "x_1": "__feature_V240103__part1",
-                "x_2": "__feature_V240103__part0",
+                "x_1": "__feature_V240103__part0",
+                "x_2": "__feature_V240103__part1",
             },
             output_name="feature",
         ),

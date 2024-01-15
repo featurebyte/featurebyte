@@ -4,7 +4,9 @@ This module contains offline store ingest query extraction related classes.
 from typing import Any, Dict, List, Optional, Set
 
 from dataclasses import dataclass
+from datetime import datetime
 
+from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
@@ -53,21 +55,26 @@ def get_offline_store_table_name(
     str
         Offline store table name
     """
+    # Mongo ObjectId is 12 bytes, which is 24 hex characters
+    # {timestamp-8}{machine_id-6}{pid-4}{counter-6}
+    catalog = str(catalog_id)
+    dt_part = datetime.fromtimestamp(int(catalog[:8], 16))
+    table_name = f'fb_{dt_part.strftime("%y%m%d")}_{catalog[15:21]}'
+
     if primary_entity_serving_names:
         entity_part = "_".join(primary_entity_serving_names)
-        table_name = sanitize_identifier(f"fb_entity_{entity_part}")
-    else:
-        table_name = "fb_entity_overall"
+        table_name = sanitize_identifier(f"{table_name}_{entity_part}")
 
     if feature_job_setting:
         fjs = feature_job_setting.to_seconds()
-        frequency = fjs["frequency"]
-        time_modulo_frequency = fjs["time_modulo_frequency"]
-        blind_spot = fjs["blind_spot"]
-        table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
+        frequency = convert_seconds_to_time_format(fjs["frequency"])
+        time_modulo_frequency = convert_seconds_to_time_format(fjs["time_modulo_frequency"])
+        blind_spot = convert_seconds_to_time_format(fjs["blind_spot"])
+        table_name = f"{table_name}_{frequency}_{time_modulo_frequency}_{blind_spot}"
+
     if has_ttl:
         table_name = f"{table_name}_ttl"
-    return f"{table_name}_{catalog_id}"
+    return table_name
 
 
 def extract_dtype_from_graph(
