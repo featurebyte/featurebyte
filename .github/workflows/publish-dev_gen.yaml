@@ -37,8 +37,6 @@ jobs:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
-    - name: Configure Poetry
-      run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
