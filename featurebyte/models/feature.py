@@ -33,7 +33,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -50,6 +49,7 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
+from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
@@ -490,15 +490,9 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         else:
             decomposed_graph = self.graph
             output_node_name = self.node.name
-            if self.table_id_feature_job_settings:
-                feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
-            else:
-                # TODO: Remove this once the default are specified in the graph
-                feature_job_setting = FeatureJobSetting(
-                    frequency="1d",
-                    time_modulo_frequency="0s",
-                    blind_spot="0s",
-                )
+            feature_job_setting = FeatureJobSettingExtractor(
+                graph=self.graph
+            ).extract_from_target_node(node=self.node)
 
             has_ttl = bool(
                 next(

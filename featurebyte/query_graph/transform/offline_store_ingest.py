@@ -13,7 +13,6 @@ from featurebyte.query_graph.model.entity_relationship_info import EntityRelatio
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.mixin import AggregationOpStructMixin
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
@@ -23,6 +22,7 @@ from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
     DecomposePointExtractor,
     DecomposePointState,
+    FeatureJobSettingExtractor,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
@@ -274,10 +274,11 @@ class OfflineStoreIngestQueryGraphTransformer(
                     )
                 )
 
-                if isinstance(subgraph_agg_node, AggregationOpStructMixin):
-                    feature_job_setting = subgraph_agg_node.extract_feature_job_setting()
-                    if feature_job_setting:
-                        feature_job_settings.append(feature_job_setting)
+                feature_job_setting = FeatureJobSettingExtractor(
+                    graph=subgraph
+                ).extract_from_agg_node(node=subgraph_agg_node)
+                if feature_job_setting:
+                    feature_job_settings.append(feature_job_setting)
 
         assert len(set(feature_job_settings)) <= 1, "Only 1 feature job setting is allowed"
         primary_entity_serving_names = [

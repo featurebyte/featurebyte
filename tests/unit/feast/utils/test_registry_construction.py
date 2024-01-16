@@ -79,7 +79,7 @@ def test_feast_registry_construction__with_post_processing_features(
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
         f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-        f"fb_entity_transaction_id_{catalog_id}",
+        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
     }
 
     data_sources = feast_registry_dict["dataSources"]
@@ -188,9 +188,13 @@ def expected_feature_view_specs_fixture(catalog_id):
             "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
             "features": [
                 {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "DOUBLE",
+                },
+                {
                     "name": f"non_time_time_sum_amount_feature_{version}",
                     "valueType": "DOUBLE",
-                }
+                },
             ],
         },
         {
@@ -238,23 +242,6 @@ def expected_feature_view_specs_fixture(catalog_id):
                 },
             ],
             "ttl": "3600s",
-        },
-        {
-            **common_params,
-            "name": f"fb_entity_transaction_id_{catalog_id}",
-            "batchSource": {
-                **common_batch_source,
-                "name": f"fb_entity_transaction_id_{catalog_id}",
-                "snowflakeOptions": {
-                    **common_snowflake_options,
-                    "table": f"fb_entity_transaction_id_{catalog_id}",
-                },
-            },
-            "entities": ["transaction_id"],
-            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
-            "features": [
-                {"name": f"__composite_feature_ttl_req_col_{version}__part1", "valueType": "DOUBLE"}
-            ],
         },
     ]
 
