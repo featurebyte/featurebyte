@@ -12,7 +12,7 @@ from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, Ta
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -210,3 +210,44 @@ class FeatureStoreWarehouseService:
             if col_name != InternalName.TABLE_ROW_INDEX
         }
         return list(table_schema.values())
+
+    async def get_table_details(
+        self,
+        feature_store: FeatureStoreModel,
+        database_name: str,
+        schema_name: str,
+        table_name: str,
+    ) -> TableDetails:
+        """
+        Get table details
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object
+        database_name: str
+            Name of database to use
+        schema_name: str
+            Name of schema to use
+        table_name: str
+            Name of table to use
+
+        Raises
+        ------
+        TableNotFoundError
+            If table not found
+
+        Returns
+        -------
+        TableDetails
+        """
+
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store
+        )
+        try:
+            return await db_session.get_table_details(
+                database_name=database_name, schema_name=schema_name, table_name=table_name
+            )
+        except db_session.no_schema_error as exc:
+            raise TableNotFoundError(f"Table {table_name} not found.") from exc

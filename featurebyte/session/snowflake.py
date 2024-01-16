@@ -29,7 +29,7 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
@@ -295,6 +295,24 @@ class SnowflakeSession(BaseSession):
                 )
 
         return column_name_type_map
+
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        query = (
+            f'SELECT * FROM "{database_name}"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            f"\"TABLE_SCHEMA\"='{schema_name}' AND \"TABLE_NAME\"='{table_name}'"
+        )
+        details = await self.execute_query_interactive(query)
+        if details is None or details.shape[0] == 0:
+            raise self.no_schema_error(f"Table {table_name} not found.")
+
+        return TableDetails(
+            details=details.iloc[0].to_dict(),
+        )
 
     @staticmethod
     def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> list[tuple[str, str]]:
