@@ -31,7 +31,7 @@ from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -206,6 +206,32 @@ class BaseSession(BaseModel):
         -------
         OrderedDict[str, ColumnSpecWithDescription]
         """
+
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        """
+        Get table details
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+        database_name: str | None
+            Database name
+        schema_name: str | None
+            Schema name
+
+        Returns
+        -------
+        TableDetails
+        """
+        _ = database_name, schema_name, table_name
+        # return empty details as fallback
+        return TableDetails()
 
     async def check_user_defined_function(
         self,

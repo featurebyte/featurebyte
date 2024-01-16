@@ -454,6 +454,114 @@ def snowflake_query_map_fixture():
         "SHOW SCHEMAS": [
             {"name": "PUBLIC"},
         ],
+        (
+            'SELECT * FROM "database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='schema' AND \"TABLE_NAME\"='table'"
+        ): [
+            {
+                "TABLE_NAME": "table",
+                "TABLE_SCHEMA": "schema",
+                "TABLE_CATALOG": "database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='sf_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='sf_table_no_tz'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table_no_tz",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='items_table_same_event_id'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table_no_tz",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "SCD table",
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table_state_map'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table_v2'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='items_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "Item table",
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='dimension_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "Dimension table",
+            }
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'

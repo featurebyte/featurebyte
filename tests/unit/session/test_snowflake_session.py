@@ -16,7 +16,7 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
@@ -130,6 +130,19 @@ async def test_snowflake_session__credential_from_config(
     ) == {
         "variant": ColumnSpecWithDescription(name="variant", dtype="UNKNOWN"),
     }
+    table_details = await session.get_table_details(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
+    )
+    assert table_details == TableDetails(
+        details={
+            "TABLE_CATALOG": "sf_database",
+            "TABLE_SCHEMA": "sf_schema",
+            "TABLE_NAME": "sf_table",
+            "TABLE_TYPE": "VIEW",
+            "COMMENT": None,
+        }
+    )
+    assert table_details.description == None
 
 
 @pytest.fixture(name="mock_snowflake_cursor")

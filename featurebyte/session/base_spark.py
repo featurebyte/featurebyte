@@ -17,7 +17,7 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -257,6 +257,31 @@ class BaseSparkSession(BaseSession, ABC):
                 )
 
         return column_name_type_map
+
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        schema = await self.execute_query_interactive(
+            f"DESCRIBE EXTENDED `{database_name}`.`{schema_name}`.`{table_name}`"
+        )
+        table_details_found = False
+        details = {}
+        if schema is not None:
+            for _, (column_name, var_info, _) in schema[
+                ["col_name", "data_type", "comment"]
+            ].iterrows():
+                # Only collect details after the table details section (# Detailed Table Information)
+                if column_name.startswith("# Detailed Table Information"):
+                    table_details_found = True
+                elif table_details_found:
+                    if column_name == "" or column_name.startswith("# "):
+                        break
+                    details[column_name] = var_info
+
+        return TableDetails(details=details)
 
 
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
