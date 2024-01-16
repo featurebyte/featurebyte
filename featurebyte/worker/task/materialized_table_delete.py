@@ -154,26 +154,10 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
-        is_view = False
-        if (
-            payload.collection_name
-            in [
-                MaterializedTableCollectionName.HISTORICAL_FEATURE,
-                MaterializedTableCollectionName.TARGET,
-            ]
-            and hasattr(deleted_document, "observation_table_id")
-            and getattr(deleted_document, "observation_table_id")
-        ):
-            observation_table_id = getattr(deleted_document, "observation_table_id")
-            observation_table = await self.observation_table_service.get_document(
-                observation_table_id
-            )
-            is_view = bool(observation_table.has_row_index)
-
         await db_session.drop_table(
             table_name=deleted_document.location.table_details.table_name,
             schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
             database_name=deleted_document.location.table_details.database_name,  # type: ignore
-            is_view=is_view,
+            is_view=deleted_document.is_view,
         )
         return

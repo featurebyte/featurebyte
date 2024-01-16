@@ -2,6 +2,7 @@
 This module contains session to EventView integration tests
 """
 import json
+import time
 from unittest import mock
 from unittest.mock import patch
 
@@ -867,6 +868,56 @@ async def test_get_historical_features__feature_table_cache(
         )
     )
     assert df.shape[0] == df_historical_expected.shape[0]
+
+
+@pytest.mark.asyncio
+async def test_get_target__feature_table_cache(
+    session,
+    data_source,
+    event_view,
+    user_entity,
+    new_user_id_entity,
+    transaction_data_upper_case,
+    feature_table_cache_metadata_service,
+):
+    """Test feature table cache create/update for target"""
+    _ = user_entity, new_user_id_entity
+
+    target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="avg_24h_target",
+    )
+
+    df_training_events, _ = get_training_events_and_expected_result()
+
+    expected_targets = pd.Series(
+        [
+            59.69888889,
+            44.19846154,
+            62.31333333,
+            44.30076923,
+            51.52,
+            54.336,
+            51.28,
+            34.06888889,
+            53.68,
+            np.nan,
+        ]
+    )
+    df_expected = pd.concat([df_training_events, expected_targets], axis=1)
+    df_expected.columns = ["POINT_IN_TIME", "üser id", "avg_24h_target"]
+
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_training_events,
+        data_source,
+    )
+    target_table = target.compute_target_table(observation_table, f"new_table_{time.time()}")
+    df = target_table.to_pandas()
+    assert df.columns.tolist() == ["POINT_IN_TIME", "üser id", "avg_24h_target"]
+    pd.testing.assert_frame_equal(df, df_expected, check_dtype=False)
 
 
 def test_datetime_operations(event_view, source_type):

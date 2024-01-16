@@ -42,6 +42,7 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     location: TabularSource
     columns_info: List[ColumnSpecWithEntityId]
     num_rows: int
+    is_view: bool = Field(default=False)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

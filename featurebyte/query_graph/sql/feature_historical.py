@@ -143,7 +143,6 @@ class MaterializedTableObservationSet(ObservationSet):
             columns.append(
                 expressions.alias_(row_number, alias=InternalName.TABLE_ROW_INDEX, quoted=True),
             )
-
         query = sql_to_string(
             expressions.select(*columns).from_(
                 get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
