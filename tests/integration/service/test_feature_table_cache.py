@@ -5,10 +5,12 @@ import time
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from sqlglot import parse_one
 
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import create_observation_table_from_dataframe
 
@@ -31,7 +33,8 @@ def feature_list_fixture(feature_group, feature_group_per_category):
         name="My Feature List for Materialization",
     )
     feature_list.save(conflict_resolution="retrieve")
-    return feature_list
+    yield feature_list
+    feature_list.delete()
 
 
 @pytest.fixture(name="two_feature_lists")
@@ -138,7 +141,10 @@ async def test_create_feature_table_cache(
     )
     df = await session.execute_query(query)
     assert df.shape[0] == 50
-    assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
+    observation_table_cols = list({col.name for col in observation_table_model.columns_info})
+    assert set(df.columns.tolist()) == set(
+        [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
+    )
 
 
 @pytest.mark.asyncio
@@ -225,4 +231,111 @@ async def test_update_feature_table_cache(
     )
     df = await session.execute_query(query)
     assert df.shape[0] == 50
-    assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
+    observation_table_cols = list({col.name for col in observation_table_model.columns_info})
+    assert set(df.columns.tolist()) == set(
+        [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_view_from_cache(
+    feature_store,
+    session,
+    data_source,
+    feature_list,
+    observation_table,
+    feature_store_service,
+    observation_table_service,
+    feature_list_service,
+    feature_service,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    source_type,
+):
+    """Test create view from feature table cache"""
+    feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
+    feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
+
+    view_1 = TableDetails(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=f"RESULT_VIEW_{ObjectId()}",
+    )
+    view_2 = TableDetails(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=f"RESULT_VIEW_{ObjectId()}",
+    )
+    try:
+        feature_cluster = feature_list_model.feature_clusters[0]
+        nodes = feature_cluster.nodes[:5]
+        observation_table_cols = list({col.name for col in observation_table_model.columns_info})
+        feature_names = [
+            feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
+        ]
+        await feature_table_cache_service.create_view_from_cache(
+            feature_store=feature_store_model,
+            observation_table=observation_table_model,
+            graph=feature_cluster.graph,
+            nodes=nodes,
+            output_view_details=view_1,
+            is_target=False,
+            feature_list_id=feature_list_model.id,
+        )
+
+        query = sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{view_1.database_name}"."{view_1.schema_name}"."{view_1.table_name}"
+                """
+            ),
+            source_type=source_type,
+        )
+        df = await session.execute_query(query)
+        assert df.shape == (50, len(set(feature_names + observation_table_cols)) + 1)
+        assert set(df.columns.tolist()) == set(
+            [InternalName.TABLE_ROW_INDEX] + feature_names + observation_table_cols
+        )
+
+        # update cache table with second feature list
+        await feature_table_cache_service.create_view_from_cache(
+            feature_store=feature_store_model,
+            observation_table=observation_table_model,
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            output_view_details=view_2,
+            is_target=False,
+            feature_list_id=feature_list_model.id,
+        )
+        query = sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{view_2.database_name}"."{view_2.schema_name}"."{view_2.table_name}"
+                """
+            ),
+            source_type=source_type,
+        )
+        df = await session.execute_query(query)
+        assert len(feature_list.feature_names) == 8
+        assert df.shape == (50, len(set(feature_list.feature_names + observation_table_cols)) + 1)
+        assert set(df.columns.tolist()) == set(
+            [InternalName.TABLE_ROW_INDEX] + feature_list.feature_names + observation_table_cols
+        )
+    finally:
+        await session.drop_table(
+            table_name=view_1.table_name,
+            schema_name=view_1.schema_name,
+            database_name=view_1.database_name,
+            if_exists=True,
+            is_view=True,
+        )
+        await session.drop_table(
+            table_name=view_2.table_name,
+            schema_name=view_2.schema_name,
+            database_name=view_2.database_name,
+            if_exists=True,
+            is_view=True,
+        )

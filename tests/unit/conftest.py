@@ -1363,7 +1363,7 @@ def historical_feature_table_fixture(
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
     with patch(
-        "featurebyte.service.historical_features.compute_tiles_on_demand",
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
     ):
         historical_feature_table = feature_list.compute_historical_feature_table(
             observation_table_from_source, "my_historical_feature_table"
@@ -1834,7 +1834,7 @@ def online_store_table_version_service_fixture(app_container):
 def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.service.historical_features.compute_tiles_on_demand"
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand"
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand
 

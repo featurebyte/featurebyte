@@ -37,11 +37,14 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
         The table that stores the materialized data
     columns_info: List[ColumnSpec]
         The columns in the table
+    is_view: bool
+        Whereas table is represented by a view physically
     """
 
     location: TabularSource
     columns_info: List[ColumnSpecWithEntityId]
     num_rows: int
+    is_view: bool = Field(default=False)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

@@ -692,9 +692,9 @@ async def insert_feature_into_persistent(
 
 
 @pytest_asyncio.fixture(name="target")
-async def target_fixture(test_dir, target_service, event_table, item_table):
+async def target_fixture(test_dir, target_service, event_table, item_table, entity):
     """Target model"""
-    _ = event_table, item_table
+    _ = event_table, item_table, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/target.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
