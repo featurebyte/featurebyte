@@ -59,7 +59,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         location = await self.observation_table_service.generate_materialized_table_location(
             payload.feature_store_id
         )
-        is_view = (
+        has_row_index = (
             isinstance(observation_set, ObservationTableModel)
             and observation_set.has_row_index is True
         )
@@ -67,7 +67,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             db_session=db_session,
             table_details=location.table_details,
             payload=payload,
-            is_view=is_view,
+            is_view=has_row_index,
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
             graph = payload.graph
@@ -114,8 +114,8 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 request_input=payload.request_input,
                 primary_entity_ids=primary_entity_ids,
                 purpose=purpose,
-                has_row_index=True,
-                is_view=is_view,
+                has_row_index=has_row_index,
+                is_view=has_row_index,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)
