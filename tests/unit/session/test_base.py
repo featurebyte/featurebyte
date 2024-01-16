@@ -58,11 +58,6 @@ def base_session_test_fixture():
         ) -> list[TableSpec]:
             return []
 
-        async def list_views(
-            self, database_name: str | None = None, schema_name: str | None = None
-        ) -> list[TableSpec]:
-            return []
-
         async def list_table_schema(
             self,
             table_name: str | None,

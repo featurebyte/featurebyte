@@ -230,18 +230,6 @@ class BaseSparkSession(BaseSession, ABC):
                 output.append(TableSpec(name=name))
         return output
 
-    async def list_views(
-        self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[TableSpec]:
-        tables = await self.execute_query_interactive(
-            f"SHOW VIEWS IN `{database_name}`.`{schema_name}`"
-        )
-        output = []
-        if tables is not None:
-            for _, (name,) in tables[["viewName"]].iterrows():
-                output.append(TableSpec(name=name))
-        return output
-
     async def list_table_schema(
         self,
         table_name: str | None,
@@ -348,9 +336,6 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
         for function in await self._list_functions():
             await self.drop_object("FUNCTION", function)
-
-        for name in await self.list_droppable_views_in_working_schema():
-            await self.drop_object("VIEW", name)
 
         for name in await self.list_droppable_tables_in_working_schema():
             await self.drop_object("TABLE", name)

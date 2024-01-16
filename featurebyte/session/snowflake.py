@@ -152,21 +152,6 @@ class SnowflakeSession(BaseSession):
 
         return output
 
-    async def list_views(
-        self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[TableSpec]:
-        output = []
-
-        views = await self.execute_query_interactive(
-            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-        )
-
-        if views is not None:
-            for _, (name, comment) in views[["name", "comment"]].iterrows():
-                output.append(TableSpec(name=name, description=comment or None))
-
-        return output
-
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         """
         Fetch the result of executed SQL query from connection cursor
@@ -416,9 +401,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
                 objects["arguments"].tolist()
             ):
                 await self.drop_object("PROCEDURE", func_name_with_args)
-
-        for name in await self.list_droppable_views_in_working_schema():
-            await self.drop_object("VIEW", name)
 
         for name in await self.list_droppable_tables_in_working_schema():
             await self.drop_object("TABLE", name)
