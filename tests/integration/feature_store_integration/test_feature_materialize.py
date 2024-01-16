@@ -294,6 +294,7 @@ async def expected_entity_lookup_feature_table_names_fixture(
     customer_entity,
     user_entity,
     status_entity,
+    item_entity,
 ):
     """
     Fixture for expected entity lookup feature table names
@@ -316,6 +317,7 @@ async def expected_entity_lookup_feature_table_names_fixture(
         _get_relationship_info(order_entity, product_action_entity),
         _get_relationship_info(order_entity, user_entity),
         _get_relationship_info(user_entity, status_entity),
+        _get_relationship_info(item_entity, order_entity),
     ]:
         expected.append(f"fb_entity_lookup_{info.id}")
 
