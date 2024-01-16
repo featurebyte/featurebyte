@@ -223,10 +223,14 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     assert subset_view.columns == ["col_float", "col_text", "effective_timestamp"]
 
 
-def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity):
+def test_scd_view_as_feature__special_column(
+    snowflake_scd_table, cust_id_entity, enable_feast_integration
+):
     """
     Test SCDView as_feature selects a special column that is excluded by default
     """
+    _ = enable_feast_integration
+
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
@@ -262,6 +266,16 @@ def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity
                 "columns_info": scd_table_columns_info,
             }
         },
+    )
+
+    # check offline store table name (should have feature job setting)
+    feature.save()
+    offline_store_info = feature.cached_model.offline_store_info
+    ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_graphs) == 1
+    assert (
+        ingest_graphs[0].offline_store_table_name
+        == f"fb_entity_cust_id_fjs_86400_0_0_{feature.catalog_id}"
     )
 
 

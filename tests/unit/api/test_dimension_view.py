@@ -145,11 +145,16 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view, mock_api_
 
 
 def test_as_features__with_primary_key_column(
-    snowflake_dimension_view_with_entity, snowflake_dimension_table, cust_id_entity
+    snowflake_dimension_view_with_entity,
+    snowflake_dimension_table,
+    cust_id_entity,
+    enable_feast_integration,
 ):
     """
     Test calling as_features() when including primary column works correctly
     """
+    _ = enable_feast_integration
+
     # Set entity
     view = snowflake_dimension_view_with_entity
     entity_column = "col_int"
@@ -211,6 +216,16 @@ def test_as_features__with_primary_key_column(
                 }
             },
         )
+
+    # check offline store info
+    feature = feature_group["IntFeature"]
+    feature.save()
+
+    # check offline store table name (should not have any feature job setting)
+    offline_store_info = feature.cached_model.offline_store_info
+    ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_graphs) == 1
+    assert ingest_graphs[0].offline_store_table_name == f"fb_entity_cust_id_{feature.catalog_id}"
 
 
 def test_as_features__offset_provided_but_ignored(

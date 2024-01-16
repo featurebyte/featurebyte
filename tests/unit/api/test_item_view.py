@@ -932,10 +932,14 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
     )
 
 
-def test_as_feature__from_view_column(saved_item_table, item_entity, update_fixtures):
+def test_as_feature__from_view_column(
+    saved_item_table, item_entity, update_fixtures, enable_feast_integration
+):
     """
     Test calling as_feature() from ItemView column
     """
+    _ = enable_feast_integration
+
     view = saved_item_table.get_view(event_suffix="_event_table")
     feature = view["item_amount"].as_feature("ItemAmountFeature")
     assert feature.name == "ItemAmountFeature"
@@ -1017,6 +1021,15 @@ def test_as_feature__from_view_column(saved_item_table, item_entity, update_fixt
         ]
     )
     check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
+
+    # check offline store table name (should have feature job setting)
+    offline_store_info = feature.cached_model.offline_store_info
+    ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_graphs) == 1
+    assert (
+        ingest_graphs[0].offline_store_table_name
+        == f"fb_entity_item_id_fjs_86400_0_0_{feature.catalog_id}"
+    )
 
 
 def test_sdk_code_generation(saved_item_table, saved_event_table, update_fixtures):

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_relationship_info import (
@@ -15,8 +15,9 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
 )
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
+from featurebyte.query_graph.node.generic import GroupByNode, LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
@@ -102,6 +103,95 @@ class AggregationInfo:
         bool
         """
         return NodeType.GROUPBY in self.agg_node_types
+
+
+class FeatureJobSettingExtractor:
+    """
+    FeatureJobSettingExtractor class is used to extract feature job setting for the given node
+    """
+
+    def __init__(self, graph: QueryGraphModel) -> None:
+        self.graph = graph
+
+    @property
+    def default_feature_job_setting(self) -> FeatureJobSetting:
+        """
+        Get default feature job setting
+
+        Returns
+        -------
+        FeatureJobSetting
+        """
+        return FeatureJobSetting(
+            frequency="1d",
+            time_modulo_frequency="0s",
+            blind_spot="0s",
+        )
+
+    @staticmethod
+    def _extract_group_by_node_feature_job_setting(node: GroupByNode) -> FeatureJobSetting:
+        return FeatureJobSetting(
+            blind_spot=f"{node.parameters.blind_spot}s",
+            frequency=f"{node.parameters.frequency}s",
+            time_modulo_frequency=f"{node.parameters.time_modulo_frequency}s",
+        )
+
+    def _extract_lookup_node_feature_job_setting(
+        self, node: LookupNode
+    ) -> Optional[FeatureJobSetting]:
+        input_node = self.graph.get_input_node(node_name=node.name)
+        if input_node.parameters.type == TableDataType.DIMENSION_TABLE:
+            return None
+        return self.default_feature_job_setting
+
+    def extract_from_agg_node(self, node: Node) -> Optional[FeatureJobSetting]:
+        """
+        Extract feature job setting from the given node, return None if the node is not an aggregation node
+
+        Parameters
+        ----------
+        node: Node
+            Node to be processed
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        if not isinstance(node, AggregationOpStructMixin):
+            return None
+
+        if isinstance(node, GroupByNode):
+            return self._extract_group_by_node_feature_job_setting(node=node)
+
+        if isinstance(node, LookupNode):
+            return self._extract_lookup_node_feature_job_setting(node=node)
+
+        return self.default_feature_job_setting
+
+    def extract_from_target_node(self, node: Node) -> Optional[FeatureJobSetting]:
+        """
+        Extract feature job setting from the given target node. DFS is used to find the first
+        aggregation node in the lineage of the target node.
+
+        Parameters
+        ----------
+        node: Node
+            Node to be processed
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        feature_job_settings = set()
+        for _node in self.graph.iterate_nodes(target_node=node, node_type=None):
+            if isinstance(_node, AggregationOpStructMixin):
+                fjs = self.extract_from_agg_node(node=_node)
+                if fjs:
+                    feature_job_settings.add(fjs)
+
+        if len(feature_job_settings) > 1:
+            assert False, "Multiple feature job settings found"
+        return next(iter(feature_job_settings), None)
 
 
 @dataclass
@@ -195,12 +285,16 @@ class DecomposePointState:
             operation_structure_map=operation_structure_map,
         )
 
-    def update_aggregation_info(self, node: Node, input_node_names: List[str]) -> None:
+    def update_aggregation_info(
+        self, query_graph: QueryGraphModel, node: Node, input_node_names: List[str]
+    ) -> None:
         """
         Update aggregation info of the given node
 
         Parameters
         ----------
+        query_graph: QueryGraphModel
+            Query graph
         node: Node
             Node to be processed
         input_node_names: List[str]
@@ -250,10 +344,11 @@ class DecomposePointState:
             # request columns introduced by request column node
             aggregation_info.has_request_column = True
 
-        if isinstance(node, AggregationOpStructMixin):
-            feature_job_setting = node.extract_feature_job_setting()
-            if feature_job_setting:
-                aggregation_info.feature_job_settings = [feature_job_setting]
+        feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
+            node=node
+        )
+        if feature_job_setting:
+            aggregation_info.feature_job_settings = [feature_job_setting]
 
         # reduce the primary entity ids based on entity relationship
         aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
@@ -426,7 +521,9 @@ class DecomposePointExtractor(
         skip_post: bool,
     ) -> DecomposePointState:
         input_node_names = self.graph.get_input_node_names(node)
-        global_state.update_aggregation_info(node=node, input_node_names=input_node_names)
+        global_state.update_aggregation_info(
+            query_graph=self.graph, node=node, input_node_names=input_node_names
+        )
         to_decompose = global_state.should_decompose_query_graph(
             node_name=node.name, input_node_names=input_node_names
         )

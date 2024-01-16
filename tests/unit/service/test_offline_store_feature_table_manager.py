@@ -726,7 +726,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir):
         "fb_entity_659ccffb8c6f3c0e0a7d1e42_fjs_3600_120_120_ttl_659ccfd58c6f3c0e0a7d1e37": [
             ObjectId("659cd19b7e511ad3fcdec2fe"),
         ],
-        "fb_entity_659ccffa8c6f3c0e0a7d1e3d_659ccfd58c6f3c0e0a7d1e37": [
+        "fb_entity_659ccffa8c6f3c0e0a7d1e3d_fjs_86400_0_0_659ccfd58c6f3c0e0a7d1e37": [
             ObjectId("659cd19b7e511ad3fcdec2fe")
         ],
     }

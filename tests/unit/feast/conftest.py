@@ -125,7 +125,6 @@ def expected_data_source_names_fixture(catalog_id, feature_list):
     relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         "POINT_IN_TIME",
-        f"fb_entity_transaction_id_{catalog_id}",
         f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
         f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
@@ -138,7 +137,6 @@ def expected_feature_view_name_to_ttl_fixture(catalog_id, feature_list):
     """Fixture for expected feature view name to TTL"""
     relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
-        f"fb_entity_transaction_id_{catalog_id}": datetime.timedelta(seconds=0),
         f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}": datetime.timedelta(seconds=0),
         f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}": datetime.timedelta(days=2),
         f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}": datetime.timedelta(seconds=3600),
