@@ -1,17 +1,17 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, List, Optional, Set
+from typing import List, Optional, Set
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -33,14 +33,8 @@ class BaseGroupbyParameters(BaseModel):
     entity_ids: Optional[List[PydanticObjectId]]
 
 
-class AggregationOpStructMixin:
+class AggregationOpStructMixin(BaseNode, ABC):
     """AggregationOpStructMixin class"""
-
-    name: str
-    type: NodeType
-    transform_info: str
-    output_type: NodeOutputType
-    parameters: Any
 
     @abstractmethod
     def _get_aggregations(
@@ -144,7 +138,7 @@ class AggregationOpStructMixin:
         """
         _ = global_state
         input_operation_info = inputs[0]
-        required_input_columns = self.get_required_input_columns(  # type: ignore
+        required_input_columns = self.get_required_input_columns(
             input_index=0, available_column_names=input_operation_info.output_column_names
         )
         lineage_columns = set(required_input_columns)
@@ -154,7 +148,9 @@ class AggregationOpStructMixin:
         parent_columns = self._get_parent_columns(input_operation_info.columns)
         agg_func = self._get_agg_func()
         if parent_columns:
-            wanted_columns.update([parent_column.name for parent_column in parent_columns])
+            wanted_columns.update(
+                [parent_column.name for parent_column in parent_columns if parent_column.name]
+            )
 
         other_node_names = set()
         columns = []
@@ -176,6 +172,7 @@ class AggregationOpStructMixin:
 
         # prepare output variable type
         if agg_func:
+            assert isinstance(self.parameters, BaseGroupbyParameters)
             aggregation_func_obj = construct_agg_func(agg_func)
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
@@ -198,16 +195,3 @@ class AggregationOpStructMixin:
             row_index_lineage=(self.name,),
             is_time_based=self._is_time_based(),
         )
-
-    def extract_feature_job_setting(  # pylint: disable=useless-return
-        self,
-    ) -> Optional[FeatureJobSetting]:
-        """
-        Extract feature job setting from the node
-
-        Returns
-        -------
-        Optional[FeatureJobSetting]
-        """
-        _ = self
-        return None

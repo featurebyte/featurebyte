@@ -21,6 +21,12 @@ from tests.util.helper import (
 )
 
 
+@pytest.fixture(name="default_feature_job_setting")
+def default_feature_job_setting_fixture():
+    """Fixture for default feature job setting"""
+    return FeatureJobSetting(blind_spot="0s", frequency="1d", time_modulo_frequency="0s")
+
+
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
 def always_enable_feast_integration_fixture(
     enable_feast_integration, patched_catalog_get_create_payload
@@ -83,7 +89,9 @@ def composite_feature_fixture(float_feature, non_time_based_feature):
 
 
 @freezegun.freeze_time("2023-12-29")
-def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update_fixtures):
+def test_feature__ttl_and_non_ttl_components(
+    composite_feature, test_dir, update_fixtures, default_feature_job_setting
+):
     """Test that a feature contains both ttl and non-ttl components."""
     composite_feature.save()
 
@@ -92,7 +100,7 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
     offline_store_info = feature_model.offline_store_info
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
-    if ingest_query_graphs[0].feature_job_setting:
+    if ingest_query_graphs[0].has_ttl:
         ttl_component_graph = ingest_query_graphs[0]
         non_ttl_component_graph = ingest_query_graphs[1]
     else:
@@ -112,7 +120,7 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
     ]
     check_ingest_query_graph(ttl_component_graph)
 
-    assert non_ttl_component_graph.feature_job_setting is None
+    assert non_ttl_component_graph.feature_job_setting == default_feature_job_setting
     assert non_ttl_component_graph.node_name == "sub_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
@@ -134,12 +142,12 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
 
 @freezegun.freeze_time("2023-12-27")
 def test_feature__request_column_ttl_and_non_ttl_components(
-    patched_catalog_get_create_payload,
     non_time_based_feature,
     latest_event_timestamp_feature,
     feature_group_feature_job_setting,
     test_dir,
     update_fixtures,
+    default_feature_job_setting,
 ):
     """Test that a feature contains request column, ttl and non-ttl components."""
     request_and_ttl_component = (
@@ -159,7 +167,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     offline_store_info = feature_model.offline_store_info
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
-    if ingest_query_graphs[0].feature_job_setting:
+    if ingest_query_graphs[0].has_ttl:
         ttl_component_graph = ingest_query_graphs[0]
         non_ttl_component_graph = ingest_query_graphs[1]
     else:
@@ -176,7 +184,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     ]
     check_ingest_query_graph(ttl_component_graph)
 
-    assert non_ttl_component_graph.feature_job_setting is None
+    assert non_ttl_component_graph.feature_job_setting == default_feature_job_setting
     assert non_ttl_component_graph.node_name == "project_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
@@ -307,11 +315,7 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(
-            inputs["__composite_feature_V231227__part2"], utc=True
-        )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = pd.Series(
+        feat = pd.Series(
             np.where(
                 pd.isna(inputs["__composite_feature_V231227__part0"])
                 | pd.isna(inputs["__composite_feature_V231227__part1"]),
@@ -321,22 +325,22 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part0"].index,
         )
-        feat_2 = pd.Series(
-            np.where(
-                pd.isna(feat_1)
-                | pd.isna(((request_col - feat).dt.seconds // 86400)),
-                np.nan,
-                feat_1 + ((request_col - feat).dt.seconds // 86400),
-            ),
-            index=feat_1.index,
+        feat_1 = pd.to_datetime(
+            inputs["__composite_feature_V231227__part2"], utc=True
+        )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat_2 = (request_col - feat_1).dt.seconds // 86400
+        feat_3 = pd.Series(
+            np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
+            index=feat.index,
         )
         # TTL handling for composite_feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        feat_2[~mask] = np.nan
-        df["composite_feature_V231227"] = feat_2
+        feat_3[~mask] = np.nan
+        df["composite_feature_V231227"] = feat_3
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -748,24 +752,19 @@ def test_databricks_specs(
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
-            feature_names=["non_time_time_sum_amount_feature_V240103"],
+            feature_names=[
+                "non_time_time_sum_amount_feature_V240103",
+                "__feature_V240103__part1",
+            ],
             rename_outputs={
                 "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
             },
         ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_transaction_id_[CATALOG_ID]",
-            lookup_key=["transaction_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__feature_V240103__part1"],
-            rename_outputs={},
-        ),
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "x_1": "__feature_V240103__part1",
-                "x_2": "__feature_V240103__part0",
+                "x_1": "__feature_V240103__part0",
+                "x_2": "__feature_V240103__part1",
             },
             output_name="feature",
         ),
