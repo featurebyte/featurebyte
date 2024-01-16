@@ -27,6 +27,7 @@ def test_feast_registry_construction__missing_asset(
             entities=[],
             features=[float_feature.cached_model],
             feature_lists=[],
+            entity_lookup_steps_mapping={},
         )
 
     with pytest.raises(ValueError, match="Missing features: "):
@@ -36,6 +37,7 @@ def test_feast_registry_construction__missing_asset(
             entities=[cust_id_entity.cached_model],
             features=[],
             feature_lists=[feature_list],
+            entity_lookup_steps_mapping={},
         )
 
 
@@ -68,6 +70,7 @@ def test_feast_registry_construction__with_post_processing_features(
         entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
         features=[feature_requires_post_processing.cached_model],
         feature_lists=[feature_list.cached_model],  # type: ignore
+        entity_lookup_steps_mapping={},
     )
     feast_registry_dict = MessageToDict(feast_registry_proto)
     on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
@@ -162,8 +165,9 @@ def expected_data_sources_fixture(expected_data_source_names):
 
 
 @pytest.fixture(name="expected_feature_view_specs")
-def expected_feature_view_specs_fixture(catalog_id):
+def expected_feature_view_specs_fixture(catalog_id, feature_list):
     """Expected feature view specs"""
+    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
     common_batch_source = {
         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
@@ -255,6 +259,23 @@ def expected_feature_view_specs_fixture(catalog_id):
             "features": [
                 {"name": f"__composite_feature_ttl_req_col_{version}__part1", "valueType": "DOUBLE"}
             ],
+        },
+        {
+            **common_params,
+            "name": f"fb_entity_lookup_{relationship_info_id}",
+            "batchSource": {
+                **common_batch_source,
+                "name": f"fb_entity_lookup_{relationship_info_id}",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": f"fb_entity_lookup_{relationship_info_id}",
+                },
+                "timestampField": "__feature_timestamp",
+                "type": "BATCH_SNOWFLAKE",
+            },
+            "entities": ["transaction_id"],
+            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
+            "features": [{"name": "cust_id", "valueType": "INT64"}],
         },
     ]
 

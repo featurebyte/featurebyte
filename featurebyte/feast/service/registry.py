@@ -15,6 +15,7 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
@@ -27,7 +28,7 @@ class FeastRegistryService(
 
     document_class = FeastRegistryModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -38,6 +39,7 @@ class FeastRegistryService(
         feature_store_service: FeatureStoreService,
         online_store_service: OnlineStoreService,
         catalog_service: CatalogService,
+        entity_lookup_feature_table_service: EntityLookupFeatureTableService,
     ):
         super().__init__(
             user=user,
@@ -50,6 +52,7 @@ class FeastRegistryService(
         self.feature_store_service = feature_store_service
         self.online_store_service = online_store_service
         self.catalog_service = catalog_service
+        self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
 
     async def _construct_feast_registry_model(
         self, data: FeastRegistryCreate
@@ -92,6 +95,12 @@ class FeastRegistryService(
                 document_id=catalog.online_store_id
             )
 
+        entity_lookup_steps_mapping = (
+            await self.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
+                data.feature_lists
+            )
+        )
+
         feast_registry_proto = FeastRegistryBuilder.create(
             feature_store=feature_store,
             online_store=online_store,
@@ -99,6 +108,7 @@ class FeastRegistryService(
             features=features,
             feature_lists=data.feature_lists,
             project_name=data.project_name,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
         return FeastRegistryModel(
             name=data.project_name,

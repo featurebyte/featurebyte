@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
@@ -43,6 +44,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
+    is_entity_lookup: Optional[bool] = Field(default=False)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -64,6 +66,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("serving_names"),
             pymongo.operations.IndexModel("feature_job_setting"),
             pymongo.operations.IndexModel("has_ttl"),
+            pymongo.operations.IndexModel("is_entity_lookup"),
         ]
 
 

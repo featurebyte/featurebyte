@@ -153,6 +153,10 @@ class RequiredEntityNotProvidedError(BaseUnprocessableEntityError):
     Raised when one or more required entities are not provided
     """
 
+    def __init__(self, *args: Any, repackaged: bool = False, **kwargs: Any) -> None:
+        self.missing_entity_ids = kwargs.pop("missing_entity_ids", None)
+        super().__init__(*args, repackaged=repackaged, **kwargs)
+
 
 class UnexpectedServingNamesMappingError(BaseUnprocessableEntityError):
     """

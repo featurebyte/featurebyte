@@ -28,6 +28,15 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
 
+    def __hash__(self) -> int:
+        key = (
+            self.relationship_type,
+            self.entity_id,
+            self.related_entity_id,
+            self.relation_table_id,
+        )
+        return hash(key)
+
 
 @dataclass
 class EntityAncestorDescendantMapper:
