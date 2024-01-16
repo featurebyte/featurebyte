@@ -263,14 +263,17 @@ def expected_feature_table_names_fixture(app_container):
     Fixture for expected feature table names
     """
     catalog_id = app_container.catalog_id
+    catalog = str(catalog_id)
+    dt_part = datetime.fromtimestamp(int(catalog[:8], 16))
+    prefix = f'fb_{dt_part.strftime("%y%m%d")}_{catalog[15:21]}'
     return {
-        f"fb_entity_overall_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_product_action_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_cust_id_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_userid_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_userid_fjs_86400_0_0_{catalog_id}",
-        f"fb_entity_user_status_fjs_86400_0_0_{catalog_id}",
-        f"fb_entity_order_id_fjs_86400_0_0_{catalog_id}",
+        f"{prefix}_userid_1d_0s_0s",
+        f"{prefix}_1h_30m_30m_ttl",
+        f"{prefix}_user_status_1d_0s_0s",
+        f"{prefix}_cust_id_1h_30m_30m_ttl",
+        f"{prefix}_order_id_1d_0s_0s",
+        f"{prefix}_product_action_1h_30m_30m_ttl",
+        f"{prefix}_userid_1h_30m_30m_ttl",
     }
 
 
