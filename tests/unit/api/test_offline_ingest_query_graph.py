@@ -21,6 +21,12 @@ from tests.util.helper import (
 )
 
 
+@pytest.fixture(name="default_feature_job_setting")
+def default_feature_job_setting_fixture():
+    """Fixture for default feature job setting"""
+    return FeatureJobSetting(blind_spot="0s", frequency="1d", time_modulo_frequency="0s")
+
+
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
 def always_enable_feast_integration_fixture(
     enable_feast_integration, patched_catalog_get_create_payload
@@ -83,7 +89,9 @@ def composite_feature_fixture(float_feature, non_time_based_feature):
 
 
 @freezegun.freeze_time("2023-12-29")
-def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update_fixtures):
+def test_feature__ttl_and_non_ttl_components(
+    composite_feature, test_dir, update_fixtures, default_feature_job_setting
+):
     """Test that a feature contains both ttl and non-ttl components."""
     composite_feature.save()
 
@@ -112,7 +120,7 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
     ]
     check_ingest_query_graph(ttl_component_graph)
 
-    # assert non_ttl_component_graph.feature_job_setting is None  # TODO: fix this
+    assert non_ttl_component_graph.feature_job_setting == default_feature_job_setting
     assert non_ttl_component_graph.node_name == "sub_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
@@ -134,12 +142,12 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
 
 @freezegun.freeze_time("2023-12-27")
 def test_feature__request_column_ttl_and_non_ttl_components(
-    patched_catalog_get_create_payload,
     non_time_based_feature,
     latest_event_timestamp_feature,
     feature_group_feature_job_setting,
     test_dir,
     update_fixtures,
+    default_feature_job_setting,
 ):
     """Test that a feature contains request column, ttl and non-ttl components."""
     request_and_ttl_component = (
@@ -176,7 +184,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     ]
     check_ingest_query_graph(ttl_component_graph)
 
-    # assert non_ttl_component_graph.feature_job_setting is None  # TODO: fix this
+    assert non_ttl_component_graph.feature_job_setting == default_feature_job_setting
     assert non_ttl_component_graph.node_name == "project_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
