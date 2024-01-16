@@ -849,10 +849,7 @@ class BaseSchemaInitializer(ABC):
             self.session.database_name, self.session.schema_name
         )
         table_names = [table.name for table in tables]
-        table_names = self.remove_materialized_tables(table_names)
-        if table_names:
-            raise ValueError(f"TABLES TO DROP: {table_names}")
-        return table_names
+        return self.remove_materialized_tables(table_names)
 
     @property
     def _schema_qualifier(self) -> str:
