@@ -910,7 +910,10 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        assert create_success_response.json()["status"] == "PUBLIC_DRAFT"
+        # description is stored during creation
+        response_dict = create_success_response.json()
+        assert response_dict["description"] == self.payload["description"]
+        assert response_dict["status"] == "PUBLIC_DRAFT"
 
     def test_update_fails_table_not_found(self, test_api_client_persistent, data_update_dict):
         """

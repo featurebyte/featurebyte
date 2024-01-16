@@ -85,6 +85,7 @@
         }
     ],
     "current_flag_column": "is_active",
+    "description": "test scd table",
     "effective_timestamp_column": "effective_timestamp",
     "end_timestamp_column": "end_timestamp",
     "name": "sf_scd_table",

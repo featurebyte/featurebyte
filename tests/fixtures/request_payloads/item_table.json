@@ -49,6 +49,7 @@
             "name": "event_timestamp"
         }
     ],
+    "description": "test item table",
     "event_id_column": "event_id_col",
     "event_table_id": "6337f9651050ee7d5980660d",
     "item_id_column": "item_id_col",

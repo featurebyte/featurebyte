@@ -722,6 +722,7 @@ def snowflake_event_table_fixture(
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
+        description="test event table",
         _id=snowflake_event_table_id,
     )
     assert event_table.frame.node.parameters.id == event_table.id
@@ -789,6 +790,7 @@ def snowflake_dimension_table_fixture(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
+        description="test dimension table",
         _id=snowflake_dimension_table_id,
     )
     assert dimension_table.frame.node.parameters.id == dimension_table.id
@@ -805,6 +807,7 @@ def snowflake_scd_table_fixture(snowflake_database_table_scd_table, snowflake_sc
         effective_timestamp_column="effective_timestamp",
         end_timestamp_column="end_timestamp",
         current_flag_column="is_active",
+        description="test scd table",
         _id=snowflake_scd_table_id,
     )
     assert scd_table.frame.node.parameters.id == scd_table.id
@@ -855,6 +858,7 @@ def snowflake_item_table_fixture(
         event_id_column="event_id_col",
         item_id_column="item_id_col",
         event_table_name=snowflake_event_table.name,
+        description="test item table",
         _id=snowflake_item_table_id,
     )
     assert item_table.frame.node.parameters.id == item_table.id

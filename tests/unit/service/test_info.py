@@ -96,6 +96,7 @@ async def test_get_event_table_info(app_container, event_table, entity):
     )
     expected_info = EventTableInfo(
         name="sf_event_table",
+        description="test event table",
         status="PUBLIC_DRAFT",
         event_timestamp_column="event_timestamp",
         event_id_column="col_int",
@@ -155,6 +156,7 @@ async def test_get_item_table_info(app_container, item_table, event_table):
     )
     expected_info = ItemTableInfo(
         name="sf_item_table",
+        description="test item table",
         status="PUBLIC_DRAFT",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -201,6 +203,7 @@ async def test_get_dimension_table_info(app_container, dimension_table):
     )
     expected_info = DimensionTableInfo(
         name="sf_dimension_table",
+        description="test dimension table",
         status="PUBLIC_DRAFT",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -250,6 +253,7 @@ async def test_get_scd_table_info(app_container, scd_table):
     )
     expected_info = SCDTableInfo(
         name="sf_scd_table",
+        description="test scd table",
         status="PUBLIC_DRAFT",
         record_creation_timestamp_column=None,
         current_flag_column="is_active",

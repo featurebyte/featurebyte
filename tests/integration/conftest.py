@@ -393,8 +393,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return SparkDetails(
             host="localhost",
             port=10009,
-            http_path="cliservice",
-            use_http_transport=False,
             storage_type=StorageType.FILE,
             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
             storage_path=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",

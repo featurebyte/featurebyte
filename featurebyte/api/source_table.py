@@ -450,6 +450,7 @@ class SourceTable(AbstractTableData):
         event_timestamp_timezone_offset: Optional[str] = None,
         event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
@@ -484,6 +485,8 @@ class SourceTable(AbstractTableData):
             Specify this if the timezone offset is different for different rows in the event table.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             event table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -522,6 +525,7 @@ class SourceTable(AbstractTableData):
             event_id_column=event_id_column,
             event_timestamp_timezone_offset=event_timestamp_timezone_offset,
             event_timestamp_timezone_offset_column=event_timestamp_timezone_offset_column,
+            description=description,
             _id=_id,
         )
 
@@ -533,6 +537,7 @@ class SourceTable(AbstractTableData):
         item_id_column: str,
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
@@ -561,6 +566,8 @@ class SourceTable(AbstractTableData):
             item table is properly linked to the correct event table.
         record_creation_timestamp_column: Optional[str]
             The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             item table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -600,6 +607,7 @@ class SourceTable(AbstractTableData):
             event_id_column=event_id_column,
             item_id_column=item_id_column,
             event_table_id=event_table.id,
+            description=description,
             _id=_id,
         )
 
@@ -609,6 +617,7 @@ class SourceTable(AbstractTableData):
         name: str,
         dimension_id_column: str,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
@@ -636,6 +645,8 @@ class SourceTable(AbstractTableData):
             The column that serves as the primary key, uniquely identifying each record in the table.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description of the new table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             dimension table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -669,6 +680,7 @@ class SourceTable(AbstractTableData):
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             dimension_id_column=dimension_id_column,
+            description=description,
             _id=_id,
         )
 
@@ -682,6 +694,7 @@ class SourceTable(AbstractTableData):
         surrogate_key_column: Optional[str] = None,
         current_flag_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
@@ -725,6 +738,8 @@ class SourceTable(AbstractTableData):
             The optional column that shows if a record is currently active or not.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description of the new table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             SCD table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -767,6 +782,7 @@ class SourceTable(AbstractTableData):
             effective_timestamp_column=effective_timestamp_column,
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
+            description=description,
         )
 
     @typechecked
@@ -776,6 +792,7 @@ class SourceTable(AbstractTableData):
         event_timestamp_column: str,
         event_id_column: str,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
@@ -792,6 +809,8 @@ class SourceTable(AbstractTableData):
             The column that contains the timestamp of the associated event.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description of the table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             event table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -810,6 +829,7 @@ class SourceTable(AbstractTableData):
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_timestamp_column=event_timestamp_column,
             event_id_column=event_id_column,
+            description=description,
             _id=_id,
         )
 
@@ -821,6 +841,7 @@ class SourceTable(AbstractTableData):
         item_id_column: str,
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
@@ -839,6 +860,8 @@ class SourceTable(AbstractTableData):
             Name of the EventTable associated with this ItemTable.
         record_creation_timestamp_column: Optional[str]
             Record creation timestamp column from the given source table.
+        description: Optional[str]
+            The optional description of the table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             item table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -860,6 +883,7 @@ class SourceTable(AbstractTableData):
             event_id_column=event_id_column,
             item_id_column=item_id_column,
             event_table_id=event_table.id,
+            description=description,
             _id=_id,
         )
 
@@ -869,6 +893,7 @@ class SourceTable(AbstractTableData):
         name: str,
         dimension_id_column: str,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
@@ -883,6 +908,8 @@ class SourceTable(AbstractTableData):
             Dimension table ID column from the given tabular source.
         record_creation_timestamp_column: str
             Record creation timestamp column from the given tabular source.
+        description: Optional[str]
+            The optional description of the table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             dimension table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -900,6 +927,7 @@ class SourceTable(AbstractTableData):
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             dimension_id_column=dimension_id_column,
+            description=description,
             _id=_id,
         )
 
@@ -913,6 +941,7 @@ class SourceTable(AbstractTableData):
         surrogate_key_column: Optional[str] = None,
         current_flag_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
@@ -936,6 +965,8 @@ class SourceTable(AbstractTableData):
             Column to indicate whether the keys are for the current time in point.
         record_creation_timestamp_column: str
             Record creation timestamp column from the given source table.
+        description: Optional[str]
+            The optional description of the table.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             SCD table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -958,6 +989,7 @@ class SourceTable(AbstractTableData):
             effective_timestamp_column=effective_timestamp_column,
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
+            description=description,
         )
 
     def create_observation_table(

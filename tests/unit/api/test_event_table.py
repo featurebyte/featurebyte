@@ -40,6 +40,7 @@ def event_table_dict_fixture(snowflake_database_table):
     return {
         "type": "event_table",
         "name": "sf_event_table",
+        "description": "Some description",
         "tabular_source": {
             "feature_store_id": snowflake_database_table.feature_store.id,
             "table_details": {
@@ -145,6 +146,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
+        description="Some description",
     )
 
     # check that node parameter is set properly
@@ -160,7 +162,6 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     event_table_dict["_id"] = event_table.id
     event_table_dict["created_at"] = event_table.created_at
     event_table_dict["updated_at"] = event_table.updated_at
-    event_table_dict["description"] = None
     event_table_dict["block_modification_by"] = []
     for column_idx in [0, 6, 7]:
         event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[
