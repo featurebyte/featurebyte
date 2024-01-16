@@ -30,6 +30,7 @@ from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
+from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 
 
 class EntityLookupStep(FeatureByteBaseModel):
@@ -53,6 +54,7 @@ class EntityLookupGraphResult:
     lookup_node: Node
     feature_node_name: str
     feature_dtype: DBVarType
+    feature_job_setting: FeatureJobSetting
 
 
 def get_lookup_feature_table_name(relationship_info_id: ObjectId) -> str:
@@ -157,11 +159,7 @@ def get_entity_lookup_feature_tables(
             output_dtypes=[lookup_graph_result.feature_dtype],
             entity_universe=entity_universe,
             has_ttl=False,
-            feature_job_setting=FeatureJobSetting(
-                frequency="1d",
-                time_modulo_frequency="0s",
-                blind_spot="0s",
-            ),
+            feature_job_setting=lookup_graph_result.feature_job_setting,
             is_entity_lookup=True,
         )
         out.append(entity_lookup_feature_table_model)
@@ -232,9 +230,15 @@ def _get_entity_lookup_graph(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[lookup_node],
     )
+    feature_job_setting_extractor = FeatureJobSettingExtractor(graph=graph)
+    feature_job_setting = (
+        feature_job_setting_extractor.extract_from_agg_node(node=lookup_node)
+        or feature_job_setting_extractor.default_feature_job_setting
+    )
     return EntityLookupGraphResult(
         graph=graph,
         lookup_node=lookup_node,
         feature_node_name=feature_node.name,
         feature_dtype=feature_dtype,
+        feature_job_setting=feature_job_setting,
     )
