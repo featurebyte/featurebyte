@@ -5,6 +5,7 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
@@ -82,6 +83,14 @@ def feature_list_fixture(feature_list_features):
     return feature_list
 
 
+@pytest_asyncio.fixture(name="entity_lookup_steps_mapping")
+async def entity_lookup_steps_mapping_fixture(app_container, feature_list):
+    """Fixture for entity_lookup_steps_mapping"""
+    return await app_container.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
+        [feature_list.cached_model]
+    )
+
+
 @pytest.fixture(name="feast_registry_proto")
 def feast_registry_proto_fixture(
     snowflake_feature_store,
@@ -90,6 +99,7 @@ def feast_registry_proto_fixture(
     transaction_entity,
     feature_list_features,
     feature_list,
+    entity_lookup_steps_mapping,
 ):
     """Fixture for the feast registry proto"""
     feast_registry_proto = FeastRegistryBuilder.create(
@@ -98,6 +108,7 @@ def feast_registry_proto_fixture(
         entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
         features=[feature.cached_model for feature in feature_list_features],
         feature_lists=[feature_list.cached_model],  # type: ignore
+        entity_lookup_steps_mapping=entity_lookup_steps_mapping,
     )
     return feast_registry_proto
 
@@ -109,23 +120,27 @@ def expected_entity_names_fixture():
 
 
 @pytest.fixture(name="expected_data_source_names")
-def expected_data_source_names_fixture(catalog_id):
+def expected_data_source_names_fixture(catalog_id, feature_list):
     """Fixture for expected data source names"""
+    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         "POINT_IN_TIME",
         f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
         f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+        f"fb_entity_lookup_{relationship_info_id}",
     }
 
 
 @pytest.fixture(name="expected_feature_view_name_to_ttl")
-def expected_feature_view_name_to_ttl_fixture(catalog_id):
+def expected_feature_view_name_to_ttl_fixture(catalog_id, feature_list):
     """Fixture for expected feature view name to TTL"""
+    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}": datetime.timedelta(seconds=0),
         f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}": datetime.timedelta(days=2),
         f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}": datetime.timedelta(seconds=3600),
+        f"fb_entity_lookup_{relationship_info_id}": datetime.timedelta(seconds=0),
     }
 
 

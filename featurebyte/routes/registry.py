@@ -72,6 +72,7 @@ from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -223,6 +224,7 @@ app_container_config.register_class(EntityService)
 app_container_config.register_class(EntityServingNamesService)
 app_container_config.register_class(EntityValidationService)
 app_container_config.register_class(EntityRelationshipExtractorService)
+app_container_config.register_class(EntityLookupFeatureTableService)
 app_container_config.register_class(EventTableController)
 app_container_config.register_class(EventTableService)
 app_container_config.register_class(FeatureController)

@@ -35,6 +35,10 @@ from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
+from featurebyte.models.entity_lookup_feature_table import (
+    EntityLookupStep,
+    get_entity_lookup_feature_tables,
+)
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -116,7 +120,8 @@ class OfflineStoreTable(FeatureByteBaseModel):
     table_name: str
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
-    ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
+    output_column_names: List[str]
+    output_dtypes: List[DBVarType]
     primary_entity_info: List[OfflineStoreEntityInfo]
 
     @property
@@ -161,7 +166,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
             table_name=table_name,
             feature_job_setting=first_ingest_query_graph.feature_job_setting,
             has_ttl=first_ingest_query_graph.has_ttl,
-            ingest_query_graphs=ingest_query_graphs,
+            output_column_names=[
+                ingest_query_graph.output_column_name for ingest_query_graph in ingest_query_graphs
+            ],
+            output_dtypes=[
+                ingest_query_graph.output_dtype for ingest_query_graph in ingest_query_graphs
+            ],
             primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
                 entity_id_to_serving_name=entity_id_to_serving_name
             ),
@@ -249,11 +259,11 @@ class OfflineStoreTable(FeatureByteBaseModel):
                 )
             )
 
-        for ingest_query_graph in self.ingest_query_graphs:
+        for output_column_name, output_dtype in zip(self.output_column_names, self.output_dtypes):
             schema.append(
                 FeastField(
-                    name=ingest_query_graph.output_column_name,
-                    dtype=to_feast_primitive_type(DBVarType(ingest_query_graph.output_dtype)),
+                    name=output_column_name,
+                    dtype=to_feast_primitive_type(DBVarType(output_dtype)),
                 )
             )
 
@@ -275,7 +285,11 @@ class OfflineStoreTableBuilder:
 
     @staticmethod
     def create_offline_store_tables(
-        features: List[FeatureModel], entity_id_to_serving_name: Dict[PydanticObjectId, str]
+        features: List[FeatureModel],
+        feature_lists: List[FeatureListModel],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        feature_store: FeatureStoreModel,
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
     ) -> List[OfflineStoreTable]:
         """
         Group each offline store ingest query graphs of features into list of offline store tables
@@ -284,8 +298,14 @@ class OfflineStoreTableBuilder:
         ----------
         features: List[FeatureModel]
             List of featurebyte feature models
+        feature_lists: List[FeatureListModel]
+            List of feature lists
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Mapping from entity id to serving name
+        feature_store: FeatureStoreModel
+            Feature store model
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Entity lookup steps mapping derived from feature lists
 
         Returns
         -------
@@ -309,7 +329,75 @@ class OfflineStoreTableBuilder:
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             offline_store_tables.append(offline_store_table)
-        return offline_store_tables
+
+        offline_store_tables_for_entity_lookup = (
+            OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
+                offline_store_tables=offline_store_tables,
+                feature_lists=feature_lists,
+                feature_store=feature_store,
+                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            )
+        )
+
+        return offline_store_tables + offline_store_tables_for_entity_lookup
+
+    @staticmethod
+    def create_offline_store_tables_for_entity_lookup(
+        offline_store_tables: List[OfflineStoreTable],
+        feature_lists: List[FeatureListModel],
+        feature_store: FeatureStoreModel,
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+    ) -> List[OfflineStoreTable]:
+        """
+        Create offline store tables for entity lookup purpose
+
+        Parameters
+        ----------
+        offline_store_tables: List[OfflineStoreTable]
+            List of offline store tables created from ingest query graphs
+        feature_lists: List[FeatureListModel]
+            List of feature lists
+        feature_store: FeatureStoreModel
+            Feature store model
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Entity lookup steps mapping derived from feature lists
+
+        Returns
+        -------
+        List[OfflineStoreTable]
+        """
+
+        entity_lookup_feature_tables = {}
+        for offline_store_table in offline_store_tables:
+            lookup_tables = get_entity_lookup_feature_tables(
+                feature_table_primary_entity_ids=list(offline_store_table.primary_entity_ids),
+                feature_lists=feature_lists,
+                feature_store=feature_store,
+                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            )
+            if lookup_tables is None:
+                continue
+            for lookup_table in lookup_tables:
+                if lookup_table.name not in entity_lookup_feature_tables:
+                    entity_lookup_feature_tables[lookup_table.name] = OfflineStoreTable(
+                        table_name=lookup_table.name,
+                        feature_job_setting=lookup_table.feature_job_setting,
+                        has_ttl=lookup_table.has_ttl,
+                        output_column_names=lookup_table.output_column_names,
+                        output_dtypes=lookup_table.output_dtypes,
+                        primary_entity_info=[
+                            OfflineStoreEntityInfo(
+                                id=entity_id,
+                                name=serving_name,
+                                dtype=DBVarType.VARCHAR,
+                            )
+                            for (entity_id, serving_name) in zip(
+                                lookup_table.primary_entity_ids, lookup_table.serving_names
+                            )
+                        ],
+                    )
+
+        return list(entity_lookup_feature_tables.values())
 
 
 class FeastAssetCreator:
@@ -546,13 +634,14 @@ class FeastRegistryBuilder:
                 return cast(RegistryProto, registry.proto())
 
     @classmethod
-    def create(
+    def create(  # pylint: disable=too-many-locals
         cls,
         feature_store: FeatureStoreModel,
         online_store: Optional[OnlineStoreModel],
         entities: List[EntityModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
         project_name: Optional[str] = None,
     ) -> RegistryProto:
         """
@@ -570,6 +659,8 @@ class FeastRegistryBuilder:
             List of featurebyte feature models
         feature_lists: List[FeatureListModel]
             List of featurebyte feature list models
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Mapping from relationships info id to EntityLookupStep objects
         project_name: Optional[str]
             Project name
 
@@ -581,7 +672,10 @@ class FeastRegistryBuilder:
         EntityFeatureChecker.check_missing_features(features, feature_lists)
         offline_store_tables = OfflineStoreTableBuilder.create_offline_store_tables(
             features=features,
+            feature_lists=feature_lists,
             entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
+            feature_store=feature_store,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []

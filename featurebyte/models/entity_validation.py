@@ -81,6 +81,25 @@ class EntityInfo(FeatureByteBaseModel):
         provided_ids = self.provided_entity_ids
         return [entity for entity in self.required_entities if entity.id not in provided_ids]
 
+    def get_entity(self, entity_id: ObjectId) -> EntityModel:
+        """
+        Get an EntityModel given its id
+
+        Parameters
+        ----------
+        entity_id: ObjectId
+            Entity identifier
+
+        Returns
+        -------
+        EntityModel
+        """
+        return next(
+            entity
+            for entity in self.provided_entities + self.missing_entities
+            if entity.id == entity_id
+        )
+
     def get_effective_serving_name(self, entity: EntityModel) -> str:
         """
         Get the serving name for the entity taking into account the serving names mapping, if any
@@ -101,3 +120,24 @@ class EntityInfo(FeatureByteBaseModel):
         ):
             return original_serving_name
         return self.serving_names_mapping[original_serving_name]
+
+    def format_missing_entities_error(self, missing_entity_ids: List[ObjectId]) -> str:
+        """
+        Format an error message for inform users on the missing entities that should be provided
+
+        Parameters
+        ----------
+        missing_entity_ids: List[ObjectId]
+            Identifiers of the missing entities that should be reported
+
+        Returns
+        -------
+        str
+        """
+        missing_entities = [self.get_entity(entity_id) for entity_id in missing_entity_ids]
+        missing_entities = sorted(missing_entities, key=lambda x: x.name)  # type: ignore
+        formatted_pairs = []
+        for entity in missing_entities:
+            formatted_pairs.append(f'{entity.name} (serving name: "{entity.serving_names[0]}")')
+        formatted_pairs_str = ", ".join(formatted_pairs)
+        return f"Required entities are not provided in the request: {formatted_pairs_str}"

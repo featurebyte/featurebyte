@@ -23,6 +23,7 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
@@ -138,6 +139,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_materialize_scheduler_service: FeatureMaterializeSchedulerService,
         feast_registry_service: FeastRegistryService,
         feature_list_service: FeatureListService,
+        entity_lookup_feature_table_service: EntityLookupFeatureTableService,
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
@@ -153,6 +155,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self.feature_materialize_scheduler_service = feature_materialize_scheduler_service
         self.feast_registry_service = feast_registry_service
         self.feature_list_service = feature_list_service
+        self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
 
     async def handle_online_enabled_features(self, features: List[FeatureModel]) -> None:
         """
@@ -165,6 +168,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Features to be enabled for online serving
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
+        feature_lists = await self._get_online_enabled_feature_lists()
 
         for (
             offline_store_table_name,
@@ -183,9 +187,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                         feature_ids.append(feature.id)
                 if feature_ids != feature_table_dict["feature_ids"]:
                     feature_table_model = await self._update_offline_store_feature_table(
-                        feature_table_dict, feature_ids
+                        feature_table_dict,
+                        feature_ids,
                     )
                 else:
+                    # Note: don't set feature_table_model here since we don't want to run
+                    # materialize below
                     feature_table_model = None
             else:
                 # create new table
@@ -205,17 +212,26 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 # Note: might need to defer updating feast registry till initialization is done to
                 # prevent concurrency issues (scheduled job started while new column's
                 # initialization is still in progress)
-                await self._create_or_update_feast_registry()
+                await self._create_or_update_feast_registry(feature_lists)
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
+            else:
+                assert feature_table_dict is not None
+                feature_table_model = await self.offline_store_feature_table_service.get_document(
+                    feature_table_dict["_id"],
+                )
+
+            await self._create_or_update_entity_lookup_feature_tables(
+                feature_table_model, feature_lists
+            )
 
         if not features:
             # If all the features are already online enabled, i.e. the offline feature store tables
             # are up-to-date. But registry still needs to be updated because there could be a new
             # feature service that needs to be created.
-            await self._create_or_update_feast_registry()
+            await self._create_or_update_feast_registry(feature_lists)
 
     async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
@@ -231,6 +247,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
+        feature_lists = await self._get_online_enabled_feature_lists()
         for feature_table_dict in feature_table_data["data"]:
             updated_feature_ids = [
                 feature_id
@@ -239,24 +256,16 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             ]
             if updated_feature_ids:
                 updated_feature_table = await self._update_offline_store_feature_table(
-                    feature_table_dict, updated_feature_ids
+                    feature_table_dict,
+                    updated_feature_ids,
                 )
                 await self.feature_materialize_service.drop_columns(
                     updated_feature_table, self._get_offline_store_feature_table_columns(features)
                 )
             else:
-                await self.feature_materialize_service.drop_table(
-                    await self.offline_store_feature_table_service.get_document(
-                        feature_table_dict["_id"],
-                    )
-                )
-                await self.feature_materialize_scheduler_service.stop_job(
-                    feature_table_dict["_id"],
-                )
-                await self.offline_store_feature_table_service.delete_document(
-                    document_id=feature_table_dict["_id"],
-                )
-        await self._create_or_update_feast_registry()
+                await self._delete_offline_store_feature_table(feature_table_dict["_id"])
+        await self._create_or_update_feast_registry(feature_lists)
+        await self._delete_entity_lookup_feature_tables(feature_lists)
 
     @staticmethod
     def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
@@ -280,7 +289,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return None
 
     async def _update_offline_store_feature_table(
-        self, feature_table_dict: Dict[str, Any], updated_feature_ids: List[ObjectId]
+        self,
+        feature_table_dict: Dict[str, Any],
+        updated_feature_ids: List[ObjectId],
     ) -> OfflineStoreFeatureTableModel:
         feature_table_model = await self._construct_offline_store_feature_table_model(
             feature_table_name=feature_table_dict["name"],
@@ -369,13 +380,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         return sorted(set(filtered_table_names))
 
-    async def _create_or_update_feast_registry(self) -> None:
-        if not await self.feast_registry_service.is_source_type_supported():
-            return
-
+    async def _get_online_enabled_feature_lists(self) -> List[FeatureListModel]:
         feature_lists = []
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_lists.append(FeatureListModel(**feature_list_dict))
+        return feature_lists
+
+    async def _create_or_update_feast_registry(self, feature_lists: List[FeatureListModel]) -> None:
+        if not await self.feast_registry_service.is_source_type_supported():
+            return
 
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
@@ -387,3 +400,89 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 document_id=feast_registry.id,
                 data=FeastRegistryUpdate(feature_lists=feature_lists),
             )
+
+    async def _create_or_update_entity_lookup_feature_tables(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_lists: List[FeatureListModel],
+    ) -> None:
+        """
+        Create or update feature tables to support parent entities lookup for a specific offline
+        feature table. This should be called when online enabling features.
+
+        Parameters
+        ----------
+        feature_table_model: OfflineStoreFeatureTableModel
+            Offline store feature table model to check
+        feature_lists: List[FeatureListModel]
+            Currently online enabled feature lists
+        """
+        # Get list of entity lookup feature tables that are currently required
+        service = self.entity_lookup_feature_table_service
+        entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
+            feature_table_model, feature_lists
+        )
+        if entity_lookup_feature_table_models is None:
+            entity_lookup_feature_table_models = []
+
+        # Commission tables that should exist if they don't already exist
+        existing_lookup_feature_tables = {
+            feature_table_dict["name"]: feature_table_dict
+            async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
+                query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+            )
+        }
+        for entity_lookup_feature_table in entity_lookup_feature_table_models:
+            if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
+                await self.offline_store_feature_table_service.create_document(
+                    entity_lookup_feature_table
+                )
+                await self.feature_materialize_service.initialize_new_columns(
+                    entity_lookup_feature_table
+                )
+                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
+                    entity_lookup_feature_table
+                )
+
+    async def _delete_entity_lookup_feature_tables(
+        self, feature_lists: List[FeatureListModel]
+    ) -> None:
+        """
+        Delete offline store feature tables that were created for entity lookup purpose but are not
+        no longer required. This should be called when online disabling features.
+
+        Parameters
+        ----------
+        feature_lists: List[FeatureListModel]
+            Currently online enabled feature lists
+        """
+        # Get list of entity lookup feature tables that are currently required
+        current_active_table_names = set()
+        service = self.entity_lookup_feature_table_service
+        async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator(
+            query_filter={"is_entity_lookup": False}
+        ):
+            entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
+                feature_table_model, feature_lists
+            )
+            if entity_lookup_feature_table_models is not None:
+                for table in entity_lookup_feature_table_models:
+                    current_active_table_names.add(table.name)
+
+        # Decommission tables that should no longer exist
+        async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
+            query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+        ):
+            if feature_table_dict["name"] not in current_active_table_names:
+                await self._delete_offline_store_feature_table(feature_table_dict["_id"])
+
+    async def _delete_offline_store_feature_table(self, feature_table_id: ObjectId) -> None:
+        await self.feature_materialize_service.drop_table(
+            await self.offline_store_feature_table_service.get_document(
+                feature_table_id,
+            )
+        )
+        await self.feature_materialize_scheduler_service.stop_job(
+            feature_table_id,
+        )
+        await self.offline_store_feature_table_service.delete_document(feature_table_id)

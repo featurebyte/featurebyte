@@ -225,6 +225,34 @@ async def deployed_features_list_fixture(session, features, expected_udf_names):
         assert all_udfs.intersection(set(expected_udf_names)) == set()
 
 
+@pytest_asyncio.fixture(name="deployed_feature_list_v2", scope="module")
+async def deployed_features_list_v2_fixture(features, deployed_feature_list):
+    """
+    Fixture for deployed feature list
+    """
+    _ = deployed_feature_list
+    features = [
+        feat
+        for feat in features
+        if feat.name in {"User Status Feature", "Current Number of Users With This Status"}
+    ]
+    feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_V2")
+    feature_list.save()
+    with patch(
+        "featurebyte.service.feature_manager.get_next_job_datetime",
+        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
+    ):
+        deployment = feature_list.deploy()
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            deployment.enable()
+
+    yield deployment
+    deployment.disable()
+
+
 @pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")
 async def offline_store_feature_tables_fixture(app_container, deployed_feature_list):
     """
@@ -257,13 +285,52 @@ def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables, app_
     return offline_store_feature_tables[f"fb_entity_userid_fjs_86400_0_0_{catalog_id}"]
 
 
+@pytest_asyncio.fixture(name="expected_entity_lookup_feature_table_names")
+async def expected_entity_lookup_feature_table_names_fixture(
+    app_container,
+    deployed_feature_list,
+    order_entity,
+    product_action_entity,
+    customer_entity,
+    user_entity,
+    status_entity,
+    item_entity,
+):
+    """
+    Fixture for expected entity lookup feature table names
+    """
+    expected = []
+    feature_list_model = await app_container.feature_list_service.get_document(
+        deployed_feature_list.feature_list_id
+    )
+
+    def _get_relationship_info(child_entity, parent_entity):
+        for info in feature_list_model.relationships_info:
+            if info.entity_id == child_entity.id and info.related_entity_id == parent_entity.id:
+                return info
+        raise AssertionError(
+            f"Relationship with child as {child_entity.name} and parent as {parent_entity.name} not found"
+        )
+
+    for info in [
+        _get_relationship_info(order_entity, customer_entity),
+        _get_relationship_info(order_entity, product_action_entity),
+        _get_relationship_info(order_entity, user_entity),
+        _get_relationship_info(user_entity, status_entity),
+        _get_relationship_info(item_entity, order_entity),
+    ]:
+        expected.append(f"fb_entity_lookup_{info.id}")
+
+    return set(expected)
+
+
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture(app_container):
+def expected_feature_table_names_fixture(app_container, expected_entity_lookup_feature_table_names):
     """
     Fixture for expected feature table names
     """
     catalog_id = app_container.catalog_id
-    return {
+    expected = {
         f"fb_entity_overall_fjs_3600_1800_1800_ttl_{catalog_id}",
         f"fb_entity_product_action_fjs_3600_1800_1800_ttl_{catalog_id}",
         f"fb_entity_cust_id_fjs_3600_1800_1800_ttl_{catalog_id}",
@@ -272,6 +339,8 @@ def expected_feature_table_names_fixture(app_container):
         f"fb_entity_user_status_fjs_86400_0_0_{catalog_id}",
         f"fb_entity_order_id_fjs_86400_0_0_{catalog_id}",
     }
+    expected.update(expected_entity_lookup_feature_table_names)
+    return expected
 
 
 @pytest.fixture(name="expected_udf_names", scope="module")
@@ -460,7 +529,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_online_features(config, deployed_feature_list):
+def test_online_features__all_entities_provided(config, deployed_feature_list):
     """
     Check online features are populated correctly
     """
@@ -472,8 +541,6 @@ def test_online_features(config, deployed_feature_list):
             "üser id": 5,
             "cust_id": 761,
             "PRODUCT_ACTION": "detail",
-            # Note: shouldn't have to provide this once parent entity lookup is supported (via child
-            # entity üser id)
             "user_status": "STÀTUS_CODE_37",
             "order_id": "T1230",
         }
@@ -536,6 +603,83 @@ def test_online_features(config, deployed_feature_list):
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
         "üser id": "5",
+    }
+    assert_dict_approx_equal(feat_dict, expected)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_online_features__primary_entity_ids(config, deployed_feature_list):
+    """
+    Check online features by providing only the primary entity ids. Expect the online serving
+    service to lookup parent entities.
+
+    List of lookups to be made:
+
+    - order_id:T3850 -> cust_id:594
+    - order_id:T3850 -> PRODUCT_ACTION:detail
+    - order_id:T3850 -> üser id:7
+    - üser id:7 -> user_status:STÀTUS_CODE_26
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_names = [
+        {
+            "order_id": "T3850",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+
+    feat_dict = res.json()["features"][0]
+    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
+        feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
+    )
+    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+    )
+    expected = {
+        "Complex Feature by User": "STÀTUS_CODE_26_1",
+        "Current Number of Users With This Status": 1,
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
+            "__MISSING__": 174.39,
+            "detail": 169.77,
+            "purchase": 473.31,
+            "rëmove": 102.37,
+            "àdd": 27.1,
+        },
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 623.15,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 62315.0,
+        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
+            0.5365338952415342,
+            0.4908373917748641,
+            0.42408493050514906,
+            0.5512648363475837,
+            0.5269536439690168,
+            0.4490616290417774,
+            0.41383692828120616,
+            0.4543201999832706,
+            0.5041296835615284,
+            0.43798778166578617,
+        ],
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 667.0592974268257,
+        "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.9171356659119657,
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 149,
+        "Most Frequent Item Type by Order": "type_24",
+        "User Status Feature": "STÀTUS_CODE_26",
+        "order_id": "T3850",
     }
     assert_dict_approx_equal(feat_dict, expected)
 
