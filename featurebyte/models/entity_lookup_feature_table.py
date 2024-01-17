@@ -54,7 +54,7 @@ class EntityLookupGraphResult:
     lookup_node: Node
     feature_node_name: str
     feature_dtype: DBVarType
-    feature_job_setting: FeatureJobSetting
+    feature_job_setting: Optional[FeatureJobSetting]
 
 
 def get_lookup_feature_table_name(relationship_info_id: ObjectId) -> str:
@@ -230,15 +230,12 @@ def _get_entity_lookup_graph(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[lookup_node],
     )
-    feature_job_setting_extractor = FeatureJobSettingExtractor(graph=graph)
-    feature_job_setting = (
-        feature_job_setting_extractor.extract_from_agg_node(node=lookup_node)
-        or feature_job_setting_extractor.default_feature_job_setting
-    )
     return EntityLookupGraphResult(
         graph=graph,
         lookup_node=lookup_node,
         feature_node_name=feature_node.name,
         feature_dtype=feature_dtype,
-        feature_job_setting=feature_job_setting,
+        feature_job_setting=FeatureJobSettingExtractor(graph=graph).extract_from_agg_node(
+            node=lookup_node
+        ),
     )
