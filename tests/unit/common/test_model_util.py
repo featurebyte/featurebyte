@@ -3,6 +3,7 @@
 import pytest
 
 from featurebyte.common.model_util import (
+    convert_seconds_to_time_format,
     convert_version_string_to_dict,
     validate_job_setting_parameters,
     validate_timezone_offset_string,
@@ -79,3 +80,35 @@ def test_validate_timezone_offset_string__invalid(timezone_offset):
     with pytest.raises(ValueError) as exc:
         validate_timezone_offset_string(timezone_offset)
     assert "Invalid timezone_offset" in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "seconds, components, expected",
+    [
+        # Test cases without specifying components (default behavior)
+        (45, None, "45s"),
+        (100, None, "1m40s"),
+        (3600, None, "1h"),
+        (3660, None, "1h1m"),
+        (3665, None, "1h1m5s"),
+        (86400, None, "1d"),
+        (86465, None, "1d1m5s"),
+        (90061, None, "1d1h1m1s"),
+        (90065, None, "1d1h1m5s"),
+        # Test cases with specified components
+        (90065, 1, "1d"),
+        (90065, 2, "1d1h"),
+        (90065, 3, "1d1h1m"),
+        (90065, 4, "1d1h1m5s"),
+        (3665, 2, "1h1m"),
+        (3665, 1, "1h"),
+    ],
+)
+def test_convert_seconds_to_time_format(seconds, components, expected):
+    """
+    Test convert_seconds_to_time_format with and without specified components
+    """
+    if components is not None:
+        assert convert_seconds_to_time_format(seconds, components) == expected
+    else:
+        assert convert_seconds_to_time_format(seconds) == expected

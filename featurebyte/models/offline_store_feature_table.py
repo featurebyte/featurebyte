@@ -10,6 +10,8 @@ from datetime import datetime
 
 import pymongo
 
+from featurebyte.common.model_util import convert_seconds_to_time_format
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -32,7 +34,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     OfflineStoreFeatureTable class
     """
 
-    name: str
+    name: str = Field(default_factory=str)
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
@@ -45,6 +47,46 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
     entity_lookup_info: Optional[EntityRelationshipInfo]
+
+    def get_basename(self) -> str:
+        """
+        Get base name of the feature table
+
+        Returns
+        -------
+        str
+        """
+        # Mongo ObjectId is 12 bytes, which is 24 hex characters
+        # {timestamp-8}{machine_id-6}{pid-4}{counter-6}
+        # characters from 15-20 contains the pid and counter related information
+        name = str(self.catalog_id)[15:21]
+        max_len = 20  # reserving 4 characters for suffix, max table name length is 24
+        if self.serving_names:
+            serving_names_part = sanitize_identifier(self.serving_names[0])
+            name = f"{name}_{serving_names_part}"
+        if self.feature_job_setting:
+            max_freq_len = 5
+            freq_part = ""
+            for component in reversed(range(1, 5)):
+                freq_part = convert_seconds_to_time_format(
+                    self.feature_job_setting.frequency_seconds, components=component
+                )
+                if len(freq_part) <= max_freq_len:
+                    break
+            keep = max_len - len(freq_part) - 1
+            name = f"{name[:keep]}_{freq_part}"
+        return name[:max_len]
+
+    def set_name(self, suffix: Optional[str] = None) -> None:
+        """
+        Set name of the feature table
+
+        Parameters
+        ----------
+        suffix : Optional[str]
+            Suffix to be appended to the name
+        """
+        self.name = self.get_basename() + (f"_{suffix}" if suffix else "")
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
