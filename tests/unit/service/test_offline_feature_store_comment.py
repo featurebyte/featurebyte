@@ -1,7 +1,7 @@
 """
 Unit tests for OfflineStoreFeatureTableCommentService
 """
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 import pytest_asyncio
@@ -43,7 +43,7 @@ def catalog_id(app_container):
     return app_container.catalog_id
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture()
 async def deployed_features(
     app_container,
     float_feature,
@@ -100,7 +100,7 @@ async def offline_feature_table(app_container, deployed_features, cust_id_entity
 
 
 @pytest_asyncio.fixture
-async def offline_feature_table_entity_lookup(app_container, deployed_features, cust_id_entity):
+async def offline_feature_table_entity_lookup(app_container, deployed_features):
     """
     Fixture for a offline feature table for entity lookup
     """
@@ -110,6 +110,37 @@ async def offline_feature_table_entity_lookup(app_container, deployed_features, 
         if feature_table.is_entity_lookup:
             return feature_table
     raise AssertionError("Feature table not found")
+
+
+@pytest.mark.asyncio
+async def test_apply_comments(service, mock_snowflake_session):
+    """
+    Test apply_comments uses session object correctly
+    """
+    with patch(
+        "featurebyte.service.offline_store_feature_table_comment.SessionManagerService.get_feature_store_session"
+    ) as patched:
+        patched.return_value = mock_snowflake_session
+        await service.apply_comments(
+            Mock(name="mock_feature_store_model"),
+            [
+                TableComment(
+                    table_name="tab_1",
+                    comment="comment for tab_1",
+                ),
+                ColumnComment(
+                    table_name="tab_2",
+                    column_name="col_2",
+                    comment="comment for tab_2's col_2",
+                ),
+            ],
+        )
+    assert mock_snowflake_session.comment_table.call_args_list == [
+        call("tab_1", "comment for tab_1")
+    ]
+    assert mock_snowflake_session.comment_column.call_args_list == [
+        call("tab_2", "col_2", "comment for tab_2's col_2")
+    ]
 
 
 @pytest.mark.asyncio
