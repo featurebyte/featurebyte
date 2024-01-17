@@ -168,7 +168,7 @@ async def test_table_comment__entity_lookup(
     comment = await service.generate_table_comment(offline_feature_table_entity_lookup)
     assert comment == TableComment(
         table_name=f"fb_entity_lookup_{relationship_info_id}",
-        comment="This feature table is used to lookup the parent entity of transaction (serving name: transaction_id). It is updated every 86400 second(s), with a blind spot of 0 second(s) and a time modulo frequency of 0 second(s).",
+        comment="This feature table is used to lookup the entity customer (serving name: cust_id) using the entity transaction (serving name: transaction_id) based on their parent-child relationship. It is updated every 86400 second(s), with a blind spot of 0 second(s) and a time modulo frequency of 0 second(s).",
     )
 
 
