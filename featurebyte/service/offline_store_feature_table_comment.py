@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Dict, List, Sequence, Tuple, Union
 
-import textwrap
 from dataclasses import dataclass
 
 from featurebyte.models.entity import EntityModel
@@ -36,23 +35,6 @@ class ColumnComment:
     table_name: str
     column_name: str
     comment: str
-
-
-def make_single_line(text: str) -> str:
-    """
-    Helper function to clean up newlines in text to return a single line sentence.
-
-    Parameters
-    ----------
-    text: str
-
-    Return
-    ------
-    str
-    """
-    text = textwrap.dedent(text).strip()
-    lines = [line.strip() for line in text.split("\n")]
-    return " ".join(lines)
 
 
 class OfflineStoreFeatureTableCommentService:
@@ -115,13 +97,9 @@ class OfflineStoreFeatureTableCommentService:
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
             sentences.append(
-                make_single_line(
-                    f"""
-                    It is updated every {job_setting.frequency_seconds} second(s), with a blind spot of
-                    {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of
-                    {job_setting.time_modulo_frequency_seconds} second(s)
-                    """
-                )
+                f"It is updated every {job_setting.frequency_seconds} second(s), with a blind spot"
+                f" of {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of"
+                f" {job_setting.time_modulo_frequency_seconds} second(s)"
             )
         comment = ". ".join(sentences) + "."
         return TableComment(table_name=feature_table_model.name, comment=comment)
@@ -146,11 +124,9 @@ class OfflineStoreFeatureTableCommentService:
             for offline_ingest_graph in offline_ingest_graphs:
                 table_name = offline_ingest_graph.offline_store_table_name
                 if feature.offline_store_info.is_decomposed:
-                    comment = make_single_line(
-                        f"""
-                        This intermediate feature is used to compute the final feature
-                        {feature.versioned_name}
-                        """
+                    comment = (
+                        f"This intermediate feature is used to compute the final feature"
+                        f" {feature.versioned_name}"
                     )
                     if feature_description is not None:
                         comment += f" ({feature_description})"
