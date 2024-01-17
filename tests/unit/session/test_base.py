@@ -13,7 +13,7 @@ import pytest
 from pydantic import Field
 from snowflake.connector.errors import ProgrammingError
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
@@ -70,6 +70,12 @@ def base_session_test_fixture():
             self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
         ) -> None:
             return None
+
+        async def comment_table(self, table_name: str, comment: str) -> None:
+            pass
+
+        async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+            pass
 
     return BaseSessionTestFixture
 
