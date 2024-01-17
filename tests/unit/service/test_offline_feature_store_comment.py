@@ -1,6 +1,7 @@
 """
 Unit tests for OfflineStoreFeatureTableCommentService
 """
+# pylint: disable=line-too-long
 from unittest.mock import Mock, call, patch
 
 import pytest

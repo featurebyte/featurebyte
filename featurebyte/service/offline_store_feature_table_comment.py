@@ -3,7 +3,7 @@ OfflineStoreFeatureTableCommentService
 """
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import textwrap
 from dataclasses import dataclass
@@ -73,7 +73,7 @@ class OfflineStoreFeatureTableCommentService:
     async def apply_comments(
         self,
         feature_store: FeatureStoreModel,
-        comments: List[Union[TableComment, ColumnComment]],
+        comments: Sequence[Union[TableComment, ColumnComment]],
     ) -> None:
         """
         Add the provided table or column comments in the data warehouse

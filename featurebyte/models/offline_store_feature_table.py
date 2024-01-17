@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
-from pydantic import Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (

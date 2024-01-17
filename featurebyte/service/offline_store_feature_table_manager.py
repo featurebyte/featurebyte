@@ -3,7 +3,7 @@ OfflineStoreFeatureTableUpdateService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -31,7 +31,9 @@ from featurebyte.service.feature_materialize_scheduler import FeatureMaterialize
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_comment import (
+    ColumnComment,
     OfflineStoreFeatureTableCommentService,
+    TableComment,
 )
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
@@ -520,7 +522,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_store_model = await self.feature_store_service.get_document(
             catalog_model.default_feature_store_ids[0]
         )
-        comments = []
+        comments: List[Union[TableComment, ColumnComment]] = []
         for feature_table_model in new_tables:
             comments.append(
                 await self.offline_store_feature_table_comment_service.generate_table_comment(
