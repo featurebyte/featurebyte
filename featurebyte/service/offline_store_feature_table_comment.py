@@ -1,0 +1,157 @@
+"""
+OfflineStoreFeatureTableCommentService
+"""
+from __future__ import annotations
+
+from typing import Dict, List, Tuple, Union
+
+import textwrap
+from dataclasses import dataclass
+
+from featurebyte.models.entity import EntityModel
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.service.entity import EntityService
+from featurebyte.service.session_manager import SessionManagerService
+
+
+@dataclass
+class TableComment:
+    """
+    Representation of a comment for a specific offline feature table
+    """
+
+    table_name: str
+    comment: str
+
+
+@dataclass
+class ColumnComment:
+    """
+    Representation of a comment for a specific offline feature table column
+    """
+
+    table_name: str
+    column_name: str
+    comment: str
+
+
+def make_single_line(text: str) -> str:
+    """
+    Helper function to clean up newlines in text to return a single line sentence.
+
+    Parameters
+    ----------
+    text: str
+
+    Return
+    ------
+    str
+    """
+    text = textwrap.dedent(text).strip()
+    lines = [line.strip() for line in text.split("\n")]
+    return " ".join(lines)
+
+
+class OfflineStoreFeatureTableCommentService:
+    """
+    OfflineStoreFeatureTableCommentService
+    """
+
+    def __init__(
+        self,
+        entity_service: EntityService,
+        session_manager_service: SessionManagerService,
+    ):
+        self.entity_service = entity_service
+        self.session_manager_service = session_manager_service
+
+    async def apply_comments(
+        self,
+        feature_store: FeatureStoreModel,
+        comments: List[Union[TableComment, ColumnComment]],
+    ) -> None:
+        """
+        Add the provided table or column comments in the data warehouse
+        """
+        session = await self.session_manager_service.get_feature_store_session(feature_store)
+        for entry in comments:
+            if isinstance(entry, TableComment):
+                await session.comment_table(entry.table_name, entry.comment)
+            else:
+                await session.comment_column(entry.table_name, entry.column_name, entry.comment)
+
+    async def generate_table_comment(
+        self, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> TableComment:
+        """
+        Generate comment for an offline feature table
+        """
+        primary_entities = await self.entity_service.get_entities(
+            set(feature_table_model.primary_entity_ids)
+        )
+
+        def _format_entity(entity_model: EntityModel) -> str:
+            return f"{entity_model.name} (serving name: {entity_model.serving_names[0]})"
+
+        primary_entities_info = ", ".join([_format_entity(entity) for entity in primary_entities])
+        if feature_table_model.is_entity_lookup:
+            sentences = [
+                f"This feature table is used to lookup the parent entity of {primary_entities_info}"
+            ]
+        else:
+            sentences = [
+                f"This feature table consists of features for primary entity {primary_entities_info}"
+            ]
+        if feature_table_model.feature_job_setting:
+            job_setting = feature_table_model.feature_job_setting
+            sentences.append(
+                make_single_line(
+                    f"""
+                    It is updated every {job_setting.frequency_seconds} second(s), with a blind spot of
+                    {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of
+                    {job_setting.time_modulo_frequency_seconds} second(s)
+                    """
+                )
+            )
+        comment = ". ".join(sentences) + "."
+        return TableComment(table_name=feature_table_model.name, comment=comment)
+
+    @staticmethod
+    def generate_column_comments(feature_models: List[FeatureModel]) -> List[ColumnComment]:
+        """
+        Generate comments for columns in offline feature tables corresponding to the features
+        """
+        # Mapping to from table name and column name to comments
+        comments: Dict[Tuple[str, str], str] = {}
+        for feature in feature_models:
+            offline_ingest_graphs = (
+                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
+            )
+            for offline_ingest_graph in offline_ingest_graphs:
+                table_name = offline_ingest_graph.offline_store_table_name
+                if feature.offline_store_info.is_decomposed:
+                    comment = make_single_line(
+                        f"""
+                        This intermediate feature is used to compute the final feature
+                        {feature.versioned_name}
+                        """
+                    )
+                    if feature.description is not None:
+                        comment += f" ({feature.description})"
+                    comments[(table_name, offline_ingest_graph.output_column_name)] = comment
+                else:
+                    if feature.description is not None:
+                        comments[
+                            (table_name, offline_ingest_graph.output_column_name)
+                        ] = feature.description
+        out = [
+            ColumnComment(
+                table_name=table_name,
+                column_name=column_name,
+                comment=comment,
+            )
+            for ((table_name, column_name), comment) in comments.items()
+        ]
+        return out
