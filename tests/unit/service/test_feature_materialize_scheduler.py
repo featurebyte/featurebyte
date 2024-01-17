@@ -6,8 +6,8 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.models.entity_universe import EntityUniverseModel
-from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel

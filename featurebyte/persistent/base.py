@@ -3,7 +3,18 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Dict, Iterable, Literal, Optional, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    cast,
+)
 
 import copy
 from abc import ABC, abstractmethod
@@ -695,6 +706,40 @@ class Persistent(ABC):
         Returns
         -------
         list[str]
+        """
+
+    @abstractmethod
+    async def aggregate_find(
+        self,
+        collection_name: str,
+        pipeline: List[Dict[str, Any]],
+        sort_by: Optional[str] = None,
+        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        page: int = 1,
+        page_size: int = 0,
+    ) -> Tuple[Iterable[Document], int]:
+        """
+        Execute aggregation pipeline
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        pipeline: List[Dict[str, Any]],
+            Pipeline to execute
+        sort_by: Optional[str]
+            Column to sort by
+        sort_dir: Optional[Literal["asc", "desc"]]
+            Direction to sort
+        page: int
+            Page number for pagination
+        page_size: int
+            Page size (0 to return all records)
+
+        Returns
+        -------
+        Tuple[Iterable[Document], int]
+            Retrieved documents and total count
         """
 
     async def rename_collection(self, collection_name: str, new_collection_name: str) -> None:

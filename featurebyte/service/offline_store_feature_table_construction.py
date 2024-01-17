@@ -44,7 +44,6 @@ class OfflineStoreFeatureTableConstructionService:
 
     async def get_offline_store_feature_table_model(
         self,
-        feature_table_name: str,
         features: List[FeatureModel],
         aggregate_result_table_names: List[str],
         primary_entities: List[EntityModel],
@@ -57,8 +56,6 @@ class OfflineStoreFeatureTableConstructionService:
 
         Parameters
         ----------
-        feature_table_name : str
-            Feature table name
         features : List[FeatureModel]
             List of features
         aggregate_result_table_names : List[str]
@@ -91,7 +88,6 @@ class OfflineStoreFeatureTableConstructionService:
         )
 
         return OfflineStoreFeatureTableModel(
-            name=feature_table_name,
             feature_ids=[feature.id for feature in features],
             primary_entity_ids=[entity.id for entity in primary_entities],
             # FIXME: consolidate all the offline store serving names (get_entity_id_to_serving_name_for_offline_store)

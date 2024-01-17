@@ -11,7 +11,7 @@ from bson import ObjectId
 from featurebyte import FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListPreview

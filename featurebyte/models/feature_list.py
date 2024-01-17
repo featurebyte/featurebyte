@@ -10,7 +10,7 @@ from collections import defaultdict
 
 import pymongo
 from bson.objectid import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
+from pydantic import Field, PrivateAttr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -23,13 +23,13 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list_store_info import DataBricksStoreInfo, StoreInfo
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 
 
@@ -205,47 +205,6 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
                 FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
             ]
         )
-
-
-class FeatureCluster(FeatureByteBaseModel):
-    """
-    Schema for a group of features from the same feature store
-    """
-
-    feature_store_id: PydanticObjectId
-    graph: QueryGraph
-    node_names: List[StrictStr]
-
-    @property
-    def nodes(self) -> List[Node]:
-        """
-        Get feature nodes
-
-        Returns
-        -------
-        List[Node]
-        """
-        return [self.graph.get_node_by_name(name) for name in self.node_names]
-
-    def get_nodes_for_feature_names(self, feature_names: List[str]) -> List[Node]:
-        """
-        Get feature nodes for a list of feature names
-
-        Parameters
-        ----------
-        feature_names: List[str]
-            List of feature names
-
-        Returns
-        -------
-        List[Node]
-        """
-        selected_nodes = []
-        for node in self.nodes:
-            feature_name = self.graph.get_node_output_column_name(node.name)
-            if feature_name in feature_names:
-                selected_nodes.append(node)
-        return selected_nodes
 
 
 ServingEntity = List[PydanticObjectId]
@@ -501,13 +460,18 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return StoreInfo(**self.internal_store_info)
 
     def initialize_store_info(
-        self, features: List[FeatureModel], feature_store: FeatureStoreModel
+        self,
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
     ) -> None:
         """
         Initialize store info for a feature list
 
         Parameters
         ----------
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel]
+            List of offline store feature tables
         features: List[FeatureModel]
             List of features
         feature_store: FeatureStoreModel
@@ -518,7 +482,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]
-            store_info = store_info_class.create(features=features, feature_store=feature_store)
+            store_info = store_info_class.create(
+                offline_store_feature_tables=offline_store_feature_tables,
+                features=features,
+                feature_store=feature_store,
+            )
             self.internal_store_info = store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):

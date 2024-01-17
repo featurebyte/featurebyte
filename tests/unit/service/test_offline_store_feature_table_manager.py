@@ -188,7 +188,7 @@ async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeat
     """
     feature_tables = {}
     async for feature_table in document_service.list_documents_iterator(query_filter={}):
-        feature_tables[feature_table.name] = feature_table
+        feature_tables[feature_table.full_name] = feature_table
     return feature_tables
 
 
@@ -232,7 +232,7 @@ async def test_feature_table_one_feature_deployed(
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
+    feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -260,12 +260,15 @@ async def test_feature_table_one_feature_deployed(
         "has_ttl": True,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        "name": "cust_id_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "feature_store_id": feature_table_dict["feature_store_id"],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -277,7 +280,7 @@ async def test_feature_table_one_feature_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"},
+        expected_feature_views={"cat1_cust_id_30m"},
         expected_feature_services={"sum_1d_list"},
     )
 
@@ -297,7 +300,7 @@ async def test_feature_table_two_features_deployed(
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
+    feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -325,12 +328,15 @@ async def test_feature_table_two_features_deployed(
         "has_ttl": True,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        "name": "cust_id_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["sum_1d_V231227", "sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "feature_store_id": feature_table_dict["feature_store_id"],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -366,7 +372,7 @@ async def test_feature_table_undeploy(
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
+    feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -443,7 +449,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     assert len(feature_tables) == 2
 
     # Check customer entity feature table
-    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
+    feature_table = feature_tables["cat1_cust_id_30m"]
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
@@ -470,7 +476,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "has_ttl": True,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        "name": "cust_id_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -539,7 +547,7 @@ async def test_feature_table_without_entity(
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}"]
+    feature_table = feature_tables["cat1__no_entity_1d"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -561,12 +569,15 @@ async def test_feature_table_without_entity(
         "has_ttl": True,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+        "name": "_no_entity_1d",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["count_1d_V231227"],
         "output_dtypes": ["INT"],
         "primary_entity_ids": [],
         "serving_names": [],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "feature_store_id": feature_table_dict["feature_store_id"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -590,7 +601,7 @@ async def test_lookup_feature(
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_cust_id_fjs_86400_0_0_{catalog_id}"]
+    feature_table = feature_tables["cat1_cust_id_1d"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -615,12 +626,15 @@ async def test_lookup_feature(
         "has_ttl": False,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_cust_id_fjs_86400_0_0_{catalog_id}",
+        "name": "cust_id_1d",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["some_lookup_feature_V231227"],
         "output_dtypes": ["BOOL"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "feature_store_id": feature_table_dict["feature_store_id"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -644,7 +658,7 @@ async def test_aggregate_asat_feature(
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables[f"fb_entity_gender_fjs_86400_0_0_{catalog_id}"]
+    feature_table = feature_tables["cat1_gender_1d"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -670,12 +684,15 @@ async def test_aggregate_asat_feature(
         "has_ttl": False,
         "entity_lookup_info": None,
         "last_materialized_at": None,
-        "name": f"fb_entity_gender_fjs_86400_0_0_{catalog_id}",
+        "name": "gender_1d",
+        "name_prefix": "cat1",
+        "name_suffix": None,
         "output_column_names": ["asat_gender_count_V231227"],
         "output_dtypes": ["INT"],
         "primary_entity_ids": deployed_aggregate_asat_feature.primary_entity_ids,
         "serving_names": ["gender"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "feature_store_id": feature_table_dict["feature_store_id"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -724,7 +741,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir):
         for (
             table_name,
             features,
-        ) in offline_ingest_graph_container.offline_store_table_name_to_features.items()
+        ) in offline_ingest_graph_container.table_signature_to_features.items()
     }
     assert offline_store_table_name_to_feature_ids == {
         "fb_entity_659ccffb8c6f3c0e0a7d1e42_fjs_3600_120_120_ttl_659ccfd58c6f3c0e0a7d1e37": [

@@ -5,7 +5,7 @@ Test historical feature table task
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.worker.task.historical_feature_table import (

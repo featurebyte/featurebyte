@@ -225,7 +225,11 @@ def test_as_features__with_primary_key_column(
     offline_store_info = feature.cached_model.offline_store_info
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_graphs) == 1
-    assert ingest_graphs[0].offline_store_table_name == f"fb_entity_cust_id_{feature.catalog_id}"
+    assert ingest_graphs[0].table_signature == {
+        "primary_entity_ids": [cust_id_entity.id],
+        "feature_job_setting": None,
+        "has_ttl": False,
+    }
 
 
 def test_as_features__offset_provided_but_ignored(

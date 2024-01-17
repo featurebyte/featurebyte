@@ -11,7 +11,10 @@ from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.offline_store_ingest_query import OfflineFeatureTableSignature
 
 
 def create_feast_on_demand_feature_view(
@@ -60,21 +63,27 @@ class OnDemandFeatureViewConstructor:
     @classmethod
     def create(
         cls,
+        table_signature_to_model: Dict[OfflineFeatureTableSignature, OfflineStoreFeatureTableModel],
         feature_model: FeatureModel,
         name_to_feast_feature_view: Dict[str, FeatureView],
         name_to_feast_request_source: Dict[str, RequestSource],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
     ) -> OnDemandFeatureView:
         """
         Create a Feast OnDemandFeatureView from an offline store info.
 
         Parameters
         ----------
+        table_signature_to_model: Dict[OfflineFeatureTableSignature, OfflineStoreFeatureTableModel]
+            Dict of OfflineFeatureTableSignatures to OfflineStoreFeatureTableModels to be used to create the
         feature_model: FeatureModel
             FeatureModel to be used to create the OnDemandFeatureView
         name_to_feast_feature_view: Dict[str, FeatureView]
             Dict of FeatureView names to FeatureViews to be used as sources for the OnDemandFeatureView
         name_to_feast_request_source: Dict[str, RequestSource]
             Dict of RequestSource names to RequestSources to be used as sources for the OnDemandFeatureView
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Dict of Entity ids to serving names
 
         Returns
         -------
@@ -86,39 +95,17 @@ class OnDemandFeatureViewConstructor:
         assert feature_model.name is not None, "FeatureModel does not have a name"
 
         sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
-        has_point_in_time = False
-        ttl_seconds: Optional[float] = None
-        if offline_store_info.is_decomposed:
-            for (
-                ingest_query_graph
-            ) in offline_store_info.extract_offline_store_ingest_query_graphs():
-                fv_source = name_to_feast_feature_view[ingest_query_graph.offline_store_table_name]
-                sources.append(fv_source)
-                if fv_source.ttl is not None:
-                    if ttl_seconds is None:
-                        ttl_seconds = fv_source.ttl.seconds
-                    elif fv_source.ttl.seconds < ttl_seconds:
-                        ttl_seconds = fv_source.ttl.seconds
-
-            for request_node in feature_model.extract_request_column_nodes():
-                req_source = name_to_feast_request_source[request_node.parameters.column_name]
-                sources.append(req_source)
-                if request_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME.value:
-                    has_point_in_time = True
-        else:
-            assert (
-                offline_store_info.metadata is not None
-            ), "OfflineStoreInfo does not have metadata"
-            assert offline_store_info.metadata.has_ttl, "FeatureModel does not have TTL"
-            fv_source = name_to_feast_feature_view[
-                offline_store_info.metadata.offline_store_table_name
-            ]
-            if fv_source.ttl is not None:
-                ttl_seconds = fv_source.ttl.total_seconds()
+        for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
+            table_signature = ingest_query.get_full_table_signature(
+                feature_store_id=feature_model.tabular_source.feature_store_id,
+                catalog_id=feature_model.catalog_id,
+                entity_id_to_serving_name=entity_id_to_serving_name,
+            )
+            table = table_signature_to_model[table_signature]
+            fv_source = name_to_feast_feature_view[table.full_name]
             sources.append(fv_source)
 
-        if not has_point_in_time and ttl_seconds:
-            # add point in time request source if the feature has TTL
+            # add point in time request source
             req_source = name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value]
             sources.append(req_source)
 

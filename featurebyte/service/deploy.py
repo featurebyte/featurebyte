@@ -24,7 +24,9 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
@@ -44,8 +46,10 @@ class DeployService(OpsServiceMixin):
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,
         deployment_service: DeploymentService,
+        feature_store_service: FeatureStoreService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
     ):
         self.persistent = persistent
@@ -55,6 +59,8 @@ class DeployService(OpsServiceMixin):
         self.feature_list_status_service = feature_list_status_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.deployment_service = deployment_service
+        self.feature_store_service = feature_store_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
         self.offline_store_feature_table_manager_service = (
             offline_store_feature_table_manager_service
         )
@@ -211,6 +217,40 @@ class DeployService(OpsServiceMixin):
             feature_list=feature_list,
         )
 
+    async def _update_feature_list_store_info(
+        self, feature_list_id: ObjectId, feature_models: List[FeatureModel]
+    ) -> FeatureListModel:
+        feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
+        if (
+            feature_list.deployed
+            and FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+        ):
+            assert len(feature_models) > 0
+            feature_store_id = feature_models[0].tabular_source.feature_store_id
+            feature_store = await self.feature_store_service.get_document(
+                document_id=feature_store_id
+            )
+            offline_store_feature_tables = [
+                table
+                async for table in self.offline_store_feature_table_service.list_documents_iterator(
+                    query_filter={"feature_ids": {"$in": feature_list.feature_ids}}
+                )
+            ]
+            feature_list.initialize_store_info(
+                offline_store_feature_tables=offline_store_feature_tables,
+                features=feature_models,
+                feature_store=feature_store,
+            )
+            if feature_list.internal_store_info:
+                feature_list = await self.feature_list_service.update_document(
+                    document_id=feature_list_id,
+                    data=FeatureListServiceUpdate(store_info=feature_list.store_info),
+                    document=feature_list,
+                    return_document=True,
+                )
+
+        return feature_list
+
     async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
@@ -301,6 +341,13 @@ class DeployService(OpsServiceMixin):
                         await update_progress(100, "Updated feature list")
 
                 await self._update_offline_store_feature_tables(feature_models, is_online_enabling)
+                if (
+                    is_online_enabling
+                    and FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+                ):
+                    return await self._update_feature_list_store_info(
+                        feature_list_id, feature_models
+                    )
 
             except Exception as exc:
                 try:

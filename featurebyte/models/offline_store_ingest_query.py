@@ -3,7 +3,7 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import datetime
 
@@ -34,6 +34,31 @@ from featurebyte.query_graph.transform.on_demand_function import (
 )
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+
+
+class OfflineFeatureTableSignature(FeatureByteBaseModel):
+    """
+    OfflineFeatureTableSignature class
+    """
+
+    catalog_id: PydanticObjectId
+    primary_entity_ids: List[PydanticObjectId]
+    serving_names: List[str]
+    feature_job_setting: Optional[FeatureJobSetting]
+    has_ttl: bool
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.catalog_id,
+                tuple(self.primary_entity_ids),
+                tuple(self.serving_names),
+                self.feature_job_setting,
+                self.has_ttl,
+                self.feature_store_id,
+            )
+        )
 
 
 def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
@@ -85,7 +110,6 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     aggregation_nodes_info: List[AggregationNodeInfo]
 
     # table related info
-    offline_store_table_name: str
     output_column_name: str
     output_dtype: DBVarType
 
@@ -102,6 +126,56 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    @property
+    def table_signature(self) -> Dict[str, Any]:
+        """
+        Signature of the offline store feature table
+
+        Returns
+        -------
+        Dict[str, Any]
+            Signature of the offline store feature table
+        """
+        fjs = self.feature_job_setting.to_seconds() if self.feature_job_setting else None
+        return {
+            "primary_entity_ids": self.primary_entity_ids,
+            "feature_job_setting": fjs,
+            "has_ttl": self.has_ttl,
+        }
+
+    def get_full_table_signature(
+        self,
+        feature_store_id: PydanticObjectId,
+        catalog_id: ObjectId,
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+    ) -> OfflineFeatureTableSignature:
+        """
+        Get full table signature of the offline store feature table
+
+        Parameters
+        ----------
+        feature_store_id: PydanticObjectId
+            Feature store ID
+        catalog_id: ObjectId
+            Catalog ID
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Map from entity id to serving name
+
+        Returns
+        -------
+        OfflineFeatureTableSignature
+        """
+        signature_dict = self.table_signature
+        signature_dict["feature_job_setting"] = self.feature_job_setting
+        return OfflineFeatureTableSignature(
+            **signature_dict,
+            feature_store_id=feature_store_id,
+            catalog_id=catalog_id,
+            serving_names=[
+                entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
+            ],
+        )
 
     @classmethod
     def create_from_graph_node(
@@ -126,7 +200,6 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             graph=graph_node_param.graph,
             node_name=graph_node_param.output_node_name,
             ref_node_name=ref_node_name,
-            offline_store_table_name=graph_node_param.offline_store_table_name,
             aggregation_nodes_info=graph_node_param.aggregation_nodes_info,
             output_column_name=graph_node_param.output_column_name,
             output_dtype=graph_node_param.output_dtype,
@@ -161,7 +234,6 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             graph=graph,
             node_name=node_name,
             ref_node_name=None,
-            offline_store_table_name=metadata.offline_store_table_name,
             aggregation_nodes_info=metadata.aggregation_nodes_info,
             output_column_name=metadata.output_column_name,
             output_dtype=metadata.output_dtype,

@@ -13,6 +13,7 @@ from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
@@ -33,12 +34,19 @@ class BaseStoreInfo(FeatureByteBaseModel):
 
     @classmethod
     @abstractmethod
-    def create(cls, features: List[FeatureModel], feature_store: FeatureStoreModel) -> StoreInfo:
+    def create(
+        cls,
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+    ) -> StoreInfo:
         """
         Create store info for a feature list
 
         Parameters
         ----------
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel]
+            List of offline store feature tables
         features: List[FeatureModel]
             List of features
         feature_store: FeatureStoreModel
@@ -208,17 +216,30 @@ class DataBricksStoreInfo(BaseStoreInfo):
 
     @staticmethod
     def _create_feature_lookups(
-        features: List[FeatureModel], schema_name: str
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
+        features: List[FeatureModel],
+        schema_name: str,
     ) -> List[DataBricksFeatureLookup]:
+        offline_table_map = {
+            offline_store_feature_table.table_signature: offline_store_feature_table
+            for offline_store_feature_table in offline_store_feature_tables
+        }
+
         feature_lookups = []
         table_name_to_feature_lookup = {}
         for feature in features:
+            feature_store_id = feature.tabular_source.feature_store_id
             offline_store_info = feature.offline_store_info
             entity_id_to_serving_name = {
                 info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
             }
             for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
-                table_name = ingest_query.offline_store_table_name
+                table_signature = ingest_query.get_full_table_signature(
+                    feature_store_id=feature_store_id,
+                    catalog_id=feature.catalog_id,
+                    entity_id_to_serving_name=entity_id_to_serving_name,
+                )
+                table_name = offline_table_map[table_signature].full_name
                 timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
 
                 if table_name not in table_name_to_feature_lookup:
@@ -227,7 +248,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         for entity_id in ingest_query.primary_entity_ids
                     ]
                     table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
-                        table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
+                        table_name=f"{schema_name}.{table_name}",
                         lookup_key=lookup_key,
                         timestamp_lookup_key=timestamp_lookup_key,
                         lookback_window=None,
@@ -248,7 +269,10 @@ class DataBricksStoreInfo(BaseStoreInfo):
 
     @classmethod
     def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+        cls,
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
     ) -> "DataBricksStoreInfo":
         exclude_columns = set()
         entity_id_to_column_spec = {}
@@ -285,7 +309,9 @@ class DataBricksStoreInfo(BaseStoreInfo):
         feature_specs: List[
             Union[DataBricksFeatureLookup, DataBricksFeatureFunction]
         ] = cls._create_feature_lookups(
-            features, fully_qualified_schema_name
+            offline_store_feature_tables,
+            features,
+            fully_qualified_schema_name,
         ) + cls._create_feature_functions(
             features, fully_qualified_schema_name
         )

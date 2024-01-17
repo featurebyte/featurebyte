@@ -42,6 +42,7 @@ from featurebyte.models.entity_lookup_feature_table import (
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.offline_store_ingest_query import (
     OfflineStoreEntityInfo,
     OfflineStoreIngestQueryGraph,
@@ -285,6 +286,7 @@ class OfflineStoreTableBuilder:
 
     @staticmethod
     def create_offline_store_tables(
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
@@ -296,6 +298,8 @@ class OfflineStoreTableBuilder:
 
         Parameters
         ----------
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel]
+            List of offline store feature table models
         features: List[FeatureModel]
             List of featurebyte feature models
         feature_lists: List[FeatureListModel]
@@ -312,19 +316,29 @@ class OfflineStoreTableBuilder:
         List[OfflineStoreTable]
             List of offline store tables
         """
+        table_signature_to_table = {
+            table.table_signature: table for table in offline_store_feature_tables
+        }
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
         for feature in features:
             offline_ingest_query_graphs = (
                 feature.offline_store_info.extract_offline_store_ingest_query_graphs()
             )
             for ingest_query_graph in offline_ingest_query_graphs:
-                table_name = ingest_query_graph.offline_store_table_name
-                offline_table_key_to_ingest_query_graphs[table_name].append(ingest_query_graph)
+                table_signature = ingest_query_graph.get_full_table_signature(
+                    feature_store_id=feature.tabular_source.feature_store_id,
+                    catalog_id=feature.catalog_id,
+                    entity_id_to_serving_name=entity_id_to_serving_name,
+                )
+                offline_table_key_to_ingest_query_graphs[table_signature].append(ingest_query_graph)
 
         offline_store_tables = []
-        for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
+        for (
+            table_signature,
+            ingest_query_graphs,
+        ) in offline_table_key_to_ingest_query_graphs.items():
             offline_store_table = OfflineStoreTable.create(
-                table_name=table_name,
+                table_name=table_signature_to_table[table_signature].full_name,
                 ingest_query_graphs=ingest_query_graphs,
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
@@ -456,21 +470,27 @@ class FeastAssetCreator:
 
     @staticmethod
     def create_feast_on_demand_feature_views(
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
         features: List[FeatureModel],
         name_to_feast_feature_view: Dict[str, FeastFeatureView],
         name_to_feast_request_source: Dict[str, FeastRequestSource],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
     ) -> List[FeastOnDemandFeatureView]:
         """
         Create feast on demand feature views based on the features
 
         Parameters
         ----------
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel]
+            List of offline store feature table models
         features: List[FeatureModel]
             List of featurebyte feature models
         name_to_feast_feature_view: Dict[str, FeastFeatureView]
             Mapping from feast feature view name to feast feature view
         name_to_feast_request_source: Dict[str, FeastRequestSource]
             Mapping from feast request source name to feast request source
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Mapping from entity id to serving name
 
         Returns
         -------
@@ -478,6 +498,9 @@ class FeastAssetCreator:
             List of feast on demand feature views
         """
         on_demand_feature_views: List[FeastOnDemandFeatureView] = []
+        table_signature_to_model = {
+            table.table_signature: table for table in offline_store_feature_tables
+        }
         for feature in features:
             if not feature.offline_store_info.is_decomposed:
                 assert feature.offline_store_info.metadata is not None
@@ -485,9 +508,11 @@ class FeastAssetCreator:
                     continue
 
             on_demand_feature_view = OnDemandFeatureViewConstructor.create(
+                table_signature_to_model=table_signature_to_model,
                 feature_model=feature,
                 name_to_feast_feature_view=name_to_feast_feature_view,
                 name_to_feast_request_source=name_to_feast_request_source,
+                entity_id_to_serving_name=entity_id_to_serving_name,
             )
             on_demand_feature_views.append(on_demand_feature_view)
         return on_demand_feature_views
@@ -639,6 +664,7 @@ class FeastRegistryBuilder:
         feature_store: FeatureStoreModel,
         online_store: Optional[OnlineStoreModel],
         entities: List[EntityModel],
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
@@ -655,6 +681,8 @@ class FeastRegistryBuilder:
             Online store model
         entities: List[EntityModel]
             List of featurebyte entity models
+        offline_store_feature_tables: List[OfflineStoreFeatureTableModel]
+            List of offline store feature table models
         features: List[FeatureModel]
             List of featurebyte feature models
         feature_lists: List[FeatureListModel]
@@ -670,10 +698,12 @@ class FeastRegistryBuilder:
         """
         EntityFeatureChecker.check_missing_entities(entities, features)
         EntityFeatureChecker.check_missing_features(features, feature_lists)
+        entity_id_to_serving_name = {entity.id: entity.serving_names[0] for entity in entities}
         offline_store_tables = OfflineStoreTableBuilder.create_offline_store_tables(
+            offline_store_feature_tables=offline_store_feature_tables,
             features=features,
             feature_lists=feature_lists,
-            entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
+            entity_id_to_serving_name=entity_id_to_serving_name,
             feature_store=feature_store,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
@@ -712,9 +742,11 @@ class FeastRegistryBuilder:
             features
         )
         on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
+            offline_store_feature_tables=offline_store_feature_tables,
             features=features,
             name_to_feast_feature_view=name_to_feast_feature_view,
             name_to_feast_request_source=name_to_feast_request_source,
+            entity_id_to_serving_name=entity_id_to_serving_name,
         )
         feast_feature_services = FeastAssetCreator.create_feast_feature_services(
             feature_lists=feature_lists,

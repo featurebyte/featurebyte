@@ -13,11 +13,9 @@ from featurebyte.common.validator import version_validator
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT, ONLINE_FEATURE_REQUEST_ROW_LIMIT
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature_list import (
-    FeatureCluster,
-    FeatureListModel,
-    FeatureReadinessDistribution,
-)
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
+from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list_store_info import StoreInfo
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.feature_or_target import ComputeRequest
@@ -145,6 +143,7 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     deployed: Optional[bool]
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
+    store_info: Optional[StoreInfo]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

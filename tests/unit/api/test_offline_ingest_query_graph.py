@@ -218,18 +218,18 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = request_col + (request_col - request_col)
+        feat = request_col + (request_col - request_col)
+        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         feat_2 = pd.Series(
             np.where(
-                pd.isna(((feat_1 - feat).dt.seconds // 86400))
+                pd.isna(((feat - feat_1).dt.seconds // 86400))
                 | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat_1 - feat).dt.seconds // 86400)
+                ((feat - feat_1).dt.seconds // 86400)
                 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat_1 - feat).dt.seconds // 86400).index,
+            index=((feat - feat_1).dt.seconds // 86400).index,
         )
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -577,10 +577,10 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
 
     def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
         # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
+        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -591,11 +591,11 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_1)
+        feat_4 = get_relative_frequency(feat_3, key=col_2)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
@@ -679,9 +679,12 @@ def test_databricks_specs(
     non_time_based_feature,
     composite_feature,
     latest_event_timestamp_feature,
-    catalog_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """Test databricks specs"""
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+
     req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     req_col_feature.name = "req_col_feature"
     features = [float_feature, non_time_based_feature, composite_feature, req_col_feature]
@@ -689,8 +692,11 @@ def test_databricks_specs(
         feature.save()
 
     feature_list = FeatureList(features, name="feature_list")
+    feature_list.save()
+
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     with mock.patch(
-        "featurebyte.service.feature_list.FeatureStoreService.get_document", new_callable=AsyncMock
+        "featurebyte.service.deploy.FeatureStoreService.get_document", new_callable=AsyncMock
     ) as mock_get_document:
         # mock the feature store service to return the databricks feature store
         feature_store = FeatureStoreModel(
@@ -706,7 +712,7 @@ def test_databricks_specs(
             ),
         )
         mock_get_document.return_value = feature_store
-        feature_list.save()
+        deployment.enable()
 
     store_info = feature_list.cached_model.store_info
     expected = """
@@ -736,7 +742,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -748,7 +754,7 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.cat2_transaction_id_1d",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -763,8 +769,8 @@ def test_databricks_specs(
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "x_1": "__feature_V240103__part0",
-                "x_2": "__feature_V240103__part1",
+                "x_1": "__feature_V240103__part1",
+                "x_2": "__feature_V240103__part0",
             },
             output_name="feature",
         ),
@@ -834,7 +840,6 @@ def test_databricks_specs(
     )
     """
     replace_pairs = [
-        ("[CATALOG_ID]", str(catalog_id)),
         ("[FEATURE_ID1]", str(composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_feature.cached_model.id)),
     ]

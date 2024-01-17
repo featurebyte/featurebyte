@@ -1,15 +1,15 @@
 SELECT
   *
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"
+FROM "cust_id_30m"
 LIMIT 1;
 
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" ADD COLUMN "sum_30m_V220101" FLOAT;
+ALTER TABLE "cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
 
 SELECT
   MAX("__feature_timestamp") AS RESULT
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db";
+FROM "cat1_cust_id_30m";
 
-MERGE INTO "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" AS offline_store_table USING (
+MERGE INTO "cust_id_30m" AS offline_store_table USING (
   SELECT
     "cust_id",
     "sum_30m_V220101"

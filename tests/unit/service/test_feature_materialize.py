@@ -240,9 +240,7 @@ async def test_scheduled_materialize_features(
         _, kwargs = mock_materialize_partial.call_args
         _ = kwargs.pop("feature_store")
         feature_view = kwargs.pop("feature_view")
-        assert (
-            feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"
-        )
+        assert feature_view.name == "cat1_cust_id_30m"
         assert kwargs == {
             "columns": [f"sum_30m_{get_version()}"],
             "start_date": None,
@@ -283,8 +281,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     _, kwargs = mock_materialize_partial.call_args
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
-    catalog_id = app_container.catalog_id
-    assert feature_view.name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
+    assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
         "columns": [f"sum_30m_{get_version()}"],
         "start_date": datetime(2022, 1, 1, 0, 0),
@@ -335,7 +332,7 @@ async def test_initialize_new_columns__table_does_not_exist(
         _, kwargs = mock_materialize_partial.call_args
         _ = kwargs.pop("feature_store")
         feature_view = kwargs.pop("feature_view")
-        assert feature_view.name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
+        assert feature_view.name == "cat1_cust_id_30m"
         assert kwargs == {
             "columns": [f"sum_30m_{get_version()}"],
             "end_date": datetime(2022, 1, 1, 0, 0),
@@ -381,9 +378,8 @@ async def test_initialize_new_columns__table_exists(
 
     _, kwargs = mock_materialize_partial.call_args
     _ = kwargs.pop("feature_store")
-    catalog_id = app_container.catalog_id
     feature_view = kwargs.pop("feature_view")
-    assert feature_view.name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
+    assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 10, 15, 10, 0, 0),

@@ -57,7 +57,6 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
     extract_dtype_from_graph,
-    get_offline_store_table_name,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -500,14 +499,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                     None,
                 )
             )
-            table_name = get_offline_store_table_name(
-                primary_entity_serving_names=[
-                    entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
-                ],
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-                catalog_id=self.catalog_id,
-            )
 
             assert len(self.entity_ids) == len(
                 self.entity_dtypes
@@ -517,7 +508,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 aggregation_nodes_info=self._extract_aggregation_nodes_info(),
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
-                offline_store_table_name=table_name,
                 output_column_name=self.versioned_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,

@@ -5,12 +5,10 @@ from typing import Any, Dict, List, Optional, Set
 
 from dataclasses import dataclass
 
-from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import (
@@ -26,48 +24,6 @@ from featurebyte.query_graph.transform.decompose_point import (
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
-
-
-def get_offline_store_table_name(
-    primary_entity_serving_names: List[str],
-    feature_job_setting: Optional[FeatureJobSetting],
-    has_ttl: bool,
-    catalog_id: PydanticObjectId,
-) -> str:
-    """
-    Get offline store table name
-
-    Parameters
-    ----------
-    primary_entity_serving_names: List[str]
-        Primary entity serving names
-    feature_job_setting: Optional[FeatureJobSetting]
-        Feature job setting
-    has_ttl: bool
-        Whether the offline store table has time-to-live property or not
-    catalog_id: PydanticObjectId
-        Catalog id
-
-    Returns
-    -------
-    str
-        Offline store table name
-    """
-    if primary_entity_serving_names:
-        entity_part = "_".join(primary_entity_serving_names)
-        table_name = sanitize_identifier(f"fb_entity_{entity_part}")
-    else:
-        table_name = "fb_entity_overall"
-
-    if feature_job_setting:
-        fjs = feature_job_setting.to_seconds()
-        frequency = fjs["frequency"]
-        time_modulo_frequency = fjs["time_modulo_frequency"]
-        blind_spot = fjs["blind_spot"]
-        table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
-    if has_ttl:
-        table_name = f"{table_name}_ttl"
-    return f"{table_name}_{catalog_id}"
 
 
 def extract_dtype_from_graph(
@@ -286,18 +242,11 @@ class OfflineStoreIngestQueryGraphTransformer(
             for entity_id in aggregation_info.primary_entity_ids
         ]
         feature_job_setting = feature_job_settings[0] if feature_job_settings else None
-        offline_store_table_name = get_offline_store_table_name(
-            primary_entity_serving_names=primary_entity_serving_names,
-            feature_job_setting=feature_job_setting,
-            has_ttl=aggregation_info.has_ttl_agg_type,
-            catalog_id=catalog_id,
-        )
         output_dtype = extract_dtype_from_graph(graph=subgraph, output_node=subgraph_output_node)
         parameters = {
             "aggregation_nodes_info": agg_nodes_info,
             "feature_job_setting": feature_job_setting,
             "has_ttl": aggregation_info.has_ttl_agg_type,
-            "offline_store_table_name": offline_store_table_name,
             "output_dtype": output_dtype,
         }
         return parameters

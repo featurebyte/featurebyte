@@ -20,7 +20,10 @@ from featurebyte.models.offline_store_feature_table import (
     FeaturesUpdate,
     OfflineStoreFeatureTableModel,
 )
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineFeatureTableSignature,
+    OfflineStoreIngestQueryGraph,
+)
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
@@ -49,13 +52,16 @@ class OfflineIngestGraphContainer:
     This helper class breaks FeatureModel objects into groups by offline store feature table name.
     """
 
-    offline_store_table_name_to_features: Dict[str, List[FeatureModel]]
-    offline_store_table_name_to_graphs: Dict[str, List[OfflineStoreIngestQueryGraph]]
+    table_signature_to_features: Dict[OfflineFeatureTableSignature, List[FeatureModel]]
+    table_signature_to_graphs: Dict[
+        OfflineFeatureTableSignature, List[OfflineStoreIngestQueryGraph]
+    ]
 
     @classmethod
     async def build(
         cls,
         features: List[FeatureModel],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
     ) -> OfflineIngestGraphContainer:
         """
         Build OfflineIngestGraphContainer
@@ -64,6 +70,8 @@ class OfflineIngestGraphContainer:
         ----------
         features : List[FeatureModel]
             List of features
+        entity_id_to_serving_name : Dict[PydanticObjectId, str]
+            Mapping from entity id to serving name
 
         Returns
         -------
@@ -75,53 +83,64 @@ class OfflineIngestGraphContainer:
             all_feature_entity_ids.update(feature.entity_ids)
 
         # Group features by offline store feature table name
-        offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
-        offline_store_table_name_to_features = defaultdict(list)
-        offline_store_table_name_to_graphs = defaultdict(list)
+        table_signature_to_feature_ids: dict[
+            OfflineFeatureTableSignature, set[ObjectId]
+        ] = defaultdict(set)
+        table_signature_to_features = defaultdict(list)
+        table_signature_to_graphs = defaultdict(list)
         for feature in features:
-            offline_ingest_graphs = (
-                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
-            )
+            feature_store_id = feature.tabular_source.feature_store_id
+            store_info = feature.offline_store_info
 
-            for offline_ingest_graph in offline_ingest_graphs:
-                table_name = offline_ingest_graph.offline_store_table_name
-                if feature.id not in offline_store_table_name_to_feature_ids[table_name]:
-                    offline_store_table_name_to_feature_ids[table_name].add(feature.id)
-                    offline_store_table_name_to_features[table_name].append(feature)
-                offline_store_table_name_to_graphs[table_name].append(offline_ingest_graph)
+            for offline_ingest_graph in store_info.extract_offline_store_ingest_query_graphs():
+                table_signature = offline_ingest_graph.get_full_table_signature(
+                    feature_store_id=feature_store_id,
+                    catalog_id=feature.catalog_id,
+                    entity_id_to_serving_name=entity_id_to_serving_name,
+                )
+
+                if feature.id not in table_signature_to_feature_ids[table_signature]:
+                    table_signature_to_feature_ids[table_signature].add(feature.id)
+                    table_signature_to_features[table_signature].append(feature)
+                table_signature_to_graphs[table_signature].append(offline_ingest_graph)
+
+                table_signature = offline_ingest_graph.table_signature
+                table_signature["catalog_id"] = feature.catalog_id
 
         return cls(
-            offline_store_table_name_to_features=offline_store_table_name_to_features,
-            offline_store_table_name_to_graphs=offline_store_table_name_to_graphs,
+            table_signature_to_features=table_signature_to_features,
+            table_signature_to_graphs=table_signature_to_graphs,
         )
 
     def get_offline_ingest_graphs(
-        self, feature_table_name: str
+        self, table_signature: OfflineFeatureTableSignature
     ) -> List[OfflineStoreIngestQueryGraph]:
         """
         Get offline ingest graphs by offline store feature table name
 
         Parameters
         ----------
-        feature_table_name: str
-            Offline store feature table name
+        table_signature : OfflineFeatureTableSignature
+            Offline store feature table signature
 
         Returns
         -------
         List[OfflineStoreIngestQueryGraph]
         """
-        return self.offline_store_table_name_to_graphs[feature_table_name]
+        return self.table_signature_to_graphs[table_signature]
 
-    def iterate_features_by_table_name(self) -> Iterable[Tuple[str, List[FeatureModel]]]:
+    def iterate_features_by_table_signature(
+        self,
+    ) -> Iterable[Tuple[OfflineFeatureTableSignature, List[FeatureModel]]]:
         """
-        Iterate features by offline store feature table name
+        Iterate features by offline store feature table signature
 
         Yields
         ------
-        Tuple[str, List[FeatureModel]]
-            Tuple of offline store feature table name and list of features
+        Tuple[OfflineFeatureTableSignature, List[FeatureModel]]
+            Tuple of offline store feature table signature and list of features
         """
-        for table_name, features in self.offline_store_table_name_to_features.items():
+        for table_name, features in self.table_signature_to_features.items():
             yield table_name, features
 
 
@@ -176,23 +195,29 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         features: List[FeatureModel]
             Features to be enabled for online serving
         """
-        ingest_graph_container = await OfflineIngestGraphContainer.build(features)
+        entity_ids = set()
+        for feature in features:
+            entity_ids.update(feature.entity_ids)
         feature_lists = await self._get_online_enabled_feature_lists()
 
-        new_tables = []
-        for (
-            offline_store_table_name,
-            offline_store_table_features,
-        ) in ingest_graph_container.iterate_features_by_table_name():
-            feature_table_dict = await self._get_compatible_existing_feature_table(
-                table_name=offline_store_table_name,
-            )
+        entity_id_to_serving_name = {}
+        async for entity_model in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(entity_ids)}}
+        ):
+            entity_id_to_serving_name[entity_model.id] = entity_model.serving_names[0]
 
+        container = await OfflineIngestGraphContainer.build(features, entity_id_to_serving_name)
+        new_tables = []
+        table_init_flag_pairs = []
+        for table_signature, features in container.iterate_features_by_table_signature():
+            feature_table_dict = await self._get_compatible_existing_feature_table(
+                table_signature=table_signature
+            )
             if feature_table_dict is not None:
                 # update existing table
                 feature_ids = feature_table_dict["feature_ids"][:]
                 feature_ids_set = set(feature_ids)
-                for feature in offline_store_table_features:
+                for feature in features:
                     if feature.id not in feature_ids_set:
                         feature_ids.append(feature.id)
                 if feature_ids != feature_table_dict["feature_ids"]:
@@ -206,12 +231,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_model = None
             else:
                 # create new table
-                offline_ingest_graph = ingest_graph_container.get_offline_ingest_graphs(
-                    feature_table_name=offline_store_table_name
+                offline_ingest_graph = container.get_offline_ingest_graphs(
+                    table_signature=table_signature
                 )[0]
                 feature_table_model = await self._construct_offline_store_feature_table_model(
-                    feature_table_name=offline_store_table_name,
-                    feature_ids=[feature.id for feature in offline_store_table_features],
+                    feature_ids=[feature.id for feature in features],
                     primary_entity_ids=offline_ingest_graph.primary_entity_ids,
                     has_ttl=offline_ingest_graph.has_ttl,
                     feature_job_setting=offline_ingest_graph.feature_job_setting,
@@ -219,20 +243,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
                 new_tables.append(feature_table_model)
 
-            if feature_table_model is not None:
-                # Note: might need to defer updating feast registry till initialization is done to
-                # prevent concurrency issues (scheduled job started while new column's
-                # initialization is still in progress)
-                await self._create_or_update_feast_registry(feature_lists)
-                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
-                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
-                    feature_table_model
-                )
-            else:
-                assert feature_table_dict is not None
+            if feature_table_model is None:
                 feature_table_model = await self.offline_store_feature_table_service.get_document(
                     feature_table_dict["_id"],
                 )
+            table_init_flag_pairs.append((feature_table_model, feature_table_dict is None))
 
             new_tables.extend(
                 await self._create_or_update_entity_lookup_feature_tables(
@@ -246,11 +261,18 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             new_features=features,
         )
 
-        if not features:
-            # If all the features are already online enabled, i.e. the offline feature store tables
-            # are up-to-date. But registry still needs to be updated because there could be a new
-            # feature service that needs to be created.
-            await self._create_or_update_feast_registry(feature_lists)
+        # Initialize new columns and start materialization jobs for new tables
+        for table, init_flag in table_init_flag_pairs:
+            if init_flag:
+                await self.feature_materialize_service.initialize_new_columns(table)
+                await self.feature_materialize_scheduler_service.start_job_if_not_exist(table)
+
+            await self._create_or_update_entity_lookup_feature_tables(table, feature_lists)
+
+        # If all the features are already online enabled, i.e. the offline feature store tables
+        # are up-to-date. But registry still needs to be updated because there could be a new
+        # feature service that needs to be created.
+        await self._create_or_update_feast_registry(feature_lists)
 
     async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
@@ -298,10 +320,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return []
 
     async def _get_compatible_existing_feature_table(
-        self, table_name: str
+        self, table_signature: OfflineFeatureTableSignature
     ) -> Optional[Dict[str, Any]]:
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={"name": table_name},
+            query_filter=table_signature.dict(),
         )
         if feature_table_data["total"] > 0:
             return cast(Dict[str, Any], feature_table_data["data"][0])
@@ -313,7 +335,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         updated_feature_ids: List[ObjectId],
     ) -> OfflineStoreFeatureTableModel:
         feature_table_model = await self._construct_offline_store_feature_table_model(
-            feature_table_name=feature_table_dict["name"],
             feature_ids=updated_feature_ids,
             primary_entity_ids=feature_table_dict["primary_entity_ids"],
             has_ttl=feature_table_dict["has_ttl"],
@@ -329,7 +350,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
     async def _construct_offline_store_feature_table_model(
         self,
-        feature_table_name: str,
         feature_ids: List[ObjectId],
         primary_entity_ids: List[PydanticObjectId],
         has_ttl: bool,
@@ -358,7 +378,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
 
         return await self.offline_store_feature_table_construction_service.get_offline_store_feature_table_model(
-            feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
             aggregate_result_table_names=required_aggregate_result_tables,
             primary_entities=primary_entities,

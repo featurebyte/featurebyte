@@ -1026,10 +1026,11 @@ def test_as_feature__from_view_column(
     offline_store_info = feature.cached_model.offline_store_info
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_graphs) == 1
-    assert (
-        ingest_graphs[0].offline_store_table_name
-        == f"fb_entity_item_id_fjs_86400_0_0_{feature.catalog_id}"
-    )
+    assert ingest_graphs[0].table_signature == {
+        "primary_entity_ids": [item_entity.id],
+        "feature_job_setting": {"frequency": 86400, "time_modulo_frequency": 0, "blind_spot": 0},
+        "has_ttl": False,
+    }
 
 
 def test_sdk_code_generation(saved_item_table, saved_event_table, update_fixtures):

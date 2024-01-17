@@ -13,6 +13,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.session_manager import SessionManagerService
 
 
@@ -48,10 +49,12 @@ class OfflineStoreFeatureTableCommentService:
         entity_service: EntityService,
         session_manager_service: SessionManagerService,
         feature_namespace_service: FeatureNamespaceService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
     ):
         self.entity_service = entity_service
         self.session_manager_service = session_manager_service
         self.feature_namespace_service = feature_namespace_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
 
     async def apply_comments(
         self,
@@ -140,17 +143,35 @@ class OfflineStoreFeatureTableCommentService:
         """
         # Mapping to from table name and column name to comments
         comments: Dict[Tuple[str, str], str] = {}
+        entity_id_to_serving_name = {}
 
         for feature in feature_models:
             feature_description = (
                 await self.feature_namespace_service.get_document(feature.feature_namespace_id)
             ).description
+            feature_store_id = feature.tabular_source.feature_store_id
 
             offline_ingest_graphs = (
                 feature.offline_store_info.extract_offline_store_ingest_query_graphs()
             )
             for offline_ingest_graph in offline_ingest_graphs:
-                table_name = offline_ingest_graph.offline_store_table_name
+                for entity_id in offline_ingest_graph.primary_entity_ids:
+                    if entity_id not in entity_id_to_serving_name:
+                        entity = await self.entity_service.get_document(entity_id)
+                        entity_id_to_serving_name[entity_id] = entity.serving_names[0]
+
+                offline_store_table = (
+                    await self.offline_store_feature_table_service.get_existing_document(
+                        table_signature=offline_ingest_graph.get_full_table_signature(
+                            feature_store_id=feature_store_id,
+                            catalog_id=feature.catalog_id,
+                            entity_id_to_serving_name=entity_id_to_serving_name,
+                        )
+                    )
+                )
+                assert offline_store_table is not None
+                table_name = offline_store_table.full_name
+
                 if feature.offline_store_info.is_decomposed:
                     comment = (
                         f"This intermediate feature is used to compute the feature"

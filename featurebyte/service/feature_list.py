@@ -12,14 +12,11 @@ from bson.objectid import ObjectId
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.deployment import FeastIntegrationSettings
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import (
-    FeatureCluster,
-    FeatureListModel,
-    FeatureReadinessDistribution,
-)
+from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -37,6 +34,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.validator.entity_relationship_validator import (
     FeatureListEntityRelationshipValidator,
@@ -112,6 +110,7 @@ class FeatureListService(
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_service: FeatureService,
         feature_list_namespace_service: FeatureListNamespaceService,
         block_modification_handler: BlockModificationHandler,
@@ -128,6 +127,7 @@ class FeatureListService(
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service
         self.relationship_info_service = relationship_info_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.entity_serving_names_service = entity_serving_names_service
@@ -241,6 +241,17 @@ class FeatureListService(
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
+    async def _get_offline_store_feature_tables(
+        self, features: List[FeatureModel]
+    ) -> List[OfflineStoreFeatureTableModel]:
+        feature_ids = [feature.id for feature in features]
+        output = []
+        async for table in self.offline_store_feature_table_service.list_documents_iterator(
+            query_filter={"feature_ids": {"$in": feature_ids}}
+        ):
+            output.append(table)
+        return output
+
     async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
@@ -272,14 +283,6 @@ class FeatureListService(
                 "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
             }
         )
-
-        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-            feature_store = await self.feature_store_service.get_document(
-                document_id=feature_data["feature_store_id"]
-            )
-            document.initialize_store_info(
-                features=feature_data["features"], feature_store=feature_store
-            )
 
         async with self.persistent.start_transaction() as session:
             insert_id = await session.insert_one(

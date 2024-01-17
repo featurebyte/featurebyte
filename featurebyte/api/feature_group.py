@@ -38,8 +38,9 @@ from featurebyte.core.series import Series
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource

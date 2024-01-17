@@ -168,7 +168,6 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     aggregation_nodes_info: List[AggregationNodeInfo]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
-    offline_store_table_name: str
     output_dtype: DBVarType
     primary_entity_dtypes: List[DBVarType]
 

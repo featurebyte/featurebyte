@@ -3,12 +3,13 @@ OfflineStoreFeatureTableModel class
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
+from pydantic import Field, root_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -18,11 +19,14 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.models.base_feature_or_target_table import FeatureCluster
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_universe import EntityUniverseModel
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureCluster
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineFeatureTableSignature,
+    OfflineStoreIngestQueryGraph,
+)
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -35,6 +39,8 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     name: str = Field(default_factory=str)
+    name_prefix: Optional[str] = Field(default=None)
+    name_suffix: Optional[str] = Field(default=None)
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
@@ -47,6 +53,63 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
     entity_lookup_info: Optional[EntityRelationshipInfo]
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @root_validator
+    @classmethod
+    def _set_feature_store_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set feature_store_id
+
+        Parameters
+        ----------
+        values : Dict[str, Any]
+            Values
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        if not values.get("feature_store_id", None) and values.get("feature_cluster"):
+            values["feature_store_id"] = values["feature_cluster"].feature_store_id
+        return values
+
+    @property
+    def full_name(self) -> str:
+        """
+        Get full name of the feature table
+
+        Returns
+        -------
+        str
+        """
+        full_name = ""
+        if self.name_prefix:
+            full_name += self.name_prefix + "_"
+
+        full_name += self.name
+
+        if self.name_suffix:
+            full_name += "_" + self.name_suffix
+        return full_name
+
+    @property
+    def table_signature(self) -> OfflineFeatureTableSignature:
+        """
+        Table signature is used to identify the table in the offline store
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return OfflineFeatureTableSignature(
+            catalog_id=self.catalog_id,
+            primary_entity_ids=self.primary_entity_ids,
+            serving_names=self.serving_names,
+            feature_job_setting=self.feature_job_setting,
+            has_ttl=self.has_ttl,
+            feature_store_id=self.feature_store_id,
+        )
 
     def get_basename(self) -> str:
         """
@@ -56,15 +119,25 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         -------
         str
         """
-        # Mongo ObjectId is 12 bytes, which is 24 hex characters
-        # {timestamp-8}{machine_id-6}{pid-4}{counter-6}
-        # characters from 15-20 contains the pid and counter related information
-        name = str(self.catalog_id)[15:21]
-        max_len = 20  # reserving 4 characters for suffix, max table name length is 24
+        # max length of feature table name is 64
+        # reserving 7 characters for prefix (catalog name, `cat<num>_`, num is 1-999)
+        # 3 characters for suffix (count, `_<num>`, num is 1-99
+        max_len = 64 - 7 - 3
+        name = "_no_entity"
         if self.serving_names:
-            serving_names_part = sanitize_identifier(self.serving_names[0])
-            name = f"{name}_{serving_names_part}"
+            # take first 3 serving names and join them with underscore
+            # if serving name is longer than 16 characters, truncate it
+            max_serv_name_len = 16
+            max_serv_num = 3
+            name = sanitize_identifier(
+                "_".join(
+                    serving_name[:max_serv_name_len]
+                    for serving_name in self.serving_names[:max_serv_num]
+                )
+            ).lstrip("_")
+
         if self.feature_job_setting:
+            # take the frequency part of the feature job setting
             max_freq_len = 5
             freq_part = ""
             for component in reversed(range(1, 5)):
@@ -76,17 +149,6 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             keep = max_len - len(freq_part) - 1
             name = f"{name[:keep]}_{freq_part}"
         return name[:max_len]
-
-    def set_name(self, suffix: Optional[str] = None) -> None:
-        """
-        Set name of the feature table
-
-        Parameters
-        ----------
-        suffix : Optional[str]
-            Suffix to be appended to the name
-        """
-        self.name = self.get_basename() + (f"_{suffix}" if suffix else "")
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -109,6 +171,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_job_setting"),
             pymongo.operations.IndexModel("has_ttl"),
             pymongo.operations.IndexModel("entity_lookup_info"),
+            pymongo.operations.IndexModel("feature_store_id"),
         ]
 
 

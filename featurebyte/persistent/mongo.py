@@ -3,9 +3,10 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, cast
+from typing import Any, AsyncIterator, Dict, Iterable, List, Literal, Optional, Tuple, cast
 
 import asyncio
+from asyncio import iscoroutine
 from contextlib import asynccontextmanager
 
 import pymongo
@@ -360,3 +361,40 @@ class MongoDB(Persistent):
         finally:
             if self._session:
                 self._session = None
+
+    async def aggregate_find(
+        self,
+        collection_name: str,
+        pipeline: List[Dict[str, Any]],
+        sort_by: Optional[str] = None,
+        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        page: int = 1,
+        page_size: int = 0,
+    ) -> Tuple[Iterable[Document], int]:
+        output_pipeline: List[Dict[str, Any]] = []
+
+        if sort_by:
+            output_pipeline.append(
+                {
+                    "$sort": {
+                        str(sort_by): pymongo.ASCENDING
+                        if sort_dir == "asc"
+                        else pymongo.DESCENDING,
+                        "_id": pymongo.DESCENDING,
+                    }
+                }
+            )
+
+        if page_size > 0:
+            output_pipeline.extend([{"$skip": page_size * (page - 1)}, {"$limit": page_size}])
+
+        pipeline = pipeline + [
+            {"$facet": {"result": output_pipeline, "total": [{"$count": "count"}]}}
+        ]
+        result = self._db[collection_name].aggregate(pipeline, session=self._session).next()
+        if iscoroutine(result):
+            output = await result
+        else:
+            output = result
+        total = 0 if not output["total"] else output["total"][0]["count"]
+        return output["result"], total

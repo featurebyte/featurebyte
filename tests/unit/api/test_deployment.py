@@ -10,7 +10,6 @@ from freezegun import freeze_time
 
 import featurebyte as fb
 from featurebyte.api.deployment import Deployment
-from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
 

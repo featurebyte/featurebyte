@@ -18,6 +18,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store import OnlineStoreService
 
 
@@ -34,6 +35,7 @@ class FeastRegistryService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_service: FeatureService,
         entity_service: EntityService,
         feature_store_service: FeatureStoreService,
@@ -47,6 +49,7 @@ class FeastRegistryService(
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
         )
+        self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.feature_store_service = feature_store_service
@@ -60,6 +63,12 @@ class FeastRegistryService(
         feature_ids = set()
         for feature_list in data.feature_lists:
             feature_ids.update(feature_list.feature_ids)
+
+        offline_store_feature_tables = []
+        async for table in self.offline_store_feature_table_service.list_documents_iterator(
+            query_filter={"feature_ids": {"$in": list(feature_ids)}}
+        ):
+            offline_store_feature_tables.append(table)
 
         features = []
         entity_ids = set()
@@ -105,6 +114,7 @@ class FeastRegistryService(
             feature_store=feature_store,
             online_store=online_store,
             entities=entities,
+            offline_store_feature_tables=offline_store_feature_tables,
             features=features,
             feature_lists=data.feature_lists,
             project_name=data.project_name,
