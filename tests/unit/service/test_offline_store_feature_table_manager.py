@@ -51,6 +51,7 @@ async def deployed_float_feature(
     _ = mock_update_data_warehouse
     out = await deploy_feature(app_container, float_feature)
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
+    assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return out
 
 
