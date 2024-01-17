@@ -19,7 +19,6 @@ from pydantic import Field, PrivateAttr
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:

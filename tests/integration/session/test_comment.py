@@ -15,7 +15,7 @@ async def registered_table(session):
     """
     Fixture for a registered table
     """
-    table_name = f"table_for_testing_comment_{str(ObjectId())}"
+    table_name = f"test_table_for_comment_{str(ObjectId())}"
     df = pd.DataFrame(
         {
             "a": [1, 2, 3],
@@ -31,7 +31,6 @@ async def registered_table(session):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_comment_table(session: BaseSession, registered_table):
     """
@@ -46,7 +45,6 @@ async def test_comment_table(session: BaseSession, registered_table):
     assert table_details.description == "some comment"
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_comment_column(session: BaseSession, registered_table):
     """

@@ -1,6 +1,7 @@
 """
 Session class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict, Type
