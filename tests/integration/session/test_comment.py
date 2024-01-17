@@ -31,7 +31,7 @@ async def registered_table(session):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_comment_table(session: BaseSession, registered_table):
     """
@@ -46,7 +46,7 @@ async def test_comment_table(session: BaseSession, registered_table):
     assert table_details.description == "some comment"
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_comment_column(session: BaseSession, registered_table):
     """
