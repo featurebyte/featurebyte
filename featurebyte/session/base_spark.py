@@ -18,6 +18,7 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -282,6 +283,20 @@ class BaseSparkSession(BaseSession, ABC):
                     details[column_name] = var_info
 
         return TableDetails(details=details)
+
+    def _format_comment(self, comment: str) -> str:
+        return self.sql_to_string(make_literal_value(comment))
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        formatted_column = self.format_quoted_identifier(column_name)
+        query = f"ALTER TABLE {formatted_table} ALTER COLUMN {formatted_column} COMMENT {self._format_comment(comment)}"
+        await self.execute_query(query)
 
 
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
