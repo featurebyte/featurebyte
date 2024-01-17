@@ -59,6 +59,13 @@ class OfflineStoreFeatureTableCommentService:
     ) -> None:
         """
         Add the provided table or column comments in the data warehouse
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature store model
+        comments:  Sequence[Union[TableComment, ColumnComment]]
+            List of comments to be added
         """
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         for entry in comments:
@@ -72,6 +79,15 @@ class OfflineStoreFeatureTableCommentService:
     ) -> TableComment:
         """
         Generate comment for an offline feature table
+
+        Parameters
+        ----------
+        feature_table_model: OfflineStoreFeatureTableModel
+            Offline store feature table model
+
+        Returns
+        -------
+        TableComment
         """
         primary_entities = await self.entity_service.get_entities(
             set(feature_table_model.primary_entity_ids)
@@ -109,6 +125,15 @@ class OfflineStoreFeatureTableCommentService:
     ) -> List[ColumnComment]:
         """
         Generate comments for columns in offline feature tables corresponding to the features
+
+        Parameters
+        ----------
+        feature_models: List[FeatureModel]
+            Feature models
+
+        Returns
+        -------
+        List[ColumnComment]
         """
         # Mapping to from table name and column name to comments
         comments: Dict[Tuple[str, str], str] = {}
