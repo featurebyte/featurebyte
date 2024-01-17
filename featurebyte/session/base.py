@@ -19,6 +19,7 @@ import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -32,6 +33,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -102,6 +104,13 @@ class BaseSession(BaseModel):
         Type[Exception]
         """
         return self._no_schema_error
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """
+        Returns an adapter instance for the session's source type
+        """
+        return get_sql_adapter(source_type=self.source_type)
 
     async def initialize(self) -> None:
         """
@@ -205,6 +214,62 @@ class BaseSession(BaseModel):
         Returns
         -------
         OrderedDict[str, ColumnSpecWithDescription]
+        """
+
+    @abstractmethod
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        """
+        Add comment to a table
+
+        Parameters
+        ----------
+        table_name: str
+            Name of the table to be commented
+        comment: str
+            Comment to add
+        """
+
+    @abstractmethod
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        """
+        Add comment to a column in a table
+
+        Parameters
+        ----------
+        table_name: str
+            Table name of the column
+        column_name: str
+            Name of the colum to be commented
+        comment: str
+            Comment to add
+        """
+
+    @abstractmethod
+    async def register_table(
+        self,
+        table_name: str,
+        dataframe: pd.DataFrame,
+        temporary: bool = True,
+    ) -> None:
+        """
+        Register a table
+
+        Parameters
+        ----------
+        table_name : str
+            Temp table name
+        dataframe : pd.DataFrame
+            DataFrame to register
+        temporary : bool
+            If True, register a temporary table
+        """
+
+    @classmethod
+    @abstractmethod
+    def is_threadsafe(cls) -> bool:
+        """
+        Whether the session object can be shared across threads. If True, SessionManager will cache
+        the session object once it is created.
         """
 
     async def get_table_details(
@@ -478,26 +543,6 @@ class BaseSession(BaseModel):
             return pd.DataFrame(all_rows, columns=columns)
         return None
 
-    @abstractmethod
-    async def register_table(
-        self,
-        table_name: str,
-        dataframe: pd.DataFrame,
-        temporary: bool = True,
-    ) -> None:
-        """
-        Register a table
-
-        Parameters
-        ----------
-        table_name : str
-            Temp table name
-        dataframe : pd.DataFrame
-            DataFrame to register
-        temporary : bool
-            If True, register a temporary table
-        """
-
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True
     ) -> None:
@@ -556,13 +601,26 @@ class BaseSession(BaseModel):
         )
         await self.execute_query(query)
 
-    @classmethod
-    @abstractmethod
-    def is_threadsafe(cls) -> bool:
+    def format_quoted_identifier(self, identifier_name: str) -> str:
         """
-        Whether the session object can be shared across threads. If True, SessionManager will cache
-        the session object once it is created.
+        Quote an identifier using the session's convention and return the result as a string
+
+        Parameters
+        ----------
+        identifier_name: str
+            Identifier name
+
+        Returns
+        -------
+        str
         """
+        return self.sql_to_string(quoted_identifier(identifier_name))
+
+    def sql_to_string(self, expr: Expression) -> str:
+        """
+        Helper function to convert an Expression to string for the session's source type
+        """
+        return sql_to_string(expr, source_type=self.source_type)
 
 
 class SqlObjectType(StrEnum):

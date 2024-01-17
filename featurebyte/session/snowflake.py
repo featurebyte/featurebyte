@@ -30,6 +30,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
@@ -377,6 +378,20 @@ class SnowflakeSession(BaseSession):
                     .str.replace(r"(\+\d+):(\d+)", r" \1\2", regex=True)
                 )
         return dataframe
+
+    def _format_comment(self, comment: str) -> str:
+        return self.sql_to_string(make_literal_value(comment))
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        formatted_column = self.format_quoted_identifier(column_name)
+        query = f"COMMENT ON COLUMN {formatted_table}.{formatted_column} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
 
 
 class SnowflakeSchemaInitializer(BaseSchemaInitializer):

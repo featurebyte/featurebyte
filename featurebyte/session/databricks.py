@@ -19,6 +19,7 @@ from pydantic import Field, PrivateAttr
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
@@ -172,3 +173,17 @@ class DatabricksSession(BaseSparkSession):
                 for record_batch in arrow_table.to_batches():
                     counter += 1
                     yield record_batch
+
+    def _format_comment(self, comment: str) -> str:
+        return self.sql_to_string(make_literal_value(comment))
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        formatted_column = self.format_quoted_identifier(column_name)
+        query = f"ALTER TABLE {formatted_table} ALTER COLUMN {formatted_column} COMMENT {self._format_comment(comment)}"
+        await self.execute_query(query)
