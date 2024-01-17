@@ -24,7 +24,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
 )
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
@@ -640,12 +640,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         ]
 
         if new_columns:
-            query = sql_to_string(
-                expressions.AlterTable(
-                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                    actions=cls._get_column_defs(feature_table_model, new_columns),
-                ),
-                source_type=session.source_type,
+            adapter = get_sql_adapter(session.source_type)
+            query = adapter.alter_table_add_columns(
+                expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                cls._get_column_defs(feature_table_model, new_columns, adapter),
             )
             await session.execute_query(query)
 
@@ -655,6 +653,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     def _get_column_defs(
         feature_table_model: OfflineStoreFeatureTableModel,
         columns: List[str],
+        adapter: BaseAdapter,
     ) -> List[expressions.ColumnDef]:
         columns_and_types = {}
         for column_name, column_data_type in zip(
@@ -666,7 +665,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         return [
             expressions.ColumnDef(
                 this=quoted_identifier(column_name),
-                kind=expressions.DataType.build(column_data_type),
+                kind=adapter.get_physical_type_from_dtype(column_data_type),
             )
             for column_name, column_data_type in columns_and_types.items()
         ]

@@ -3,7 +3,7 @@ SELECT
 FROM "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"
 LIMIT 1;
 
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"   ADD COLUMN "sum_30m_V220101" FLOAT;
+ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" ADD COLUMN "sum_30m_V220101" FLOAT;
 
 SELECT
   MAX("__feature_timestamp") AS RESULT
