@@ -110,6 +110,10 @@ class BaseSession(BaseModel):
     def adapter(self) -> BaseAdapter:
         """
         Returns an adapter instance for the session's source type
+
+        Returns
+        -------
+        BaseAdapter
         """
         return get_sql_adapter(source_type=self.source_type)
 
@@ -620,6 +624,10 @@ class BaseSession(BaseModel):
     def sql_to_string(self, expr: Expression) -> str:
         """
         Helper function to convert an Expression to string for the session's source type
+
+        Returns
+        -------
+        str
         """
         return sql_to_string(expr, source_type=self.source_type)
 
