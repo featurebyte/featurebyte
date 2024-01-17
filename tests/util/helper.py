@@ -743,6 +743,27 @@ def check_on_demand_feature_code_generation(
                 assert expected.strip() == udf_codes.strip(), udf_codes
 
 
+async def deploy_feature_list(app_container, feature_list_name, feature_ids):
+    """
+    Helper function to deploy a feature list using services
+    """
+    for feature_id in feature_ids:
+        # Update readiness to production ready
+        await app_container.feature_readiness_service.update_feature(
+            feature_id=feature_id, readiness="PRODUCTION_READY", ignore_guardrails=True
+        )
+
+    data = FeatureListServiceCreate(name=feature_list_name, feature_ids=feature_ids)
+    feature_list_model = await app_container.feature_list_service.create_document(data)
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list_model.id,
+        deployment_id=ObjectId(),
+        deployment_name=feature_list_model.name,
+        to_enable_deployment=True,
+    )
+    return feature_list_model
+
+
 async def deploy_feature(
     app_container,
     feature,
@@ -754,28 +775,17 @@ async def deploy_feature(
     """
     assert return_type in {"feature", "feature_list"}
 
-    # Create feature and make production ready
+    # Create feature
     if not feature.saved:
         feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
         await app_container.feature_service.create_document(data=feature_create_payload)
-        await app_container.feature_readiness_service.update_feature(
-            feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
-        )
 
     # Create feature list and deploy
     if feature_list_name_override is None:
         feature_list_name = f"{feature.name}_list"
     else:
         feature_list_name = feature_list_name_override
-    data = FeatureListServiceCreate(name=feature_list_name, feature_ids=[feature.id])
-    feature_list_model = await app_container.feature_list_service.create_document(data)
-    await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list_model.id,
-        deployment_id=ObjectId(),
-        deployment_name=feature_list_model.name,
-        to_enable_deployment=True,
-    )
-
+    feature_list_model = await deploy_feature_list(app_container, feature_list_name, [feature.id])
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)
     return await app_container.feature_list_service.get_document(feature_list_model.id)

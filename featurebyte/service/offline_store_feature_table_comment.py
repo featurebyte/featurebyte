@@ -13,6 +13,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.service.entity import EntityService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.session_manager import SessionManagerService
 
 
@@ -63,9 +64,11 @@ class OfflineStoreFeatureTableCommentService:
         self,
         entity_service: EntityService,
         session_manager_service: SessionManagerService,
+        feature_namespace_service: FeatureNamespaceService,
     ):
         self.entity_service = entity_service
         self.session_manager_service = session_manager_service
+        self.feature_namespace_service = feature_namespace_service
 
     async def apply_comments(
         self,
@@ -118,14 +121,20 @@ class OfflineStoreFeatureTableCommentService:
         comment = ". ".join(sentences) + "."
         return TableComment(table_name=feature_table_model.name, comment=comment)
 
-    @staticmethod
-    def generate_column_comments(feature_models: List[FeatureModel]) -> List[ColumnComment]:
+    async def generate_column_comments(
+        self, feature_models: List[FeatureModel]
+    ) -> List[ColumnComment]:
         """
         Generate comments for columns in offline feature tables corresponding to the features
         """
         # Mapping to from table name and column name to comments
         comments: Dict[Tuple[str, str], str] = {}
+
         for feature in feature_models:
+            feature_description = (
+                await self.feature_namespace_service.get_document(feature.feature_namespace_id)
+            ).description
+
             offline_ingest_graphs = (
                 feature.offline_store_info.extract_offline_store_ingest_query_graphs()
             )
@@ -138,14 +147,14 @@ class OfflineStoreFeatureTableCommentService:
                         {feature.versioned_name}
                         """
                     )
-                    if feature.description is not None:
-                        comment += f" ({feature.description})"
+                    if feature_description is not None:
+                        comment += f" ({feature_description})"
                     comments[(table_name, offline_ingest_graph.output_column_name)] = comment
-                else:
-                    if feature.description is not None:
-                        comments[
-                            (table_name, offline_ingest_graph.output_column_name)
-                        ] = feature.description
+                elif feature_description is not None:
+                    comments[
+                        (table_name, offline_ingest_graph.output_column_name)
+                    ] = feature_description
+
         out = [
             ColumnComment(
                 table_name=table_name,

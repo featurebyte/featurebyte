@@ -528,7 +528,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
             )
         comments.extend(
-            self.offline_store_feature_table_comment_service.generate_column_comments(new_features)
+            await self.offline_store_feature_table_comment_service.generate_column_comments(
+                new_features
+            )
         )
         await self.offline_store_feature_table_comment_service.apply_comments(
             feature_store_model, comments
