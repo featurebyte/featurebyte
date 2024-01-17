@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.common import (
     MISSING_VALUE_REPLACEMENT,
     get_qualified_column_identifier,
     quoted_identifier,
+    sql_to_string,
 )
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
@@ -801,3 +802,32 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         asin_expr = cls._asin_expr(sqrt_expr)
         mult_by_2_expr = expressions.Mul(this=make_literal_value(2), expression=asin_expr)
         return expressions.Mul(this=mult_by_2_expr, expression=make_literal_value(6371))
+
+    @classmethod
+    def alter_table_add_columns(
+        cls,
+        table: expressions.Table,
+        columns: List[expressions.ColumnDef],
+    ) -> str:
+        """
+        Generate a query to add columns to an existing table
+
+        Query is formatted manually because the current version of sqlglot doesn't generate the
+        correct query in all cases.
+
+        Parameters
+        ----------
+        table: expressions.Table
+            Table to alter
+        columns: List[expressions.ColumnDef]
+            List of columns to add
+
+        Returns
+        -------
+        str
+            ALTER sql statement
+        """
+        alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}"
+        tuple_expr = expressions.Tuple(expressions=columns)
+        alter_table_sql += " ADD COLUMNS " + sql_to_string(tuple_expr, source_type=cls.source_type)
+        return alter_table_sql
