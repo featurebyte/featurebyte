@@ -40,14 +40,17 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
 
 @pytest_asyncio.fixture
 async def deployed_float_feature(
-    app_container, float_feature, mock_update_data_warehouse, mock_feature_materialize_service
+    app_container,
+    float_feature,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for deployed float feature
     """
     _ = mock_update_data_warehouse
     out = await deploy_feature(app_container, float_feature)
-    assert mock_feature_materialize_service["initialize_new_columns"].call_count == 1
+    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     return out
 
 
@@ -76,13 +79,13 @@ async def deployed_feature_without_entity(
     app_container,
     feature_without_entity,
     mock_update_data_warehouse,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for deployed feature without entity
     """
     _ = mock_update_data_warehouse
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     return await deploy_feature(app_container, feature_without_entity)
 
 
@@ -91,13 +94,13 @@ async def deployed_scd_lookup_feature(
     app_container,
     scd_lookup_feature,
     mock_update_data_warehouse,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for deployed scd lookup feature
     """
     _ = mock_update_data_warehouse
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     return await deploy_feature(app_container, scd_lookup_feature)
 
 
@@ -106,13 +109,13 @@ async def deployed_aggregate_asat_feature(
     app_container,
     aggregate_asat_feature,
     mock_update_data_warehouse,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for deployed aggregate asat feature
     """
     _ = mock_update_data_warehouse
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     return await deploy_feature(app_container, aggregate_asat_feature)
 
 
@@ -121,13 +124,13 @@ async def deployed_item_aggregate_feature(
     app_container,
     non_time_based_feature,
     mock_update_data_warehouse,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for deployed item aggregate feature
     """
     _ = mock_update_data_warehouse
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     return await deploy_feature(app_container, non_time_based_feature)
 
 
@@ -137,13 +140,13 @@ async def deployed_complex_feature(
     non_time_based_feature,
     feature_without_entity,
     mock_update_data_warehouse,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
     Fixture for a complex feature with multiple parts in the same feature table
     """
     _ = mock_update_data_warehouse
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     f1 = non_time_based_feature
     f2 = feature_without_entity
     new_feature = f1 + f2 + f1
@@ -350,7 +353,7 @@ async def test_feature_table_undeploy(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
     update_fixtures,
 ):
     """
@@ -404,7 +407,7 @@ async def test_feature_table_undeploy(
     )
 
     # Check drop_columns called
-    args, _ = mock_feature_materialize_service["drop_columns"].call_args
+    args, _ = mock_offline_store_feature_manager_dependencies["drop_columns"].call_args
     assert args[0].name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
     assert args[1] == ["sum_1d_V231227"]
 
@@ -414,7 +417,7 @@ async def test_feature_table_undeploy(
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
-    args, _ = mock_feature_materialize_service["drop_table"].call_args
+    args, _ = mock_offline_store_feature_manager_dependencies["drop_table"].call_args
     assert args[0].name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
     await check_feast_registry(
         app_container,

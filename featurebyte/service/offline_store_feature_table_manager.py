@@ -238,24 +238,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
             )
 
-        # TODO: pass this around?
-        catalog_model = await self.catalog_service.get_document(self.catalog_id)
-        feature_store_model = await self.feature_store_service.get_document(
-            catalog_model.default_feature_store_ids[0]
+        # Add comments to newly created tables and columns
+        await self._update_table_and_column_comments(
+            new_tables=new_tables,
+            new_features=features,
         )
-        comments = []
-        for feature_table_model in new_tables:
-            comments.append(
-                await self.offline_store_feature_table_comment_service.generate_table_comment(
-                    feature_table_model,
-                )
-            )
-        comments.extend(
-            self.offline_store_feature_table_comment_service.generate_column_comments(features)
-        )
-        await self.offline_store_feature_table_comment_service.apply_comments(
-            feature_store_model, comments
-        )
+
         if not features:
             # If all the features are already online enabled, i.e. the offline feature store tables
             # are up-to-date. But registry still needs to be updated because there could be a new
@@ -522,3 +510,26 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_table_id,
         )
         await self.offline_store_feature_table_service.delete_document(feature_table_id)
+
+    async def _update_table_and_column_comments(
+        self,
+        new_tables: List[OfflineStoreFeatureTableModel],
+        new_features: List[FeatureModel],
+    ) -> None:
+        catalog_model = await self.catalog_service.get_document(self.catalog_id)
+        feature_store_model = await self.feature_store_service.get_document(
+            catalog_model.default_feature_store_ids[0]
+        )
+        comments = []
+        for feature_table_model in new_tables:
+            comments.append(
+                await self.offline_store_feature_table_comment_service.generate_table_comment(
+                    feature_table_model,
+                )
+            )
+        comments.extend(
+            self.offline_store_feature_table_comment_service.generate_column_comments(new_features)
+        )
+        await self.offline_store_feature_table_comment_service.apply_comments(
+            feature_store_model, comments
+        )

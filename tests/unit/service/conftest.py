@@ -1048,18 +1048,27 @@ def feature_materialize_service_fixture(app_container):
     return app_container.feature_materialize_service
 
 
-@pytest.fixture(name="mock_feature_materialize_service")
-def mock_feature_materialize_service_fixture():
+@pytest.fixture(name="mock_offline_store_feature_manager_dependencies")
+def mock_offline_store_feature_manager_dependencies_fixture():
     """
-    Fixture to mock FeatureMaterializeService's methods where the actual queries are executed
+    Fixture to mock dependencies of offline_store_feature_table_manager where database session is
+    required and the actual queries will be executed
     """
     patched = {}
-    service_name = (
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService"
-    )
-    for method_name in ["initialize_new_columns", "drop_columns", "drop_table"]:
-        patcher = patch(f"{service_name}.{method_name}")
-        patched[method_name] = patcher.start()
+    patch_targets = {
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService": [
+            "initialize_new_columns",
+            "drop_columns",
+            "drop_table",
+        ],
+        "featurebyte.service.offline_store_feature_table_manager.OfflineStoreFeatureTableCommentService": [
+            "apply_comments",
+        ],
+    }
+    for service_name, method_names in patch_targets.items():
+        for method_name in method_names:
+            patcher = patch(f"{service_name}.{method_name}")
+            patched[method_name] = patcher.start()
     yield patched
     for patcher in patched.values():
         patcher.stop()
