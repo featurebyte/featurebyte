@@ -23,6 +23,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
@@ -44,7 +45,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
-    is_entity_lookup: Optional[bool] = Field(default=False)
+    entity_lookup_info: Optional[EntityRelationshipInfo]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -66,7 +67,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("serving_names"),
             pymongo.operations.IndexModel("feature_job_setting"),
             pymongo.operations.IndexModel("has_ttl"),
-            pymongo.operations.IndexModel("is_entity_lookup"),
+            pymongo.operations.IndexModel("entity_lookup_info"),
         ]
 
 

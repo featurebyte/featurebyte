@@ -93,7 +93,7 @@ async def offline_feature_table(app_container, deployed_features, cust_id_entity
     async for feature_table in service.list_documents_iterator(query_filter={}):
         if (
             feature_table.primary_entity_ids == [cust_id_entity.id]
-            and not feature_table.is_entity_lookup
+            and feature_table.entity_lookup_info is None
         ):
             return feature_table
     raise AssertionError("Feature table not found")
@@ -107,7 +107,7 @@ async def offline_feature_table_entity_lookup(app_container, deployed_features):
     _ = deployed_features
     service = app_container.offline_store_feature_table_service
     async for feature_table in service.list_documents_iterator(query_filter={}):
-        if feature_table.is_entity_lookup:
+        if feature_table.entity_lookup_info is not None:
             return feature_table
     raise AssertionError("Feature table not found")
 

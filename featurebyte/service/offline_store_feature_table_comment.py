@@ -99,7 +99,7 @@ class OfflineStoreFeatureTableCommentService:
             return f"{entity_model.name} (serving name: {entity_model.serving_names[0]})"
 
         primary_entities_info = ", ".join([_format_entity(entity) for entity in primary_entities])
-        if feature_table_model.is_entity_lookup:
+        if feature_table_model.entity_lookup_info is not None:
             sentences = [
                 f"This feature table is used to lookup the parent entity of {primary_entities_info}"
             ]

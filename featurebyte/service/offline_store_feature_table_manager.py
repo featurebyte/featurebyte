@@ -450,7 +450,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         existing_lookup_feature_tables = {
             feature_table_dict["name"]: feature_table_dict
             async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-                query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+                query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
             )
         }
         new_tables = []
@@ -484,7 +484,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         current_active_table_names = set()
         service = self.entity_lookup_feature_table_service
         async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator(
-            query_filter={"is_entity_lookup": False}
+            query_filter={"entity_lookup_info": {"$eq": None}}
         ):
             entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
                 feature_table_model, feature_lists
@@ -495,7 +495,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         # Decommission tables that should no longer exist
         async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+            query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
         ):
             if feature_table_dict["name"] not in current_active_table_names:
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
