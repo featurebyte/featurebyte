@@ -625,6 +625,11 @@ class BaseSession(BaseModel):
         """
         Helper function to convert an Expression to string for the session's source type
 
+        Parameters
+        ----------
+        expr: Expression
+            Expression to convert to string
+
         Returns
         -------
         str
