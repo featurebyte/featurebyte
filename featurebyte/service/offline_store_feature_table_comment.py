@@ -39,7 +39,8 @@ class ColumnComment:
 
 class OfflineStoreFeatureTableCommentService:
     """
-    OfflineStoreFeatureTableCommentService
+    OfflineStoreFeatureTableCommentService is responsible for generating comments for offline store
+    feature tables and columns, and applying them in the data warehouse.
     """
 
     def __init__(
@@ -106,10 +107,12 @@ class OfflineStoreFeatureTableCommentService:
                 f" using the entity {primary_entities_info} based on their parent-child"
                 f" relationship"
             ]
-        else:
+        elif feature_table_model.primary_entity_ids:
             sentences = [
                 f"This feature table consists of features for primary entity {primary_entities_info}"
             ]
+        else:
+            sentences = [f"This feature table consists of features without a primary entity"]
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
             sentences.append(
@@ -150,11 +153,11 @@ class OfflineStoreFeatureTableCommentService:
                 table_name = offline_ingest_graph.offline_store_table_name
                 if feature.offline_store_info.is_decomposed:
                     comment = (
-                        f"This intermediate feature is used to compute the final feature"
-                        f" {feature.versioned_name}"
+                        f"This intermediate feature is used to compute the feature"
+                        f" {feature.name} (version: {feature.version.name})"
                     )
                     if feature_description is not None:
-                        comment += f" ({feature_description})"
+                        comment += f". Description of {feature.name}: {feature_description}"
                     comments[(table_name, offline_ingest_graph.output_column_name)] = comment
                 elif feature_description is not None:
                     comments[
