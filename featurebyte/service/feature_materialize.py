@@ -35,12 +35,10 @@ from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
 )
-from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
-from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
@@ -80,8 +78,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         feature_service: FeatureService,
-        online_store_compute_query_service: OnlineStoreComputeQueryService,
-        entity_service: EntityService,
         online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -91,8 +87,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         entity_validation_service: EntityValidationService,
     ):
         self.feature_service = feature_service
-        self.online_store_compute_query_service = online_store_compute_query_service
-        self.entity_service = entity_service
         self.online_store_table_version_service = online_store_table_version_service
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service

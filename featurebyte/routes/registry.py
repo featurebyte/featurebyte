@@ -103,6 +103,9 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_comment import (
+    OfflineStoreFeatureTableCommentService,
+)
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
 )
@@ -269,6 +272,7 @@ app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
 app_container_config.register_class(OfflineStoreFeatureTableConstructionService)
 app_container_config.register_class(OfflineStoreFeatureTableService)
+app_container_config.register_class(OfflineStoreFeatureTableCommentService)
 app_container_config.register_class(OfflineStoreFeatureTableManagerService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)

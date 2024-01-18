@@ -22,25 +22,28 @@ def always_enable_feast_integration_fixture(enable_feast_integration, catalog_wi
 async def deployed_feature_list_with_float_feature(
     app_container,
     float_feature,
-    mock_feature_materialize_service,
+    mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
 ):
     """
     Fixture for deployed float feature
     """
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     _ = mock_update_data_warehouse
     return await deploy_feature(app_container, float_feature, return_type="feature_list")
 
 
 @pytest_asyncio.fixture
 async def deployed_feature_list_with_point_in_time_request_column_feature(
-    app_container, float_feature, mock_feature_materialize_service, mock_update_data_warehouse
+    app_container,
+    float_feature,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
 ):
     """
     Fixture for deployed point in time request column feature
     """
-    _ = mock_feature_materialize_service
+    _ = mock_offline_store_feature_manager_dependencies
     _ = mock_update_data_warehouse
     new_feature = float_feature * fb.RequestColumn.point_in_time().dt.day
     new_feature.name = "feature_with_point_in_time_request_column"

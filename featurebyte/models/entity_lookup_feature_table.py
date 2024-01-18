@@ -160,7 +160,7 @@ def get_entity_lookup_feature_tables(
             entity_universe=entity_universe,
             has_ttl=False,
             feature_job_setting=lookup_graph_result.feature_job_setting,
-            is_entity_lookup=True,
+            entity_lookup_info=lookup_relationship,
         )
         out.append(entity_lookup_feature_table_model)
     return out

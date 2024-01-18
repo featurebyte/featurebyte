@@ -3,7 +3,7 @@ OfflineStoreFeatureTableUpdateService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -30,6 +30,11 @@ from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_comment import (
+    ColumnComment,
+    OfflineStoreFeatureTableCommentService,
+    TableComment,
+)
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
 )
@@ -132,6 +137,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_store_service: FeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
+        offline_store_feature_table_comment_service: OfflineStoreFeatureTableCommentService,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
@@ -147,6 +153,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.offline_store_feature_table_construction_service = (
             offline_store_feature_table_construction_service
+        )
+        self.offline_store_feature_table_comment_service = (
+            offline_store_feature_table_comment_service
         )
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -170,6 +179,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
         feature_lists = await self._get_online_enabled_feature_lists()
 
+        new_tables = []
         for (
             offline_store_table_name,
             offline_store_table_features,
@@ -207,6 +217,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_job_setting=offline_ingest_graph.feature_job_setting,
                 )
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
+                new_tables.append(feature_table_model)
 
             if feature_table_model is not None:
                 # Note: might need to defer updating feast registry till initialization is done to
@@ -223,9 +234,17 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_dict["_id"],
                 )
 
-            await self._create_or_update_entity_lookup_feature_tables(
-                feature_table_model, feature_lists
+            new_tables.extend(
+                await self._create_or_update_entity_lookup_feature_tables(
+                    feature_table_model, feature_lists
+                )
             )
+
+        # Add comments to newly created tables and columns
+        await self._update_table_and_column_comments(
+            new_tables=new_tables,
+            new_features=features,
+        )
 
         if not features:
             # If all the features are already online enabled, i.e. the offline feature store tables
@@ -405,7 +424,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
         feature_lists: List[FeatureListModel],
-    ) -> None:
+    ) -> List[OfflineStoreFeatureTableModel]:
         """
         Create or update feature tables to support parent entities lookup for a specific offline
         feature table. This should be called when online enabling features.
@@ -416,6 +435,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Offline store feature table model to check
         feature_lists: List[FeatureListModel]
             Currently online enabled feature lists
+
+        Returns
+        -------
+        List[OfflineStoreFeatureTableModel]
         """
         # Get list of entity lookup feature tables that are currently required
         service = self.entity_lookup_feature_table_service
@@ -429,9 +452,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         existing_lookup_feature_tables = {
             feature_table_dict["name"]: feature_table_dict
             async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-                query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+                query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
             )
         }
+        new_tables = []
         for entity_lookup_feature_table in entity_lookup_feature_table_models:
             if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
                 await self.offline_store_feature_table_service.create_document(
@@ -443,6 +467,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     entity_lookup_feature_table
                 )
+                new_tables.append(entity_lookup_feature_table)
+        return new_tables
 
     async def _delete_entity_lookup_feature_tables(
         self, feature_lists: List[FeatureListModel]
@@ -460,7 +486,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         current_active_table_names = set()
         service = self.entity_lookup_feature_table_service
         async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator(
-            query_filter={"is_entity_lookup": False}
+            query_filter={"entity_lookup_info": {"$eq": None}}
         ):
             entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
                 feature_table_model, feature_lists
@@ -471,7 +497,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         # Decommission tables that should no longer exist
         async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"is_entity_lookup": True}, projection={"_id": 1, "name": 1}
+            query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
         ):
             if feature_table_dict["name"] not in current_active_table_names:
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
@@ -486,3 +512,28 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_table_id,
         )
         await self.offline_store_feature_table_service.delete_document(feature_table_id)
+
+    async def _update_table_and_column_comments(
+        self,
+        new_tables: List[OfflineStoreFeatureTableModel],
+        new_features: List[FeatureModel],
+    ) -> None:
+        catalog_model = await self.catalog_service.get_document(self.catalog_id)
+        feature_store_model = await self.feature_store_service.get_document(
+            catalog_model.default_feature_store_ids[0]
+        )
+        comments: List[Union[TableComment, ColumnComment]] = []
+        for feature_table_model in new_tables:
+            comments.append(
+                await self.offline_store_feature_table_comment_service.generate_table_comment(
+                    feature_table_model,
+                )
+            )
+        comments.extend(
+            await self.offline_store_feature_table_comment_service.generate_column_comments(
+                new_features
+            )
+        )
+        await self.offline_store_feature_table_comment_service.apply_comments(
+            feature_store_model, comments
+        )
