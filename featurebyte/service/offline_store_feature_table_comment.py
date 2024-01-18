@@ -112,7 +112,7 @@ class OfflineStoreFeatureTableCommentService:
                 f"This feature table consists of features for primary entity {primary_entities_info}"
             ]
         else:
-            sentences = [f"This feature table consists of features without a primary entity"]
+            sentences = ["This feature table consists of features without a primary entity"]
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
             sentences.append(
