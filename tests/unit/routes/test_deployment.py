@@ -2,6 +2,7 @@
 Tests for Deployment route
 """
 import json
+import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -503,24 +504,20 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         deployment_doc = create_success_response.json()
         self.update_deployment_enabled(test_api_client, deployment_doc["_id"], default_catalog_id)
 
-        async def mock_execute_query(query):
-            _ = query
-            return pd.DataFrame(
-                [
-                    {
-                        "cust_id": 1,
-                    },
-                    {
-                        "cust_id": 2,
-                    },
-                    {
-                        "cust_id": 3,
-                    },
-                ]
-            )
-
         mock_session = mock_get_session.return_value
-        mock_session.execute_query = mock_execute_query
+        mock_session.execute_query.return_value = pd.DataFrame(
+            [
+                {
+                    "cust_id": 1,
+                },
+                {
+                    "cust_id": 2,
+                },
+                {
+                    "cust_id": 3,
+                },
+            ]
+        )
 
         # Request sample entity serving names
         deployment_id = deployment_doc["_id"]
@@ -544,3 +541,31 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                 {"cust_id": "1"},
             ],
         }
+
+        # Check SQL
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+            WITH data AS (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                CAST("event_timestamp" AS STRING) AS "event_timestamp",
+                CAST("created_at" AS STRING) AS "created_at",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+            SELECT
+              DISTINCT "cust_id"
+            FROM data
+            WHERE
+              "cust_id" IS NOT NULL
+            LIMIT 10
+            """
+            ).strip()
+        )

@@ -267,6 +267,12 @@ class PreviewMixin(BaseGraphInterpreter):
                 expressions.Distinct(expressions=[quoted_identifier(column_name)]),
             )
             .from_("data")
+            .where(
+                expressions.Is(
+                    this=quoted_identifier(column_name),
+                    expression=expressions.Not(this=expressions.Null()),
+                )
+            )
         )
         return sql_to_string(output_expr.limit(num_rows), source_type=self.source_type)
 
