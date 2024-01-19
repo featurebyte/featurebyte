@@ -238,6 +238,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_2[~mask] = np.nan
         df["feature_V231227"] = feat_2
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -341,6 +342,7 @@ def test_feature__ttl_item_aggregate_request_column(
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_3[~mask] = np.nan
         df["composite_feature_V231227"] = feat_3
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -422,6 +424,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_1[~mask] = np.nan
         df["feature_zscore_V231227"] = feat_1
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -495,6 +498,7 @@ def test_feature__with_ttl_handling(float_feature):
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_V231227"][~mask] = np.nan
         df["sum_1d_V231227"] = inputs["sum_1d_V231227"]
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -668,6 +672,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         df[
             "TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105"
         ] = feat_4
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert feature.offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
