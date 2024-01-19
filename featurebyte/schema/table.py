@@ -3,7 +3,7 @@ Table model's attribute payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
@@ -32,6 +32,35 @@ class TableCreate(FeatureByteBaseModel):
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+
+    @classmethod
+    def _special_column_validator(cls, column_name: str, values: Dict[str, Any]) -> str:
+        """
+        Check if column name specified for a special column field exists in the table create columns info
+
+        Parameters
+        ----------
+        column_name: str
+            Special column name
+        values: Dict[str, Any]
+            Dict of values
+
+        Raises
+        ------
+        ValueError
+            If column name specified for a special column field does not exist in the table create columns info
+
+        Returns
+        -------
+        str
+        """
+        columns_info = values.get("columns_info")
+        # columns_info is None if validation failed for columns_info - skip validation in this case
+        if column_name is not None and columns_info is not None:
+            columns_info = set(column_info.name for column_info in columns_info)
+            if column_name not in columns_info:
+                raise ValueError(f"Column not found in table: {column_name}")
+        return column_name
 
 
 class TableUpdate(FeatureByteBaseModel):

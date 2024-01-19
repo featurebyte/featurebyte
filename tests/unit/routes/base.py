@@ -915,6 +915,35 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         assert response_dict["description"] == self.payload["description"]
         assert response_dict["status"] == "PUBLIC_DRAFT"
 
+    def test_create_422_invalid_special_columns(self, test_api_client_persistent):
+        """Test creation (unprocessable) when special columns are invalid"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+
+        # set special columns to invalid values
+        special_columns = [
+            field_name
+            for field_name in self.data_create_schema_class.__fields__
+            if field_name.endswith("column")
+        ]
+        for special_column in special_columns:
+            payload[special_column] = ""
+
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response_dict == {
+            "detail": [
+                {
+                    "loc": ["body", special_column],
+                    "msg": "Column not found in table: ",
+                    "type": "value_error",
+                }
+                for special_column in special_columns
+            ]
+        }
+
     def test_update_fails_table_not_found(self, test_api_client_persistent, data_update_dict):
         """
         Update Data fails if table not found
