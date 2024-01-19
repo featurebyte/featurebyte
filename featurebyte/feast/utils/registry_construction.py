@@ -19,12 +19,11 @@ from feast import Field as FeastField
 from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
-from feast.feature_view import DUMMY_ENTITY_ID, DUMMY_ENTITY_NAME
+from feast.feature_view import DUMMY_ENTITY
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
-from feast.types import PrimitiveFeastType
 
 from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
@@ -692,11 +691,7 @@ class FeastRegistryBuilder:
                     offline_store_table.create_feast_entity(),
                 )
             else:
-                feast_entity = FeastEntity(
-                    name=DUMMY_ENTITY_NAME,
-                    join_keys=[DUMMY_ENTITY_ID],
-                    value_type=PrimitiveFeastType.STRING.to_value_type(),
-                )
+                feast_entity = DUMMY_ENTITY
             if entity_key not in primary_entity_ids_to_feast_entity:
                 primary_entity_ids_to_feast_entity[entity_key] = feast_entity
 
