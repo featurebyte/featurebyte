@@ -3,6 +3,7 @@ Module for managing physical feature table cache as well as metadata storage.
 """
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
+import pandas as pd
 from bson import ObjectId
 from sqlglot import expressions
 
@@ -473,6 +474,76 @@ class FeatureTableCacheService:
                 observation_table_id=observation_table.id,
                 feature_definitions=[definition for _, definition in non_cached_nodes],
             )
+
+    async def read_from_cache(
+        self,
+        feature_store: FeatureStoreModel,
+        observation_table: ObservationTableModel,
+        graph: QueryGraph,
+        nodes: List[Node],
+    ) -> pd.DataFrame:
+        """
+        Given the graph and set of nodes, read respective cached features from feature table cache.
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature Store object
+        observation_table: ObservationTableModel
+            Observation table object
+        graph: QueryGraph
+            Graph definition
+        nodes: List[Node]
+            Node names
+
+        Returns
+        -------
+        pd.DataFrame
+            Result data
+        """
+        hashes = await self.definition_hashes_to_nodes(graph, nodes)
+        cache_metadata = (
+            await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+                observation_table_id=observation_table.id,
+            )
+        )
+        cached_hashes = set(
+            feature_def.definition_hash for feature_def in cache_metadata.feature_definitions
+        )
+        assert set(hashes.keys()) <= cached_hashes, "All nodes must be cached"
+
+        cached_features = {
+            feature.definition_hash: feature.feature_name
+            for feature in cache_metadata.feature_definitions
+        }
+
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store
+        )
+
+        columns_expr = [
+            expressions.alias_(
+                quoted_identifier(cast(str, cached_features[definition_hash])),
+                alias=graph.get_node_output_column_name(node.name),
+                quoted=True,
+            )
+            for definition_hash, node in hashes.items()
+        ]
+        select_expr = (
+            expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+            .select(*columns_expr)
+            .from_(
+                get_fully_qualified_table_name(
+                    {
+                        "database_name": db_session.database_name,
+                        "schema_name": db_session.schema_name,
+                        "table_name": cache_metadata.table_name,
+                    }
+                )
+            )
+        )
+        sql = sql_to_string(select_expr, source_type=db_session.source_type)
+        return await db_session.execute_query(sql)
 
     async def create_view_from_cache(
         self,

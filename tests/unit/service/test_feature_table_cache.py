@@ -563,3 +563,52 @@ async def test_create_feature_table_cache__with_target(
         '  "float_target" AS "FEATURE_dfbe0388b776a0bd4e78b6e538889b9b9eea7bb1"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )
+
+
+@pytest.mark.asyncio
+async def test_read_from_cache(
+    feature_store,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    observation_table,
+    feature_list,
+    mock_get_historical_features,
+    mock_snowflake_session,
+):
+    """Test read data from table cache"""
+    await feature_table_cache_service.create_or_update_feature_table_cache(
+        feature_store=feature_store,
+        observation_table=observation_table,
+        graph=feature_list.feature_clusters[0].graph,
+        nodes=feature_list.feature_clusters[0].nodes,
+        feature_list_id=feature_list.id,
+    )
+    assert mock_get_historical_features.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 1
+
+    mock_snowflake_session.reset_mock()
+
+    await feature_table_cache_service.read_from_cache(
+        feature_store=feature_store,
+        observation_table=observation_table,
+        graph=feature_list.feature_clusters[0].graph,
+        nodes=feature_list.feature_clusters[0].nodes,
+    )
+    assert mock_snowflake_session.execute_query.await_count == 1
+
+    feature_table_cache = (
+        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+            observation_table_id=observation_table.id,
+        )
+    )
+
+    call_args = mock_snowflake_session.execute_query.await_args_list
+    sqls = [arg[0][0] for arg in call_args]
+
+    assert sqls[0] == (
+        "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
+        '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
+        f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
+    )

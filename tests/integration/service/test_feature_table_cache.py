@@ -339,3 +339,48 @@ async def test_create_view_from_cache(
             if_exists=True,
             is_view=True,
         )
+
+
+@pytest.mark.asyncio
+async def test_read_from_cache(
+    feature_store,
+    session,
+    data_source,
+    feature_list,
+    observation_table,
+    feature_store_service,
+    observation_table_service,
+    feature_list_service,
+    feature_service,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    source_type,
+):
+    """Test read from table cache"""
+
+    feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
+    feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
+    feature_cluster = feature_list_model.feature_clusters[0]
+    await feature_table_cache_service.create_or_update_feature_table_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table_model,
+        graph=feature_cluster.graph,
+        nodes=feature_cluster.nodes,
+        feature_list_id=feature_list_model.id,
+    )
+
+    features = [
+        feature_cluster.graph.get_node_output_column_name(node.name)
+        for node in feature_cluster.nodes
+    ]
+    df = await feature_table_cache_service.read_from_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table_model,
+        graph=feature_cluster.graph,
+        nodes=feature_cluster.nodes,
+    )
+    assert df.shape[0] == 50
+    assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
