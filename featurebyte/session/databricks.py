@@ -127,7 +127,7 @@ class DatabricksSession(BaseSparkSession):
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         buffer = BytesIO()
-        dataframe.to_parquet(buffer)
+        dataframe.to_parquet(buffer, version="2.4")
         buffer.seek(0)
         path = f"{self._storage_base_path}/{remote_path}"
         self._dbfs_client.upload(path=path, src=buffer, overwrite=True)

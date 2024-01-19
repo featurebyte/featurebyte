@@ -422,6 +422,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
 
     # Check feast materialize and get_online_features
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry.id
+    )
     feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
     version = get_version()
     entity_row = {

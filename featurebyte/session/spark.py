@@ -233,7 +233,7 @@ class SparkSession(BaseSparkSession):
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         with self._storage.open(path=remote_path, mode="wb") as out_file_obj:
-            dataframe.to_parquet(out_file_obj)
+            dataframe.to_parquet(out_file_obj, version="2.4")
             out_file_obj.flush()
 
     def delete_path_from_storage(self, remote_path: str) -> None:
