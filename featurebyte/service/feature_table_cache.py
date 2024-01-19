@@ -99,6 +99,21 @@ class FeatureTableCacheService:
             hashes[definition_hash] = node
         return hashes
 
+    def _get_column_expr(
+        self,
+        graph: QueryGraph,
+        hashes: Dict[str, Node],
+        cached_features: Dict[str, str],
+    ) -> List[expressions.Alias]:
+        return [
+            expressions.alias_(
+                quoted_identifier(cached_features[definition_hash]),
+                alias=graph.get_node_output_column_name(node.name),
+                quoted=True,
+            )
+            for definition_hash, node in hashes.items()
+        ]
+
     async def get_non_cached_nodes(
         self,
         feature_table_cache_metadata: FeatureTableCacheMetadataModel,
@@ -516,19 +531,10 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-
-        columns_expr = [
-            expressions.alias_(
-                quoted_identifier(cast(str, cached_features[definition_hash])),
-                alias=graph.get_node_output_column_name(node.name),
-                quoted=True,
-            )
-            for definition_hash, node in hashes.items()
-        ]
+        columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
             .select(*columns_expr)
@@ -611,14 +617,7 @@ class FeatureTableCacheService:
 
         request_column_names = sorted({col.name for col in observation_table.columns_info})
         request_columns = [quoted_identifier(col) for col in request_column_names]
-        columns_expr = [
-            expressions.alias_(
-                quoted_identifier(cast(str, cached_features[definition_hash])),
-                alias=graph.get_node_output_column_name(node.name),
-                quoted=True,
-            )
-            for definition_hash, node in hashes.items()
-        ]
+        columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
             .select(*request_columns)
