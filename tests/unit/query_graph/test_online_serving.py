@@ -4,16 +4,25 @@ Tests for featurebyte.query_graph.sql.online_serving
 from typing import List
 
 import textwrap
+from unittest.mock import patch
 
 import pandas as pd
+import pytest
+from bson import ObjectId
 
 from featurebyte.enum import SourceType
+from featurebyte.models.feature_query_set import FeatureQuerySet
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
-    get_online_store_retrieval_template,
+    fill_version_placeholders_for_query_set,
+    get_aggregation_result_names,
+    get_online_features_query_set,
+    get_online_store_retrieval_expr,
     is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.online_store_compute_query import (
@@ -24,33 +33,49 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
+def feature_query_set_to_string(feature_query_set: FeatureQuerySet) -> str:
+    """
+    Convert a feature query set to string for testing purpose
+    """
+
+    def _to_string(str_or_expr):
+        if isinstance(str_or_expr, str):
+            query_str = str_or_expr
+        else:
+            query_str = sql_to_string(str_or_expr, SourceType.SNOWFLAKE)
+        return query_str
+
+    all_queries = []
+    for feature_query in feature_query_set.feature_queries:
+        all_queries.append(_to_string(feature_query.sql))
+    all_queries.append(_to_string(feature_query_set.output_query))
+
+    return ";\n\n".join(all_queries)
+
+
+@pytest.fixture
+def adapter():
+    """
+    Fixture for a sql adapter
+    """
+    return get_sql_adapter(SourceType.SNOWFLAKE)
+
+
+@pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
+def mocked_unique_identifier_generator_fixture():
+    """
+    Patch ObjectId to return a fixed value so that queries are deterministic
+    """
+    with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id:
+        patched_object_id.return_value = ObjectId("000000000000000000000000")
+        yield patched_object_id
+
+
 def get_aggregation_specs(graph, groupby_node) -> List[TileBasedAggregationSpec]:
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
         graph, groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
     return agg_specs
-
-
-def get_online_store_retrieval_sql(
-    graph,
-    nodes,
-    source_type,
-    request_table_columns,
-    request_table_name=None,
-    request_table_expr=None,
-    parent_serving_preparation=None,
-):
-    """Generate SQL for retrieving online store data"""
-    retrieval_template = get_online_store_retrieval_template(
-        graph=graph,
-        nodes=nodes,
-        source_type=source_type,
-        request_table_columns=request_table_columns,
-        request_table_name=request_table_name,
-        request_table_expr=request_table_expr,
-        parent_serving_preparation=parent_serving_preparation,
-    )
-    return retrieval_template.sql_template.render()
 
 
 def test_construct_universe_sql(query_graph_with_groupby):
@@ -232,7 +257,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     )
 
 
-def test_complex_features(complex_feature_query_graph, update_fixtures):
+def test_complex_features(complex_feature_query_graph, adapter, update_fixtures):
     """
     Test complex features with multiple tile tables
     """
@@ -288,65 +313,71 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     )
 
     # Check retrieval sql
-    sql = get_online_store_retrieval_sql(
-        request_table_name="MY_REQUEST_TABLE",
+    expr, feature_names = get_online_store_retrieval_expr(
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID"],
         graph=pruned_graph,
         nodes=[pruned_node],
+        current_timestamp_expr=adapter.current_timestamp(),
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
-        sql,
+        expr.sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_complex.sql",
         update_fixture=update_fixtures,
     )
+    assert feature_names == ["a_2h_avg_by_user_div_7d_by_biz"]
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(
-    query_graph_with_groupby_and_feature_nodes, update_fixtures
+    query_graph_with_groupby_and_feature_nodes, update_fixtures, adapter
 ):
     """
     Test constructing feature retrieval sql for online store
     """
     graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    sql = get_online_store_retrieval_sql(
-        request_table_name="MY_REQUEST_TABLE",
+    expr, feature_names = get_online_store_retrieval_expr(
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
+        current_timestamp_expr=adapter.current_timestamp(),
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
-        sql,
+        expr.sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_simple.sql",
         update_fixture=update_fixtures,
     )
+    assert feature_names == ["a_2h_average", "a_48h_average plus 123"]
 
 
 def test_online_store_feature_retrieval_sql__mixed(
-    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures
 ):
     """
     Test constructing feature retrieval sql for online store where some features cannot be looked up
     from the online store and has to be computed on demand
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    sql = get_online_store_retrieval_sql(
-        request_table_name="MY_REQUEST_TABLE",
+    expr, feature_names = get_online_store_retrieval_expr(
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID", "order_id"],
         graph=graph,
         nodes=nodes,
+        current_timestamp_expr=adapter.current_timestamp(),
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
-        sql,
+        expr.sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
         update_fixture=update_fixtures,
     )
+    assert feature_names == ["a_48h_average", "order_size"]
 
 
 def test_online_store_feature_retrieval_sql__request_subquery(
-    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures
 ):
     """
     Test constructing feature retrieval sql for online store when request table is a subquery
@@ -355,22 +386,24 @@ def test_online_store_feature_retrieval_sql__request_subquery(
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    sql = get_online_store_retrieval_sql(
+    expr, feature_names = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
+        current_timestamp_expr=adapter.current_timestamp(),
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
-        sql,
+        expr.sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
         update_fixture=update_fixtures,
     )
+    assert feature_names == ["a_48h_average", "order_size"]
 
 
 def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column(
-    global_graph, scd_lookup_feature_node, update_fixtures
+    global_graph, scd_lookup_feature_node, adapter, update_fixtures
 ):
     """
     Test constructing feature retrieval sql for online store when request table is a subquery
@@ -378,42 +411,77 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
     df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
-    sql = get_online_store_retrieval_sql(
+    expr, feature_names = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=global_graph,
         nodes=[scd_lookup_feature_node],
+        current_timestamp_expr=adapter.current_timestamp(),
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
-        sql,
+        expr.sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
         update_fixture=update_fixtures,
     )
+    assert feature_names == ["Current Membership Status"]
 
 
 def test_online_store_feature_retrieval_sql__version_placeholders_filled(
     mixed_point_in_time_and_item_aggregations_features, update_fixtures
 ):
     """
-    Test retrieval sql with version placeholders filled
+    Test retrieval sql with version placeholders filled (single
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    retrieval_template = get_online_store_retrieval_template(
+    feature_query_set = get_online_features_query_set(
+        graph=graph,
+        node_groups=[nodes],
+        output_feature_names=get_feature_names(graph, nodes),
+        source_type=SourceType.SNOWFLAKE,
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+    )
+    aggregation_result_names = get_aggregation_result_names(
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
-        request_table_name="MY_REQUEST_TABLE",
-        request_table_columns=["CUSTOMER_ID", "order_id"],
     )
-    versions_mapping = {
-        k: i for (i, k) in enumerate(sorted(retrieval_template.aggregation_result_names))
-    }
-    sql = sql_to_string(
-        retrieval_template.fill_version_placeholders(versions_mapping), SourceType.SNOWFLAKE
-    )
+    versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
+    fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)
+    sql = sql_to_string(feature_query_set.output_query, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_filled_versions.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_online_store_feature_retrieval_sql__multiple_groups(
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+):
+    """
+    Test retrieval sql with version placeholders filled
+    """
+    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
+    feature_query_set = get_online_features_query_set(
+        graph=graph,
+        node_groups=[nodes[:1], nodes[1:]],
+        output_feature_names=get_feature_names(graph, nodes),
+        source_type=SourceType.SNOWFLAKE,
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+    )
+    aggregation_result_names = get_aggregation_result_names(
+        graph=graph,
+        nodes=nodes,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
+    fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)
+    sql = feature_query_set_to_string(feature_query_set)
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_filled_versions_multiple_groups.sql",
         update_fixture=update_fixtures,
     )

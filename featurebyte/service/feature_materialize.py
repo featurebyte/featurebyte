@@ -31,6 +31,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.materialisation import get_row_index_column_expr
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
@@ -147,7 +148,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     last_materialized_timestamp=feature_table_model.last_materialized_at
                     if use_last_materialized_timestamp
                     else None,
-                ),
+                ).select(get_row_index_column_expr()),
             ),
             source_type=session.source_type,
         )

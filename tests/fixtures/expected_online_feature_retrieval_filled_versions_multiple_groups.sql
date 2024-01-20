@@ -1,21 +1,19 @@
+CREATE TABLE "__TEMP_000000000000000000000000_0" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."CUSTOMER_ID",
     REQ."order_id",
     SYSDATE() AS POINT_IN_TIME
   FROM "MY_REQUEST_TABLE" AS REQ
-), "REQUEST_TABLE_order_id" AS (
-  SELECT DISTINCT
-    "order_id"
-  FROM ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."CUSTOMER_ID",
     REQ."order_id",
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T1"."_fb_internal_item_count_None_order_id_None_input_2" AS "_fb_internal_item_count_None_order_id_None_input_2"
+    "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -53,6 +51,34 @@ WITH ONLINE_REQUEST_TABLE AS (
     )
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
+)
+SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
+  AGG."CUSTOMER_ID",
+  AGG."order_id",
+  "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average"
+FROM _FB_AGGREGATED AS AGG;
+
+CREATE TABLE "__TEMP_000000000000000000000000_1" AS
+WITH ONLINE_REQUEST_TABLE AS (
+  SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
+    REQ."CUSTOMER_ID",
+    REQ."order_id",
+    SYSDATE() AS POINT_IN_TIME
+  FROM "MY_REQUEST_TABLE" AS REQ
+), "REQUEST_TABLE_order_id" AS (
+  SELECT DISTINCT
+    "order_id"
+  FROM ONLINE_REQUEST_TABLE
+), _FB_AGGREGATED AS (
+  SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
+    REQ."CUSTOMER_ID",
+    REQ."order_id",
+    REQ."POINT_IN_TIME",
+    "T0"."_fb_internal_item_count_None_order_id_None_input_2" AS "_fb_internal_item_count_None_order_id_None_input_2"
+  FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
@@ -69,12 +95,23 @@ WITH ONLINE_REQUEST_TABLE AS (
       ON REQ."order_id" = ITEM."order_id"
     GROUP BY
       REQ."order_id"
-  ) AS T1
-    ON REQ."order_id" = T1."order_id"
+  ) AS T0
+    ON REQ."order_id" = T0."order_id"
 )
 SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."CUSTOMER_ID",
   AGG."order_id",
-  "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average",
   "_fb_internal_item_count_None_order_id_None_input_2" AS "order_size"
-FROM _FB_AGGREGATED AS AGG
+FROM _FB_AGGREGATED AS AGG;
+
+SELECT
+  REQ."CUSTOMER_ID",
+  REQ."order_id",
+  T0."a_48h_average",
+  T1."order_size"
+FROM REQUEST_TABLE AS REQ
+LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
+  ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX"
+LEFT JOIN "__TEMP_000000000000000000000000_1" AS T1
+  ON REQ."__FB_TABLE_ROW_INDEX" = T1."__FB_TABLE_ROW_INDEX"
