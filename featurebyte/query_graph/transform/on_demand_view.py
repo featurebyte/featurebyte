@@ -154,6 +154,7 @@ class OnDemandFeatureViewExtractor(
             {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
             {input_column_expr}[~{mask_var_name}] = np.nan
             {subset_output_column_expr} = {input_column_expr}
+            {output_df_name}.fillna(np.nan, inplace=True)
             """
             ).strip()
         )

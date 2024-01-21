@@ -349,6 +349,7 @@ def test_feast_registry_construction(
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_{get_version()}"][~mask] = np.nan
         df["sum_1d_{get_version()}"] = inputs["sum_1d_{get_version()}"]
+        df.fillna(np.nan, inplace=True)
         return df
     """
     assert udf_definition.strip() == textwrap.dedent(expected).strip()
