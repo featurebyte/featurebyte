@@ -551,7 +551,7 @@ class FeatureTableCacheService:
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
         return await db_session.execute_query(sql)
 
-    async def create_view_from_cache(
+    async def create_view_from_cache(  # pylint: disable=R0914
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -616,6 +616,12 @@ class FeatureTableCacheService:
         )
 
         request_column_names = sorted({col.name for col in observation_table.columns_info})
+        node_feature_names = [
+            graph.get_node_output_column_name(node.name) for node in hashes.values()
+        ]
+        request_column_names = [
+            col for col in request_column_names if col not in node_feature_names
+        ]
         request_columns = [quoted_identifier(col) for col in request_column_names]
         columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
         select_expr = (

@@ -10,6 +10,8 @@ from sqlglot import parse_one
 
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
+from featurebyte.models.materialized_table import ColumnSpecWithEntityId
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import create_observation_table_from_dataframe
@@ -235,6 +237,118 @@ async def test_update_feature_table_cache(
     assert set(df.columns.tolist()) == set(
         [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
     )
+
+
+@pytest.mark.asyncio
+async def test_target_table_cache(
+    feature_store,
+    session,
+    data_source,
+    event_view,
+    observation_table,
+    feature_store_service,
+    observation_table_service,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    source_type,
+    persistent,
+):
+    """Test target table cache"""
+    feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
+
+    # add target column in a hacky way - there is no good way to add target from the integration test
+    columns_info = observation_table_model.columns_info.copy()
+    columns_info.append(ColumnSpecWithEntityId(name="avg_24h_target", dtype="FLOAT"))
+    update_dict = {"columns_info": [col.dict(exclude_none=True) for col in columns_info]}
+    await persistent.update_one(
+        collection_name=ObservationTableModel.collection_name(),
+        query_filter={"_id": observation_table_model.id},
+        update={"$set": update_dict},
+        user_id=observation_table_service.user.id,
+        disable_audit=observation_table_service.should_disable_audit,
+    )
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
+
+    target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="avg_24h_target",
+    )
+
+    view = TableDetails(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=f"RESULT_VIEW_{ObjectId()}",
+    )
+    try:
+        await feature_table_cache_service.create_view_from_cache(
+            feature_store=feature_store_model,
+            observation_table=observation_table_model,
+            graph=target.graph,
+            nodes=[target.node],
+            output_view_details=view,
+            is_target=True,
+        )
+
+        feature_table_cache = (
+            await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+                observation_table_id=observation_table.id,
+            )
+        )
+        assert len(feature_table_cache.feature_definitions) == 1
+
+        query = sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{session.database_name}"."{session.schema_name}"."{feature_table_cache.table_name}"
+                """
+            ),
+            source_type=source_type,
+        )
+        df = await session.execute_query(query)
+        assert df.shape[0] == 50
+        assert feature_table_cache.feature_definitions[0].feature_name in df.columns
+        assert "avg_24h_target" in df.columns
+
+        df = await feature_table_cache_service.read_from_cache(
+            feature_store=feature_store_model,
+            observation_table=observation_table_model,
+            graph=target.graph,
+            nodes=[target.node],
+        )
+        assert df.shape[0] == 50
+        assert df.columns.tolist() == [InternalName.TABLE_ROW_INDEX, "avg_24h_target"]
+
+        query = sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{view.database_name}"."{view.schema_name}"."{view.table_name}"
+                """
+            ),
+            source_type=source_type,
+        )
+        df = await session.execute_query(query)
+        assert df.shape[0] == 50
+        assert df.columns.tolist() == [
+            "__FB_TABLE_ROW_INDEX",
+            "POINT_IN_TIME",
+            "üser id",
+            "avg_24h_target",
+        ]
+    finally:
+        await session.drop_table(
+            table_name=view.table_name,
+            schema_name=view.schema_name,
+            database_name=view.database_name,
+            if_exists=True,
+            is_view=True,
+        )
 
 
 @pytest.mark.asyncio

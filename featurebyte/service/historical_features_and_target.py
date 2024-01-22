@@ -298,6 +298,10 @@ async def get_target(
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
     request_table_columns = observation_set.columns
 
+    # filter request columns if nodes request them as well
+    nodes_columns = [graph.get_node_output_column_name(node.name) for node in nodes]
+    request_table_columns = [col for col in request_table_columns if col not in nodes_columns]
+
     # Execute feature SQL code
     await observation_set.register_as_request_table(
         session,
