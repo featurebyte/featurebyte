@@ -82,6 +82,6 @@ def test_get_basename(serving_names, feature_job_setting, common_params, expecte
             "feature_job_setting": feature_job_setting,
         }
     )
-    base_name = feature_table.get_basename()
+    base_name = feature_table._get_basename()
     assert len(base_name) <= 20
     assert base_name == expected

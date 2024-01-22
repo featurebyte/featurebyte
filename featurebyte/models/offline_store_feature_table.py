@@ -111,7 +111,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             feature_store_id=self.feature_store_id,
         )
 
-    def get_basename(self) -> str:
+    def _get_basename(self) -> str:
         """
         Get base name of the feature table
 
@@ -149,6 +149,24 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             keep = max_len - len(freq_part) - 1
             name = f"{name[:keep]}_{freq_part}"
         return name[:max_len]
+
+    def get_name(self) -> str:
+        """
+        Get full name of the feature table
+
+        Returns
+        -------
+        str
+        """
+        full_name = ""
+        if self.name_prefix:
+            full_name += self.name_prefix + "_"
+
+        full_name += self._get_basename()
+
+        if self.name_suffix:
+            full_name += "_" + self.name_suffix
+        return full_name
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

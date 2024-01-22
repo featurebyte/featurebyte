@@ -50,6 +50,7 @@ class OfflineStoreFeatureTableConstructionService:
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
         source_type: SourceType,
+        catalog_id: PydanticObjectId,
     ) -> OfflineStoreFeatureTableModel:
         """
         Returns a OfflineStoreFeatureTableModel for a feature table
@@ -98,6 +99,7 @@ class OfflineStoreFeatureTableConstructionService:
             entity_universe=entity_universe,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
+            catalog_id=catalog_id,
         )
 
     async def get_entity_universe_model(

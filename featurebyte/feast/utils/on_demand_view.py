@@ -102,7 +102,7 @@ class OnDemandFeatureViewConstructor:
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             table = table_signature_to_model[table_signature]
-            fv_source = name_to_feast_feature_view[table.full_name]
+            fv_source = name_to_feast_feature_view[table.name]
             sources.append(fv_source)
 
             # add point in time request source

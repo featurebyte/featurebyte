@@ -170,8 +170,7 @@ class OfflineStoreFeatureTableCommentService:
                     )
                 )
                 assert offline_store_table is not None
-                table_name = offline_store_table.full_name
-
+                table_name = offline_store_table.name
                 if feature.offline_store_info.is_decomposed:
                     comment = (
                         f"This intermediate feature is used to compute the feature"

@@ -305,10 +305,12 @@ class DeployService(OpsServiceMixin):
 
                 # make each feature online enabled first
                 feature_models = []
+                all_feature_models = []
                 is_online_enabling = True
                 for ind, feature_id in enumerate(document.feature_ids):
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
+                        all_feature_models.append(feature)
                         feature_online_enabled_map[feature.id] = feature.online_enabled
                         updated_feature = await self._update_feature(
                             feature_id=feature_id,
@@ -345,9 +347,7 @@ class DeployService(OpsServiceMixin):
                     is_online_enabling
                     and FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
                 ):
-                    return await self._update_feature_list_store_info(
-                        feature_list_id, feature_models
-                    )
+                    return await self._update_feature_list_store_info(feature_list_id, all_feature_models)
 
             except Exception as exc:
                 try:

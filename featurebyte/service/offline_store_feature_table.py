@@ -103,9 +103,9 @@ class OfflineStoreFeatureTableService(
             )
             data.name_prefix = catalog_part
 
-        data.name = data.get_basename()
+        data.name = data.get_name()
         with self.allow_use_raw_query_filter():
-            query_filter = {"name_prefix": catalog_part, "name": data.name}
+            query_filter = {"name": data.name}
             if data.feature_store_id:
                 query_filter["feature_store_id"] = data.feature_store_id
             query_result = await self.list_documents_as_dict(
@@ -116,6 +116,7 @@ class OfflineStoreFeatureTableService(
         data.name_suffix = None
         if count:
             data.name_suffix = str(count)
+            data.name = data.get_name()
         return await super().create_document(data)
 
     async def get_existing_document(

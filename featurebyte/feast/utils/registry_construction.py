@@ -338,7 +338,7 @@ class OfflineStoreTableBuilder:
             ingest_query_graphs,
         ) in offline_table_key_to_ingest_query_graphs.items():
             offline_store_table = OfflineStoreTable.create(
-                table_name=table_signature_to_table[table_signature].full_name,
+                table_name=table_signature_to_table[table_signature].name,
                 ingest_query_graphs=ingest_query_graphs,
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )

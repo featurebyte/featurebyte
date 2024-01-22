@@ -239,7 +239,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
                     catalog_id=feature.catalog_id,
                     entity_id_to_serving_name=entity_id_to_serving_name,
                 )
-                table_name = offline_table_map[table_signature].full_name
+                table_name = offline_table_map[table_signature].name
                 timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
 
                 if table_name not in table_name_to_feature_lookup:

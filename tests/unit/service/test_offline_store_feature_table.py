@@ -84,7 +84,7 @@ async def test_create_document_and_retrieve_document(
     assert document.name_prefix == "cat1"
     assert document.name == "cust_id_1d"
     assert document.name_suffix is None
-    assert document.full_name == "cat1_cust_id_1d"
+    assert document.name == "cat1_cust_id_1d"
 
     # create another document with same name
     data = OfflineStoreFeatureTableModel(**{**common_params, "_id": ObjectId()})
@@ -92,7 +92,7 @@ async def test_create_document_and_retrieve_document(
     assert document.name_prefix == "cat1"
     assert document.name == "cust_id_1d"
     assert document.name_suffix == "1"
-    assert document.full_name == "cat1_cust_id_1d_1"
+    assert document.name == "cat1_cust_id_1d_1"
 
     # create another document in another catalog (expect no name conflict, full name should be different)
     data = OfflineStoreFeatureTableModel(**{**common_params, "catalog_id": another_catalog_id})
@@ -100,7 +100,7 @@ async def test_create_document_and_retrieve_document(
     assert document.name_prefix == "cat2"
     assert document.name == "cust_id_1d"
     assert document.name_suffix is None
-    assert document.full_name == "cat2_cust_id_1d"
+    assert document.name == "cat2_cust_id_1d"
     assert document.catalog_id == another_catalog_id
 
     # create another document with different feature_store_id (same name is allowed)
@@ -112,4 +112,4 @@ async def test_create_document_and_retrieve_document(
     assert document.name_prefix == "cat1"
     assert document.name == "cust_id_1d"
     assert document.name_suffix is None
-    assert document.full_name == "cat1_cust_id_1d"
+    assert document.name == "cat1_cust_id_1d"

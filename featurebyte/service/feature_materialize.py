@@ -243,7 +243,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         if feature_store is not None and feature_store.config.online_store is not None:
             materialize_partial(
                 feature_store=feature_store,
-                feature_view=feature_store.get_feature_view(feature_table_model.full_name),
+                feature_view=feature_store.get_feature_view(feature_table_model.name),
                 columns=feature_table_model.output_column_names,
                 start_date=feature_table_model.last_materialized_at,
                 end_date=materialized_features.feature_timestamp,
@@ -298,7 +298,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             else:
                 # Merge into existing feature table
                 last_feature_timestamp = await self._get_last_feature_timestamp(
-                    session, feature_table_model.full_name
+                    session, feature_table_model.name
                 )
                 await self._merge_into_feature_table(
                     session=session,
@@ -313,7 +313,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         if feature_store is not None and feature_store.config.online_store is not None:
             materialize_partial(
                 feature_store=feature_store,
-                feature_view=feature_store.get_feature_view(feature_table_model.full_name),
+                feature_view=feature_store.get_feature_view(feature_table_model.name),
                 columns=materialized_features.column_names,
                 end_date=materialize_end_date,
                 with_feature_timestamp=feature_table_model.has_ttl,
@@ -471,7 +471,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         query = sql_to_string(
             expressions.Insert(
                 this=expressions.Schema(
-                    this=expressions.Table(this=quoted_identifier(feature_table_model.full_name)),
+                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
                     expressions=[quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)]
                     + [
                         quoted_identifier(column)

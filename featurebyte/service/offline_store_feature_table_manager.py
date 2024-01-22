@@ -384,6 +384,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
             source_type=feature_store_model.type,
+            catalog_id=self.catalog_id,
         )
 
     async def _get_required_aggregate_result_tables(
