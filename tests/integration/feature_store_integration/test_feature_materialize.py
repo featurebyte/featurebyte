@@ -268,7 +268,7 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
 
 
 @pytest.fixture(name="user_entity_ttl_feature_table")
-def user_entity_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
+def user_entity_ttl_feature_table_fixture(offline_store_feature_tables):
     """
     Return the user entity feature table
     """
@@ -276,7 +276,7 @@ def user_entity_ttl_feature_table_fixture(offline_store_feature_tables, app_cont
 
 
 @pytest.fixture(name="user_entity_non_ttl_feature_table")
-def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
+def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables):
     """
     Return the user entity feature table
     """
@@ -323,11 +323,10 @@ async def expected_entity_lookup_feature_table_names_fixture(
 
 
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture(app_container, expected_entity_lookup_feature_table_names):
+def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_names):
     """
     Fixture for expected feature table names
     """
-    catalog_id = app_container.catalog_id
     expected = {
         "cat1__no_entity_1h",
         "cat1_product_action_1h",
