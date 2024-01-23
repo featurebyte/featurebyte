@@ -6,9 +6,9 @@ from __future__ import annotations
 from typing import List, Optional
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
@@ -145,3 +145,21 @@ def select_and_rename_columns(
     else:
         column_exprs = [quoted_identifier(col) for col in columns]
     return select(*column_exprs).from_(table_expr.subquery())
+
+
+def get_row_index_column_expr() -> Expression:
+    """
+    Returns an expression for a running number aliased as TABLE_ROW_INDEX
+
+    Returns
+    -------
+    Expression
+    """
+    return expressions.alias_(  # type: ignore[no-any-return]
+        expressions.Window(
+            this=expressions.Anonymous(this="ROW_NUMBER"),
+            order=expressions.Order(expressions=[expressions.Literal.number(1)]),
+        ),
+        alias=InternalName.TABLE_ROW_INDEX,
+        quoted=True,
+    )

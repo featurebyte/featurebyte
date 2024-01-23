@@ -52,6 +52,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
             destination=location.table_details,
             sample_rows=None,
         )
+        await service.add_row_index_column(db_session, location.table_details)
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             columns_info, num_rows = await service.get_columns_info_and_num_rows(
