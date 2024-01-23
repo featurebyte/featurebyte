@@ -2,6 +2,7 @@
 Tests for Deployment route
 """
 import json
+import os
 import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
@@ -25,6 +26,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         "tests/fixtures/request_payloads/deployment.json"
     )
     async_create = True
+    online_store_payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/mysql_online_store.json"
+    )
 
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self):
@@ -40,6 +44,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
             ("feature_list", "feature_list_single"),
+            ("online_store", "mysql_online_store"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -82,6 +87,16 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             payload["feature_list_id"] = feature_list_id
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
+
+    def update_catalog_online_store_id(self, api_client, catalog_id):
+        """
+        Add online store to catalog
+        """
+        response = api_client.patch(
+            f"/catalog/{catalog_id}/online_store",
+            json={"online_store_id": self.online_store_payload["_id"]},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
 
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list 200"""
@@ -491,6 +506,43 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         # Check result
         assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": None}]}
+
+    def test_get_online_features__feast_store_not_available(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+        default_catalog_id,
+    ):
+        """Test feature list get_online_features"""
+        test_api_client, _ = test_api_client_persistent
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame([{"cust_id": 1, "feature_value": 123.0, "__FB_TABLE_ROW_INDEX": 0}])
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query_long_running = mock_execute_query
+
+        # Deploy feature list
+        deployment_doc = create_success_response.json()
+        self.update_deployment_enabled(test_api_client, deployment_doc["_id"], default_catalog_id)
+
+        # Simulate online store being set, but feast registry is not available
+        self.update_catalog_online_store_id(test_api_client, default_catalog_id)
+
+        with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+            # Request online features
+            deployment_id = deployment_doc["_id"]
+            data = {"entity_serving_names": [{"cust_id": 1}]}
+            response = test_api_client.post(
+                f"{self.base_route}/{deployment_id}/online_features",
+                data=json.dumps(data),
+            )
+        assert response.status_code == HTTPStatus.OK, response.content
+
+        # Check result
+        assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
 
     def test_request_sample_entity_serving_names(
         self,

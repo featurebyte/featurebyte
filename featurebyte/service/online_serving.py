@@ -20,7 +20,6 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
     UnsupportedRequestCodeTemplateLanguage,
 )
-from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.logging import get_logger
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -64,7 +63,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         feature_service: FeatureService,
         entity_service: EntityService,
         table_service: TableService,
-        feast_feature_store_service: FeastFeatureStoreService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -75,7 +73,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.table_service = table_service
-        self.feast_feature_store_service = feast_feature_store_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -154,6 +151,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
     async def get_online_features_by_feast(
         self,
         feature_list: FeatureListModel,
+        feast_store: FeastFeatureStore,
         request_data: List[Dict[str, Any]],
     ) -> OnlineFeaturesResponseModel:
         """
@@ -163,22 +161,15 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         ----------
         feature_list: FeatureListModel
             Feature List
+        feast_store: FeastFeatureStore
+            FeastFeatureStore object
         request_data: List[Dict[str, Any]]
             Request data containing entity serving names
 
         Returns
         -------
         OnlineFeaturesResponseModel
-
-        Raises
-        ------
-        RuntimeError
-            When the provided FeatureList is not available for online serving using feast.
         """
-        feast_store = await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
-        if feast_store is None:
-            raise RuntimeError("Feast feature store is not available")
-
         assert feature_list.feature_clusters is not None
         feature_cluster = feature_list.feature_clusters[0]
 
