@@ -62,8 +62,7 @@ class OfflineStoreFeatureTableService(
                 ],
             )
             results = list(res)
-            assert len(results) == 1
-            catalog_count = results[0]["uniqueCount"] + 1
+            catalog_count = results[0]["uniqueCount"] + 1 if results else 1
             return f"cat{catalog_count}"
 
     async def get_or_create_document(
