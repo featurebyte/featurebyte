@@ -31,7 +31,6 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.materialisation import get_row_index_column_expr
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
@@ -39,6 +38,7 @@ from featurebyte.query_graph.sql.online_serving import (
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
@@ -148,11 +148,14 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     last_materialized_timestamp=feature_table_model.last_materialized_at
                     if use_last_materialized_timestamp
                     else None,
-                ).select(get_row_index_column_expr()),
+                ),
             ),
             source_type=session.source_type,
         )
         await session.execute_query_long_running(create_batch_request_table_query)
+        await BaseMaterializedTableService.add_row_index_column(
+            session, batch_request_table.table_details
+        )
 
         # Materialize features
         output_table_details = TableDetails(
