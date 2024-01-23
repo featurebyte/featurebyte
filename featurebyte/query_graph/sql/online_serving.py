@@ -40,6 +40,10 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
+from featurebyte.query_graph.sql.entity import (
+    get_combined_serving_names,
+    get_combined_serving_names_expr,
+)
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -279,6 +283,27 @@ def get_current_timestamp_expr(
     return current_timestamp_expr
 
 
+def add_concatenated_serving_names(
+    select_expr: expressions.Select,
+    concatenate_serving_names: Optional[list[str]] = None,
+) -> expressions.Select:
+    """
+    Add concatenated serving name column to the provided Select statement which is assumed to
+    contain all the serving names.
+    """
+    if concatenate_serving_names is not None and len(concatenate_serving_names) > 1:
+        updated_select_expr = select_expr.select(
+            expressions.alias_(
+                get_combined_serving_names_expr(concatenate_serving_names),
+                alias=get_combined_serving_names(concatenate_serving_names),
+                quoted=True,
+            )
+        )
+    else:
+        updated_select_expr = select_expr
+    return updated_select_expr
+
+
 def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-many-locals
     graph: QueryGraph,
     node_groups: list[list[Node]],
@@ -292,6 +317,7 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
     output_include_row_index: bool = False,
+    concatenate_serving_names: Optional[list[str]] = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -343,6 +369,7 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
             source_type=source_type,
             parent_serving_preparation=parent_serving_preparation,
         )
+        sql_expr = add_concatenated_serving_names(sql_expr, concatenate_serving_names)
         if output_table_details is not None:
             output_query = get_sql_adapter(source_type).create_table_as(
                 table_details=output_table_details,
@@ -390,6 +417,7 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
         request_table_columns=request_table_columns,
         output_include_row_index=output_include_row_index,
     )
+    output_expr = add_concatenated_serving_names(output_expr, concatenate_serving_names)
     if output_table_details is not None:
         output_expr = get_sql_adapter(source_type).create_table_as(  # type: ignore[assignment]
             table_details=output_table_details,
@@ -423,6 +451,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
+    concatenate_serving_names: Optional[list[str]] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -505,6 +534,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
         request_timestamp=request_timestamp,
         output_table_details=output_table_details,
         output_include_row_index=request_table_details is None,
+        concatenate_serving_names=concatenate_serving_names,
     )
     fill_version_placeholders_for_query_set(query_set, versions)
     logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")

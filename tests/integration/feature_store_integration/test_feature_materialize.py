@@ -168,6 +168,15 @@ def features_fixture(
     assert feature_13.primary_entity_ids == feature_10.primary_entity_ids
     feature_13.name = "Complex Feature by User"
 
+    feature_14 = event_view.groupby(
+        ["ÜSER ID", "PRODUCT_ACTION"],
+    ).aggregate_over(
+        "ÀMOUNT",
+        method="sum",
+        windows=["24d"],
+        feature_names=["Amount Sum by Customer x Product Action 24d"],
+    )["Amount Sum by Customer x Product Action 24d"]
+
     # Save all features to be deployed
     features = [
         feature
@@ -185,6 +194,7 @@ def features_fixture(
             feature_11,
             feature_12,
             feature_13,
+            feature_14,
         ]
         if feature is not None
     ]
@@ -223,34 +233,6 @@ async def deployed_features_list_fixture(session, features, expected_udf_names):
         )
         all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
         assert all_udfs.intersection(set(expected_udf_names)) == set()
-
-
-@pytest_asyncio.fixture(name="deployed_feature_list_v2", scope="module")
-async def deployed_features_list_v2_fixture(features, deployed_feature_list):
-    """
-    Fixture for deployed feature list
-    """
-    _ = deployed_feature_list
-    features = [
-        feat
-        for feat in features
-        if feat.name in {"User Status Feature", "Current Number of Users With This Status"}
-    ]
-    feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_V2")
-    feature_list.save()
-    with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
-    ):
-        deployment = feature_list.deploy()
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
-            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-            deployment.enable()
-
-    yield deployment
-    deployment.disable()
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")
@@ -431,6 +413,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "PRODUCT_ACTION": "detail",
         "order_id": "T1230",
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
+        "üser id x PRODUCT_ACTION": "detail::761",
     }
     online_features = feature_store.get_online_features(
         features=feature_service,
@@ -447,6 +430,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         else None
     ]
     expected = {
+        f"Amount Sum by Customer x Product Action 24d_{version}": [None],
         f"Current Number of Users With This Status_{version}": [1.0],
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [
             {
@@ -486,6 +470,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "order_id": ["T1230"],
         "user_status": ["STÀTUS_CODE_37"],
         "üser id": ["5"],
+        "üser id x PRODUCT_ACTION": ["detail::761"],
     }
     assert_dict_approx_equal(online_features, expected)
 
@@ -502,6 +487,8 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "PRODUCT_ACTION": ["detail"],
         "user_status": ["STÀTUS_CODE_37"],
         "order_id": ["T1230"],
+        "üser id x PRODUCT_ACTION": ["detail::761"],
+        f"Amount Sum by Customer x Product Action 24d_{version}": [None],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         f"Current Number of Users With This Status_{version}": [1],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
@@ -568,6 +555,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
     )
     expected = {
+        "Amount Sum by Customer x Product Action 24d": 254.23000000000002,
         "Complex Feature by User": "STÀTUS_CODE_37_1",
         "Current Number of Users With This Status": 1.0,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
@@ -649,6 +637,7 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
     )
     expected = {
+        "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
         "Current Number of Users With This Status": 1,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {

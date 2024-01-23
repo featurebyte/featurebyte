@@ -31,6 +31,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.entity import get_combined_serving_names
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
@@ -66,7 +67,11 @@ class MaterializedFeatures:
         -------
         List[str]
         """
-        return self.serving_names + self.column_names
+        result = self.serving_names[:]
+        if len(self.serving_names) > 1:
+            result.append(get_combined_serving_names(self.serving_names))
+        result += self.column_names
+        return result
 
 
 class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
@@ -189,6 +194,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 output_table_details=output_table_details,
                 request_timestamp=feature_timestamp,
                 parent_serving_preparation=parent_serving_preparation,
+                concatenate_serving_names=feature_table_model.serving_names,
             )
 
             column_names = []
