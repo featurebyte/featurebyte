@@ -114,6 +114,7 @@ def mock_session_for_online_serving_fixture():
             execute_query_long_running=Mock(side_effect=mock_execute_query),
             database_name="my_db",
             schema_name="my_schema",
+            generate_session_unique_id=Mock(return_value="1"),
             source_type=SourceType.SNOWFLAKE,
             spec=BaseSession,
         )

@@ -441,6 +441,7 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
         source_type=SourceType.SNOWFLAKE,
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+        request_table_name=None,
     )
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,
@@ -471,6 +472,7 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
         source_type=SourceType.SNOWFLAKE,
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+        request_table_name="REQUEST_TABLE_1234",
     )
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,

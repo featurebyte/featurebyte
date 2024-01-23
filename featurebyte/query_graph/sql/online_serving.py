@@ -285,6 +285,7 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
     source_type: SourceType,
     request_table_columns: list[str],
     output_feature_names: list[str],
+    request_table_name: Optional[str],
     request_table_expr: Optional[expressions.Select] = None,
     request_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
@@ -311,6 +312,8 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
         List of output feature names
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
+    request_table_name: Optional[str]
+        Name of the registered request table
     request_table_expr: Optional[expressions.Select]
         Sql expression for the request table
     request_table_details: Optional[TableDetails]
@@ -379,10 +382,11 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
             )
         )
 
+    assert request_table_name is not None
     output_expr = construct_join_feature_sets_query(
         feature_queries=feature_queries,
         output_feature_names=output_feature_names,
-        request_table_name=REQUEST_TABLE_NAME,
+        request_table_name=request_table_name,
         request_table_columns=request_table_columns,
         output_include_row_index=output_include_row_index,
     )
@@ -469,8 +473,11 @@ async def get_online_features(  # pylint: disable=too-many-locals
             request_table_columns = request_data.column_names[:]
 
     if len(node_groups) > 1:
+        # If using multiple queries, FeatureQuerySet requires request table to be registered as a
+        # table beforehand.
+        request_table_name = f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}"
         if isinstance(request_data, pd.DataFrame):
-            await session.register_table(REQUEST_TABLE_NAME, request_data)
+            await session.register_table(request_table_name, request_data)
         else:
             assert request_table_details is not None
             query = sql_to_string(
@@ -479,7 +486,9 @@ async def get_online_features(  # pylint: disable=too-many-locals
                 ),
                 source_type=session.source_type,
             )
-            await session.register_table_with_query(REQUEST_TABLE_NAME, query)
+            await session.register_table_with_query(request_table_name, query)
+    else:
+        request_table_name = None
 
     aggregation_result_names = get_aggregation_result_names(graph, nodes, source_type)
     versions = await online_store_table_version_service.get_versions(aggregation_result_names)
@@ -489,6 +498,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
         source_type=source_type,
         request_table_columns=request_table_columns,
         output_feature_names=get_feature_names(graph, nodes),
+        request_table_name=request_table_name,
         request_table_expr=request_table_expr,
         request_table_details=request_table_details,
         parent_serving_preparation=parent_serving_preparation,
@@ -499,6 +509,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
     fill_version_placeholders_for_query_set(query_set, versions)
     logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
+    tic = time.time()
     df_features = await execute_feature_query_set(session, query_set)
     if output_table_details is None:
         assert df_features is not None
