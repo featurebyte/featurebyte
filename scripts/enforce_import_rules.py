@@ -203,6 +203,7 @@ if __name__ == "__main__":
             "whitelist": COMMON_LIBS.union(COMMON_MODS).union(
                 {
                     "featurebyte.session.base",  # query_graph/sql/{online_serving.py, feature_historical.py}
+                    "featurebyte.session.session_helper",  # query_graph/sql/online_serving.py
                     "featurebyte.service.online_store_table_version",  # query_graph/sql/online_serving.py
                 }
             ),

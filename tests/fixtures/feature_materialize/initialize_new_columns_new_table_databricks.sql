@@ -3,6 +3,18 @@ SELECT
 FROM `fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db`
 LIMIT 1;
 
+CREATE OR REPLACE TABLE `sf_db`.`sf_schema`.`TEMP_REQUEST_TABLE_000000000000000000000000`
+USING DELTA
+TBLPROPERTIES (
+  'delta.columnMapping.mode'='name',
+  'delta.minReaderVersion'='2',
+  'delta.minWriterVersion'='5'
+) AS
+SELECT
+  ROW_NUMBER() OVER (ORDER BY 1) AS `__FB_TABLE_ROW_INDEX`,
+  *
+FROM `TEMP_REQUEST_TABLE_000000000000000000000000`;
+
 CREATE TABLE `sf_db`.`sf_schema`.`fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db`
 USING DELTA
 TBLPROPERTIES (

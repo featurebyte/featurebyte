@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
@@ -141,6 +142,8 @@ async def test_online_serving_sql(
 
         # Check online_features route
         check_online_features_route(deployment, config, df_historical, columns)
+        with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", 4):
+            check_online_features_route(deployment, config, df_historical, columns)
 
         # check get batch features
         batch_request_table = await create_batch_request_table_from_dataframe(
@@ -154,6 +157,13 @@ async def test_online_serving_sql(
             df_historical,
             columns,
         )
+        with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", 4):
+            check_get_batch_features(
+                deployment,
+                batch_request_table,
+                df_historical,
+                columns,
+            )
 
         # clear batch request table
         batch_request_table.delete()
@@ -244,7 +254,7 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
     """
     batch_feature_table = deployment.compute_batch_feature_table(
         batch_request_table=batch_request_table,
-        batch_feature_table_name="batch_feature_table",
+        batch_feature_table_name=f"batch_feature_table_{ObjectId()}",
     )
     preview_df = batch_feature_table.preview(limit=df_historical.shape[0])
     fb_assert_frame_equal(

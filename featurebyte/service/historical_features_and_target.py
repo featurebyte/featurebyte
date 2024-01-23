@@ -18,22 +18,25 @@ from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.batch_helper import (
+    NUM_FEATURES_PER_QUERY,
+    get_feature_names,
+    split_nodes,
+)
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
-    NUM_FEATURES_PER_QUERY,
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     PROGRESS_MESSAGE_COMPUTING_TARGET,
     TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-    get_feature_names,
     get_historical_features_query_set,
     get_internal_observation_set,
-    split_nodes,
     validate_historical_requests_point_in_time,
     validate_request_schema,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.session_helper import execute_feature_query_set
 
 logger = get_logger(__name__)
 
@@ -234,9 +237,10 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         output_include_row_index=output_include_row_index,
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
-    await historical_feature_query_set.execute(
+    await execute_feature_query_set(
         session,
-        get_ranged_progress_callback(
+        feature_query_set=historical_feature_query_set,
+        progress_callback=get_ranged_progress_callback(
             progress_callback,
             TILE_COMPUTE_PROGRESS_MAX_PERCENT,
             100,
@@ -320,9 +324,10 @@ async def get_target(
         progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
     )
 
-    await historical_feature_query_set.execute(
-        session,
-        get_ranged_progress_callback(
+    await execute_feature_query_set(
+        session=session,
+        feature_query_set=historical_feature_query_set,
+        progress_callback=get_ranged_progress_callback(
             progress_callback,
             TILE_COMPUTE_PROGRESS_MAX_PERCENT,
             100,

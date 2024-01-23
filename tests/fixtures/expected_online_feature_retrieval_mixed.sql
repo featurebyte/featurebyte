@@ -1,4 +1,4 @@
-WITH ONLINE_MY_REQUEST_TABLE AS (
+WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."CUSTOMER_ID",
     REQ."order_id",
@@ -7,7 +7,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
 ), "REQUEST_TABLE_order_id" AS (
   SELECT DISTINCT
     "order_id"
-  FROM ONLINE_MY_REQUEST_TABLE
+  FROM ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."CUSTOMER_ID",
@@ -16,7 +16,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
     "T0"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
     "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
     "T1"."_fb_internal_item_count_None_order_id_None_input_2" AS "_fb_internal_item_count_None_order_id_None_input_2"
-  FROM ONLINE_MY_REQUEST_TABLE AS REQ
+  FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "CUSTOMER_ID" AS "CUSTOMER_ID",
