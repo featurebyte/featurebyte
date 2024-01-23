@@ -10,6 +10,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
@@ -196,11 +197,13 @@ class OfflineStoreIngestQueryGraphTransformer(
         node_name_to_subgraph_node_name: Dict[str, str],
         aggregation_node_names: Set[str],
         aggregation_info: AggregationInfo,
+        operation_structure: OperationStructure,
     ) -> Dict[str, Any]:
         agg_nodes_info = []
         feature_job_settings = []
+        agg_node_names = [agg.node_name for agg in operation_structure.iterate_aggregations()]
         for node_name in aggregation_node_names:
-            if node_name in node_name_to_subgraph_node_name:
+            if node_name in agg_node_names:
                 # if the aggregation node is in the subgraph, that means the aggregation node
                 # is used to create the offline store ingest query
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
@@ -250,6 +253,9 @@ class OfflineStoreIngestQueryGraphTransformer(
             node_name_to_subgraph_node_name=node_name_map,
             aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
+            operation_structure=global_state.decompose_point_info.operation_structure_map[
+                node_name
+            ],
         )
         part_num = global_state.ingest_graph_node_counter
         column_name = (

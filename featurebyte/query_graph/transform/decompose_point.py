@@ -182,16 +182,10 @@ class FeatureJobSettingExtractor:
         -------
         Optional[FeatureJobSetting]
         """
-        feature_job_settings = set()
         for _node in self.graph.iterate_nodes(target_node=node, node_type=None):
             if isinstance(_node, AggregationOpStructMixin):
-                fjs = self.extract_from_agg_node(node=_node)
-                if fjs:
-                    feature_job_settings.add(fjs)
-
-        if len(feature_job_settings) > 1:
-            assert False, "Multiple feature job settings found"
-        return next(iter(feature_job_settings), None)
+                return self.extract_from_agg_node(node=_node)
+        return None
 
 
 @dataclass
