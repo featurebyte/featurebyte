@@ -9,21 +9,21 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import SourceType
+from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     PROGRESS_MESSAGE_COMPUTING_TARGET,
-    FeatureQuery,
-    HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
-    get_feature_names,
     get_historical_features_expr,
     get_historical_features_query_set,
     get_internal_observation_set,
     validate_historical_requests_point_in_time,
 )
 from featurebyte.session.base import BaseSession
+from featurebyte.session.session_helper import execute_feature_query_set
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -254,12 +254,12 @@ async def test_historical_feature_query_set_execute(mocked_session, progress_mes
             feature_names=["F2"],
         ),
     ]
-    historical_feature_query_set = HistoricalFeatureQuerySet(
+    historical_feature_query_set = FeatureQuerySet(
         feature_queries=feature_queries,
         output_query="some_final_join_query",
         progress_message=progress_message,
     )
-    await historical_feature_query_set.execute(mocked_session, progress_callback)
+    await execute_feature_query_set(mocked_session, historical_feature_query_set, progress_callback)
     assert mocked_session.execute_query_long_running.call_args_list == [
         call("some_feature_query_1"),
         call("some_feature_query_2"),

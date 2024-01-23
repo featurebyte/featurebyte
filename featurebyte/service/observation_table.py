@@ -17,7 +17,6 @@ from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import (
     DBVarType,
-    InternalName,
     MaterializedTableNamePrefix,
     SourceType,
     SpecialColumnName,
@@ -525,43 +524,6 @@ class ObservationTableService(
             "entity_column_name_to_count": column_name_to_count,
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
-
-    @staticmethod
-    async def add_row_index_column(
-        session: BaseSession,
-        table_details: TableDetails,
-    ) -> None:
-        """
-        Add a row index column of running integers to a materialized table
-
-        Parameters
-        ----------
-        session: BaseSession
-            Database session
-        table_details: TableDetails
-            Table details of the materialized table
-        """
-        row_number_expr = expressions.alias_(
-            expressions.Window(
-                this=expressions.Anonymous(this="ROW_NUMBER"),
-                order=expressions.Order(expressions=[expressions.Literal.number(1)]),
-            ),
-            alias=InternalName.TABLE_ROW_INDEX,
-            quoted=True,
-        )
-        adapter = get_sql_adapter(session.source_type)
-        query = sql_to_string(
-            adapter.create_table_as(
-                table_details,
-                expressions.select(
-                    row_number_expr,
-                    expressions.Star(),
-                ).from_(quoted_identifier(table_details.table_name)),
-                replace=True,
-            ),
-            source_type=session.source_type,
-        )
-        await session.execute_query(query)
 
     async def update_observation_table(  # pylint: disable=too-many-branches
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate

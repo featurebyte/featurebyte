@@ -3,6 +3,18 @@ SELECT
 FROM `cat1_cust_id_30m`
 LIMIT 1;
 
+CREATE OR REPLACE TABLE `sf_db`.`sf_schema`.`TEMP_REQUEST_TABLE_000000000000000000000000`
+USING DELTA
+TBLPROPERTIES (
+  'delta.columnMapping.mode'='name',
+  'delta.minReaderVersion'='2',
+  'delta.minWriterVersion'='5'
+) AS
+SELECT
+  ROW_NUMBER() OVER (ORDER BY 1) AS `__FB_TABLE_ROW_INDEX`,
+  *
+FROM `TEMP_REQUEST_TABLE_000000000000000000000000`;
+
 CREATE TABLE `sf_db`.`sf_schema`.`cat1_cust_id_30m`
 USING DELTA
 TBLPROPERTIES (

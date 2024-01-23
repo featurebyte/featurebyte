@@ -13,7 +13,7 @@ from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -142,18 +142,6 @@ def freeze_feature_timestamp_fixture():
     """
     with freeze_time("2022-01-01 00:00:00"):
         yield
-
-
-def extract_session_executed_queries(mock_snowflake_session, func="execute_query_long_running"):
-    """
-    Helper to extract executed queries from mock_snowflake_session
-    """
-    assert func in {"execute_query_long_running", "execute_query"}
-    queries = []
-    for call_obj in getattr(mock_snowflake_session, func).call_args_list:
-        args, _ = call_obj
-        queries.append(args[0] + ";")
-    return "\n\n".join(queries)
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")

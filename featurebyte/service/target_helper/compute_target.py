@@ -3,23 +3,8 @@ Get targets module
 """
 from __future__ import annotations
 
-import time
-from abc import abstractmethod
-from dataclasses import dataclass
-
-from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.feature_historical import (
-    NUM_FEATURES_PER_QUERY,
-    PROGRESS_MESSAGE_COMPUTING_TARGET,
-    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-    get_feature_names,
-    get_historical_features_query_set,
-    get_internal_observation_set,
-    validate_request_schema,
-)
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.service.entity_validation import EntityValidationService

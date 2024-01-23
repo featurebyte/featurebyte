@@ -759,7 +759,7 @@ async def deploy_feature_list(app_container, feature_list_name, feature_ids):
         deployment_name=feature_list_model.name,
         to_enable_deployment=True,
     )
-    return feature_list_model
+    return await app_container.feature_list_service.get_document(feature_list_model.id)
 
 
 async def deploy_feature(
@@ -845,3 +845,15 @@ def assert_lists_of_dicts_equal(list1, list2):
     set1 = {dict_to_tuple(d) for d in list1}
     set2 = {dict_to_tuple(d) for d in list2}
     assert set1 == set2, f"Expected {set1}, got {set2}"
+
+
+def extract_session_executed_queries(mock_snowflake_session, func="execute_query_long_running"):
+    """
+    Helper to extract executed queries from mock_snowflake_session
+    """
+    assert func in {"execute_query_long_running", "execute_query"}
+    queries = []
+    for call_obj in getattr(mock_snowflake_session, func).call_args_list:
+        args, _ = call_obj
+        queries.append(args[0] + ";")
+    return "\n\n".join(queries)

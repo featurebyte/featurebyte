@@ -3,11 +3,10 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 import datetime
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -18,24 +17,24 @@ from sqlglot import expressions
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
+from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import (
-    get_fully_qualified_table_name,
-    get_qualified_column_identifier,
-    quoted_identifier,
-    sql_to_string,
+from featurebyte.query_graph.sql.batch_helper import (
+    NUM_FEATURES_PER_QUERY,
+    construct_join_feature_sets_query,
+    maybe_add_row_index_column,
+    split_nodes,
 )
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 from featurebyte.session.base import BaseSession
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
-NUM_FEATURES_PER_QUERY = 50
 
 PROGRESS_MESSAGE_COMPUTING_FEATURES = "Computing features"
 PROGRESS_MESSAGE_COMPUTING_TARGET = "Computing target"
@@ -150,69 +149,6 @@ class MaterializedTableObservationSet(ObservationSet):
             source_type=session.source_type,
         )
         await session.register_table_with_query(request_table_name, query)
-
-
-@dataclass
-class FeatureQuery:
-    """
-    FeatureQuery represents a sql query that materializes a temporary table for a set of features
-    """
-
-    sql: str
-    table_name: str
-    feature_names: list[str]
-
-
-@dataclass
-class HistoricalFeatureQuerySet:
-    """
-    HistoricalFeatureQuerySet is a collection of FeatureQuery that materializes intermediate feature
-    tables and a final query that joins them into one.
-    """
-
-    feature_queries: list[FeatureQuery]
-    output_query: str
-    progress_message: str
-
-    async def execute(
-        self,
-        session: BaseSession,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
-        """
-        Execute the feature queries to materialize historical features
-
-        Parameters
-        ----------
-        session: BaseSession
-            Session object
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
-        """
-        total_num_queries = len(self.feature_queries) + 1
-        materialized_feature_table = []
-        try:
-            for i, feature_query in enumerate(self.feature_queries):
-                await session.execute_query_long_running(feature_query.sql)
-                materialized_feature_table.append(feature_query.table_name)
-                if progress_callback:
-                    await progress_callback(
-                        int(100 * (i + 1) / total_num_queries),
-                        self.progress_message,
-                    )
-
-            await session.execute_query_long_running(self.output_query)
-            if progress_callback:
-                await progress_callback(100, self.progress_message)
-
-        finally:
-            for table_name in materialized_feature_table:
-                await session.drop_table(
-                    database_name=session.database_name,
-                    schema_name=session.schema_name,
-                    table_name=table_name,
-                    if_exists=True,
-                )
 
 
 def get_internal_observation_set(
@@ -360,136 +296,6 @@ def get_historical_features_expr(
     return historical_features_expr, feature_names
 
 
-def split_nodes(
-    graph: QueryGraph,
-    nodes: list[Node],
-    num_features_per_query: int,
-    is_tile_cache: bool = False,
-) -> list[list[Node]]:
-    """
-    Split nodes into multiple lists, each containing at most `num_features_per_query` nodes. Nodes
-    within the same group after splitting will be executed in the same query.
-
-    Parameters
-    ----------
-    graph: QueryGraph
-        Query graph
-    nodes : list[Node]
-        List of nodes
-    num_features_per_query : int
-        Number of features per query
-    is_tile_cache : bool
-        Whether the output will be used for tile cache queries
-
-    Returns
-    -------
-    list[list[Node]]
-    """
-    planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
-
-    def get_sort_key(node: Node) -> str:
-        mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
-        agg_specs = planner.get_aggregation_specs(mapped_node)
-        agg_spec = agg_specs[0]
-
-        parts = [agg_spec.aggregation_type.value]
-        if isinstance(agg_spec, TileBasedAggregationSpec):
-            if is_tile_cache:
-                # Tile cache queries joins with entity tracker tables. These tables are organized by
-                # aggregation_id. The split should be random across different aggregation_id.
-                parts.append(agg_spec.aggregation_id)
-            else:
-                # Tile based aggregation joins with tile tables. Sort by tile_table_id first to
-                # group nodes that join with the same tile table.
-                parts.extend([agg_spec.tile_table_id, agg_spec.aggregation_id])
-        else:
-            assert isinstance(agg_spec, NonTileBasedAggregationSpec)
-            # These queries join with source tables directly. Sort by query node name of the source
-            # to group nodes that join with the same source table.
-            query_node = planner.graph.get_node_by_name(agg_spec.aggregation_source.query_node_name)
-            parts.append(query_node.name)
-
-        key = ",".join(parts)
-        return key
-
-    result = []
-    sorted_nodes = sorted(nodes, key=get_sort_key)
-    for i in range(0, len(sorted_nodes), num_features_per_query):
-        current_nodes = sorted_nodes[i : i + num_features_per_query]
-        result.append(current_nodes)
-    return result
-
-
-def _maybe_add_row_index_column(
-    request_table_columns: list[str], to_include_row_index_column: bool
-) -> list[str]:
-    if to_include_row_index_column:
-        return [InternalName.TABLE_ROW_INDEX.value] + request_table_columns
-    return request_table_columns[:]
-
-
-def construct_join_feature_sets_query(
-    feature_queries: list[FeatureQuery],
-    output_feature_names: list[str],
-    request_table_name: str,
-    request_table_columns: list[str],
-    output_include_row_index: bool,
-) -> expressions.Select:
-    """
-    Construct the SQL code that joins the results of intermediate feature queries
-
-    Parameters
-    ----------
-    feature_queries : list[FeatureQuery]
-        List of feature queries
-    output_feature_names : list[str]
-        List of output feature names
-    request_table_name : str
-        Name of request table
-    request_table_columns : list[str]
-        List of column names in the request table. This should exclude the TABLE_ROW_INDEX
-        column which is only used for joining.
-    output_include_row_index: bool
-        Whether to include the TABLE_ROW_INDEX column in the output
-
-    Returns
-    -------
-    expressions.Select
-    """
-    expr = expressions.select(
-        *(
-            get_qualified_column_identifier(col, "REQ")
-            for col in _maybe_add_row_index_column(request_table_columns, output_include_row_index)
-        )
-    ).from_(f"{request_table_name} AS REQ")
-
-    table_alias_by_feature = {}
-    for i, feature_set in enumerate(feature_queries):
-        table_alias = f"T{i}"
-        expr = expr.join(
-            expressions.Table(
-                this=quoted_identifier(feature_set.table_name),
-                alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
-            ),
-            join_type="left",
-            on=expressions.EQ(
-                this=get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "REQ"),
-                expression=get_qualified_column_identifier(
-                    InternalName.TABLE_ROW_INDEX, table_alias
-                ),
-            ),
-        )
-        for feature_name in feature_set.feature_names:
-            table_alias_by_feature[feature_name] = table_alias
-
-    return expr.select(
-        *[
-            get_qualified_column_identifier(name, table_alias_by_feature[name])
-            for name in output_feature_names
-        ]
-    )
-
-
 def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-many-arguments
     request_table_name: str,
     graph: QueryGraph,
@@ -502,7 +308,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
-) -> HistoricalFeatureQuerySet:
+) -> FeatureQuerySet:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -532,7 +338,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
 
     Returns
     -------
-    HistoricalFeatureQuerySet
+    FeatureQuerySet
     """
     # Process nodes in batches
     node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
@@ -542,7 +348,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
             nodes=nodes,
-            request_table_columns=_maybe_add_row_index_column(
+            request_table_columns=maybe_add_row_index_column(
                 request_table_columns, output_include_row_index
             ),
             serving_names_mapping=serving_names_mapping,
@@ -557,7 +363,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
             ),
             source_type=source_type,
         )
-        return HistoricalFeatureQuerySet(
+        return FeatureQuerySet(
             feature_queries=[],
             output_query=output_query,
             progress_message=progress_message,
@@ -605,27 +411,8 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
         ),
         source_type=source_type,
     )
-    return HistoricalFeatureQuerySet(
+    return FeatureQuerySet(
         feature_queries=feature_queries,
         output_query=output_query,
         progress_message=progress_message,
     )
-
-
-def get_feature_names(graph: QueryGraph, nodes: list[Node]) -> list[str]:
-    """
-    Get feature names given a list of ndoes
-
-    Parameters
-    ----------
-    graph: QueryGraph
-        Query graph
-    nodes: list[Node]
-        List of query graph node
-
-    Returns
-    -------
-    list[str]
-    """
-    planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
-    return planner.generate_plan(nodes).feature_names
