@@ -69,11 +69,6 @@ class OfflineIngestGraphContainer:
         -------
         OfflineIngestGraphContainer
         """
-        # Build mapping from entity id to serving names needed by offline store info extraction
-        all_feature_entity_ids = set()
-        for feature in features:
-            all_feature_entity_ids.update(feature.entity_ids)
-
         # Group features by offline store feature table name
         offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
@@ -319,7 +314,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             has_ttl=feature_table_dict["has_ttl"],
             feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
         )
-        update_schema = FeaturesUpdate(**feature_table_model.dict())
+        update_schema = FeaturesUpdate(**feature_table_model.dict(by_alias=True))
         return cast(
             OfflineStoreFeatureTableModel,
             await self.offline_store_feature_table_service.update_document(

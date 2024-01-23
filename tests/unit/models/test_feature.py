@@ -201,14 +201,17 @@ def test_extract_operation_structure(feature_model_dict):
     ]
 
 
-def test_ingest_graph_and_node(feature_model_dict):
+@pytest.mark.asyncio
+async def test_ingest_graph_and_node(feature_model_dict, app_container):
     """Test ingest_graph_and_node method"""
     feature_model_dict["version"] = {"name": "V231231", "suffix": None}
+    feature_model_dict["catalog_id"] = app_container.catalog_id
     feature = FeatureModel(**feature_model_dict)
-    feature.initialize_offline_store_info(entity_id_to_serving_name={})
-    offline_store_info = feature.offline_store_info
-    assert offline_store_info is not None, "Offline store info should not be None"
-
+    service = app_container.offline_store_info_initialization_service
+    offline_store_info = await service.initialize_offline_store_info(
+        feature=feature,
+        entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
+    )
     ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]
 
     # case 1: no decomposed graph

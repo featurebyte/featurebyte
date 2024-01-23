@@ -3,13 +3,16 @@ OfflineStoreFeatureTableModel class
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
+from pydantic import Field, root_validator
 
+from featurebyte.common.model_util import convert_seconds_to_time_format
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -33,6 +36,8 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     name: str
+    name_prefix: Optional[str] = Field(default=None)
+    name_suffix: Optional[str] = Field(default=None)
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
@@ -43,8 +48,119 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    entity_universe: EntityUniverseModel
+    internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
     entity_lookup_info: Optional[EntityRelationshipInfo]
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @root_validator
+    @classmethod
+    def _set_feature_store_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set feature_store_id
+
+        Parameters
+        ----------
+        values : Dict[str, Any]
+            Values
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        if not values.get("feature_store_id", None) and values.get("feature_cluster"):
+            values["feature_store_id"] = values["feature_cluster"].feature_store_id
+        return values
+
+    @property
+    def table_signature(self) -> Dict[str, Any]:
+        """
+        Get table signature
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        entity_lookup_info = None
+        if self.entity_lookup_info:
+            entity_lookup_info = self.entity_lookup_info.dict(by_alias=True)
+        return {
+            "catalog_id": self.catalog_id,
+            "primary_entity_ids": self.primary_entity_ids,
+            "serving_names": self.serving_names,
+            "feature_job_setting": self.feature_job_setting.dict()
+            if self.feature_job_setting
+            else None,
+            "has_ttl": self.has_ttl,
+            "entity_lookup_info": entity_lookup_info,
+        }
+
+    @property
+    def entity_universe(self) -> EntityUniverseModel:
+        """
+        Get entity universe
+
+        Returns
+        -------
+        EntityUniverseModel
+
+        Raises
+        ------
+        ValueError
+            If entity_universe is not set
+        """
+        if self.internal_entity_universe is None:
+            raise ValueError("entity_universe is not set")
+        return EntityUniverseModel(**self.internal_entity_universe)
+
+    def _get_basename(self) -> str:
+        # max length of feature table name is 64
+        # reserving 7 characters for prefix (catalog name, `cat<num>_`, num is 1-999)
+        # 3 characters for suffix (count, `_<num>`, num is 1-99
+        max_len = 64 - 7 - 3
+        name = "_no_entity"
+        if self.serving_names:
+            # take first 3 serving names and join them with underscore
+            # if serving name is longer than 16 characters, truncate it
+            max_serv_name_len = 16
+            max_serv_num = 3
+            name = sanitize_identifier(
+                "_".join(
+                    serving_name[:max_serv_name_len]
+                    for serving_name in self.serving_names[:max_serv_num]
+                )
+            ).lstrip("_")
+
+        if self.feature_job_setting:
+            # take the frequency part of the feature job setting
+            max_freq_len = 5
+            freq_part = ""
+            for component in reversed(range(1, 5)):
+                freq_part = convert_seconds_to_time_format(
+                    self.feature_job_setting.frequency_seconds, components=component
+                )
+                if len(freq_part) <= max_freq_len:
+                    break
+            keep = max_len - len(freq_part) - 1
+            name = f"{name[:keep]}_{freq_part}"
+        return name[:max_len]
+
+    def get_name(self) -> str:
+        """
+        Get full name of the feature table
+
+        Returns
+        -------
+        str
+        """
+        full_name = ""
+        if self.name_prefix:
+            full_name += self.name_prefix + "_"
+
+        full_name += self._get_basename()
+
+        if self.name_suffix:
+            full_name += "_" + self.name_suffix
+        return full_name
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

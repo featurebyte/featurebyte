@@ -49,7 +49,6 @@ def test_feast_registry_construction__with_post_processing_features(
     float_feature,
     non_time_based_feature,
     latest_event_timestamp_feature,
-    catalog_id,
     mock_pymysql_connect,
 ):
     """Test the construction of the feast register (with post processing features)"""
@@ -81,8 +80,8 @@ def test_feast_registry_construction__with_post_processing_features(
     assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
-        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+        "cat1_cust_id_30m",
+        "cat1_transaction_id_1d",
     }
 
     data_sources = feast_registry_dict["dataSources"]
@@ -165,7 +164,7 @@ def expected_data_sources_fixture(expected_data_source_names):
 
 
 @pytest.fixture(name="expected_feature_view_specs")
-def expected_feature_view_specs_fixture(catalog_id, feature_list):
+def expected_feature_view_specs_fixture(feature_list):
     """Expected feature view specs"""
     relationship_info_id = feature_list.cached_model.relationships_info[0].id
     common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
@@ -179,13 +178,13 @@ def expected_feature_view_specs_fixture(catalog_id, feature_list):
     return [
         {
             **common_params,
-            "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+            "name": "cat1_transaction_id_1d",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                "name": "cat1_transaction_id_1d",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                    "table": "cat1_transaction_id_1d",
                 },
             },
             "entities": ["transaction_id"],
@@ -203,13 +202,13 @@ def expected_feature_view_specs_fixture(catalog_id, feature_list):
         },
         {
             **common_params,
-            "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+            "name": "cat1__no_entity_1d",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+                "name": "cat1__no_entity_1d",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+                    "table": "cat1__no_entity_1d",
                 },
             },
             "entities": ["__dummy"],
@@ -222,13 +221,13 @@ def expected_feature_view_specs_fixture(catalog_id, feature_list):
         },
         {
             **common_params,
-            "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+            "name": "cat1_cust_id_30m",
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+                "name": "cat1_cust_id_30m",
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+                    "table": "cat1_cust_id_30m",
                 },
             },
             "entities": ["cust_id"],
@@ -269,7 +268,7 @@ def expected_feature_view_specs_fixture(catalog_id, feature_list):
 
 @pytest.fixture(name="expected_feature_service_spec")
 def expected_feature_service_spec_fixture(
-    catalog_id, float_feature, feature_without_entity, composite_feature_ttl_req_col
+    float_feature, feature_without_entity, composite_feature_ttl_req_col
 ):
     """Expected feature service spec"""
     comp_feat_id = composite_feature_ttl_req_col.id
@@ -303,7 +302,7 @@ def expected_feature_service_spec_fixture(
                             "valueType": "DOUBLE",
                         }
                     ],
-                    "featureViewName": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                    "featureViewName": "cat1_transaction_id_1d",
                 },
             ],
         }

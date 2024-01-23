@@ -66,10 +66,8 @@ def test_point_in_time_minus_timestamp_feature(
     output = transformer.transform(
         target_node=new_feature_model.node,
         relationships_info=new_feature_model.relationships_info,
-        entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
         feature_version=new_feature_model.version.to_str(),
-        catalog_id=new_feature_model.catalog_id,
     )
 
     # check decomposed graph structure
@@ -120,10 +118,8 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     output = transformer.transform(
         target_node=new_feature_model.node,
         relationships_info=new_feature_model.relationships_info,
-        entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
         feature_version=new_feature_model.version.to_str(),
-        catalog_id=new_feature_model.catalog_id,
     )
 
     # check decomposed graph structure

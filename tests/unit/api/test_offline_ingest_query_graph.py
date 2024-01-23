@@ -8,13 +8,16 @@ from unittest.mock import AsyncMock
 
 import freezegun
 import pytest
-from bson import json_util
+from bson import ObjectId, json_util
 
 from featurebyte import DatabricksDetails, Entity, FeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
+from featurebyte.schema.catalog import CatalogCreate
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
@@ -552,7 +555,10 @@ def test_feature_entity_dtypes(
     ]
 
 
-def test_on_demand_feature_view_code_generation__card_transaction_description_feature(test_dir):
+@pytest.mark.asyncio
+async def test_on_demand_feature_view_code_generation__card_transaction_description_feature(
+    test_dir, persistent, user
+):
     """Test on-demand feature view code generation for card_transaction_description feature."""
     fixture_path = os.path.join(
         test_dir, "fixtures/feature/card_txn_description_representation.json"
@@ -561,10 +567,33 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feature_dict = json_util.loads(file_handle.read())
         feature = FeatureModel(**feature_dict)
 
+    # create catalog document
+    catalog_id = feature.catalog_id
+    app_container = LazyAppContainer(
+        app_container_config=app_container_config,
+        instance_map={
+            "user": user,
+            "persistent": persistent,
+            "catalog_id": catalog_id,
+        },
+    )
+    await app_container.catalog_service.create_document(
+        data=CatalogCreate(
+            _id=catalog_id,
+            name="test_catalog",
+            default_feature_store_ids=["6597cfcb357720b529a10196"],
+        )
+    )
+
     # initialize offline store info
-    feature.initialize_offline_store_info(entity_id_to_serving_name={})
+    service = app_container.offline_store_info_initialization_service
+    offline_store_info = await service.initialize_offline_store_info(
+        feature=feature,
+        entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
+    )
 
     # check on-demand view code
+    feature.internal_offline_store_info = offline_store_info.dict(by_alias=True)
     check_on_demand_feature_code_generation(feature_model=feature)
 
     # check the actual code
@@ -582,8 +611,8 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
     def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
         # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
         feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
 
         def get_relative_frequency(input_dict, key):
@@ -604,15 +633,15 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
             np.nan
-            if pd.isna(feat_2) or pd.isna(feat_4)
-            else np.divide(feat_2, feat_4)
+            if pd.isna(feat_4) or pd.isna(feat_2)
+            else np.divide(feat_4, feat_2)
         )
         return feat_5
 
     return user_defined_function(x_1, x_2, x_3)
     $$
     """
-    assert feature.offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
 
     expected = """
     import json
@@ -626,7 +655,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
     ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
@@ -647,7 +676,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         mask = feat_1.isnull()
         feat_1[mask] = 0
         feat_2 = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
         feat_3 = feat_2.combine(
             inputs[
@@ -659,9 +688,9 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feat_3[mask_1] = 0
         feat_4 = pd.Series(
             np.where(
-                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
+                pd.isna(feat_3) | pd.isna(feat_1), np.nan, np.divide(feat_3, feat_1)
             ),
-            index=feat_1.index,
+            index=feat_3.index,
         )
         # TTL handling for TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -675,7 +704,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         df.fillna(np.nan, inplace=True)
         return df
     """
-    assert feature.offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
 @freezegun.freeze_time("2024-01-03")
@@ -684,7 +713,6 @@ def test_databricks_specs(
     non_time_based_feature,
     composite_feature,
     latest_event_timestamp_feature,
-    catalog_id,
 ):
     """Test databricks specs"""
     req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
@@ -741,7 +769,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -753,7 +781,7 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -768,8 +796,8 @@ def test_databricks_specs(
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "x_1": "__feature_V240103__part0",
-                "x_2": "__feature_V240103__part1",
+                "x_1": "__feature_V240103__part1",
+                "x_2": "__feature_V240103__part0",
             },
             output_name="feature",
         ),
@@ -839,7 +867,6 @@ def test_databricks_specs(
     )
     """
     replace_pairs = [
-        ("[CATALOG_ID]", str(catalog_id)),
         ("[FEATURE_ID1]", str(composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_feature.cached_model.id)),
     ]

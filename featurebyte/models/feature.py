@@ -23,11 +23,7 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.mixin import QueryGraphMixin
-from featurebyte.models.offline_store_ingest_query import (
-    OfflineStoreInfo,
-    OfflineStoreInfoMetadata,
-    ServingNameInfo,
-)
+from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -49,16 +45,11 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
-from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-from featurebyte.query_graph.transform.offline_store_ingest import (
-    OfflineStoreIngestQueryGraphTransformer,
-    extract_dtype_from_graph,
-    get_offline_store_table_name,
-)
+from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
@@ -445,7 +436,14 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
 
-    def _extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+    def extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+        """
+        Extract aggregation nodes info from the feature or target graph
+
+        Returns
+        -------
+        List[AggregationNodeInfo]
+        """
         operation_structure = self.graph.extract_operation_structure(self.node)
         output = []
         for agg in operation_structure.iterate_aggregations():
@@ -460,93 +458,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 )
             )
         return output
-
-    def initialize_offline_store_info(
-        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    ) -> None:
-        """
-        Initialize offline store info
-
-        Parameters
-        ----------
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping
-        """
-        transformer = OfflineStoreIngestQueryGraphTransformer(graph=self.graph)
-        assert self.name is not None
-        result = transformer.transform(
-            target_node=self.node,
-            entity_id_to_serving_name=entity_id_to_serving_name,
-            relationships_info=self.relationships_info or [],
-            feature_name=self.name,
-            feature_version=self.version.to_str(),
-            catalog_id=self.catalog_id,
-        )
-
-        if result.is_decomposed:
-            decomposed_graph = result.graph
-            output_node_name = result.node_name_map[self.node.name]
-            metadata = None
-        else:
-            decomposed_graph = self.graph
-            output_node_name = self.node.name
-            feature_job_setting = FeatureJobSettingExtractor(
-                graph=self.graph
-            ).extract_from_target_node(node=self.node)
-
-            has_ttl = bool(
-                next(
-                    self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY),
-                    None,
-                )
-            )
-            table_name = get_offline_store_table_name(
-                primary_entity_serving_names=[
-                    entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
-                ],
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-                catalog_id=self.catalog_id,
-            )
-
-            assert len(self.entity_ids) == len(
-                self.entity_dtypes
-            ), "entity_ids & entity_dtypes must match"
-            entity_id_to_dtype = dict(zip(self.entity_ids, self.entity_dtypes))
-            metadata = OfflineStoreInfoMetadata(
-                aggregation_nodes_info=self._extract_aggregation_nodes_info(),
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-                offline_store_table_name=table_name,
-                output_column_name=self.versioned_name,
-                output_dtype=self.dtype,
-                primary_entity_ids=self.primary_entity_ids,
-                primary_entity_dtypes=[
-                    entity_id_to_dtype[entity_id] for entity_id in self.primary_entity_ids
-                ],
-            )
-
-        # populate offline store info
-        offline_store_info = OfflineStoreInfo(
-            graph=decomposed_graph,
-            node_name=output_node_name,
-            node_name_map=result.node_name_map,
-            is_decomposed=result.is_decomposed,
-            metadata=metadata,
-            serving_names_info=[
-                ServingNameInfo(serving_name=serving_name, entity_id=entity_id)
-                for entity_id, serving_name in entity_id_to_serving_name.items()
-            ],
-        )
-        offline_store_info.initialize(
-            feature_versioned_name=self.versioned_name,
-            feature_dtype=self.dtype,
-            feature_job_settings=[
-                setting.feature_job_setting for setting in self.table_id_feature_job_settings
-            ],
-            feature_id=self.id,
-        )
-        self.internal_offline_store_info = offline_store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

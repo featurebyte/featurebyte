@@ -27,6 +27,7 @@ from featurebyte.service.base_feature_service import BaseFeatureService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
     validate_version_and_namespace_consistency,
@@ -53,6 +54,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
         entity_serving_names_service: EntityServingNamesService,
+        offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
     ):
         super().__init__(
             user=user,
@@ -66,6 +68,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self.feature_namespace_service = feature_namespace_service
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
+        self.offline_store_info_initialization_service = offline_store_info_initialization_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -159,17 +162,6 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             # prepare feature definition
             definition = await self.namespace_handler.prepare_definition(document=document)
 
-            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-                service = self.entity_serving_names_service
-                entity_id_to_serving_name = (
-                    await service.get_entity_id_to_serving_name_for_offline_store(
-                        entity_ids=document.entity_ids
-                    )
-                )
-                document.initialize_offline_store_info(
-                    entity_id_to_serving_name=entity_id_to_serving_name
-                )
-
             # insert the document
             definition_hash_output = document.extract_definition_hash()
             insert_id = await session.insert_one(
@@ -183,6 +175,15 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 user_id=self.user.id,
             )
             assert insert_id == document.id
+
+            # initialize offline store info
+            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+                store_info = await self.offline_store_info_initialization_service.initialize_offline_store_info(
+                    feature=document
+                )
+                await self.update_offline_store_info(
+                    document_id=document.id, store_info=store_info.dict(by_alias=True)
+                )
 
             try:
                 feature_namespace = await self.feature_namespace_service.get_document(
@@ -274,6 +275,33 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
             update={"$set": {"readiness": str(readiness)}},
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+
+    async def update_offline_store_info(
+        self, document_id: ObjectId, store_info: Dict[str, Any]
+    ) -> None:
+        """
+        Update offline store info for a feature
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Feature id
+        store_info: Dict[str, Any]
+            Offline store info
+        """
+        document = await self.get_document_as_dict(
+            document_id=document_id,
+            projection={"block_modification_by": 1},
+        )
+        self._check_document_modifiable(document=document)
+
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document_id),
+            update={"$set": {"offline_store_info": store_info}},
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
