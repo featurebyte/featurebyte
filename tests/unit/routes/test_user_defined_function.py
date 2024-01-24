@@ -304,3 +304,29 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             "updated_at": None,
             "description": None,
         }
+
+    def test_create__with_description(self, test_api_client_persistent):
+        """Test creation route accepts description as well"""
+        test_api_client, _ = test_api_client_persistent
+
+        self.setup_creation_route(test_api_client)
+
+        payload = self.payload.copy()
+        payload["description"] = "udf description"
+
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.CREATED, response.text
+        response_dict = response.json()
+        assert response_dict["description"] == "udf description"
+
+        udf_id = response_dict["_id"]
+
+        response = test_api_client.get(url=f"{self.base_route}/{udf_id}")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict["description"] == "udf description"
+
+        response = test_api_client.get(url=f"{self.base_route}/{udf_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict["description"] == "udf description"
