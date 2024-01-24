@@ -26,7 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
-from tests.source_types import SNOWFLAKE_AND_SPARK
+from tests.source_types import SNOWFLAKE_AND_SPARK, SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -71,8 +71,7 @@ def features_fixture(
         method="sum",
         windows=["666h"],
         feature_names=["EXTERNAL_FS_FEATURE_NOT_DEPLOYED"],
-    )
-    feature_0.save()
+    )["EXTERNAL_FS_FEATURE_NOT_DEPLOYED"]
 
     # Window aggregate feature
     feature_1 = event_view.groupby("ÜSER ID").aggregate_over(
@@ -182,6 +181,7 @@ def features_fixture(
     features = [
         feature
         for feature in [
+            feature_0,
             feature_1,
             feature_2,
             feature_3,
@@ -200,10 +200,10 @@ def features_fixture(
         if feature is not None
     ]
     for feature in features:
-        feature.save()
+        feature.save(conflict_resolution="retrieve")
         feature.update_readiness("PRODUCTION_READY")
 
-    return features
+    return features[1:]
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
@@ -212,7 +212,7 @@ async def deployed_features_list_fixture(session, features):
     Fixture for deployed feature list
     """
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST")
-    feature_list.save()
+    feature_list.save(conflict_resolution="retrieve")
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
@@ -381,10 +381,10 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
         assert len(udfs_for_on_demand_func) == 0
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
-async def test_feast_registry(app_container, expected_feature_table_names):
+async def test_feast_registry(app_container, expected_feature_table_names, source_type):
     """
     Check feast registry is populated correctly
     """
@@ -422,11 +422,12 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
         else None
     ]
-    online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
-        json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
-        if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
-        else None
-    ]
+    if source_type != SourceType.DATABRICKS_UNITY:
+        online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
+            json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
+            if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
+            else None
+        ]
     expected = {
         f"Amount Sum by Customer x Product Action 24d_{version}": [None],
         f"Current Number of Users With This Status_{version}": [1.0],
@@ -470,6 +471,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "üser id": ["5"],
         "üser id x PRODUCT_ACTION": ["detail::761"],
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
+        expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
     assert_dict_approx_equal(online_features, expected)
 
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
@@ -501,6 +505,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [None],
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [None],
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
+        expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
     assert_dict_approx_equal(online_features, expected)
 
     # set the point in time earlier than the 2001-01-02 12:00:00
@@ -671,7 +678,7 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__ttl_feature_table(
     app_container,
@@ -692,7 +699,7 @@ async def test_simulated_materialize__ttl_feature_table(
         ),
     )
     version = get_version()
-    if source_type == SourceType.SNOWFLAKE:
+    if source_type != SourceType.DATABRICKS_UNITY:
         expected = [
             "__feature_timestamp",
             "üser id",

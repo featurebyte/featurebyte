@@ -1,4 +1,8 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple
+"""
+Spark Thrift Server Data Source
+"""
+# pylint: disable=no-name-in-module
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, cast
 
 import json
 
@@ -9,19 +13,15 @@ from feast.repo_config import RepoConfig
 from feast.saved_dataset import SavedDatasetStorage
 from feast.type_map import spark_to_feast_value_type
 from feast.value_type import ValueType
-
-from featurebyte.session.base_spark import BaseSparkSession
-
-
-def get_table_column_names_and_types(
-    db_session: BaseSparkSession,
-    table_name: str,
-) -> Iterable[Tuple[str, str]]:
-    df = db_session.execute_query_blocking(f"DESCRIBE {table_name}")
-    return tuple((row.col_name, row.data_type) for _, row in df.iterrows())
+from typeguard import typechecked
 
 
+@typechecked
 class SparkThriftSource(DataSource):
+    """
+    Feast DataSource for Spark Thrift Server
+    """
+
     def __init__(
         self,
         *,
@@ -122,7 +122,7 @@ class SparkThriftSource(DataSource):
 
         return data_source_proto
 
-    def validate(self, config: RepoConfig):
+    def validate(self, config: RepoConfig) -> None:
         self.get_table_column_names_and_types(config)
 
     @staticmethod
@@ -130,11 +130,9 @@ class SparkThriftSource(DataSource):
         return spark_to_feast_value_type
 
     def get_table_column_names_and_types(self, config: RepoConfig) -> Iterable[Tuple[str, str]]:
-        from featurebyte.feast.infra.offline_stores.spark_thrift import get_db_session
-
-        return get_table_column_names_and_types(
-            db_session=get_db_session(config.offline_store),
-            table_name=self.get_table_query_string(),
+        return cast(
+            Iterable[Tuple[str, str]],
+            config.offline_store.get_table_column_names_and_types(self.get_table_query_string()),
         )
 
     def get_table_query_string(self) -> str:
@@ -149,6 +147,10 @@ class SparkThriftSource(DataSource):
 
 
 class SparkThriftOptions:
+    """
+    DataSource options for Spark Thrift Server
+    """
+
     def __init__(
         self,
         catalog: str,
@@ -160,14 +162,35 @@ class SparkThriftOptions:
         self.table = table
 
     @classmethod
-    def from_proto(cls, postgres_options_proto: DataSourceProto.CustomSourceOptions):
-        config = json.loads(postgres_options_proto.configuration.decode("utf8"))
+    def from_proto(
+        cls, spark_thrift_options_proto: DataSourceProto.CustomSourceOptions
+    ) -> "SparkThriftOptions":
+        """
+        Creates a SparkThriftOptions from a protobuf representation of a SparkThriftOptions
+
+        Parameters
+        ----------
+        spark_thrift_options_proto: DataSourceProto.CustomSourceOptions
+            A protobuf representation of a SparkThriftOptions
+
+        Returns
+        -------
+        SparkThriftOptions
+        """
+        config = json.loads(spark_thrift_options_proto.configuration.decode("utf8"))
         spark_thrift_options = cls(
             catalog=config["catalog"], schema=config["schema"], table=config["table"]
         )
         return spark_thrift_options
 
     def to_proto(self) -> DataSourceProto.CustomSourceOptions:
+        """
+        Converts a SparkThriftOptions to its protobuf representation
+
+        Returns
+        -------
+        DataSourceProto.CustomSourceOptions
+        """
         spark_thrift_options_proto = DataSourceProto.CustomSourceOptions(
             configuration=json.dumps(
                 {"catalog": self.catalog, "schema": self.schema, "table": self.table}
@@ -177,6 +200,10 @@ class SparkThriftOptions:
 
 
 class SavedDatasetSparkThriftStorage(SavedDatasetStorage):
+    """
+    SavedDatasetStorage for Spark Thrift Server
+    """
+
     _proto_attr_name = "custom_storage"
 
     spark_thrift_options: SparkThriftOptions
@@ -195,6 +222,18 @@ class SavedDatasetSparkThriftStorage(SavedDatasetStorage):
 
     @staticmethod
     def from_proto(storage_proto: SavedDatasetStorageProto) -> SavedDatasetStorage:
+        """
+        Creates a SavedDatasetSparkThriftStorage from a protobuf representation of a SavedDatasetSparkThriftStorage
+
+        Parameters
+        ----------
+        storage_proto: SavedDatasetStorageProto
+            A protobuf representation of a SavedDatasetSparkThriftStorage
+
+        Returns
+        -------
+        SavedDatasetSparkThriftStorage
+        """
         spark_thrift_options = SparkThriftOptions.from_proto(storage_proto.custom_storage)
         return SavedDatasetSparkThriftStorage(
             catalog=spark_thrift_options.catalog,
@@ -203,10 +242,25 @@ class SavedDatasetSparkThriftStorage(SavedDatasetStorage):
         )
 
     def to_proto(self) -> SavedDatasetStorageProto:
+        """
+        Converts a SavedDatasetSparkThriftStorage to its protobuf representation
+
+        Returns
+        -------
+        SavedDatasetStorageProto
+        """
         return SavedDatasetStorageProto(custom_storage=self.spark_thrift_options.to_proto())
 
     def to_data_source(self) -> DataSource:
+        """
+        Converts a SavedDatasetSparkThriftStorage to a DataSource
+
+        Returns
+        -------
+        DataSource
+        """
         return SparkThriftSource(
+            name=self.spark_thrift_options.table,
             catalog=self.spark_thrift_options.catalog,
             schema=self.spark_thrift_options.schema,
             table=self.spark_thrift_options.table,

@@ -1,7 +1,7 @@
 """
 This module contains feature store details used to construct feast data source & offline store config
 """
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -10,6 +10,10 @@ from feast.data_source import DataSource
 from feast.infra.offline_stores.snowflake import SnowflakeOfflineStoreConfig
 
 from featurebyte import SourceType
+from featurebyte.feast.infra.offline_stores.databricks import (
+    DataBricksOfflineStoreConfig,
+    DataBricksUnityOfflineStoreConfig,
+)
 from featurebyte.feast.infra.offline_stores.spark_thrift import SparkThriftOfflineStoreConfig
 from featurebyte.feast.infra.offline_stores.spark_thrift_source import SparkThriftSource
 from featurebyte.models.credential import (
@@ -17,10 +21,10 @@ from featurebyte.models.credential import (
     BaseStorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.query_graph.node.schema import BaseDatabaseDetails
+from featurebyte.query_graph.node.schema import BaseDatabaseDetails, DatabricksDetails
 from featurebyte.query_graph.node.schema import FeatureStoreDetails as BaseFeatureStoreDetails
 from featurebyte.query_graph.node.schema import SnowflakeDetails as BaseSnowflakeDetails
-from featurebyte.query_graph.node.schema import SparkDetails as BaseSparkDetails
+from featurebyte.query_graph.node.schema import SparkDetails
 
 
 class AbstractDatabaseDetailsForFeast(BaseDatabaseDetails, ABC):
@@ -142,7 +146,7 @@ class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetail
         )
 
 
-class FeastSparkDetails(AbstractDatabaseDetailsForFeast, BaseSparkDetails):
+class FeastSparkDetails(AbstractDatabaseDetailsForFeast, SparkDetails):
     """
     Spark database details.
     """
@@ -173,13 +177,16 @@ class FeastSparkDetails(AbstractDatabaseDetailsForFeast, BaseSparkDetails):
         DataSource
             Feast DataSource object
         """
-        return SparkThriftSource(
-            name=name,
-            timestamp_field=timestamp_field,
-            catalog=self.catalog_name,
-            schema=self.schema_name,
-            table=table_name,
-            created_timestamp_column=created_timestamp_column,
+        return cast(
+            DataSource,
+            SparkThriftSource(
+                name=name,
+                timestamp_field=timestamp_field,
+                catalog=self.catalog_name,
+                schema=self.schema_name,
+                table=table_name,
+                created_timestamp_column=created_timestamp_column,
+            ),
         )
 
     def get_offline_store_config(
@@ -188,22 +195,70 @@ class FeastSparkDetails(AbstractDatabaseDetailsForFeast, BaseSparkDetails):
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
         return SparkThriftOfflineStoreConfig(
-            host=self.host,
-            http_path=self.http_path,
-            port=self.port,
-            storage_path=self.storage_path,
-            catalog_name=self.catalog_name,
-            schema_name=self.schema_name,
-            use_http_transport=self.use_http_transport,
-            use_ssl=self.use_ssl,
-            storage_type=self.storage_type,
-            storage_url=self.storage_url,
+            **self.dict(),
             database_credential=database_credential,
             storage_credential=storage_credential,
         )
 
 
-FeastDatabaseDetails = Union[FeastSnowflakeDetails, FeastSparkDetails]
+class FeastDataBricksDetails(AbstractDatabaseDetailsForFeast, DatabricksDetails):
+    """
+    Databricks details.
+    """
+
+    def create_feast_data_source(
+        self,
+        name: str,
+        table_name: str,
+        timestamp_field: str,
+        created_timestamp_column: Optional[str] = None,
+    ) -> DataSource:
+        """
+        Create a Feast DataSource from the details in this class
+
+        Parameters
+        ----------
+        name: str
+            Name of the DataSource
+        table_name: str
+            Name of the table to create a DataSource for
+        timestamp_field: str
+            Event timestamp field used for point in time joins of feature values
+        created_timestamp_column: Optional[str]
+            Timestamp column indicating when the row was created, used for de-duplicating rows.
+
+        Returns
+        -------
+        DataSource
+            Feast DataSource object
+        """
+        return cast(
+            DataSource,
+            SparkThriftSource(
+                name=name,
+                timestamp_field=timestamp_field,
+                catalog=self.catalog_name,
+                schema=self.schema_name,
+                table=table_name,
+                created_timestamp_column=created_timestamp_column,
+            ),
+        )
+
+    def get_offline_store_config(
+        self,
+        database_credential: Optional[BaseDatabaseCredential],
+        storage_credential: Optional[BaseStorageCredential],
+    ) -> Any:
+        if self.group_name is None:
+            return DataBricksOfflineStoreConfig(
+                **self.dict(), database_credential=database_credential
+            )
+        return DataBricksUnityOfflineStoreConfig(
+            **self.dict(), database_credential=database_credential
+        )
+
+
+FeastDatabaseDetails = Union[FeastSnowflakeDetails, FeastSparkDetails, FeastDataBricksDetails]
 
 
 class FeatureStoreDetailsWithFeastConfiguration(BaseFeatureStoreDetails):

@@ -1,5 +1,5 @@
 """
-Tests for snowflake cosine similarity UDF
+Tests for cosine similarity UDF
 """
 import json
 
