@@ -1052,6 +1052,19 @@ def gender_entity_fixture(catalog):
     yield entity
 
 
+@pytest.fixture(name="another_entity")
+def another_entity_fixture(catalog):
+    """
+    Another entity fixture
+    """
+    _ = catalog
+    entity = Entity(
+        name="another", serving_names=["another_key"], _id=ObjectId("65b123107011cad326ada330")
+    )
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
     snowflake_event_table,
@@ -1575,6 +1588,28 @@ def float_feature_different_job_setting_fixture(snowflake_event_view_with_entity
         ),
         feature_names=["sum_24h_every_3h"],
     )["sum_24h_every_3h"]
+
+
+@pytest.fixture(name="float_feature_composite_entity")
+def float_feature_composite_entity_fixture(
+    snowflake_event_table_with_entity,
+    cust_id_entity,
+    another_entity,
+    feature_group_feature_job_setting,
+):
+    """
+    Feature with composite entity
+    """
+    snowflake_event_table_with_entity.col_text.as_entity(another_entity.name)
+    event_view = snowflake_event_table_with_entity.get_view()
+    feature = event_view.groupby(["cust_id", "col_text"]).aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["composite_entity_feature_1d"],
+    )["composite_entity_feature_1d"]
+    yield feature
 
 
 @pytest.fixture(name="bool_feature")

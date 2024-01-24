@@ -13,7 +13,11 @@ from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
-from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    deploy_feature_list,
+    extract_session_executed_queries,
+)
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -95,6 +99,26 @@ async def deployed_feature_list_fixture(
     yield deployed_feature_list
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_list_composite_entity(
+    app_container,
+    float_feature_composite_entity,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list with composite entity
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+
+    float_feature_composite_entity.save()
+    feature_list_model = await deploy_feature_list(
+        app_container, "my_list", [float_feature_composite_entity.id]
+    )
+    return feature_list_model
+
+
 @pytest_asyncio.fixture(name="deployed_feature")
 async def deployed_feature_fixture(feature_service, deployed_feature_list):
     """
@@ -110,6 +134,19 @@ async def offline_store_feature_table_fixture(app_container, deployed_feature):
     """
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"feature_ids": deployed_feature.id}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_composite_entity")
+async def offline_store_feature_table_composite_entity_fixture(
+    app_container, deployed_feature_list_composite_entity
+):
+    """
+    Fixture for offline store feature table with composite entity
+    """
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"feature_ids": deployed_feature_list_composite_entity.feature_ids}
     ):
         return model
 
@@ -442,4 +479,39 @@ async def test_drop_table(
         schema_name="sf_schema",
         database_name="sf_db",
         if_exists=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_materialize_features_composite_entity(
+    offline_store_feature_table_composite_entity,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test materialize_features for a feature table with composite entity
+    """
+    _ = mock_get_feature_store_session
+
+    async with feature_materialize_service.materialize_features(
+        feature_table_model=offline_store_feature_table_composite_entity,
+    ) as materialized_features:
+        pass
+
+    # Check concatenated column generated
+    assert materialized_features.serving_names_and_column_names == [
+        "cust_id",
+        "another_key",
+        "cust_id x another_key",
+        f"composite_entity_feature_1d_{get_version()}",
+    ]
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql",
+        update_fixtures,
     )
