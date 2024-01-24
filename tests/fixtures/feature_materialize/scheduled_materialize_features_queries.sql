@@ -4,7 +4,7 @@ SELECT
   *
 FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
 
-INSERT INTO "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" (
+INSERT INTO "cat1_cust_id_30m" (
   "__feature_timestamp",
   "cust_id",
   "sum_30m_V220101"

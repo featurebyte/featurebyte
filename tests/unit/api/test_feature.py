@@ -869,10 +869,8 @@ def check_offline_store_ingest_graph_on_composite_feature(
     output = transformer.transform(
         target_node=feature_model.node,
         relationships_info=feature_model.relationships_info,
-        entity_id_to_serving_name={},
         feature_name=feature_model.name,
         feature_version=feature_model.version.to_str(),
-        catalog_id=feature_model.catalog_id,
     )
     assert output.graph.edges_map == {
         "graph_1": ["add_1"],
@@ -902,22 +900,14 @@ def check_offline_store_ingest_graph_on_composite_feature(
         ),
     ]
     new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
-    new_feature_model.initialize_offline_store_info(
-        entity_id_to_serving_name={
-            cust_entity_id: "cust_id",
-            transaction_entity_id: "transaction_id",
-        }
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=new_feature_model.graph)
+    decomposed_result = transformer.transform(
+        target_node=new_feature_model.node,
+        relationships_info=new_feature_model.relationships_info,
+        feature_name=new_feature_model.name,
+        feature_version=new_feature_model.version.to_str(),
     )
-    offline_store_info = new_feature_model.offline_store_info
-    assert offline_store_info is not None, "Offline store info should not be None"
-    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
-    assert len(ingest_query_graphs) == 1
-    ingest_query_graph = ingest_query_graphs[0]
-    assert ingest_query_graph.node_name == new_feature_model.node_name
-    assert ingest_query_graph.graph == new_feature_model.graph
-    assert ingest_query_graph.ref_node_name is None
-    assert ingest_query_graph.primary_entity_ids == new_feature_model.primary_entity_ids
-    assert ingest_query_graph.output_column_name == feature_model.versioned_name
+    assert decomposed_result.is_decomposed is False
 
 
 def test_composite_features(

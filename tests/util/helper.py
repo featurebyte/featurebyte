@@ -516,11 +516,9 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature_model.graph)
         output = transformer.transform(
             target_node=feature_model.node,
-            entity_id_to_serving_name={},
             relationships_info=feature_model.relationships_info,
             feature_name=feature_model.name,
             feature_version=feature_model.version.to_str(),
-            catalog_id=feature_model.catalog_id,
         )
 
     if output.is_decomposed is False:

@@ -3,7 +3,9 @@ OfflineStoreFeatureTableConstructionService class
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence
+
+from bson import ObjectId
 
 from featurebyte import FeatureJobSetting, SourceType
 from featurebyte.models.base import PydanticObjectId
@@ -16,16 +18,19 @@ from featurebyte.models.entity_universe import (
 )
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     get_combined_ingest_graph,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 
 
@@ -38,9 +43,69 @@ class OfflineStoreFeatureTableConstructionService:
         self,
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
+        entity_serving_names_service: EntityServingNamesService,
     ):
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
+        self.entity_serving_names_service = entity_serving_names_service
+
+    async def get_dummy_offline_store_feature_table_model(
+        self,
+        primary_entity_ids: Sequence[ObjectId],
+        feature_job_setting: Optional[FeatureJobSetting],
+        has_ttl: bool,
+        feature_store_id: ObjectId,
+        catalog_id: ObjectId,
+        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+    ) -> OfflineStoreFeatureTableModel:
+        """
+        Returns a dummy OfflineStoreFeatureTableModel for a feature table
+
+        Parameters
+        ----------
+        primary_entity_ids: Sequence[ObjectId]
+            List of primary entity ids
+        feature_job_setting: Optional[FeatureJobSetting]
+            Feature job setting of the feature table
+        has_ttl: bool
+            Whether the feature table has TTL
+        feature_store_id: ObjectId
+            Feature store id
+        catalog_id: ObjectId
+            Catalog id
+        entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
+            Entity id to serving name mapping
+
+        Returns
+        -------
+        OfflineStoreFeatureTableModel
+        """
+        if entity_id_to_serving_name is None:
+            entity_id_to_serving_name = await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
+                entity_ids=primary_entity_ids
+            )
+
+        feature_cluster = FeatureCluster(
+            feature_store_id=feature_store_id,
+            graph=QueryGraph(),
+            node_names=[],
+        )
+        return OfflineStoreFeatureTableModel(
+            name="",  # to be filled in later
+            feature_ids=[],
+            primary_entity_ids=primary_entity_ids,
+            serving_names=[
+                entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids
+            ],
+            feature_cluster=feature_cluster,
+            output_column_names=[],
+            output_dtypes=[],
+            entity_universe=None,
+            has_ttl=has_ttl,
+            feature_job_setting=feature_job_setting.normalize() if feature_job_setting else None,
+            feature_store_id=feature_store_id,
+            catalog_id=catalog_id,
+        )
 
     async def get_offline_store_feature_table_model(
         self,
@@ -101,7 +166,7 @@ class OfflineStoreFeatureTableConstructionService:
             output_dtypes=ingest_graph_metadata.output_dtypes,
             entity_universe=entity_universe,
             has_ttl=has_ttl,
-            feature_job_setting=feature_job_setting,
+            feature_job_setting=feature_job_setting.normalize() if feature_job_setting else None,
         )
 
     async def get_entity_universe_model(

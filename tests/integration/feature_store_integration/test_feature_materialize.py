@@ -268,21 +268,19 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
 
 
 @pytest.fixture(name="user_entity_ttl_feature_table")
-def user_entity_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
+def user_entity_ttl_feature_table_fixture(offline_store_feature_tables):
     """
     Return the user entity feature table
     """
-    catalog_id = app_container.catalog_id
-    return offline_store_feature_tables[f"fb_entity_userid_fjs_3600_1800_1800_ttl_{catalog_id}"]
+    return offline_store_feature_tables["cat1_userid_1h"]
 
 
 @pytest.fixture(name="user_entity_non_ttl_feature_table")
-def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
+def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables):
     """
     Return the user entity feature table
     """
-    catalog_id = app_container.catalog_id
-    return offline_store_feature_tables[f"fb_entity_userid_fjs_86400_0_0_{catalog_id}"]
+    return offline_store_feature_tables["cat1_userid_1d"]
 
 
 @pytest_asyncio.fixture(name="expected_entity_lookup_feature_table_names")
@@ -325,19 +323,18 @@ async def expected_entity_lookup_feature_table_names_fixture(
 
 
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture(app_container, expected_entity_lookup_feature_table_names):
+def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_names):
     """
     Fixture for expected feature table names
     """
-    catalog_id = app_container.catalog_id
     expected = {
-        f"fb_entity_overall_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_product_action_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_cust_id_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_userid_fjs_3600_1800_1800_ttl_{catalog_id}",
-        f"fb_entity_userid_fjs_86400_0_0_{catalog_id}",
-        f"fb_entity_user_status_fjs_86400_0_0_{catalog_id}",
-        f"fb_entity_order_id_fjs_86400_0_0_{catalog_id}",
+        "cat1__no_entity_1h",
+        "cat1_product_action_1h",
+        "cat1_cust_id_1h",
+        "cat1_userid_1h",
+        "cat1_userid_1d",
+        "cat1_user_status_1d",
+        "cat1_order_id_1d",
     }
     expected.update(expected_entity_lookup_feature_table_names)
     return expected

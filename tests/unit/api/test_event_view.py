@@ -1062,7 +1062,4 @@ def test_event_view_as_feature(
     offline_store_info = feature.cached_model.offline_store_info
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_graphs) == 1
-    assert (
-        ingest_graphs[0].offline_store_table_name
-        == f"fb_entity_transaction_id_fjs_86400_0_0_{feature.catalog_id}"
-    )
+    assert ingest_graphs[0].offline_store_table_name == "cat1_transaction_id_1d"

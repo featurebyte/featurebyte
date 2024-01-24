@@ -36,6 +36,7 @@ async def fixture_offline_store_feature_table(app_container, feature_job_setting
                 formatted_expression="SELECT DISTINCT cust_id FROM my_table",
             )
         ),
+        catalog_id=app_container.catalog_id,
     )
     await app_container.offline_store_feature_table_service.create_document(feature_table)
     yield feature_table

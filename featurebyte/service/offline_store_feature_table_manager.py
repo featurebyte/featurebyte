@@ -69,11 +69,6 @@ class OfflineIngestGraphContainer:
         -------
         OfflineIngestGraphContainer
         """
-        # Build mapping from entity id to serving names needed by offline store info extraction
-        all_feature_entity_ids = set()
-        for feature in features:
-            all_feature_entity_ids.update(feature.entity_ids)
-
         # Group features by offline store feature table name
         offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
@@ -187,37 +182,27 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 table_name=offline_store_table_name,
             )
+            assert feature_table_dict is not None
 
-            if feature_table_dict is not None:
-                # update existing table
-                feature_ids = feature_table_dict["feature_ids"][:]
-                feature_ids_set = set(feature_ids)
-                for feature in offline_store_table_features:
-                    if feature.id not in feature_ids_set:
-                        feature_ids.append(feature.id)
-                if feature_ids != feature_table_dict["feature_ids"]:
-                    feature_table_model = await self._update_offline_store_feature_table(
-                        feature_table_dict,
-                        feature_ids,
-                    )
-                else:
-                    # Note: don't set feature_table_model here since we don't want to run
-                    # materialize below
-                    feature_table_model = None
-            else:
-                # create new table
-                offline_ingest_graph = ingest_graph_container.get_offline_ingest_graphs(
-                    feature_table_name=offline_store_table_name
-                )[0]
-                feature_table_model = await self._construct_offline_store_feature_table_model(
-                    feature_table_name=offline_store_table_name,
-                    feature_ids=[feature.id for feature in offline_store_table_features],
-                    primary_entity_ids=offline_ingest_graph.primary_entity_ids,
-                    has_ttl=offline_ingest_graph.has_ttl,
-                    feature_job_setting=offline_ingest_graph.feature_job_setting,
+            if len(feature_table_dict["feature_ids"]) == 0:
+                # add to new tables as the original table is empty
+                new_tables.append(OfflineStoreFeatureTableModel(**feature_table_dict))
+
+            # update existing table
+            feature_ids = feature_table_dict["feature_ids"][:]
+            feature_ids_set = set(feature_ids)
+            for feature in offline_store_table_features:
+                if feature.id not in feature_ids_set:
+                    feature_ids.append(feature.id)
+            if feature_ids != feature_table_dict["feature_ids"]:
+                feature_table_model = await self._update_offline_store_feature_table(
+                    feature_table_dict,
+                    feature_ids,
                 )
-                await self.offline_store_feature_table_service.create_document(feature_table_model)
-                new_tables.append(feature_table_model)
+            else:
+                # Note: don't set feature_table_model here since we don't want to run
+                # materialize below
+                feature_table_model = None
 
             if feature_table_model is not None:
                 # Note: might need to defer updating feast registry till initialization is done to
@@ -319,7 +304,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             has_ttl=feature_table_dict["has_ttl"],
             feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
         )
-        update_schema = FeaturesUpdate(**feature_table_model.dict())
+        update_schema = FeaturesUpdate(**feature_table_model.dict(by_alias=True))
         return cast(
             OfflineStoreFeatureTableModel,
             await self.offline_store_feature_table_service.update_document(

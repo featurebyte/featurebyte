@@ -105,7 +105,11 @@ def get_entity_lookup_feature_tables(
     feature_table_primary_entity_ids_set = set(feature_table_primary_entity_ids)
 
     required_lookup_relationships = set()
+    catalog_id = None
     for feature_list in feature_lists:
+        if catalog_id is None:
+            catalog_id = feature_list.catalog_id
+
         # Skip if entities are already fulfilled
         if feature_table_primary_entity_ids_set.issubset(feature_list.primary_entity_ids):
             continue
@@ -123,6 +127,7 @@ def get_entity_lookup_feature_tables(
             if lookup_relationships is not None:
                 required_lookup_relationships.update(lookup_relationships)
 
+    assert catalog_id is not None, "Catalog id is not set"
     out = []
 
     for lookup_relationship in required_lookup_relationships:
@@ -161,6 +166,7 @@ def get_entity_lookup_feature_tables(
             has_ttl=False,
             feature_job_setting=lookup_graph_result.feature_job_setting,
             entity_lookup_info=lookup_relationship,
+            catalog_id=catalog_id,
         )
         out.append(entity_lookup_feature_table_model)
     return out

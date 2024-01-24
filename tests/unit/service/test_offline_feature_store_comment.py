@@ -163,7 +163,6 @@ async def test_apply_comments(service, mock_snowflake_session):
 @pytest.mark.asyncio
 async def test_table_comment(
     service,
-    catalog_id,
     deployed_features,
     offline_feature_table,
     offline_feature_table_no_primary_entity,
@@ -175,7 +174,7 @@ async def test_table_comment(
     # Regular offline feature tables
     comment = await service.generate_table_comment(offline_feature_table)
     expected = TableComment(
-        table_name=f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        table_name="cat1_cust_id_30m",
         comment="This feature table consists of features for primary entity customer (serving name: cust_id). It is updated every 1800 second(s), with a blind spot of 600 second(s) and a time modulo frequency of 300 second(s).",
     )
     assert comment == expected
@@ -183,7 +182,7 @@ async def test_table_comment(
     # Regular feature table without primary entity
     comment = await service.generate_table_comment(offline_feature_table_no_primary_entity)
     expected = TableComment(
-        table_name=f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+        table_name="cat1__no_entity_1d",
         comment="This feature table consists of features without a primary entity. It is updated every 86400 second(s), with a blind spot of 7200 second(s) and a time modulo frequency of 3600 second(s).",
     )
     assert comment == expected
@@ -199,7 +198,7 @@ async def test_table_comment(
 
 
 @pytest.mark.asyncio
-async def test_column_comment(service, catalog_id, deployed_features):
+async def test_column_comment(service, deployed_features):
     """
     Test feature without description
     """
@@ -211,7 +210,7 @@ async def test_column_comment(service, catalog_id, deployed_features):
     comments = await service.generate_column_comments([deployed_features["float_feature"]])
     assert comments == [
         ColumnComment(
-            table_name=f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+            table_name="cat1_cust_id_30m",
             column_name="sum_1d_V231227",
             comment="This is a float feature",
         )
@@ -221,13 +220,50 @@ async def test_column_comment(service, catalog_id, deployed_features):
     comments = await service.generate_column_comments([deployed_features["complex_feature"]])
     assert comments == [
         ColumnComment(
-            table_name=f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+            table_name="cat1_transaction_id_1d",
             column_name="__Complex Feature_V231227__part1",
-            comment="This intermediate feature is used to compute the feature Complex Feature (version: V231227). Description of Complex Feature: This is a complex feature",
+            comment=(
+                "This intermediate feature is used to compute the feature Complex Feature (version: V231227). "
+                "Description of Complex Feature: This is a complex feature"
+            ),
         ),
         ColumnComment(
-            table_name=f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+            table_name="cat1_cust_id_30m",
             column_name="__Complex Feature_V231227__part0",
-            comment="This intermediate feature is used to compute the feature Complex Feature (version: V231227). Description of Complex Feature: This is a complex feature",
+            comment=(
+                "This intermediate feature is used to compute the feature Complex Feature (version: V231227). "
+                "Description of Complex Feature: This is a complex feature"
+            ),
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_lookup_table_retrieval(app_container, offline_feature_table_entity_lookup):
+    """Test lookup table retrieval"""
+    offline_table_service = app_container.offline_store_feature_table_service
+    table = await offline_table_service.get_or_create_document(offline_feature_table_entity_lookup)
+    assert table.id == offline_feature_table_entity_lookup.id
+    assert table.name == offline_feature_table_entity_lookup.name
+
+
+@pytest.mark.asyncio
+async def test_offline_feature_table_retrieval(app_container, offline_feature_table):
+    """Test offline feature table retrieval"""
+    offline_table_service = app_container.offline_store_feature_table_service
+    table = await offline_table_service.get_or_create_document(offline_feature_table)
+    assert table.id == offline_feature_table.id
+    assert table.name == offline_feature_table.name
+
+
+@pytest.mark.asyncio
+async def test_offline_feature_table_no_primary_entity_retrieval(
+    app_container, offline_feature_table_no_primary_entity
+):
+    """Test offline feature table without primary entity retrieval"""
+    offline_table_service = app_container.offline_store_feature_table_service
+    table = await offline_table_service.get_or_create_document(
+        offline_feature_table_no_primary_entity
+    )
+    assert table.id == offline_feature_table_no_primary_entity.id
+    assert table.name == offline_feature_table_no_primary_entity.name

@@ -1,9 +1,9 @@
 SELECT
   *
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db"
+FROM "cat1_cust_id_30m"
 LIMIT 1;
 
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" ADD COLUMN "sum_30m_V220101" FLOAT;
+ALTER TABLE "cat1_cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
@@ -13,9 +13,9 @@ FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
 
 SELECT
   MAX("__feature_timestamp") AS RESULT
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db";
+FROM "cat1_cust_id_30m";
 
-MERGE INTO "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" AS offline_store_table USING (
+MERGE INTO "cat1_cust_id_30m" AS offline_store_table USING (
   SELECT
     "cust_id",
     "sum_30m_V220101"
