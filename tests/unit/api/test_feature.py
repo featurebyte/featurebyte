@@ -61,7 +61,7 @@ from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
-    deploy_features,
+    deploy_features_through_api,
     get_node,
 )
 
@@ -971,7 +971,7 @@ def test_composite_features(
     # save the feature first
     composite_feature.name = "composite_feature"
     composite_feature.save()
-    deploy_features([composite_feature])
+    deploy_features_through_api([composite_feature])
 
     # get the offline store ingest query graphs
     feature_model = composite_feature.cached_model
@@ -987,7 +987,7 @@ def test_offline_store_ingest_query_graphs__without_graph_decomposition(
     """Test offline store ingest query graphs"""
     _ = enable_feast_integration, mock_deployment_flow
 
-    deploy_features([saved_feature])
+    deploy_features_through_api([saved_feature])
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
     ingest_query_graphs = (

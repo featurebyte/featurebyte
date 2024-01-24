@@ -58,14 +58,13 @@ async def deployed_feature_list_fixture(
     production_ready_feature_list,
     online_store,
     mock_update_data_warehouse,
-    mock_get_feature_store_session,
     is_source_type_supported_by_feast,
     is_online_store_registered_for_catalog,
 ):
     """
     Fixture for FeatureMaterializeService
     """
-    _ = mock_update_data_warehouse, mock_get_feature_store_session
+    _ = mock_update_data_warehouse
 
     if is_online_store_registered_for_catalog:
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
@@ -145,19 +144,17 @@ def freeze_feature_timestamp_fixture():
         yield
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_materialize_features(
     feature_materialize_service,
     mock_snowflake_session,
-    mock_get_feature_store_session,
     offline_store_feature_table,
     update_fixtures,
 ):
     """
     Test materialize_features
     """
-    _ = mock_get_feature_store_session
-
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table,
     ) as materialized_features:
@@ -203,6 +200,7 @@ async def test_materialize_features(
 
 
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features(
     app_container,
@@ -210,15 +208,12 @@ async def test_scheduled_materialize_features(
     mock_snowflake_session,
     offline_store_feature_table,
     mock_materialize_partial,
-    mock_get_feature_store_session,
     is_online_store_registered_for_catalog,
     update_fixtures,
 ):
     """
     Test scheduled_materialize_features
     """
-    _ = mock_get_feature_store_session
-
     await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
 
     executed_queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
@@ -250,21 +245,19 @@ async def test_scheduled_materialize_features(
     assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features_if_materialized_before(
     app_container,
     feature_materialize_service,
     offline_store_feature_table,
     mock_materialize_partial,
-    mock_get_feature_store_session,
 ):
     """
     Test calling scheduled_materialize_features when the feature table has already been materialized
     before. When calling online materialize it should provide the feature table's
     last_materialized_at as start date.
     """
-    _ = mock_get_feature_store_session
-
     offline_store_feature_table.last_materialized_at = datetime(2022, 1, 1, 0, 0)
 
     with freeze_time("2022-01-02 00:00:00"):
@@ -291,22 +284,20 @@ async def test_scheduled_materialize_features_if_materialized_before(
     assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
 
 
-@pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_does_not_exist(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
     mock_materialize_partial,
-    mock_get_feature_store_session,
     is_online_store_registered_for_catalog,
     update_fixtures,
 ):
     """
     Test initialize_new_columns when feature table is not yet created
     """
-    _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
         if "LIMIT 1" in query:
@@ -337,20 +328,18 @@ async def test_initialize_new_columns__table_does_not_exist(
         assert mock_materialize_partial.call_count == 0
 
 
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_exists(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
     mock_materialize_partial,
-    mock_get_feature_store_session,
     update_fixtures,
 ):
     """
     Test initialize_new_columns when feature table already exists
     """
-    _ = mock_get_feature_store_session
 
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
@@ -383,21 +372,19 @@ async def test_initialize_new_columns__table_exists(
     }
 
 
-@pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("is_source_type_supported_by_feast", [False])
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__databricks_unity(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
     mock_materialize_partial,
-    mock_get_feature_store_session,
     update_fixtures,
 ):
     """
     Test initialize_new_columns when session is databricks_unity
     """
-    _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
         if "LIMIT 1" in query:
@@ -419,20 +406,17 @@ async def test_initialize_new_columns__databricks_unity(
     assert mock_materialize_partial.call_count == 0
 
 
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_drop_columns(
     feature_materialize_service,
     mock_snowflake_session,
-    mock_get_feature_store_session,
     offline_store_feature_table,
     update_fixtures,
 ):
     """
     Test drop_columns
     """
-    _ = mock_get_feature_store_session
-
     await feature_materialize_service.drop_columns(offline_store_feature_table, ["a", "b"])
     queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
     assert_equal_with_expected_fixture(
@@ -442,19 +426,16 @@ async def test_drop_columns(
     )
 
 
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_drop_table(
     feature_materialize_service,
     mock_snowflake_session,
-    mock_get_feature_store_session,
     offline_store_feature_table,
 ):
     """
     Test drop_columns
     """
-    _ = mock_get_feature_store_session
-
     await feature_materialize_service.drop_table(offline_store_feature_table)
     assert mock_snowflake_session.drop_table.call_args == call(
         offline_store_feature_table.name,

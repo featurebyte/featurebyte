@@ -21,7 +21,7 @@ from featurebyte.schema.catalog import CatalogCreate
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
-    deploy_features,
+    deploy_features_through_api,
 )
 
 
@@ -100,7 +100,7 @@ def test_feature__ttl_and_non_ttl_components(
 ):
     """Test that a feature contains both ttl and non-ttl components."""
     composite_feature.save()
-    deploy_features([composite_feature])
+    deploy_features_through_api([composite_feature])
 
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
@@ -168,7 +168,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     feature = request_and_ttl_component + non_ttl_component
     feature.name = "feature"
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph (note that the request column part should be removed)
     feature_model = feature.cached_model
@@ -266,7 +266,7 @@ def test_feature__multiple_non_ttl_components(
     feature = lookup_feature + feature_a
     feature.name = "feature"
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph (note that the request column part should be removed)
     feature_model = feature.cached_model
@@ -306,7 +306,7 @@ def test_feature__ttl_item_aggregate_request_column(
     composite_feature = float_feature + non_time_based_feature + request_feature
     composite_feature.name = "composite_feature"
     composite_feature.save()
-    deploy_features([composite_feature])
+    deploy_features_through_api([composite_feature])
 
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
@@ -389,7 +389,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     feature_zscore = (feature_raw - feature_avg) / feature_std
     feature_zscore.name = "feature_zscore"
     feature_zscore.save()
-    deploy_features([feature_zscore])
+    deploy_features_through_api([feature_zscore])
 
     # check offline ingest query graph
     feature_model = feature_zscore.cached_model
@@ -463,7 +463,7 @@ def test_feature__composite_count_dict(
     feature = count_dict_feat1.cd.cosine_similarity(count_dict_feat2)
     feature.name = "feature_cosine_similarity"
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph
     feature_model = feature.cached_model
@@ -492,7 +492,7 @@ def test_feature__input_has_ingest_query_graph_node(test_dir):
 def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
-    deploy_features([float_feature])
+    deploy_features_through_api([float_feature])
     offline_store_info = float_feature.cached_model.offline_store_info
     expected = f"""
     import json
@@ -545,7 +545,7 @@ def test_feature_entity_dtypes(
     feat = feat_sum1 + feat_sum2
     feat.name = "feature"
     feat.save()
-    deploy_features([feat])
+    deploy_features_through_api([feat])
 
     # check the entity dtypes are correctly set
     expected_entity_id_to_dtype = {

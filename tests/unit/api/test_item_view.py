@@ -25,7 +25,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, deploy_features, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestItemView(BaseViewTestSuite):
@@ -984,7 +984,7 @@ def test_as_feature__from_view_column(
 
     # test create new version & check SDK code generation
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     new_version = feature.create_new_version(
         table_feature_job_settings=None,

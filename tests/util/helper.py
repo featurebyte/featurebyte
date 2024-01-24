@@ -859,7 +859,7 @@ def extract_session_executed_queries(mock_snowflake_session, func="execute_query
     return "\n\n".join(queries)
 
 
-def deploy_features(features):
+def deploy_features_through_api(features):
     """Create a feature list and deploy the feature list."""
     feature_list = FeatureList(features, name=f"feature_list_{ObjectId()}")
     feature_list.save()

@@ -11,7 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, deploy_features, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestDimensionView(BaseViewTestSuite):
@@ -221,7 +221,7 @@ def test_as_features__with_primary_key_column(
     # check offline store info
     feature = feature_group["IntFeature"]
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     # check offline store table name (should not have any feature job setting)
     offline_store_info = feature.cached_model.offline_store_info

@@ -6,7 +6,7 @@ import pytest
 from featurebyte.api.scd_view import SCDView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, deploy_features, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestSCDView(BaseViewTestSuite):
@@ -270,7 +270,7 @@ def test_scd_view_as_feature__special_column(
 
     # check offline store table name (should have feature job setting)
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     offline_store_info = feature.cached_model.offline_store_info
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()

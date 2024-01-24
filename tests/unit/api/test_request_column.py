@@ -16,7 +16,7 @@ from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
-    deploy_features,
+    deploy_features_through_api,
 )
 
 
@@ -51,7 +51,7 @@ def test_point_in_time_minus_timestamp_feature(
     assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
 
     new_feature.save()
-    deploy_features([new_feature])
+    deploy_features_through_api([new_feature])
 
     loaded_feature = Feature.get(new_feature.name)
     check_sdk_code_generation(

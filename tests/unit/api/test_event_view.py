@@ -32,7 +32,7 @@ from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
-    deploy_features,
+    deploy_features_through_api,
     get_node,
 )
 
@@ -1061,7 +1061,7 @@ def test_event_view_as_feature(
         "col_float"
     ]
     feature.save()
-    deploy_features([feature])
+    deploy_features_through_api([feature])
 
     # check offline store table name (should have feature job setting)
     offline_store_info = feature.cached_model.offline_store_info

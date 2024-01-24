@@ -9,7 +9,7 @@ from google.protobuf.json_format import MessageToDict
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
-from tests.util.helper import assert_lists_of_dicts_equal, deploy_features
+from tests.util.helper import assert_lists_of_dicts_equal, deploy_features_through_api
 
 
 def test_feast_registry_construction__missing_asset(
@@ -65,7 +65,7 @@ def test_feast_registry_construction__with_post_processing_features(
 
     feature_list = FeatureList([feature_requires_post_processing], name="test_feature_list")
     feature_list.save()
-    deploy_features([feature_requires_post_processing])
+    deploy_features_through_api([feature_requires_post_processing])
 
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
