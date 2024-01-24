@@ -364,11 +364,14 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
         assert df.shape[0] > 0
 
         # Should have all the serving names and output columns tracked in OfflineStoreFeatureTable
-        assert set(df.columns.tolist()) == set(
+        expected = set(
             [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
             + feature_table.serving_names
             + feature_table.output_column_names
         )
+        if len(feature_table.serving_names) > 0:
+            expected.add(" x ".join(feature_table.serving_names))
+        assert set(df.columns.tolist()) == expected
 
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
