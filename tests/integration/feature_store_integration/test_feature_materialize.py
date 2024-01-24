@@ -168,7 +168,7 @@ def features_fixture(
     assert feature_13.primary_entity_ids == feature_10.primary_entity_ids
     feature_13.name = "Complex Feature by User"
 
-    feature_14 = event_view.groupby(
+    feature_14 = filtered_event_view.groupby(
         ["ÜSER ID", "PRODUCT_ACTION"],
     ).aggregate_over(
         "ÀMOUNT",
