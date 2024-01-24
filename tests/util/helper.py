@@ -24,7 +24,7 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
 import featurebyte as fb
-from featurebyte import get_version
+from featurebyte import FeatureList, get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
@@ -857,3 +857,12 @@ def extract_session_executed_queries(mock_snowflake_session, func="execute_query
         args, _ = call_obj
         queries.append(args[0] + ";")
     return "\n\n".join(queries)
+
+
+def deploy_features(features):
+    """Create a feature list and deploy the feature list."""
+    feature_list = FeatureList(features, name=f"feature_list_{ObjectId()}")
+    feature_list.save()
+
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment.enable()

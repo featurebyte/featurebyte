@@ -196,7 +196,7 @@ def features_fixture(
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
-async def deployed_features_list_fixture(session, features, expected_udf_names):
+async def deployed_features_list_fixture(session, features):
     """
     Fixture for deployed feature list
     """
@@ -222,7 +222,8 @@ async def deployed_features_list_fixture(session, features, expected_udf_names):
             sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type)
         )
         all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
-        assert all_udfs.intersection(set(expected_udf_names)) == set()
+        udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
+        assert len(udfs_for_on_demand_func) == 0
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_v2", scope="module")
@@ -341,15 +342,13 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
 
 
 @pytest.fixture(name="expected_udf_names", scope="module")
-def expected_udf_names_fixture(features):
+def expected_udf_names_fixture(source_type):
     """
     Fixture for expected udf names
     """
-    return [
-        feature.cached_model.offline_store_info.udf_info.sql_function_name
-        for feature in features
-        if feature.cached_model.offline_store_info.udf_info
-    ]
+    if source_type == SourceType.DATABRICKS_UNITY:
+        return []
+    return []
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
@@ -390,7 +389,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_databricks_udf_created(session, offline_store_feature_tables, expected_udf_names):
+async def test_databricks_udf_created(session, offline_store_feature_tables, source_type):
     """Test that udf is created in databricks"""
     _ = offline_store_feature_tables
     df = await session.execute_query(
@@ -398,7 +397,11 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, exp
     )
     all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
     assert len(all_udfs) > 0
-    assert set(expected_udf_names).issubset(all_udfs)
+    udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
+    if source_type == SourceType.DATABRICKS_UNITY:
+        assert len(udfs_for_on_demand_func) == 2
+    else:
+        assert len(udfs_for_on_demand_func) == 0
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

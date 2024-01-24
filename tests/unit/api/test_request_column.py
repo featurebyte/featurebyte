@@ -16,6 +16,7 @@ from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
+    deploy_features,
 )
 
 
@@ -35,12 +36,12 @@ def test_point_in_time_request_column():
 
 
 def test_point_in_time_minus_timestamp_feature(
-    latest_event_timestamp_feature, update_fixtures, enable_feast_integration
+    latest_event_timestamp_feature, update_fixtures, enable_feast_integration, mock_deployment_flow
 ):
     """
     Test an on-demand feature involving point in time
     """
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
     new_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     new_feature.name = "Time Since Last Event (days)"
     assert isinstance(new_feature, Feature)
@@ -50,6 +51,8 @@ def test_point_in_time_minus_timestamp_feature(
     assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
 
     new_feature.save()
+    deploy_features([new_feature])
+
     loaded_feature = Feature.get(new_feature.name)
     check_sdk_code_generation(
         loaded_feature,

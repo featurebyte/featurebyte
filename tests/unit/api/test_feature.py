@@ -61,6 +61,7 @@ from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
+    deploy_features,
     get_node,
 )
 
@@ -911,10 +912,13 @@ def check_offline_store_ingest_graph_on_composite_feature(
 
 
 def test_composite_features(
-    snowflake_event_table_with_entity, cust_id_entity, enable_feast_integration
+    snowflake_event_table_with_entity,
+    cust_id_entity,
+    enable_feast_integration,
+    mock_deployment_flow,
 ):
     """Test composite features' property"""
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
     entity = Entity(name="binary", serving_names=["col_binary"])
     entity.save()
 
@@ -967,6 +971,7 @@ def test_composite_features(
     # save the feature first
     composite_feature.name = "composite_feature"
     composite_feature.save()
+    deploy_features([composite_feature])
 
     # get the offline store ingest query graphs
     feature_model = composite_feature.cached_model
@@ -977,10 +982,12 @@ def test_composite_features(
 
 
 def test_offline_store_ingest_query_graphs__without_graph_decomposition(
-    enable_feast_integration, saved_feature
+    enable_feast_integration, saved_feature, mock_deployment_flow
 ):
     """Test offline store ingest query graphs"""
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
+
+    deploy_features([saved_feature])
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
     ingest_query_graphs = (

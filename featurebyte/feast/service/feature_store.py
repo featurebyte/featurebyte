@@ -105,6 +105,7 @@ class FeastFeatureStoreService:
                     credential=database_credential
                 ),
                 online_store=online_store,
+                entity_key_serialization_version=2,
             )
             return cast(FeatureStore, FeatureStore(config=repo_config))
 

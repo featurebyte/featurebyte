@@ -11,7 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features, get_node
 
 
 class TestDimensionView(BaseViewTestSuite):
@@ -149,11 +149,12 @@ def test_as_features__with_primary_key_column(
     snowflake_dimension_table,
     cust_id_entity,
     enable_feast_integration,
+    mock_deployment_flow,
 ):
     """
     Test calling as_features() when including primary column works correctly
     """
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
 
     # Set entity
     view = snowflake_dimension_view_with_entity
@@ -220,6 +221,7 @@ def test_as_features__with_primary_key_column(
     # check offline store info
     feature = feature_group["IntFeature"]
     feature.save()
+    deploy_features([feature])
 
     # check offline store table name (should not have any feature job setting)
     offline_store_info = feature.cached_model.offline_store_info

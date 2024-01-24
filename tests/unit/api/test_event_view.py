@@ -32,6 +32,7 @@ from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
+    deploy_features,
     get_node,
 )
 
@@ -1044,10 +1045,13 @@ def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
 
 
 def test_event_view_as_feature(
-    snowflake_event_table_with_entity, feature_group_feature_job_setting, enable_feast_integration
+    snowflake_event_table_with_entity,
+    feature_group_feature_job_setting,
+    enable_feast_integration,
+    mock_deployment_flow,
 ):
     """Test offline store table name for event view lookup features"""
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
 
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=feature_group_feature_job_setting,
@@ -1057,6 +1061,7 @@ def test_event_view_as_feature(
         "col_float"
     ]
     feature.save()
+    deploy_features([feature])
 
     # check offline store table name (should have feature job setting)
     offline_store_info = feature.cached_model.offline_store_info

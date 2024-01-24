@@ -17,12 +17,10 @@ from bson.objectid import ObjectId
 
 from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
-from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -1022,56 +1020,12 @@ def relationships(b_is_parent_of_a, c_is_parent_of_b):
     yield
 
 
-@pytest.fixture(name="mock_update_data_warehouse")
-def mock_update_data_warehouse(app_container):
-    """Mock update data warehouse method"""
-
-    async def mock_func(updated_feature, online_enabled_before_update):
-        _ = online_enabled_before_update
-        extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
-        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-        for query in online_feature_spec.precompute_queries:
-            await app_container.online_store_compute_query_service.create_document(query)
-
-    with patch(
-        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",
-        side_effect=mock_func,
-    ) as mock_update_data_warehouse:
-        yield mock_update_data_warehouse
-
-
 @pytest.fixture(name="feature_materialize_service")
 def feature_materialize_service_fixture(app_container):
     """
     Fixture for FeatureMaterializeService
     """
     return app_container.feature_materialize_service
-
-
-@pytest.fixture(name="mock_offline_store_feature_manager_dependencies")
-def mock_offline_store_feature_manager_dependencies_fixture():
-    """
-    Fixture to mock dependencies of offline_store_feature_table_manager where database session is
-    required and the actual queries will be executed
-    """
-    patched = {}
-    patch_targets = {
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService": [
-            "initialize_new_columns",
-            "drop_columns",
-            "drop_table",
-        ],
-        "featurebyte.service.offline_store_feature_table_manager.OfflineStoreFeatureTableCommentService": [
-            "apply_comments",
-        ],
-    }
-    for service_name, method_names in patch_targets.items():
-        for method_name in method_names:
-            patcher = patch(f"{service_name}.{method_name}")
-            patched[method_name] = patcher.start()
-    yield patched
-    for patcher in patched.values():
-        patcher.stop()
 
 
 @pytest_asyncio.fixture(name="online_store")

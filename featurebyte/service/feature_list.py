@@ -12,7 +12,6 @@ from bson.objectid import ObjectId
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureCluster,
@@ -273,14 +272,6 @@ class FeatureListService(
             }
         )
 
-        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-            feature_store = await self.feature_store_service.get_document(
-                document_id=feature_data["feature_store_id"]
-            )
-            document.initialize_store_info(
-                features=feature_data["features"], feature_store=feature_store
-            )
-
         async with self.persistent.start_transaction() as session:
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
@@ -363,6 +354,34 @@ class FeatureListService(
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
+
+    async def update_store_info(self, document_id: ObjectId, features: List[FeatureModel]) -> None:
+        """
+        Update store info for a feature list
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Feature list id
+        features: List[FeatureModel]
+            List of features
+        """
+        feature_list = await self.get_document(document_id=document_id)
+        assert set(feature_list.feature_ids) == set(feature.id for feature in features)
+        self._check_document_modifiable(document=feature_list.dict(by_alias=True))
+
+        feature_store = await self.feature_store_service.get_document(
+            document_id=features[0].tabular_source.feature_store_id
+        )
+        feature_list.initialize_store_info(features=features, feature_store=feature_store)
+        if feature_list.internal_store_info:
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document_id),
+                update={"$set": {"store_info": feature_list.internal_store_info}},
+                user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
+            )
 
     async def delete_document(
         self,

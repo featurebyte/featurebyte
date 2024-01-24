@@ -11,7 +11,6 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
@@ -175,15 +174,6 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 user_id=self.user.id,
             )
             assert insert_id == document.id
-
-            # initialize offline store info
-            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-                store_info = await self.offline_store_info_initialization_service.initialize_offline_store_info(
-                    feature=document
-                )
-                await self.update_offline_store_info(
-                    document_id=document.id, store_info=store_info.dict(by_alias=True)
-                )
 
             try:
                 feature_namespace = await self.feature_namespace_service.get_document(

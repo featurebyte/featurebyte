@@ -24,6 +24,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
+from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
@@ -37,6 +38,8 @@ class DeployService(OpsServiceMixin):
     of feature list deployment.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         persistent: Persistent,
@@ -47,6 +50,7 @@ class DeployService(OpsServiceMixin):
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
+        offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
     ):
         self.persistent = persistent
         self.feature_service = feature_service
@@ -58,6 +62,7 @@ class DeployService(OpsServiceMixin):
         self.offline_store_feature_table_manager_service = (
             offline_store_feature_table_manager_service
         )
+        self.offline_store_info_initialization_service = offline_store_info_initialization_service
 
     @classmethod
     def _extract_deployed_feature_list_ids(
@@ -66,6 +71,17 @@ class DeployService(OpsServiceMixin):
         if feature_list.deployed:
             return cls.include_object_id(document.deployed_feature_list_ids, feature_list.id)
         return cls.exclude_object_id(document.deployed_feature_list_ids, feature_list.id)
+
+    async def _update_offline_store_info(self, feature: FeatureModel) -> FeatureModel:
+        store_info = (
+            await self.offline_store_info_initialization_service.initialize_offline_store_info(
+                feature=feature
+            )
+        )
+        await self.feature_service.update_offline_store_info(
+            document_id=feature.id, store_info=store_info.dict(by_alias=True)
+        )
+        return await self.feature_service.get_document(document_id=feature.id)
 
     async def _update_feature(
         self,
@@ -265,10 +281,13 @@ class DeployService(OpsServiceMixin):
 
                 # make each feature online enabled first
                 feature_models = []
+                all_feature_models = []
                 is_online_enabling = True
                 for ind, feature_id in enumerate(document.feature_ids):
+                    feature = await self.feature_service.get_document(document_id=feature_id)
+                    feature = await self._update_offline_store_info(feature)
+                    all_feature_models.append(feature)
                     async with self.persistent.start_transaction():
-                        feature = await self.feature_service.get_document(document_id=feature_id)
                         feature_online_enabled_map[feature.id] = feature.online_enabled
                         updated_feature = await self._update_feature(
                             feature_id=feature_id,
@@ -290,6 +309,15 @@ class DeployService(OpsServiceMixin):
 
                 if update_progress:
                     await update_progress(80, "Update feature list")
+
+                if (
+                    target_deployed
+                    and FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+                ):
+                    await self.feature_list_service.update_store_info(
+                        document_id=feature_list_id,
+                        features=all_feature_models,
+                    )
 
                 async with self.persistent.start_transaction():
                     await self._update_feature_list_namespace(

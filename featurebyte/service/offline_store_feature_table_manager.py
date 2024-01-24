@@ -182,7 +182,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 table_name=offline_store_table_name,
             )
-            assert feature_table_dict is not None
+            assert feature_table_dict is not None, f"{offline_store_table_name} not found"
 
             if len(feature_table_dict["feature_ids"]) == 0:
                 # add to new tables as the original table is empty
@@ -219,11 +219,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_dict["_id"],
                 )
 
-            new_tables.extend(
-                await self._create_or_update_entity_lookup_feature_tables(
-                    feature_table_model, feature_lists
+            if feature_table_model.feature_ids:
+                new_tables.extend(
+                    await self._create_or_update_entity_lookup_feature_tables(
+                        feature_table_model, feature_lists
+                    )
                 )
-            )
 
         # Add comments to newly created tables and columns
         await self._update_table_and_column_comments(
@@ -297,12 +298,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_table_dict: Dict[str, Any],
         updated_feature_ids: List[ObjectId],
     ) -> OfflineStoreFeatureTableModel:
+        feature_job_setting = None
+        if feature_table_dict["feature_job_setting"]:
+            feature_job_setting = FeatureJobSetting(**feature_table_dict["feature_job_setting"])
         feature_table_model = await self._construct_offline_store_feature_table_model(
             feature_table_name=feature_table_dict["name"],
             feature_ids=updated_feature_ids,
             primary_entity_ids=feature_table_dict["primary_entity_ids"],
             has_ttl=feature_table_dict["has_ttl"],
-            feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
+            feature_job_setting=feature_job_setting,
         )
         update_schema = FeaturesUpdate(**feature_table_model.dict(by_alias=True))
         return cast(
