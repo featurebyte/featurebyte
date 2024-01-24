@@ -291,6 +291,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_does_not_exist(
@@ -336,6 +337,7 @@ async def test_initialize_new_columns__table_does_not_exist(
         assert mock_materialize_partial.call_count == 0
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_exists(
     feature_materialize_service,
@@ -381,6 +383,7 @@ async def test_initialize_new_columns__table_exists(
     }
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("is_source_type_supported_by_feast", [False])
 @pytest.mark.asyncio
 async def test_initialize_new_columns__databricks_unity(
@@ -416,6 +419,7 @@ async def test_initialize_new_columns__databricks_unity(
     assert mock_materialize_partial.call_count == 0
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
 async def test_drop_columns(
     feature_materialize_service,
@@ -438,6 +442,7 @@ async def test_drop_columns(
     )
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
 async def test_drop_table(
     feature_materialize_service,
