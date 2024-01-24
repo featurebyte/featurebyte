@@ -65,7 +65,7 @@ async def deployed_feature_list_fixture(
     """
     Fixture for FeatureMaterializeService
     """
-    _ = mock_update_data_warehouse
+    _ = mock_update_data_warehouse, mock_get_feature_store_session
 
     if is_online_store_registered_for_catalog:
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
