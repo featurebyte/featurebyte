@@ -1065,12 +1065,14 @@ def mock_offline_store_feature_manager_dependencies_fixture():
             "apply_comments",
         ],
     }
+    started_patchers = []
     for service_name, method_names in patch_targets.items():
         for method_name in method_names:
             patcher = patch(f"{service_name}.{method_name}")
             patched[method_name] = patcher.start()
+            started_patchers.append(patcher)
     yield patched
-    for patcher in patched.values():
+    for patcher in started_patchers:
         patcher.stop()
 
 
