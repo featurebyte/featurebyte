@@ -26,6 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
+from tests.source_types import SNOWFLAKE_AND_SPARK
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -380,7 +381,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
         assert len(udfs_for_on_demand_func) == 0
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
 async def test_feast_registry(app_container, expected_feature_table_names):
@@ -512,7 +513,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
     assert_dict_approx_equal(online_features, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 def test_online_features__all_entities_provided(config, deployed_feature_list):
     """
     Check online features are populated correctly
@@ -592,7 +593,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 def test_online_features__primary_entity_ids(config, deployed_feature_list):
     """
     Check online features by providing only the primary entity ids. Expect the online serving
@@ -670,7 +671,7 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__ttl_feature_table(
     app_container,

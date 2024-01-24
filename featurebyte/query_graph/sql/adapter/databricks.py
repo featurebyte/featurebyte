@@ -38,9 +38,27 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
         struct_expr = expressions.Anonymous(this="struct", expressions=[key_column, value_column])
-        return expressions.Anonymous(
+        map_expr = expressions.Anonymous(
             this="map_from_entries",
             expressions=[expressions.Anonymous(this="collect_list", expressions=[struct_expr])],
+        )
+        # exclude entries with null values
+        return expressions.Anonymous(
+            this="map_filter",
+            expressions=[
+                map_expr,
+                expressions.Lambda(
+                    this=expressions.Not(
+                        this=expressions.Is(
+                            this=expressions.Identifier(this="v"), expression=expressions.Null()
+                        )
+                    ),
+                    expressions=[
+                        expressions.Identifier(this="k"),
+                        expressions.Identifier(this="v"),
+                    ],
+                ),
+            ],
         )
 
     @classmethod
