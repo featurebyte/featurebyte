@@ -1593,7 +1593,6 @@ def float_feature_different_job_setting_fixture(snowflake_event_view_with_entity
 @pytest.fixture(name="float_feature_composite_entity")
 def float_feature_composite_entity_fixture(
     snowflake_event_table_with_entity,
-    cust_id_entity,
     another_entity,
     feature_group_feature_job_setting,
 ):
