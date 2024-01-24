@@ -290,6 +290,17 @@ def add_concatenated_serving_names(
     """
     Add concatenated serving name column to the provided Select statement which is assumed to
     contain all the serving names.
+
+    Parameters
+    ----------
+    select_expr: expressions.Select
+        Select statement
+    concatenate_serving_names: Optional[list[str]]
+        List of serving names to concatenate
+
+    Returns
+    -------
+    expressions.Select
     """
     if concatenate_serving_names is not None and len(concatenate_serving_names) > 1:
         updated_select_expr = select_expr.select(
@@ -348,6 +359,8 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
         The timestamp value to use as the point-in-time
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    concatenate_serving_names: Optional[list[str]]
+        List of serving names to concatenate as a new column, if specified
 
     Returns
     -------
@@ -477,6 +490,8 @@ async def get_online_features(  # pylint: disable=too-many-locals
         function will return None (intended to be used when handling asynchronous batch online feature requests).
     request_timestamp: Optional[datetime]
         Request timestamp to use if provided
+    concatenate_serving_names: Optional[list[str]]
+        List of serving names to concatenate as a new column, if specified
 
     Returns
     -------

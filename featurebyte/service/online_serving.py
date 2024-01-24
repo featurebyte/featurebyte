@@ -304,6 +304,21 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         - Add point in time column if required
         - Composite entities are combined into a single column
         - Remove columns that are not required since feast is strict and will complain about them
+
+        Parameters
+        ----------
+        request_data : List[Dict[str, Any]]
+            Request data to be processed
+        feature_ids : List[PydanticObjectId]
+            List of feature ids in the feature list
+        feature_cluster : FeatureCluster
+            Feature cluster in the feature list
+        added_column_names : List[str]
+            List of column names that were added to the request data. Will be updated in-place.
+
+        Returns
+        -------
+        RequestColumnsMetadata
         """
         # Include point in time column if it is required
         is_point_in_time_column_required = self._require_point_in_time_request_column(

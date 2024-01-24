@@ -317,6 +317,7 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
         "cat1_userid_1d",
         "cat1_user_status_1d",
         "cat1_order_id_1d",
+        "cat1_userid_product_action_1h",
     }
     expected.update(expected_entity_lookup_feature_table_names)
     return expected
