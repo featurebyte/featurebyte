@@ -11,6 +11,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
+from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
@@ -62,6 +63,7 @@ class DeploymentController(
         task_controller: TaskController,
         use_case_service: UseCaseService,
         batch_feature_table_service: BatchFeatureTableService,
+        feast_feature_store_service: FeastFeatureStoreService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -71,6 +73,7 @@ class DeploymentController(
         self.task_controller = task_controller
         self.use_case_service = use_case_service
         self.batch_feature_table_service = batch_feature_table_service
+        self.feast_feature_store_service = feast_feature_store_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -225,8 +228,16 @@ class DeploymentController(
                 FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
                 and catalog.online_store_id is not None
             ):
+                feast_store = (
+                    await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
+                )
+            else:
+                feast_store = None
+
+            if feast_store is not None:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
+                    feast_store=feast_store,
                     request_data=data.entity_serving_names,
                 )
             else:

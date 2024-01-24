@@ -50,16 +50,26 @@ async def deployed_feature_list_with_point_in_time_request_column_feature(
     return await deploy_feature(app_container, new_feature, return_type="feature_list")
 
 
+@pytest_asyncio.fixture
+async def feast_feature_store(app_container):
+    """
+    Fixture for a feast feature store
+    """
+    return await app_container.feast_feature_store_service.get_feast_feature_store_for_catalog()
+
+
 @pytest.mark.asyncio
 async def test_feature_no_point_in_time(
-    online_serving_service, deployed_feature_list_with_float_feature
+    online_serving_service,
+    deployed_feature_list_with_float_feature,
+    feast_feature_store,
 ):
     """
     Test online serving feast without point in time
     """
     request_data = [{"cust_id": "a"}]
     result = await online_serving_service.get_online_features_by_feast(
-        deployed_feature_list_with_float_feature, request_data
+        deployed_feature_list_with_float_feature, feast_feature_store, request_data
     )
     assert result.dict() == {"features": [{"cust_id": "a", "sum_1d": None}]}
 
@@ -68,13 +78,16 @@ async def test_feature_no_point_in_time(
 async def test_feature_with_point_in_time(
     online_serving_service,
     deployed_feature_list_with_point_in_time_request_column_feature,
+    feast_feature_store,
 ):
     """
     Test online serving feast with point in time
     """
     request_data = [{"cust_id": "a"}]
     result = await online_serving_service.get_online_features_by_feast(
-        deployed_feature_list_with_point_in_time_request_column_feature, request_data
+        deployed_feature_list_with_point_in_time_request_column_feature,
+        feast_feature_store,
+        request_data,
     )
     assert result.dict() == {
         "features": [{"cust_id": "a", "feature_with_point_in_time_request_column": None}]
@@ -85,6 +98,7 @@ async def test_feature_with_point_in_time(
 async def test_validate_required_serving_names(
     online_serving_service,
     deployed_feature_list_with_point_in_time_request_column_feature,
+    feast_feature_store,
 ):
     """
     Test validation for missing required serving names
@@ -92,7 +106,9 @@ async def test_validate_required_serving_names(
     request_data = [{"cust_idz": "a"}]
     with pytest.raises(RequiredEntityNotProvidedError) as exc_info:
         await online_serving_service.get_online_features_by_feast(
-            deployed_feature_list_with_point_in_time_request_column_feature, request_data
+            deployed_feature_list_with_point_in_time_request_column_feature,
+            feast_feature_store,
+            request_data,
         )
     assert (
         str(exc_info.value)
