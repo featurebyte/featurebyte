@@ -341,16 +341,6 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
     return expected
 
 
-@pytest.fixture(name="expected_udf_names", scope="module")
-def expected_udf_names_fixture(source_type):
-    """
-    Fixture for expected udf names
-    """
-    if source_type == SourceType.DATABRICKS_UNITY:
-        return []
-    return []
-
-
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
 def test_feature_tables_expected(
     offline_store_feature_tables,
