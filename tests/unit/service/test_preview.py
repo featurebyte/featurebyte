@@ -2,7 +2,6 @@
 Test preview service module
 """
 import textwrap
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -26,15 +25,6 @@ def empty_graph_fixture():
         "nodes": [],
         "edges": [],
     }
-
-
-@pytest.fixture(name="mock_get_feature_store_session")
-def mock_get_feature_store_session_fixture():
-    """Mock get_feature_store_session method"""
-    with patch(
-        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        yield mock_get_feature_store_session
 
 
 @pytest.fixture(name="feature_store_preview")

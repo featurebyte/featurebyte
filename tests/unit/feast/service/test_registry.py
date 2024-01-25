@@ -29,8 +29,12 @@ def feast_feature_store_service_fixture(app_container):
 
 
 @pytest_asyncio.fixture(name="feast_registry")
-async def feast_registry_fixture(feast_registry_service, feature_list):
+async def feast_registry_fixture(feast_registry_service, feature_list, mock_deployment_flow):
     """Feast registry fixture"""
+    _ = mock_deployment_flow
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment.enable()
+
     feature_list_model = feature_list.cached_model
     registry = await feast_registry_service.create_document(
         data=FeastRegistryCreate(

@@ -141,7 +141,9 @@ class OfflineStoreInfoInitializationService:
         return new_graph, node_name_map[node_name]
 
     async def initialize_offline_store_info(
-        self, feature: FeatureModel, entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None
+        self,
+        feature: FeatureModel,
+        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> OfflineStoreInfo:
         """
         Initialize feature offline store info

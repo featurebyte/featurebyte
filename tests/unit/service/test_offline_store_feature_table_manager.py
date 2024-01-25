@@ -771,6 +771,6 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
         ) in offline_ingest_graph_container.offline_store_table_name_to_features.items()
     }
     assert offline_store_table_name_to_feature_ids == {
-        "cat1_659ccffb8c6f3c0e_1h": [ObjectId("659cd19b7e511ad3fcdec2fe")],
-        "cat1_659ccffa8c6f3c0e_1d": [ObjectId("659cd19b7e511ad3fcdec2fe")],
+        "cat1_659ccffa8c6f3c0e0a7_1d": [ObjectId("659cd19b7e511ad3fcdec2fe")],
+        "cat1_659ccffb8c6f3c0e0a7_1h": [ObjectId("659cd19b7e511ad3fcdec2fe")],
     }

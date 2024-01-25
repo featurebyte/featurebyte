@@ -9,7 +9,7 @@ from google.protobuf.json_format import MessageToDict
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
-from tests.util.helper import assert_lists_of_dicts_equal
+from tests.util.helper import assert_lists_of_dicts_equal, deploy_features_through_api
 
 
 def test_feast_registry_construction__missing_asset(
@@ -50,8 +50,11 @@ def test_feast_registry_construction__with_post_processing_features(
     non_time_based_feature,
     latest_event_timestamp_feature,
     mock_pymysql_connect,
+    mock_deployment_flow,
 ):
     """Test the construction of the feast register (with post processing features)"""
+    _ = mock_deployment_flow
+
     feature_requires_post_processing = (
         (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day.cos()
         + float_feature
@@ -62,6 +65,7 @@ def test_feast_registry_construction__with_post_processing_features(
 
     feature_list = FeatureList([feature_requires_post_processing], name="test_feature_list")
     feature_list.save()
+    deploy_features_through_api([feature_requires_post_processing])
 
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,

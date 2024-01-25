@@ -6,7 +6,7 @@ import pytest
 from featurebyte.api.scd_view import SCDView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestSCDView(BaseViewTestSuite):
@@ -224,12 +224,12 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
 
 
 def test_scd_view_as_feature__special_column(
-    snowflake_scd_table, cust_id_entity, enable_feast_integration
+    snowflake_scd_table, cust_id_entity, enable_feast_integration, mock_deployment_flow
 ):
     """
     Test SCDView as_feature selects a special column that is excluded by default
     """
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
 
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
@@ -270,6 +270,8 @@ def test_scd_view_as_feature__special_column(
 
     # check offline store table name (should have feature job setting)
     feature.save()
+    deploy_features_through_api([feature])
+
     offline_store_info = feature.cached_model.offline_store_info
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_graphs) == 1

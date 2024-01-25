@@ -114,25 +114,34 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
 
     def _get_basename(self) -> str:
         # max length of feature table name is 64
-        # reserving 7 characters for prefix (catalog name, `cat<num>_`, num is 1-999)
-        # 3 characters for suffix (count, `_<num>`, num is 1-99
-        max_len = 64 - 7 - 3
+        # reserving 8 characters for prefix (catalog name, `cat<num>_`, num is 1-9999)
+        # need to the same prefix for project name (same as catalog prefix)
+        # 3 characters for suffix (count, `_<num>`, num is 1-99)
+        max_len = 45  # 64 - 2 * 8 - 3
+        max_serv_name_len = 19
+        max_serv_num = 2
+        max_freq_len = (  # 45 - 39 - 1 = 5
+            max_len
+            - max_serv_name_len * max_serv_num  # serving names
+            - (max_serv_num - 1)  # underscores
+            - 1  # frequency separator
+        )
+
         name = "_no_entity"
         if self.serving_names:
             # take first 3 serving names and join them with underscore
             # if serving name is longer than 16 characters, truncate it
-            max_serv_name_len = 16
-            max_serv_num = 3
+            # max length of the name = 15 * 3 + 2 = 47
+            # strip leading and trailing underscores for all serving names & sanitized name
             name = sanitize_identifier(
                 "_".join(
-                    serving_name[:max_serv_name_len]
+                    serving_name[:max_serv_name_len].strip("_")
                     for serving_name in self.serving_names[:max_serv_num]
                 )
-            ).lstrip("_")
+            ).strip("_")
 
         if self.feature_job_setting:
             # take the frequency part of the feature job setting
-            max_freq_len = 5
             freq_part = ""
             for component in reversed(range(1, 5)):
                 freq_part = convert_seconds_to_time_format(
@@ -142,7 +151,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                     break
             keep = max_len - len(freq_part) - 1
             name = f"{name[:keep]}_{freq_part}"
-        return name[:max_len]
+        return name
 
     def get_name(self) -> str:
         """

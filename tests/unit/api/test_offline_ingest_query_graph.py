@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 
 import freezegun
 import pytest
-from bson import ObjectId, json_util
+from bson import json_util
 
 from featurebyte import DatabricksDetails, Entity, FeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.models.feature import FeatureModel
@@ -21,6 +21,7 @@ from featurebyte.schema.catalog import CatalogCreate
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
+    deploy_features_through_api,
 )
 
 
@@ -32,10 +33,12 @@ def default_feature_job_setting_fixture():
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
 def always_enable_feast_integration_fixture(
-    enable_feast_integration, patched_catalog_get_create_payload
+    enable_feast_integration,
+    patched_catalog_get_create_payload,
+    mock_deployment_flow,
 ):
     """Enable feast integration & patch catalog ID for all tests in this module"""
-    _ = enable_feast_integration, patched_catalog_get_create_payload
+    _ = enable_feast_integration, patched_catalog_get_create_payload, mock_deployment_flow
     yield
 
 
@@ -97,6 +100,7 @@ def test_feature__ttl_and_non_ttl_components(
 ):
     """Test that a feature contains both ttl and non-ttl components."""
     composite_feature.save()
+    deploy_features_through_api([composite_feature])
 
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
@@ -164,6 +168,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     feature = request_and_ttl_component + non_ttl_component
     feature.name = "feature"
     feature.save()
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph (note that the request column part should be removed)
     feature_model = feature.cached_model
@@ -261,6 +266,7 @@ def test_feature__multiple_non_ttl_components(
     feature = lookup_feature + feature_a
     feature.name = "feature"
     feature.save()
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph (note that the request column part should be removed)
     feature_model = feature.cached_model
@@ -300,6 +306,7 @@ def test_feature__ttl_item_aggregate_request_column(
     composite_feature = float_feature + non_time_based_feature + request_feature
     composite_feature.name = "composite_feature"
     composite_feature.save()
+    deploy_features_through_api([composite_feature])
 
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
@@ -382,6 +389,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     feature_zscore = (feature_raw - feature_avg) / feature_std
     feature_zscore.name = "feature_zscore"
     feature_zscore.save()
+    deploy_features_through_api([feature_zscore])
 
     # check offline ingest query graph
     feature_model = feature_zscore.cached_model
@@ -455,6 +463,7 @@ def test_feature__composite_count_dict(
     feature = count_dict_feat1.cd.cosine_similarity(count_dict_feat2)
     feature.name = "feature_cosine_similarity"
     feature.save()
+    deploy_features_through_api([feature])
 
     # check offline ingest query graph
     feature_model = feature.cached_model
@@ -483,6 +492,7 @@ def test_feature__input_has_ingest_query_graph_node(test_dir):
 def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
+    deploy_features_through_api([float_feature])
     offline_store_info = float_feature.cached_model.offline_store_info
     expected = f"""
     import json
@@ -535,6 +545,7 @@ def test_feature_entity_dtypes(
     feat = feat_sum1 + feat_sum2
     feat.name = "feature"
     feat.save()
+    deploy_features_through_api([feat])
 
     # check the entity dtypes are correctly set
     expected_entity_id_to_dtype = {
@@ -610,10 +621,10 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
 
     def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
         # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
+        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -624,11 +635,11 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_1)
+        feat_4 = get_relative_frequency(feat_3, key=col_2)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
@@ -722,6 +733,7 @@ def test_databricks_specs(
         feature.save()
 
     feature_list = FeatureList(features, name="feature_list")
+    feature_list.save()
     with mock.patch(
         "featurebyte.service.feature_list.FeatureStoreService.get_document", new_callable=AsyncMock
     ) as mock_get_document:
@@ -739,7 +751,8 @@ def test_databricks_specs(
             ),
         )
         mock_get_document.return_value = feature_store
-        feature_list.save()
+        deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+        deployment.enable()
 
     store_info = feature_list.cached_model.store_info
     expected = """

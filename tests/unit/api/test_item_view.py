@@ -25,7 +25,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestItemView(BaseViewTestSuite):
@@ -933,12 +933,12 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
 
 
 def test_as_feature__from_view_column(
-    saved_item_table, item_entity, update_fixtures, enable_feast_integration
+    saved_item_table, item_entity, update_fixtures, enable_feast_integration, mock_deployment_flow
 ):
     """
     Test calling as_feature() from ItemView column
     """
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
 
     view = saved_item_table.get_view(event_suffix="_event_table")
     feature = view["item_amount"].as_feature("ItemAmountFeature")
@@ -984,6 +984,8 @@ def test_as_feature__from_view_column(
 
     # test create new version & check SDK code generation
     feature.save()
+    deploy_features_through_api([feature])
+
     new_version = feature.create_new_version(
         table_feature_job_settings=None,
         table_cleaning_operations=[

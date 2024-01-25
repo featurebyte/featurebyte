@@ -53,17 +53,21 @@ class OfflineStoreFeatureTableService(
             if query_result["total"]:
                 return str(query_result["data"][0]["name_prefix"])
 
-            res, _ = await self.persistent.aggregate_find(
-                collection_name=self.collection_name,
-                pipeline=[
-                    {"$match": {"feature_store_id": feature_store_id}},
-                    {"$group": {"_id": "$catalog_id"}},
-                    {"$count": "uniqueCount"},
-                ],
-            )
-            results = list(res)
-            catalog_count = results[0]["uniqueCount"] + 1 if results else 1
-            return f"cat{catalog_count}"
+        res, _ = await self.persistent.aggregate_find(
+            collection_name=self.collection_name,
+            pipeline=[
+                {"$match": {"feature_store_id": feature_store_id}},
+                {"$group": {"_id": None, "unique_name_prefixes": {"$addToSet": "$name_prefix"}}},
+            ],
+        )
+        results = list(res)
+        found_name_prefixes = set(results[0]["unique_name_prefixes"]) if results else set()
+        name_prefix_count = len(found_name_prefixes)
+        for idx in range(1, name_prefix_count):
+            name_prefix = f"cat{idx}"
+            if name_prefix not in found_name_prefixes:
+                return name_prefix
+        return f"cat{name_prefix_count + 1}"
 
     async def get_or_create_document(
         self, data: OfflineStoreFeatureTableModel

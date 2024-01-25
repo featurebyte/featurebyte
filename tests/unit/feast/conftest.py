@@ -100,8 +100,14 @@ def feast_registry_proto_fixture(
     feature_list_features,
     feature_list,
     entity_lookup_steps_mapping,
+    mock_deployment_flow,
 ):
     """Fixture for the feast registry proto"""
+    _ = mock_deployment_flow
+
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment.enable()
+
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
         online_store=mysql_online_store.cached_model,
