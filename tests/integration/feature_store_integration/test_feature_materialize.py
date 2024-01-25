@@ -212,7 +212,7 @@ async def deployed_features_list_fixture(session, features):
     Fixture for deployed feature list
     """
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST")
-    feature_list.save(conflict_resolution="retrieve")
+    feature_list.save()
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),

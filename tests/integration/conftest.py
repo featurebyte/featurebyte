@@ -116,7 +116,7 @@ def pytest_collection_modifyitems(config, items):
             extra_ordering_key = source_type
 
         # include index as the sorting key to preserve the original ordering
-        return extra_ordering_key, index
+        return extra_ordering_key, item.path, index
 
     def filter_items_by_source_types(all_items):
         if not filtered_source_types:
