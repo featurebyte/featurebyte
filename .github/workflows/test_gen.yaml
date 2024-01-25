@@ -109,12 +109,8 @@ jobs:
         path: featurebyte/sql/spark/
     - name: Run tests
       run: |-
-        task test-setup
-        task test-unit-service
-        task test-unit-api
         task test-unit
         task generate-unit-test-fixtures
-        task test-teardown
     - name: Moving coverage file by appending 0
       run: mv .coverage .coverage.0
     - name: Upload test results

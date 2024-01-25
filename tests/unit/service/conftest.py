@@ -229,10 +229,7 @@ def mock_get_feature_store_session_fixture():
 
 @pytest.fixture(name="preview_service")
 def preview_service_fixture(
-    app_container,
-    feature_store,
-    mock_snowflake_session,
-    mock_get_feature_store_session,
+    app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session
 ):
     """PreviewService fixture"""
     with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
@@ -292,19 +289,22 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
-def online_enable_service_data_warehouse_mocks_fixture(mock_get_feature_store_session):
+def online_enable_service_data_warehouse_mocks_fixture():
     """
     Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
     FeatureManager
     """
     mocks = {}
     with patch(
-        "featurebyte.service.online_enable.FeatureManagerService.online_enable",
-    ) as online_enable:
-        mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
-        mocks["get_feature_store_session"] = mock_get_feature_store_session
-        mocks["feature_manager_online_enable"] = online_enable
-        yield mocks
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        with patch(
+            "featurebyte.service.online_enable.FeatureManagerService.online_enable",
+        ) as online_enable:
+            mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
+            mocks["get_feature_store_session"] = mock_get_feature_store_session
+            mocks["feature_manager_online_enable"] = online_enable
+            yield mocks
 
 
 @pytest.fixture(name="online_serving_service")
