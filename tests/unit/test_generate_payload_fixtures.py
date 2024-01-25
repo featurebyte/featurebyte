@@ -294,6 +294,7 @@ def test_generate_user_defined_function(
     user_defined_function = UserDefinedFunctionCreate(
         _id="64928868668f720c5bebbbd4",
         name="udf_test",
+        description=None,
         sql_function_name="cos",
         function_parameters=[FunctionParameter(name="x", dtype=DBVarType.FLOAT)],
         output_dtype=DBVarType.FLOAT,
