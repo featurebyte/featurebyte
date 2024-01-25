@@ -1,11 +1,11 @@
 """
 Test for feast online store models
 """
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import MySQLOnlineStoreConfig
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 
 from featurebyte import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.feast.model.online_store import get_feast_online_store_details
+from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 
 
 def test_redis_details():
@@ -41,6 +41,10 @@ def test_mysql_details():
     feast_config = get_feast_online_store_details(
         online_store_details
     ).to_feast_online_store_config()
-    assert feast_config == MySQLOnlineStoreConfig(
-        host="1.2.3.4", user="user", password="my_pw", database="my_db", port=3306, type="mysql"
+    assert feast_config == FBMySQLOnlineStoreConfig(
+        host="1.2.3.4",
+        user="user",
+        password="my_pw",
+        database="my_db",
+        port=3306,
     )

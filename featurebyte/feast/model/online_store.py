@@ -3,16 +3,16 @@ Models to construct feast online store config from featurebyte BaseOnlineStoreDe
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import Union, cast
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import MySQLOnlineStoreConfig
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import FeastConfigBaseModel
 from pydantic import Field, parse_obj_as
 
+from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 from featurebyte.models.online_store import (
     BaseOnlineStoreDetails,
     MySQLOnlineStoreDetails,
@@ -57,13 +57,14 @@ class FeastMySQLOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, MySQLOnlineSt
             user, password = self.credential.username, self.credential.password
         else:
             user, password = None, None
-        return MySQLOnlineStoreConfig(
+        config = FBMySQLOnlineStoreConfig(
             host=self.host,
             user=user,
             password=password,
             database=self.database,
             port=self.port,
         )
+        return cast(FeastConfigBaseModel, config)
 
 
 FeastOnlineStoreDetails = Annotated[
