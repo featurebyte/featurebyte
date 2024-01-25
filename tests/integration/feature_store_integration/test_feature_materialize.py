@@ -26,7 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
-from tests.source_types import SNOWFLAKE_AND_SPARK, SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -520,8 +520,8 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     assert_dict_approx_equal(online_features, expected)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
-def test_online_features__all_entities_provided(config, deployed_feature_list):
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__all_entities_provided(config, deployed_feature_list, source_type):
     """
     Check online features are populated correctly
     """
@@ -556,9 +556,10 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
-    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
-    )
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        )
     expected = {
         "Amount Sum by Customer x Product Action 24d": 254.23000000000002,
         "Complex Feature by User": "STÀTUS_CODE_37_1",
@@ -597,11 +598,14 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
         "user_status": "STÀTUS_CODE_37",
         "üser id": "5",
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
+        expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
-def test_online_features__primary_entity_ids(config, deployed_feature_list):
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__primary_entity_ids(config, deployed_feature_list, source_type):
     """
     Check online features by providing only the primary entity ids. Expect the online serving
     service to lookup parent entities.
@@ -638,9 +642,10 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
-    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
-    )
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        )
     expected = {
         "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
@@ -675,6 +680,9 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
+        expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
     assert_dict_approx_equal(feat_dict, expected)
 
 
@@ -766,7 +774,7 @@ async def reload_feature_table_model(app_container, feature_table_model):
     return feature_table_model
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__non_ttl_feature_table(
     app_container,
