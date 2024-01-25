@@ -41,12 +41,13 @@ def mock_event_dataset():
         ),
     ]
     mock_patches = {}
+    started_patches = []
     for target, side_effect in mock_targets:
         mock_patch = patch(target, side_effect=side_effect, new_callable=AsyncMock)
-        mock_patch.start()
-        mock_patches[target] = mock_patch
+        mock_patches[target] = mock_patch.start()
+        started_patches.append(mock_patch)
 
     yield
 
-    for mock_patch in mock_patches.values():
+    for mock_patch in started_patches:
         mock_patch.stop()
