@@ -10,8 +10,6 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from mongomock_motor import AsyncMongoMockClient
-from sortedcontainers import SortedDict
-from xdist.scheduler import LoadScopeScheduling
 
 from featurebyte.persistent.mongo import MongoDB
 
@@ -122,36 +120,3 @@ def enable_feast_integration_fixture():
     """
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
         yield
-
-
-def pytest_xdist_make_scheduler(config, log):
-    """Group tests from the same module together"""
-
-    class GroupByModuleScheduler(LoadScopeScheduling):
-        """Group tests from the same module together and sort the test cases by module & test names"""
-
-        def _assign_work_unit(self, node):
-            """Assign a work unit to a node."""
-            assert self.workqueue
-
-            # Grab a unit of work
-            scope, work_unit = self.workqueue.popitem(last=False)
-
-            # Change the default from OrderedDict() to SortedDict()
-            assigned_to_node = self.assigned_work.setdefault(node, default=SortedDict())
-            assigned_to_node[scope] = work_unit
-
-            # Ask the node to execute the workload
-            worker_collection = self.registered_collections[node]
-            nodeids_indexes = [
-                worker_collection.index(nodeid)
-                for nodeid, completed in work_unit.items()
-                if not completed
-            ]
-
-            node.send_runtest_some(nodeids_indexes)
-
-        def mark_test_pending(self, item):
-            raise NotImplementedError()
-
-    return GroupByModuleScheduler(config, log)

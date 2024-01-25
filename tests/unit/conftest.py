@@ -19,6 +19,7 @@ from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
+from xdist.scheduler import LoadScopeScheduling
 
 from featurebyte import (
     FeatureJobSetting,
@@ -72,6 +73,11 @@ pytest.register_assert_rewrite("tests.unit.routes.base")
 # "Registering" fixtures so that they'll be available for use as if they were defined here.
 # We keep the definition in a separate file for readability
 _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
+
+
+def pytest_xdist_make_scheduler(config, log):
+    """Group tests from the same module together"""
+    return LoadScopeScheduling(config, log)
 
 
 @pytest.fixture(name="mock_api_object_cache")
