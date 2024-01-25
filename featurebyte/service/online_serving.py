@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import json
 import os
 import time
+from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
@@ -21,7 +22,7 @@ from featurebyte.exception import (
     UnsupportedRequestCodeTemplateLanguage,
 )
 from featurebyte.logging import get_logger
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.entity_lookup_feature_table import get_lookup_feature_table_name
@@ -31,6 +32,10 @@ from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.entity import (
+    get_combined_serving_names,
+    get_combined_serving_names_pandas,
+)
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
@@ -40,11 +45,22 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class RequestColumnsMetadata:
+    """
+    Metadata about the request columns
+    """
+
+    updated_request_data: List[Dict[str, Any]]
+    df_extra_columns: Optional[pd.DataFrame]
 
 
 class OnlineServingService:  # pylint: disable=too-many-instance-attributes
@@ -63,6 +79,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         feature_service: FeatureService,
         entity_service: EntityService,
         table_service: TableService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -73,6 +90,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.table_service = table_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -190,21 +208,18 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 feast_store=feast_store,
             )
         else:
-            added_column_names = None
+            added_column_names = []
 
-        # Include point in time column if it is required
-        is_point_in_time_column_required = self._require_point_in_time_request_column(
-            feature_cluster
+        request_data_metadata = await self._process_request_columns(
+            request_data=request_data,
+            feature_ids=feature_list.feature_ids,
+            feature_cluster=feature_list.feature_clusters[0],
+            added_column_names=added_column_names,
         )
-        if is_point_in_time_column_required:
-            point_in_time_value = datetime.utcnow().isoformat()
-            for row in request_data:
-                row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
-
         tic = time.time()
         feast_online_features = feast_store.get_online_features(
             feast_store.get_feature_service(feature_list.name),
-            request_data,
+            request_data_metadata.updated_request_data,
         )
         logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
 
@@ -223,6 +238,11 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         # Excluded looked up parent entities from result
         if added_column_names:
             online_features_df.drop(added_column_names, axis=1, inplace=True)
+
+        # Add back extra columns
+        if request_data_metadata.df_extra_columns:
+            for col in request_data_metadata.df_extra_columns:
+                online_features_df[col] = request_data_metadata.df_extra_columns[col].values
 
         features = online_features_df.to_dict(orient="records")
         return OnlineFeaturesResponseModel(features=features)
@@ -269,6 +289,91 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
 
         request_data = df_entity_rows.to_dict(orient="records")
         return request_data, added_column_names
+
+    async def _process_request_columns(
+        self,
+        request_data: List[Dict[str, Any]],
+        feature_ids: List[PydanticObjectId],
+        feature_cluster: FeatureCluster,
+        added_column_names: List[str],
+    ) -> RequestColumnsMetadata:
+        """
+        Perform additional handling on the provided columns in the request data to prepare it for
+        feast get_online_features().
+
+        - Add point in time column if required
+        - Composite entities are combined into a single column
+        - Remove columns that are not required since feast is strict and will complain about them
+
+        Parameters
+        ----------
+        request_data : List[Dict[str, Any]]
+            Request data to be processed
+        feature_ids : List[PydanticObjectId]
+            List of feature ids in the feature list
+        feature_cluster : FeatureCluster
+            Feature cluster in the feature list
+        added_column_names : List[str]
+            List of column names that were added to the request data. Will be updated in-place.
+
+        Returns
+        -------
+        RequestColumnsMetadata
+        """
+        # Include point in time column if it is required
+        is_point_in_time_column_required = self._require_point_in_time_request_column(
+            feature_cluster
+        )
+        if is_point_in_time_column_required:
+            point_in_time_value = datetime.utcnow().isoformat()
+            for row in request_data:
+                row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
+
+        # Get required serving names and composite serving names that need further processing
+        offline_store_table_docs = (
+            await self.offline_store_feature_table_service.list_documents_as_dict(
+                query_filter={"feature_ids": {"$in": feature_ids}},
+                project_name={"serving_names"},
+            )
+        )
+        required_serving_names = set()
+        composite_serving_names = set()
+        for offline_store_table_doc in offline_store_table_docs["data"]:
+            serving_names = tuple(offline_store_table_doc["serving_names"])
+            if len(serving_names) == 1:
+                required_serving_names.add(serving_names[0])
+            elif len(serving_names) > 1:
+                composite_serving_names.add(serving_names)
+
+        # Add concatenated composite serving names
+        df_request_data = pd.DataFrame(request_data)
+        if composite_serving_names:
+            for serving_names in composite_serving_names:
+                combined_serving_names_col = get_combined_serving_names(list(serving_names))
+                df_request_data[combined_serving_names_col] = get_combined_serving_names_pandas(
+                    [df_request_data[serving_name] for serving_name in serving_names]
+                )
+                added_column_names.append(combined_serving_names_col)
+
+        # Get exactly the columns that are required by feast
+        needed_columns = list(required_serving_names) + added_column_names
+        if is_point_in_time_column_required:
+            needed_columns.append(SpecialColumnName.POINT_IN_TIME.value)
+
+        # Remove columns that are not required to be added back later to the result
+        extra_columns = [col for col in df_request_data.columns if col not in needed_columns]
+        if extra_columns:
+            df_extra_columns = df_request_data[extra_columns]
+        else:
+            df_extra_columns = None
+
+        df_request_data = df_request_data[needed_columns]
+        request_data = df_request_data.to_dict(orient="records")
+
+        return RequestColumnsMetadata(
+            updated_request_data=request_data,
+            df_extra_columns=df_extra_columns,
+        )
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

@@ -326,11 +326,14 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ):
             feature_ids_to_model[feature_model.id] = feature_model
 
-        primary_entities = []
+        primary_entities_mapping = {}
         async for entity_model in self.entity_service.list_documents_iterator(
             query_filter={"_id": {"$in": primary_entity_ids}}
         ):
-            primary_entities.append(entity_model)
+            primary_entities_mapping[entity_model.id] = entity_model
+        primary_entities = [
+            primary_entities_mapping[primary_entity_id] for primary_entity_id in primary_entity_ids
+        ]
 
         required_aggregate_result_tables = await self._get_required_aggregate_result_tables(
             feature_id_to_models=feature_ids_to_model,

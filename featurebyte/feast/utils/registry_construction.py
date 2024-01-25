@@ -49,6 +49,7 @@ from featurebyte.models.offline_store_ingest_query import (
 )
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.sql.entity import get_combined_serving_names
 
 
 class EntityFeatureChecker:
@@ -190,9 +191,14 @@ class OfflineStoreTable(FeatureByteBaseModel):
         value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
         assert len(self.primary_entity_info) > 0
         serving_names = [entity_info.name for entity_info in self.primary_entity_info]
+        if len(serving_names) == 1:
+            join_keys = serving_names
+        else:
+            # For now, an entity may only have a single join key in feast
+            join_keys = [get_combined_serving_names(serving_names)]
         entity = FeastEntity(
             name=" x ".join(serving_names),
-            join_keys=serving_names,
+            join_keys=join_keys,
             value_type=value_type,
         )
         return entity  # type: ignore[no-any-return]
