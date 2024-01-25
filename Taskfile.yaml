@@ -222,6 +222,30 @@ tasks:
       - task: test-docs
       - task: generate-unit-test-fixtures
 
+  test-unit-service:
+    desc: Runs unit tests for service
+    deps:
+      - task: install
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/**/*
+      - tests/unit/service/**/*
+    cmds:
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0a -n auto --cov=featurebyte tests/unit/service
+
+  test-unit-api:
+    desc: Runs unit tests for api
+    deps:
+      - task: install
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/**/*
+      - tests/unit/api/**/*
+    cmds:
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0b -n auto --cov=featurebyte tests/unit/api
+
   test-unit:
     desc: Runs unit tests
     deps:
@@ -232,9 +256,7 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - task: test-setup
-      - poetry run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
-      - task: test-teardown
+      - poetry run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit --ignore=tests/unit/service --ignore=tests/unit/api
 
   generate-unit-test-fixtures:
     desc: Generate unit test fixtures

@@ -107,6 +107,7 @@ coverage.xml
 .pytest_cache/
 pytest.xml
 pytest-coverage.txt
+pytest_logs.txt
 
 # Translations
 *.mo
