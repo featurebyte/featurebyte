@@ -230,7 +230,7 @@ tasks:
       - poetry.lock
       - pyproject.toml
       - featurebyte/**/*
-      - tests/unit/service/**/*
+      - tests/**/*
     cmds:
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.0a -n auto --cov=featurebyte tests/unit/service
 
@@ -242,7 +242,7 @@ tasks:
       - poetry.lock
       - pyproject.toml
       - featurebyte/**/*
-      - tests/unit/api/**/*
+      - tests/**/*
     cmds:
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.0b -n auto --cov=featurebyte tests/unit/api
 
