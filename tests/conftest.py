@@ -151,4 +151,7 @@ def pytest_xdist_make_scheduler(config, log):
 
             node.send_runtest_some(nodeids_indexes)
 
+        def mark_test_pending(self, item):
+            raise NotImplementedError()
+
     return GroupByModuleScheduler(config, log)
