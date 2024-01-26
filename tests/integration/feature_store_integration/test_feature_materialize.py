@@ -26,6 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -70,8 +71,7 @@ def features_fixture(
         method="sum",
         windows=["666h"],
         feature_names=["EXTERNAL_FS_FEATURE_NOT_DEPLOYED"],
-    )
-    feature_0.save()
+    )["EXTERNAL_FS_FEATURE_NOT_DEPLOYED"]
 
     # Window aggregate feature
     feature_1 = event_view.groupby("ÜSER ID").aggregate_over(
@@ -181,6 +181,7 @@ def features_fixture(
     features = [
         feature
         for feature in [
+            feature_0,
             feature_1,
             feature_2,
             feature_3,
@@ -199,10 +200,10 @@ def features_fixture(
         if feature is not None
     ]
     for feature in features:
-        feature.save()
+        feature.save(conflict_resolution="retrieve")
         feature.update_readiness("PRODUCTION_READY")
 
-    return features
+    return features[1:]
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
@@ -324,7 +325,8 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
     return expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(1)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_feature_tables_expected(
     offline_store_feature_tables,
     expected_feature_table_names,
@@ -335,7 +337,8 @@ def test_feature_tables_expected(
     assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(2)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_feature_tables_populated(session, offline_store_feature_tables):
     """
@@ -363,6 +366,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
         assert set(df.columns.tolist()) == expected
 
 
+@pytest.mark.order(3)
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_databricks_udf_created(session, offline_store_feature_tables, source_type):
@@ -380,10 +384,11 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
         assert len(udfs_for_on_demand_func) == 0
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.order(4)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
-async def test_feast_registry(app_container, expected_feature_table_names):
+async def test_feast_registry(app_container, expected_feature_table_names, source_type):
     """
     Check feast registry is populated correctly
     """
@@ -421,11 +426,12 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
         else None
     ]
-    online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
-        json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
-        if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
-        else None
-    ]
+    if source_type != SourceType.DATABRICKS_UNITY:
+        online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
+            json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
+            if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
+            else None
+        ]
     expected = {
         f"Amount Sum by Customer x Product Action 24d_{version}": [None],
         f"Current Number of Users With This Status_{version}": [1.0],
@@ -469,6 +475,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "üser id": ["5"],
         "üser id x PRODUCT_ACTION": ["detail::761"],
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
+        expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
     assert_dict_approx_equal(online_features, expected)
 
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
@@ -500,6 +509,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [None],
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [None],
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
+        expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
     assert_dict_approx_equal(online_features, expected)
 
     # set the point in time earlier than the 2001-01-02 12:00:00
@@ -512,8 +524,9 @@ async def test_feast_registry(app_container, expected_feature_table_names):
     assert_dict_approx_equal(online_features, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_online_features__all_entities_provided(config, deployed_feature_list):
+@pytest.mark.order(5)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__all_entities_provided(config, deployed_feature_list, source_type):
     """
     Check online features are populated correctly
     """
@@ -548,9 +561,10 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
-    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
-    )
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        )
     expected = {
         "Amount Sum by Customer x Product Action 24d": 254.23000000000002,
         "Complex Feature by User": "STÀTUS_CODE_37_1",
@@ -589,11 +603,15 @@ def test_online_features__all_entities_provided(config, deployed_feature_list):
         "user_status": "STÀTUS_CODE_37",
         "üser id": "5",
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
+        expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_online_features__primary_entity_ids(config, deployed_feature_list):
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__primary_entity_ids(config, deployed_feature_list, source_type):
     """
     Check online features by providing only the primary entity ids. Expect the online serving
     service to lookup parent entities.
@@ -630,9 +648,10 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
-    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
-    )
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        )
     expected = {
         "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
@@ -667,10 +686,14 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list):
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
     }
+    if source_type == SourceType.DATABRICKS_UNITY:
+        expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
+        expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(7)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__ttl_feature_table(
     app_container,
@@ -691,7 +714,7 @@ async def test_simulated_materialize__ttl_feature_table(
         ),
     )
     version = get_version()
-    if source_type == SourceType.SNOWFLAKE:
+    if source_type != SourceType.DATABRICKS_UNITY:
         expected = [
             "__feature_timestamp",
             "üser id",
@@ -758,7 +781,8 @@ async def reload_feature_table_model(app_container, feature_table_model):
     return feature_table_model
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(8)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__non_ttl_feature_table(
     app_container,
@@ -813,6 +837,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     assert df_2["__feature_timestamp"].nunique() == df_1["__feature_timestamp"].nunique()
 
 
+@pytest.mark.order(9)
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_tables_have_primary_key_constraints(session, offline_store_feature_tables):

@@ -364,7 +364,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 12
+        return 13
 
     @property
     def sql_directory_name(self) -> str:
@@ -479,7 +479,6 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
                 "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
                 "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
             ),
-            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregateV1"),
             ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDeleteV1"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndexV1"),
             ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),

@@ -283,7 +283,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
       - task: test-teardown
 
   test-integration-databricks:

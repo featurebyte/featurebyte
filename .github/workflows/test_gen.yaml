@@ -181,7 +181,7 @@ jobs:
     - build-jar
     runs-on:
       group: Public Runners
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       matrix:
         python-version:

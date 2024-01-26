@@ -95,14 +95,17 @@ class FeastFeatureStoreService:
                 **feature_store.get_feature_store_details().dict()
             )
             database_credential = None
+            storage_credential = None
             if credentials:
                 database_credential = credentials.database_credential
+                storage_credential = credentials.storage_credential
             repo_config = RepoConfig(
                 project=feast_registry.name,
                 provider="local",
                 registry=registry_config,
                 offline_store=feature_store_details.details.get_offline_store_config(
-                    credential=database_credential
+                    database_credential=database_credential,
+                    storage_credential=storage_credential,
                 ),
                 online_store=online_store,
                 entity_key_serialization_version=2,

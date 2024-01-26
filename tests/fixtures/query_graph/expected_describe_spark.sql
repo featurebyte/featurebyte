@@ -23,8 +23,11 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__0`
   FROM (
     SELECT
-      MAP_FROM_ENTRIES(
-        COLLECT_LIST(STRUCT(CASE WHEN `ts` IS NULL THEN '__MISSING__' ELSE `ts` END, `__FB_COUNTS`))
+      MAP_FILTER(
+        MAP_FROM_ENTRIES(
+          COLLECT_LIST(STRUCT(CASE WHEN `ts` IS NULL THEN '__MISSING__' ELSE `ts` END, `__FB_COUNTS`))
+        ),
+        (k, v) -> NOT v IS NULL
       ) AS `COUNT_DICT`
     FROM (
       SELECT
@@ -45,10 +48,13 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__1`
   FROM (
     SELECT
-      MAP_FROM_ENTRIES(
-        COLLECT_LIST(
-          STRUCT(CASE WHEN `cust_id` IS NULL THEN '__MISSING__' ELSE `cust_id` END, `__FB_COUNTS`)
-        )
+      MAP_FILTER(
+        MAP_FROM_ENTRIES(
+          COLLECT_LIST(
+            STRUCT(CASE WHEN `cust_id` IS NULL THEN '__MISSING__' ELSE `cust_id` END, `__FB_COUNTS`)
+          )
+        ),
+        (k, v) -> NOT v IS NULL
       ) AS `COUNT_DICT`
     FROM (
       SELECT
@@ -68,8 +74,11 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__2`
   FROM (
     SELECT
-      MAP_FROM_ENTRIES(
-        COLLECT_LIST(STRUCT(CASE WHEN `a` IS NULL THEN '__MISSING__' ELSE `a` END, `__FB_COUNTS`))
+      MAP_FILTER(
+        MAP_FROM_ENTRIES(
+          COLLECT_LIST(STRUCT(CASE WHEN `a` IS NULL THEN '__MISSING__' ELSE `a` END, `__FB_COUNTS`))
+        ),
+        (k, v) -> NOT v IS NULL
       ) AS `COUNT_DICT`
     FROM (
       SELECT
@@ -89,8 +98,11 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__3`
   FROM (
     SELECT
-      MAP_FROM_ENTRIES(
-        COLLECT_LIST(STRUCT(CASE WHEN `b` IS NULL THEN '__MISSING__' ELSE `b` END, `__FB_COUNTS`))
+      MAP_FILTER(
+        MAP_FROM_ENTRIES(
+          COLLECT_LIST(STRUCT(CASE WHEN `b` IS NULL THEN '__MISSING__' ELSE `b` END, `__FB_COUNTS`))
+        ),
+        (k, v) -> NOT v IS NULL
       ) AS `COUNT_DICT`
     FROM (
       SELECT
@@ -110,10 +122,13 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__4`
   FROM (
     SELECT
-      MAP_FROM_ENTRIES(
-        COLLECT_LIST(
-          STRUCT(CASE WHEN `a_copy` IS NULL THEN '__MISSING__' ELSE `a_copy` END, `__FB_COUNTS`)
-        )
+      MAP_FILTER(
+        MAP_FROM_ENTRIES(
+          COLLECT_LIST(
+            STRUCT(CASE WHEN `a_copy` IS NULL THEN '__MISSING__' ELSE `a_copy` END, `__FB_COUNTS`)
+          )
+        ),
+        (k, v) -> NOT v IS NULL
       ) AS `COUNT_DICT`
     FROM (
       SELECT
