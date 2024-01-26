@@ -116,7 +116,7 @@ def pytest_collection_modifyitems(config, items):
             extra_ordering_key = source_type
 
         # include index as the sorting key to preserve the original ordering
-        return extra_ordering_key, item.path, item.name, index
+        return extra_ordering_key, item.path, index
 
     def filter_items_by_source_types(all_items):
         if not filtered_source_types:
@@ -1046,7 +1046,9 @@ def user_entity_fixture(catalog):
     Fixture for an Entity "User"
     """
     _ = catalog
-    entity = Entity(name="User", serving_names=["üser id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a1"), name="User", serving_names=["üser id"]
+    )
     entity.save()
     return entity
 
@@ -1057,7 +1059,11 @@ def product_action_entity_fixture(catalog):
     Fixture for an Entity "ProductAction"
     """
     _ = catalog
-    entity = Entity(name="ProductAction", serving_names=["PRODUCT_ACTION"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a2"),
+        name="ProductAction",
+        serving_names=["PRODUCT_ACTION"],
+    )
     entity.save()
     return entity
 
@@ -1068,7 +1074,9 @@ def customer_entity_fixture(catalog):
     Fixture for an Entity "Customer"
     """
     _ = catalog
-    entity = Entity(name="Customer", serving_names=["cust_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a3"), name="Customer", serving_names=["cust_id"]
+    )
     entity.save()
     return entity
 
@@ -1079,7 +1087,9 @@ def order_entity_fixture(catalog):
     Fixture for an Entity "Order"
     """
     _ = catalog
-    entity = Entity(name="Order", serving_names=["order_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a4"), name="Order", serving_names=["order_id"]
+    )
     entity.save()
     return entity
 
@@ -1090,7 +1100,9 @@ def item_entity_fixture(catalog):
     Fixture for an Entity "Item"
     """
     _ = catalog
-    entity = Entity(name="Item", serving_names=["item_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a5"), name="Item", serving_names=["item_id"]
+    )
     entity.save()
     return entity
 
@@ -1101,7 +1113,9 @@ def status_entity_fixture(catalog):
     Fixture for an Entity "UserStatus"
     """
     _ = catalog
-    entity = Entity(name="UserStatus", serving_names=["user_status"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a6"), name="UserStatus", serving_names=["user_status"]
+    )
     entity.save()
     return entity
 

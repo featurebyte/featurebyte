@@ -26,7 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
-from tests.source_types import SNOWFLAKE_AND_DATABRICKS_UNITY, SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -325,7 +325,8 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
     return expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(1)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_feature_tables_expected(
     offline_store_feature_tables,
     expected_feature_table_names,
@@ -336,7 +337,8 @@ def test_feature_tables_expected(
     assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.order(2)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_feature_tables_populated(session, offline_store_feature_tables):
     """
@@ -364,6 +366,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
         assert set(df.columns.tolist()) == expected
 
 
+@pytest.mark.order(3)
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_databricks_udf_created(session, offline_store_feature_tables, source_type):
@@ -381,6 +384,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
         assert len(udfs_for_on_demand_func) == 0
 
 
+@pytest.mark.order(4)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
@@ -520,6 +524,7 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     assert_dict_approx_equal(online_features, expected)
 
 
+@pytest.mark.order(5)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_online_features__all_entities_provided(config, deployed_feature_list, source_type):
     """
@@ -604,6 +609,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
     assert_dict_approx_equal(feat_dict, expected)
 
 
+@pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_online_features__primary_entity_ids(config, deployed_feature_list, source_type):
     """
@@ -686,6 +692,7 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list, sour
     assert_dict_approx_equal(feat_dict, expected)
 
 
+@pytest.mark.order(7)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__ttl_feature_table(
@@ -774,7 +781,8 @@ async def reload_feature_table_model(app_container, feature_table_model):
     return feature_table_model
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.order(8)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__non_ttl_feature_table(
     app_container,
@@ -829,6 +837,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     assert df_2["__feature_timestamp"].nunique() == df_1["__feature_timestamp"].nunique()
 
 
+@pytest.mark.order(9)
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_tables_have_primary_key_constraints(session, offline_store_feature_tables):
