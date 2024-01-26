@@ -26,7 +26,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.source_types import SNOWFLAKE_AND_DATABRICKS_UNITY, SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -774,7 +774,7 @@ async def reload_feature_table_model(app_container, feature_table_model):
     return feature_table_model
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__non_ttl_feature_table(
     app_container,

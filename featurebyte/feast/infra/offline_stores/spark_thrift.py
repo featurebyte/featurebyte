@@ -274,10 +274,7 @@ class SparkThriftRetrievalJob(RetrievalJob):
         -------
         pd.DataFrame
         """
-        statements = self.query.split("---EOS---")
-        for statement in statements[:-1]:
-            self.db_session.execute_query_blocking(statement)
-        result = self.db_session.execute_query_blocking(statements[-1])
+        result = self.db_session.execute_query_blocking(self.query)
         assert isinstance(result, pd.DataFrame)
 
         # convert arrays to string
