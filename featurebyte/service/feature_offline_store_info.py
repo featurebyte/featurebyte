@@ -1,10 +1,11 @@
 """
 Feature Offline Store Info Initialization Service
 """
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_ingest_query import (
     OfflineStoreInfo,
@@ -97,6 +98,7 @@ class OfflineStoreInfoInitializationService:
         node_name: str,
         catalog_id: ObjectId,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        dry_run: bool = False,
     ) -> Tuple[QueryGraphModel, str]:
         """
         Reconstruct decomposed graph
@@ -111,6 +113,9 @@ class OfflineStoreInfoInitializationService:
             Catalog id
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
+        dry_run: bool
+            If True, don't create the offline feature tables but return OfflineStoreInfo consisting
+            of dummy feature table names.
 
         Returns
         -------
@@ -123,15 +128,16 @@ class OfflineStoreInfoInitializationService:
             graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
         ):
             assert isinstance(node.parameters, OfflineStoreIngestQueryGraphNodeParameters)
-            node.parameters.offline_store_table_name = (
-                await self.offline_store_feature_table_creator(
-                    primary_entity_ids=node.parameters.primary_entity_ids,
-                    feature_job_setting=node.parameters.feature_job_setting,
-                    has_ttl=node.parameters.has_ttl,
-                    catalog_id=catalog_id,
-                    entity_id_to_serving_name=entity_id_to_serving_name,
+            if not dry_run:
+                node.parameters.offline_store_table_name = (
+                    await self.offline_store_feature_table_creator(
+                        primary_entity_ids=node.parameters.primary_entity_ids,
+                        feature_job_setting=node.parameters.feature_job_setting,
+                        has_ttl=node.parameters.has_ttl,
+                        catalog_id=catalog_id,
+                        entity_id_to_serving_name=entity_id_to_serving_name,
+                    )
                 )
-            )
             node_name_to_repl_node[node.name] = node
 
         new_graph, node_name_map = query_graph.reconstruct(
@@ -140,10 +146,42 @@ class OfflineStoreInfoInitializationService:
         )
         return new_graph, node_name_map[node_name]
 
+    async def get_offline_store_feature_tables_entity_ids(
+        self, feature: FeatureModel, entity_id_to_serving_name: Dict[ObjectId, str]
+    ) -> List[List[PydanticObjectId]]:
+        """
+        Get the primary entity of the offline feature tables for the feature. This doesn't require
+        offline_store_info to be initialized beforehand.
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature
+        entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
+            Entity id to serving name mapping
+
+        Returns
+        -------
+        List[List[PydanticObjectId]]
+        """
+        if feature.internal_offline_store_info is not None:
+            offline_store_info = feature.offline_store_info
+        else:
+            offline_store_info = await self.initialize_offline_store_info(
+                feature=feature,
+                entity_id_to_serving_name=entity_id_to_serving_name,
+                dry_run=True,
+            )
+        feature_table_entity_ids = []
+        for ingest_graph in offline_store_info.extract_offline_store_ingest_query_graphs():
+            feature_table_entity_ids.append(ingest_graph.primary_entity_ids)
+        return feature_table_entity_ids
+
     async def initialize_offline_store_info(
         self,
         feature: FeatureModel,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        dry_run: bool = False,
     ) -> OfflineStoreInfo:
         """
         Initialize feature offline store info
@@ -154,6 +192,9 @@ class OfflineStoreInfoInitializationService:
             Feature
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
+        dry_run: bool
+            If True, don't create the offline feature tables but return OfflineStoreInfo consisting
+            of dummy feature table names.
 
         Returns
         -------
@@ -179,6 +220,7 @@ class OfflineStoreInfoInitializationService:
                 node_name=result.node_name_map[feature.node.name],
                 catalog_id=feature.catalog_id,
                 entity_id_to_serving_name=entity_id_to_serving_name,
+                dry_run=dry_run,
             )
             metadata = None
         else:
@@ -196,12 +238,16 @@ class OfflineStoreInfoInitializationService:
                     None,
                 )
             )
-            table_name = await self.offline_store_feature_table_creator(
-                primary_entity_ids=feature.primary_entity_ids,
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-                catalog_id=feature.catalog_id,
-                entity_id_to_serving_name=entity_id_to_serving_name,
+            table_name = (
+                await self.offline_store_feature_table_creator(
+                    primary_entity_ids=feature.primary_entity_ids,
+                    feature_job_setting=feature_job_setting,
+                    has_ttl=has_ttl,
+                    catalog_id=feature.catalog_id,
+                    entity_id_to_serving_name=entity_id_to_serving_name,
+                )
+                if not dry_run
+                else ""
             )
             entity_id_to_dtype = dict(zip(feature.entity_ids, feature.entity_dtypes))
             metadata = OfflineStoreInfoMetadata(

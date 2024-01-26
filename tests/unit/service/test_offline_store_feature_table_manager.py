@@ -20,6 +20,7 @@ from tests.util.helper import (
     assert_equal_json_fixture,
     assert_equal_with_expected_fixture,
     deploy_feature,
+    get_relationship_info,
     undeploy_feature,
 )
 
@@ -53,7 +54,7 @@ async def deployed_float_feature(
     """
     _ = mock_update_data_warehouse
     out = await deploy_feature(app_container, float_feature)
-    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
+    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return out
 
@@ -221,12 +222,47 @@ async def check_feast_registry(app_container, expected_feature_views, expected_f
     assert {fs.name for fs in feature_store.list_feature_services()} == expected_feature_services
 
 
+@pytest_asyncio.fixture
+async def transaction_to_customer_relationship_info_id(
+    app_container, transaction_entity, cust_id_entity
+):
+    """
+    Fixture for the relationship info id between transaction and customer entities
+    """
+    return (
+        await get_relationship_info(
+            app_container,
+            child_entity_id=transaction_entity.id,
+            parent_entity_id=cust_id_entity.id,
+        )
+    ).id
+
+
+@pytest_asyncio.fixture
+async def customer_to_gender_relationship_info_id(
+    app_container,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Fixture for the relationship info id between customer and gender entities
+    """
+    return (
+        await get_relationship_info(
+            app_container,
+            child_entity_id=cust_id_entity.id,
+            parent_entity_id=gender_entity.id,
+        )
+    ).id
+
+
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     app_container,
     document_service,
     periodic_task_service,
     deployed_float_feature,
+    transaction_to_customer_relationship_info_id,
     update_fixtures,
 ):
     """
@@ -234,7 +270,10 @@ async def test_feature_table_one_feature_deployed(
     """
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
-    assert len(feature_tables) == 1
+    assert set(feature_tables.keys()) == {
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        "cat1_cust_id_30m",
+    }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
@@ -283,7 +322,10 @@ async def test_feature_table_one_feature_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_cust_id_30m"},
+        expected_feature_views={
+            "cat1_cust_id_30m",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        },
         expected_feature_services={"sum_1d_list"},
     )
 
@@ -295,13 +337,17 @@ async def test_feature_table_two_features_deployed(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
+    transaction_to_customer_relationship_info_id,
     update_fixtures,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    assert len(feature_tables) == 1
+    assert set(feature_tables.keys()) == {
+        "cat1_cust_id_30m",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+    }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
@@ -350,7 +396,10 @@ async def test_feature_table_two_features_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_cust_id_30m"},
+        expected_feature_views={
+            "cat1_cust_id_30m",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        },
         expected_feature_services={"sum_1d_list", "sum_1d_plus_123_list"},
     )
 
@@ -362,6 +411,7 @@ async def test_feature_table_undeploy(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
+    transaction_to_customer_relationship_info_id,
     mock_offline_store_feature_manager_dependencies,
     update_fixtures,
 ):
@@ -372,7 +422,10 @@ async def test_feature_table_undeploy(
     undeploy_feature(deployed_float_feature)
 
     feature_tables = await get_all_feature_tables(document_service)
-    assert len(feature_tables) == 1
+    assert set(feature_tables.keys()) == {
+        "cat1_cust_id_30m",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+    }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
     feature_table_dict = feature_table.dict(
@@ -428,7 +481,11 @@ async def test_feature_table_undeploy(
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
-    args, _ = mock_offline_store_feature_manager_dependencies["drop_table"].call_args
+    drop_table_calls = mock_offline_store_feature_manager_dependencies["drop_table"].call_args_list
+    assert {c.args[0].name for c in drop_table_calls} == {
+        "cat1_cust_id_30m",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+    }
     assert args[0].name == "cat1_cust_id_30m"
     await check_feast_registry(
         app_container,
@@ -444,12 +501,17 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
+    transaction_to_customer_relationship_info_id,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    assert len(feature_tables) == 2
+    assert set(feature_tables.keys()) == {
+        "cat1_cust_id_30m",
+        "cat1_cust_id_3h",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+    }
 
     # Check customer entity feature table
     feature_table = feature_tables["cat1_cust_id_30m"]
@@ -533,7 +595,11 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_cust_id_30m", "cat1_cust_id_3h"},
+        expected_feature_views={
+            "cat1_cust_id_30m",
+            "cat1_cust_id_3h",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        },
         expected_feature_services={"sum_24h_every_3h_list", "sum_1d_list"},
     )
 
@@ -652,13 +718,17 @@ async def test_aggregate_asat_feature(
     document_service,
     periodic_task_service,
     deployed_aggregate_asat_feature,
+    customer_to_gender_relationship_info_id,
     update_fixtures,
 ):
     """
     Test feature table creation with aggregate asat feature
     """
     feature_tables = await get_all_feature_tables(document_service)
-    assert len(feature_tables) == 1
+    assert set(feature_tables.keys()) == {
+        "cat1_gender_1d",
+        f"fb_entity_lookup_{customer_to_gender_relationship_info_id}",
+    }
     feature_table = feature_tables["cat1_gender_1d"]
 
     feature_table_dict = feature_table.dict(
@@ -698,7 +768,10 @@ async def test_aggregate_asat_feature(
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_gender_1d"},
+        expected_feature_views={
+            "cat1_gender_1d",
+            f"fb_entity_lookup_{customer_to_gender_relationship_info_id}",
+        },
         expected_feature_services={"asat_gender_count_list"},
     )
 
@@ -707,13 +780,17 @@ async def test_aggregate_asat_feature(
 async def test_new_deployment_when_all_features_already_deployed(
     app_container,
     deployed_feature_list_when_all_features_already_deployed,
+    transaction_to_customer_relationship_info_id,
 ):
     """
     Test enabling a new deployment when all the underlying features are already deployed
     """
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_cust_id_30m"},
+        expected_feature_views={
+            "cat1_cust_id_30m",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        },
         expected_feature_services={
             "sum_1d_list",
             deployed_feature_list_when_all_features_already_deployed.name,

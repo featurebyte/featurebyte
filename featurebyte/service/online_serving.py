@@ -3,7 +3,7 @@ OnlineServingService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import json
 import os
@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
+from bson import ObjectId
 from feast.feature_store import FeatureStore as FeastFeatureStore
 from jinja2 import Template
 
@@ -25,10 +26,12 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_lookup_feature_table import get_lookup_feature_table_name
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -166,7 +169,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             return None
         return OnlineFeaturesResponseModel(features=features)
 
-    async def get_online_features_by_feast(
+    async def get_online_features_by_feast(  # pylint: disable=too-many-locals
         self,
         feature_list: FeatureListModel,
         feast_store: FeastFeatureStore,
@@ -191,37 +194,44 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         assert feature_list.feature_clusters is not None
         feature_cluster = feature_list.feature_clusters[0]
 
-        # Validate required entities are present
+        # Original request data to be concatenated with features retrieved from feast
+        df_features = [pd.DataFrame(request_data)]
+
+        # Get entity models required for validation and lookup steps
+        entity_ids: Set[ObjectId] = set()
+        if feature_list.features_entity_lookup_info is not None:
+            for lookup_info in feature_list.features_entity_lookup_info:
+                if not lookup_info.join_steps:
+                    continue
+                for join_step in lookup_info.join_steps:
+                    entity_ids.add(join_step.entity_id)
+                    entity_ids.add(join_step.related_entity_id)
+        entity_id_to_model = {
+            entity.id: entity for entity in await self.entity_service.get_entities(entity_ids)
+        }
+
+        # Lookup parent entities to retrieve feature list's primary entity. This will validate that
+        # the required entities are present.
         request_column_names = set(request_data[0].keys())
-        entity_info = await self.entity_validation_service.get_entity_info_from_request(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            request_column_names=request_column_names,
+        required_entities = await self.entity_service.get_entities(
+            set(feature_list.primary_entity_ids)
+        )
+        provided_entities = await self.entity_service.get_entities_with_serving_names(
+            request_column_names,
+        )
+        entity_info = EntityInfo(
+            required_entities=required_entities,
+            provided_entities=provided_entities,
         )
 
-        # Lookup parent entities if needed before retrieving features from feature service
         if entity_info.missing_entities:
-            request_data, added_column_names = self._lookup_parent_entities_by_feast(
+            request_data = self._lookup_parent_entities_by_feast(
                 request_data=request_data,
                 feature_list=feature_list,
                 entity_info=entity_info,
                 feast_store=feast_store,
+                entity_id_to_model=entity_id_to_model,
             )
-        else:
-            added_column_names = []
-
-        request_data_metadata = await self._process_request_columns(
-            request_data=request_data,
-            feature_ids=feature_list.feature_ids,
-            feature_cluster=feature_list.feature_clusters[0],
-            added_column_names=added_column_names,
-        )
-        tic = time.time()
-        feast_online_features = feast_store.get_online_features(
-            feast_store.get_feature_service(feature_list.name),
-            request_data_metadata.updated_request_data,
-        )
-        logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
 
         # Map feature names to the original names
         feature_docs = await self.feature_service.list_documents_as_dict(
@@ -229,31 +239,64 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             projection={"name": 1, "version": 1},
         )
         feature_name_map = {}
+        feature_id_to_versioned_name = {}
         for feature_doc in feature_docs["data"]:
             feature_name = feature_doc["name"]
             feature_version = VersionIdentifier(**feature_doc["version"]).to_str()
             feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
-        online_features_df = feast_online_features.to_df().rename(columns=feature_name_map)
+            feature_id_to_versioned_name[feature_doc["_id"]] = f"{feature_name}_{feature_version}"
 
-        # Excluded looked up parent entities from result
-        if added_column_names:
-            online_features_df.drop(added_column_names, axis=1, inplace=True)
+        # Include point in time column if it is required
+        if self._require_point_in_time_request_column(feature_cluster):
+            point_in_time_value = datetime.utcnow().isoformat()
+        else:
+            point_in_time_value = None
 
-        # Add back extra columns
-        if request_data_metadata.df_extra_columns:
-            for col in request_data_metadata.df_extra_columns:
-                online_features_df[col] = request_data_metadata.df_extra_columns[col].values
+        # Now request data has the feature list's primary entity. Lookup additional entities that
+        # are their parents, if needed.
+        combined_lookup_steps: List[EntityRelationshipInfo] = []
+        if feature_list.features_entity_lookup_info:
+            for info in feature_list.features_entity_lookup_info:
+                for step in info.join_steps:
+                    if step not in combined_lookup_steps:
+                        combined_lookup_steps.extend(info.join_steps)
+
+        df_entity_rows = pd.DataFrame(request_data)
+        self._apply_entity_lookup_steps(
+            feast_store=feast_store,
+            df_entity_rows=df_entity_rows,
+            lookup_steps=combined_lookup_steps,
+            entity_id_to_model=entity_id_to_model,
+        )
+        request_data = df_entity_rows.to_dict(orient="records")
+
+        tic = time.time()
+        assert feature_list.name is not None
+        df_feast_online_features = await self._get_online_features_feast(
+            feast_store=feast_store,
+            feast_service_name=feature_list.name,
+            feature_id_to_versioned_name=feature_id_to_versioned_name,
+            point_in_time_value=point_in_time_value,
+            df_request_data=pd.DataFrame(request_data),
+        )
+        df_features.append(df_feast_online_features)
+        logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
+
+        online_features_df = pd.concat(df_features, axis=1)
+        online_features_df.rename(columns=feature_name_map, inplace=True)
 
         features = online_features_df.to_dict(orient="records")
         return OnlineFeaturesResponseModel(features=features)
 
-    @staticmethod
+    @classmethod
     def _lookup_parent_entities_by_feast(
+        cls,
         request_data: List[Dict[str, Any]],
         feature_list: FeatureListModel,
         entity_info: EntityInfo,
         feast_store: FeastFeatureStore,
-    ) -> Tuple[List[Dict[str, Any]], List[str]]:
+        entity_id_to_model: Dict[PydanticObjectId, EntityModel],
+    ) -> List[Dict[str, Any]]:
         # Validate missing entities can be looked up based on available relationships
         try:
             assert feature_list.relationships_info is not None
@@ -269,70 +312,101 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             )
 
         # Lookup parent entities through feast store
-        added_column_names = []
         df_entity_rows = pd.DataFrame(request_data)
+        cls._apply_entity_lookup_steps(
+            feast_store=feast_store,
+            df_entity_rows=df_entity_rows,
+            lookup_steps=lookup_steps,
+            entity_id_to_model=entity_id_to_model,
+        )
+        request_data = df_entity_rows.to_dict(orient="records")
+        return request_data
+
+    @staticmethod
+    def _apply_entity_lookup_steps(
+        feast_store: FeastFeatureStore,
+        df_entity_rows: pd.DataFrame,
+        lookup_steps: List[EntityRelationshipInfo],
+        entity_id_to_model: Dict[PydanticObjectId, EntityModel],
+    ) -> None:
+        """
+        Apply a list of entity lookup steps using the feast online store and update df_entity_rows
+        in place with the retrieved parent entities
+
+        Parameters
+        ----------
+        feast_store: FeastFeatureStore
+            Feast feature store
+        df_entity_rows: pd.DataFrame
+            DataFrame of the request data with the provided entities, to be updated in-place
+        lookup_steps: List[EntityRelationshipInfo]
+            The list of lookup steps in terms of EntityRelationshipInfo. Each relationship will
+            retrieve its parent entity (related_entity_id) using its child entity (entity_id)
+        entity_id_to_model: Dict[PydanticObjectId, EntityModel]
+            Mapping from entity identifier to EntityModel objects
+        """
         for lookup_step in lookup_steps:
-            child_entity = entity_info.get_entity(lookup_step.entity_id)
-            parent_entity = entity_info.get_entity(lookup_step.related_entity_id)
+            child_entity = entity_id_to_model[lookup_step.entity_id]
+            parent_entity = entity_id_to_model[lookup_step.related_entity_id]
             lookup_feature_name = parent_entity.serving_names[0]
+            if lookup_feature_name in df_entity_rows:
+                continue
             entity_lookup_rows = df_entity_rows[[child_entity.serving_names[0]]].to_dict(
                 orient="records"
             )
             entity_lookup_feast_spec = [
                 f"{get_lookup_feature_table_name(lookup_step.id)}:{lookup_feature_name}"
             ]
-            entity_lookup_result = feast_store.get_online_features(
-                entity_lookup_feast_spec, entity_lookup_rows
-            ).to_df()
+            entity_lookup_result = (
+                feast_store.get_online_features(entity_lookup_feast_spec, entity_lookup_rows)
+                .to_df()
+                .fillna("")
+            )
             df_entity_rows[lookup_feature_name] = entity_lookup_result[lookup_feature_name].values
-            added_column_names.append(lookup_feature_name)
 
-        request_data = df_entity_rows.to_dict(orient="records")
-        return request_data, added_column_names
-
-    async def _process_request_columns(
+    async def _get_online_features_feast(
         self,
-        request_data: List[Dict[str, Any]],
-        feature_ids: List[PydanticObjectId],
-        feature_cluster: FeatureCluster,
-        added_column_names: List[str],
-    ) -> RequestColumnsMetadata:
+        feast_store: FeastFeatureStore,
+        feast_service_name: str,
+        feature_id_to_versioned_name: Dict[PydanticObjectId, str],
+        df_request_data: pd.DataFrame,
+        point_in_time_value: Optional[str],
+    ) -> pd.DataFrame:
         """
-        Perform additional handling on the provided columns in the request data to prepare it for
-        feast get_online_features().
+        Perform additional handling on the request data:
 
         - Add point in time column if required
         - Composite entities are combined into a single column
         - Remove columns that are not required since feast is strict and will complain about them
 
+        and call feast get_online_features(). The returned DataFrame consists of only the features
+        (without the serving names).
+
         Parameters
         ----------
-        request_data : List[Dict[str, Any]]
-            Request data to be processed
-        feature_ids : List[PydanticObjectId]
-            List of feature ids in the feature list
-        feature_cluster : FeatureCluster
-            Feature cluster in the feature list
-        added_column_names : List[str]
-            List of column names that were added to the request data. Will be updated in-place.
+        feast_store: FeastFeatureStore
+            FeastFeatureStore object
+        feast_service_name: str
+            Name of the feast feature service to use
+        df_request_data: pd.DataFrame
+            DataFrame of the request data
+        feature_id_to_versioned_name: Dict[PydanticObjectId, str]
+            Mapping from feature id to feature's versioned name
+        point_in_time_value: Optional[str]
+            Point in time value to use if the feature service requires point in time request column
 
         Returns
         -------
-        RequestColumnsMetadata
+        DataFrame
         """
         # Include point in time column if it is required
-        is_point_in_time_column_required = self._require_point_in_time_request_column(
-            feature_cluster
-        )
-        if is_point_in_time_column_required:
-            point_in_time_value = datetime.utcnow().isoformat()
-            for row in request_data:
-                row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
+        if point_in_time_value is not None:
+            df_request_data[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
 
         # Get required serving names and composite serving names that need further processing
         offline_store_table_docs = (
             await self.offline_store_feature_table_service.list_documents_as_dict(
-                query_filter={"feature_ids": {"$in": feature_ids}},
+                query_filter={"feature_ids": {"$in": list(feature_id_to_versioned_name.keys())}},
                 project_name={"serving_names"},
             )
         )
@@ -346,7 +420,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 composite_serving_names.add(serving_names)
 
         # Add concatenated composite serving names
-        df_request_data = pd.DataFrame(request_data)
+        added_column_names = []
         if composite_serving_names:
             for serving_names in composite_serving_names:
                 combined_serving_names_col = get_combined_serving_names(list(serving_names))
@@ -357,23 +431,19 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
 
         # Get exactly the columns that are required by feast
         needed_columns = list(required_serving_names) + added_column_names
-        if is_point_in_time_column_required:
+        if point_in_time_value:
             needed_columns.append(SpecialColumnName.POINT_IN_TIME.value)
 
-        # Remove columns that are not required to be added back later to the result
-        extra_columns = [col for col in df_request_data.columns if col not in needed_columns]
-        if extra_columns:
-            df_extra_columns = df_request_data[extra_columns]
-        else:
-            df_extra_columns = None
-
-        df_request_data = df_request_data[needed_columns]
-        request_data = df_request_data.to_dict(orient="records")
-
-        return RequestColumnsMetadata(
-            updated_request_data=request_data,
-            df_extra_columns=df_extra_columns,
-        )
+        updated_request_data = df_request_data[needed_columns].to_dict(orient="records")
+        versioned_feature_names = [
+            feature_id_to_versioned_name[feature_id]
+            for feature_id in feature_id_to_versioned_name.keys()
+        ]
+        df_feast_online_features = feast_store.get_online_features(
+            feast_store.get_feature_service(feast_service_name),
+            updated_request_data,
+        ).to_df()[versioned_feature_names]
+        return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

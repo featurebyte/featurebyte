@@ -3,21 +3,19 @@ Parent / child entity lookup related models
 """
 from __future__ import annotations
 
-from typing import Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 from collections import defaultdict
 from dataclasses import dataclass
 
-from pydantic import BaseModel
+from bson import ObjectId
 
 from featurebyte.exception import RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 
 
-def sorted_entity_ids(
-    entity_ids: Union[Tuple[PydanticObjectId, ...], List[PydanticObjectId]]
-) -> Tuple[PydanticObjectId, ...]:
+def sorted_entity_ids(entity_ids: Sequence[ObjectId]) -> Tuple[ObjectId, ...]:
     """
     Return a sorted tuple of entity ids
 
@@ -30,21 +28,22 @@ def sorted_entity_ids(
     -------
     Tuple[PydanticObjectId, ...]
     """
-    return tuple(sorted(entity_ids))
+    return tuple(sorted([ObjectId(entity_id) for entity_id in entity_ids]))
 
 
-class EntityLookupPlan(BaseModel):
+@dataclass
+class EntityLookupPlan:
     """
     EntityLookupPlan contains the lookup steps for a specific feature table
 
     """
 
-    feature_primary_entity_ids: List[PydanticObjectId]
-    descendant_ids: Set[PydanticObjectId]
-    lookup_steps_mapping: Dict[Tuple[PydanticObjectId, ...], List[EntityRelationshipInfo]]
+    feature_primary_entity_ids: Sequence[ObjectId]
+    descendant_ids: Set[ObjectId]
+    lookup_steps_mapping: Dict[Tuple[ObjectId, ...], List[EntityRelationshipInfo]]
 
     def get_entity_lookup_steps(
-        self, serving_entity_ids: List[PydanticObjectId]
+        self, serving_entity_ids: Sequence[ObjectId]
     ) -> Optional[List[EntityRelationshipInfo]]:
         """
         Get the parent entity lookup steps required to convert serving entity ids to feature table's
@@ -71,7 +70,7 @@ class EntityLookupState:
     A step in the entity lookup BFS traversal
     """
 
-    entity_ids: List[PydanticObjectId]
+    entity_ids: Sequence[ObjectId]
     lookup_path: List[EntityRelationshipInfo]
 
     def apply_relationship(self, relationship: EntityRelationshipInfo) -> EntityLookupState:
@@ -154,8 +153,8 @@ class EntityLookupPlanner:
     @classmethod
     def generate_lookup_steps(
         cls,
-        available_entity_ids: List[PydanticObjectId],
-        required_entity_ids: List[PydanticObjectId],
+        available_entity_ids: Sequence[ObjectId],
+        required_entity_ids: Sequence[ObjectId],
         relationships_info: List[EntityRelationshipInfo],
     ) -> List[EntityRelationshipInfo]:
         """
@@ -218,7 +217,7 @@ class EntityLookupPlanner:
     def _get_relationships_to_children(
         cls,
         relationships_info: List[EntityRelationshipInfo],
-    ) -> Dict[PydanticObjectId, List[EntityRelationshipInfo]]:
+    ) -> Dict[ObjectId, List[EntityRelationshipInfo]]:
         """
         Construct a mapping from entity id to a list of relationships that lead to its children
 
@@ -233,7 +232,7 @@ class EntityLookupPlanner:
         """
         graph = defaultdict(list)
         for relationship in relationships_info:
-            parent_id = relationship.related_entity_id
+            parent_id = ObjectId(relationship.related_entity_id)
             graph[parent_id].append(relationship)
         return dict(graph)
 
@@ -241,7 +240,7 @@ class EntityLookupPlanner:
     def _get_relationships_to_parents(
         cls,
         relationships_info: List[EntityRelationshipInfo],
-    ) -> Dict[PydanticObjectId, List[EntityRelationshipInfo]]:
+    ) -> Dict[ObjectId, List[EntityRelationshipInfo]]:
         """
         Construct a mapping from entity id to a list of relationships that lead to its parents
 
@@ -256,14 +255,14 @@ class EntityLookupPlanner:
         """
         graph = defaultdict(list)
         for relationship in relationships_info:
-            child_id = relationship.entity_id
+            child_id = ObjectId(relationship.entity_id)
             graph[child_id].append(relationship)
         return dict(graph)
 
     @classmethod
     def _bfs(
         cls,
-        relationships_mapping: Dict[PydanticObjectId, List[EntityRelationshipInfo]],
+        relationships_mapping: Dict[ObjectId, List[EntityRelationshipInfo]],
         pending: List[EntityLookupState],
     ) -> Iterator[EntityLookupState]:
         visited = set()
