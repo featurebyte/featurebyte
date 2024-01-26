@@ -174,6 +174,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
         feature_lists = await self._get_online_enabled_feature_lists()
 
+        # Refresh feast registry since it's needed for when materializing the features from offline
+        # store feature tables to online store
+        await self._create_or_update_feast_registry(feature_lists)
+
         new_tables = []
         for (
             offline_store_table_name,
@@ -205,10 +209,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_table_model = None
 
             if feature_table_model is not None:
-                # Note: might need to defer updating feast registry till initialization is done to
-                # prevent concurrency issues (scheduled job started while new column's
-                # initialization is still in progress)
-                await self._create_or_update_feast_registry(feature_lists)
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
@@ -231,12 +231,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             new_tables=new_tables,
             new_features=features,
         )
-
-        if not features:
-            # If all the features are already online enabled, i.e. the offline feature store tables
-            # are up-to-date. But registry still needs to be updated because there could be a new
-            # feature service that needs to be created.
-            await self._create_or_update_feast_registry(feature_lists)
 
     async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
