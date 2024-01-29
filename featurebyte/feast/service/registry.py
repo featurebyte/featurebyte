@@ -4,9 +4,7 @@ Feast registry service
 from typing import Any, Optional, cast
 
 from bson import ObjectId
-from pydantic import ValidationError
 
-from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
@@ -179,23 +177,3 @@ class FeastRegistryService(
         ):
             return feast_registry_model
         return None
-
-    async def is_source_type_supported(self) -> bool:
-        """
-        Check if source type of the current catalog is supported
-
-        Returns
-        -------
-        bool
-        """
-        assert self.catalog_id is not None
-        catalog = await self.catalog_service.get_document(document_id=self.catalog_id)
-        assert len(catalog.default_feature_store_ids) > 0
-        feature_store_id = catalog.default_feature_store_ids[0]
-        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
-        feature_store_details_dict = feature_store.get_feature_store_details().dict()
-        try:
-            _ = FeatureStoreDetailsWithFeastConfiguration(**feature_store_details_dict)
-        except ValidationError:
-            return False
-        return True

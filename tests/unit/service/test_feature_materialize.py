@@ -40,14 +40,6 @@ def mock_get_feature_store_session_fixture(mock_snowflake_session):
         yield patched_get_feature_store_session
 
 
-@pytest.fixture(name="is_source_type_supported_by_feast")
-def is_source_type_supported_by_feast_fixture():
-    """
-    Fixture to determine if source type is supported in feast
-    """
-    return True
-
-
 @pytest.fixture(name="is_online_store_registered_for_catalog")
 def is_online_store_registered_for_catalog_fixture():
     """
@@ -62,7 +54,6 @@ async def deployed_feature_list_fixture(
     production_ready_feature_list,
     online_store,
     mock_update_data_warehouse,
-    is_source_type_supported_by_feast,
     is_online_store_registered_for_catalog,
 ):
     """
@@ -81,16 +72,12 @@ async def deployed_feature_list_fixture(
     with patch(
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
     ):
-        with patch(
-            "featurebyte.service.feature_materialize.FeastRegistryService.is_source_type_supported",
-            return_value=is_source_type_supported_by_feast,
-        ):
-            await app_container.deploy_service.create_deployment(
-                feature_list_id=production_ready_feature_list.id,
-                deployment_id=deployment_id,
-                deployment_name=None,
-                to_enable_deployment=True,
-            )
+        await app_container.deploy_service.create_deployment(
+            feature_list_id=production_ready_feature_list.id,
+            deployment_id=deployment_id,
+            deployment_name=None,
+            to_enable_deployment=True,
+        )
 
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
@@ -409,7 +396,6 @@ async def test_initialize_new_columns__table_exists(
     }
 
 
-@pytest.mark.parametrize("is_source_type_supported_by_feast", [False])
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__databricks_unity(
@@ -439,8 +425,7 @@ async def test_initialize_new_columns__databricks_unity(
         update_fixtures,
     )
 
-    # shouldn't call feast materialize since feast registry and store is not available
-    assert mock_materialize_partial.call_count == 0
+    assert mock_materialize_partial.call_count == 1
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
