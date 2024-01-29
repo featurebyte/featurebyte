@@ -392,9 +392,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return feature_lists
 
     async def _create_or_update_feast_registry(self, feature_lists: List[FeatureListModel]) -> None:
-        if not await self.feast_registry_service.is_source_type_supported():
-            return
-
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             await self.feast_registry_service.create_document(
