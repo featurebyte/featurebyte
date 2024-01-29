@@ -28,7 +28,7 @@ def sorted_entity_ids(entity_ids: Sequence[ObjectId]) -> Tuple[ObjectId, ...]:
     -------
     Tuple[PydanticObjectId, ...]
     """
-    return tuple(sorted([ObjectId(entity_id) for entity_id in entity_ids]))
+    return tuple(sorted(entity_ids))
 
 
 @dataclass

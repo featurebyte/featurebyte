@@ -224,9 +224,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             )
         )
         for feature in features:
-            feature_tables_entity_ids = await self.offline_store_info_initialization_service.get_offline_store_feature_tables_entity_ids(
-                feature, entity_id_to_serving_name
-            )
             feature_list_to_feature_primary_entity_join_steps = (
                 EntityLookupPlanner.generate_lookup_steps(
                     available_entity_ids=fl_primary_entity_ids,
@@ -235,6 +232,9 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 )
             )
             feature_internal_entity_join_steps = []
+            feature_tables_entity_ids = await self.offline_store_info_initialization_service.get_offline_store_feature_tables_entity_ids(
+                feature, entity_id_to_serving_name
+            )
             for entity_ids in feature_tables_entity_ids:
                 if feature.relationships_info is None:
                     continue

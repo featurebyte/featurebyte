@@ -268,7 +268,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             lookup_steps=combined_lookup_steps,
             entity_id_to_model=entity_id_to_model,
         )
-        request_data = df_entity_rows.to_dict(orient="records")
 
         tic = time.time()
         assert feature_list.name is not None
@@ -277,7 +276,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             feast_service_name=feature_list.name,
             feature_id_to_versioned_name=feature_id_to_versioned_name,
             point_in_time_value=point_in_time_value,
-            df_request_data=pd.DataFrame(request_data),
+            df_request_data=df_entity_rows,
         )
         df_features.append(df_feast_online_features)
         logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
