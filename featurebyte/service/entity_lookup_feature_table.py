@@ -11,6 +11,7 @@ from featurebyte.models.entity_lookup_feature_table import (
     get_entity_lookup_feature_tables,
 )
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
@@ -94,6 +95,9 @@ class EntityLookupFeatureTableService:
             if feature_list.relationships_info is not None:
                 for info in feature_list.relationships_info:
                     all_relationships_info.add(info)
+            if feature_list.features_entity_lookup_info is not None:
+                for entity_lookup_info in feature_list.features_entity_lookup_info:
+                    all_relationships_info.update(entity_lookup_info.join_steps)
         entity_lookup_steps_mapping = await self.get_entity_lookup_steps(
             list(all_relationships_info)
         )
@@ -101,32 +105,26 @@ class EntityLookupFeatureTableService:
 
     async def get_entity_lookup_feature_tables(
         self,
-        feature_table_model: OfflineStoreFeatureTableModel,
         feature_lists: List[FeatureListModel],
+        feature_store_model: FeatureStoreModel,
     ) -> Optional[List[OfflineStoreFeatureTableModel]]:
         """
         Get list of internal offline store feature tables for parent entity lookup purpose
 
         Parameters
         ----------
-        feature_table_model: OfflineStoreFeatureTableModel
-            Feature table model
         feature_lists: List[FeatureListModel]
             Currently online enabled feature lists
+        feature_store_model: FeatureStoreModel
+            Feature store document
 
         Returns
         -------
         Optional[List[OfflineStoreFeatureTableModel]]
         """
-
-        feature = await self.feature_service.get_document(feature_table_model.feature_ids[0])
-        feature_store = await self.feature_store_service.get_document(
-            feature.tabular_source.feature_store_id
-        )
         entity_lookup_steps_mapping = await self.get_entity_lookup_steps_mapping(feature_lists)
         return get_entity_lookup_feature_tables(
-            feature_table_primary_entity_ids=feature_table_model.primary_entity_ids,
             feature_lists=feature_lists,
-            feature_store=feature_store,
+            feature_store=feature_store_model,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )

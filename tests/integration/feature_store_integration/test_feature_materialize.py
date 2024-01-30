@@ -604,10 +604,10 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "Most Frequent Item Type by Order": "type_12",
         "PRODUCT_ACTION": "detail",
         "User Status Feature": "STÀTUS_CODE_37",
-        "cust_id": "761",
+        "cust_id": 761,
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
-        "üser id": "5",
+        "üser id": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
