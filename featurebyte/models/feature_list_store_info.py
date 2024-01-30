@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import ColumnSpec, DatabricksDetails
+from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
@@ -222,11 +223,13 @@ class DataBricksStoreInfo(BaseStoreInfo):
                 timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
 
                 if table_name not in table_name_to_feature_lookup:
-                    lookup_key = [
-                        entity_id_to_serving_name[entity_id]
-                        for entity_id in ingest_query.primary_entity_ids
-                    ]
-                    # TODO: probably need to update this when primary_entity_ids is empty
+                    if len(ingest_query.primary_entity_ids) > 0:
+                        lookup_key = [
+                            entity_id_to_serving_name[entity_id]
+                            for entity_id in ingest_query.primary_entity_ids
+                        ]
+                    else:
+                        lookup_key = [DUMMY_ENTITY_COLUMN_NAME]
                     table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
                         table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
                         lookup_key=lookup_key,
