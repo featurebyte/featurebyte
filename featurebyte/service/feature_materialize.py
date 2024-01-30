@@ -348,7 +348,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             query = sql_to_string(
                 expressions.AlterTable(
                     this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                    actions=[expressions.Drop(this=quoted_identifier(column_name), kind="COLUMN")],
+                    actions=[
+                        expressions.Drop(
+                            this=quoted_identifier(column_name), kind="COLUMN", exists=True
+                        )
+                    ],
                 ),
                 source_type=session.source_type,
             )
