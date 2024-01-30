@@ -248,6 +248,31 @@ class FilterNode(BaseNode):
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
 
+    def _derive_python_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        node_output_type: NodeOutputType,
+        node_output_category: NodeOutputCategory,
+        to_reindex: bool,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expr = var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=node_output_type,
+            node_output_category=node_output_category,
+            to_associate_with_node_name=False,
+        )
+        mask_name = var_name_expressions[1].as_input()
+        expr = filter_series_or_frame_expr(
+            series_or_frame_name=var_name, filter_expression=mask_name
+        )
+        if to_reindex:
+            expr = f"{expr}.reindex(index={var_name}.index)"
+        return statements, ExpressionStr(expr)
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -256,20 +281,46 @@ class FilterNode(BaseNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_python_code(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            to_reindex=False,  # no need to reindex for SDK code
+        )
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        output = self._derive_python_code(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_reindex=True,  # reindex for on-demand view code which is based on pandas
+        )
+        return output
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
             var_name_generator=var_name_generator,
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
             to_associate_with_node_name=False,
         )
         mask_name = var_name_expressions[1].as_input()
-        expr = filter_series_or_frame_expr(
-            series_or_frame_name=var_name, filter_expression=mask_name
-        )
-        return statements, ExpressionStr(expr)
+        return statements, ExpressionStr(f"{var_name} if {mask_name} else np.nan")
 
 
 class AssignColumnMixin:

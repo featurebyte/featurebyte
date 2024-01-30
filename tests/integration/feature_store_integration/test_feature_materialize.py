@@ -18,6 +18,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, DUMMY_ENTITY_VALUE
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
@@ -340,7 +341,7 @@ def test_feature_tables_expected(
 @pytest.mark.order(2)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
-async def test_feature_tables_populated(session, offline_store_feature_tables):
+async def test_feature_tables_populated(session, offline_store_feature_tables, source_type):
     """
     Check feature tables are populated correctly
     """
@@ -363,7 +364,12 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
         )
         if len(feature_table.serving_names) > 0:
             expected.add(" x ".join(feature_table.serving_names))
+        elif source_type == SourceType.DATABRICKS_UNITY:
+            expected.add(DUMMY_ENTITY_COLUMN_NAME)
         assert set(df.columns.tolist()) == expected
+
+        if len(feature_table.serving_names) == 0 and source_type == SourceType.DATABRICKS_UNITY:
+            assert (df[DUMMY_ENTITY_COLUMN_NAME] == DUMMY_ENTITY_VALUE).all()
 
 
 @pytest.mark.order(3)
