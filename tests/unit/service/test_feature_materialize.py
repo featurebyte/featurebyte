@@ -106,6 +106,24 @@ async def deployed_feature_list_composite_entity(
     return feature_list_model
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_list_no_entity(
+    app_container,
+    feature_without_entity,
+    mock_deployment_flow,
+):
+    """
+    Fixture for a feature list with no entity
+    """
+    _ = mock_deployment_flow
+
+    feature_without_entity.save()
+    feature_list_model = await deploy_feature_list(
+        app_container, "my_list", [feature_without_entity.id]
+    )
+    return feature_list_model
+
+
 @pytest_asyncio.fixture(name="deployed_feature")
 async def deployed_feature_fixture(feature_service, deployed_feature_list):
     """
@@ -134,6 +152,19 @@ async def offline_store_feature_table_composite_entity_fixture(
     """
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"feature_ids": deployed_feature_list_composite_entity.feature_ids}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_no_entity")
+async def offline_store_feature_table_no_entity_fixture(
+    app_container, deployed_feature_list_no_entity
+):
+    """
+    Fixture for offline store feature table with no entity
+    """
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"feature_ids": deployed_feature_list_no_entity.feature_ids}
     ):
         return model
 
@@ -196,6 +227,7 @@ async def test_materialize_features(
         "data_types": ["FLOAT"],
         "feature_timestamp": datetime(2022, 1, 1, 0, 0),
         "serving_names": ["cust_id"],
+        "source_type": "snowflake",
     }
 
     # Check that executed queries are correct
@@ -498,5 +530,36 @@ async def test_materialize_features_composite_entity(
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_materialize_features_no_entity_databricks_unity(
+    offline_store_feature_table_no_entity,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test creating a feature table with no entity sets the primary constraint on dummy column
+    """
+
+    def mock_execute_query(query):
+        if "LIMIT 1" in query:
+            raise ValueError()
+
+    mock_snowflake_session.source_type = "databricks_unity"
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    patch.stopall()  # stop the patcher on initialize_new_columns()
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table_no_entity)
+
+    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/feature_materialize/initialize_features_no_entity_databricks_unity.sql",
         update_fixtures,
     )
