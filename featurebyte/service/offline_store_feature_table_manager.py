@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from bson import ObjectId
 
-from featurebyte import FeatureJobSetting
+from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.models.base import PydanticObjectId
@@ -21,6 +21,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
@@ -173,7 +174,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
         feature_lists = await self._get_online_enabled_feature_lists()
-
         # Refresh feast registry since it's needed for when materializing the features from offline
         # store feature tables to online store
         await self._create_or_update_feast_registry(feature_lists)
@@ -391,17 +391,19 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_lists.append(FeatureListModel(**feature_list_dict))
         return feature_lists
 
-    async def _create_or_update_feast_registry(self, feature_lists: List[FeatureListModel]) -> None:
+    async def _create_or_update_feast_registry(
+        self, feature_lists: List[FeatureListModel]
+    ) -> FeastRegistryModel:
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
-            await self.feast_registry_service.create_document(
-                FeastRegistryCreate(project_name=str(self.catalog_id), feature_lists=feature_lists)
+            return await self.feast_registry_service.create_document(
+                FeastRegistryCreate(feature_lists=feature_lists)
             )
-        else:
-            await self.feast_registry_service.update_document(
-                document_id=feast_registry.id,
-                data=FeastRegistryUpdate(feature_lists=feature_lists),
-            )
+
+        return await self.feast_registry_service.update_document(
+            document_id=feast_registry.id,
+            data=FeastRegistryUpdate(feature_lists=feature_lists),
+        )
 
     async def _create_or_update_entity_lookup_feature_tables(
         self,

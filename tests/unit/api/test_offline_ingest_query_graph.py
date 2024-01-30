@@ -601,6 +601,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     offline_store_info = await service.initialize_offline_store_info(
         feature=feature,
         entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
+        table_name_prefix="cat1",
     )
 
     # check on-demand view code

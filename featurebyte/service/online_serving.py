@@ -218,7 +218,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         )
         tic = time.time()
         feast_online_features = feast_store.get_online_features(
-            feast_store.get_feature_service(feature_list.name),
+            feast_store.get_feature_service(feature_list.versioned_name),
             request_data_metadata.updated_request_data,
         )
         logger.debug("Feast get_online_features took %f seconds", time.time() - tic)

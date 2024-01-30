@@ -5,6 +5,7 @@ import pytest
 import pytest_asyncio
 from google.protobuf.json_format import MessageToDict
 
+from featurebyte.common.model_util import get_version
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 
 
@@ -38,7 +39,6 @@ async def feast_registry_fixture(feast_registry_service, feature_list, mock_depl
     feature_list_model = feature_list.cached_model
     registry = await feast_registry_service.create_document(
         data=FeastRegistryCreate(
-            project_name="test_project",
             feature_lists=[feature_list_model],
         )
     )
@@ -53,11 +53,10 @@ async def test_create_and_retrieve_feast_registry(
     feature_list_model = feature_list.cached_model
     registry = feast_registry
     registry_proto = registry.registry_proto()
-    assert registry.name == "test_project"
     assert registry.catalog_id == feature_list_model.catalog_id
     assert registry.feature_store_id == snowflake_feature_store.cached_model.id
     assert len(registry_proto.feature_services) == 1
-    assert registry_proto.feature_services[0].spec.name == "test_feature_list"
+    assert registry_proto.feature_services[0].spec.name == f"test_feature_list_{get_version()}"
 
     retrieved_registry = await feast_registry_service.get_document(document_id=registry.id)
     assert retrieved_registry == registry
@@ -86,7 +85,7 @@ async def test_update_feast_registry(
     assert registry_dict["entities"] == [
         {
             "meta": registry_dict["entities"][0]["meta"],
-            "spec": {"joinKey": "__dummy_id", "name": "__dummy", "project": "test_project"},
+            "spec": {"joinKey": "__dummy_id", "name": "__dummy", "project": feast_registry.name},
         }
     ]
 
@@ -103,7 +102,9 @@ async def test_update_feast_registry(
     assert {
         odfv.spec.name for odfv in registry_proto.on_demand_feature_views
     } == expected_on_demand_feature_view_names
-    assert {fs.spec.name for fs in registry_proto.feature_services} == {"test_feature_list"}
+    assert {fs.spec.name for fs in registry_proto.feature_services} == {
+        f"test_feature_list_{get_version()}"
+    }
 
 
 @pytest.mark.asyncio
@@ -134,4 +135,4 @@ async def test_get_feast_feature_store(
     assert odfv_names == expected_on_demand_feature_view_names
 
     fs_names = {feature_service.name for feature_service in feast_fs.list_feature_services()}
-    assert fs_names == {"test_feature_list"}
+    assert fs_names == {f"test_feature_list_{get_version()}"}

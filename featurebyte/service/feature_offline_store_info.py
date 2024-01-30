@@ -54,6 +54,7 @@ class OfflineStoreInfoInitializationService:
         feature_job_setting: Optional[FeatureJobSetting],
         has_ttl: bool,
         catalog_id: ObjectId,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> str:
         """
@@ -69,6 +70,8 @@ class OfflineStoreInfoInitializationService:
             Whether the offline store feature table has ttl
         catalog_id: ObjectId
             Catalog id
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
 
@@ -84,6 +87,7 @@ class OfflineStoreInfoInitializationService:
             has_ttl=has_ttl,
             feature_store_id=catalog.default_feature_store_ids[0],
             catalog_id=catalog_id,
+            table_name_prefix=table_name_prefix,
             entity_id_to_serving_name=entity_id_to_serving_name,
         )
         persist_table = await self.offline_store_feature_table_service.get_or_create_document(
@@ -96,6 +100,7 @@ class OfflineStoreInfoInitializationService:
         graph: QueryGraphModel,
         node_name: str,
         catalog_id: ObjectId,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> Tuple[QueryGraphModel, str]:
         """
@@ -109,6 +114,8 @@ class OfflineStoreInfoInitializationService:
             Node name
         catalog_id: ObjectId
             Catalog id
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
 
@@ -129,6 +136,7 @@ class OfflineStoreInfoInitializationService:
                     feature_job_setting=node.parameters.feature_job_setting,
                     has_ttl=node.parameters.has_ttl,
                     catalog_id=catalog_id,
+                    table_name_prefix=table_name_prefix,
                     entity_id_to_serving_name=entity_id_to_serving_name,
                 )
             )
@@ -143,6 +151,7 @@ class OfflineStoreInfoInitializationService:
     async def initialize_offline_store_info(
         self,
         feature: FeatureModel,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> OfflineStoreInfo:
         """
@@ -152,6 +161,8 @@ class OfflineStoreInfoInitializationService:
         ----------
         feature: FeatureModel
             Feature
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
 
@@ -160,8 +171,11 @@ class OfflineStoreInfoInitializationService:
         OfflineStoreInfo
         """
         if entity_id_to_serving_name is None:
-            entity_id_to_serving_name = await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
-                entity_ids=feature.entity_ids
+            serv_name_service = self.entity_serving_names_service
+            entity_id_to_serving_name = (
+                await serv_name_service.get_entity_id_to_serving_name_for_offline_store(
+                    entity_ids=feature.entity_ids
+                )
             )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
@@ -178,6 +192,7 @@ class OfflineStoreInfoInitializationService:
                 graph=result.graph,
                 node_name=result.node_name_map[feature.node.name],
                 catalog_id=feature.catalog_id,
+                table_name_prefix=table_name_prefix,
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             metadata = None
@@ -201,6 +216,7 @@ class OfflineStoreInfoInitializationService:
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
                 catalog_id=feature.catalog_id,
+                table_name_prefix=table_name_prefix,
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             entity_id_to_dtype = dict(zip(feature.entity_ids, feature.entity_dtypes))

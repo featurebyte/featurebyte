@@ -234,7 +234,13 @@ class DeploymentController(
             else:
                 feast_store = None
 
+            feast_feature_services = set()
             if feast_store is not None:
+                feast_feature_services.update(
+                    [fs.name for fs in feast_store.list_feature_services()]
+                )
+
+            if feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
                     feast_store=feast_store,
