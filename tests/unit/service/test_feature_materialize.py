@@ -545,6 +545,7 @@ async def test_materialize_features_no_entity_databricks_unity(
     """
     Test creating a feature table with no entity sets the primary constraint on dummy column
     """
+    _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
         if "LIMIT 1" in query:

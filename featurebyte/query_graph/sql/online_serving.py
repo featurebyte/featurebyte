@@ -307,7 +307,9 @@ def add_concatenated_serving_names(
     -------
     expressions.Select
     """
-    if concatenate_serving_names is not None and len(concatenate_serving_names) > 1:
+    if concatenate_serving_names is None:
+        return select_expr
+    if len(concatenate_serving_names) > 1:
         updated_select_expr = select_expr.select(
             expressions.alias_(
                 get_combined_serving_names_expr(concatenate_serving_names),
