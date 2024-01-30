@@ -664,7 +664,7 @@ class BaseNode(BaseModel):
             If this method is not supposed to be called
         # noqa: DAR401
         """
-        raise RuntimeError("This method should not be called")
+        raise RuntimeError(f"This method should not be called by {self.__class__.__name__}")
 
     def _derive_user_defined_function_code(
         self,
@@ -695,7 +695,7 @@ class BaseNode(BaseModel):
             If this method is not supposed to be called
         # noqa: DAR401
         """
-        raise RuntimeError("This method should not be called")
+        raise RuntimeError(f"This method should not be called by {self.__class__.__name__}")
 
     @property
     @abstractmethod
