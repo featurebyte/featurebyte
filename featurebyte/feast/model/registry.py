@@ -1,11 +1,8 @@
 """
 Feast registry model
 """
-from typing import Optional
-
 # pylint: disable=no-name-in-module
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -17,7 +14,7 @@ from featurebyte.models.base import (
 class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     """Feast registry model"""
 
-    offline_table_name_prefix: Optional[str] = Field(default=None)
+    offline_table_name_prefix: str
     registry: bytes
     feature_store_id: PydanticObjectId
 

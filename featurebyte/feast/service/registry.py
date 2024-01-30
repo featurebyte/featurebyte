@@ -221,10 +221,23 @@ class FeastRegistryService(
         FeastRegistryModel
             Created document
         """
-        data = await self._construct_feast_registry_model(
+        document = await self._construct_feast_registry_model(
             project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
         )
-        return await super().create_document(data=data)
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(
+            document=document,
+            document_class=self.document_class,
+        )
+        insert_id = await self.persistent.insert_one(
+            collection_name=self.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        assert insert_id == document.id
+        return await self.get_document(document_id=insert_id)
 
     async def update_document(
         self,
@@ -237,6 +250,8 @@ class FeastRegistryService(
     ) -> Optional[FeastRegistryModel]:
         assert data.registry is None, "Registry will be generated automatically from feature lists"
         assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
+        if data.feature_lists is None:
+            return await self.get_document(document_id=document_id)
 
         original_doc = await self.get_document(document_id=document_id)
         recreated_model = await self._construct_feast_registry_model(

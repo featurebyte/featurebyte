@@ -400,10 +400,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 FeastRegistryCreate(feature_lists=feature_lists)
             )
 
-        return await self.feast_registry_service.update_document(
+        output = await self.feast_registry_service.update_document(
             document_id=feast_registry.id,
             data=FeastRegistryUpdate(feature_lists=feature_lists),
         )
+        assert output is not None
+        return output
 
     async def _create_or_update_entity_lookup_feature_tables(
         self,
