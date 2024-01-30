@@ -224,20 +224,7 @@ class FeastRegistryService(
         document = await self._construct_feast_registry_model(
             project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
         )
-
-        # check any conflict with existing documents
-        await self._check_document_unique_constraints(
-            document=document,
-            document_class=self.document_class,
-        )
-        insert_id = await self.persistent.insert_one(
-            collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
-        assert insert_id == document.id
-        return await self.get_document(document_id=insert_id)
+        return await super().create_document(data=document)  # type: ignore
 
     async def update_document(
         self,
