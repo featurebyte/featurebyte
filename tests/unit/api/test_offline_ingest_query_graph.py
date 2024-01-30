@@ -448,7 +448,13 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     assert offline_store_info.is_decomposed is True
 
     expected = f"""
-        def odfv_feature_v231227_{feat.id}(
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def odfv_feature_v231227_{feat.id}(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
