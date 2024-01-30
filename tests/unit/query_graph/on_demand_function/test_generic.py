@@ -1,7 +1,7 @@
 """
 Test node's demand feature view related methods
 """
-from featurebyte.query_graph.node.generic import AliasNode, ConditionalNode
+from featurebyte.query_graph.node.generic import AliasNode, ConditionalNode, FilterNode
 from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
 
 
@@ -68,3 +68,24 @@ def test_conditional_node(odfv_config, udf_config):
     )
     assert udf_stats == ["feat1 = 1 if mask else feat1"]
     assert udf_out_var == "feat1"
+
+
+def test_filter_node(odfv_config, udf_config):
+    """Test FilterNode derive_on_demand_view_code"""
+    node = FilterNode(name="node_name", output_type="series")
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("mask")]
+    odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+    assert odfv_stats == []
+    assert odfv_out_var == "feat1[mask].reindex(index=feat1.index)"
+
+    udf_stats, udf_out_var = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+    assert udf_stats == []
+    assert udf_out_var == "feat1 if mask else np.nan"

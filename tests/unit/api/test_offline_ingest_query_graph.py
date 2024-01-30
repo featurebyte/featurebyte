@@ -440,6 +440,39 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
+    feat = feature_raw[feature_avg > 0]
+    feat.name = "feature"
+    feat.save()
+    deploy_features_through_api([feat])
+    offline_store_info = feat.cached_model.offline_store_info
+    assert offline_store_info.is_decomposed is True
+
+    expected = f"""
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def odfv_feature_v231227_{feat.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = inputs["__feature_V231227__part0"][
+            inputs["__feature_V231227__part1"]
+        ].reindex(index=inputs["__feature_V231227__part0"].index)
+        # TTL handling for feature_V231227
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+        feat[~mask] = np.nan
+        df["feature_V231227"] = feat
+        df.fillna(np.nan, inplace=True)
+        return df
+    """
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+
 
 def test_feature__composite_count_dict(
     snowflake_event_table_with_entity, feature_group_feature_job_setting
