@@ -31,7 +31,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.entity import get_combined_serving_names
+from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, get_combined_serving_names
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
@@ -57,6 +57,7 @@ class MaterializedFeatures:
     data_types: List[str]
     serving_names: List[str]
     feature_timestamp: datetime
+    source_type: SourceType
 
     @property
     def serving_names_and_column_names(self) -> List[str]:
@@ -70,6 +71,8 @@ class MaterializedFeatures:
         result = self.serving_names[:]
         if len(self.serving_names) > 1:
             result.append(get_combined_serving_names(self.serving_names))
+        if len(self.serving_names) == 0 and self.source_type == SourceType.DATABRICKS_UNITY:
+            result.append(DUMMY_ENTITY_COLUMN_NAME)
         result += self.column_names
         return result
 
@@ -212,6 +215,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 data_types=[adapter.get_physical_type_from_dtype(dtype) for dtype in column_dtypes],
                 serving_names=feature_table_model.serving_names,
                 feature_timestamp=feature_timestamp,
+                source_type=session.source_type,
             )
 
         finally:

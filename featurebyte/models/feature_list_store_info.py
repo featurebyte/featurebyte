@@ -226,6 +226,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         entity_id_to_serving_name[entity_id]
                         for entity_id in ingest_query.primary_entity_ids
                     ]
+                    # TODO: probably need to update this when primary_entity_ids is empty
                     table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
                         table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
                         lookup_key=lookup_key,
