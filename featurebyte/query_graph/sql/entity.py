@@ -12,6 +12,9 @@ from sqlglot.expressions import Expression
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 
+DUMMY_ENTITY_COLUMN_NAME = "__featurebyte_dummy_entity"
+DUMMY_ENTITY_VALUE = "0"
+
 
 def get_combined_serving_names(serving_names: List[str]) -> str:
     """
