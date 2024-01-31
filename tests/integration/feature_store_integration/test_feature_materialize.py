@@ -67,7 +67,7 @@ def features_fixture(
     event_view = event_table.get_view()
 
     # Feature saved but not deployed
-    feature_0 = event_view.groupby("ÜSER ID").aggregate_over(
+    _ = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
         method="sum",
         windows=["666h"],

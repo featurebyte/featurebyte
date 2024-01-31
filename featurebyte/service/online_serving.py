@@ -196,23 +196,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
 
         # Original request data to be concatenated with features retrieved from feast
         df_features = [pd.DataFrame(request_data)]
-
-        # Get entity models required for validation and lookup steps
-        entity_ids: Set[ObjectId] = set()
-        if feature_list.relationships_info is not None:
-            for join_step in feature_list.relationships_info:
-                entity_ids.add(join_step.entity_id)
-                entity_ids.add(join_step.related_entity_id)
-        if feature_list.features_entity_lookup_info is not None:
-            for lookup_info in feature_list.features_entity_lookup_info:
-                if not lookup_info.join_steps:
-                    continue
-                for join_step in lookup_info.join_steps:
-                    entity_ids.add(join_step.entity_id)
-                    entity_ids.add(join_step.related_entity_id)
-        entity_id_to_model = {
-            entity.id: entity for entity in await self.entity_service.get_entities(entity_ids)
-        }
+        entity_id_to_model = await self._get_entity_id_to_model_mapping(feature_list)
 
         # Lookup parent entities to retrieve feature list's primary entity. This will validate that
         # the required entities are present.
@@ -291,6 +275,27 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         features = online_features_df.to_dict(orient="records")
         return OnlineFeaturesResponseModel(features=features)
 
+    async def _get_entity_id_to_model_mapping(
+        self, feature_list: FeatureListModel
+    ) -> Dict[PydanticObjectId, EntityModel]:
+        # Get entity models required for validation and lookup steps
+        entity_ids: Set[ObjectId] = set()
+        if feature_list.relationships_info is not None:
+            for join_step in feature_list.relationships_info:
+                entity_ids.add(join_step.entity_id)
+                entity_ids.add(join_step.related_entity_id)
+        if feature_list.features_entity_lookup_info is not None:
+            for lookup_info in feature_list.features_entity_lookup_info:
+                if not lookup_info.join_steps:
+                    continue
+                for join_step in lookup_info.join_steps:
+                    entity_ids.add(join_step.entity_id)
+                    entity_ids.add(join_step.related_entity_id)
+        entity_id_to_model = {
+            entity.id: entity for entity in await self.entity_service.get_entities(entity_ids)
+        }
+        return entity_id_to_model
+
     @classmethod
     def _lookup_parent_entities_by_feast(
         cls,
@@ -360,14 +365,11 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             entity_lookup_feast_spec = [
                 f"{get_lookup_feature_table_name(lookup_step.id)}:{lookup_feature_name}"
             ]
-            try:
-                entity_lookup_result = (
-                    feast_store.get_online_features(entity_lookup_feast_spec, entity_lookup_rows)
-                    .to_df()
-                    .fillna("")
-                )
-            except:
-                raise
+            entity_lookup_result = (
+                feast_store.get_online_features(entity_lookup_feast_spec, entity_lookup_rows)
+                .to_df()
+                .fillna("")
+            )
             df_entity_rows[lookup_feature_name] = entity_lookup_result[lookup_feature_name].values
 
     async def _get_online_features_feast(
