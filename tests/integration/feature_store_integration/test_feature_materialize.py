@@ -431,14 +431,15 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     )
 
     # Check feature views and feature services
+    feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
-    assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
+    assert {fs.name for fs in feature_store.list_feature_services()} == {feature_service_name}
 
     # Check feast materialize and get_online_features
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
         feast_registry.id
     )
-    feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
+    feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()
     entity_row = {
         "üser id": 5,

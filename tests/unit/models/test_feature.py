@@ -210,6 +210,7 @@ async def test_ingest_graph_and_node(feature_model_dict, app_container):
     service = app_container.offline_store_info_initialization_service
     offline_store_info = await service.initialize_offline_store_info(
         feature=feature,
+        table_name_prefix="cat1",
         entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
     )
     ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]

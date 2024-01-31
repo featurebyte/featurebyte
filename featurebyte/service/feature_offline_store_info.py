@@ -55,6 +55,7 @@ class OfflineStoreInfoInitializationService:
         feature_job_setting: Optional[FeatureJobSetting],
         has_ttl: bool,
         catalog_id: ObjectId,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> str:
         """
@@ -70,6 +71,8 @@ class OfflineStoreInfoInitializationService:
             Whether the offline store feature table has ttl
         catalog_id: ObjectId
             Catalog id
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
 
@@ -85,6 +88,7 @@ class OfflineStoreInfoInitializationService:
             has_ttl=has_ttl,
             feature_store_id=catalog.default_feature_store_ids[0],
             catalog_id=catalog_id,
+            table_name_prefix=table_name_prefix,
             entity_id_to_serving_name=entity_id_to_serving_name,
         )
         persist_table = await self.offline_store_feature_table_service.get_or_create_document(
@@ -97,6 +101,7 @@ class OfflineStoreInfoInitializationService:
         graph: QueryGraphModel,
         node_name: str,
         catalog_id: ObjectId,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
     ) -> Tuple[QueryGraphModel, str]:
@@ -111,6 +116,8 @@ class OfflineStoreInfoInitializationService:
             Node name
         catalog_id: ObjectId
             Catalog id
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
         dry_run: bool
@@ -135,6 +142,7 @@ class OfflineStoreInfoInitializationService:
                         feature_job_setting=node.parameters.feature_job_setting,
                         has_ttl=node.parameters.has_ttl,
                         catalog_id=catalog_id,
+                        table_name_prefix=table_name_prefix,
                         entity_id_to_serving_name=entity_id_to_serving_name,
                     )
                 )
@@ -169,6 +177,7 @@ class OfflineStoreInfoInitializationService:
         else:
             offline_store_info = await self.initialize_offline_store_info(
                 feature=feature,
+                table_name_prefix="",  # this value is not used in dry_run mode
                 entity_id_to_serving_name=entity_id_to_serving_name,
                 dry_run=True,
             )
@@ -180,6 +189,7 @@ class OfflineStoreInfoInitializationService:
     async def initialize_offline_store_info(
         self,
         feature: FeatureModel,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
     ) -> OfflineStoreInfo:
@@ -190,6 +200,8 @@ class OfflineStoreInfoInitializationService:
         ----------
         feature: FeatureModel
             Feature
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
         dry_run: bool
@@ -201,8 +213,11 @@ class OfflineStoreInfoInitializationService:
         OfflineStoreInfo
         """
         if entity_id_to_serving_name is None:
-            entity_id_to_serving_name = await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
-                entity_ids=feature.entity_ids
+            serv_name_service = self.entity_serving_names_service
+            entity_id_to_serving_name = (
+                await serv_name_service.get_entity_id_to_serving_name_for_offline_store(
+                    entity_ids=feature.entity_ids
+                )
             )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
@@ -219,6 +234,7 @@ class OfflineStoreInfoInitializationService:
                 graph=result.graph,
                 node_name=result.node_name_map[feature.node.name],
                 catalog_id=feature.catalog_id,
+                table_name_prefix=table_name_prefix,
                 entity_id_to_serving_name=entity_id_to_serving_name,
                 dry_run=dry_run,
             )
@@ -243,6 +259,7 @@ class OfflineStoreInfoInitializationService:
                     primary_entity_ids=feature.primary_entity_ids,
                     feature_job_setting=feature_job_setting,
                     has_ttl=has_ttl,
+                    table_name_prefix=table_name_prefix,
                     catalog_id=feature.catalog_id,
                     entity_id_to_serving_name=entity_id_to_serving_name,
                 )

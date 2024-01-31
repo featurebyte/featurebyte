@@ -56,6 +56,7 @@ class OfflineStoreFeatureTableConstructionService:
         has_ttl: bool,
         feature_store_id: ObjectId,
         catalog_id: ObjectId,
+        table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
     ) -> OfflineStoreFeatureTableModel:
         """
@@ -73,6 +74,8 @@ class OfflineStoreFeatureTableConstructionService:
             Feature store id
         catalog_id: ObjectId
             Catalog id
+        table_name_prefix: str
+            Registry project name
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
 
@@ -92,6 +95,7 @@ class OfflineStoreFeatureTableConstructionService:
         )
         return OfflineStoreFeatureTableModel(
             name="",  # to be filled in later
+            name_prefix=table_name_prefix,
             feature_ids=[],
             primary_entity_ids=primary_entity_ids,
             serving_names=[

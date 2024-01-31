@@ -471,6 +471,17 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return feature_clusters
 
     @property
+    def versioned_name(self) -> str:
+        """
+        Retrieve feature name with version info
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.name}_{self.version.to_str()}"
+
+    @property
     def feature_clusters(self) -> Optional[List[FeatureCluster]]:
         """
         List of combined graphs for features from the same feature store

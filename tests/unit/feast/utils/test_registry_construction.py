@@ -285,7 +285,7 @@ def expected_feature_service_spec_fixture(
     version = get_version()
     return [
         {
-            "name": "test_feature_list",
+            "name": f"test_feature_list_{version}",
             "project": "featurebyte_project",
             "features": [
                 {
