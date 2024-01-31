@@ -182,20 +182,19 @@ def features_fixture(
     features = [
         feature
         for feature in [
-            feature_0,
-            feature_1,
-            feature_2,
-            feature_3,
-            feature_4,
-            feature_5,
-            feature_6,
-            feature_7,
-            feature_8,
-            feature_9,
-            feature_10,
-            feature_11,
-            feature_12,
-            feature_13,
+            # feature_1,
+            # feature_2,
+            # feature_3,
+            # feature_4,
+            # feature_5,
+            # feature_6,
+            # feature_7,
+            # feature_8,
+            # feature_9,
+            # feature_10,
+            # feature_11,
+            # feature_12,
+            # feature_13,
             feature_14,
         ]
         if feature is not None
@@ -204,7 +203,7 @@ def features_fixture(
         feature.save(conflict_resolution="retrieve")
         feature.update_readiness("PRODUCTION_READY")
 
-    return features[1:]
+    return features
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")

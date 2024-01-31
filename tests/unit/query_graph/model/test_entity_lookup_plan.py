@@ -13,7 +13,7 @@ def entity_a():
     """
     Fixture for entity a
     """
-    return ObjectId()
+    return ObjectId("65b9ce1b40b5573fc4f0000a")
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def entity_b():
     """
     Fixture for entity b
     """
-    return ObjectId()
+    return ObjectId("65b9ce1b40b5573fc4f0000b")
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def entity_c():
     """
     Fixture for entity c
     """
-    return ObjectId()
+    return ObjectId("65b9ce1b40b5573fc4f0000c")
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def entity_d():
     """
     Fixture for entity d
     """
-    return ObjectId()
+    return ObjectId("65b9ce1b40b5573fc4f0000d")
 
 
 def create_relationship_info(child, parent):
@@ -67,6 +67,14 @@ def c_is_parent_of_b(entity_c, entity_b):
     Fixture to establish b -> c relationship
     """
     return create_relationship_info(child=entity_b, parent=entity_c)
+
+
+@pytest.fixture
+def d_is_parent_of_b(entity_d, entity_b):
+    """
+    Fixture to establish b -> d relationship
+    """
+    return create_relationship_info(child=entity_b, parent=entity_d)
 
 
 def test_entity_lookup_plan_one_relationship(entity_a, entity_b, entity_c, b_is_parent_of_a):
@@ -126,6 +134,29 @@ def test_entity_lookup_plan_composite_feature_list_primary_ids(
     assert plan.get_entity_lookup_steps([entity_b]) == [c_is_parent_of_b]
 
 
+def test_entity_lookup_plan_composite_feature_parallel_parents(
+    entity_b,
+    entity_c,
+    entity_d,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+):
+    """
+    Relationships:
+
+    (child)     (parent)
+    b        -> c
+             -> d
+    """
+    relationships_info = [c_is_parent_of_b, d_is_parent_of_b]
+
+    # Feature List primary entity is (c, d)
+    plan = EntityLookupPlanner.generate_plan([entity_c, entity_d], relationships_info)
+
+    # Serving from b is possible with two lookups
+    assert set(plan.get_entity_lookup_steps([entity_b])) == {c_is_parent_of_b, d_is_parent_of_b}
+
+
 def test_generate_lookup_steps_one_step(
     entity_a,
     entity_b,
@@ -160,3 +191,26 @@ def test_generate_lookup_steps_two_steps(
         relationships_info=relationships_info,
     )
     assert lookup_steps == [b_is_parent_of_a, c_is_parent_of_b]
+
+
+def test_generate_lookup_steps_parallel_parents(
+    entity_b,
+    entity_c,
+    entity_d,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+):
+    """
+    Relationships:
+
+    (child)     (parent)
+    b        -> c
+             -> d
+    """
+    relationships_info = [c_is_parent_of_b, d_is_parent_of_b]
+    lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+        available_entity_ids=[entity_b],
+        required_entity_ids=[entity_c, entity_d],
+        relationships_info=relationships_info,
+    )
+    assert lookup_steps == [c_is_parent_of_b, d_is_parent_of_b]
