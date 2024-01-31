@@ -16,6 +16,7 @@ from sqlglot import parse_one
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import InternalName, SourceType
+from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, DUMMY_ENTITY_VALUE
@@ -515,12 +516,13 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
 
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
     # expect all ttl features to be null
-    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
+    entity_row_ttl_expired = entity_row.copy()
+    entity_row_ttl_expired["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
     online_features = feature_store.get_online_features(
         features=feature_service,
-        entity_rows=[entity_row],
+        entity_rows=[entity_row_ttl_expired],
     ).to_dict()
-    expected = {
+    expected_ttl_expired = {
         "üser id": ["5"],
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
@@ -545,16 +547,37 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
         expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
-    assert_dict_approx_equal(online_features, expected)
+    assert_dict_approx_equal(online_features, expected_ttl_expired)
 
     # set the point in time earlier than the 2001-01-02 12:00:00
     # expect all ttl features to be null
-    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
+    entity_row_ttl_expired["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
     online_features = feature_store.get_online_features(
         features=feature_service,
-        entity_rows=[entity_row],
+        entity_rows=[entity_row_ttl_expired],
     ).to_dict()
-    assert_dict_approx_equal(online_features, expected)
+    assert_dict_approx_equal(online_features, expected_ttl_expired)
+
+    # test patching of augment_response_with_on_demand_transforms
+    feature_store._augment_response_with_on_demand_transforms = (  # pylint: disable=protected-access
+        augment_response_with_on_demand_transforms
+    )
+    online_features = feature_store.get_online_features(
+        features=feature_service,
+        entity_rows=[entity_row_ttl_expired, entity_row],
+    ).to_dict()
+
+    assert_dict_approx_equal(
+        {key: val[:1] for key, val in online_features.items()}, expected_ttl_expired
+    )
+    second_row = {key: val[1:] for key, val in online_features.items()}
+    for key in [
+        f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+        f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}",
+    ]:
+        if key in second_row:
+            second_row[key][0] = json.loads(second_row[key][0])
+    assert_dict_approx_equal(second_row, expected)
 
 
 @pytest.mark.order(5)

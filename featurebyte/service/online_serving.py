@@ -22,6 +22,7 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
     UnsupportedRequestCodeTemplateLanguage,
 )
+from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -446,6 +447,12 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             feature_id_to_versioned_name[feature_id]
             for feature_id in feature_id_to_versioned_name.keys()
         ]
+
+        # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
+        feast_store._augment_response_with_on_demand_transforms = (  # pylint: disable=protected-access
+            augment_response_with_on_demand_transforms
+        )
+
         df_feast_online_features = feast_store.get_online_features(
             feast_store.get_feature_service(feast_service_name),
             updated_request_data,
