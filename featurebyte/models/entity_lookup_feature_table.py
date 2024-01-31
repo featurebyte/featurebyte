@@ -3,7 +3,7 @@ Entity lookup feature table construction
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from dataclasses import dataclass
 
@@ -27,6 +27,7 @@ from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
@@ -74,7 +75,6 @@ def get_lookup_feature_table_name(relationship_info_id: ObjectId) -> str:
 
 
 def get_entity_lookup_feature_tables(
-    feature_table_primary_entity_ids: List[PydanticObjectId],
     feature_lists: List[FeatureListModel],
     feature_store: FeatureStoreModel,
     entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
@@ -84,8 +84,6 @@ def get_entity_lookup_feature_tables(
 
     Parameters
     ----------
-    feature_table_primary_entity_ids: OfflineStoreTable
-        Primary entity ids of the offline store feature table
     feature_lists: List[FeatureListModel]
         Currently online enabled feature lists
     feature_store: FeatureStoreModel
@@ -97,40 +95,26 @@ def get_entity_lookup_feature_tables(
     -------
     Optional[List[OfflineStoreFeatureTableModel]]
     """
-
-    if len(feature_table_primary_entity_ids) == 0:
-        # Skip for feature tables without entity
-        return None
-
-    feature_table_primary_entity_ids_set = set(feature_table_primary_entity_ids)
-
-    required_lookup_relationships = set()
+    required_lookup_relationships: Set[EntityRelationshipInfo] = set()
     catalog_id = None
     for feature_list in feature_lists:
+        if feature_list.features_entity_lookup_info is None:
+            continue
+        for lookup_info in feature_list.features_entity_lookup_info:
+            required_lookup_relationships.update(lookup_info.join_steps)
         if catalog_id is None:
             catalog_id = feature_list.catalog_id
-
-        # Skip if entities are already fulfilled
-        if feature_table_primary_entity_ids_set.issubset(feature_list.primary_entity_ids):
-            continue
-        # Collect required lookup relationships
         entity_lookup_plan = EntityLookupPlanner.generate_plan(
-            feature_table_primary_entity_ids, feature_list.relationships_info or []
+            feature_list.primary_entity_ids, feature_list.relationships_info or []
         )
-        lookup_relationships = entity_lookup_plan.get_entity_lookup_steps(
-            feature_list.primary_entity_ids
-        )
-        if lookup_relationships is not None:
-            required_lookup_relationships.update(lookup_relationships)
         for serving_entity_ids in feature_list.supported_serving_entity_ids:
             lookup_relationships = entity_lookup_plan.get_entity_lookup_steps(serving_entity_ids)
             if lookup_relationships is not None:
                 required_lookup_relationships.update(lookup_relationships)
 
-    assert catalog_id is not None, "Catalog id is not set"
     out = []
-
     for lookup_relationship in required_lookup_relationships:
+        assert catalog_id is not None, "Catalog id is not set"
         lookup_step = entity_lookup_steps_mapping[lookup_relationship.id]
         lookup_graph_result = _get_entity_lookup_graph(
             lookup_step=lookup_step,

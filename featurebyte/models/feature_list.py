@@ -28,7 +28,10 @@ from featurebyte.models.feature_list_store_info import DataBricksStoreInfo, Stor
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityRelationshipInfo,
+    FeatureEntityLookupInfo,
+)
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 
@@ -286,6 +289,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None  # DEV-556
+    )
+    features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
+        allow_mutation=False, default=None
     )
     supported_serving_entity_ids: List[ServingEntity] = Field(
         allow_mutation=False, default_factory=list

@@ -41,7 +41,8 @@ def test_feast_registry_construction__missing_asset(
         )
 
 
-def test_feast_registry_construction__with_post_processing_features(
+@pytest.mark.asyncio
+async def test_feast_registry_construction__with_post_processing_features(  # pylint: disable=too-many-locals
     snowflake_feature_store,
     mysql_online_store,
     cust_id_entity,
@@ -51,6 +52,7 @@ def test_feast_registry_construction__with_post_processing_features(
     latest_event_timestamp_feature,
     mock_pymysql_connect,
     mock_deployment_flow,
+    app_container,
 ):
     """Test the construction of the feast register (with post processing features)"""
     _ = mock_deployment_flow
@@ -67,13 +69,17 @@ def test_feast_registry_construction__with_post_processing_features(
     feature_list.save()
     deploy_features_through_api([feature_requires_post_processing])
 
+    helper_service = app_container.entity_lookup_feature_table_service
+    entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping(
+        [feature_list.cached_model]
+    )
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
         online_store=mysql_online_store.cached_model,
         entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
         features=[feature_requires_post_processing.cached_model],
         feature_lists=[feature_list.cached_model],  # type: ignore
-        entity_lookup_steps_mapping={},
+        entity_lookup_steps_mapping=entity_lookup_steps_mapping,
     )
     feast_registry_dict = MessageToDict(feast_registry_proto)
     on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]

@@ -866,3 +866,14 @@ def deploy_features_through_api(features):
 
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
+
+
+async def get_relationship_info(app_container, child_entity_id, parent_entity_id):
+    """
+    Helper function to retrieve a relationship between two entities
+    """
+    async for info in app_container.relationship_info_service.list_documents_iterator(
+        query_filter={"entity_id": child_entity_id, "related_entity_id": parent_entity_id}
+    ):
+        return info
+    raise AssertionError("Relationship not found")

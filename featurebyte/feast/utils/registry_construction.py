@@ -338,7 +338,6 @@ class OfflineStoreTableBuilder:
 
         offline_store_tables_for_entity_lookup = (
             OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
-                offline_store_tables=offline_store_tables,
                 feature_lists=feature_lists,
                 feature_store=feature_store,
                 entity_lookup_steps_mapping=entity_lookup_steps_mapping,
@@ -349,7 +348,6 @@ class OfflineStoreTableBuilder:
 
     @staticmethod
     def create_offline_store_tables_for_entity_lookup(
-        offline_store_tables: List[OfflineStoreTable],
         feature_lists: List[FeatureListModel],
         feature_store: FeatureStoreModel,
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
@@ -359,8 +357,6 @@ class OfflineStoreTableBuilder:
 
         Parameters
         ----------
-        offline_store_tables: List[OfflineStoreTable]
-            List of offline store tables created from ingest query graphs
         feature_lists: List[FeatureListModel]
             List of feature lists
         feature_store: FeatureStoreModel
@@ -373,37 +369,36 @@ class OfflineStoreTableBuilder:
         List[OfflineStoreTable]
         """
 
-        entity_lookup_feature_tables = {}
-        for offline_store_table in offline_store_tables:
-            lookup_tables = get_entity_lookup_feature_tables(
-                feature_table_primary_entity_ids=list(offline_store_table.primary_entity_ids),
-                feature_lists=feature_lists,
-                feature_store=feature_store,
-                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-            )
-            if lookup_tables is None:
-                continue
-            for lookup_table in lookup_tables:
-                if lookup_table.name not in entity_lookup_feature_tables:
-                    entity_lookup_feature_tables[lookup_table.name] = OfflineStoreTable(
-                        table_name=lookup_table.name,
-                        feature_job_setting=lookup_table.feature_job_setting,
-                        has_ttl=lookup_table.has_ttl,
-                        output_column_names=lookup_table.output_column_names,
-                        output_dtypes=lookup_table.output_dtypes,
-                        primary_entity_info=[
-                            OfflineStoreEntityInfo(
-                                id=entity_id,
-                                name=serving_name,
-                                dtype=DBVarType.VARCHAR,
-                            )
-                            for (entity_id, serving_name) in zip(
-                                lookup_table.primary_entity_ids, lookup_table.serving_names
-                            )
-                        ],
-                    )
+        lookup_tables = get_entity_lookup_feature_tables(
+            feature_lists=feature_lists,
+            feature_store=feature_store,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+        )
+        if lookup_tables is None:
+            return []
 
-        return list(entity_lookup_feature_tables.values())
+        entity_lookup_feature_tables = []
+        for lookup_table in lookup_tables:
+            entity_lookup_feature_tables.append(
+                OfflineStoreTable(
+                    table_name=lookup_table.name,
+                    feature_job_setting=lookup_table.feature_job_setting,
+                    has_ttl=lookup_table.has_ttl,
+                    output_column_names=lookup_table.output_column_names,
+                    output_dtypes=lookup_table.output_dtypes,
+                    primary_entity_info=[
+                        OfflineStoreEntityInfo(
+                            id=entity_id,
+                            name=serving_name,
+                            dtype=DBVarType.VARCHAR,
+                        )
+                        for (entity_id, serving_name) in zip(
+                            lookup_table.primary_entity_ids, lookup_table.serving_names
+                        )
+                    ],
+                )
+            )
+        return entity_lookup_feature_tables
 
 
 class FeastAssetCreator:

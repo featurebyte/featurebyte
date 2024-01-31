@@ -21,7 +21,11 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityRelationshipInfo,
+    FeatureEntityLookupInfo,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -34,6 +38,7 @@ from featurebyte.service.entity_relationship_extractor import (
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -92,9 +97,10 @@ class FeatureListEntityRelationshipData:
     primary_entity_ids: List[ObjectId]
     relationships_info: List[EntityRelationshipInfo]
     supported_serving_entity_ids: List[List[ObjectId]]
+    features_entity_lookup_info: List[FeatureEntityLookupInfo]
 
 
-class FeatureListService(
+class FeatureListService(  # pylint: disable=too-many-instance-attributes
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
     """
@@ -117,6 +123,7 @@ class FeatureListService(
         entity_serving_names_service: EntityServingNamesService,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         feature_list_entity_relationship_validator: FeatureListEntityRelationshipValidator,
+        offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
     ):
         super().__init__(
             user=user,
@@ -132,6 +139,7 @@ class FeatureListService(
         self.entity_serving_names_service = entity_serving_names_service
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
         self.feature_list_entity_relationship_validator = feature_list_entity_relationship_validator
+        self.offline_store_info_initialization_service = offline_store_info_initialization_service
 
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
@@ -179,20 +187,21 @@ class FeatureListService(
         return derived_output
 
     async def extract_entity_relationship_data(
-        self, feature_primary_entity_ids: List[List[ObjectId]]
+        self, features: List[FeatureModel]
     ) -> FeatureListEntityRelationshipData:
         """
-        Extract entity relationship data from feature primary entity ids
+        Extract entity relationship data from feature models
 
         Parameters
         ----------
-        feature_primary_entity_ids: List[List[ObjectId]]
-            List of feature primary entity ids
+        features: List[FeatureModel]
+            List of feature models
 
         Returns
         -------
         FeatureListEntityRelationshipData
         """
+        feature_primary_entity_ids = [feature.primary_entity_ids for feature in features]
         combined_primary_entity_ids = set().union(*feature_primary_entity_ids)
         primary_entity_ids = list(combined_primary_entity_ids)
         extractor = self.entity_relationship_extractor_service
@@ -208,10 +217,47 @@ class FeatureListService(
         supported_serving_entity_ids = serving_entity_enumeration.generate(
             entity_ids=fl_primary_entity_ids
         )
+        features_entity_lookup_info = []
+        entity_id_to_serving_name = (
+            await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
+                entity_ids=list(set().union(*[feature.entity_ids for feature in features]))
+            )
+        )
+        for feature in features:
+            feature_list_to_feature_primary_entity_join_steps = (
+                EntityLookupPlanner.generate_lookup_steps(
+                    available_entity_ids=fl_primary_entity_ids,
+                    required_entity_ids=feature.primary_entity_ids,
+                    relationships_info=relationships_info,
+                )
+            )
+            feature_internal_entity_join_steps = []
+            feature_tables_entity_ids = await self.offline_store_info_initialization_service.get_offline_store_feature_tables_entity_ids(
+                feature, entity_id_to_serving_name
+            )
+            for entity_ids in feature_tables_entity_ids:
+                if feature.relationships_info is None:
+                    continue
+                internal_steps = EntityLookupPlanner.generate_lookup_steps(
+                    available_entity_ids=feature.primary_entity_ids,
+                    required_entity_ids=entity_ids,
+                    relationships_info=feature.relationships_info,
+                )
+                for step in internal_steps:
+                    if step not in feature_internal_entity_join_steps:
+                        feature_internal_entity_join_steps.append(step)
+            feature_entity_lookup_info = FeatureEntityLookupInfo(
+                feature_id=feature.id,
+                feature_list_to_feature_primary_entity_join_steps=feature_list_to_feature_primary_entity_join_steps,
+                feature_internal_entity_join_steps=feature_internal_entity_join_steps,
+            )
+            features_entity_lookup_info.append(feature_entity_lookup_info)
+
         return FeatureListEntityRelationshipData(
             primary_entity_ids=fl_primary_entity_ids,
             relationships_info=relationships_info,
             supported_serving_entity_ids=supported_serving_entity_ids,
+            features_entity_lookup_info=features_entity_lookup_info,
         )
 
     async def _update_features(
@@ -256,9 +302,7 @@ class FeatureListService(
         # check whether the feature(s) in the feature list saved to persistent or not
         feature_data = await self._extract_feature_data(document)
         entity_relationship_data = await self.extract_entity_relationship_data(
-            feature_primary_entity_ids=[
-                feature.primary_entity_ids for feature in feature_data["features"]
-            ]
+            features=feature_data["features"]
         )
 
         # update document with derived output
@@ -269,6 +313,7 @@ class FeatureListService(
                 "primary_entity_ids": entity_relationship_data.primary_entity_ids,
                 "relationships_info": entity_relationship_data.relationships_info,
                 "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
+                "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
             }
         )
 

@@ -734,6 +734,7 @@ async def setup_for_feature_readiness_fixture(
         readiness="DEPRECATED",
         namespace_id=feature.feature_namespace_id,
         catalog_id=feature.catalog_id,
+        version="V0",
     )
     feat_namespace = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
