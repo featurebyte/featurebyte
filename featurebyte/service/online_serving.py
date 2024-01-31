@@ -10,6 +10,7 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from unittest.mock import patch
 
 import pandas as pd
 from bson import ObjectId
@@ -449,15 +450,16 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         ]
 
         # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
-        feast_store._augment_response_with_on_demand_transforms = (  # pylint: disable=protected-access
-            augment_response_with_on_demand_transforms
-        )
-
-        df_feast_online_features = feast_store.get_online_features(
-            feast_store.get_feature_service(feast_service_name),
-            updated_request_data,
-        ).to_df()[versioned_feature_names]
-        return df_feast_online_features
+        with patch.object(
+            feast_store,
+            "_augment_response_with_on_demand_transforms",
+            new=augment_response_with_on_demand_transforms,
+        ):
+            df_feast_online_features = feast_store.get_online_features(
+                feast_store.get_feature_service(feast_service_name),
+                updated_request_data,
+            ).to_df()[versioned_feature_names]
+            return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

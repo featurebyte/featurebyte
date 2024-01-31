@@ -12,7 +12,7 @@ from feast import OnDemandFeatureView
 from feast.online_response import OnlineResponse
 from feast.protos.feast.serving.ServingService_pb2 import FieldStatus, GetOnlineFeaturesResponse
 from feast.type_map import python_values_to_proto_values
-from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.timestamp_pb2 import Timestamp  # type: ignore[import]
 
 
 def augment_response_with_on_demand_transforms(
@@ -20,7 +20,7 @@ def augment_response_with_on_demand_transforms(
     feature_refs: List[str],
     requested_on_demand_feature_views: List[OnDemandFeatureView],
     full_feature_names: bool,
-):
+) -> None:
     """Computes on demand feature values and adds them to the result rows.
 
     Assumes that 'online_features_response' already contains the necessary request data and input feature
