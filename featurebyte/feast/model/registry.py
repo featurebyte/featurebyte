@@ -1,6 +1,8 @@
 """
 Feast registry model
 """
+import pymongo
+
 # pylint: disable=no-name-in-module
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 
@@ -48,4 +50,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=None,
             ),
+        ]
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_store_id"),
         ]

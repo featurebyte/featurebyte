@@ -117,19 +117,16 @@ class FeastRegistryService(
         -------
         FeastRegistryModel
         """
-        with self.allow_use_raw_query_filter():
-            query_filter = {"catalog_id": catalog_id}
-            if feature_store_id:
-                query_filter["feature_store_id"] = feature_store_id
-            else:
-                catalog = await self.catalog_service.get_document(document_id=catalog_id)
-                query_filter["feature_store_id"] = catalog.default_feature_store_ids[0]
+        query_filter = {"catalog_id": catalog_id}
+        if feature_store_id:
+            query_filter["feature_store_id"] = feature_store_id
+        else:
+            catalog = await self.catalog_service.get_document(document_id=catalog_id)
+            query_filter["feature_store_id"] = catalog.default_feature_store_ids[0]
 
-            query_result = await self.list_documents_as_dict(
-                query_filter=query_filter, use_raw_query_filter=True, page_size=1
-            )
-            if query_result["total"]:
-                return FeastRegistryModel(**query_result["data"][0])
+        query_result = await self.list_documents_as_dict(query_filter=query_filter, page_size=1)
+        if query_result["total"]:
+            return FeastRegistryModel(**query_result["data"][0])
 
         registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[]))
         return registry
