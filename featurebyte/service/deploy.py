@@ -8,6 +8,7 @@ from typing import Any, Callable, Coroutine, List, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
+from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
@@ -40,7 +41,7 @@ class DeployService(OpsServiceMixin):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         persistent: Persistent,
         feature_service: FeatureService,
@@ -51,6 +52,7 @@ class DeployService(OpsServiceMixin):
         feature_list_service: FeatureListService,
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
+        feast_registry_service: FeastRegistryService,
     ):
         self.persistent = persistent
         self.feature_service = feature_service
@@ -63,6 +65,7 @@ class DeployService(OpsServiceMixin):
             offline_store_feature_table_manager_service
         )
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
+        self.feast_registry_service = feast_registry_service
 
     @classmethod
     def _extract_deployed_feature_list_ids(
@@ -72,10 +75,12 @@ class DeployService(OpsServiceMixin):
             return cls.include_object_id(document.deployed_feature_list_ids, feature_list.id)
         return cls.exclude_object_id(document.deployed_feature_list_ids, feature_list.id)
 
-    async def _update_offline_store_info(self, feature: FeatureModel) -> FeatureModel:
+    async def _update_offline_store_info(
+        self, feature: FeatureModel, table_name_prefix: str
+    ) -> FeatureModel:
         store_info = (
             await self.offline_store_info_initialization_service.initialize_offline_store_info(
-                feature=feature
+                feature=feature, table_name_prefix=table_name_prefix
             )
         )
         await self.feature_service.update_offline_store_info(
@@ -276,6 +281,11 @@ class DeployService(OpsServiceMixin):
                 )
                 assert isinstance(feature_list, FeatureListModel)
 
+                feast_registry = await self.feast_registry_service.get_or_create_feast_registry(
+                    catalog_id=document.catalog_id,
+                    feature_store_id=None,
+                )
+
                 if update_progress:
                     await update_progress(20, "Update features")
 
@@ -285,7 +295,9 @@ class DeployService(OpsServiceMixin):
                 is_online_enabling = True
                 for ind, feature_id in enumerate(document.feature_ids):
                     feature = await self.feature_service.get_document(document_id=feature_id)
-                    feature = await self._update_offline_store_info(feature)
+                    feature = await self._update_offline_store_info(
+                        feature, feast_registry.offline_table_name_prefix
+                    )
                     all_feature_models.append(feature)
                     async with self.persistent.start_transaction():
                         feature_online_enabled_map[feature.id] = feature.online_enabled

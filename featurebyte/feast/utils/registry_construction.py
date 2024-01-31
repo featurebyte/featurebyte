@@ -542,7 +542,7 @@ class FeastAssetCreator:
 
             # construct feature service
             feature_service = FeastFeatureService(
-                name=feature_list.name,
+                name=feature_list.versioned_name,
                 features=input_feature_views,
             )
             feature_services.append(feature_service)

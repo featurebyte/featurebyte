@@ -10,6 +10,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId, json_util
 
+from featurebyte.common.model_util import get_version
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -208,7 +209,9 @@ async def has_scheduled_task(periodic_task_service, feature_table):
     return False
 
 
-async def check_feast_registry(app_container, expected_feature_views, expected_feature_services):
+async def check_feast_registry(
+    app_container, expected_feature_views, expected_feature_services, expected_project_name
+):
     """
     Helper function to check feast registry
     """
@@ -217,7 +220,7 @@ async def check_feast_registry(app_container, expected_feature_views, expected_f
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
         feast_registry.id
     )
-    assert feature_store.project == str(app_container.catalog_id)
+    assert feature_store.project == expected_project_name
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_views
     assert {fs.name for fs in feature_store.list_feature_services()} == expected_feature_services
 
@@ -326,7 +329,8 @@ async def test_feature_table_one_feature_deployed(
             "cat1_cust_id_30m",
             f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
         },
-        expected_feature_services={"sum_1d_list"},
+        expected_feature_services={f"sum_1d_list_{get_version()}"},
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -394,13 +398,18 @@ async def test_feature_table_two_features_deployed(
 
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
+    fl_version = get_version()
     await check_feast_registry(
         app_container,
         expected_feature_views={
             "cat1_cust_id_30m",
             f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
         },
-        expected_feature_services={"sum_1d_list", "sum_1d_plus_123_list"},
+        expected_feature_services={
+            f"sum_1d_list_{fl_version}",
+            f"sum_1d_plus_123_list_{fl_version}",
+        },
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -491,6 +500,7 @@ async def test_feature_table_undeploy(
         app_container,
         expected_feature_views=set(),
         expected_feature_services=set(),
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -593,6 +603,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
+    fl_version = get_version()
     await check_feast_registry(
         app_container,
         expected_feature_views={
@@ -600,7 +611,11 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             "cat1_cust_id_3h",
             f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
         },
-        expected_feature_services={"sum_24h_every_3h_list", "sum_1d_list"},
+        expected_feature_services={
+            f"sum_24h_every_3h_list_{fl_version}",
+            f"sum_1d_list_{fl_version}",
+        },
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -652,7 +667,8 @@ async def test_feature_table_without_entity(
     await check_feast_registry(
         app_container,
         expected_feature_views={"cat1__no_entity_1d"},
-        expected_feature_services={"count_1d_list"},
+        expected_feature_services={f"count_1d_list_{get_version()}"},
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -708,7 +724,8 @@ async def test_lookup_feature(
     await check_feast_registry(
         app_container,
         expected_feature_views={"cat1_cust_id_1d"},
-        expected_feature_services={"some_lookup_feature_list"},
+        expected_feature_services={f"some_lookup_feature_list_{get_version()}"},
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -772,7 +789,8 @@ async def test_aggregate_asat_feature(
             "cat1_gender_1d",
             f"fb_entity_lookup_{customer_to_gender_relationship_info_id}",
         },
-        expected_feature_services={"asat_gender_count_list"},
+        expected_feature_services={f"asat_gender_count_list_{get_version()}"},
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -792,9 +810,10 @@ async def test_new_deployment_when_all_features_already_deployed(
             f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
         },
         expected_feature_services={
-            "sum_1d_list",
-            deployed_feature_list_when_all_features_already_deployed.name,
+            f"sum_1d_list_{get_version()}",
+            deployed_feature_list_when_all_features_already_deployed.versioned_name,
         },
+        expected_project_name=str(app_container.catalog_id)[-7:],
     )
 
 
@@ -833,6 +852,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
     service = app_container.offline_store_info_initialization_service
     offline_store_info = await service.initialize_offline_store_info(
         feature=feature_model,
+        table_name_prefix="cat1",
         entity_id_to_serving_name={
             entity_id: str(entity_id) for entity_id in feature_model.entity_ids
         },

@@ -270,10 +270,9 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         )
 
         tic = time.time()
-        assert feature_list.name is not None
         df_feast_online_features = await self._get_online_features_feast(
             feast_store=feast_store,
-            feast_service_name=feature_list.name,
+            feast_service_name=feature_list.versioned_name,
             feature_id_to_versioned_name=feature_id_to_versioned_name,
             point_in_time_value=point_in_time_value,
             df_request_data=df_entity_rows,

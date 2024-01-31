@@ -13,7 +13,6 @@ class FeastRegistryCreate(FeatureByteBaseModel):
     Feast registry create schema
     """
 
-    project_name: Optional[str]
     feature_lists: List[FeatureListModel]
 
 
