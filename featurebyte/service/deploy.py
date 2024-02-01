@@ -76,17 +76,19 @@ class DeployService(OpsServiceMixin):
         return cls.exclude_object_id(document.deployed_feature_list_ids, feature_list.id)
 
     async def _update_offline_store_info(
-        self, feature: FeatureModel, table_name_prefix: str
+        self, feature: FeatureModel, table_name_prefix: str, target_deployed: bool
     ) -> FeatureModel:
-        store_info = (
-            await self.offline_store_info_initialization_service.initialize_offline_store_info(
-                feature=feature, table_name_prefix=table_name_prefix
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED and target_deployed:
+            store_info = (
+                await self.offline_store_info_initialization_service.initialize_offline_store_info(
+                    feature=feature, table_name_prefix=table_name_prefix
+                )
             )
-        )
-        await self.feature_service.update_offline_store_info(
-            document_id=feature.id, store_info=store_info.dict(by_alias=True)
-        )
-        return await self.feature_service.get_document(document_id=feature.id)
+            await self.feature_service.update_offline_store_info(
+                document_id=feature.id, store_info=store_info.dict(by_alias=True)
+            )
+            return await self.feature_service.get_document(document_id=feature.id)
+        return feature
 
     async def _update_feature(
         self,
@@ -296,7 +298,7 @@ class DeployService(OpsServiceMixin):
                 for ind, feature_id in enumerate(document.feature_ids):
                     feature = await self.feature_service.get_document(document_id=feature_id)
                     feature = await self._update_offline_store_info(
-                        feature, feast_registry.offline_table_name_prefix
+                        feature, feast_registry.offline_table_name_prefix, target_deployed
                     )
                     all_feature_models.append(feature)
                     async with self.persistent.start_transaction():
