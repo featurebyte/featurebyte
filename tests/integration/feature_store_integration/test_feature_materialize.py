@@ -67,7 +67,7 @@ def features_fixture(
     event_view = event_table.get_view()
 
     # Feature saved but not deployed
-    feature_0 = event_view.groupby("ÜSER ID").aggregate_over(
+    _ = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
         method="sum",
         windows=["666h"],
@@ -182,7 +182,6 @@ def features_fixture(
     features = [
         feature
         for feature in [
-            feature_0,
             feature_1,
             feature_2,
             feature_3,
@@ -204,7 +203,7 @@ def features_fixture(
         feature.save(conflict_resolution="retrieve")
         feature.update_readiness("PRODUCTION_READY")
 
-    return features[1:]
+    return features
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
@@ -236,6 +235,33 @@ async def deployed_features_list_fixture(session, features):
         all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
         udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
         assert len(udfs_for_on_demand_func) == 0
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
+async def deployed_features_list_composite_entities_fixture(features):
+    """
+    Fixture for deployed feature list
+    """
+    features = [
+        feature
+        for feature in features
+        if feature.name == "Amount Sum by Customer x Product Action 24d"
+    ]
+    feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES")
+    feature_list.save()
+    with patch(
+        "featurebyte.service.feature_manager.get_next_job_datetime",
+        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
+    ):
+        deployment = feature_list.deploy()
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            deployment.enable()
+
+    yield deployment
+    deployment.disable()
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")
@@ -696,6 +722,41 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list, sour
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
         expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
+    assert_dict_approx_equal(feat_dict, expected)
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__composite_entities(config, deployed_feature_list_composite_entities):
+    """
+    Check online features when the feature list only has a feature with composite entities
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list_composite_entities
+
+    entity_serving_names = [
+        {
+            "order_id": "T3850",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+
+    feat_dict = res.json()["features"][0]
+    expected = {
+        "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
+        "order_id": "T3850",
+    }
     assert_dict_approx_equal(feat_dict, expected)
 
 

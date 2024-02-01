@@ -850,7 +850,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
     }
     out_node = ingest_query_graph1.graph.get_node_by_name(ingest_query_graph1.node_name)
     assert isinstance(out_node, ProjectNode)
-    assert out_node.parameters.columns == ["sum_30m_by_binary"]
+    assert out_node.parameters.columns == ["sum_30m_by_bool"]
 
     # check the second offline store ingest query graph
     assert ingest_query_graph2.output_column_name.startswith(
@@ -919,11 +919,11 @@ def test_composite_features(
 ):
     """Test composite features' property"""
     _ = enable_feast_integration, mock_deployment_flow
-    entity = Entity(name="binary", serving_names=["col_binary"])
+    entity = Entity(name="bool", serving_names=["col_bool"])
     entity.save()
 
     # make col_binary as an entity column
-    snowflake_event_table_with_entity.col_binary.as_entity("binary")
+    snowflake_event_table_with_entity.col_boolean.as_entity("bool")
 
     event_view = snowflake_event_table_with_entity.get_view()
     feature_job_setting = FeatureJobSetting(
@@ -945,17 +945,17 @@ def test_composite_features(
         feature_job_setting=feature_job_setting,
         feature_names=["sum_30m_by_cust_id_1h"],
     )
-    feature_group_by_binary = event_view.groupby("col_binary").aggregate_over(
+    feature_group_by_bool = event_view.groupby("col_boolean").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
         feature_job_setting=feature_job_setting,
-        feature_names=["sum_30m_by_binary"],
+        feature_names=["sum_30m_by_bool"],
     )
     composite_feature = (
         feature_group_by_cust_id_30m["sum_30m_by_cust_id_30m"]
         + feature_group_by_cust_id_1h["sum_30m_by_cust_id_1h"]
-        + feature_group_by_binary["sum_30m_by_binary"]
+        + feature_group_by_bool["sum_30m_by_bool"]
     )
 
     assert composite_feature.primary_entity == [
@@ -964,7 +964,7 @@ def test_composite_features(
     ]
     assert composite_feature.entity_ids == sorted([cust_id_entity.id, entity.id])
     assert composite_feature.graph.get_entity_columns(node_name=composite_feature.node_name) == [
-        "col_binary",
+        "col_boolean",
         "cust_id",
     ]
 

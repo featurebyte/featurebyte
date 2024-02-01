@@ -73,7 +73,11 @@ class EntityLookupState:
     entity_ids: Sequence[ObjectId]
     lookup_path: List[EntityRelationshipInfo]
 
-    def apply_relationship(self, relationship: EntityRelationshipInfo) -> EntityLookupState:
+    def apply_relationship(
+        self,
+        relationship: EntityRelationshipInfo,
+        entity_id_to_change: ObjectId,
+    ) -> EntityLookupState:
         """
         Return a new EntityLookupState by applying a relationship that lead to its parent or child
 
@@ -81,6 +85,8 @@ class EntityLookupState:
         ----------
         relationship: EntityRelationshipInfo
             EntityRelationshipInfo object representing relationship between two entities
+        entity_id_to_change: ObjectId
+            The entity id to change after applying this relationship
 
         Returns
         -------
@@ -88,10 +94,15 @@ class EntityLookupState:
         """
         new_entity_ids = []
         for entity_id in self.entity_ids:
-            if entity_id == relationship.related_entity_id:
-                new_entity_ids.append(relationship.entity_id)  # child
-            elif entity_id == relationship.entity_id:
-                new_entity_ids.append(relationship.related_entity_id)  # parent
+            if entity_id != entity_id_to_change:
+                new_entity_ids.append(entity_id)
+            else:
+                assert entity_id in [relationship.entity_id, relationship.related_entity_id]
+                if entity_id == relationship.related_entity_id:
+                    new_entity_ids.append(relationship.entity_id)  # child
+                else:
+                    new_entity_ids.append(relationship.related_entity_id)  # parent
+        new_entity_ids = sorted(set(new_entity_ids))
         return EntityLookupState(
             entity_ids=new_entity_ids,
             lookup_path=[relationship] + self.lookup_path,
@@ -200,7 +211,6 @@ class EntityLookupPlanner:
                 if entity_id in missing_entity_ids:
                     missing_entity_ids.remove(entity_id)
                     required = True
-                    break
             if required:
                 for lookup_step in node.lookup_path[::-1]:
                     if lookup_step not in required_lookup_steps:
@@ -274,7 +284,7 @@ class EntityLookupPlanner:
                 if not relationships:
                     continue
                 for relationship in relationships:
-                    new_node = current_node.apply_relationship(relationship)
+                    new_node = current_node.apply_relationship(relationship, entity_id)
                     key = sorted_entity_ids(new_node.entity_ids)
                     if key not in visited:
                         visited.add(key)
