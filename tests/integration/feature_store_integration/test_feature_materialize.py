@@ -951,7 +951,7 @@ async def test_feature_tables_have_primary_key_constraints(session, offline_stor
 
 @pytest.mark.order(10)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__patch_feast(config, deployed_feature_list, source_type):
+def test_online_features__patch_feast(config, deployed_feature_list):
     """Test feast online features with patching works without error"""
     client = config.get_client()
     deployment = deployed_feature_list
