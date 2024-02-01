@@ -31,7 +31,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -79,7 +79,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -127,7 +127,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
