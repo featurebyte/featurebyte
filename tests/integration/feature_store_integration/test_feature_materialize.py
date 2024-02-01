@@ -642,49 +642,11 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__primary_entity_ids(config, deployed_feature_list, source_type):
+@pytest.fixture
+def expected_features_order_id_T3850(source_type):
     """
-    Check online features by providing only the primary entity ids. Expect the online serving
-    service to lookup parent entities.
-
-    List of lookups to be made:
-
-    - order_id:T3850 -> cust_id:594
-    - order_id:T3850 -> PRODUCT_ACTION:detail
-    - order_id:T3850 -> üser id:7
-    - üser id:7 -> user_status:STÀTUS_CODE_26
+    Expected features for entity order_id T3850
     """
-    client = config.get_client()
-    deployment = deployed_feature_list
-
-    entity_serving_names = [
-        {
-            "order_id": "T3850",
-        }
-    ]
-    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
-
-    tic = time.time()
-    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
-        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-        res = client.post(
-            f"/deployment/{deployment.id}/online_features",
-            json=data.json_dict(),
-        )
-    assert res.status_code == 200
-    elapsed = time.time() - tic
-    logger.info("online_features elapsed: %fs", elapsed)
-
-    feat_dict = res.json()["features"][0]
-    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
-        feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
-    )
-    if source_type != SourceType.DATABRICKS_UNITY:
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
-            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
-        )
     expected = {
         "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
@@ -722,7 +684,100 @@ def test_online_features__primary_entity_ids(config, deployed_feature_list, sour
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
         expected.pop("EXTERNAL_FS_COSINE_SIMILARITY_VEC")
-    assert_dict_approx_equal(feat_dict, expected)
+    return expected
+
+
+def process_output_features_helper(feat_dict, source_type):
+    """
+    Process output features to facilitate testing
+    """
+    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
+        feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
+    )
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+            feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        )
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__primary_entity_ids(
+    config, deployed_feature_list, expected_features_order_id_T3850, source_type
+):
+    """
+    Check online features by providing only the primary entity ids. Expect the online serving
+    service to lookup parent entities.
+
+    List of lookups to be made:
+
+    - order_id:T3850 -> cust_id:594
+    - order_id:T3850 -> PRODUCT_ACTION:detail
+    - order_id:T3850 -> üser id:7
+    - üser id:7 -> user_status:STÀTUS_CODE_26
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_names = [
+        {
+            "order_id": "T3850",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+
+    feat_dict = res.json()["features"][0]
+    process_output_features_helper(feat_dict, source_type)
+    assert_dict_approx_equal(feat_dict, expected_features_order_id_T3850)
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__non_existing_order_id(
+    config, deployed_feature_list, expected_features_order_id_T3850, source_type
+):
+    """
+    Test online features with a mix of existing and non-existing serving entities
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_name = {"order_id": "T3850"}
+    entity_serving_name_non_exist = {"order_id": "non_existing_order_id"}
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        data = OnlineFeaturesRequestPayload(
+            entity_serving_names=[entity_serving_name, entity_serving_name_non_exist]
+        )
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    features = res.json()["features"]
+    process_output_features_helper(features[0], source_type)
+    assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
+    expected_non_existing_order_id_features = entity_serving_name_non_exist.copy()
+    expected_non_existing_order_id_features.update(
+        {
+            feature_name: None
+            for feature_name in expected_features_order_id_T3850
+            if feature_name != "order_id"
+        }
+    )
+    assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
+    assert_dict_approx_equal(features[1], expected_non_existing_order_id_features)
 
 
 @pytest.mark.order(6)

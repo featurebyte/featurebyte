@@ -3,9 +3,8 @@ Entity related helpers
 """
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List
 
-import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
@@ -61,25 +60,21 @@ def get_combined_serving_names_expr(serving_names: List[str]) -> Expression:
     return combined_serving_names_expr
 
 
-def get_combined_serving_names_pandas(serving_name_cols: List[pd.Series]) -> pd.Series:
+def get_combined_serving_names_python(serving_name_cols: List[Any]) -> str:
     """
-    Construct a pandas series of the concatenated serving names
+    Construct concatenated serving names for a row
 
     This must apply the exact same transformations as get_combined_serving_names_expr()
 
     Parameters
     ----------
-    serving_name_cols: List[pd.Series]
-        Pandas series of the serving names to be concatenated
+    serving_name_cols: List[Any]
+        List of the serving names to be concatenated for a row
 
     Returns
     -------
-    pd.Series
+    str
     """
     assert len(serving_name_cols) > 0
-    serving_name_cols = [col.astype(str) for col in serving_name_cols]
-    result = serving_name_cols[0]
-    for col in serving_name_cols[1:]:
-        result = result + "::" + col
-    result = result.fillna("")
-    return result
+    serving_name_cols = [str(col) for col in serving_name_cols]
+    return "::".join(serving_name_cols)
