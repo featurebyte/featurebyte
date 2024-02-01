@@ -393,7 +393,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             FeastFeatureStore object
         feast_service_name: str
             Name of the feast feature service to use
-        request_data: List[Dict[str, ANy]
+        request_data: List[Dict[str, Any]]
             Request data with all the entities available
         feature_id_to_versioned_name: Dict[PydanticObjectId, str]
             Mapping from feature id to feature's versioned name
