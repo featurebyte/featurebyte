@@ -10,6 +10,7 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from unittest.mock import patch
 
 import pandas as pd
 from bson import ObjectId
@@ -22,6 +23,7 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
     UnsupportedRequestCodeTemplateLanguage,
 )
+from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -446,11 +448,18 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             feature_id_to_versioned_name[feature_id]
             for feature_id in feature_id_to_versioned_name.keys()
         ]
-        df_feast_online_features = feast_store.get_online_features(
-            feast_store.get_feature_service(feast_service_name),
-            updated_request_data,
-        ).to_df()[versioned_feature_names]
-        return df_feast_online_features
+
+        # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
+        with patch.object(
+            feast_store,
+            "_augment_response_with_on_demand_transforms",
+            new=augment_response_with_on_demand_transforms,
+        ):
+            df_feast_online_features = feast_store.get_online_features(
+                feast_store.get_feature_service(feast_service_name),
+                updated_request_data,
+            ).to_df()[versioned_feature_names]
+            return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

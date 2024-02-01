@@ -924,3 +924,49 @@ async def test_feature_tables_have_primary_key_constraints(session, offline_stor
             ).strip()
         )
         assert df.shape[0] == 1
+
+
+@pytest.mark.order(10)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__patch_feast(config, deployed_feature_list):
+    """Test feast online features with patching works without error"""
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_name = {
+        "üser id": 5,
+        "cust_id": 761,
+        "PRODUCT_ACTION": "detail",
+        "user_status": "STÀTUS_CODE_37",
+        "order_id": "T1230",
+    }
+    entity_serving_name_non_exist = {
+        "üser id": "non_existing_user_id",
+        "cust_id": 123456,
+        "PRODUCT_ACTION": "non_existing_product_action",
+        "user_status": "non_existing_user_status",
+        "order_id": "non_existing_order_id",
+    }
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+
+        data = OnlineFeaturesRequestPayload(entity_serving_names=[entity_serving_name])
+        res1 = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        ).json()
+
+        data = OnlineFeaturesRequestPayload(entity_serving_names=[entity_serving_name_non_exist])
+        res2 = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        ).json()
+
+        data = OnlineFeaturesRequestPayload(
+            entity_serving_names=[entity_serving_name_non_exist, entity_serving_name]
+        )
+        res3 = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        ).json()
+        assert res3 == {"features": res2["features"] + res1["features"]}
