@@ -7,6 +7,7 @@ from typing import Any, Callable, Coroutine, List, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.models.base import PydanticObjectId
@@ -289,12 +290,16 @@ class DeployService(OpsServiceMixin):
                 )
 
                 if update_progress:
-                    await update_progress(20, "Update features")
+                    await update_progress(5, "Update features")
 
                 # make each feature online enabled first
                 feature_models = []
                 all_feature_models = []
                 is_online_enabling = True
+                feature_update_progress = None
+                if update_progress:
+                    feature_update_progress = get_ranged_progress_callback(update_progress, 5, 80)
+
                 for ind, feature_id in enumerate(document.feature_ids):
                     feature = await self.feature_service.get_document(document_id=feature_id)
                     feature = await self._update_offline_store_info(
@@ -317,12 +322,14 @@ class DeployService(OpsServiceMixin):
                         online_enabled_before_update=feature.online_enabled,
                     )
 
-                    if update_progress:
-                        percent = 20 + int(60 / len(document.feature_ids) * (ind + 1))
-                        await update_progress(percent, f"Updated {feature.name}")
+                    if feature_update_progress:
+                        await feature_update_progress(
+                            int((ind + 1) / len(document.feature_ids) * 100),
+                            f"Updated {feature.name}",
+                        )
 
-                if update_progress:
-                    await update_progress(80, "Update feature list")
+                if feature_update_progress:
+                    await feature_update_progress(100, "Updated features")
 
                 if (
                     target_deployed
@@ -339,10 +346,16 @@ class DeployService(OpsServiceMixin):
                         feature_list=feature_list,
                     )
 
-                    if update_progress:
-                        await update_progress(100, "Updated feature list")
+                if update_progress:
+                    await update_progress(80, "Updated feature list")
 
-                await self._update_offline_store_feature_tables(feature_models, is_online_enabling)
+                await self._update_offline_store_feature_tables(
+                    feature_models,
+                    is_online_enabling,
+                    update_progress=get_ranged_progress_callback(update_progress, 80, 100)
+                    if update_progress
+                    else None,
+                )
 
             except Exception as exc:
                 try:
@@ -421,16 +434,19 @@ class DeployService(OpsServiceMixin):
             raise DocumentCreationError("Failed to create deployment") from exc
 
     async def _update_offline_store_feature_tables(
-        self, feature_models: List[FeatureModel], is_online_enabling: bool
+        self,
+        feature_models: List[FeatureModel],
+        is_online_enabling: bool,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
             if is_online_enabling:
                 await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
-                    feature_models
+                    features=feature_models, update_progress=update_progress
                 )
             else:
                 await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
-                    feature_models
+                    features=feature_models, update_progress=update_progress
                 )
 
     async def update_deployment(

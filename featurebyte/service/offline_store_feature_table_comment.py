@@ -3,7 +3,7 @@ OfflineStoreFeatureTableCommentService
 """
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
 from dataclasses import dataclass
 
@@ -57,6 +57,7 @@ class OfflineStoreFeatureTableCommentService:
         self,
         feature_store: FeatureStoreModel,
         comments: Sequence[Union[TableComment, ColumnComment]],
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Add the provided table or column comments in the data warehouse
@@ -67,13 +68,25 @@ class OfflineStoreFeatureTableCommentService:
             Feature store model
         comments:  Sequence[Union[TableComment, ColumnComment]]
             List of comments to be added
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
+            Progress callback
         """
         session = await self.session_manager_service.get_feature_store_session(feature_store)
-        for entry in comments:
+        for idx, entry in enumerate(comments):
             if isinstance(entry, TableComment):
                 await session.comment_table(entry.table_name, entry.comment)
             else:
                 await session.comment_column(entry.table_name, entry.column_name, entry.comment)
+
+            if update_progress:
+                percent = int((idx + 1) / len(comments) * 100)
+                if isinstance(entry, TableComment):
+                    message = f"Added comment for table {entry.table_name}"
+                else:
+                    message = (
+                        f"Added comment for column {entry.column_name} in table {entry.table_name}"
+                    )
+                await update_progress(percent, message)
 
     async def generate_table_comment(
         self, feature_table_model: OfflineStoreFeatureTableModel
