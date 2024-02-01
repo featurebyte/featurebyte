@@ -1,12 +1,13 @@
 """
 This module contains classes for constructing feast repository config
 """
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import tempfile
 
 from bson import ObjectId
-from feast import FeatureStore, RepoConfig
+from feast import FeatureStore as FeastFeatureStore
+from feast import RepoConfig
 from feast.repo_config import RegistryConfig
 
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
@@ -16,6 +17,18 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+
+class FeatureStore(FeastFeatureStore):
+    """
+    Feast feature store that also tracks the corresponding online store id in featurebyte
+
+    TODO: move to models?
+    """
+
+    def __init__(self, online_store_id: Optional[ObjectId], *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.online_store_id = online_store_id
 
 
 class FeastFeatureStoreService:
@@ -110,7 +123,11 @@ class FeastFeatureStoreService:
                 online_store=online_store,
                 entity_key_serialization_version=2,
             )
-            return cast(FeatureStore, FeatureStore(config=repo_config))
+            feast_feature_store = FeatureStore(
+                config=repo_config, online_store_id=catalog.online_store_id
+            )
+            feast_feature_store.online_store_id = catalog.online_store_id
+            return feast_feature_store
 
     async def get_feast_feature_store_for_catalog(self) -> Optional[FeatureStore]:
         """

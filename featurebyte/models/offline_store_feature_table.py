@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pymongo
-from pydantic import Field, root_validator
+from bson import ObjectId
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -30,6 +31,15 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
+class OnlineStoreLastMaterializedAt(BaseModel):
+    """
+    Last materialized timestamp for an online store
+    """
+
+    online_store_id: PydanticObjectId
+    value: datetime
+
+
 class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
     OfflineStoreFeatureTable class
@@ -44,6 +54,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     last_materialized_at: Optional[datetime]
+    online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt] = Field(
+        default_factory=list
+    )
 
     feature_cluster: FeatureCluster
     output_column_names: List[str]
@@ -171,6 +184,22 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             full_name += "_" + self.name_suffix
         return full_name
 
+    def get_online_store_last_materialized_at(
+        self, online_store_id: ObjectId
+    ) -> Optional[datetime]:
+        """
+        Get the last materialized at timestamp for an online store
+
+        Returns
+        -------
+        Optional[datetime]
+        """
+        if self.online_stores_last_materialized_at is not None:
+            for entry in self.online_stores_last_materialized_at:
+                if entry.online_store_id == online_store_id:
+                    return entry.value
+        return None
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
@@ -207,15 +236,25 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     entity_universe: EntityUniverseModel
 
 
-class LastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
+class OfflineLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
     """
-    LastMaterializedAtUpdate class to be used when updating last_materialized_at field
+    Schema to be used when updating last_materialized_at field
     """
 
-    last_materialized_at: Optional[datetime]
+    last_materialized_at: datetime
 
 
-OfflineStoreFeatureTableUpdate = Union[FeaturesUpdate, LastMaterializedAtUpdate]
+class OnlineStoresLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Schema to be used when updating online_stores_last_materialized_at field
+    """
+
+    online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt]
+
+
+OfflineStoreFeatureTableUpdate = Union[
+    FeaturesUpdate, OfflineLastMaterializedAtUpdate, OnlineStoresLastMaterializedAtUpdate
+]
 
 
 @dataclass
