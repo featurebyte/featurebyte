@@ -515,13 +515,12 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
 
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
     # expect all ttl features to be null
-    entity_row_ttl_expired = entity_row.copy()
-    entity_row_ttl_expired["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
+    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
     online_features = feature_store.get_online_features(
         features=feature_service,
-        entity_rows=[entity_row_ttl_expired],
+        entity_rows=[entity_row],
     ).to_dict()
-    expected_ttl_expired = {
+    expected = {
         "üser id": ["5"],
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
@@ -546,16 +545,16 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
         expected.pop(f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}")
-    assert_dict_approx_equal(online_features, expected_ttl_expired)
+    assert_dict_approx_equal(online_features, expected)
 
     # set the point in time earlier than the 2001-01-02 12:00:00
     # expect all ttl features to be null
-    entity_row_ttl_expired["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
+    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
     online_features = feature_store.get_online_features(
         features=feature_service,
-        entity_rows=[entity_row_ttl_expired],
+        entity_rows=[entity_row],
     ).to_dict()
-    assert_dict_approx_equal(online_features, expected_ttl_expired)
+    assert_dict_approx_equal(online_features, expected)
 
 
 @pytest.mark.order(5)
