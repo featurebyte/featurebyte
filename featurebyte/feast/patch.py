@@ -21,20 +21,24 @@ def augment_response_with_on_demand_transforms(
     requested_on_demand_feature_views: List[OnDemandFeatureView],
     full_feature_names: bool,
 ) -> None:
-    """Computes on demand feature values and adds them to the result rows.
+    """
+    The main difference between this and the original Feast implementation is that this function explicitly
+    casts the transformed feature values to the expected data type. This is necessary because the
+    original implementation attempts to infer the data type from the values, which can lead to incorrect
+    data types being used.
 
-    Assumes that 'online_features_response' already contains the necessary request data and input feature
-    views for the on demand feature views. Unneeded feature values such as request data and
-    unrequested input feature views will be removed from 'online_features_response'.
-
-    # noqa: DAR101
-    Args:
-        online_features_response: Protobuf object to populate
-        feature_refs: List of all feature references to be returned.
-        requested_on_demand_feature_views: List of all odfvs that have been requested.
-        full_feature_names: A boolean that provides the option to add the feature view prefixes to the feature names,
-            changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
-            "customer_fv__daily_transactions").
+    Parameters
+    ----------
+    online_features_response: GetOnlineFeaturesResponse
+        Protobuf object to populate
+    feature_refs: List[str]
+        List of all feature references to be returned.
+    requested_on_demand_feature_views: List[OnDemandFeatureView]
+        List of all odfvs that have been requested.
+    full_feature_names: bool
+        A boolean that provides the option to add the feature view prefixes to the feature names,
+        changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
+        "customer_fv__daily_transactions").
     """
     # pylint: disable=too-many-locals
     requested_odfv_map = {odfv.name: odfv for odfv in requested_on_demand_feature_views}

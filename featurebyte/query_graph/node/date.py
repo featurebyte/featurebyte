@@ -186,23 +186,23 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_odfv_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
-            return f"{operand}.dt.microseconds // 1000"
+            return f"1e3 * {operand}.dt.total_seconds()"
         if self.parameters.property == "microsecond":
-            return f"{operand}.dt.microseconds"
+            return f"1e6 * {operand}.dt.total_seconds()"
         if self.parameters.property == "second":
-            return f"{operand}.dt.seconds"
+            return f"{operand}.dt.total_seconds()"
 
-        return f"{operand}.dt.seconds // {self.unit_to_seconds[self.parameters.property]}"
+        return f"{operand}.dt.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
     def generate_udf_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
-            return f"{operand}.microseconds // 1000"
+            return f"1e3 * {operand}.total_seconds()"
         if self.parameters.property == "microsecond":
-            return f"{operand}.microseconds"
+            return f"1e6 * {operand}.total_seconds()"
         if self.parameters.property == "second":
-            return f"{operand}.seconds"
+            return f"{operand}.total_seconds()"
 
-        return f"{operand}.seconds // {self.unit_to_seconds[self.parameters.property]}"
+        return f"{operand}.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
 
 class DateDifferenceNode(BaseSeriesOutputNode):
