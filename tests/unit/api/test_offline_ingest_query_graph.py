@@ -229,23 +229,22 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = request_col + (request_col - request_col)
-        feat_2 = pd.Series(
+        feat_2 = (feat_1 - feat).dt.total_seconds() // 86400
+        feat_3 = pd.Series(
             np.where(
-                pd.isna(((feat_1 - feat).dt.seconds // 86400))
-                | pd.isna(inputs["__feature_V231227__part1"]),
+                pd.isna(feat_2) | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat_1 - feat).dt.seconds // 86400)
-                + inputs["__feature_V231227__part1"],
+                feat_2 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat_1 - feat).dt.seconds // 86400).index,
+            index=feat_2.index,
         )
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        feat_2[~mask] = np.nan
-        df["feature_V231227"] = feat_2
+        feat_3[~mask] = np.nan
+        df["feature_V231227"] = feat_3
         df.fillna(np.nan, inplace=True)
         return df
     """
@@ -340,7 +339,7 @@ def test_feature__ttl_item_aggregate_request_column(
             inputs["__composite_feature_V231227__part2"], utc=True
         )
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_2 = (request_col - feat_1).dt.seconds // 86400
+        feat_2 = (request_col - feat_1).dt.total_seconds() // 86400
         feat_3 = pd.Series(
             np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
             index=feat.index,

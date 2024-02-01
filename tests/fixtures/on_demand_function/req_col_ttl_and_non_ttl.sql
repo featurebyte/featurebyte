@@ -20,7 +20,7 @@ def user_defined_function(
     feat_3 = (
         np.nan
         if pd.isna(((feat_2 + (feat_2 - feat_2)) - feat_1))
-        else ((feat_2 + (feat_2 - feat_2)) - feat_1).seconds // 86400
+        else ((feat_2 + (feat_2 - feat_2)) - feat_1).total_seconds() // 86400
     )
     feat_4 = np.nan if pd.isna(feat_3) or pd.isna(col_2) else feat_3 + col_2
     return feat_4

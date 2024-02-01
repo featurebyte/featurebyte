@@ -174,18 +174,43 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
 
 
 @pytest.mark.parametrize(
-    "td_property,expected_odfv_expr,expected_udf_expr",
+    "td_property,expected_odfv_expr,expected_udf_expr,expected_output",
     [
-        ("day", "feat.dt.seconds // 86400", "feat.seconds // 86400"),  # 86400 = 24 * 60 * 60
-        ("hour", "feat.dt.seconds // 3600", "feat.seconds // 3600"),  # 3600 = 60 * 60
-        ("minute", "feat.dt.seconds // 60", "feat.seconds // 60"),
-        ("second", "feat.dt.seconds", "feat.seconds"),
-        ("millisecond", "feat.dt.microseconds // 1000", "feat.microseconds // 1000"),
-        ("microsecond", "feat.dt.microseconds", "feat.microseconds"),
+        (
+            "day",
+            "feat.dt.total_seconds() // 86400",
+            "feat.total_seconds() // 86400",
+            [0, 0, 5],
+        ),  # 86400 = 24 * 60 * 60
+        (
+            "hour",
+            "feat.dt.total_seconds() // 3600",
+            "feat.total_seconds() // 3600",
+            [0, 3, 120],
+        ),  # 3600 = 60 * 60
+        ("minute", "feat.dt.total_seconds() // 60", "feat.total_seconds() // 60", [1, 180, 7219]),
+        (
+            "second",
+            "feat.dt.total_seconds()",
+            "feat.total_seconds()",
+            [60.123, 10800.000456, 433149],
+        ),
+        (
+            "millisecond",
+            "1e3 * feat.dt.total_seconds()",
+            "1e3 * feat.total_seconds()",
+            [60123, 10800000.456, 433149000],
+        ),
+        (
+            "microsecond",
+            "1e6 * feat.dt.total_seconds()",
+            "1e6 * feat.total_seconds()",
+            [60123000, 10800000456, 433149000000],
+        ),
     ],
 )
 def test_time_delta_extract(
-    odfv_config, udf_config, td_property, expected_odfv_expr, expected_udf_expr
+    odfv_config, udf_config, td_property, expected_odfv_expr, expected_udf_expr, expected_output
 ):
     """Test TimeDeltaExtractNode derive_on_demand_view_code"""
     # single input with no timezone offset
@@ -208,7 +233,13 @@ def test_time_delta_extract(
     assert udf_stats == []
     assert udf_expr == f"np.nan if pd.isna(feat) else {expected_udf_expr}"
 
-    feat = pd.Series([np.nan] + list(pd.Timedelta(seconds=1) * np.random.randint(0, 100, 10)))
+    timedelta_vals = [
+        np.nan,
+        pd.Timedelta(minutes=1) + pd.Timedelta(seconds=0.123),
+        pd.Timedelta(hours=3) + pd.Timedelta(seconds=0.000456),
+        pd.Timedelta(days=5) + pd.Timedelta(minutes=6) + pd.Timedelta(seconds=789),
+    ]
+    feat = pd.Series(timedelta_vals)
 
     # check the expression can be evaluated & matches expected
     evaluate_and_compare_odfv_and_udf_results(
@@ -217,6 +248,7 @@ def test_time_delta_extract(
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
+        expected_output=pd.Series([np.nan] + expected_output),
     )
 
 
