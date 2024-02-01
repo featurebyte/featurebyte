@@ -1,6 +1,7 @@
 """
 Tests for feature materialization service
 """
+# pylint: disable=too-many-lines
 import json
 import os
 import textwrap
