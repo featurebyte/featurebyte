@@ -30,6 +30,7 @@ from featurebyte.schema.catalog import (
 )
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import CatalogInfo
+from featurebyte.schema.task import Task
 
 
 class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, CatalogController]):
@@ -57,13 +58,22 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             status_code=HTTPStatus.OK,
         )
 
-        # update online store route
+        # update online store route (for backward compatibility; to be deprecated)
         self.router.add_api_route(
             "/{catalog_id}/online_store",
             self.update_catalog_online_store,
             methods=["PATCH"],
             response_model=CatalogModel,
             status_code=HTTPStatus.OK,
+        )
+
+        # update online store route
+        self.router.add_api_route(
+            "/{catalog_id}/online_store_async",
+            self.update_catalog_online_store_async,
+            methods=["PATCH"],
+            response_model=Task,
+            status_code=HTTPStatus.ACCEPTED,
         )
 
         # delete route
@@ -148,7 +158,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         Update catalog
         """
         controller = self.get_controller_for_request(request)
-        catalog: CatalogModel = await controller.update_catalog(
+        catalog = await controller.update_catalog(
             catalog_id=catalog_id,
             data=data,
         )
@@ -164,11 +174,27 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         Update catalog online store
         """
         controller = self.get_controller_for_request(request)
-        catalog: CatalogModel = await controller.update_catalog_online_store(
+        catalog = await controller.update_catalog_online_store(
             catalog_id=catalog_id,
             data=data,
         )
         return catalog
+
+    async def update_catalog_online_store_async(
+        self,
+        request: Request,
+        catalog_id: PydanticObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> Task:
+        """
+        Update catalog online store
+        """
+        controller = self.get_controller_for_request(request)
+        task = await controller.update_catalog_online_store_async(
+            catalog_id=catalog_id,
+            data=data,
+        )
+        return task
 
     async def delete_catalog(
         self,

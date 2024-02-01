@@ -188,7 +188,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         self, online_store_id: ObjectId
     ) -> Optional[datetime]:
         """
-        Get the last materialized at timestamp for an online store
+        Get the last materialized at timestamp for an online store. Returns None if this offline
+        store table has never been materialized to the online store.
+
+        Parameters
+        ----------
+        online_store_id: ObjectId
+            Online store id
 
         Returns
         -------

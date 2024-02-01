@@ -88,6 +88,18 @@ class OfflineStoreFeatureTableService(
         online_store_id: ObjectId,
         last_materialized_at: datetime,
     ) -> None:
+        """
+        Update the last materialized at timestamp for the given online_store_id
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            OfflineStoreFeatureTableModel id
+        online_store_id: ObjectId
+            Online store id
+        last_materialized_at: datetime
+            Last materialized at timestamp to use
+        """
         document = await self.get_document(document_id=document_id)
         new_entry = OnlineStoreLastMaterializedAt(
             online_store_id=online_store_id,

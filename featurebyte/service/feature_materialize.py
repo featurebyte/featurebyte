@@ -12,7 +12,6 @@ from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
-from feast import FeatureStore as FeastFeatureStore
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SourceType
@@ -355,6 +354,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         session: BaseSession
             Data warehouse session object
         """
+        if feature_table_model.last_materialized_at is None:
+            # Skip if offline table is not computed yet as nothing to materialize
+            return
         assert feature_store.online_store_id is not None
         end_date = pd.Timestamp(
             await self._get_last_feature_timestamp(session, feature_table_model.name)
@@ -426,7 +428,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     ) -> None:
         """
         Calls materialize_partial and also updates online store last materialized at
+
+        # noqa: DAR101
         """
+        if not columns:
+            return
         materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table_model.name),
@@ -435,6 +441,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             start_date=start_date,
             with_feature_timestamp=feature_table_model.has_ttl,
         )
+        assert feature_store.online_store_id is not None
         await self.offline_store_feature_table_service.update_online_last_materialized_at(
             document_id=feature_table_model.id,
             online_store_id=feature_store.online_store_id,

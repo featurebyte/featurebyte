@@ -168,7 +168,7 @@ class TestCatalogApi(BaseApiTestSuite):
         self, create_success_response, test_api_client_persistent, mysql_online_store
     ):
         """
-        Test catalog online store update (success)
+        Test catalog online store update (success) (to be deprecated)
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
@@ -184,6 +184,36 @@ class TestCatalogApi(BaseApiTestSuite):
         response = test_api_client.patch(
             f"{self.base_route}/{catalog_id}/online_store", json={"online_store_id": None}
         )
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] is None
+
+    def test_update_online_store_202(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] == str(mysql_online_store.id)
+
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async", json={"online_store_id": None}
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["online_store_id"] is None

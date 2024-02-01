@@ -8,7 +8,7 @@ import tempfile
 from bson import ObjectId
 from feast import FeatureStore as FeastFeatureStore
 from feast import RepoConfig
-from feast.repo_config import RegistryConfig
+from feast.repo_config import FeastConfigBaseModel, RegistryConfig
 
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.model.online_store import get_feast_online_store_details
@@ -53,6 +53,7 @@ class FeastFeatureStoreService:
     async def get_feast_feature_store(
         self,
         feast_registry_id: ObjectId,
+        online_store_id: Optional[ObjectId] = None,
     ) -> FeatureStore:
         """
         Create feast repo config
@@ -61,6 +62,10 @@ class FeastFeatureStoreService:
         ----------
         feast_registry_id: ObjectId
             Feast registry id
+        online_store_id: Optional[ObjectId]
+            Online store id to use if specified instead of using the one in the catalog. This is used
+            when the returned feature store is about to be used to update a different online store
+            (e.g. for initialization purpose)
 
         Returns
         -------
@@ -79,15 +84,12 @@ class FeastFeatureStoreService:
 
         # Get online store feast config
         catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
-        if catalog.online_store_id is not None:
-            online_store_details = (
-                await self.online_store_service.get_document(catalog.online_store_id)
-            ).details
-            online_store = get_feast_online_store_details(
-                online_store_details
-            ).to_feast_online_store_config()
-        else:
-            online_store = None
+        effective_online_store_id = (
+            online_store_id if online_store_id is not None else catalog.online_store_id
+        )
+        online_store = await self._get_feast_online_store_config(
+            online_store_id=effective_online_store_id,
+        )
 
         with tempfile.NamedTemporaryFile() as temp_file:
             # Use temp file to pass the registry proto to the feature store. Once the
@@ -124,10 +126,25 @@ class FeastFeatureStoreService:
                 entity_key_serialization_version=2,
             )
             feast_feature_store = FeatureStore(
-                config=repo_config, online_store_id=catalog.online_store_id
+                config=repo_config,
+                online_store_id=effective_online_store_id,
             )
-            feast_feature_store.online_store_id = catalog.online_store_id
             return feast_feature_store
+
+    async def _get_feast_online_store_config(
+        self, online_store_id: Optional[ObjectId]
+    ) -> Optional[FeastConfigBaseModel]:
+        if online_store_id is not None:
+            online_store_details = (
+                await self.online_store_service.get_document(online_store_id)
+            ).details
+            online_store = get_feast_online_store_details(
+                online_store_details
+            ).to_feast_online_store_config()
+        else:
+            online_store = None
+
+        return online_store
 
     async def get_feast_feature_store_for_catalog(self) -> Optional[FeatureStore]:
         """

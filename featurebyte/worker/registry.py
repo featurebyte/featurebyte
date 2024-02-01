@@ -10,6 +10,7 @@ from featurebyte.worker.task.base import BaseTask, TaskT
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -51,5 +52,6 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TILE_COMPUTE: TileTask,
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
+    WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
     WorkerCommand.TEST: TestTask,
 }
