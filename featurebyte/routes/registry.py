@@ -166,6 +166,7 @@ from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -207,6 +208,7 @@ app_container_config.register_class(
     CatalogController, dependency_override={"service": "catalog_service"}
 )
 app_container_config.register_class(CatalogNameInjector)
+app_container_config.register_class(CatalogOnlineStoreUpdateTask)
 app_container_config.register_class(CatalogService)
 app_container_config.register_class(
     ContextController, dependency_override={"service": "context_service"}

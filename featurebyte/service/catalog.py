@@ -10,6 +10,9 @@ from bson import ObjectId
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate, CatalogServiceUpdate
+from featurebyte.schema.worker.task.online_store_initialize import (
+    CatalogOnlineStoreInitializeTaskPayload,
+)
 from featurebyte.service.base_document import BaseDocumentService
 
 
@@ -83,6 +86,34 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
             document=document,
             update_dict=data.dict(),
             update_document_class=None,
+        )
+
+    async def get_update_online_store_task_payload(
+        self,
+        document_id: ObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> Optional[CatalogOnlineStoreInitializeTaskPayload]:
+        """
+        Get OnlineStoreInitializeTask payload
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Catalog id
+        data: CatalogOnlineStoreUpdate
+            Online store update payload
+
+        Returns
+        -------
+        Optional[CatalogOnlineStoreInitializeTaskPayload]
+        """
+        document = await self.get_document(document_id=document_id)
+        if document.online_store_id == data.online_store_id:
+            return None
+        return CatalogOnlineStoreInitializeTaskPayload(
+            catalog_id=document_id,
+            online_store_id=data.online_store_id,
+            output_document_id=document.id,
         )
 
 

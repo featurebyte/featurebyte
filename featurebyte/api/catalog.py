@@ -44,7 +44,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate, CatalogUpdate
 
 logger = get_logger(__name__)
 
@@ -369,12 +369,12 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         else:
             online_store = OnlineStore.get(online_store_name)
             online_store_id = str(online_store.id)
-        self.update(
-            update_payload={"online_store_id": online_store_id},
-            url=f"{self._route}/{self.id}/online_store",
-            allow_update_local=True,
-            skip_update_schema_check=True,
+        self.patch_async_task(
+            route=f"{self._route}/{self.id}/online_store_async",
+            payload=CatalogOnlineStoreUpdate(online_store_id=online_store_id).json_dict(),
         )
+        # call get to update the object cache
+        self._get_by_id(self.id, use_cache=False)
 
     @property
     def name_history(self) -> List[Dict[str, Any]]:

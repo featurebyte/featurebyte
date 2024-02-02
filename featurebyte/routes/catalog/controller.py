@@ -3,11 +3,14 @@ Catalog API route controller
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.catalog import (
     CatalogList,
     CatalogOnlineStoreUpdate,
@@ -15,6 +18,7 @@ from featurebyte.schema.catalog import (
     CatalogUpdate,
 )
 from featurebyte.schema.info import CatalogInfo
+from featurebyte.schema.task import Task
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import AllDeploymentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -36,11 +40,13 @@ class CatalogController(
         all_deployment_service: AllDeploymentService,
         feature_store_service: FeatureStoreService,
         online_store_service: OnlineStoreService,
+        task_controller: TaskController,
     ):
         super().__init__(service=service)
         self.all_deployment_service = all_deployment_service
         self.feature_store_service = feature_store_service
         self.online_store_service = online_store_service
+        self.task_controller = task_controller
 
     async def update_catalog(
         self,
@@ -89,11 +95,40 @@ class CatalogController(
         CatalogModel
             Catalog object with updated attribute(s)
         """
+        await self.update_catalog_online_store_async(catalog_id, data)
         await self.service.update_online_store(
             document_id=catalog_id,
             data=data,
         )
         return await self.get(document_id=catalog_id)
+
+    async def update_catalog_online_store_async(
+        self,
+        catalog_id: ObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> Optional[Task]:
+        """
+        Update Catalog online store by triggering a CATALOG_ONLINE_STORE_UPDATE task
+
+        Parameters
+        ----------
+        catalog_id: ObjectId
+            Catalog ID
+        data: CatalogOnlineStoreUpdate
+            Catalog online store update payload
+
+        Returns
+        -------
+        Optional[Task]
+        """
+        payload = await self.service.get_update_online_store_task_payload(
+            document_id=catalog_id,
+            data=data,
+        )
+        if payload is None:
+            return None
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=task_id)
 
     async def delete_catalog(self, catalog_id: ObjectId, soft_delete: bool) -> None:
         """
