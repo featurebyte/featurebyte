@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from http import HTTPStatus
 
-from fastapi import Query, Request
+from fastapi import Query, Request, Response
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.catalog import CatalogModel, CatalogNameHistoryEntry
@@ -72,8 +72,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             "/{catalog_id}/online_store_async",
             self.update_catalog_online_store_async,
             methods=["PATCH"],
-            response_model=Task,
-            status_code=HTTPStatus.ACCEPTED,
+            response_model=Optional[Task],
         )
 
         # delete route
@@ -185,16 +184,21 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         request: Request,
         catalog_id: PydanticObjectId,
         data: CatalogOnlineStoreUpdate,
-    ) -> Task:
+        response: Response,
+    ) -> Optional[Task]:
         """
         Update catalog online store
         """
         controller = self.get_controller_for_request(request)
-        task = await controller.update_catalog_online_store_async(
+        maybe_task = await controller.update_catalog_online_store_async(
             catalog_id=catalog_id,
             data=data,
         )
-        return task
+        if maybe_task is None:
+            response.status_code = HTTPStatus.OK
+        else:
+            response.status_code = HTTPStatus.ACCEPTED
+        return maybe_task
 
     async def delete_catalog(
         self,

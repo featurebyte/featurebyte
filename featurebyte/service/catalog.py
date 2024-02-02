@@ -92,7 +92,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         self,
         document_id: ObjectId,
         data: CatalogOnlineStoreUpdate,
-    ) -> CatalogOnlineStoreInitializeTaskPayload:
+    ) -> Optional[CatalogOnlineStoreInitializeTaskPayload]:
         """
         Get OnlineStoreInitializeTask payload
 
@@ -105,9 +105,11 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
 
         Returns
         -------
-        CatalogOnlineStoreInitializeTaskPayload
+        Optional[CatalogOnlineStoreInitializeTaskPayload]
         """
         document = await self.get_document(document_id=document_id)
+        if document.online_store_id == data.online_store_id:
+            return None
         return CatalogOnlineStoreInitializeTaskPayload(
             catalog_id=document_id,
             online_store_id=data.online_store_id,
