@@ -3,13 +3,14 @@ OfflineStoreFeatureTableUpdateService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from collections import defaultdict
 from dataclasses import dataclass
 
 from bson import ObjectId
 
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.service.registry import FeastRegistryService
@@ -163,7 +164,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self.feature_list_service = feature_list_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
 
-    async def handle_online_enabled_features(self, features: List[FeatureModel]) -> None:
+    async def handle_online_enabled_features(
+        self,
+        features: List[FeatureModel],
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    ) -> None:
         """
         Handles the case where features are enabled for online serving by updating all affected
         feature tables.
@@ -172,18 +177,21 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: List[FeatureModel]
             Features to be enabled for online serving
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
+            Optional callback to update progress
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
         feature_lists = await self._get_online_enabled_feature_lists()
         # Refresh feast registry since it's needed for when materializing the features from offline
         # store feature tables to online store
         await self._create_or_update_feast_registry(feature_lists)
+        offline_table_count = len(ingest_graph_container.offline_store_table_name_to_features)
 
         new_tables = []
-        for (
+        for idx, (
             offline_store_table_name,
             offline_store_table_features,
-        ) in ingest_graph_container.iterate_features_by_table_name():
+        ) in enumerate(ingest_graph_container.iterate_features_by_table_name()):
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 table_name=offline_store_table_name,
             )
@@ -215,10 +223,18 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_model
                 )
 
+            if update_progress:
+                await update_progress(
+                    int((idx + 1) / offline_table_count * 60),
+                    f"Materializing features to online store for table {offline_store_table_name}",
+                )
+
         feature_store_model = await self._get_feature_store_model()
         new_tables.extend(
             await self._create_or_update_entity_lookup_feature_tables(
-                feature_lists, feature_store_model
+                feature_lists,
+                feature_store_model,
+                get_ranged_progress_callback(update_progress, 60, 90) if update_progress else None,
             )
         )
 
@@ -227,9 +243,16 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             new_tables=new_tables,
             new_features=features,
             feature_store_model=feature_store_model,
+            update_progress=get_ranged_progress_callback(update_progress, 90, 100)
+            if update_progress
+            else None,
         )
 
-    async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
+    async def handle_online_disabled_features(
+        self,
+        features: List[FeatureModel],
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    ) -> None:
         """
         Handles the case where a feature is disabled for online serving by updating all affected
         feature tables. In normal case there should only be one.
@@ -238,13 +261,17 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: FeatureModel
             Model of the feature to be disabled for online serving
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
+            Optional callback to update progress
         """
         feature_ids_to_remove = {feature.id for feature in features}
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
         feature_lists = await self._get_online_enabled_feature_lists()
-        for feature_table_dict in feature_table_data["data"]:
+        offline_table_count = len(feature_table_data["data"])
+
+        for idx, feature_table_dict in enumerate(feature_table_data["data"]):
             updated_feature_ids = [
                 feature_id
                 for feature_id in feature_table_dict["feature_ids"]
@@ -260,9 +287,18 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
             else:
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
+
+            if update_progress:
+                await update_progress(
+                    int((idx + 1) / offline_table_count * 90),
+                    f"Updating offline store feature table {feature_table_dict['name']} for online disabling features",
+                )
+
         await self._create_or_update_feast_registry(feature_lists)
         feature_store_model = await self._get_feature_store_model()
         await self._delete_entity_lookup_feature_tables(feature_lists, feature_store_model)
+        if update_progress:
+            await update_progress(100, "Updated entity lookup feature tables")
 
     @staticmethod
     def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
@@ -406,7 +442,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return output
 
     async def _create_or_update_entity_lookup_feature_tables(
-        self, feature_lists: List[FeatureListModel], feature_store_model: FeatureStoreModel
+        self,
+        feature_lists: List[FeatureListModel],
+        feature_store_model: FeatureStoreModel,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> List[OfflineStoreFeatureTableModel]:
         """
         Create or update feature tables to support parent entities lookup for a specific offline
@@ -418,6 +457,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Currently online enabled feature lists
         feature_store_model: FeatureStoreModel
             Feature store model
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
+            Optional callback to update progress
 
         Returns
         -------
@@ -439,7 +480,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             )
         }
         new_tables = []
-        for entity_lookup_feature_table in entity_lookup_feature_table_models:
+        for idx, entity_lookup_feature_table in enumerate(entity_lookup_feature_table_models):
             if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
                 await self.offline_store_feature_table_service.create_document(
                     entity_lookup_feature_table
@@ -451,6 +492,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     entity_lookup_feature_table
                 )
                 new_tables.append(entity_lookup_feature_table)
+
+            if update_progress:
+                await update_progress(
+                    int(idx / len(entity_lookup_feature_table_models) * 100),
+                    f"Update entity look up table {entity_lookup_feature_table.name}",
+                )
+
         return new_tables
 
     async def _delete_entity_lookup_feature_tables(
@@ -507,6 +555,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         new_tables: List[OfflineStoreFeatureTableModel],
         new_features: List[FeatureModel],
         feature_store_model: FeatureStoreModel,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         comments: List[Union[TableComment, ColumnComment]] = []
         for feature_table_model in new_tables:
@@ -521,5 +570,5 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             )
         )
         await self.offline_store_feature_table_comment_service.apply_comments(
-            feature_store_model, comments
+            feature_store_model, comments, update_progress
         )
