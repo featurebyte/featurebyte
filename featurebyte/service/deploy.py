@@ -346,9 +346,6 @@ class DeployService(OpsServiceMixin):
                         feature_list=feature_list,
                     )
 
-                if update_progress:
-                    await update_progress(80, "Updated feature list")
-
                 await self._update_offline_store_feature_tables(
                     feature_models,
                     is_online_enabling,
@@ -356,6 +353,9 @@ class DeployService(OpsServiceMixin):
                     if update_progress
                     else None,
                 )
+
+                if update_progress:
+                    await update_progress(100, "Completed updating feature list & features")
 
             except Exception as exc:
                 try:
