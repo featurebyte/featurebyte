@@ -39,7 +39,7 @@ from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.entity import (
     get_combined_serving_names,
-    get_combined_serving_names_pandas,
+    get_combined_serving_names_python,
 )
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
@@ -251,10 +251,9 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                     if step not in combined_lookup_steps:
                         combined_lookup_steps.extend(info.join_steps)
 
-        df_entity_rows = pd.DataFrame(request_data)
         self._apply_entity_lookup_steps(
             feast_store=feast_store,
-            df_entity_rows=df_entity_rows,
+            entity_rows=request_data,
             lookup_steps=combined_lookup_steps,
             entity_id_to_model=entity_id_to_model,
         )
@@ -265,7 +264,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             feast_service_name=feature_list.versioned_name,
             feature_id_to_versioned_name=feature_id_to_versioned_name,
             point_in_time_value=point_in_time_value,
-            df_request_data=df_entity_rows,
+            request_data=request_data,
         )
         df_features.append(df_feast_online_features)
         logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
@@ -321,20 +320,18 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             )
 
         # Lookup parent entities through feast store
-        df_entity_rows = pd.DataFrame(request_data)
         cls._apply_entity_lookup_steps(
             feast_store=feast_store,
-            df_entity_rows=df_entity_rows,
+            entity_rows=request_data,
             lookup_steps=lookup_steps,
             entity_id_to_model=entity_id_to_model,
         )
-        request_data = df_entity_rows.to_dict(orient="records")
         return request_data
 
     @staticmethod
     def _apply_entity_lookup_steps(
         feast_store: FeastFeatureStore,
-        df_entity_rows: pd.DataFrame,
+        entity_rows: List[Dict[str, Any]],
         lookup_steps: List[EntityRelationshipInfo],
         entity_id_to_model: Dict[PydanticObjectId, EntityModel],
     ) -> None:
@@ -346,8 +343,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         ----------
         feast_store: FeastFeatureStore
             Feast feature store
-        df_entity_rows: pd.DataFrame
-            DataFrame of the request data with the provided entities, to be updated in-place
+        entity_rows: List[Dict[str, Any]]
+            List of the request data with the provided entities, to be updated in-place
         lookup_steps: List[EntityRelationshipInfo]
             The list of lookup steps in terms of EntityRelationshipInfo. Each relationship will
             retrieve its parent entity (related_entity_id) using its child entity (entity_id)
@@ -357,28 +354,29 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         for lookup_step in lookup_steps:
             child_entity = entity_id_to_model[lookup_step.entity_id]
             parent_entity = entity_id_to_model[lookup_step.related_entity_id]
+            input_feature_name = child_entity.serving_names[0]
             lookup_feature_name = parent_entity.serving_names[0]
-            if lookup_feature_name in df_entity_rows:
+            if lookup_feature_name in entity_rows[0]:
                 continue
-            entity_lookup_rows = df_entity_rows[[child_entity.serving_names[0]]].to_dict(
-                orient="records"
-            )
+            entity_lookup_rows = [
+                {input_feature_name: row[input_feature_name]} for row in entity_rows
+            ]
             entity_lookup_feast_spec = [
                 f"{get_lookup_feature_table_name(lookup_step.id)}:{lookup_feature_name}"
             ]
-            entity_lookup_result = (
-                feast_store.get_online_features(entity_lookup_feast_spec, entity_lookup_rows)
-                .to_df()
-                .fillna("")
-            )
-            df_entity_rows[lookup_feature_name] = entity_lookup_result[lookup_feature_name].values
+            response = feast_store.get_online_features(entity_lookup_feast_spec, entity_lookup_rows)
+            response_dict = response.to_dict()
+            for entity_row, looked_up_value in zip(entity_rows, response_dict[lookup_feature_name]):
+                if looked_up_value is None:
+                    looked_up_value = ""
+                entity_row[lookup_feature_name] = looked_up_value
 
     async def _get_online_features_feast(
         self,
         feast_store: FeastFeatureStore,
         feast_service_name: str,
         feature_id_to_versioned_name: Dict[PydanticObjectId, str],
-        df_request_data: pd.DataFrame,
+        request_data: List[Dict[str, Any]],
         point_in_time_value: Optional[str],
     ) -> pd.DataFrame:
         """
@@ -397,8 +395,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             FeastFeatureStore object
         feast_service_name: str
             Name of the feast feature service to use
-        df_request_data: pd.DataFrame
-            DataFrame of the request data
+        request_data: List[Dict[str, Any]]
+            Request data with all the entities available
         feature_id_to_versioned_name: Dict[PydanticObjectId, str]
             Mapping from feature id to feature's versioned name
         point_in_time_value: Optional[str]
@@ -410,7 +408,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         """
         # Include point in time column if it is required
         if point_in_time_value is not None:
-            df_request_data[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
+            for row in request_data:
+                row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
 
         # Get required serving names and composite serving names that need further processing
         offline_store_table_docs = (
@@ -433,9 +432,10 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         if composite_serving_names:
             for serving_names in composite_serving_names:
                 combined_serving_names_col = get_combined_serving_names(list(serving_names))
-                df_request_data[combined_serving_names_col] = get_combined_serving_names_pandas(
-                    [df_request_data[serving_name] for serving_name in serving_names]
-                )
+                for row in request_data:
+                    row[combined_serving_names_col] = get_combined_serving_names_python(
+                        [row[serving_name] for serving_name in serving_names]
+                    )
                 added_column_names.append(combined_serving_names_col)
 
         # Get exactly the columns that are required by feast
@@ -443,7 +443,9 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         if point_in_time_value:
             needed_columns.append(SpecialColumnName.POINT_IN_TIME.value)
 
-        updated_request_data = df_request_data[needed_columns].to_dict(orient="records")
+        updated_request_data = []
+        for row in request_data:
+            updated_request_data.append({k: v for (k, v) in row.items() if k in needed_columns})
         versioned_feature_names = [
             feature_id_to_versioned_name[feature_id]
             for feature_id in feature_id_to_versioned_name.keys()
