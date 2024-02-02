@@ -1,18 +1,23 @@
 """
 Helper function for feature materialization
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional
 
 import copy
 from datetime import datetime
 from unittest.mock import patch
 
+from cachetools import TTLCache
 from feast import FeatureStore, FeatureView, utils
 from tqdm import tqdm
 
 from featurebyte.enum import InternalName
 
 DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
+
+feast_snowflake_session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=3600)
 
 
 def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
@@ -81,13 +86,25 @@ def materialize_partial(
         feature_view.projection.features, columns
     )
 
+    # FIXME: This patch modifies the cache used by the SnowflakeOfflineStore to introduce
+    # ttl of 10 minutes to recover from a stale connection.
+    if feature_store.config.offline_store.type == "snowflake.offline":
+        key = str(feature_store.config.offline_store)
+        if key not in feast_snowflake_session_cache:
+            feast_snowflake_session_cache[key] = {}
+        snowflake_session_cache = feast_snowflake_session_cache[key]
+    else:
+        snowflake_session_cache = {}
+
     # FIXME: This patch is related to an implementation detail of RedisOnlineStore: it checks
     # whether the feature table's stored feature timestamp is the same as current feature timestamp,
     # and if so skip the update. This doesn't work for partial materialization because a feature
     # table's stored feature timestamp is always up-to-date except on the first materialization run.
     # Patching this effectively skips the check, but a better solution might be to override the
     # implementation of RedisOnlineStore.online_write_batch().
-    with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"):
+    with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"), patch(
+        "feast.infra.utils.snowflake.snowflake_utils._cache", snowflake_session_cache
+    ):
         provider.materialize_single_feature_view(
             config=feature_store.config,
             feature_view=partial_feature_view,

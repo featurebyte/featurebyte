@@ -163,7 +163,7 @@ tasks:
     cmds:
       - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
         silent: true
-      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
+      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
 
   lint-safety:
     desc: "Run the linter[safety]"
