@@ -15,7 +15,7 @@ from bson import ObjectId
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SourceType
-from featurebyte.feast.service.feature_store import FeastFeatureStoreService, FeatureStore
+from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
 from featurebyte.models.offline_store_feature_table import (
@@ -337,7 +337,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
     async def update_online_store(
         self,
-        feature_store: FeatureStore,
+        feature_store: FeastFeatureStore,
         feature_table_model: OfflineStoreFeatureTableModel,
         session: BaseSession,
     ) -> None:
@@ -347,7 +347,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        feature_store: FeatureStore
+        feature_store: FeastFeatureStore
             Feast feature store
         feature_table_model: OfflineStoreFeatureTableModel
             Offline store feature table model
@@ -420,7 +420,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
     async def _materialize_online(
         self,
-        feature_store: FeatureStore,
+        feature_store: FeastFeatureStore,
         feature_table_model: OfflineStoreFeatureTableModel,
         columns: List[str],
         end_date: datetime,
@@ -460,7 +460,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             document_id=feature_table_model.id, data=update_schema
         )
 
-    async def _get_feast_feature_store(self) -> Optional[FeatureStore]:
+    async def _get_feast_feature_store(self) -> Optional[FeastFeatureStore]:
         """
         Get the FeastFeatureStore object
 

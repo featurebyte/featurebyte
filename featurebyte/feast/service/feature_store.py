@@ -6,7 +6,7 @@ from typing import Any, Optional
 import tempfile
 
 from bson import ObjectId
-from feast import FeatureStore as FeastFeatureStore
+from feast import FeatureStore as BaseFeastFeatureStore
 from feast import RepoConfig
 from feast.repo_config import FeastConfigBaseModel, RegistryConfig
 
@@ -19,11 +19,9 @@ from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
-class FeatureStore(FeastFeatureStore):
+class FeastFeatureStore(BaseFeastFeatureStore):
     """
     Feast feature store that also tracks the corresponding online store id in featurebyte
-
-    TODO: move to models?
     """
 
     def __init__(self, online_store_id: Optional[ObjectId], *args: Any, **kwargs: Any):
@@ -54,7 +52,7 @@ class FeastFeatureStoreService:
         self,
         feast_registry_id: ObjectId,
         online_store_id: Optional[ObjectId] = None,
-    ) -> FeatureStore:
+    ) -> FeastFeatureStore:
         """
         Create feast repo config
 
@@ -69,7 +67,7 @@ class FeastFeatureStoreService:
 
         Returns
         -------
-        FeatureStore
+        FeastFeatureStore
             Feast feature store
         """
         feast_registry = await self.feast_registry_service.get_document(
@@ -125,7 +123,7 @@ class FeastFeatureStoreService:
                 online_store=online_store,
                 entity_key_serialization_version=2,
             )
-            feast_feature_store = FeatureStore(
+            feast_feature_store = FeastFeatureStore(
                 config=repo_config,
                 online_store_id=effective_online_store_id,
             )
@@ -146,13 +144,13 @@ class FeastFeatureStoreService:
 
         return online_store
 
-    async def get_feast_feature_store_for_catalog(self) -> Optional[FeatureStore]:
+    async def get_feast_feature_store_for_catalog(self) -> Optional[FeastFeatureStore]:
         """
-        Retrieve a FeatureStore object for the current catalog
+        Retrieve a FeastFeatureStore object for the current catalog
 
         Returns
         -------
-        Optional[FeatureStore]
+        Optional[FeastFeatureStore]
         """
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
