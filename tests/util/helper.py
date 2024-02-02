@@ -35,6 +35,7 @@ from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, Qu
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
@@ -877,3 +878,10 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     ):
         return info
     raise AssertionError("Relationship not found")
+
+
+def check_null_filling_value(graph, node_name, expected_value):
+    """Check that the null filling value is correctly extracted from the graph"""
+    node = graph.get_node_by_name(node_name)
+    state = NullFillingValueExtractor(graph=graph).extract(node=node)
+    assert state.fill_value == expected_value, state

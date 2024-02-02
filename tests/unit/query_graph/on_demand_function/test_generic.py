@@ -48,8 +48,8 @@ def test_conditional_node(odfv_config, udf_config):
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
-    assert udf_stats == ["feat1 = feat2 if mask else feat1"]
-    assert udf_out_var == "feat1"
+    assert udf_stats == [("feat", "feat2 if mask else feat1")]
+    assert udf_out_var == "feat"
 
     # check on 2 inputs
     two_node_inputs = [VariableNameStr("feat1"), VariableNameStr("mask")]
@@ -66,8 +66,8 @@ def test_conditional_node(odfv_config, udf_config):
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
-    assert udf_stats == ["feat1 = 1 if mask else feat1"]
-    assert udf_out_var == "feat1"
+    assert udf_stats == [("feat", "1 if mask else feat1")]
+    assert udf_out_var == "feat"
 
 
 def test_filter_node(odfv_config, udf_config):

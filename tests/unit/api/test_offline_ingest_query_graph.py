@@ -670,17 +670,17 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
         feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
-        feat_2 = 0 if flag_1 else feat_2
-        feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_2)
-        flag_2 = pd.isna(feat_4)
-        feat_4 = 0 if flag_2 else feat_4
-        feat_5 = (
+        feat_3 = 0 if flag_1 else feat_2
+        feat_4 = np.nan if pd.isna(col_3) else json.loads(col_3)
+        feat_5 = get_relative_frequency(feat_4, key=col_2)
+        flag_2 = pd.isna(feat_5)
+        feat_6 = 0 if flag_2 else feat_5
+        feat_7 = (
             np.nan
-            if pd.isna(feat_4) or pd.isna(feat_2)
-            else np.divide(feat_4, feat_2)
+            if pd.isna(feat_6) or pd.isna(feat_3)
+            else np.divide(feat_6, feat_3)
         )
-        return feat_5
+        return feat_7
 
     return user_defined_function(x_1, x_2, x_3)
     $$
