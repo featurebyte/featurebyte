@@ -40,7 +40,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     InfoDict,
     ObjectClass,
     RightHandSide,
-    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,

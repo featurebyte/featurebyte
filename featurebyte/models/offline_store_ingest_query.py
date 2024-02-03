@@ -11,6 +11,7 @@ from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.common.string import sanitize_identifier
+from featurebyte.common.typing import Scalar
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -288,6 +289,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
     serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
     time_to_live_in_secs: Optional[int] = Field(default=None)
+    null_filling_value: Optional[Scalar] = Field(default=None)
     odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
     udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
 
@@ -311,6 +313,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         feature_dtype: DBVarType,
         feature_job_settings: List[FeatureJobSetting],
         feature_id: ObjectId,
+        null_filling_value: Optional[Scalar] = None,
     ) -> None:
         """
         Initialize offline store info by populating the on demand feature view info and user defined function info
@@ -325,8 +328,11 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             List of feature job settings used by the feature
         feature_id: ObjectId
             Feature ID
+        null_filling_value: Optional[Scalar]
+            Null filling value
         """
         self.time_to_live_in_secs = None
+        self.null_filling_value = null_filling_value
         if feature_job_settings:
             self.time_to_live_in_secs = min(
                 get_time_aggregate_ttl_in_secs(feature_job_setting)
@@ -334,7 +340,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
-        if self.is_decomposed or self.time_to_live_in_secs:
+        if self.is_decomposed or self.time_to_live_in_secs or self.null_filling_value is not None:
             # initialize the on demand feature view info
             odfv_info = OnDemandFeatureViewInfo(
                 feature_versioned_name=feature_versioned_name,
@@ -352,6 +358,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             self.odfv_info = odfv_info
 
         if self.is_decomposed:
+            # FIXME: should handle the case for null_filling_value
             # initialize the user defined function info
             udf_info = UserDefinedFunctionInfo(
                 sql_function_name=f"udf_{unique_func_name}",
@@ -448,20 +455,33 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
             code_generator = codegen_state.code_generator
         else:
-            assert ttl_seconds is not None, "TTL is not set"
             code_generator = CodeGenerator(template="on_demand_view.tpl")
-            statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
-                feature_name_version=feature_versioned_name,
-                input_df_name=input_df_name,
-                output_df_name=output_df_name,
-                input_column_expr=subset_frame_column_expr(
-                    input_df_name,
-                    feature_versioned_name,
-                ),
-                ttl_seconds=ttl_seconds,
-                var_name_generator=VariableNameGenerator(),
-            )
-            code_generator.add_statements(statements=[statements])
+            assert ttl_seconds is not None or self.null_filling_value is not None
+            if self.null_filling_value is not None:
+                statements = OnDemandFeatureViewExtractor.generate_null_filling_statements(
+                    feature_name_version=feature_versioned_name,
+                    output_df_name=output_df_name,
+                    input_column_expr=subset_frame_column_expr(
+                        input_df_name,
+                        feature_versioned_name,
+                    ),
+                    fill_value=self.null_filling_value,
+                )
+                code_generator.add_statements(statements=[statements])
+
+            if ttl_seconds is not None:
+                statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
+                    feature_name_version=feature_versioned_name,
+                    input_df_name=input_df_name,
+                    output_df_name=output_df_name,
+                    input_column_expr=subset_frame_column_expr(
+                        input_df_name,
+                        feature_versioned_name,
+                    ),
+                    ttl_seconds=ttl_seconds,
+                    var_name_generator=VariableNameGenerator(),
+                )
+                code_generator.add_statements(statements=[statements])
 
         codes = code_generator.generate(
             to_format=True,

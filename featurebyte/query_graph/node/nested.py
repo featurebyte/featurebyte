@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
+from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -43,6 +44,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     ObjectClass,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
@@ -171,6 +173,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     offline_store_table_name: str
     output_dtype: DBVarType
     primary_entity_dtypes: List[DBVarType]
+    null_filling_value: Optional[Scalar] = Field(default=None)
 
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):
@@ -631,24 +634,36 @@ class BaseGraphNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         input_var_name_expr: VarNameExpressionInfo,
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
+        null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
             raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
 
         node_params = self.parameters
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
+        statements: List[StatementT] = []
+        if node_params.null_filling_value is not None:
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            null_fill_expr = null_filling_func(
+                input_var_name_expr, ValueStr(node_params.null_filling_value)
+            )
+            statements.append((var_name, null_fill_expr))
+            input_var_name_expr = var_name
+
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             to_dt_expr = get_object_class_from_function_call(
                 "pd.to_datetime", input_var_name_expr, utc=True
             )
-            return [(var_name, to_dt_expr)], var_name
+            statements.append((var_name, to_dt_expr))
+            return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             json_conv_expr = json_conversion_func(input_var_name_expr)
-            return [(var_name, json_conv_expr)], var_name
-        return [], input_var_name_expr
+            statements.append((var_name, json_conv_expr))
+            return statements, var_name
+        return statements, input_var_name_expr
 
     def _derive_on_demand_view_code(
         self,
@@ -674,6 +689,7 @@ class BaseGraphNode(BasePrunableNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name_expr,
             json_conversion_func=_json_conversion_func,
+            null_filling_func=lambda expr, val: ExpressionStr(f"{expr}.fillna({val.as_input()})"),
         )
 
     def _derive_user_defined_function_code(
@@ -701,5 +717,8 @@ class BaseGraphNode(BasePrunableNode):
             input_var_name_expr=input_var_name,
             json_conversion_func=lambda expr: ExpressionStr(
                 f"np.nan if pd.isna({expr}) else json.loads({expr})"
+            ),
+            null_filling_func=lambda expr, val: ExpressionStr(
+                f"{val.as_input()} if pd.isna({expr}) else {expr}"
             ),
         )

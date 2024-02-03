@@ -217,16 +217,16 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 # materialize below
                 feature_table_model = None
 
-            if feature_table_model is not None:
-                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
-                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
-                    feature_table_model
-                )
-
             if update_progress:
                 await update_progress(
                     int((idx + 1) / offline_table_count * 60),
                     f"Materializing features to online store for table {offline_store_table_name}",
+                )
+
+            if feature_table_model is not None:
+                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
+                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
+                    feature_table_model
                 )
 
         feature_store_model = await self._get_feature_store_model()
@@ -481,6 +481,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         }
         new_tables = []
         for idx, entity_lookup_feature_table in enumerate(entity_lookup_feature_table_models):
+            if update_progress:
+                await update_progress(
+                    int(idx / len(entity_lookup_feature_table_models) * 100),
+                    f"Materializing entity look up table {entity_lookup_feature_table.name}",
+                )
+
             if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
                 await self.offline_store_feature_table_service.create_document(
                     entity_lookup_feature_table
@@ -492,12 +498,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     entity_lookup_feature_table
                 )
                 new_tables.append(entity_lookup_feature_table)
-
-            if update_progress:
-                await update_progress(
-                    int(idx / len(entity_lookup_feature_table_models) * 100),
-                    f"Update entity look up table {entity_lookup_feature_table.name}",
-                )
 
         return new_tables
 
