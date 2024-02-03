@@ -111,6 +111,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         if document.online_store_id == data.online_store_id:
             return None
         return CatalogOnlineStoreInitializeTaskPayload(
+            user_id=self.user.id,
             catalog_id=document_id,
             online_store_id=data.online_store_id,
             output_document_id=document.id,
