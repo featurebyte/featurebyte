@@ -56,8 +56,11 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
         return f'{action} deployment "{deployment_name}"'
 
     def lock_key(self, payload: DeploymentCreateUpdateTaskPayload) -> str:
-        # each deployment can only be created or updated once at a time
-        return f"deployment:{payload.output_document_id}:create_update"
+        # each deployment can only be created or updated once per catalog
+        # as each deployment create/update task will update the feature list & features,
+        # different deployments of the same catalog can be created or updated concurrently.
+        # therefore, the lock key is based on the catalog id to prevent concurrent creation or update
+        return f"deployment_catalog:{payload.catalog_id}:create_update"
 
     @property
     def lock_timeout(self) -> Optional[int]:
