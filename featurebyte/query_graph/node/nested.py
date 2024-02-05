@@ -748,9 +748,11 @@ class BaseGraphNode(BasePrunableNode):
         ttl_handling_column = None
         config_for_ttl = None
         ttl_seconds = None
+        assert isinstance(self.parameters, OfflineStoreIngestQueryGraphNodeParameters)
         if self.parameters.has_ttl:
             ttl_handling_column = column_name
             config_for_ttl = config
+            assert self.parameters.feature_job_setting is not None
             ttl_seconds = 2 * self.parameters.feature_job_setting.frequency_seconds
 
         return self._derive_on_demand_view_or_user_defined_function_helper(
