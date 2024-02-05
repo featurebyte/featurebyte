@@ -553,12 +553,9 @@ def test_feature__with_ttl_handling(float_feature):
         df = pd.DataFrame()
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        _feat_ts_col_map = {{}}
-        for _feat_ts_col_name in ["sum_1d_V231227__ts"]:
-            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
-                inputs[_feat_ts_col_name], unit="s", utc=True
-            )
-        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
+        feature_timestamp = pd.to_datetime(
+            inputs["sum_1d_V231227__ts"], unit="s", utc=True
+        )
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_V231227"][~mask] = np.nan
         df["sum_1d_V231227"] = inputs["sum_1d_V231227"]

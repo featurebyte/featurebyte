@@ -1,7 +1,7 @@
 """
 On demand feature view (for Feast) related classes and functions.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import textwrap
 
@@ -96,7 +96,6 @@ class OnDemandFeatureViewExtractor(
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
         comment: str = "",
-        feature_columns_used_for_ttl: Optional[List[str]] = None,
     ) -> StatementStr:
         """
         Generate time-to-live (TTL) handling statements for the feature or target query graph
@@ -117,28 +116,21 @@ class OnDemandFeatureViewExtractor(
             Variable name generator
         comment: str
             Comment
-        feature_columns_used_for_ttl: Optional[List[str]]
-            Feature columns used for TTL
 
         Returns
         -------
         StatementStr
             Generated code
         """
-        if feature_columns_used_for_ttl is None:
-            feature_columns_used_for_ttl = [feature_name_version]
-
         # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
         # hardcoding the timestamp postfix as we don't want to import feast module here
-        ttl_ts_columns = [f"{col}{FEAST_TIMESTAMP_POSTFIX}" for col in feature_columns_used_for_ttl]
+        ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
 
         # expressions
-        feat_ts_col_name = "_feat_ts_col_name"
-        feat_ts_col_map = "_feat_ts_col_map"
         subset_pit_expr = subset_frame_column_expr(
             input_df_name, SpecialColumnName.POINT_IN_TIME.value
         )
-        subset_feat_time_col_expr = f"{input_df_name}[{feat_ts_col_name}]"
+        subset_feat_time_col_expr = subset_frame_column_expr(input_df_name, ttl_ts_column)
         subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
 
         # variable names
@@ -160,10 +152,7 @@ class OnDemandFeatureViewExtractor(
             {comment}
             {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
-            {feat_ts_col_map} = {{}}
-            for {feat_ts_col_name} in {ttl_ts_columns}:
-                {feat_ts_col_map}[{feat_ts_col_name}] = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
-            {feat_time_name} = pd.DataFrame({feat_ts_col_map}).max(axis=1)
+            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
             {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
             {input_column_expr}[~{mask_var_name}] = np.nan
             {subset_output_column_expr} = {input_column_expr}

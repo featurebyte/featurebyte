@@ -796,6 +796,8 @@ def test_online_features__non_existing_order_id(
             if feature_name != "order_id"
         }
     )
+    expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0
+    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 149
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
     assert_dict_approx_equal(features[1], expected_non_existing_order_id_features)
 
