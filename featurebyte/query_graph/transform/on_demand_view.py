@@ -8,12 +8,11 @@ import textwrap
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import SpecialColumnName
-from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX, GraphNodeType
+from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
-    ExpressionStr,
     StatementStr,
     VariableNameGenerator,
     VariableNameStr,
@@ -174,7 +173,6 @@ class OnDemandFeatureViewExtractor(
         )
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:
-        has_ttl = kwargs.get("ttl_seconds", 0)
         feature_name_version = kwargs.get("feature_name_version", None)
         assert feature_name_version is not None, "feature_name_version must be provided"
         global_state = OnDemandFeatureViewGlobalState(
@@ -187,38 +185,6 @@ class OnDemandFeatureViewExtractor(
             topological_order_map=self.graph.node_topological_order_map,
         )
         output_df_name = global_state.code_generation_config.output_df_name
-        if has_ttl:
-            if isinstance(var_name_or_expr, ExpressionStr):
-                input_var_name = global_state.var_name_generator.convert_to_variable_name(
-                    variable_name_prefix="feat", node_name=None
-                )
-                global_state.code_generator.add_statements(
-                    statements=[(input_var_name, var_name_or_expr)]
-                )
-            else:
-                input_var_name = var_name_or_expr
-
-            feature_columns_used_for_ttl = [
-                node.parameters.output_column_name  # type: ignore[attr-defined]
-                for node in self.graph.iterate_sorted_graph_nodes(
-                    graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
-                )
-            ]
-            ttl_statements = self.generate_ttl_handling_statements(
-                feature_name_version=feature_name_version,
-                input_df_name=global_state.code_generation_config.input_df_name,
-                output_df_name=global_state.code_generation_config.output_df_name,
-                input_column_expr=input_var_name,
-                ttl_seconds=has_ttl,
-                var_name_generator=global_state.var_name_generator,
-                comment=f"# TTL handling for {feature_name_version}",
-                feature_columns_used_for_ttl=feature_columns_used_for_ttl,
-            )
-            global_state.code_generator.add_statements(statements=[ttl_statements])
-        else:
-            output_var = VariableNameStr(
-                subset_frame_column_expr(output_df_name, feature_name_version)
-            )
-            global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
-
+        output_var = VariableNameStr(subset_frame_column_expr(output_df_name, feature_name_version))
+        global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
         return global_state

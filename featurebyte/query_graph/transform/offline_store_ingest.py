@@ -3,7 +3,6 @@ This module contains offline store ingest query extraction related classes.
 """
 from typing import Any, Dict, List, Optional, Set
 
-import pdb
 from dataclasses import dataclass
 
 from featurebyte.enum import DBVarType
