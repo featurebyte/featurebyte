@@ -205,6 +205,9 @@ async def test_feature_list__contains_relationships_info(
     # and grand_child_entity is not included in the feature list
     assert new_feature_list.relationships_info == []
 
+    # should contain only features that require additional entity lookups
+    assert new_feature_list.features_entity_lookup_info == []
+
 
 @pytest.mark.asyncio
 async def test_update_readiness_distribution(feature_list_service, feature_list):
