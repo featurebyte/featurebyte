@@ -395,63 +395,63 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     feature_zscore = (feature_raw - feature_avg) / feature_std
     feature_zscore.name = "feature_zscore"
     feature_zscore.save()
-    # deploy_features_through_api([feature_zscore])
-    #
-    # # check offline ingest query graph
-    # feature_model = feature_zscore.cached_model
-    # check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    # check_on_demand_feature_code_generation(feature_model=feature_model)
-    #
-    # # check on-demand view code
-    # offline_store_info = feature_model.offline_store_info
-    # assert offline_store_info.odfv_info is not None
-    # expected = f"""
-    # import json
-    # import numpy as np
-    # import pandas as pd
-    # import scipy as sp
-    #
-    #
-    # def odfv_feature_zscore_v231227_{feature_model.id}(
-    #     inputs: pd.DataFrame,
-    # ) -> pd.DataFrame:
-    #     df = pd.DataFrame()
-    #     request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-    #     cutoff = request_time - pd.Timedelta(seconds=3600)
-    #     feat_ts = pd.to_datetime(
-    #         inputs["__feature_zscore_V231227__part1__ts"], unit="s", utc=True
-    #     )
-    #     mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
-    #     inputs.loc[~mask, "__feature_zscore_V231227__part1"] = np.nan
-    #     feat = pd.Series(
-    #         np.where(
-    #             pd.isna(inputs["__feature_zscore_V231227__part0"])
-    #             | pd.isna(inputs["__feature_zscore_V231227__part1"]),
-    #             np.nan,
-    #             inputs["__feature_zscore_V231227__part0"]
-    #             - inputs["__feature_zscore_V231227__part1"],
-    #         ),
-    #         index=inputs["__feature_zscore_V231227__part0"].index,
-    #     )
-    #     request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-    #     cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
-    #     feat_ts_1 = pd.to_datetime(
-    #         inputs["__feature_zscore_V231227__part2__ts"], unit="s", utc=True
-    #     )
-    #     mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
-    #     inputs.loc[~mask_1, "__feature_zscore_V231227__part2"] = np.nan
-    #     feat_1 = pd.Series(
-    #         np.where(
-    #             pd.isna(feat) | pd.isna(inputs["__feature_zscore_V231227__part2"]),
-    #             np.nan,
-    #             np.divide(feat, inputs["__feature_zscore_V231227__part2"]),
-    #         ),
-    #         index=feat.index,
-    #     )
-    #     df["feature_zscore_V231227"] = feat_1
-    #     return df
-    # """
-    # assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+    deploy_features_through_api([feature_zscore])
+
+    # check offline ingest query graph
+    feature_model = feature_zscore.cached_model
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
+
+    # check on-demand view code
+    offline_store_info = feature_model.offline_store_info
+    assert offline_store_info.odfv_info is not None
+    expected = f"""
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def odfv_feature_zscore_v231227_{feature_model.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df = pd.DataFrame()
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        feat_ts = pd.to_datetime(
+            inputs["__feature_zscore_V231227__part1__ts"], unit="s", utc=True
+        )
+        mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
+        inputs.loc[~mask, "__feature_zscore_V231227__part1"] = np.nan
+        feat = pd.Series(
+            np.where(
+                pd.isna(inputs["__feature_zscore_V231227__part0"])
+                | pd.isna(inputs["__feature_zscore_V231227__part1"]),
+                np.nan,
+                inputs["__feature_zscore_V231227__part0"]
+                - inputs["__feature_zscore_V231227__part1"],
+            ),
+            index=inputs["__feature_zscore_V231227__part0"].index,
+        )
+        request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
+        feat_ts_1 = pd.to_datetime(
+            inputs["__feature_zscore_V231227__part2__ts"], unit="s", utc=True
+        )
+        mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
+        inputs.loc[~mask_1, "__feature_zscore_V231227__part2"] = np.nan
+        feat_1 = pd.Series(
+            np.where(
+                pd.isna(feat) | pd.isna(inputs["__feature_zscore_V231227__part2"]),
+                np.nan,
+                np.divide(feat, inputs["__feature_zscore_V231227__part2"]),
+            ),
+            index=feat.index,
+        )
+        df["feature_zscore_V231227"] = feat_1
+        return df
+    """
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
     feat = feature_raw[feature_avg > 0]
     feat.name = "feature"
