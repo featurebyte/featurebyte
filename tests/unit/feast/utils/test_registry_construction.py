@@ -354,7 +354,12 @@ def test_feast_registry_construction(
         df = pd.DataFrame()
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in ["sum_1d_V240205__ts"]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_{get_version()}"][~mask] = np.nan
         df["sum_1d_{get_version()}"] = inputs["sum_1d_{get_version()}"]

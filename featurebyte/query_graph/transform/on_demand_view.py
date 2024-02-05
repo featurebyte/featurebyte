@@ -1,13 +1,14 @@
 """
 On demand feature view (for Feast) related classes and functions.
 """
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import textwrap
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
+from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX, GraphNodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -96,6 +97,7 @@ class OnDemandFeatureViewExtractor(
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
         comment: str = "",
+        feature_columns_used_for_ttl: Optional[List[str]] = None,
     ) -> StatementStr:
         """
         Generate time-to-live (TTL) handling statements for the feature or target query graph
@@ -116,19 +118,28 @@ class OnDemandFeatureViewExtractor(
             Variable name generator
         comment: str
             Comment
+        feature_columns_used_for_ttl: Optional[List[str]]
+            Feature columns used for TTL
 
         Returns
         -------
         StatementStr
             Generated code
         """
+        if feature_columns_used_for_ttl is None:
+            feature_columns_used_for_ttl = [feature_name_version]
+
+        # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
+        # hardcoding the timestamp postfix as we don't want to import feast module here
+        ttl_ts_columns = [f"{col}{FEAST_TIMESTAMP_POSTFIX}" for col in feature_columns_used_for_ttl]
+
         # expressions
+        feat_ts_col_name = "_feat_ts_col_name"
+        feat_ts_col_map = "_feat_ts_col_map"
         subset_pit_expr = subset_frame_column_expr(
             input_df_name, SpecialColumnName.POINT_IN_TIME.value
         )
-        subset_feat_time_col_expr = subset_frame_column_expr(
-            input_df_name, InternalName.FEATURE_TIMESTAMP_COLUMN.value
-        )
+        subset_feat_time_col_expr = f"{input_df_name}[{feat_ts_col_name}]"
         subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
 
         # variable names
@@ -150,7 +161,10 @@ class OnDemandFeatureViewExtractor(
             {comment}
             {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
-            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, utc=True)
+            {feat_ts_col_map} = {{}}
+            for {feat_ts_col_name} in {ttl_ts_columns}:
+                {feat_ts_col_map}[{feat_ts_col_name}] = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
+            {feat_time_name} = pd.DataFrame({feat_ts_col_map}).max(axis=1)
             {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
             {input_column_expr}[~{mask_var_name}] = np.nan
             {subset_output_column_expr} = {input_column_expr}
@@ -184,6 +198,12 @@ class OnDemandFeatureViewExtractor(
             else:
                 input_var_name = var_name_or_expr
 
+            feature_columns_used_for_ttl = [
+                node.parameters.output_column_name  # type: ignore[attr-defined]
+                for node in self.graph.iterate_sorted_graph_nodes(
+                    graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
+                )
+            ]
             ttl_statements = self.generate_ttl_handling_statements(
                 feature_name_version=feature_name_version,
                 input_df_name=global_state.code_generation_config.input_df_name,
@@ -192,6 +212,7 @@ class OnDemandFeatureViewExtractor(
                 ttl_seconds=has_ttl,
                 var_name_generator=global_state.var_name_generator,
                 comment=f"# TTL handling for {feature_name_version}",
+                feature_columns_used_for_ttl=feature_columns_used_for_ttl,
             )
             global_state.code_generator.add_statements(statements=[ttl_statements])
         else:

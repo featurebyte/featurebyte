@@ -157,3 +157,9 @@ class GraphNodeType(StrEnum):
             cls.SCD_VIEW,
             cls.CHANGE_VIEW,
         }
+
+
+# copy the constant here to avoid importing feast module
+# feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
+# this is used to retrieve offline feature table event timestamp
+FEAST_TIMESTAMP_POSTFIX = "__ts"

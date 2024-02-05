@@ -241,7 +241,15 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in [
+            "__feature_V231227__part1__ts",
+            "__feature_V231227__part0__ts",
+        ]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_3[~mask] = np.nan
         df["feature_V231227"] = feat_3
@@ -347,7 +355,16 @@ def test_feature__ttl_item_aggregate_request_column(
         # TTL handling for composite_feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in [
+            "__composite_feature_V231227__part0__ts",
+            "__composite_feature_V231227__part2__ts",
+            "__composite_feature_V231227__part1__ts",
+        ]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_3[~mask] = np.nan
         df["composite_feature_V231227"] = feat_3
@@ -430,7 +447,16 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         # TTL handling for feature_zscore_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in [
+            "__feature_zscore_V231227__part0__ts",
+            "__feature_zscore_V231227__part2__ts",
+            "__feature_zscore_V231227__part1__ts",
+        ]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_1[~mask] = np.nan
         df["feature_zscore_V231227"] = feat_1
@@ -463,7 +489,15 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in [
+            "__feature_V231227__part1__ts",
+            "__feature_V231227__part0__ts",
+        ]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat[~mask] = np.nan
         df["feature_V231227"] = feat
@@ -539,7 +573,12 @@ def test_feature__with_ttl_handling(float_feature):
         df = pd.DataFrame()
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {{}}
+        for _feat_ts_col_name in ["sum_1d_V231227__ts"]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_V231227"][~mask] = np.nan
         df["sum_1d_V231227"] = inputs["sum_1d_V231227"]
@@ -739,7 +778,16 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         # TTL handling for TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=172800)
-        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        _feat_ts_col_map = {}
+        for _feat_ts_col_name in [
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0__ts",
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1__ts",
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2__ts",
+        ]:
+            _feat_ts_col_map[_feat_ts_col_name] = pd.to_datetime(
+                inputs[_feat_ts_col_name], unit="s", utc=True
+            )
+        feature_timestamp = pd.DataFrame(_feat_ts_col_map).max(axis=1)
         mask_2 = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_4[~mask_2] = np.nan
         df[

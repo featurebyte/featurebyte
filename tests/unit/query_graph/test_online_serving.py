@@ -9,9 +9,11 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from bson import ObjectId
+from feast.online_response import TIMESTAMP_POSTFIX
 
 from featurebyte.enum import SourceType
 from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -487,3 +489,8 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
         "tests/fixtures/expected_online_feature_retrieval_filled_versions_multiple_groups.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_feast_timestamp_postfix_consistency():
+    """This test is used to check the consistency of the FEAST_TIMESTAMP_POSTFIX constant"""
+    assert FEAST_TIMESTAMP_POSTFIX == TIMESTAMP_POSTFIX == "__ts"
