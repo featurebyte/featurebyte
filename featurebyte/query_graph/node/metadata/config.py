@@ -84,6 +84,8 @@ class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
             return output
         if dtype in DBVarType.supported_timestamp_types():
             return "pd.Timestamp"
+        if dtype == DBVarType.DATE:
+            return "datetime.date"
         if dtype in DBVarType.json_conversion_types():
             return "str"
         raise ValueError(f"Unsupported dtype: {dtype}")
@@ -114,6 +116,7 @@ class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
             "float": "DOUBLE",
             "int": "BIGINT",
             "pd.Timestamp": "TIMESTAMP",
+            "datetime.date": "DATE",
         }
         output = mapping.get(py_type)
         if output:

@@ -193,6 +193,7 @@ def test_code_generator__on_demand_view():
         codes.strip()
         == textwrap.dedent(
             """
+        import datetime
         import json
         import numpy as np
         import pandas as pd
@@ -229,6 +230,7 @@ def test_code_generator__on_demand_function():
         py_codes.strip()
         == textwrap.dedent(
             """
+        import datetime
         import json
         import numpy as np
         import pandas as pd
@@ -262,6 +264,7 @@ def test_code_generator__on_demand_function():
             LANGUAGE PYTHON
             COMMENT 'On demand function used for feature engineering'
             AS $$
+            import datetime
             import json
             import numpy as np
             import pandas as pd

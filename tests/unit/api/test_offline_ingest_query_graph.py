@@ -216,6 +216,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     # check on-demand view code
     assert offline_store_info.odfv_info is not None
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -315,6 +316,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -399,6 +401,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info.odfv_info is not None
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -447,6 +450,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     assert offline_store_info.is_decomposed is True
 
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -527,6 +531,7 @@ def test_feature__with_ttl_handling(float_feature):
     deploy_features_through_api([float_feature])
     offline_store_info = float_feature.cached_model.offline_store_info
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -647,6 +652,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     LANGUAGE PYTHON
     COMMENT ''
     AS $$
+    import datetime
     import json
     import numpy as np
     import pandas as pd
@@ -688,6 +694,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     assert offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
 
     expected = """
+    import datetime
     import json
     import numpy as np
     import pandas as pd

@@ -78,6 +78,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
         odfv_info.codes.strip()
         == textwrap.dedent(
             f"""
+        import datetime
         import json
         import numpy as np
         import pandas as pd
@@ -106,6 +107,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
         odfv_info.codes.strip()
         == textwrap.dedent(
             f"""
+        import datetime
         import json
         import numpy as np
         import pandas as pd
@@ -129,6 +131,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
         odfv_info.codes.strip()
         == textwrap.dedent(
             f"""
+        import datetime
         import json
         import numpy as np
         import pandas as pd
