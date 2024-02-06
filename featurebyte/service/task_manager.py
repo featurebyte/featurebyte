@@ -102,7 +102,7 @@ class TaskManager:
 
         return Task(
             id=UUID(task_id),
-            status=task_result.status,
+            status=task_result.status if task_result else document.get("status"),
             output_path=output_path,
             payload=payload,
             traceback=traceback,
