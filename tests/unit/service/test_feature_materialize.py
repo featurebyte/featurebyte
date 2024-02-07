@@ -12,6 +12,7 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
+from featurebyte.models.offline_store_feature_table import OnlineStoreLastMaterializedAt
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
@@ -169,6 +170,14 @@ async def offline_store_feature_table_no_entity_fixture(
         return model
 
 
+@pytest_asyncio.fixture(name="feast_feature_store")
+async def feast_feature_store_fixture(app_container):
+    """
+    Fixture for the feast feature store
+    """
+    return await app_container.feast_feature_store_service.get_feast_feature_store_for_catalog()
+
+
 @pytest.fixture(name="mock_materialize_partial")
 def mock_materialize_partial_fixture():
     """
@@ -279,7 +288,8 @@ async def test_scheduled_materialize_features(
         update_fixtures,
     )
 
-    # Check online materialization called if there is a registered online store
+    # Check online materialization called if there is a registered online store (note: start_date is
+    # None because the initialize_new_columns is mocked when deploying)
     if is_online_store_registered_for_catalog:
         _, kwargs = mock_materialize_partial.call_args
         _ = kwargs.pop("feature_store")
@@ -300,6 +310,15 @@ async def test_scheduled_materialize_features(
     )
     assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
 
+    # Check online last materialization timestamp updated
+    if is_online_store_registered_for_catalog:
+        assert len(updated_feature_table.online_stores_last_materialized_at) == 1
+        assert updated_feature_table.online_stores_last_materialized_at[0].value == datetime(
+            2022, 1, 1, 0, 0
+        )
+    else:
+        assert len(updated_feature_table.online_stores_last_materialized_at) == 0
+
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
@@ -307,6 +326,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     app_container,
     feature_materialize_service,
     offline_store_feature_table,
+    online_store,
     mock_materialize_partial,
 ):
     """
@@ -314,7 +334,12 @@ async def test_scheduled_materialize_features_if_materialized_before(
     before. When calling online materialize it should provide the feature table's
     last_materialized_at as start date.
     """
-    offline_store_feature_table.last_materialized_at = datetime(2022, 1, 1, 0, 0)
+    offline_store_feature_table.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 1, 0, 0),
+        )
+    ]
 
     with freeze_time("2022-01-02 00:00:00"):
         await feature_materialize_service.scheduled_materialize_features(
@@ -333,11 +358,19 @@ async def test_scheduled_materialize_features_if_materialized_before(
         "with_feature_timestamp": True,
     }
 
-    # Check last materialization timestamp updated
+    # Check offline last materialization timestamp updated
     updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
         offline_store_feature_table.id
     )
     assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
+
+    # Check online last materialization timestamp updated
+    offline_store_feature_table.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 2, 0, 0),
+        )
+    ]
 
 
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
@@ -377,6 +410,7 @@ async def test_initialize_new_columns__table_does_not_exist(
         assert feature_view.name == "cat1_cust_id_30m"
         assert kwargs == {
             "columns": [f"sum_30m_{get_version()}"],
+            "start_date": None,
             "end_date": datetime(2022, 1, 1, 0, 0),
             "with_feature_timestamp": True,
         }
@@ -424,6 +458,7 @@ async def test_initialize_new_columns__table_exists(
     assert kwargs == {
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 10, 15, 10, 0, 0),
+        "start_date": None,
         "with_feature_timestamp": True,
     }
 
@@ -564,3 +599,116 @@ async def test_materialize_features_no_entity_databricks_unity(
         "tests/fixtures/feature_materialize/initialize_features_no_entity_databricks_unity.sql",
         update_fixtures,
     )
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_update_online_store__never_materialized_before(
+    app_container,
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    mock_materialize_partial,
+    feast_feature_store,
+):
+    """
+    Test update_online_store for a new online store
+    """
+    offline_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
+
+    async def mock_execute_query(query):
+        if 'MAX("__feature_timestamp")' in query:
+            return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+
+    offline_store_feature_table.last_materialized_at = offline_last_materialized_at
+    offline_store_feature_table.online_stores_last_materialized_at = []
+    await feature_materialize_service.update_online_store(
+        feature_store=feast_feature_store,
+        feature_table_model=offline_store_feature_table,
+        session=mock_snowflake_session,
+    )
+
+    # Check materialized_partial called correctly
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "cat1_cust_id_30m"
+    assert kwargs == {
+        "columns": [f"sum_30m_{get_version()}"],
+        "end_date": offline_last_materialized_at,
+        "start_date": None,
+        "with_feature_timestamp": True,
+    }
+
+    # Check online last updated correctly
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table.id
+    )
+    assert updated_feature_table.online_stores_last_materialized_at == [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=feast_feature_store.online_store_id,
+            value=offline_last_materialized_at,
+        )
+    ]
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_update_online_store__materialized_before(
+    app_container,
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    mock_materialize_partial,
+    feast_feature_store,
+):
+    """
+    Test update_online_store when the online store was materialized before but is now outdated (e.g.
+    it was detached from the catalog for a while)
+    """
+    offline_last_materialized_at = datetime(2022, 12, 15, 10, 0, 0)
+    online_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
+
+    async def mock_execute_query(query):
+        if 'MAX("__feature_timestamp")' in query:
+            return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+
+    offline_store_feature_table.last_materialized_at = offline_last_materialized_at
+    offline_store_feature_table.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=feast_feature_store.online_store_id,
+            value=online_last_materialized_at,
+        )
+    ]
+    await feature_materialize_service.update_online_store(
+        feature_store=feast_feature_store,
+        feature_table_model=offline_store_feature_table,
+        session=mock_snowflake_session,
+    )
+
+    # Check materialized_partial called correctly
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "cat1_cust_id_30m"
+    assert kwargs == {
+        "columns": [f"sum_30m_{get_version()}"],
+        "end_date": offline_last_materialized_at,
+        "start_date": online_last_materialized_at,
+        "with_feature_timestamp": True,
+    }
+
+    # Check online last updated correctly
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table.id
+    )
+    assert updated_feature_table.online_stores_last_materialized_at == [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=feast_feature_store.online_store_id,
+            value=offline_last_materialized_at,
+        )
+    ]

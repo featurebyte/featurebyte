@@ -55,9 +55,9 @@ async def test_submit_task(task_manager):
     assert isinstance(task.date_done, datetime.datetime)
 
     # ensure task is in the tasks list
-    tasks, total = await task_manager.list_tasks()
-    assert total == 1
-    assert str(tasks[0].id) == task_id
+    tasks, _ = await task_manager.list_tasks()
+    matching_tasks = [task for task in tasks if str(task.id) == task_id]
+    assert len(matching_tasks) == 1
 
 
 @pytest.mark.asyncio

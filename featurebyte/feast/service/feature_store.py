@@ -1,13 +1,14 @@
 """
 This module contains classes for constructing feast repository config
 """
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import tempfile
 
 from bson import ObjectId
-from feast import FeatureStore, RepoConfig
-from feast.repo_config import RegistryConfig
+from feast import FeatureStore as BaseFeastFeatureStore
+from feast import RepoConfig
+from feast.repo_config import FeastConfigBaseModel, RegistryConfig
 
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.model.online_store import get_feast_online_store_details
@@ -16,6 +17,16 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+
+class FeastFeatureStore(BaseFeastFeatureStore):
+    """
+    Feast feature store that also tracks the corresponding online store id in featurebyte
+    """
+
+    def __init__(self, online_store_id: Optional[ObjectId], *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.online_store_id = online_store_id
 
 
 class FeastFeatureStoreService:
@@ -40,7 +51,8 @@ class FeastFeatureStoreService:
     async def get_feast_feature_store(
         self,
         feast_registry_id: ObjectId,
-    ) -> FeatureStore:
+        online_store_id: Optional[ObjectId] = None,
+    ) -> FeastFeatureStore:
         """
         Create feast repo config
 
@@ -48,10 +60,14 @@ class FeastFeatureStoreService:
         ----------
         feast_registry_id: ObjectId
             Feast registry id
+        online_store_id: Optional[ObjectId]
+            Online store id to use if specified instead of using the one in the catalog. This is used
+            when the returned feature store is about to be used to update a different online store
+            (e.g. for initialization purpose)
 
         Returns
         -------
-        FeatureStore
+        FeastFeatureStore
             Feast feature store
         """
         feast_registry = await self.feast_registry_service.get_document(
@@ -66,15 +82,12 @@ class FeastFeatureStoreService:
 
         # Get online store feast config
         catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
-        if catalog.online_store_id is not None:
-            online_store_details = (
-                await self.online_store_service.get_document(catalog.online_store_id)
-            ).details
-            online_store = get_feast_online_store_details(
-                online_store_details
-            ).to_feast_online_store_config()
-        else:
-            online_store = None
+        effective_online_store_id = (
+            online_store_id if online_store_id is not None else catalog.online_store_id
+        )
+        online_store = await self._get_feast_online_store_config(
+            online_store_id=effective_online_store_id,
+        )
 
         with tempfile.NamedTemporaryFile() as temp_file:
             # Use temp file to pass the registry proto to the feature store. Once the
@@ -110,15 +123,34 @@ class FeastFeatureStoreService:
                 online_store=online_store,
                 entity_key_serialization_version=2,
             )
-            return cast(FeatureStore, FeatureStore(config=repo_config))
+            feast_feature_store = FeastFeatureStore(
+                config=repo_config,
+                online_store_id=effective_online_store_id,
+            )
+            return feast_feature_store
 
-    async def get_feast_feature_store_for_catalog(self) -> Optional[FeatureStore]:
+    async def _get_feast_online_store_config(
+        self, online_store_id: Optional[ObjectId]
+    ) -> Optional[FeastConfigBaseModel]:
+        if online_store_id is not None:
+            online_store_details = (
+                await self.online_store_service.get_document(online_store_id)
+            ).details
+            online_store = get_feast_online_store_details(
+                online_store_details
+            ).to_feast_online_store_config()
+        else:
+            online_store = None
+
+        return online_store
+
+    async def get_feast_feature_store_for_catalog(self) -> Optional[FeastFeatureStore]:
         """
-        Retrieve a FeatureStore object for the current catalog
+        Retrieve a FeastFeatureStore object for the current catalog
 
         Returns
         -------
-        Optional[FeatureStore]
+        Optional[FeastFeatureStore]
         """
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:

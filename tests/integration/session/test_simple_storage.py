@@ -35,10 +35,10 @@ def test_s3_storage():
     Test S3 storage
     """
     storage = S3SimpleStorage(
-        storage_url=f'{os.getenv("DATABRICKS_STORAGE_URL")}/test',
+        storage_url="https://s3.ap-southeast-1.amazonaws.com/featurebyte-cicd/test",
         storage_credential=S3StorageCredential(
-            s3_access_key_id=os.environ["DATABRICKS_STORAGE_ACCESS_KEY_ID"],
-            s3_secret_access_key=os.environ["DATABRICKS_STORAGE_ACCESS_KEY_SECRET"],
+            s3_access_key_id=os.environ["S3_ACCESS_KEY"],
+            s3_secret_access_key=os.environ["S3_SECRET_KEY"],
         ),
     )
     storage.test_connection()
