@@ -11,7 +11,10 @@ from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
 from featurebyte.worker.task.base import BaseTask
-from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
+from featurebyte.worker.util.batch_feature_creator import (
+    BatchFeatureCreator,
+    patch_api_object_cache,
+)
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
@@ -40,6 +43,7 @@ class FeatureListCreateWithBatchFeatureCreationTask(
     ) -> str:
         return f'Save feature list "{payload.name}"'
 
+    @patch_api_object_cache()
     async def execute(self, payload: FeatureListCreateWithBatchFeatureCreationTaskPayload) -> Any:
         # create list of features
         feature_ids = await self.batch_feature_creator.batch_feature_create(
