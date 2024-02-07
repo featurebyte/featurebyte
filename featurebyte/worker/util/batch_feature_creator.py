@@ -1,15 +1,18 @@
 """
 Batch feature creator
 """
-from typing import Any, Dict, Iterator, List, Sequence, Set, Union
+from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
 
 import asyncio
 import concurrent
 import os
 from contextlib import contextmanager
+from functools import wraps
 
 from bson import ObjectId
+from cachetools import TTLCache
 
+from featurebyte.api.api_object import ApiObject
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
@@ -29,6 +32,43 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
+
+
+def patch_api_object_cache(ttl: int = 7200) -> Any:
+    """
+    A decorator to patch the api object cache settings, specifically for asyncio functions.
+
+    Parameters
+    ----------
+    ttl: int
+        The time to live for the cache
+
+    Returns
+    -------
+    A decorator function that can be used to wrap async test functions.
+    """
+
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, Any]]
+    ) -> Callable[..., Coroutine[Any, Any, Any]]:
+        # pylint: disable=protected-access
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Save the original cache settings
+            original_cache = ApiObject._cache
+
+            # Patch the cache settings
+            ApiObject._cache = TTLCache(maxsize=original_cache.maxsize, ttl=ttl)
+            try:
+                # Call the async test function
+                return await func(*args, **kwargs)
+            finally:
+                # Restore the original cache settings
+                ApiObject._cache = original_cache
+
+        return wrapper
+
+    return decorator
 
 
 @contextmanager
