@@ -55,7 +55,7 @@ def augment_response_with_on_demand_transforms(
             )
 
     initial_response = OnlineResponse(online_features_response)
-    initial_response_df = initial_response.to_df()
+    initial_response_df = initial_response.to_df(include_event_timestamps=True)
 
     # Apply on demand transformations and augment the result rows
     odfv_result_names = set()

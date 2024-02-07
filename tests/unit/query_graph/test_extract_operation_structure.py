@@ -347,7 +347,7 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
         "name": "a_2h_average",
         "node_names": {"input_1", "eq_1", "filter_1", "project_3", "groupby_1"},
         "node_name": "filter_1",
-        "transforms": ["filter"],
+        "transforms": ["eq(value=1)", "filter"],
         "type": "post_aggregation",
         "dtype": "FLOAT",
     }

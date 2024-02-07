@@ -703,7 +703,13 @@ def check_on_demand_feature_code_generation(
     # add a timestamp column & a feature timestamp column
     if "POINT_IN_TIME" not in df.columns:
         df["POINT_IN_TIME"] = pd.date_range("2020-01-01", freq="1h", periods=df.shape[0])
-    df["__feature_timestamp"] = pd.to_datetime(df["POINT_IN_TIME"]) - pd.Timedelta(seconds=10)
+
+    feat_event_ts = pd.to_datetime(df["POINT_IN_TIME"]) - pd.Timedelta(seconds=10)
+    df["__feature_timestamp"] = feat_event_ts
+
+    for col in df.columns:
+        if col != "POINT_IN_TIME":
+            df[f"{col}__ts"] = feat_event_ts.astype(int) // 1e9
 
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes

@@ -7,12 +7,12 @@ import textwrap
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
+from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
-    ExpressionStr,
     StatementStr,
     VariableNameGenerator,
     VariableNameStr,
@@ -122,13 +122,15 @@ class OnDemandFeatureViewExtractor(
         StatementStr
             Generated code
         """
+        # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
+        # hardcoding the timestamp postfix as we don't want to import feast module here
+        ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
+
         # expressions
         subset_pit_expr = subset_frame_column_expr(
             input_df_name, SpecialColumnName.POINT_IN_TIME.value
         )
-        subset_feat_time_col_expr = subset_frame_column_expr(
-            input_df_name, InternalName.FEATURE_TIMESTAMP_COLUMN.value
-        )
+        subset_feat_time_col_expr = subset_frame_column_expr(input_df_name, ttl_ts_column)
         subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
 
         # variable names
@@ -150,7 +152,7 @@ class OnDemandFeatureViewExtractor(
             {comment}
             {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
-            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, utc=True)
+            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
             {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
             {input_column_expr}[~{mask_var_name}] = np.nan
             {subset_output_column_expr} = {input_column_expr}
@@ -160,7 +162,6 @@ class OnDemandFeatureViewExtractor(
         )
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:
-        has_ttl = kwargs.get("ttl_seconds", 0)
         feature_name_version = kwargs.get("feature_name_version", None)
         assert feature_name_version is not None, "feature_name_version must be provided"
         global_state = OnDemandFeatureViewGlobalState(
@@ -173,31 +174,6 @@ class OnDemandFeatureViewExtractor(
             topological_order_map=self.graph.node_topological_order_map,
         )
         output_df_name = global_state.code_generation_config.output_df_name
-        if has_ttl:
-            if isinstance(var_name_or_expr, ExpressionStr):
-                input_var_name = global_state.var_name_generator.convert_to_variable_name(
-                    variable_name_prefix="feat", node_name=None
-                )
-                global_state.code_generator.add_statements(
-                    statements=[(input_var_name, var_name_or_expr)]
-                )
-            else:
-                input_var_name = var_name_or_expr
-
-            ttl_statements = self.generate_ttl_handling_statements(
-                feature_name_version=feature_name_version,
-                input_df_name=global_state.code_generation_config.input_df_name,
-                output_df_name=global_state.code_generation_config.output_df_name,
-                input_column_expr=input_var_name,
-                ttl_seconds=has_ttl,
-                var_name_generator=global_state.var_name_generator,
-                comment=f"# TTL handling for {feature_name_version}",
-            )
-            global_state.code_generator.add_statements(statements=[ttl_statements])
-        else:
-            output_var = VariableNameStr(
-                subset_frame_column_expr(output_df_name, feature_name_version)
-            )
-            global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
-
+        output_var = VariableNameStr(subset_frame_column_expr(output_df_name, feature_name_version))
+        global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
         return global_state

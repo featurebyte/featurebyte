@@ -17,6 +17,7 @@ from sqlglot import parse_one
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import InternalName, SourceType
+from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, DUMMY_ENTITY_VALUE
@@ -451,10 +452,16 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
         "üser id x PRODUCT_ACTION": "detail::761",
     }
-    online_features = feature_store.get_online_features(
-        features=feature_service,
-        entity_rows=[entity_row],
-    ).to_dict()
+    with patch.object(
+        feature_store,
+        "_augment_response_with_on_demand_transforms",
+        new=augment_response_with_on_demand_transforms,
+    ):
+        online_features = feature_store.get_online_features(
+            features=feature_service,
+            entity_rows=[entity_row],
+        ).to_dict()
+
     online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"] = [
         json.loads(online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0])
         if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
@@ -517,10 +524,15 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
     # expect all ttl features to be null
     entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
-    online_features = feature_store.get_online_features(
-        features=feature_service,
-        entity_rows=[entity_row],
-    ).to_dict()
+    with patch.object(
+        feature_store,
+        "_augment_response_with_on_demand_transforms",
+        new=augment_response_with_on_demand_transforms,
+    ):
+        online_features = feature_store.get_online_features(
+            features=feature_service,
+            entity_rows=[entity_row],
+        ).to_dict()
     expected = {
         "üser id": ["5"],
         "cust_id": ["761"],
@@ -541,7 +553,9 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [None],
         f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [None],
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [None],
-        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [None],
+        # due to implementation in _get_vector_cosine_similarity_function_name,
+        # any null value in the input vector will result in 0 cosine similarity
+        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.0],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -551,10 +565,15 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     # set the point in time earlier than the 2001-01-02 12:00:00
     # expect all ttl features to be null
     entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
-    online_features = feature_store.get_online_features(
-        features=feature_service,
-        entity_rows=[entity_row],
-    ).to_dict()
+    with patch.object(
+        feature_store,
+        "_augment_response_with_on_demand_transforms",
+        new=augment_response_with_on_demand_transforms,
+    ):
+        online_features = feature_store.get_online_features(
+            features=feature_service,
+            entity_rows=[entity_row],
+        ).to_dict()
     assert_dict_approx_equal(online_features, expected)
 
 
@@ -777,6 +796,9 @@ def test_online_features__non_existing_order_id(
             if feature_name != "order_id"
         }
     )
+    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 149
+    if source_type != SourceType.DATABRICKS_UNITY:
+        expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
     assert_dict_approx_equal(features[1], expected_non_existing_order_id_features)
 
