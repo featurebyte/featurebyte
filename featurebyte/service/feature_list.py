@@ -251,7 +251,8 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 feature_list_to_feature_primary_entity_join_steps=feature_list_to_feature_primary_entity_join_steps,
                 feature_internal_entity_join_steps=feature_internal_entity_join_steps,
             )
-            features_entity_lookup_info.append(feature_entity_lookup_info)
+            if feature_entity_lookup_info.join_steps:
+                features_entity_lookup_info.append(feature_entity_lookup_info)
 
         return FeatureListEntityRelationshipData(
             primary_entity_ids=fl_primary_entity_ids,
