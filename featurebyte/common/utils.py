@@ -19,6 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
 from dateutil import parser
+from pandas._typing import FilePath, WriteBuffer
 from pandas.core.dtypes.common import is_string_dtype
 from requests import Response
 
@@ -136,7 +137,7 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
         input_buffer = buffer
 
     reader = pa.ipc.open_stream(input_buffer)
-    return reader.read_all().to_pandas()
+    return reader.read_all().to_pandas(timestamp_as_object=True)
 
 
 def literal_eval(value: Any) -> Any:
@@ -168,7 +169,7 @@ def _update_batches_for_types(
 
     output_list = []
     for batch in batches:
-        curr_df = batch.to_pandas()
+        curr_df = batch.to_pandas(timestamp_as_object=True)
         for col_name, db_var_type in col_name_to_db_var_type.items():
             if db_var_type in DBVarType.array_types():
                 # Check if column is of string dtype
@@ -209,7 +210,7 @@ def pa_table_to_record_batches(
 
     # convert to pandas in order to create empty record batch with schema
     # there is no way to get empty record batch from pyarrow table directly
-    return [pa.RecordBatch.from_pandas(table.to_pandas())]
+    return [pa.RecordBatch.from_pandas(table.to_pandas(timestamp_as_object=True))]
 
 
 def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
@@ -456,3 +457,22 @@ def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[s
     if isinstance(value, list):
         output = value
     return output
+
+
+def dataframe_to_parquet(
+    dataframe: pd.DataFrame, path: FilePath | WriteBuffer[bytes] | None = None, **kwargs: Any
+) -> None:
+    """
+    Write dataframe to parquet file
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe to read from
+    path: FilePath | WriteBuffer[bytes]
+        File path or buffer to write to
+    kwargs: Any
+        Additional keyword arguments
+    """
+    kwargs["version"] = "2.4"
+    dataframe.to_parquet(path, **kwargs)

@@ -21,7 +21,7 @@ from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 from thrift.transport.TTransport import TTransportException
 
-from featurebyte.common.utils import literal_eval
+from featurebyte.common.utils import dataframe_to_parquet, literal_eval
 from featurebyte.enum import SourceType, StorageType
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
@@ -233,7 +233,7 @@ class SparkSession(BaseSparkSession):
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         with self._storage.open(path=remote_path, mode="wb") as out_file_obj:
-            dataframe.to_parquet(out_file_obj, version="2.4")
+            dataframe_to_parquet(dataframe, out_file_obj)
             out_file_obj.flush()
 
     def delete_path_from_storage(self, remote_path: str) -> None:
@@ -374,7 +374,7 @@ class SparkSession(BaseSparkSession):
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         arrow_table = self.fetchall_arrow(cursor)
-        return arrow_table.to_pandas()
+        return arrow_table.to_pandas(timestamp_as_object=True)
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches

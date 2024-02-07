@@ -17,7 +17,7 @@ from bson import ObjectId
 from pydantic import Field, PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
-from featurebyte.common.utils import pa_table_to_record_batches
+from featurebyte.common.utils import dataframe_to_parquet, pa_table_to_record_batches
 from featurebyte.enum import SourceType
 from featurebyte.session.base_spark import BaseSparkSession
 
@@ -62,7 +62,7 @@ class ArrowTablePostProcessor:
         # handle map type. Databricks returns map as list of tuples
         # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
         # which is not supported by pyarrow. Below converts the tuple list to json string
-        dataframe = arrow_table.to_pandas()
+        dataframe = arrow_table.to_pandas(timestamp_as_object=True)
         for col_name in self._map_columns:
             dataframe[col_name] = dataframe[col_name].apply(
                 lambda x: json.dumps(dict(x)) if x is not None else None
@@ -127,7 +127,7 @@ class DatabricksSession(BaseSparkSession):
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         buffer = BytesIO()
-        dataframe.to_parquet(buffer, version="2.4")
+        dataframe_to_parquet(dataframe, buffer)
         buffer.seek(0)
         path = f"{self._storage_base_path}/{remote_path}"
         self._dbfs_client.upload(path=path, src=buffer, overwrite=True)

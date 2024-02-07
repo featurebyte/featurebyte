@@ -14,6 +14,8 @@ import pandas as pd
 from pandas import DataFrame
 from pydantic import BaseModel
 
+from featurebyte.common.utils import dataframe_to_parquet
+
 
 class Storage(ABC):
     """
@@ -169,7 +171,7 @@ class Storage(ABC):
             Path of remote file to upload to
         """
         async with aiofiles.tempfile.NamedTemporaryFile() as file_obj:
-            dataframe.to_parquet(file_obj.name)
+            dataframe_to_parquet(dataframe, file_obj.name)
             await self.put(Path(str(file_obj.name)), remote_path)
 
     async def get_dataframe(self, remote_path: Path) -> DataFrame:
