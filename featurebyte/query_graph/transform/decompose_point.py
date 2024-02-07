@@ -288,6 +288,53 @@ class DecomposePointState:
             extract_primary_entity_ids_only=extract_primary_entity_ids_only,
         )
 
+    def _update_more_aggregation_info(
+        self,
+        query_graph: QueryGraphModel,
+        node: Node,
+        aggregation_info: AggregationInfo,
+    ) -> AggregationInfo:
+        op_struct = self.operation_structure_map[node.name]
+
+        if node.name in self.aggregation_node_names:
+            aggregation_info.agg_node_types = [node.type]
+
+        if isinstance(node.parameters, BaseGroupbyParameters):
+            groupby_keys = node.parameters.keys
+            # check the dtype of the source columns that match the groupby keys to get dtype
+            # of the primary entity ids
+            colname_to_dtype_map = {}
+            for source_column in op_struct.columns:
+                if source_column.name in groupby_keys:
+                    colname_to_dtype_map[source_column.name] = source_column.dtype
+            aggregation_info.primary_entity_dtypes = [
+                colname_to_dtype_map[key] for key in groupby_keys
+            ]
+            assert len(aggregation_info.primary_entity_dtypes) == len(
+                aggregation_info.primary_entity_ids
+            ), "Primary entity dtype not matches"
+
+        elif isinstance(node, (LookupNode, LookupTargetNode)):
+            # primary entity ids introduced by lookup node family
+            for source_column in op_struct.columns:
+                if source_column.name == node.parameters.entity_column:
+                    aggregation_info.primary_entity_dtypes = [source_column.dtype]
+                    break
+            assert (
+                len(aggregation_info.primary_entity_dtypes) == 1
+            ), "Primary entity dtype not found"
+
+        if isinstance(node, RequestColumnNode):
+            # request columns introduced by request column node
+            aggregation_info.has_request_column = True
+
+        feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
+            node=node
+        )
+        if feature_job_setting:
+            aggregation_info.feature_job_settings = [feature_job_setting]
+        return aggregation_info
+
     def update_aggregation_info(
         self,
         query_graph: QueryGraphModel,
@@ -325,45 +372,9 @@ class DecomposePointState:
             aggregation_info.primary_entity_ids = [node.parameters.entity_id]
 
         if not extract_primary_entity_ids_only:
-            op_struct = self.operation_structure_map[node.name]
-
-            if node.name in self.aggregation_node_names:
-                aggregation_info.agg_node_types = [node.type]
-
-            if isinstance(node.parameters, BaseGroupbyParameters):
-                groupby_keys = node.parameters.keys
-                # check the dtype of the source columns that match the groupby keys to get dtype
-                # of the primary entity ids
-                colname_to_dtype_map = {}
-                for source_column in op_struct.columns:
-                    if source_column.name in groupby_keys:
-                        colname_to_dtype_map[source_column.name] = source_column.dtype
-                aggregation_info.primary_entity_dtypes = [
-                    colname_to_dtype_map[key] for key in groupby_keys
-                ]
-                assert len(aggregation_info.primary_entity_dtypes) == len(
-                    aggregation_info.primary_entity_ids
-                ), "Primary entity dtype not matches"
-
-            elif isinstance(node, (LookupNode, LookupTargetNode)):
-                # primary entity ids introduced by lookup node family
-                for source_column in op_struct.columns:
-                    if source_column.name == node.parameters.entity_column:
-                        aggregation_info.primary_entity_dtypes = [source_column.dtype]
-                        break
-                assert (
-                    len(aggregation_info.primary_entity_dtypes) == 1
-                ), "Primary entity dtype not found"
-
-            if isinstance(node, RequestColumnNode):
-                # request columns introduced by request column node
-                aggregation_info.has_request_column = True
-
-            feature_job_setting = FeatureJobSettingExtractor(
-                graph=query_graph
-            ).extract_from_agg_node(node=node)
-            if feature_job_setting:
-                aggregation_info.feature_job_settings = [feature_job_setting]
+            aggregation_info = self._update_more_aggregation_info(
+                query_graph=query_graph, node=node, aggregation_info=aggregation_info
+            )
 
         # reduce the primary entity ids based on entity relationship
         aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
