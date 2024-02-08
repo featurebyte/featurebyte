@@ -116,7 +116,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             }
         }
         if sanitize_for_definition:
-            # add aggregation attributes to avoid triggering unnecessary aggregation attribute derivation
+            # since the feature model is created for definition, actual aggregation attributes are not
+            # required. Add aggregation attributes to avoid triggering unnecessary aggregation attributes
+            # derivation.
             feature_dict["aggregation_ids"] = ["dummy_aggregation_id"]
             feature_dict["aggregation_result_names"] = ["dummy_aggregation_result_name"]
         return FeatureModel(**feature_dict)
