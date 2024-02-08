@@ -131,6 +131,8 @@ async def execute_sdk_code(
             assert len(mock_post.call_args.args) == 0, mock_post.call_args.args
             post_kwargs = mock_post.call_args.kwargs
             assert list(post_kwargs.keys()) == ["url", "json"], post_kwargs.keys()
+            asset_name = feature_controller.service.collection_name
+            assert post_kwargs["url"] == f"/{asset_name}", post_kwargs["url"]
 
             # call the feature controller to create the feature without using the API
             await feature_controller.create_feature(data=FeatureCreate(**post_kwargs["json"]))
