@@ -8,9 +8,11 @@ import concurrent
 import os
 from contextlib import contextmanager
 from functools import wraps
+from unittest.mock import patch
 
 from bson import ObjectId
 from cachetools import TTLCache
+from requests import Session
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.progress import get_ranged_progress_callback
@@ -21,7 +23,7 @@ from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.routes.feature.controller import FeatureController
-from featurebyte.schema.feature import BatchFeatureItem, FeatureServiceCreate
+from featurebyte.schema.feature import BatchFeatureItem, FeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
@@ -100,7 +102,9 @@ def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
             del os.environ[variable]
 
 
-async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
+async def execute_sdk_code(
+    catalog_id: ObjectId, code: str, feature_controller: FeatureController
+) -> None:
     """
     Activate the catalog and execute the code in server mode
 
@@ -110,6 +114,8 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
         The catalog id
     code: str
         The SDK code to execute
+    feature_controller: FeatureController
+        The feature controller
     """
     # activate the correct catalog before executing the code
     activate_catalog(catalog_id=catalog_id)
@@ -117,7 +123,19 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     # execute the code
     with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+            # patch the session.post method to capture the call & pass the payload to the feature controller
+            with patch.object(Session, "post") as mock_post:
+                await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+
+            # some assertions to ensure that the post method was called with the correct arguments
+            assert len(mock_post.call_args.args) == 0, mock_post.call_args.args
+            post_kwargs = mock_post.call_args.kwargs
+            assert list(post_kwargs.keys()) == ["url", "json"], post_kwargs.keys()
+            asset_name = feature_controller.service.collection_name
+            assert post_kwargs["url"] == f"/{asset_name}", post_kwargs["url"]
+
+            # call the feature controller to create the feature without using the API
+            await feature_controller.create_feature(data=FeatureCreate(**post_kwargs["json"]))
 
 
 class BatchFeatureCreator:
@@ -271,7 +289,9 @@ class BatchFeatureCreator:
         definition = await self.namespace_handler.prepare_definition(document=document)
 
         # execute the code to save the feature
-        await execute_sdk_code(catalog_id=catalog_id, code=definition)
+        await execute_sdk_code(
+            catalog_id=catalog_id, code=definition, feature_controller=self.feature_controller
+        )
 
         # retrieve the saved feature & check if it is the same as the expected feature
         is_consistent = await self.is_generated_feature_consistent(document=document)
