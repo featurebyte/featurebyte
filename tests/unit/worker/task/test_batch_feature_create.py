@@ -3,6 +3,7 @@ Test batch feature creation task
 """
 import os
 import textwrap
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from bson import ObjectId
@@ -40,8 +41,10 @@ def test_set_environment_variable():
 @pytest.mark.asyncio
 async def test_execute_sdk_code(test_catalog, catalog):
     """Test execute sdk code"""
+    _ = catalog
+
     # save the current active catalog
-    current_active_catalog = Catalog.get_active()
+    Catalog.get_active()
 
     # check that the entity doesn't exist
     with pytest.raises(RecordRetrievalException):
@@ -57,15 +60,13 @@ async def test_execute_sdk_code(test_catalog, catalog):
     ).strip()
 
     # execute the SDK code & check the entity's catalog id
-    await execute_sdk_code(catalog_id=test_catalog.id, code=sdk_code)
-    entity = Entity.get(name="test_entity")
-    assert entity.serving_names == ["test_entity_serving_name"]
-    assert entity.catalog_id == test_catalog.id
+    feature_controller = AsyncMock()
+    with patch("featurebyte.worker.util.batch_feature_creator.FeatureCreate"):
+        await execute_sdk_code(
+            catalog_id=test_catalog.id, code=sdk_code, feature_controller=feature_controller
+        )
 
-    # restore the active catalog
-    activate_catalog(catalog_id=current_active_catalog.id)
-    catalog = Catalog.get_active()
-    assert catalog == current_active_catalog
+    feature_controller.create_feature.assert_called_once()
 
 
 @pytest.mark.asyncio
