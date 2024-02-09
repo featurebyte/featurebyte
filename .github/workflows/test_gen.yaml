@@ -52,12 +52,12 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Setup gradle cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: hive-udf/.gradle
         key: gradle-cache-${{ runner.os }}
     - name: Setup gradle build cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: hive-udf/lib/build
         key: gradle-build-cache-${{ runner.os }}
@@ -84,7 +84,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -139,7 +139,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -196,7 +196,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -273,7 +273,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -326,7 +326,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -374,7 +374,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -422,7 +422,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
@@ -536,7 +536,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
       name: Send Slack notification with workflow result.
-      uses: slackapi/slack-github-action@v1.24.0
+      uses: slackapi/slack-github-action@v1.25.0
       with:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
@@ -563,7 +563,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
       name: Send Slack notification to developer channel
-      uses: slackapi/slack-github-action@v1.24.0
+      uses: slackapi/slack-github-action@v1.25.0
       with:
         channel-id: C03D81HC6Q5
         payload: |-
