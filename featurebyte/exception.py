@@ -483,3 +483,19 @@ class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
     """
     Raise when observation table is missing required columns
     """
+
+
+class TaskNotRevocableError(BaseUnprocessableEntityError):
+    """
+    Raise when task is not revocable
+    """
+
+
+# Exceptions to catch to handle task revoke
+TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError)
+
+
+class TaskCancelledError(FeatureByteException):
+    """
+    Raise when task is cancelled
+    """

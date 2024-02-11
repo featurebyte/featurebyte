@@ -20,6 +20,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
+from featurebyte.exception import TaskCancelledError, TaskRevokeExceptions
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task as TaskModel
@@ -235,6 +236,11 @@ class BaseCeleryTask(Task):
         payload: Any
             Task payload
 
+        Raises
+        ------
+        TaskCancelledError
+            Task cancelled.
+
         Returns
         -------
         Any
@@ -247,6 +253,8 @@ class BaseCeleryTask(Task):
         try:
             return_val = await executor.execute()
             return return_val
+        except TaskRevokeExceptions as exc:
+            raise TaskCancelledError("Task cancelled.") from exc
         finally:
             # indicate stream is closed
             progress.put({"percent": -1})

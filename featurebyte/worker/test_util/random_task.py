@@ -76,6 +76,7 @@ class LongRunningPayload(BaseTaskPayload):
 
     output_collection_name = "long_running_result_collection"
     command = Command.LONG_RUNNING_COMMAND
+    is_revocable = True
 
 
 class LongRunningTask(BaseTask[LongRunningPayload]):

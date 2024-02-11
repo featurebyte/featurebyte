@@ -37,6 +37,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     task_type: TaskType = Field(default=TaskType.IO_TASK)
     priority: int = Field(default=0, ge=0, le=3)  # 0 is the highest priority
     is_scheduled_task: Optional[bool] = Field(default=False)
+    is_revocable: ClassVar[Optional[bool]] = False
 
     class Config:
         """
@@ -96,6 +97,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
         output: dict[str, Any] = super().dict(*args, **kwargs)
         if self.command:
             output["command"] = self.command.value
+        output["output_collection_name"] = self.output_collection_name
+        output["is_revocable"] = self.is_revocable
         return output
 
     def json(self, *args: Any, **kwargs: Any) -> str:
@@ -104,6 +107,10 @@ class BaseTaskPayload(FeatureByteBaseModel):
 
         # include class variables
         json_dict.update(
-            {"command": self.command, "output_collection_name": self.output_collection_name}
+            {
+                "command": self.command,
+                "output_collection_name": self.output_collection_name,
+                "is_revocable": self.is_revocable,
+            }
         )
         return json.dumps(json_dict)

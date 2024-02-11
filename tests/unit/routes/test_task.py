@@ -8,11 +8,12 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
-class TestTaskStatusApi:
-    """Test suite for Task Status API"""
+class TestTaskApi:
+    """Test suite for Task API"""
 
     # class variables to be set at metaclass
     base_route = "/task"
@@ -23,19 +24,19 @@ class TestTaskStatusApi:
         yield app_container.task_manager
 
     @pytest_asyncio.fixture
-    async def task_status_id(self, user_id, task_manager):
-        """Task status id"""
+    async def task_id(self, user_id, task_manager):
+        """Task id"""
         return await task_manager.submit(
             payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
         )
 
-    def test_get_200(self, api_client_persistent, task_status_id, user_id):
+    def test_get_200(self, api_client_persistent, task_id, user_id):
         """Test get (success)"""
         test_api_client, _ = api_client_persistent
-        response = test_api_client.get(f"{self.base_route}/{task_status_id}")
+        response = test_api_client.get(f"{self.base_route}/{task_id}")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
-        assert response_dict.items() > {"id": str(task_status_id), "status": "SUCCESS"}.items()
+        assert response_dict.items() > {"id": str(task_id), "status": "SUCCESS"}.items()
         assert (
             response_dict["payload"].items()
             > {
@@ -71,3 +72,28 @@ class TestTaskStatusApi:
         assert [data["id"] for data in response_dict["data"]] == (
             expected_task_ids if sort_dir == "asc" else list(reversed(expected_task_ids))
         )
+
+    def test_patch_404(self, api_client_persistent):
+        """Test patch (not found)"""
+        test_api_client, _ = api_client_persistent
+        unknown_id = ObjectId()
+        response = test_api_client.patch(f"{self.base_route}/{unknown_id}", json={"revoke": True})
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.json()["detail"] == f'Task (id: "{unknown_id}") not found.'
+
+    @pytest.mark.asyncio
+    async def test_patch_422(self, api_client_persistent, task_manager, user_id):
+        """Test patch (not revocable)"""
+        test_api_client, _ = api_client_persistent
+        task_id = await task_manager.submit(
+            payload=TestTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+        )
+        response = test_api_client.patch(f"{self.base_route}/{task_id}", json={"revoke": True})
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == f'Task (id: "{task_id}") does not support revoke.'
+
+    def test_patch_200(self, api_client_persistent, task_id):
+        """Test patch"""
+        test_api_client, _ = api_client_persistent
+        response = test_api_client.patch(f"{self.base_route}/{task_id}", json={"revoke": True})
+        assert response.status_code == HTTPStatus.OK
