@@ -495,7 +495,7 @@ class TaskNotRevocableError(BaseUnprocessableEntityError):
 TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError)
 
 
-class TaskCancelledError(FeatureByteException):
+class TaskCanceledError(FeatureByteException):
     """
-    Raise when task is cancelled
+    Raise when task is canceled
     """

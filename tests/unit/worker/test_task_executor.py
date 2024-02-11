@@ -42,9 +42,11 @@ def test_extend_base_task_payload():
         "user_id": user_id,
         "catalog_id": DEFAULT_CATALOG_ID,
         "output_document_id": document_id,
+        "output_collection_name": "random_collection",
         "task_type": TaskType.IO_TASK,
         "priority": 0,
         "is_scheduled_task": False,
+        "is_revocable": False,
     }
     assert payload_obj.task_output_path == f"/random_collection/{document_id}"
 
