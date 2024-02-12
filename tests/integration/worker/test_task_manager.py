@@ -10,7 +10,7 @@ import pytest
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.periodic_task import Interval
-from featurebyte.schema.task import TaskId
+from featurebyte.schema.task import TaskId, TaskStatus
 from featurebyte.schema.worker.task.test import TestIOTaskPayload, TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
 
@@ -24,7 +24,7 @@ async def wait_for_async_task(
     start_time = time.time()
     while (time.time() - start_time) < timeout_seconds:
         task = await task_manager.get_task(task_id=task_id)
-        if task.status in ["SUCCESS", "FAILURE"]:
+        if task.status in TaskStatus.terminal():
             return task
         await asyncio.sleep(1)
     raise TimeoutError("Timeout waiting for task to finish")
@@ -78,7 +78,7 @@ async def test_schedule_interval_task(task_manager, payload):
         interval=Interval(every=1, period="seconds"),
     )
     # wait for 5 seconds
-    await asyncio.sleep(20)
+    await asyncio.sleep(10)
 
     # check if task is running
     periodic_task = await task_manager.get_periodic_task(periodic_task_id)
@@ -88,3 +88,28 @@ async def test_schedule_interval_task(task_manager, payload):
     await task_manager.delete_periodic_task(periodic_task_id)
     with pytest.raises(DocumentNotFoundError):
         await task_manager.get_periodic_task(periodic_task_id)
+
+
+@pytest.mark.parametrize("worker_type", ["cpu"], indirect=True)
+@pytest.mark.asyncio
+async def test_revoke_task(task_manager, persistent):
+    """Test task manager revoke task"""
+    payload = TestTaskPayload(
+        user_id=task_manager.user.id,
+        catalog_id=DEFAULT_CATALOG_ID,
+        sleep=1,
+    )
+    task_id = await task_manager.submit(payload=payload)
+    start_time = time.time()
+    while (time.time() - start_time) < 20:
+        task = await task_manager.get_task(task_id)
+        if (
+            task.status == TaskStatus.STARTED
+            and task.progress
+            and task.progress.get("percent", 0) > 0
+        ):
+            break
+        await asyncio.sleep(0.1)
+    await task_manager.revoke_task(task_id)
+    task = await task_manager.get_task(task_id)
+    assert task.status == TaskStatus.REVOKED

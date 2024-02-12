@@ -14,6 +14,8 @@ class TestTaskPayload(BaseTaskPayload):
 
     command = WorkerCommand.TEST
     task_type = TaskType.CPU_TASK
+    sleep: int = 0
+    is_revocable = True
 
     @property
     def task_output_path(self) -> Optional[str]:

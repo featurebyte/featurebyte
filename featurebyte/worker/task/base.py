@@ -51,6 +51,16 @@ class BaseTask(Generic[TaskT]):
             Task payload
         """
 
+    async def handle_task_revoke(self, payload: TaskT) -> None:
+        """
+        Handle clean up on task revocation
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
+        """
+
     @abstractmethod
     async def get_task_description(self, payload: TaskT) -> str:
         """

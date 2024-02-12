@@ -1528,7 +1528,7 @@ def app_container_fixture(persistent, user, catalog):
 
 
 @pytest.fixture(name="app_container_no_catalog")
-def app_container_fixture(persistent, user):
+def app_container_no_catalog_fixture(persistent, user):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """

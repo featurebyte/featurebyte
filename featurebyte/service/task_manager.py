@@ -11,7 +11,7 @@ from uuid import UUID
 from bson.objectid import ObjectId
 from celery import Celery
 
-from featurebyte.exception import TaskNotRevocableError
+from featurebyte.exception import TaskNotFound, TaskNotRevocableError
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
@@ -385,13 +385,15 @@ class TaskManager:
 
         Raises
         ------
+        TaskNotFound
+            Task not found.
         TaskNotRevocableError
             Task does not support revoke.
         """
         task = await self.get_task(task_id)
         if not task:
-            return
-        if not task.payload.get("is_revocable"):
+            raise TaskNotFound(f'Task (id: "{task_id}") not found.')
+        if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable"):
             raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
         if task.status in TaskStatus.non_terminal():
-            self.celery.control.revoke(task_id, terminate=True, signal="SIGTERM")
+            self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")

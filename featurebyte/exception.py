@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from asyncio.exceptions import CancelledError
+
 from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
@@ -491,8 +493,14 @@ class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
 
 
+class TaskNotFound(BaseUnprocessableEntityError):
+    """
+    Raise when task is not found
+    """
+
+
 # Exceptions to catch to handle task revoke
-TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError)
+TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError, CancelledError)
 
 
 class TaskCanceledError(FeatureByteException):
