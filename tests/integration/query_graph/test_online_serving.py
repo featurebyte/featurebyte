@@ -229,7 +229,7 @@ def check_online_features_route(deployment, config, df_historical, columns):
         f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
-    assert res.status_code == 200
+    assert res.status_code == 200, res.json()
 
     df = pd.DataFrame(res.json()["features"])
     elapsed = time.time() - tic

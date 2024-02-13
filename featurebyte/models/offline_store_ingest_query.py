@@ -450,7 +450,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 input_df_name=input_df_name,
                 output_df_name=output_df_name,
                 on_demand_function_name=function_name,
-                ttl_seconds=ttl_seconds,
                 feature_name_version=feature_versioned_name,
             )
             code_generator = codegen_state.code_generator

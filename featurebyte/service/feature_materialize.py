@@ -433,7 +433,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         """
         if not columns:
             return
-        materialize_partial(
+        await materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table_model.name),
             columns=columns,

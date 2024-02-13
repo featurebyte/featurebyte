@@ -23,9 +23,14 @@ from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import Scalar
-from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.enum import (
+    FEAST_TIMESTAMP_POSTFIX,
+    GraphNodeType,
+    NodeOutputType,
+    NodeType,
+)
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
@@ -43,6 +48,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
     ObjectClass,
+    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -635,13 +641,16 @@ class BaseGraphNode(BasePrunableNode):
         input_var_name_expr: VarNameExpressionInfo,
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
+        config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
+        ttl_handling_column: Optional[str] = None,
+        ttl_seconds: Optional[int] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
             raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
 
+        statements: List[StatementT] = []
         node_params = self.parameters
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
-        statements: List[StatementT] = []
         if node_params.null_filling_value is not None:
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             null_fill_expr = null_filling_func(
@@ -649,6 +658,69 @@ class BaseGraphNode(BasePrunableNode):
             )
             statements.append((var_name, null_fill_expr))
             input_var_name_expr = var_name
+
+        if ttl_handling_column is not None:
+            assert config_for_ttl is not None
+            assert ttl_seconds is not None
+            input_df_name = config_for_ttl.input_df_name
+            feat_ts_col = f"{ttl_handling_column}{FEAST_TIMESTAMP_POSTFIX}"
+            # need to apply TTL handling on the input column
+            var_name_map = {}
+            for var_name in ["request_time", "cutoff", "feat_ts", "mask"]:
+                var_name_map[var_name] = var_name_generator.convert_to_variable_name(
+                    variable_name_prefix=var_name, node_name=None
+                )
+
+            statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+                (
+                    var_name_map["request_time"],
+                    get_object_class_from_function_call(
+                        "pd.to_datetime",
+                        ExpressionStr(
+                            subset_frame_column_expr(
+                                VariableNameStr(input_df_name),
+                                SpecialColumnName.POINT_IN_TIME.value,
+                            )
+                        ),
+                        utc=True,
+                    ),
+                )
+            )
+            statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
+                (
+                    var_name_map["cutoff"],
+                    ExpressionStr(
+                        f"{var_name_map['request_time']} - pd.Timedelta(seconds={ttl_seconds})"
+                    ),
+                )
+            )
+            statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
+                (
+                    var_name_map["feat_ts"],
+                    get_object_class_from_function_call(
+                        "pd.to_datetime",
+                        ExpressionStr(
+                            subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
+                        ),
+                        unit="s",
+                        utc=True,
+                    ),
+                )
+            )
+            statements.append(  # mask = (feature_ts >= cutoff) & (feature_ts <= request_time)
+                (
+                    var_name_map["mask"],
+                    ExpressionStr(
+                        f"({var_name_map['feat_ts']} >= {var_name_map['cutoff']}) & "
+                        f"({var_name_map['feat_ts']} <= {var_name_map['request_time']})"
+                    ),
+                )
+            )
+            statements.append(  # inputs.loc["feat"][~mask] = np.nan
+                StatementStr(
+                    f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
+                )
+            )
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
@@ -685,11 +757,24 @@ class BaseGraphNode(BasePrunableNode):
         input_var_name_expr = VariableNameStr(
             subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
         )
+        ttl_handling_column = None
+        config_for_ttl = None
+        ttl_seconds = None
+        assert isinstance(self.parameters, OfflineStoreIngestQueryGraphNodeParameters)
+        if self.parameters.has_ttl:
+            ttl_handling_column = column_name
+            config_for_ttl = config
+            assert self.parameters.feature_job_setting is not None
+            ttl_seconds = 2 * self.parameters.feature_job_setting.frequency_seconds
+
         return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name_expr,
             json_conversion_func=_json_conversion_func,
             null_filling_func=lambda expr, val: ExpressionStr(f"{expr}.fillna({val.as_input()})"),
+            config_for_ttl=config_for_ttl,
+            ttl_handling_column=ttl_handling_column,
+            ttl_seconds=ttl_seconds,
         )
 
     def _derive_user_defined_function_code(

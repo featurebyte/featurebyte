@@ -102,7 +102,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             graph=prepared_graph, node_name=prepared_node_name
         )
 
-        return FeatureModel(
+        feature_dict = {
             **{
                 **data_dict,
                 "graph": prepared_graph,
@@ -114,7 +114,14 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }
-        )
+        }
+        if sanitize_for_definition:
+            # since the feature model is created for definition, actual aggregation attributes are not
+            # required. Add aggregation attributes to avoid triggering unnecessary aggregation attributes
+            # derivation.
+            feature_dict["aggregation_ids"] = ["dummy_aggregation_id"]
+            feature_dict["aggregation_result_names"] = ["dummy_aggregation_result_name"]
+        return FeatureModel(**feature_dict)
 
     @staticmethod
     def validate_feature(feature: FeatureModel) -> None:

@@ -8,7 +8,10 @@ from featurebyte.query_graph.transform.decompose_point import AggregationInfo, D
 def decompose_point_global_state_fixture():
     """Fixture for DecomposePointState."""
     return DecomposePointState.create(
-        relationships_info=[], aggregation_node_names=set(), operation_structure_map={}
+        relationships_info=[],
+        aggregation_node_names=set(),
+        operation_structure_map={},
+        extract_primary_entity_ids_only=False,
     )
 
 
@@ -47,16 +50,16 @@ def test_check_input_aggregations(
 ):
     """Test check_input_aggregations."""
     input_node_names = ["input_1", "input_2"]
-    input1_agg_info = AggregationInfo()
+    input1_agg_info = AggregationInfo(extract_primary_entity_ids_only=False)
     input1_agg_info.has_request_column = input1_has_req_col
     input1_agg_info.has_ingest_graph_node = input1_has_graph
-    input2_agg_info = AggregationInfo()
+    input2_agg_info = AggregationInfo(extract_primary_entity_ids_only=False)
     input2_agg_info.has_request_column = input2_has_req_col
     input2_agg_info.has_ingest_graph_node = input2_has_graph
     decompose_point_global_state.node_name_to_aggregation_info["input_1"] = input1_agg_info
     decompose_point_global_state.node_name_to_aggregation_info["input_2"] = input2_agg_info
     output = decompose_point_global_state.check_input_aggregations(
-        agg_info=AggregationInfo(),
+        agg_info=AggregationInfo(extract_primary_entity_ids_only=False),
         input_node_names=input_node_names,
     )
     assert output == expected

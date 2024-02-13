@@ -190,7 +190,6 @@ def feature_list_with_parent_child_features_fixture(
             deployment.disable()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [

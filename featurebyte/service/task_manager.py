@@ -76,39 +76,32 @@ class TaskManager:
             Task object
         """
         task_id = str(task_id)
-        task_result = self.celery.AsyncResult(task_id)
-        payload = {}
-        output_path = None
-        traceback = None
 
-        # try to find in persistent first
+        # try to find record in persistent first
         document = await self.persistent.find_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
         )
 
-        start_time = None
-        date_done = None
-        progress = None
-        if document:
-            output_path = document.get("kwargs", {}).get("task_output_path")
-            payload = document.get("kwargs", {})
-            traceback = document.get("traceback")
-            start_time = document.get("start_time")
-            date_done = document.get("date_done")
-            progress = document.get("progress")
-        elif not task_result:
-            return None
+        if not document:
+            # no persistent record, fallback to celery result
+            task_result = self.celery.AsyncResult(task_id)
+            if not task_result:
+                # no celery or persistent result
+                return None
+
+            # get only status from celery result
+            document = {"status": task_result.status}
 
         return Task(
             id=UUID(task_id),
-            status=task_result.status,
-            output_path=output_path,
-            payload=payload,
-            traceback=traceback,
-            start_time=start_time,
-            date_done=date_done,
-            progress=progress,
+            status=document.get("status"),
+            output_path=document.get("kwargs", {}).get("task_output_path"),
+            payload=document.get("kwargs", {}),
+            traceback=document.get("traceback"),
+            start_time=document.get("start_time"),
+            date_done=document.get("date_done"),
+            progress=document.get("progress"),
         )
 
     async def list_tasks(

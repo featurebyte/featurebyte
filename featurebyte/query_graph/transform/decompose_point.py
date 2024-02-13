@@ -43,14 +43,16 @@ class AggregationInfo:
     feature_job_settings: List[FeatureJobSetting]
     has_request_column: bool
     has_ingest_graph_node: bool
+    extract_primary_entity_ids_only: bool
 
-    def __init__(self) -> None:
+    def __init__(self, extract_primary_entity_ids_only: bool) -> None:
         self.agg_node_types = []
         self.primary_entity_ids = []
         self.primary_entity_dtypes = []
         self.feature_job_settings = []
         self.has_request_column = False
         self.has_ingest_graph_node = False
+        self.extract_primary_entity_ids_only = extract_primary_entity_ids_only
 
     @property
     def primary_entity_id_to_dtype_map(self) -> Dict[PydanticObjectId, DBVarType]:
@@ -80,17 +82,18 @@ class AggregationInfo:
         primary_entity_id_to_dtype_map = self.primary_entity_id_to_dtype_map.copy()
         primary_entity_id_to_dtype_map.update(other.primary_entity_id_to_dtype_map)
 
-        output = AggregationInfo()
-        output.agg_node_types = sorted(set(self.agg_node_types + other.agg_node_types))
+        output = AggregationInfo(self.extract_primary_entity_ids_only)
         output.primary_entity_ids = sorted(set(self.primary_entity_ids + other.primary_entity_ids))
-        output.primary_entity_dtypes = [
-            primary_entity_id_to_dtype_map[entity_id] for entity_id in output.primary_entity_ids
-        ]
-        output.feature_job_settings = list(
-            set(self.feature_job_settings + other.feature_job_settings)
-        )
-        output.has_request_column = self.has_request_column or other.has_request_column
-        output.has_ingest_graph_node = self.has_ingest_graph_node or other.has_ingest_graph_node
+        if not self.extract_primary_entity_ids_only:
+            output.agg_node_types = sorted(set(self.agg_node_types + other.agg_node_types))
+            output.primary_entity_dtypes = [
+                primary_entity_id_to_dtype_map[entity_id] for entity_id in output.primary_entity_ids
+            ]
+            output.feature_job_settings = list(
+                set(self.feature_job_settings + other.feature_job_settings)
+            )
+            output.has_request_column = self.has_request_column or other.has_request_column
+            output.has_ingest_graph_node = self.has_ingest_graph_node or other.has_ingest_graph_node
         return output
 
     @property
@@ -204,6 +207,8 @@ class DecomposePointState:
     ingest_graph_output_node_names: Set[str]
     # operation structure info
     operation_structure_map: Dict[str, OperationStructure]
+    # extract primary entity ids only
+    extract_primary_entity_ids_only: bool
 
     @property
     def should_decompose(self) -> bool:
@@ -250,6 +255,7 @@ class DecomposePointState:
         relationships_info: List[EntityRelationshipInfo],
         aggregation_node_names: Set[str],
         operation_structure_map: Dict[str, OperationStructure],
+        extract_primary_entity_ids_only: bool,
     ) -> "DecomposePointState":
         """
         Create DecomposePointState object
@@ -262,6 +268,8 @@ class DecomposePointState:
             Set of aggregation node names
         operation_structure_map: Dict[str, OperationStructure]
             Operation structure map
+        extract_primary_entity_ids_only: bool
+            Extract primary entity ids only without extracting other information to speed up the process
 
         Returns
         -------
@@ -277,38 +285,21 @@ class DecomposePointState:
             decompose_node_names=set(),
             ingest_graph_output_node_names=set(),
             operation_structure_map=operation_structure_map,
+            extract_primary_entity_ids_only=extract_primary_entity_ids_only,
         )
 
-    def update_aggregation_info(
-        self, query_graph: QueryGraphModel, node: Node, input_node_names: List[str]
-    ) -> None:
-        """
-        Update aggregation info of the given node
-
-        Parameters
-        ----------
-        query_graph: QueryGraphModel
-            Query graph
-        node: Node
-            Node to be processed
-        input_node_names: List[str]
-            List of input node names
-        """
+    def _update_more_aggregation_info(
+        self,
+        query_graph: QueryGraphModel,
+        node: Node,
+        aggregation_info: AggregationInfo,
+    ) -> AggregationInfo:
         op_struct = self.operation_structure_map[node.name]
-        aggregation_info = AggregationInfo()
-        for input_node_name in input_node_names:
-            input_aggregation_info = self.node_name_to_aggregation_info.get(input_node_name)
-            if input_aggregation_info:
-                # if current node is groupby node, the input_aggregation_info should be empty
-                # as they are skipped in the pre-compute step
-                aggregation_info += input_aggregation_info
 
         if node.name in self.aggregation_node_names:
             aggregation_info.agg_node_types = [node.type]
 
         if isinstance(node.parameters, BaseGroupbyParameters):
-            # primary entity ids introduced by groupby node family
-            aggregation_info.primary_entity_ids = node.parameters.entity_ids or []
             groupby_keys = node.parameters.keys
             # check the dtype of the source columns that match the groupby keys to get dtype
             # of the primary entity ids
@@ -325,7 +316,6 @@ class DecomposePointState:
 
         elif isinstance(node, (LookupNode, LookupTargetNode)):
             # primary entity ids introduced by lookup node family
-            aggregation_info.primary_entity_ids = [node.parameters.entity_id]
             for source_column in op_struct.columns:
                 if source_column.name == node.parameters.entity_column:
                     aggregation_info.primary_entity_dtypes = [source_column.dtype]
@@ -343,6 +333,48 @@ class DecomposePointState:
         )
         if feature_job_setting:
             aggregation_info.feature_job_settings = [feature_job_setting]
+        return aggregation_info
+
+    def update_aggregation_info(
+        self,
+        query_graph: QueryGraphModel,
+        node: Node,
+        input_node_names: List[str],
+        extract_primary_entity_ids_only: bool,
+    ) -> None:
+        """
+        Update aggregation info of the given node
+
+        Parameters
+        ----------
+        query_graph: QueryGraphModel
+            Query graph
+        node: Node
+            Node to be processed
+        input_node_names: List[str]
+            List of input node names
+        extract_primary_entity_ids_only: bool
+            Extract primary entity ids only without extracting other information to speed up the process
+        """
+        aggregation_info = AggregationInfo(extract_primary_entity_ids_only)
+        for input_node_name in input_node_names:
+            input_aggregation_info = self.node_name_to_aggregation_info.get(input_node_name)
+            if input_aggregation_info:
+                # if current node is groupby node, the input_aggregation_info should be empty
+                # as they are skipped in the pre-compute step
+                aggregation_info += input_aggregation_info
+
+        if isinstance(node.parameters, BaseGroupbyParameters):
+            # primary entity ids introduced by groupby node family
+            aggregation_info.primary_entity_ids = node.parameters.entity_ids or []
+        elif isinstance(node, (LookupNode, LookupTargetNode)):
+            # primary entity ids introduced by lookup node family
+            aggregation_info.primary_entity_ids = [node.parameters.entity_id]
+
+        if not extract_primary_entity_ids_only:
+            aggregation_info = self._update_more_aggregation_info(
+                query_graph=query_graph, node=node, aggregation_info=aggregation_info
+            )
 
         # reduce the primary entity ids based on entity relationship
         aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
@@ -516,33 +548,47 @@ class DecomposePointExtractor(
     ) -> DecomposePointState:
         input_node_names = self.graph.get_input_node_names(node)
         global_state.update_aggregation_info(
-            query_graph=self.graph, node=node, input_node_names=input_node_names
+            query_graph=self.graph,
+            node=node,
+            input_node_names=input_node_names,
+            extract_primary_entity_ids_only=global_state.extract_primary_entity_ids_only,
         )
-        to_decompose = global_state.should_decompose_query_graph(
-            node_name=node.name, input_node_names=input_node_names
-        )
-        if to_decompose:
-            global_state.decompose_node_names.add(node.name)
-            global_state.update_ingest_graph_node_output_names(input_node_names=input_node_names)
-            global_state.node_name_to_aggregation_info[node.name].has_ingest_graph_node = True
+        if not global_state.extract_primary_entity_ids_only:
+            # skip decompose point extraction if the graph is only used to extract primary entity ids
+            # to speed up the process
+            to_decompose = global_state.should_decompose_query_graph(
+                node_name=node.name, input_node_names=input_node_names
+            )
+            if to_decompose:
+                global_state.decompose_node_names.add(node.name)
+                global_state.update_ingest_graph_node_output_names(
+                    input_node_names=input_node_names
+                )
+                global_state.node_name_to_aggregation_info[node.name].has_ingest_graph_node = True
         return global_state
 
     def extract(
         self,
         node: Node,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        extract_primary_entity_ids_only: bool = False,
         **kwargs: Any,
     ) -> DecomposePointState:
-        # identify aggregation node names in the graph, aggregation node names are used to determine
-        # whether to start decomposing the graph
-        op_struct_state = OperationStructureExtractor(graph=self.graph).extract(node=node)
-        op_struct = op_struct_state.operation_structure_map[node.name]
-        aggregation_node_names = {agg.node_name for agg in op_struct.iterate_aggregations()}
+        aggregation_node_names = set()
+        operation_structure_map = {}
+        if not extract_primary_entity_ids_only:
+            # identify aggregation node names in the graph, aggregation node names are used to determine
+            # whether to start decomposing the graph
+            op_struct_state = OperationStructureExtractor(graph=self.graph).extract(node=node)
+            op_struct = op_struct_state.operation_structure_map[node.name]
+            aggregation_node_names = {agg.node_name for agg in op_struct.iterate_aggregations()}
+            operation_structure_map = op_struct_state.operation_structure_map
 
         global_state = DecomposePointState.create(
             relationships_info=relationships_info or [],
             aggregation_node_names=aggregation_node_names,
-            operation_structure_map=op_struct_state.operation_structure_map,
+            operation_structure_map=operation_structure_map,
+            extract_primary_entity_ids_only=extract_primary_entity_ids_only,
         )
         self._extract(
             node=node,

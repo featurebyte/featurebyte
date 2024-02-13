@@ -3,13 +3,13 @@ Test batch feature creation task
 """
 import os
 import textwrap
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from bson import ObjectId
 
 from featurebyte.api.catalog import Catalog, Entity
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.base import activate_catalog
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -40,8 +40,10 @@ def test_set_environment_variable():
 @pytest.mark.asyncio
 async def test_execute_sdk_code(test_catalog, catalog):
     """Test execute sdk code"""
+    _ = catalog
+
     # save the current active catalog
-    current_active_catalog = Catalog.get_active()
+    Catalog.get_active()
 
     # check that the entity doesn't exist
     with pytest.raises(RecordRetrievalException):
@@ -57,15 +59,14 @@ async def test_execute_sdk_code(test_catalog, catalog):
     ).strip()
 
     # execute the SDK code & check the entity's catalog id
-    await execute_sdk_code(catalog_id=test_catalog.id, code=sdk_code)
-    entity = Entity.get(name="test_entity")
-    assert entity.serving_names == ["test_entity_serving_name"]
-    assert entity.catalog_id == test_catalog.id
+    controller = AsyncMock()
+    controller.service.collection_name = "entity"  # above code contains a call to Entity.create
+    with patch("featurebyte.worker.util.batch_feature_creator.FeatureCreate"):
+        await execute_sdk_code(
+            catalog_id=test_catalog.id, code=sdk_code, feature_controller=controller
+        )
 
-    # restore the active catalog
-    activate_catalog(catalog_id=current_active_catalog.id)
-    catalog = Catalog.get_active()
-    assert catalog == current_active_catalog
+    controller.create_feature.assert_called_once()
 
 
 @pytest.mark.asyncio

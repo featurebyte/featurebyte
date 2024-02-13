@@ -14,6 +14,7 @@ from feast import FeatureStore, FeatureView, utils
 from tqdm import tqdm
 
 from featurebyte.enum import InternalName
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, to_thread
 
 DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
 
@@ -38,7 +39,7 @@ def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
     return [obj for obj in obj_list if obj.name in columns]
 
 
-def materialize_partial(
+async def materialize_partial(
     feature_store: FeatureStore,
     feature_view: FeatureView,
     columns: List[str],
@@ -105,7 +106,9 @@ def materialize_partial(
     with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"), patch(
         "feast.infra.utils.snowflake.snowflake_utils._cache", snowflake_session_cache
     ):
-        provider.materialize_single_feature_view(
+        await to_thread(
+            provider.materialize_single_feature_view,
+            LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
             config=feature_store.config,
             feature_view=partial_feature_view,
             start_date=start_date,

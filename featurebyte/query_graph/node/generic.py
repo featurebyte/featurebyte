@@ -231,7 +231,7 @@ class FilterNode(BaseNode):
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
                     name=col.name,
-                    columns=[col],
+                    columns=[col] + mask_operation_info.aggregations,
                     transform=self.transform_info,
                     node_name=self.name,
                     other_node_names=mask_operation_info.all_node_names,

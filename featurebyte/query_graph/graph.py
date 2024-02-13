@@ -137,6 +137,7 @@ class QueryGraph(QueryGraphModel):
         self,
         node_name: str,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        extract_primary_entity_ids_only: bool = False,
     ) -> DecomposePointState:
         """
         Get decompose state of the query graph given the target node name
@@ -147,6 +148,8 @@ class QueryGraph(QueryGraphModel):
             Name of the node to get decompose state for
         relationships_info: Optional[List[EntityRelationshipInfo]]
             Entity relationship info
+        extract_primary_entity_ids_only: bool
+            Whether to extract primary entity IDs only to speed up the extraction process
 
         Returns
         -------
@@ -154,7 +157,9 @@ class QueryGraph(QueryGraphModel):
             Decompose state of the query graph
         """
         decompose_state = DecomposePointExtractor(graph=self).extract(
-            node=self.get_node_by_name(node_name=node_name), relationships_info=relationships_info
+            node=self.get_node_by_name(node_name=node_name),
+            relationships_info=relationships_info,
+            extract_primary_entity_ids_only=extract_primary_entity_ids_only,
         )
         return decompose_state
 
@@ -173,7 +178,9 @@ class QueryGraph(QueryGraphModel):
             List of entity IDs in the query graph
         """
         # not passing entity relationship to the extractor, primary entity will be the same as entity
-        decompose_state = self.get_decompose_state(node_name=node_name, relationships_info=None)
+        decompose_state = self.get_decompose_state(
+            node_name=node_name, relationships_info=None, extract_primary_entity_ids_only=True
+        )
         return sorted(decompose_state.primary_entity_ids)
 
     def get_user_defined_function_ids(self, node_name: str) -> List[ObjectId]:
