@@ -224,4 +224,4 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
     await task_manager.revoke_task(task_id)
 
     # check celery task revoke
-    celery.control.revoke.assert_called_with(task_id, terminate=True, signal="SIGTERM")
+    celery.control.revoke.assert_called_with(task_id, reply=True, terminate=True, signal="SIGTERM")
