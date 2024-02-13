@@ -19,6 +19,7 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
+from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
@@ -146,6 +147,13 @@ class OfflineStoreInfoInitializationService:
                         entity_id_to_serving_name=entity_id_to_serving_name,
                     )
                 )
+                node_params = node.parameters
+                extractor = NullFillingValueExtractor(graph=node_params.graph)
+                state = extractor.extract(
+                    node=node_params.graph.get_node_by_name(node_params.output_node_name)
+                )
+                node.parameters.null_filling_value = state.fill_value
+
             node_name_to_repl_node[node.name] = node
 
         new_graph, node_name_map = query_graph.reconstruct(
@@ -229,6 +237,9 @@ class OfflineStoreInfoInitializationService:
             feature_version=feature.version.to_str(),
         )
 
+        null_filling_value_extractor = NullFillingValueExtractor(graph=feature.graph)
+        null_filling_value_state = null_filling_value_extractor.extract(node=feature.node)
+
         if result.is_decomposed:
             decomposed_graph, output_node_name = await self.reconstruct_decomposed_graph(
                 graph=result.graph,
@@ -278,6 +289,7 @@ class OfflineStoreInfoInitializationService:
                 primary_entity_dtypes=[
                     entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids
                 ],
+                null_filling_value=null_filling_value_state.fill_value,
             )
 
         # populate offline store info
@@ -299,5 +311,6 @@ class OfflineStoreInfoInitializationService:
                 setting.feature_job_setting for setting in feature.table_id_feature_job_settings
             ],
             feature_id=feature.id,
+            null_filling_value=null_filling_value_state.fill_value,
         )
         return offline_store_info

@@ -7,6 +7,7 @@ import textwrap
 
 from pydantic import BaseModel, Field
 
+from featurebyte.common.typing import Scalar
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
@@ -14,6 +15,7 @@ from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConf
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
     StatementStr,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
@@ -159,6 +161,39 @@ class OnDemandFeatureViewExtractor(
             {output_df_name}.fillna(np.nan, inplace=True)
             """
             ).strip()
+        )
+
+    @staticmethod
+    def generate_null_filling_statements(
+        feature_name_version: str,
+        output_df_name: str,
+        input_column_expr: str,
+        fill_value: Scalar,
+    ) -> StatementStr:
+        """
+        Generate null filling statements for the feature or target query graph
+
+        Parameters
+        ----------
+        feature_name_version: str
+            Feature name version
+        output_df_name: str
+            Output dataframe name
+        input_column_expr: str
+            Input column expression (to be applied for null filling)
+        fill_value: Scalar
+            Fill value
+
+        Returns
+        -------
+        StatementStr
+            Generated code
+        """
+        # expressions
+        subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
+        fill_value_expr = ValueStr(fill_value).as_input()
+        return StatementStr(
+            f"{subset_output_column_expr} = {input_column_expr}.fillna({fill_value_expr})"
         )
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:

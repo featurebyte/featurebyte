@@ -40,7 +40,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     InfoDict,
     ObjectClass,
     RightHandSide,
-    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -2076,6 +2075,12 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             assert not isinstance(node_inputs[2], InfoDict)
             value = node_inputs[2]
 
-        statement = StatementStr(f"{var_name} = {value} if {flag_var_name} else {var_name}")
-        statements.append(statement)
+        expr_statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=ExpressionStr(f"{value} if {flag_var_name} else {var_name}"),
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_associate_with_node_name=True,
+        )
+        statements.extend(expr_statements)
         return statements, var_name

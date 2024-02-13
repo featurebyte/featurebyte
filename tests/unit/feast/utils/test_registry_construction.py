@@ -110,7 +110,9 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
 
     # dill's getsource() does not include the import statements
     udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
-    assert udf.body_text.startswith("import json\nimport numpy as np\nimport pandas as pd\n")
+    assert udf.body_text.startswith(
+        "import datetime\nimport json\nimport numpy as np\nimport pandas as pd\n"
+    )
 
     # check that mock_pymysql_connect was called
     assert mock_pymysql_connect.call_count == 1
@@ -342,6 +344,7 @@ def test_feast_registry_construction(
             udf_definition = odfv["spec"]["userDefinedFunction"]["bodyText"]
 
     expected = f"""
+    import datetime
     import json
     import numpy as np
     import pandas as pd
