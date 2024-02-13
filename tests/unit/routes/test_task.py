@@ -8,7 +8,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.schema.worker.task.test import TestTaskPayload
+from featurebyte.schema.worker.task.test import TestIOTaskPayload
 from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
@@ -86,7 +86,7 @@ class TestTaskApi:
         """Test patch (not revocable)"""
         test_api_client, _ = api_client_persistent
         task_id = await task_manager.submit(
-            payload=TestTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+            payload=TestIOTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
         )
         response = test_api_client.patch(f"{self.base_route}/{task_id}", json={"revoke": True})
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

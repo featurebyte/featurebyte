@@ -493,7 +493,7 @@ class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
 
 
-class TaskNotFound(BaseUnprocessableEntityError):
+class TaskNotFound(DocumentNotFoundError):
     """
     Raise when task is not found
     """

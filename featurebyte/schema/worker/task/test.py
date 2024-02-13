@@ -31,7 +31,7 @@ class TestTaskPayload(BaseTaskPayload):
 
 class TestIOTaskPayload(BaseTaskPayload):
     """
-    Test Task Payload
+    Test IO Task Payload
     """
 
     command = WorkerCommand.TEST
