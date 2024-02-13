@@ -652,12 +652,12 @@ class BaseGraphNode(BasePrunableNode):
         node_params = self.parameters
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
         if node_params.null_filling_value is not None:
-            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            var = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             null_fill_expr = null_filling_func(
                 input_var_name_expr, ValueStr(node_params.null_filling_value)
             )
-            statements.append((var_name, null_fill_expr))
-            input_var_name_expr = var_name
+            statements.append((var, null_fill_expr))
+            input_var_name_expr = var
 
         if ttl_handling_column is not None:
             assert config_for_ttl is not None
