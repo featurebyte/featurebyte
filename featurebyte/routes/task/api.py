@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import PageQuery, PageSizeQuery, SortDirQuery
-from featurebyte.schema.task import Task, TaskList
+from featurebyte.schema.task import Task, TaskList, TaskUpdate
 
 
 class TaskRouter(BaseRouter):
@@ -26,6 +26,12 @@ class TaskRouter(BaseRouter):
             response_model=Task,
         )
         self.router.add_api_route(
+            "/{task_id}",
+            self.update_task,
+            methods=["PATCH"],
+            response_model=Task,
+        )
+        self.router.add_api_route(
             "",
             self.list_tasks,
             methods=["GET"],
@@ -39,6 +45,15 @@ class TaskRouter(BaseRouter):
         """
         controller = request.state.app_container.task_controller
         task: Task = await controller.get_task(task_id=task_id)
+        return task
+
+    @staticmethod
+    async def update_task(request: Request, task_id: str, update: TaskUpdate) -> Task:
+        """
+        Update task
+        """
+        controller = request.state.app_container.task_controller
+        task: Task = await controller.update_task(task_id=task_id, update=update)
         return task
 
     @staticmethod

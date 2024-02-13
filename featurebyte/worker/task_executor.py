@@ -20,6 +20,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
+from featurebyte.exception import TaskCanceledError, TaskRevokeExceptions
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task as TaskModel
@@ -166,17 +167,26 @@ class TaskExecutor:
     async def execute(self) -> Any:
         """
         Execute the task
+
+        Raises
+        ------
+        TaskCanceledError
+            Task revoked.
         """
         # Send initial progress to indicate task is started
         await self.task_progress_updater.update_progress(percent=0)
-
-        # Execute the task
         payload_obj = self.task.get_payload_obj(self.payload_dict)
-        await self._update_task_start_time_and_description(payload_obj)
-        await self.task.execute(payload_obj)
 
-        # Send final progress to indicate task is completed
-        await self.task_progress_updater.update_progress(percent=100)
+        try:
+            # Execute the task
+            await self._update_task_start_time_and_description(payload_obj)
+            await self.task.execute(payload_obj)
+
+            # Send final progress to indicate task is completed
+            await self.task_progress_updater.update_progress(percent=100)
+        except TaskRevokeExceptions as exc:
+            await self.task.handle_task_revoke(payload_obj)
+            raise TaskCanceledError("Task canceled.") from exc
 
 
 class BaseCeleryTask(Task):

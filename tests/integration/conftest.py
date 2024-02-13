@@ -46,7 +46,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -1523,6 +1523,21 @@ def app_container_fixture(persistent, user, catalog):
         "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": catalog.id,
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
+
+
+@pytest.fixture(name="app_container_no_catalog")
+def app_container_no_catalog_fixture(persistent, user):
+    """
+    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+    """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "celery": get_celery(),
+        "storage": LocalTempStorage(),
+        "catalog_id": DEFAULT_CATALOG_ID,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 

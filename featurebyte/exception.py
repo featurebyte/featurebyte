@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from asyncio.exceptions import CancelledError
+
 from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
@@ -482,4 +484,26 @@ class EntityTaggingIsNotAllowedError(BaseUnprocessableEntityError):
 class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
     """
     Raise when observation table is missing required columns
+    """
+
+
+class TaskNotRevocableError(BaseUnprocessableEntityError):
+    """
+    Raise when task is not revocable
+    """
+
+
+class TaskNotFound(DocumentNotFoundError):
+    """
+    Raise when task is not found
+    """
+
+
+# Exceptions to catch to handle task revoke
+TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError, CancelledError)
+
+
+class TaskCanceledError(FeatureByteException):
+    """
+    Raise when task is canceled
     """

@@ -11,12 +11,13 @@ from uuid import UUID
 from bson.objectid import ObjectId
 from celery import Celery
 
+from featurebyte.exception import TaskNotFound, TaskNotRevocableError
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.schema.task import Task
+from featurebyte.schema.task import Task, TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
@@ -75,8 +76,6 @@ class TaskManager:
         Task
             Task object
         """
-        task_id = str(task_id)
-
         # try to find record in persistent first
         document = await self.persistent.find_one(
             collection_name=TaskModel.collection_name(),
@@ -374,3 +373,27 @@ class TaskManager:
             logger.error(f"Document with name {name} not found")
         else:
             await periodic_task_service.delete_document(document_id=data[0]["_id"])
+
+    async def revoke_task(self, task_id: str) -> None:
+        """
+        Revoke task
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Raises
+        ------
+        TaskNotFound
+            Task not found.
+        TaskNotRevocableError
+            Task does not support revoke.
+        """
+        task = await self.get_task(task_id)
+        if not task:
+            raise TaskNotFound(f'Task (id: "{task_id}") not found.')
+        if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable"):
+            raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
+        if task.status in TaskStatus.non_terminal():
+            self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
