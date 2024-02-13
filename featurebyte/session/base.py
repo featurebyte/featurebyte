@@ -4,12 +4,14 @@ Session class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict, Type
+from typing import Any, AsyncGenerator, ClassVar, Dict, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
+import ctypes
 import functools
 import os
+import threading
 import time
 from abc import ABC, abstractmethod
 from asyncio import events
@@ -67,14 +69,40 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     **kwargs : Any
         Keyword arguments to `func`.
 
+    Raises
+    ------
+    asyncio.exceptions.TimeoutError
+        Function execution timed out.
+
     Returns
     -------
     Any
     """
     loop = events.get_running_loop()
     ctx = contextvars.copy_context()
-    func_call = functools.partial(ctx.run, func, *args, **kwargs)
-    return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+
+    def _func_wrapper(func: Any, thread_info: Dict[str, Any], *args: Any, **kwargs: Any) -> Any:
+        thread_info["tid"] = threading.get_ident()
+        return func(*args, **kwargs)
+
+    def _raise_timeout_exception_in_thread(thread_id: int) -> None:
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_ulong(thread_id), ctypes.py_object(TimeoutError)
+        )
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            raise ValueError("Exception raise failure")
+        if res:
+            logger.debug("Raised exception in thread")
+
+    thread_info: Dict[str, int] = {}
+    func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
+
+    try:
+        return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+    except asyncio.exceptions.TimeoutError:
+        _raise_timeout_exception_in_thread(thread_info["tid"])
+        raise
 
 
 class BaseSession(BaseModel):
