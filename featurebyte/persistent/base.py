@@ -717,6 +717,7 @@ class Persistent(ABC):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
+        **kwargs: Any,
     ) -> Tuple[Iterable[Document], int]:
         """
         Execute aggregation pipeline
@@ -735,6 +736,8 @@ class Persistent(ABC):
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------

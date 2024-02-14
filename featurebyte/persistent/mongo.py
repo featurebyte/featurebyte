@@ -370,6 +370,7 @@ class MongoDB(Persistent):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
+        **kwargs: Any,
     ) -> Tuple[Iterable[Document], int]:
         output_pipeline: List[Dict[str, Any]] = []
 
