@@ -43,7 +43,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.7.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}

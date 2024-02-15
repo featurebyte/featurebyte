@@ -49,7 +49,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.7.1
     - name: Check pyproject.toml and poetry.lock are consistent
       run: task check-poetry
     - name: Build package (branch)

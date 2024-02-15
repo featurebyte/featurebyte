@@ -16,12 +16,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 env:
-  GCR_DOCKER_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
 jobs:
   test-deep-dive-notebooks:
     runs-on: ubuntu-latest-4-cores
+    strategy:
+      matrix:
+        python-version: [ 3.8 ]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -33,7 +35,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.7.1
     - name: Configure Poetry
       run: |-
         poetry config virtualenvs.in-project true
@@ -64,6 +66,9 @@ jobs:
     timeout-minutes: 30
   test-quick-start-notebooks:
     runs-on: ubuntu-latest-4-cores
+    strategy:
+      matrix:
+        python-version: [ 3.8 ]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -75,7 +80,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.7.1
     - name: Configure Poetry
       run: |-
         poetry config virtualenvs.in-project true
@@ -106,6 +111,9 @@ jobs:
     timeout-minutes: 45
   test-playground-notebooks:
     runs-on: ubuntu-latest-4-cores
+    strategy:
+      matrix:
+        python-version: [ 3.8 ]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -117,7 +125,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.7.1
     - name: Configure Poetry
       run: |-
         poetry config virtualenvs.in-project true
