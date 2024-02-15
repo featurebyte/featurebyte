@@ -53,12 +53,6 @@ jobs:
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
       run: task install
-    - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v3
-      with:
-        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
-        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
-        username: _json_key_base64
     - name: Build docker image
       run: task docker-build
     - name: Install published featurebyte version
@@ -101,12 +95,6 @@ jobs:
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
       run: task install
-    - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v3
-      with:
-        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
-        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
-        username: _json_key_base64
     - name: Build docker image
       run: task docker-build
     - name: Install published featurebyte version
@@ -149,12 +137,6 @@ jobs:
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
       run: task install
-    - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v3
-      with:
-        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
-        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
-        username: _json_key_base64
     - name: Build docker image
       run: task docker-build
     - name: Install published featurebyte version

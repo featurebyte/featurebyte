@@ -95,6 +95,7 @@ tasks:
       - task: test-java
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
+      - ls -l featurebyte/sql/spark/*.jar
 
   format:
     desc: "Format the code"
