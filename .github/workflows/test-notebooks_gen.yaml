@@ -57,10 +57,6 @@ jobs:
       run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
-    - name: Retag docker image
-      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-deep-dive-notebooks
     timeout-minutes: 30
@@ -102,10 +98,6 @@ jobs:
       run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
-    - name: Retag docker image
-      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-quick-start-notebooks
     timeout-minutes: 45
@@ -147,10 +139,6 @@ jobs:
       run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
-    - name: Retag docker image
-      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-playground-notebooks
     timeout-minutes: 30
