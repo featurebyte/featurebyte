@@ -210,7 +210,8 @@ class PreviewService:
             feature_store_id=sample.feature_store_id,
         )
 
-        describe_sql, type_conversions, row_names, columns = GraphInterpreter(
+        # describe_sql, type_conversions, row_names, columns = GraphInterpreter(
+        describe_query = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_describe_sql(
             node_name=sample.node_name,
@@ -221,15 +222,16 @@ class PreviewService:
             timestamp_column=sample.timestamp_column,
             stats_names=sample.stats_names,
         )
-        logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
-        result = await session.execute_query(describe_sql)
+        logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
+        result = await session.execute_query_long_running(describe_query.sql)
+        columns = describe_query.columns
         assert result is not None
         results = pd.DataFrame(
             result.values.reshape(len(columns), -1).T,
-            index=row_names,
+            index=describe_query.row_names,
             columns=[str(column.name) for column in columns],
         ).dropna(axis=0, how="all")
-        return dataframe_to_json(results, type_conversions, skip_prepare=True)
+        return dataframe_to_json(results, describe_query.type_conversions, skip_prepare=True)
 
     async def value_counts(
         self,

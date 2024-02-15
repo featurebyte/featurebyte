@@ -8,6 +8,7 @@ from typing import OrderedDict as OrderedDictT
 from typing import Set, Tuple, cast
 
 from collections import OrderedDict
+from dataclasses import dataclass
 from datetime import datetime
 
 from sqlglot import expressions, parse_one
@@ -31,6 +32,18 @@ from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 CATEGORY_COUNT_COLUMN_NAME = "__FB_COUNTS"
 CASTED_DATA_TABLE_NAME = "casted_data"
 NUM_TABLES_PER_JOIN = 10
+
+
+@dataclass
+class DescribeQuery:
+    """
+    Query to describe selected columns for a given node
+    """
+
+    sql: str
+    type_conversions: dict[Optional[str], DBVarType]
+    row_names: List[str]
+    columns: List[ViewDataColumn]
 
 
 class PreviewMixin(BaseGraphInterpreter):
@@ -811,7 +824,8 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         stats_names: Optional[List[str]] = None,
-    ) -> Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]:
+        # ) -> Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]:
+    ) -> DescribeQuery:
         """Construct SQL to describe data from a given node
 
         Parameters
@@ -853,11 +867,11 @@ class PreviewMixin(BaseGraphInterpreter):
         sql_tree, row_indices, columns = self._construct_stats_sql(
             sql_tree=sql_tree, columns=operation_structure.columns, stats_names=stats_names
         )
-        return (
-            sql_to_string(sql_tree, source_type=self.source_type),
-            type_conversions,
-            row_indices,
-            columns,
+        return DescribeQuery(
+            sql=sql_to_string(sql_tree, source_type=self.source_type),
+            type_conversions=type_conversions,
+            row_names=row_indices,
+            columns=columns,
         )
 
     def construct_value_counts_sql(
