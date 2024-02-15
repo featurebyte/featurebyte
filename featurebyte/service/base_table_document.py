@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional, TypeVar
 
 from bson.objectid import ObjectId
+from redis import Redis
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import TableStatus
@@ -35,8 +36,9 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         feature_store_service: FeatureStoreService,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.feature_store_service = feature_store_service
 
     @property

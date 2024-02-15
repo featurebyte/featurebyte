@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson.objectid import ObjectId
+from redis import Redis
 
 from featurebyte.exception import DocumentError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -48,8 +49,9 @@ class FeatureJobSettingAnalysisService(
         catalog_id: Optional[ObjectId],
         event_table_service: EventTableService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.event_table_service = event_table_service
 
     async def create_document_creation_task(

@@ -1,6 +1,8 @@
 """
 Tests for RelationshipService class
 """
+from unittest.mock import Mock
+
 import pytest
 import pytest_asyncio
 
@@ -81,6 +83,7 @@ def family_document_service_fixture(user, persistent):
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        redis=Mock(),
     )
 
 

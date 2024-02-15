@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
+from redis import Redis
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName
@@ -51,8 +52,9 @@ class BaseMaterializedTableService(
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service

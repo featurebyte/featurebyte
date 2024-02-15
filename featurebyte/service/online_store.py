@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Type
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.persistent import Persistent
@@ -34,12 +35,14 @@ class OnlineStoreService(
         catalog_id: Optional[ObjectId],
         catalog_service: CatalogService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.catalog_service = catalog_service
 

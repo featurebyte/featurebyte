@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 from dataclasses import dataclass
 
 from bson.objectid import ObjectId
+from redis import Redis
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
@@ -124,12 +125,14 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         feature_list_entity_relationship_validator: FeatureListEntityRelationshipValidator,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service

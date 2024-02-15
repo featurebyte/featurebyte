@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
 from pymongo.errors import OperationFailure
+from redis import Redis
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.dict_util import get_field_path_value
@@ -112,12 +113,14 @@ class BaseDocumentService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
         self.block_modification_handler = block_modification_handler
+        self.redis = redis
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"

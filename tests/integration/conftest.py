@@ -1508,6 +1508,7 @@ def task_manager_fixture(persistent, user, catalog):
         persistent=persistent,
         celery=get_celery(),
         catalog_id=catalog.id,
+        redis=Mock(),
     )
     return task_manager
 

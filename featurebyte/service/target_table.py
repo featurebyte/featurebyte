@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -42,6 +43,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
         session_manager_service: SessionManagerService,
         temp_storage: Storage,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
         super().__init__(
             user,
@@ -51,6 +53,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
             feature_store_service,
             entity_service,
             block_modification_handler,
+            redis,
         )
         self.temp_storage = temp_storage
 

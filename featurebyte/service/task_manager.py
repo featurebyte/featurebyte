@@ -10,6 +10,7 @@ from uuid import UUID
 
 from bson.objectid import ObjectId
 from celery import Celery
+from redis import Redis
 
 from featurebyte.exception import TaskNotFound, TaskNotRevocableError
 from featurebyte.logging import get_logger
@@ -36,11 +37,30 @@ class TaskManager:
         persistent: Persistent,
         celery: Celery,
         catalog_id: Optional[ObjectId],
+        redis: Redis[Any],
     ) -> None:
         self.user = user
         self.persistent = persistent
         self.celery = celery
         self.catalog_id = catalog_id
+        self.redis = redis
+
+    @property
+    def periodic_task_service(self) -> PeriodicTaskService:
+        """
+        Get PeriodicTaskService instance
+
+        Returns
+        -------
+        PeriodicTaskService
+        """
+        return PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
+            redis=self.redis,
+        )
 
     async def submit(self, payload: BaseTaskPayload) -> str:
         """
@@ -221,13 +241,7 @@ class TaskManager:
             queue=payload.queue,
             soft_time_limit=time_limit,
         )
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.create_document(data=periodic_task)
+        await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
 
     async def schedule_cron_task(
@@ -269,13 +283,7 @@ class TaskManager:
             start_after=start_after,
             soft_time_limit=time_limit,
         )
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.create_document(data=periodic_task)
+        await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
 
     async def get_periodic_task(self, periodic_task_id: ObjectId) -> PeriodicTask:
@@ -291,13 +299,7 @@ class TaskManager:
         -------
         PeriodicTask
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        return await periodic_task_service.get_document(document_id=periodic_task_id)
+        return await self.periodic_task_service.get_document(document_id=periodic_task_id)
 
     async def get_periodic_task_by_name(self, name: str) -> Optional[PeriodicTask]:
         """
@@ -312,13 +314,7 @@ class TaskManager:
         -------
         PeriodicTask
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        result = await periodic_task_service.list_documents_as_dict(
+        result = await self.periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -339,13 +335,7 @@ class TaskManager:
         periodic_task_id: ObjectId
             PeriodicTask ID
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.delete_document(document_id=periodic_task_id)
+        await self.periodic_task_service.delete_document(document_id=periodic_task_id)
 
     async def delete_periodic_task_by_name(self, name: str) -> None:
         """
@@ -356,13 +346,7 @@ class TaskManager:
         name: str
             Document Name
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        result = await periodic_task_service.list_documents_as_dict(
+        result = await self.periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -372,7 +356,7 @@ class TaskManager:
         if not data:
             logger.error(f"Document with name {name} not found")
         else:
-            await periodic_task_service.delete_document(document_id=data[0]["_id"])
+            await self.periodic_task_service.delete_document(document_id=data[0]["_id"])
 
     async def revoke_task(self, task_id: str) -> None:
         """

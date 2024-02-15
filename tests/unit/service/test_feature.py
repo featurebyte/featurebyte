@@ -99,6 +99,7 @@ async def test_get_document_by_name_and_version(
             entity_relationship_extractor_service=app_container.entity_relationship_extractor_service,
             derive_primary_entity_helper=app_container.derive_primary_entity_helper,
             offline_store_info_initialization_service=app_container.offline_store_info_initialization_service,
+            redis=app_container.redis,
         )
         await another_feat_service.get_document_by_name_and_version(
             name=feature.name, version=feature.version
