@@ -31,4 +31,5 @@ def schema_metadata_service_fixture(user, persistent):
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        redis=Mock(),
     )

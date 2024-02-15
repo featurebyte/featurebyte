@@ -1,9 +1,12 @@
 """
 UseCaseService class
 """
+from __future__ import annotations
+
 from typing import Any, Optional, cast
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
@@ -29,8 +32,9 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         context_service: ContextService,
         historical_feature_table_service: HistoricalFeatureTableService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.context_service = context_service
         self.historical_feature_table_service = historical_feature_table_service
 

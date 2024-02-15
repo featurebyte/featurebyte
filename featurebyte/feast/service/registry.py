@@ -1,11 +1,14 @@
 """
 Feast registry service
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional, cast
 
 import random
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
@@ -41,12 +44,14 @@ class FeastRegistryService(
         online_store_service: OnlineStoreService,
         catalog_service: CatalogService,
         entity_lookup_feature_table_service: EntityLookupFeatureTableService,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.feature_service = feature_service
         self.entity_service = entity_service

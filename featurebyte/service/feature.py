@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
@@ -54,6 +55,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         namespace_handler: NamespaceHandler,
         entity_serving_names_service: EntityServingNamesService,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
@@ -62,6 +64,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
             derive_primary_entity_helper=derive_primary_entity_helper,
+            redis=redis,
         )
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service

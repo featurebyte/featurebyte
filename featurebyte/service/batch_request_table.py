@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -41,6 +42,7 @@ class BatchRequestTableService(
         entity_service: EntityService,
         context_service: ContextService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
         super().__init__(
             user,
@@ -50,6 +52,7 @@ class BatchRequestTableService(
             feature_store_service,
             entity_service,
             block_modification_handler,
+            redis,
         )
         self.context_service = context_service
 

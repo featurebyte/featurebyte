@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent import Persistent
@@ -30,8 +31,9 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         catalog_id: Optional[ObjectId],
         catalog_name_injector: CatalogNameInjector,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.catalog_name_injector = catalog_name_injector
 
     @staticmethod

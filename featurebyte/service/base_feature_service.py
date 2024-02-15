@@ -1,11 +1,14 @@
 """
 Base namespace service
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional
 
 from dataclasses import dataclass
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.base import VersionIdentifier
@@ -44,12 +47,14 @@ class BaseFeatureService(
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
         self.derive_primary_entity_helper = derive_primary_entity_helper

@@ -395,6 +395,7 @@ async def catalog_fixture(test_dir, user, persistent):
         persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        redis=Mock(),
     )
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())

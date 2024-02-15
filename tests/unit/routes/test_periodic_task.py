@@ -3,6 +3,7 @@ Tests for PeriodicTask route
 """
 import json
 from http import HTTPStatus
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -80,6 +81,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
             persistent=persistent,
             catalog_id=ObjectId(default_catalog_id),
             block_modification_handler=BlockModificationHandler(),
+            redis=Mock(),
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
         return MockResponse(
@@ -98,6 +100,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
             persistent=persistent,
             catalog_id=ObjectId(default_catalog_id),
             block_modification_handler=BlockModificationHandler(),
+            redis=Mock(),
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))

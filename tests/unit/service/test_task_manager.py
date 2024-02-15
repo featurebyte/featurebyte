@@ -36,6 +36,7 @@ def task_manager_fixture(user_id, persistent, celery, catalog):
         persistent=persistent,
         celery=celery,
         catalog_id=catalog.id,
+        redis=Mock(),
     )
     yield task_manager
 

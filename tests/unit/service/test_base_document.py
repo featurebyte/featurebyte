@@ -74,6 +74,7 @@ def document_service_fixture(user, persistent):
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        redis=Mock(),
     )
 
 
@@ -85,6 +86,7 @@ def non_auditable_document_service_fixture(user, persistent):
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        redis=Mock(),
     )
 
 
@@ -136,6 +138,7 @@ async def test_check_document_creation_conflict(
             persistent=persistent,
             catalog_id=None,
             block_modification_handler=BlockModificationHandler(),
+            redis=Mock(),
         )._check_document_unique_constraint(
             query_filter=query_filter,
             projection={"_id": 1, "name": 1},  # not used
@@ -592,6 +595,7 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
                 persistent=persistent,
                 catalog_id=None,
                 block_modification_handler=BlockModificationHandler(),
+                redis=Mock(),
             )
         assert str(exc.value) == "Catalog not specified. Please specify a catalog."
 

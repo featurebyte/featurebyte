@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.context import ContextModel
@@ -34,8 +35,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
         table_service: TableService,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
         self.entity_service = entity_service
         self.table_service = table_service
 

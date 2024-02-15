@@ -4,7 +4,7 @@ Test functions in migration/run.py
 import glob
 import json
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -197,6 +197,7 @@ async def test_run_migration(
         get_credential=get_credential,
         celery=get_celery(),
         include_data_warehouse_migrations=False,
+        redis=Mock(),
     )
 
     # check that all migrated collections contains some examples for testing

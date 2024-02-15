@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
@@ -166,6 +167,7 @@ class ObservationTableService(
         block_modification_handler: BlockModificationHandler,
         primary_entity_validator: PrimaryEntityValidator,
         use_case_service: UseCaseService,
+        redis: Redis[Any],
     ):
         super().__init__(
             user,
@@ -175,6 +177,7 @@ class ObservationTableService(
             feature_store_service,
             entity_service,
             block_modification_handler,
+            redis,
         )
         self.context_service = context_service
         self.preview_service = preview_service

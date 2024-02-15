@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from cryptography.fernet import InvalidToken
+from redis import Redis
 
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
@@ -38,12 +39,14 @@ class CredentialService(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         block_modification_handler: BlockModificationHandler,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.feature_store_service = feature_store_service

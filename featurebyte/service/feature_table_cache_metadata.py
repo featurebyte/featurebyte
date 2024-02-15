@@ -1,9 +1,12 @@
 """
 Feature Table Cache service
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import PydanticObjectId
@@ -38,12 +41,14 @@ class FeatureTableCacheMetadataService(
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         observation_table_service: ObservationTableService,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            redis=redis,
         )
         self.observation_table_service = observation_table_service
 
