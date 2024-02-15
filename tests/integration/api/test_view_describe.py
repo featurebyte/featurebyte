@@ -1,7 +1,10 @@
 """
 Test API View objects describe function
 """
+from unittest.mock import patch
+
 import pandas as pd
+import pytest
 from pandas.testing import assert_series_equal
 
 
@@ -12,13 +15,22 @@ def _to_utc_no_offset(date):
     return pd.to_datetime(date, utc=True).tz_localize(None)
 
 
-def test_event_view_describe(event_table):
+@pytest.mark.parametrize("default_columns_batch_size", [None, 2])
+def test_event_view_describe(event_table, default_columns_batch_size):
     """
     Test describe for EventView
     """
     event_view = event_table.get_view()
 
-    describe_df = event_view.describe()
+    if default_columns_batch_size is not None:
+        with patch(
+            "featurebyte.service.preview.DEFAULT_COLUMNS_BATCH_SIZE",
+            default_columns_batch_size,
+        ):
+            describe_df = event_view.describe()
+    else:
+        describe_df = event_view.describe()
+
     assert describe_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",

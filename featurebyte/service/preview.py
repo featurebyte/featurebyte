@@ -33,6 +33,8 @@ MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
 )  # 10 million rows, 300 columns
 
+DEFAULT_COLUMNS_BATCH_SIZE = 50
+
 
 logger = get_logger(__name__)
 
@@ -186,7 +188,13 @@ class PreviewService:
         result = await session.execute_query(sample_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def describe(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
+    async def describe(
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        columns_batch_size: Optional[int] = None,
+    ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -198,22 +206,28 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
+        columns_batch_size: Optional[int]
+            Maximum number of columns to describe in a single query. More columns in the data will
+            be described in multiple queries. If None, a default value will be used. If 0, batching
+            will be disabled.
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
+        if columns_batch_size is None:
+            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
+
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_id=sample.feature_store_id,
         )
 
-        # describe_sql, type_conversions, row_names, columns = GraphInterpreter(
-        describe_query = GraphInterpreter(
+        describe_queries = GraphInterpreter(
             sample.graph, source_type=feature_store.type
-        ).construct_describe_sql(
+        ).construct_describe_queries(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
@@ -221,17 +235,22 @@ class PreviewService:
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
             stats_names=sample.stats_names,
+            columns_batch_size=columns_batch_size,
         )
-        logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
-        result = await session.execute_query_long_running(describe_query.sql)
-        columns = describe_query.columns
-        assert result is not None
-        results = pd.DataFrame(
-            result.values.reshape(len(columns), -1).T,
-            index=describe_query.row_names,
-            columns=[str(column.name) for column in columns],
-        ).dropna(axis=0, how="all")
-        return dataframe_to_json(results, describe_query.type_conversions, skip_prepare=True)
+        df_queries = []
+        for describe_query in describe_queries.queries:
+            logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
+            result = await session.execute_query_long_running(describe_query.sql)
+            columns = describe_query.columns
+            assert result is not None
+            df_query = pd.DataFrame(
+                result.values.reshape(len(columns), -1).T,
+                index=describe_query.row_names,
+                columns=[str(column.name) for column in columns],
+            )
+            df_queries.append(df_query)
+        results = pd.concat(df_queries, axis=1).dropna(axis=0, how="all")
+        return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
 
     async def value_counts(
         self,

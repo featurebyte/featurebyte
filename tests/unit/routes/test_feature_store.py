@@ -580,7 +580,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = pd.DataFrame(
+        mock_session.execute_query_long_running.return_value = pd.DataFrame(
             {
                 "a_dtype": ["FLOAT"],
                 "a_unique": [5],
@@ -625,7 +625,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         # check SQL statement
         assert_equal_with_expected_fixture(
-            mock_session.execute_query.call_args[0][0],
+            mock_session.execute_query_long_running.call_args[0][0],
             "tests/fixtures/expected_describe_request.sql",
             update_fixture=update_fixtures,
         )
@@ -654,7 +654,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = pd.DataFrame(
+        mock_session.execute_query_long_running.return_value = pd.DataFrame(
             {
                 "a_dtype": ["FLOAT"],
                 "a_unique": [20],
