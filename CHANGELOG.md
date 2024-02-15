@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.1.0 (2024-02-15)
+
+### 💡 Enhancements
+
++ `api` Create api to manage online stores
++ `service` Simplify user defined function route creation schema
++ `online_serving` Implement FEAST offline stores for Spark Thrift and DataBricks for online serving support
++ `session` Specify role and group in Snowflake and Databricks details to enforce permissions for accessing source and output tables
++ `service` Remove feature store details from tile hash calculation.
++ `api` Support description specification during table creation.
+
+### 🐛 Bug Fixes
+
++ `service` Updates output variable type of count aggregation to be integer instead of float
++ `session` Fix snowflake session using wrong role if the user's default role does not match role in feature store details
++ `deployment` Fix getting sample entity serving names for deployment fails when entity has null values
++ `service` Fix FeatureList online_enabled_feature_ids attribute not updated correctly in some cases
++ `service` Fix an error when retrieving online features for features with array dtype
++ `session` Fix count dictionary entropy UDF behavior for edge cases
+
 ## v1.0.0 (2023-12-21)
 
 ### 💡 Enhancements
