@@ -46,3 +46,4 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("tile_type"),
             pymongo.operations.IndexModel("aggregation_id"),
         ]
+        auditable = False
