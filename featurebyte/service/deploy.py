@@ -238,9 +238,7 @@ class DeployService(OpsServiceMixin):
     async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
-        update_progress: Optional[
-            Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
-        ] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModel:
         """
         Update deployed status in feature list
@@ -249,7 +247,7 @@ class DeployService(OpsServiceMixin):
         ----------
         feature_list_id: ObjectId
             Target feature list ID
-        update_progress: Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
         Returns

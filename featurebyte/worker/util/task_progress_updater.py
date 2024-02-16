@@ -1,7 +1,7 @@
 """
 Task progress updater
 """
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from uuid import UUID
 
@@ -21,7 +21,7 @@ class TaskProgressUpdater:
         self.progress = progress
 
     async def update_progress(
-        self, percent: int, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
+        self, percent: int, message: Optional[str] = None, **kwargs: Any
     ) -> None:
         """
         Update progress
@@ -32,10 +32,10 @@ class TaskProgressUpdater:
             Completed progress percentage
         message: str | None
             Optional message
-        metadata: Dict[str, Any] | None
-            Optional task specific progress metadata (should keep it small)
+        **kwargs: Any
+            Optional parameters
         """
-        progress = ProgressModel(percent=percent, message=message, metadata=metadata)
+        progress = ProgressModel(percent=percent, message=message, **kwargs)
         progress_dict = progress.dict(exclude_none=True)
 
         # write to persistent

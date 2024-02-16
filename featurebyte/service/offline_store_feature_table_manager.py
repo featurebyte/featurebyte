@@ -167,9 +167,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
-        update_progress: Optional[
-            Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
-        ] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Handles the case where features are enabled for online serving by updating all affected
@@ -179,7 +177,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: List[FeatureModel]
             Features to be enabled for online serving
-        update_progress: Optional[Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
@@ -557,9 +555,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         new_tables: List[OfflineStoreFeatureTableModel],
         new_features: List[FeatureModel],
         feature_store_model: FeatureStoreModel,
-        update_progress: Optional[
-            Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
-        ] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         comments: List[Union[TableComment, ColumnComment]] = []
         for feature_table_model in new_tables:

@@ -25,9 +25,9 @@ async def test_get_ranged_progress_callback(progress_callback):
     for i in [0, 50, 100]:
         await new_callback(i, "Doing a subtask")
     assert progress_callback.call_args_list == [
-        call(10, "Doing a subtask", None),
-        call(15, "Doing a subtask", None),
-        call(20, "Doing a subtask", None),
+        call(10, "Doing a subtask"),
+        call(15, "Doing a subtask"),
+        call(20, "Doing a subtask"),
     ]
 
 
@@ -45,7 +45,7 @@ async def test_get_ranged_progress_callback_nested(progress_callback):
     for i in [0, 50, 100]:
         await newer_callback(i, "Doing a smaller subtask")
     assert progress_callback.call_args_list == [
-        call(15, "Doing a smaller subtask", None),
-        call(17, "Doing a smaller subtask", None),
-        call(20, "Doing a smaller subtask", None),
+        call(15, "Doing a smaller subtask"),
+        call(17, "Doing a smaller subtask"),
+        call(20, "Doing a smaller subtask"),
     ]
