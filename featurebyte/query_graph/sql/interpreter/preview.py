@@ -8,6 +8,7 @@ from typing import OrderedDict as OrderedDictT
 from typing import Set, Tuple, cast
 
 from collections import OrderedDict
+from dataclasses import dataclass
 from datetime import datetime
 
 from sqlglot import expressions, parse_one
@@ -31,6 +32,27 @@ from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 CATEGORY_COUNT_COLUMN_NAME = "__FB_COUNTS"
 CASTED_DATA_TABLE_NAME = "casted_data"
 NUM_TABLES_PER_JOIN = 10
+
+
+@dataclass
+class DescribeQuery:
+    """
+    Query to describe selected columns for a given node
+    """
+
+    sql: str
+    row_names: List[str]
+    columns: List[ViewDataColumn]
+
+
+@dataclass
+class DescribeQueries:
+    """
+    Collection of queries to describe all columns for a given node
+    """
+
+    queries: List[DescribeQuery]
+    type_conversions: dict[Optional[str], DBVarType]
 
 
 class PreviewMixin(BaseGraphInterpreter):
@@ -692,6 +714,8 @@ class PreviewMixin(BaseGraphInterpreter):
         output_columns = []
         for column_idx, col_expr in enumerate(sql_tree.expressions):
             col_name = col_expr.alias or col_expr.name
+            if col_name not in columns_info:
+                continue
             column = columns_info[col_name]
             output_columns.append(column)
             col_expr = quoted_identifier(col_name)
@@ -802,7 +826,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree
 
-    def construct_describe_sql(
+    def construct_describe_queries(
         self,
         node_name: str,
         num_rows: int = 10,
@@ -811,7 +835,8 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         stats_names: Optional[List[str]] = None,
-    ) -> Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]:
+        columns_batch_size: Optional[int] = None,
+    ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
         Parameters
@@ -830,17 +855,20 @@ class PreviewMixin(BaseGraphInterpreter):
             Column to apply date range filtering on
         stats_names: Optional[List[str]]
             List of statistics to compute. If None, compute all supported statistics.
+        columns_batch_size: Optional[int]
+            Maximum number of columns to include in each query. If None, include all columns in a
+            single query.
 
         Returns
         -------
-        Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]
+        DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
         )
 
-        sql_tree, type_conversions = self._construct_sample_sql(
+        sample_sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -850,15 +878,24 @@ class PreviewMixin(BaseGraphInterpreter):
             skip_conversion=True,
         )
 
-        sql_tree, row_indices, columns = self._construct_stats_sql(
-            sql_tree=sql_tree, columns=operation_structure.columns, stats_names=stats_names
-        )
-        return (
-            sql_to_string(sql_tree, source_type=self.source_type),
-            type_conversions,
-            row_indices,
-            columns,
-        )
+        if not columns_batch_size:
+            columns_batch_size = len(operation_structure.columns)
+
+        queries = []
+        for i in range(0, len(operation_structure.columns), columns_batch_size):
+            sql_tree, row_indices, columns = self._construct_stats_sql(
+                sql_tree=sample_sql_tree,
+                columns=operation_structure.columns[i : i + columns_batch_size],
+                stats_names=stats_names,
+            )
+            queries.append(
+                DescribeQuery(
+                    sql=sql_to_string(sql_tree, source_type=self.source_type),
+                    row_names=row_indices,
+                    columns=columns,
+                )
+            )
+        return DescribeQueries(queries=queries, type_conversions=type_conversions)
 
     def construct_value_counts_sql(
         self,
