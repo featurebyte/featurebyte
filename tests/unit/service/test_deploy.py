@@ -331,8 +331,8 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
         )
     )
 
-    async def fake_update_progress(progress, message) -> None:
-        _ = message
+    async def fake_update_progress(progress, message, metadata=None) -> None:
+        _ = message, metadata
         if progress == 100:
             raise ValueError("update_progress throws error!!")
 
