@@ -7,7 +7,9 @@ from typing import Any, Callable, Coroutine
 
 
 def get_ranged_progress_callback(
-    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]],
+    progress_callback: Callable[
+        [int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]
+    ],
     from_percent: int | float,
     to_percent: int | float,
 ) -> Callable[[int, str | None], Coroutine[Any, Any, None]]:
@@ -17,7 +19,7 @@ def get_ranged_progress_callback(
 
     Parameters
     ----------
-    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]]
+    progress_callback: Callable[[int, str | None, dict[str, Any] | None], Coroutine[Any, Any, None]]
         Original progress callback
     from_percent: int | float
         Lower bound of the new progress range
@@ -31,8 +33,10 @@ def get_ranged_progress_callback(
     """
     assert from_percent < to_percent
 
-    async def wrapped(percent: int, message: str | None) -> None:
+    async def wrapped(
+        percent: int, message: str | None, metadata: dict[str, Any] | None = None
+    ) -> None:
         effective_percent = percent / 100 * (to_percent - from_percent)
-        await progress_callback(int(effective_percent + from_percent), message)
+        await progress_callback(int(effective_percent + from_percent), message, metadata)
 
     return wrapped
