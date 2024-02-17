@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, Dict, Iterator, List, Optional, Union
 
 import ctypes
-import os
 import threading
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -144,20 +143,6 @@ class NameAttributeUpdatableMixin:
             except RecordRetrievalException:
                 pass
         return super().__getattribute__(item)
-
-
-def is_server_mode() -> bool:
-    """
-    Check if the code is running in server mode. Server mode is used when running the SDK code inside
-    featurebyte worker.
-
-    Returns
-    -------
-    bool
-        True if the code is running in server mode
-    """
-    sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
-    return sdk_execution_mode == "SERVER"
 
 
 def map_object_id_to_name(

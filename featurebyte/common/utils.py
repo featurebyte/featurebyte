@@ -7,6 +7,7 @@ from typing import Any, Iterator, List, Optional, Union
 
 import ast
 import functools
+import os
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
@@ -456,3 +457,17 @@ def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[s
     if isinstance(value, list):
         output = value
     return output
+
+
+def is_server_mode() -> bool:
+    """
+    Check if the code is running in server mode. Server mode is used when running the SDK code inside
+    featurebyte worker.
+
+    Returns
+    -------
+    bool
+        True if the code is running in server mode
+    """
+    sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
+    return sdk_execution_mode == "SERVER"

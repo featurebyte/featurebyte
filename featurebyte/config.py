@@ -21,7 +21,7 @@ from urllib3.util.retry import Retry
 from websocket import WebSocketConnectionClosedException
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.utils import get_version
+from featurebyte.common.utils import get_version, is_server_mode
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import get_active_catalog_id
@@ -522,11 +522,13 @@ class Configurations:
         APIClient
             API client
         """
-        # pylint: disable=import-outside-toplevel,cyclic-import
-        from featurebyte.logging import reconfigure_loggers
+        if not is_server_mode():
+            # pylint: disable=import-outside-toplevel,cyclic-import
+            from featurebyte.logging import reconfigure_loggers
 
-        # configure logger
-        reconfigure_loggers(self)
+            # configure logger
+            reconfigure_loggers(self)
+
         return APIClient(
             api_url=self.profile.api_url,
             api_token=self.profile.api_token,
