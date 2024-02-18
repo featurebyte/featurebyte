@@ -3,11 +3,14 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, List, Optional, Union
+from typing import Any, Generator, Iterator, List, Optional, Union
 
 import ast
 import functools
+import logging
 import os
+import time
+from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
@@ -471,3 +474,28 @@ def is_server_mode() -> bool:
     """
     sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
     return sdk_execution_mode == "SERVER"
+
+
+@contextmanager
+def timer(message: str, logger: logging.Logger) -> Generator[None, None, None]:
+    """
+    Timer context manager to measure execution time.
+
+    Parameters
+    ----------
+    message: str
+        Message to log before and after the execution time measurement.
+    logger: logging.Logger
+        Logger object to log the execution time message.
+
+    Yields
+    ------
+    A context manager that logs the execution time with the given message and logger.
+    """
+    start_time = time.time()
+    try:
+        yield
+    finally:
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(f"{message}: {duration} seconds")
