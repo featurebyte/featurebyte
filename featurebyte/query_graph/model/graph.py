@@ -49,6 +49,7 @@ class QueryGraphModel(FeatureByteBaseModel):
     _total_node_num: Optional[int] = PrivateAttr(default=None)
     _sorted_node_names_by_ref: List[str] = PrivateAttr(default_factory=list)
     _sorted_edges_map_by_ref: Dict[str, List[str]] = PrivateAttr(default=defaultdict(list))
+    _sorted_node_names: List[str] = PrivateAttr(default_factory=list)
     _node_topological_order_map: Dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __repr__(self) -> str:
@@ -92,11 +93,11 @@ class QueryGraphModel(FeatureByteBaseModel):
         )
 
         # Update node topological order map
-        sorted_node_names = topological_sort(
+        self._sorted_node_names = topological_sort(
             self._sorted_node_names_by_ref, self._sorted_edges_map_by_ref
         )
         self._node_topological_order_map = {
-            value: idx for idx, value in enumerate(sorted_node_names)
+            value: idx for idx, value in enumerate(self._sorted_node_names)
         }
 
         # Update total node number to validate the cache
@@ -114,6 +115,19 @@ class QueryGraphModel(FeatureByteBaseModel):
         if self._is_cache_invalid():
             self._update_cache()
         return self._sorted_node_names_by_ref
+
+    @property
+    def sorted_node_names(self) -> List[str]:
+        """
+        Topologically sorted node names
+
+        Returns
+        -------
+        List[str]
+        """
+        if self._is_cache_invalid():
+            self._update_cache()
+        return self._sorted_node_names
 
     @property
     def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
@@ -503,10 +517,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Topologically sorted query graph nodes
         """
-        sorted_node_names = topological_sort(
-            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
-        )
-        for node_name in sorted_node_names:
+        for node_name in self.sorted_node_names:
             yield self.nodes_map[node_name]
 
     def _add_edge(self, parent: Node, child: Node) -> None:

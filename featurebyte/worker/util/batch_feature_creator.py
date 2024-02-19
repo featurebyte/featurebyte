@@ -16,12 +16,14 @@ from requests import Session
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.common.utils import timer
+from featurebyte.core.generic import QueryObject
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import BatchFeatureItem, FeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
@@ -157,6 +159,18 @@ class BatchFeatureCreator:
         self.feature_controller = feature_controller
         self.task_progress_updater = task_progress_updater
 
+    @property
+    def graph_clear_frequency(self) -> int:
+        """
+        Graph clear frequency
+
+        Returns
+        -------
+        int
+            Graph clear frequency
+        """
+        return int(os.getenv("FEATUREBYTE_GRAPH_CLEAR_PERIOD", "1"))
+
     async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> Set[ObjectId]:
         """
         Identify saved feature ids
@@ -270,31 +284,36 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
-        # prepare the feature create payload
-        pruned_graph, node_name_map = graph.quick_prune(target_node_names=[feature_item.node_name])
-        feature_create = FeatureServiceCreate(
-            _id=feature_item.id,
-            name=feature_item.name,
-            graph=pruned_graph,
-            node_name=node_name_map[feature_item.node_name],
-            tabular_source=feature_item.tabular_source,
-        )
+        with timer("prune graph & prepare feature definition", logger):
+            # prepare the feature create payload
+            pruned_graph, node_name_map = graph.quick_prune(
+                target_node_names=[feature_item.node_name]
+            )
+            feature_create = FeatureServiceCreate(
+                _id=feature_item.id,
+                name=feature_item.name,
+                graph=pruned_graph,
+                node_name=node_name_map[feature_item.node_name],
+                tabular_source=feature_item.tabular_source,
+            )
 
-        # prepare the feature document & definition
-        feature_service: FeatureService = self.feature_service
-        document = await feature_service.prepare_feature_model(
-            data=feature_create,
-            sanitize_for_definition=True,
-        )
-        definition = await self.namespace_handler.prepare_definition(document=document)
+            # prepare the feature document & definition
+            feature_service: FeatureService = self.feature_service
+            document = await feature_service.prepare_feature_model(
+                data=feature_create,
+                sanitize_for_definition=True,
+            )
+            definition = await self.namespace_handler.prepare_definition(document=document)
 
-        # execute the code to save the feature
-        await execute_sdk_code(
-            catalog_id=catalog_id, code=definition, feature_controller=self.feature_controller
-        )
+        with timer("execute feature definition", logger, extra={"feature_name": document.name}):
+            # execute the code to save the feature
+            await execute_sdk_code(
+                catalog_id=catalog_id, code=definition, feature_controller=self.feature_controller
+            )
 
-        # retrieve the saved feature & check if it is the same as the expected feature
-        is_consistent = await self.is_generated_feature_consistent(document=document)
+        with timer("validate feature consistency", logger):
+            # retrieve the saved feature & check if it is the same as the expected feature
+            is_consistent = await self.is_generated_feature_consistent(document=document)
 
         if not is_consistent:
             # delete the generated feature & raise an error
@@ -332,6 +351,7 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
+        # pylint: disable=too-many-locals
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
@@ -351,9 +371,21 @@ class BatchFeatureCreator:
         )
         await ranged_progress_update(0, "Started saving features")
 
-        output_feature_ids = []
+        output_feature_ids: List[PydanticObjectId] = []
         inconsistent_feature_names = []
+        created_feat_count = 0
         for i, feature_item in enumerate(payload.features):
+            if (created_feat_count + 1) % self.graph_clear_frequency == 0:
+                # clear the global query graph & operation structure cache to avoid bloating global query graph
+                global_graph = GlobalQueryGraph()
+                logger.info(
+                    "Clearing global query graph: %s nodes, %s edges",
+                    len(global_graph.nodes),
+                    len(global_graph.edges),
+                )
+                global_graph.clear()
+                QueryObject.clear_operation_structure_cache()
+
             if feature_item.id in saved_feature_ids:
                 # skip if the feature is already saved
                 output_feature_ids.append(feature_item.id)
@@ -375,6 +407,7 @@ class BatchFeatureCreator:
                         catalog_id=payload.catalog_id,
                     )
                     output_feature_ids.append(document.id)
+                    created_feat_count += 1
                 except DocumentInconsistencyError:
                     inconsistent_feature_names.append(feature_item.name)
 

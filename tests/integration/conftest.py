@@ -492,7 +492,10 @@ def mock_config_path_env_fixture(config):
     """Override default config path for all API tests"""
     with mock.patch.dict(
         os.environ,
-        {"FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path))},
+        {
+            "FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path)),
+            "FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000",
+        },
     ):
         yield
 
@@ -1667,3 +1670,14 @@ def feature_group_per_category_fixture(event_view):
     ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
 
     return feature_group_per_category
+
+
+@pytest.fixture(name="mock_graph_clear_period", autouse=True)
+def mock_graph_clear_period_fixture():
+    """
+    Mock graph clear period
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000"}):
+        # mock graph clear period to high value to clearing graph in tests
+        # clearing graph in tests will cause test failures as the task & client sharing the same process space
+        yield

@@ -601,12 +601,8 @@ StateField = Literal[
 ]
 
 
-class GlobalGraphState(metaclass=SingletonMeta):
-    """
-    Global singleton to store query graph related attributes
-    """
-
-    _state: GraphState = {
+def _create_global_graph_state() -> GraphState:
+    return {
         "edges": [],
         "nodes": [],
         "nodes_map": {},
@@ -617,19 +613,21 @@ class GlobalGraphState(metaclass=SingletonMeta):
         "ref_to_node_name": {},
     }
 
+
+class GlobalGraphState(metaclass=SingletonMeta):
+    """
+    Global singleton to store query graph related attributes
+    """
+
+    _state: GraphState = _create_global_graph_state()
+
     @classmethod
     def reset(cls) -> None:
         """
         Reset the global query graph state to clean state
         """
-        cls._state["edges"] = []
-        cls._state["nodes"] = []
-        cls._state["nodes_map"] = {}
-        cls._state["edges_map"] = defaultdict(list)
-        cls._state["backward_edges_map"] = defaultdict(list)
-        cls._state["node_type_counter"] = defaultdict(int)
-        cls._state["node_name_to_ref"] = {}
-        cls._state["ref_to_node_name"] = {}
+        del cls._state
+        cls._state = _create_global_graph_state()
 
     @classmethod
     def construct_getter_func(cls, field: StateField) -> Callable[[], Any]:
@@ -705,3 +703,14 @@ class GlobalQueryGraph(QueryGraph):
         # under no circumstances we should allow making copy of GlobalQueryGraph
         _ = args, kwargs
         return GlobalQueryGraph()
+
+    def clear(self) -> None:
+        """
+        Clear the global query graph
+        """
+        del self.nodes[:]
+        del self.edges[:]
+        self.nodes = []
+        self.edges = []
+        GlobalGraphState.reset()
+        self._update_cache()

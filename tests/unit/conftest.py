@@ -5,6 +5,7 @@ Common test fixtures used across unit test directories
 import copy
 import json
 import logging
+import os
 import tempfile
 import traceback
 from datetime import datetime
@@ -2253,3 +2254,14 @@ def mock_deployment_flow_fixture(
     _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
     _ = mock_api_object_cache
     yield
+
+
+@pytest.fixture(name="mock_graph_clear_period", autouse=True)
+def mock_graph_clear_period_fixture():
+    """
+    Mock graph clear period
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000"}):
+        # mock graph clear period to high value to clearing graph in tests
+        # clearing graph in tests will cause test failures as the task & client sharing the same process space
+        yield
