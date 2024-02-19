@@ -492,7 +492,10 @@ def mock_config_path_env_fixture(config):
     """Override default config path for all API tests"""
     with mock.patch.dict(
         os.environ,
-        {"FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path))},
+        {
+            "FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path)),
+            "FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000",
+        },
     ):
         yield
 
