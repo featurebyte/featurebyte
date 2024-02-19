@@ -125,10 +125,6 @@ async def execute_sdk_code(
     # execute the code
     with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            # clear the global query graph & operation structure cache to avoid bloating global query graph
-            GlobalQueryGraph().clear()
-            QueryObject.clear_operation_structure_cache()
-
             # patch the session.post method to capture the call & pass the payload to the feature controller
             with patch.object(Session, "post") as mock_post:
                 await asyncio.get_event_loop().run_in_executor(pool, exec, code)
@@ -320,6 +316,7 @@ class BatchFeatureCreator:
         ],
         start_percentage: int,
         end_percentage: int,
+        graph_clear_frequency: int = 25,
     ) -> Sequence[ObjectId]:
         """
         Batch feature creation based on given payload
@@ -332,6 +329,8 @@ class BatchFeatureCreator:
             Start percentage
         end_percentage: int
             End percentage
+        graph_clear_frequency: int
+            Frequency to clear the global query graph & operation structure cache
 
         Returns
         -------
@@ -343,6 +342,7 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
+        # pylint: disable=too-many-locals
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
@@ -362,9 +362,20 @@ class BatchFeatureCreator:
         )
         await ranged_progress_update(0, "Started saving features")
 
-        output_feature_ids = []
+        output_feature_ids: List[PydanticObjectId] = []
         inconsistent_feature_names = []
         for i, feature_item in enumerate(payload.features):
+            if (len(output_feature_ids) + 1) % graph_clear_frequency == 0:
+                # clear the global query graph & operation structure cache to avoid bloating global query graph
+                global_graph = GlobalQueryGraph()
+                logger.info(
+                    "Clearing global query graph: %s nodes, %s edges",
+                    len(global_graph.nodes),
+                    len(global_graph.edges),
+                )
+                global_graph.clear()
+                QueryObject.clear_operation_structure_cache()
+
             if feature_item.id in saved_feature_ids:
                 # skip if the feature is already saved
                 output_feature_ids.append(feature_item.id)
