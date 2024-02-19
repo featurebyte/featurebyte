@@ -159,6 +159,18 @@ class BatchFeatureCreator:
         self.feature_controller = feature_controller
         self.task_progress_updater = task_progress_updater
 
+    @property
+    def graph_clear_frequency(self) -> int:
+        """
+        Graph clear frequency
+
+        Returns
+        -------
+        int
+            Graph clear frequency
+        """
+        return int(os.getenv("FEATUREBYTE_GRAPH_CLEAR_PERIOD", "1"))
+
     async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> Set[ObjectId]:
         """
         Identify saved feature ids
@@ -316,7 +328,6 @@ class BatchFeatureCreator:
         ],
         start_percentage: int,
         end_percentage: int,
-        graph_clear_frequency: int = 5,
     ) -> Sequence[ObjectId]:
         """
         Batch feature creation based on given payload
@@ -329,8 +340,6 @@ class BatchFeatureCreator:
             Start percentage
         end_percentage: int
             End percentage
-        graph_clear_frequency: int
-            Frequency to clear the global query graph & operation structure cache
 
         Returns
         -------
@@ -366,7 +375,7 @@ class BatchFeatureCreator:
         inconsistent_feature_names = []
         created_feat_count = 0
         for i, feature_item in enumerate(payload.features):
-            if (created_feat_count + 1) % graph_clear_frequency == 0:
+            if (created_feat_count + 1) % self.graph_clear_frequency == 0:
                 # clear the global query graph & operation structure cache to avoid bloating global query graph
                 global_graph = GlobalQueryGraph()
                 logger.info(

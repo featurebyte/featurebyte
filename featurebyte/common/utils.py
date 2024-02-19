@@ -477,7 +477,9 @@ def is_server_mode() -> bool:
 
 
 @contextmanager
-def timer(message: str, logger: logging.Logger) -> Generator[None, None, None]:
+def timer(
+    message: str, logger: logging.Logger, **logger_kwargs: Any
+) -> Generator[None, None, None]:
     """
     Timer context manager to measure execution time.
 
@@ -487,6 +489,8 @@ def timer(message: str, logger: logging.Logger) -> Generator[None, None, None]:
         Message to log before and after the execution time measurement.
     logger: logging.Logger
         Logger object to log the execution time message.
+    logger_kwargs: Any
+        Additional keyword arguments to pass to the logger.
 
     Yields
     ------
@@ -499,4 +503,4 @@ def timer(message: str, logger: logging.Logger) -> Generator[None, None, None]:
     finally:
         end_time = time.time()
         duration = end_time - start_time
-        logger.info(f"{message}: {duration} seconds")
+        logger.info(f"{message}: {duration} seconds", **logger_kwargs)
