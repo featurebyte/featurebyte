@@ -490,7 +490,8 @@ def timer(message: str, logger: logging.Logger) -> Generator[None, None, None]:
 
     Yields
     ------
-    A context manager that logs the execution time with the given message and logger.
+    Generator[None, None, None]
+        A context manager that logs the execution time with the given message and logger.
     """
     start_time = time.time()
     try:

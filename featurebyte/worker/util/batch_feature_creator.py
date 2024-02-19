@@ -17,12 +17,13 @@ from requests import Session
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
+from featurebyte.core.generic import QueryObject
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import BatchFeatureItem, FeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
@@ -124,6 +125,10 @@ async def execute_sdk_code(
     # execute the code
     with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
+            # clear the global query graph & operation structure cache to avoid bloating global query graph
+            GlobalQueryGraph().clear()
+            QueryObject.clear_operation_structure_cache()
+
             # patch the session.post method to capture the call & pass the payload to the feature controller
             with patch.object(Session, "post") as mock_post:
                 await asyncio.get_event_loop().run_in_executor(pool, exec, code)

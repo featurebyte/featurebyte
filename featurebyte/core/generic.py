@@ -53,6 +53,17 @@ def get_operation_structure_cache_key(obj: QueryObjectT) -> Any:
     return hashkey(graph_identity, obj.node_name)
 
 
+def _create_operation_structure_cache() -> Any:
+    """
+    Create the operation structure cache
+
+    Returns
+    -------
+    LRUCache
+    """
+    return LRUCache(maxsize=1024)
+
+
 class QueryObject(FeatureByteBaseModel):
     """
     QueryObject class contains query graph, node, row index lineage & session.
@@ -63,7 +74,7 @@ class QueryObject(FeatureByteBaseModel):
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
-    _operation_structure_cache: Any = LRUCache(maxsize=1024)
+    _operation_structure_cache: Any = _create_operation_structure_cache()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
@@ -279,6 +290,14 @@ class QueryObject(FeatureByteBaseModel):
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
         return json_object
+
+    @classmethod
+    def clear_operation_structure_cache(cls) -> None:
+        """
+        Clear the operation structure cache
+        """
+        del cls._operation_structure_cache
+        cls._operation_structure_cache = _create_operation_structure_cache()
 
 
 class ProtectedColumnsQueryObject(QueryObject):
