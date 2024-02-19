@@ -120,14 +120,3 @@ def enable_feast_integration_fixture():
     """
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
         yield
-
-
-@pytest.fixture(name="mock_graph_clear_period", autouse=True)
-def mock_graph_clear_frequency_fixture():
-    """
-    Mock graph clear period
-    """
-    with patch.dict(os.environ, {"FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000"}):
-        # mock graph clear period to high value to clearing graph in tests
-        # clearing graph in tests will cause test failures as the task & client sharing the same process space
-        yield

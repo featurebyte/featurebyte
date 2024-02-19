@@ -305,7 +305,7 @@ class BatchFeatureCreator:
             )
             definition = await self.namespace_handler.prepare_definition(document=document)
 
-        with timer("execute feature definition", logger):
+        with timer("execute feature definition", logger, extra={"feature_name": document.name}):
             # execute the code to save the feature
             await execute_sdk_code(
                 catalog_id=catalog_id, code=definition, feature_controller=self.feature_controller
