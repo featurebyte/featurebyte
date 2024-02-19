@@ -10,6 +10,7 @@
 + `session` Specify role and group in Snowflake and Databricks details to enforce permissions for accessing source and output tables
 + `service` Remove feature store details from tile hash calculation.
 + `api` Support description specification during table creation.
++ `service` Compute data description in batches of columns
 
 ### 🐛 Bug Fixes
 
