@@ -316,7 +316,7 @@ class BatchFeatureCreator:
         ],
         start_percentage: int,
         end_percentage: int,
-        graph_clear_frequency: int = 25,
+        graph_clear_frequency: int = 5,
     ) -> Sequence[ObjectId]:
         """
         Batch feature creation based on given payload
