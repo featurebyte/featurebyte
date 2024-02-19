@@ -364,8 +364,9 @@ class BatchFeatureCreator:
 
         output_feature_ids: List[PydanticObjectId] = []
         inconsistent_feature_names = []
+        created_feat_count = 0
         for i, feature_item in enumerate(payload.features):
-            if (len(output_feature_ids) + 1) % graph_clear_frequency == 0:
+            if (created_feat_count + 1) % graph_clear_frequency == 0:
                 # clear the global query graph & operation structure cache to avoid bloating global query graph
                 global_graph = GlobalQueryGraph()
                 logger.info(
@@ -397,6 +398,7 @@ class BatchFeatureCreator:
                         catalog_id=payload.catalog_id,
                     )
                     output_feature_ids.append(document.id)
+                    created_feat_count += 1
                 except DocumentInconsistencyError:
                     inconsistent_feature_names.append(feature_item.name)
 
