@@ -12,7 +12,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.ast.base import TableNode
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, sql_to_string
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -68,13 +68,15 @@ class BaseGraphInterpreter:
         operation_structure = QueryGraph(**flat_graph.dict()).extract_operation_structure(
             flat_node, keep_all_source_columns=True
         )
-        sql_tree = (
-            SQLOperationGraph(
-                flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
-            )
-            .build(flat_node)
-            .sql
-        )
+        sql_node = SQLOperationGraph(
+            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+        ).build(flat_node)
+        assert isinstance(sql_node, (TableNode, ExpressionNode))
+        if isinstance(sql_node, TableNode):
+            sql_tree = sql_node.sql
+        else:
+            sql_tree = sql_node.sql_standalone
+
         sql_tree = (
             construct_cte_sql([("data", sql_tree)])
             .select(expressions.alias_(expressions.Count(this="*"), "count", quoted=True))

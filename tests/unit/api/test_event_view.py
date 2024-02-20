@@ -956,7 +956,7 @@ def test_shape(snowflake_event_table, snowflake_query_map):
     Test creating ObservationTable from an EventView
     """
     view = snowflake_event_table.get_view()
-    expected_call = textwrap.dedent(
+    expected_call_view = textwrap.dedent(
         """
         WITH data AS (
           SELECT
@@ -968,6 +968,18 @@ def test_shape(snowflake_event_table, snowflake_query_map):
             "col_boolean" AS "col_boolean",
             "event_timestamp" AS "event_timestamp",
             "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
+        SELECT
+          COUNT(*) AS "count"
+        FROM data
+        """
+    ).strip()
+    expected_call_view_column = textwrap.dedent(
+        """
+        WITH data AS (
+          SELECT
+            "col_int" AS "col_int"
           FROM "sf_database"."sf_schema"."sf_table"
         )
         SELECT
@@ -989,9 +1001,11 @@ def test_shape(snowflake_event_table, snowflake_query_map):
         mock_execute_query.side_effect = side_effect
         assert view.shape() == (1000, 8)
         # Check that the correct query was executed
-        assert mock_execute_query.call_args[0][0] == expected_call
+        assert mock_execute_query.call_args[0][0] == expected_call_view
         # test view colum shape
         assert view["col_int"].shape() == (1000, 1)
+        # Check that the correct query was executed
+        assert mock_execute_query.call_args[0][0] == expected_call_view_column
 
 
 @pytest.mark.flaky(reruns=3)
