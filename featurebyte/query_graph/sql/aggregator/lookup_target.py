@@ -9,7 +9,8 @@ from sqlglot.expressions import Select
 
 from featurebyte.query_graph.node.generic import SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.base_lookup import BaseLookupAggregator
-from featurebyte.query_graph.sql.scd_helper import OffsetDirection, Table, get_scd_join_expr
+from featurebyte.query_graph.sql.offset import OffsetDirection
+from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 
 

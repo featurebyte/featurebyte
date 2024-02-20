@@ -6,16 +6,25 @@ from __future__ import annotations
 import pandas as pd
 from sqlglot.expressions import Expression
 
+from featurebyte.enum import StrEnum
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.scd_helper import OffsetDirection
+
+
+class OffsetDirection(StrEnum):
+    """
+    Offset direction
+    """
+
+    FORWARD = "forward"
+    BACKWARD = "backward"
 
 
 def add_offset_to_timestamp(
     adapter: BaseAdapter,
     timestamp_expr: Expression,
     offset: str,
-    offset_direction: OffsetDirection,
+    offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
 ) -> Expression:
     """
     Returns an expression for the timestamp adjusted by offset

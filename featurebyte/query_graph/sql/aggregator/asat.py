@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
+from featurebyte.query_graph.sql.offset import add_offset_to_timestamp
 from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_with_end_timestamp
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
 
@@ -100,6 +101,20 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         else:
             join_key_condition = expressions.true()
 
+        # Use offset adjusted point in time to join with SCD table if any
+        if spec.parameters.offset is None:
+            point_in_time_expr = get_qualified_column_identifier(
+                SpecialColumnName.POINT_IN_TIME, "REQ"
+            )
+        else:
+            point_in_time_expr = add_offset_to_timestamp(
+                adapter=self.adapter,
+                timestamp_expr=get_qualified_column_identifier(
+                    SpecialColumnName.POINT_IN_TIME, "REQ"
+                ),
+                offset=spec.parameters.offset,
+            )
+
         # Only join records from the SCD table that are valid as at point in time
         record_validity_condition = expressions.and_(
             # SCD.effective_timestamp_column <= REQ.POINT_IN_TIME; i.e. record became effective
@@ -108,16 +123,14 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
                 this=get_qualified_column_identifier(
                     spec.parameters.effective_timestamp_column, "SCD"
                 ),
-                expression=get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
+                expression=point_in_time_expr,
             ),
             expressions.or_(
                 # SCD.end_timestamp_column > REQ.POINT_IN_TIME; i.e. record has not yet been
                 # invalidated as at the point in time, but will be at a future time
                 expressions.GT(
                     this=get_qualified_column_identifier(end_timestamp_column, "SCD"),
-                    expression=get_qualified_column_identifier(
-                        SpecialColumnName.POINT_IN_TIME, "REQ"
-                    ),
+                    expression=point_in_time_expr,
                 ),
                 # SCD.end_timestamp_column IS NULL; i.e. record is current
                 expressions.Is(
