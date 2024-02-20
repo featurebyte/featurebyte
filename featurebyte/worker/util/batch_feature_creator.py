@@ -414,7 +414,7 @@ class BatchFeatureCreator:
             # update the progress
             percent = int(100 * (i + 1) / total_features)
             message = f"Completed {i+1}/{total_features} features"
-            await ranged_progress_update(percent, message)
+            await ranged_progress_update(percent, message, metadata={"processed_features": i + 1})
 
         if inconsistent_feature_names:
             combined_names = ", ".join(inconsistent_feature_names)
