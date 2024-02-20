@@ -981,8 +981,6 @@ def test_shape(snowflake_event_table, snowflake_query_map):
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
-
-        print(query)
         return pd.DataFrame({"count": [1000]})
 
     with mock.patch(
