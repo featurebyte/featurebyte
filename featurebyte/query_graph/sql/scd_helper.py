@@ -17,6 +17,8 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 # Internally used identifiers when constructing SQL
+from featurebyte.query_graph.sql.offset import add_offset_to_timestamp
+
 TS_COL = "__FB_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
 KEY_COL = "__FB_KEY_COL"
@@ -277,11 +279,11 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     """
     # Adjust left timestamps if offset is provided
     if offset:
-        offset_seconds = pd.Timedelta(offset).total_seconds()
-        direction_adjustment_multiplier = -1 if offset_direction == OffsetDirection.BACKWARD else 1
-        left_ts_col = adapter.dateadd_microsecond(
-            make_literal_value(offset_seconds * 1e6 * direction_adjustment_multiplier),
-            left_table.timestamp_column_expr,
+        left_ts_col = add_offset_to_timestamp(
+            adapter=adapter,
+            timestamp_expr=left_table.timestamp_column_expr,
+            offset=offset,
+            offset_direction=offset_direction,
         )
     else:
         left_ts_col = left_table.timestamp_column_expr
