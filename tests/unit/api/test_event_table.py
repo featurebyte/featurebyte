@@ -1098,14 +1098,22 @@ def test_sdk_code_generation_on_saved_data(saved_event_table, update_fixtures):
     )
 
 
-def test_shape(snowflake_event_table):
+def test_shape(snowflake_event_table, snowflake_query_map):
     """
     Test creating ObservationTable from an EventView
     """
+
+    def side_effect(query, timeout=None):
+        _ = timeout
+        res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return pd.DataFrame({"count": [1000]})
+
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
-        mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
+        mock_execute_query.side_effect = side_effect
         assert snowflake_event_table.shape() == (1000, 9)
         # Check that the correct query was executed
         assert (

@@ -9,7 +9,7 @@ from featurebyte.exception import CredentialsError
 from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
@@ -34,6 +34,7 @@ class SessionManagerService:
         feature_store: FeatureStoreModel,
         get_credential: Any = None,
         user_override: Optional[User] = None,
+        timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> BaseSession:
         """
         Get session for feature store
@@ -46,6 +47,8 @@ class SessionManagerService:
             Get credential handler function
         user_override: Optional[User]
             User object to override
+        timeout: float
+            timeout for session creation
 
         Returns
         -------
@@ -71,7 +74,7 @@ class SessionManagerService:
                 )
             credentials = {feature_store.name: credential}
             session_manager = SessionManager(credentials=credentials)
-            session = await session_manager.get_session(feature_store)
+            session = await session_manager.get_session(feature_store, timeout=timeout)
             await self.session_validator_service.validate_feature_store_exists(
                 feature_store.details
             )

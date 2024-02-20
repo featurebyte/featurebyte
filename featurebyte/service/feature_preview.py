@@ -34,6 +34,7 @@ from featurebyte.service.session_manager import SessionManagerService
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
 from featurebyte.service.target import TargetService
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS
 
 ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
 
@@ -111,7 +112,7 @@ class FeaturePreviewService(PreviewService):
                 document_id=observation_table.location.feature_store_id
             )
             db_session = await self.session_manager_service.get_feature_store_session(
-                feature_store=feature_store,
+                feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
             )
             sql_expr = get_source_expr(source=observation_table.location.table_details)
             sql = sql_to_string(

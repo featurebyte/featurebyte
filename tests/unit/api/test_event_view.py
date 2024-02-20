@@ -951,39 +951,45 @@ def test_create_observation_table_from_event_view__with_sample(
     )
 
 
-def test_shape(snowflake_event_table):
+def test_shape(snowflake_event_table, snowflake_query_map):
     """
     Test creating ObservationTable from an EventView
     """
     view = snowflake_event_table.get_view()
+    expected_call = textwrap.dedent(
+        """
+        WITH data AS (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
+        SELECT
+          COUNT(*) AS "count"
+        FROM data
+        """
+    ).strip()
+
+    def side_effect(query, timeout=None):
+        _ = timeout
+        res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return pd.DataFrame({"count": [1000]})
+
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
-        mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
+        mock_execute_query.side_effect = side_effect
         assert view.shape() == (1000, 8)
         # Check that the correct query was executed
-        assert (
-            mock_execute_query.call_args[0][0]
-            == textwrap.dedent(
-                """
-                WITH data AS (
-                  SELECT
-                    "col_int" AS "col_int",
-                    "col_float" AS "col_float",
-                    "col_char" AS "col_char",
-                    "col_text" AS "col_text",
-                    "col_binary" AS "col_binary",
-                    "col_boolean" AS "col_boolean",
-                    "event_timestamp" AS "event_timestamp",
-                    "cust_id" AS "cust_id"
-                  FROM "sf_database"."sf_schema"."sf_table"
-                )
-                SELECT
-                  COUNT(*) AS "count"
-                FROM data
-                """
-            ).strip()
-        )
+        assert mock_execute_query.call_args[0][0] == expected_call
         # test view colum shape
         assert view["col_int"].shape() == (1000, 1)
 
