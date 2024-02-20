@@ -369,6 +369,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         ----------
         parameters: BaseGroupbyParameters
             Groupby parameters
+        *args: Any
+            Any additional parameters to include in the result name
 
         Returns
         -------
