@@ -564,6 +564,7 @@ def snowflake_query_map_fixture():
                 "COMMENT": "Dimension table",
             }
         ],
+        "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'

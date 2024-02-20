@@ -27,7 +27,7 @@ from featurebyte.schema.feature_store import (
 )
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 
 MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
@@ -91,7 +91,7 @@ class PreviewService:
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
         return feature_store, session
 
@@ -321,7 +321,7 @@ class PreviewService:
             document_id=location.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
 
         # check size of the table

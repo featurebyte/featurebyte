@@ -132,14 +132,12 @@ async def test_session_manager_get_new_session_timeout(
     """
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
 
-    with patch("featurebyte.session.manager.INTERACTIVE_SESSION_TIMEOUT_SECONDS", 1), patch(
-        "featurebyte.session.manager.SnowflakeSession.__init__"
-    ) as mock_init:
+    with patch("featurebyte.session.manager.SnowflakeSession.__init__") as mock_init:
 
         def slow_init(*args, **kwargs):
-            time.sleep(2)
+            time.sleep(1)
 
         mock_init.side_effect = slow_init
         with pytest.raises(SessionInitializationTimeOut) as exc:
-            await session_manager.get_session(snowflake_feature_store)
+            await session_manager.get_session(snowflake_feature_store, timeout=0.5)
         assert "Session creation timed out after" in str(exc.value)
