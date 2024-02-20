@@ -1082,6 +1082,35 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_table_input_node):
     return feature_node
 
 
+@pytest.fixture(name="aggregate_asat_with_offset_feature_node")
+def aggregate_asat_with_offset_feature_node_fixture(global_graph, scd_table_input_node):
+    node_params = {
+        "keys": ["membership_status"],
+        "serving_names": ["MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "name": "asat_feature_offset_7d",
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "effective_timestamp_column": "effective_ts",
+        "natural_key_column": "cust_id",
+        "offset": "7d",
+    }
+    aggregate_asat_node = global_graph.add_operation(
+        node_type=NodeType.AGGREGATE_AS_AT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["asat_feature_offset_7d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_asat_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="time_since_last_event_feature_node")
 def time_since_last_event_feature_node_fixture(global_graph, input_node):
     node_params = {

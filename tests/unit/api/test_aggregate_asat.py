@@ -144,12 +144,44 @@ def test_aggregate_asat__invalid_offset_string(scd_view_with_entity):
     assert "Failed to parse the offset parameter" in str(exc.value)
 
 
-def test_aggregate_asat__offset_not_implemented(scd_view_with_entity):
+def test_aggregate_asat__offset(scd_view_with_entity, entity_col_int):
     """
-    Test offset support not yet implemented
+    Test offset parameter
     """
-    with pytest.raises(NotImplementedError) as exc:
-        scd_view_with_entity.groupby("cust_id").aggregate_asat(
-            value_column="col_float", method="sum", feature_name="asat_feature", offset="7d"
-        )
-    assert str(exc.value) == "offset support is not yet implemented"
+    feature = scd_view_with_entity.groupby("cust_id").aggregate_asat(
+        value_column="col_float", method="sum", feature_name="asat_feature", offset="7d"
+    )
+
+    assert isinstance(feature, Feature)
+    feature_dict = feature.dict()
+    graph_dict = feature_dict["graph"]
+
+    node_dict = get_node(graph_dict, feature_dict["node_name"])
+    assert node_dict == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["asat_feature"]},
+    }
+
+    asat_node_dict = get_node(graph_dict, "aggregate_as_at_1")
+    assert asat_node_dict == {
+        "name": "aggregate_as_at_1",
+        "output_type": "frame",
+        "parameters": {
+            "agg_func": "sum",
+            "backward": True,
+            "current_flag_column": "is_active",
+            "effective_timestamp_column": "effective_timestamp",
+            "end_timestamp_column": "end_timestamp",
+            "entity_ids": [entity_col_int.id],
+            "keys": ["cust_id"],
+            "name": "asat_feature",
+            "natural_key_column": "col_text",
+            "offset": "7d",
+            "parent": "col_float",
+            "serving_names": ["col_int"],
+            "value_by": None,
+        },
+        "type": "aggregate_as_at",
+    }

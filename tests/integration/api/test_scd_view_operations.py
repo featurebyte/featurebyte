@@ -435,12 +435,16 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     Test aggregate_asat aggregation on SCDView
     """
     scd_view = scd_table.get_view()
-    feature = scd_view.groupby("User Status").aggregate_asat(
+    feature_1 = scd_view.groupby("User Status").aggregate_asat(
         method="count", feature_name="Current Number of Users With This Status"
+    )
+    feature_2 = scd_view.groupby("User Status").aggregate_asat(
+        method="count", feature_name="Current Number of Users With This Status 1d", offset="1d"
     )
 
     # check preview but provides children id
-    df = FeatureList([feature], name="mylist").preview(
+    feature_list = FeatureList([feature_1, feature_2], name="mylist")
+    df = feature_list.preview(
         pd.DataFrame(
             [
                 {
@@ -456,11 +460,12 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "üser id": 1,
         "Current Number of Users With This Status": 1,
+        "Current Number of Users With This Status 1d": 1,
     }
     assert df.iloc[0].to_dict() == expected
 
     # check preview
-    df = feature.preview(
+    df = feature_list.preview(
         pd.DataFrame(
             [
                 {
@@ -476,11 +481,11 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "user_status": "STÀTUS_CODE_42",
         "Current Number of Users With This Status": 1,
+        "Current Number of Users With This Status 1d": 0,
     }
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
-    feature_list = FeatureList([feature], "feature_list")
     observations_set = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
@@ -489,6 +494,7 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     )
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
+    expected["Current Number of Users With This Status 1d"] = [0, 0, 1, 2, 2, 1, 1, 0, 0, 0]
     df = feature_list.compute_historical_features(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)

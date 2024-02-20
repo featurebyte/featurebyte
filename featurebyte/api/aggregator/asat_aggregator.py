@@ -149,4 +149,3 @@ class AsAtAggregator(BaseAggregator):
 
         if offset is not None:
             validate_offset_string(offset)
-            raise NotImplementedError("offset support is not yet implemented")

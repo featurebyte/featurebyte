@@ -355,7 +355,11 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def construct_agg_result_name(self, *args: Any) -> str:
         return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
 
-    def get_agg_result_name_from_groupby_parameters(self, parameters: BaseGroupbyParameters) -> str:
+    def get_agg_result_name_from_groupby_parameters(
+        self,
+        parameters: BaseGroupbyParameters,
+        *args: Any,
+    ) -> str:
         """
         Get the name of the aggregation result column from groupby parameters. The name should
         include the parameters that can affect the result of the groupby operation: aggregation
@@ -365,18 +369,20 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         ----------
         parameters: BaseGroupbyParameters
             Groupby parameters
+        *args: Any
+            Any additional parameters to include in the result name
 
         Returns
         -------
         str
         """
-        args = [
+        groupby_args = [
             parameters.agg_func,
             parameters.parent,
             *(parameters.keys or [None]),  # type: ignore
             parameters.value_by or None,
         ]
-        return self.construct_agg_result_name(*args)
+        return self.construct_agg_result_name(*groupby_args, *args)
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
@@ -614,7 +620,14 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
+        args = self._get_additional_agg_result_name_params()
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters, *args)
+
+    def _get_additional_agg_result_name_params(self) -> list[Any]:
+        args = []
+        if self.parameters is not None and self.parameters.offset is not None:
+            args.append(self.parameters.offset)
+        return args
 
     @property
     def aggregation_type(self) -> AggregationType:
