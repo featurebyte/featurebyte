@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional
+from typing import Any, AsyncIterator, Callable, Coroutine, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -207,15 +207,29 @@ class DeployService(OpsServiceMixin):
                         "Only FeatureList object of all production ready features can be deployed."
                     )
 
+    async def _iterate_enabled_deployments_as_dict(
+        self, feature_list_id: ObjectId, deployment_id: ObjectId, target_deployed: bool
+    ) -> AsyncIterator[dict[str, Any]]:
+        """
+        Iterate deployments that are enabled, including the one that is going to be enabled in the
+        current request
+        """
+        async for doc in self.deployment_service.list_documents_as_dict_iterator(
+            query_filter={"feature_list_id": feature_list_id, "enabled": True}
+        ):
+            yield doc
+        if target_deployed:
+            yield await self.deployment_service.get_document_as_dict(deployment_id)
+
     async def _get_enabled_serving_entity_ids(
-        self, feature_list_model: FeatureListModel
+        self, feature_list_model: FeatureListModel, deployment_id: ObjectId, target_deployed: bool
     ) -> List[ServingEntity]:
-        enabled_serving_entity_ids = {tuple(feature_list_model.primary_entity_ids)}
+        enabled_serving_entity_ids = []
         context_id_to_model = {}
         use_case_id_to_model = {}
 
-        async for doc in self.deployment_service.list_documents_as_dict_iterator(
-            query_filter={"feature_list_id": feature_list_model.id, "enabled": True}
+        async for doc in self._iterate_enabled_deployments_as_dict(
+            feature_list_model.id, deployment_id, target_deployed
         ):
             context_id = doc["context_id"]
 
@@ -242,9 +256,9 @@ class DeployService(OpsServiceMixin):
                     combined_entity_ids
                 )
                 if sorted(reduced_entity_ids) == sorted(context_model.primary_entity_ids):
-                    enabled_serving_entity_ids.add(tuple(serving_entity_ids))
+                    enabled_serving_entity_ids.append(serving_entity_ids)
 
-        return [list(entity_ids) for entity_ids in enabled_serving_entity_ids]
+        return enabled_serving_entity_ids
 
     async def _revert_changes(
         self,
@@ -338,7 +352,11 @@ class DeployService(OpsServiceMixin):
         )
 
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
-        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(document)
+        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
+            feature_list_model=document,
+            deployment_id=deployment_id,
+            target_deployed=target_deployed,
+        )
 
         if document.deployed != target_deployed:
             await self._validate_deployed_operation(document, target_deployed)
