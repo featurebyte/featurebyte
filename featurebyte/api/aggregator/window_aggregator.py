@@ -103,6 +103,7 @@ class WindowAggregator(BaseAggregator):
             node_cls=GroupByNode,
             node_params=node_params,
             input_node=self.view.node,
+            operation_structure_info=self.view.operation_structure_info,
         )
         assert isinstance(feature_names, list)
         assert method is not None
