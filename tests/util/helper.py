@@ -755,7 +755,12 @@ def check_on_demand_feature_code_generation(
                 assert expected.strip() == udf_codes.strip(), udf_codes
 
 
-async def deploy_feature_list(app_container, feature_list_name, feature_ids):
+async def deploy_feature_list(
+    app_container,
+    feature_list_name,
+    feature_ids,
+    context_primary_entity_ids=None,
+):
     """
     Helper function to deploy a feature list using services
     """
@@ -767,9 +772,11 @@ async def deploy_feature_list(app_container, feature_list_name, feature_ids):
 
     data = FeatureListServiceCreate(name=feature_list_name, feature_ids=feature_ids)
     feature_list_model = await app_container.feature_list_service.create_document(data)
+    if context_primary_entity_ids is None:
+        context_primary_entity_ids = feature_list_model.primary_entity_ids
     data = ContextCreate(
         name=f"{feature_list_name}_context",
-        primary_entity_ids=feature_list_model.primary_entity_ids,
+        primary_entity_ids=context_primary_entity_ids,
     )
     context_model = await app_container.context_service.create_document(data)
     data = UseCaseCreate(
@@ -793,6 +800,7 @@ async def deploy_feature(
     feature,
     return_type="feature",
     feature_list_name_override=None,
+    context_primary_entity_ids=None,
 ):
     """
     Helper function to create deploy a single feature using services
@@ -809,7 +817,12 @@ async def deploy_feature(
         feature_list_name = f"{feature.name}_list"
     else:
         feature_list_name = feature_list_name_override
-    feature_list_model = await deploy_feature_list(app_container, feature_list_name, [feature.id])
+    feature_list_model = await deploy_feature_list(
+        app_container,
+        feature_list_name,
+        [feature.id],
+        context_primary_entity_ids=context_primary_entity_ids,
+    )
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)
     return await app_container.feature_list_service.get_document(feature_list_model.id)

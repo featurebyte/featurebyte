@@ -47,6 +47,7 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
 async def deployed_float_feature(
     app_container,
     float_feature,
+    transaction_entity,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -54,20 +55,26 @@ async def deployed_float_feature(
     Fixture for deployed float feature
     """
     _ = mock_update_data_warehouse
-    out = await deploy_feature(app_container, float_feature)
+    out = await deploy_feature(
+        app_container, float_feature, context_primary_entity_ids=[transaction_entity.id]
+    )
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return out
 
 
 @pytest_asyncio.fixture
-async def deployed_float_feature_post_processed(app_container, float_feature) -> FeatureModel:
+async def deployed_float_feature_post_processed(
+    app_container, float_feature, transaction_entity
+) -> FeatureModel:
     """
     Fixture for deployed feature that is post processed from float feature
     """
     feature = float_feature + 123
     feature.name = f"{float_feature.name}_plus_123"
-    return await deploy_feature(app_container, feature)
+    return await deploy_feature(
+        app_container, feature, context_primary_entity_ids=[transaction_entity.id]
+    )
 
 
 @pytest_asyncio.fixture
@@ -114,6 +121,7 @@ async def deployed_scd_lookup_feature(
 async def deployed_aggregate_asat_feature(
     app_container,
     aggregate_asat_feature,
+    cust_id_entity,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -122,7 +130,9 @@ async def deployed_aggregate_asat_feature(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, aggregate_asat_feature)
+    return await deploy_feature(
+        app_container, aggregate_asat_feature, context_primary_entity_ids=[cust_id_entity.id]
+    )
 
 
 @pytest_asyncio.fixture
