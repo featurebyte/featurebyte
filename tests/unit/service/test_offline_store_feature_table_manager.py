@@ -48,6 +48,7 @@ async def deployed_float_feature(
     app_container,
     float_feature,
     transaction_entity,
+    cust_id_entity,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -55,12 +56,18 @@ async def deployed_float_feature(
     Fixture for deployed float feature
     """
     _ = mock_update_data_warehouse
-    out = await deploy_feature(
-        app_container, float_feature, context_primary_entity_ids=[transaction_entity.id]
+    feature_list = await deploy_feature(
+        app_container,
+        float_feature,
+        context_primary_entity_ids=[transaction_entity.id],
+        return_type="feature_list",
     )
+    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
-    return out
+
+    feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
+    return feature
 
 
 @pytest_asyncio.fixture
