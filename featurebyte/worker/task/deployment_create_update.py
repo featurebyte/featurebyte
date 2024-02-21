@@ -93,6 +93,6 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
             update_deployment_payload = cast(UpdateDeploymentPayload, payload.deployment_payload)
             await self.deploy_service.update_deployment(
                 deployment_id=payload.output_document_id,
-                enabled=update_deployment_payload.enabled,
+                to_enable_deployment=update_deployment_payload.enabled,
                 update_progress=self.task_progress_updater.update_progress,
             )
