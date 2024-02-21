@@ -40,8 +40,15 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
+from featurebyte.schema.use_case import UseCaseCreate
+from featurebyte.schema.worker.task.deployment_create_update import (
+    CreateDeploymentPayload,
+    DeploymentCreateUpdateTaskPayload,
+    UpdateDeploymentPayload,
+)
 
 
 def reset_global_graph():
@@ -760,11 +767,23 @@ async def deploy_feature_list(app_container, feature_list_name, feature_ids):
 
     data = FeatureListServiceCreate(name=feature_list_name, feature_ids=feature_ids)
     feature_list_model = await app_container.feature_list_service.create_document(data)
+    data = ContextCreate(
+        name=f"{feature_list_name}_context",
+        primary_entity_ids=feature_list_model.primary_entity_ids,
+    )
+    context_model = await app_container.context_service.create_document(data)
+    data = UseCaseCreate(
+        name=f"{feature_list_name}_use_case",
+        context_id=context_model.id,
+        target_namespace_id=ObjectId(),
+    )
+    use_case_model = await app_container.use_case_service.create_document(data)
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
         deployment_id=ObjectId(),
         deployment_name=feature_list_model.name,
         to_enable_deployment=True,
+        use_case_id=use_case_model.id,
     )
     return await app_container.feature_list_service.get_document(feature_list_model.id)
 

@@ -274,6 +274,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         List of entity relationship info for the feature list
     supported_serving_entity_ids: List[ServingEntity]
         List of supported serving entity ids, serving entity id is a list of entity ids for serving
+    enabled_serving_entity_ids: List[ServingEntity]
+        List of serving entity ids that are used by currently enabled deployments
     deployed: bool
         Whether to deploy this feature list version
     feature_list_namespace_id: PydanticObjectId
@@ -294,6 +296,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default=None
     )
     supported_serving_entity_ids: List[ServingEntity] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    enabled_serving_entity_ids: List[ServingEntity] = Field(
         allow_mutation=False, default_factory=list
     )
     readiness_distribution: FeatureReadinessDistribution = Field(

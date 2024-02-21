@@ -319,6 +319,22 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 entity_info.format_missing_entities_error(exc.missing_entity_ids)
             )
 
+        # Validate that there are existing entity lookup tables that support the required lookup
+        # steps
+        feature_view_names = {
+            feature_view.name
+            for feature_view in feast_store._list_feature_views(
+                allow_cache=False, hide_dummy_entity=False
+            )
+        }
+        for lookup_step in lookup_steps:
+            if get_lookup_feature_table_name(lookup_step.id) not in feature_view_names:
+                raise RequiredEntityNotProvidedError(
+                    entity_info.format_missing_entities_error(
+                        [entity.id for entity in entity_info.missing_entities]
+                    )
+                )
+
         # Lookup parent entities through feast store
         cls._apply_entity_lookup_steps(
             feast_store=feast_store,

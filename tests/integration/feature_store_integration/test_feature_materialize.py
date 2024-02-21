@@ -767,6 +767,32 @@ def test_online_features__primary_entity_ids(
 
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__invalid_child_entity(config, deployed_feature_list, source_type):
+    """
+    Check online features using a child entity that is a feature list's supported_serving_entity_ids
+    but not enabled_serving_entity_ids
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_names = [
+        {
+            "item_id": "ITEM_42",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    res = client.post(
+        f"/deployment/{deployment.id}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 422
+    assert res.json() == {
+        "detail": 'Required entities are not provided in the request: Order (serving name: "order_id")'
+    }
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_online_features__non_existing_order_id(
     config, deployed_feature_list, expected_features_order_id_T3850, source_type
 ):
