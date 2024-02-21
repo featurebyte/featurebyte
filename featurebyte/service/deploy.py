@@ -235,9 +235,27 @@ class DeployService(OpsServiceMixin):
             feature_list=feature_list,
         )
 
+    async def _get_feature_list_target_deployed(
+        self, feature_list_id: ObjectId, deployment_id: ObjectId, to_enable_deployment: bool
+    ) -> bool:
+        target_deployed = to_enable_deployment
+        if not to_enable_deployment:
+            # check whether other deployment are using this feature list
+            list_deployment_results = await self.deployment_service.list_documents_as_dict(
+                query_filter={
+                    "feature_list_id": feature_list_id,
+                    "enabled": True,
+                    "_id": {"$ne": deployment_id},
+                }
+            )
+            target_deployed = list_deployment_results["total"] > 0
+        return target_deployed
+
     async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
+        deployment_id: ObjectId,
+        to_enable_deployment: bool,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModel:
         """
@@ -247,6 +265,10 @@ class DeployService(OpsServiceMixin):
         ----------
         feature_list_id: ObjectId
             Target feature list ID
+        deployment_id: ObjectId
+            Deployment ID
+        to_enable_deployment: bool
+            Flag to indicate whether the call is from enable/disable deployment
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
@@ -259,15 +281,17 @@ class DeployService(OpsServiceMixin):
         Exception
             When there is an unexpected error during feature online_enabled status update
         """
+        # pylint: disable=too-many-locals
         if update_progress:
             await update_progress(0, "Start updating feature list")
 
-        list_deployment_results = await self.deployment_service.list_documents_as_dict(
-            query_filter={"feature_list_id": feature_list_id, "enabled": True}
+        target_deployed = await self._get_feature_list_target_deployed(
+            feature_list_id=feature_list_id,
+            deployment_id=deployment_id,
+            to_enable_deployment=to_enable_deployment,
         )
-        target_deployed = list_deployment_results["total"] > 0
-        document = await self.feature_list_service.get_document(document_id=feature_list_id)
 
+        document = await self.feature_list_service.get_document(document_id=feature_list_id)
         if document.deployed != target_deployed:
             await self._validate_deployed_operation(document, target_deployed)
 
@@ -415,15 +439,21 @@ class DeployService(OpsServiceMixin):
                     _id=deployment_id,
                     name=deployment_name or default_deployment_name,
                     feature_list_id=feature_list_id,
-                    enabled=to_enable_deployment,
+                    enabled=False,
                     use_case_id=use_case_id,
                     context_id=context_id,
                 )
             )
             await self._update_feature_list(
                 feature_list_id=feature_list_id,
+                deployment_id=deployment_id,
+                to_enable_deployment=to_enable_deployment,
                 update_progress=update_progress,
             )
+            if to_enable_deployment:
+                await self.deployment_service.update_document(
+                    document_id=deployment_id, data=DeploymentUpdate(enabled=to_enable_deployment)
+                )
         except Exception as exc:
             try:
                 await self.deployment_service.delete_document(document_id=deployment_id)
@@ -452,7 +482,7 @@ class DeployService(OpsServiceMixin):
     async def update_deployment(
         self,
         deployment_id: ObjectId,
-        enabled: bool,
+        to_enable_deployment: bool,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -462,7 +492,7 @@ class DeployService(OpsServiceMixin):
         ----------
         deployment_id: ObjectId
             Deployment ID
-        enabled: bool
+        to_enable_deployment: bool
             Enabled status
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
@@ -474,15 +504,17 @@ class DeployService(OpsServiceMixin):
         """
         deployment = await self.deployment_service.get_document(document_id=deployment_id)
         original_enabled = deployment.enabled
-        if original_enabled != enabled:
+        if original_enabled != to_enable_deployment:
             try:
-                await self.deployment_service.update_document(
-                    document_id=deployment_id,
-                    data=DeploymentUpdate(enabled=enabled),
-                )
                 await self._update_feature_list(
                     feature_list_id=deployment.feature_list_id,
+                    deployment_id=deployment_id,
+                    to_enable_deployment=to_enable_deployment,
                     update_progress=update_progress,
+                )
+                await self.deployment_service.update_document(
+                    document_id=deployment_id,
+                    data=DeploymentUpdate(enabled=to_enable_deployment),
                 )
             except Exception as exc:
                 try:

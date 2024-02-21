@@ -65,7 +65,7 @@ async def test_update_deployment__not_all_features_are_online_enabled(
     """Test update deployment (not all features are online enabled validation error)"""
     with pytest.raises(DocumentError) as exc:
         await app_container.deploy_service.update_deployment(
-            deployment_id=disabled_deployment.id, enabled=True
+            deployment_id=disabled_deployment.id, to_enable_deployment=True
         )
 
     expected_msg = "Only FeatureList object of all production ready features can be deployed."
@@ -82,7 +82,7 @@ async def test_update_deployment__not_all_features_are_online_enabled(
 async def test_update_deployment__no_update(app_container, disabled_deployment):
     """Test update feature list when deployed status is the same"""
     await app_container.deploy_service.update_deployment(
-        deployment_id=disabled_deployment.id, enabled=False
+        deployment_id=disabled_deployment.id, to_enable_deployment=False
     )
 
     # check that deployment is not updated
@@ -177,7 +177,7 @@ async def test_update_deployment(
 
     await app_container.deploy_service.update_deployment(
         deployment_id=deployment_id,
-        enabled=False,
+        to_enable_deployment=False,
     )
     deployed_disabled_feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
@@ -209,7 +209,7 @@ async def test_update_deployment(
     with pytest.raises(DocumentUpdateError) as exc:
         await app_container.deploy_service.update_deployment(
             deployment_id=deployment.id,
-            enabled=True,
+            to_enable_deployment=True,
         )
 
     expected_msg = "Deprecated feature list cannot be deployed."
@@ -233,7 +233,7 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
         with pytest.raises(DocumentError) as exc:
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
-                enabled=True,
+                to_enable_deployment=True,
             )
 
         # check exception message
@@ -285,7 +285,7 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_is
         with pytest.raises(DocumentError) as exc:
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
-                enabled=True,
+                to_enable_deployment=True,
             )
 
         # check exception message
@@ -339,6 +339,8 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     with pytest.raises(ValueError) as exc:
         _ = await deploy_service._update_feature_list(
             feature_list_id=feature_list.id,
+            deployment_id=ObjectId(),
+            to_enable_deployment=False,
             update_progress=fake_update_progress,
         )
 
@@ -361,6 +363,8 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
             mock_update_feature.side_effect = Exception("Error during revert changes")
             _ = await deploy_service._update_feature_list(
                 feature_list_id=feature_list.id,
+                deployment_id=ObjectId(),
+                to_enable_deployment=False,
                 update_progress=fake_update_progress,
             )
 
