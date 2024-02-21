@@ -42,6 +42,7 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     OperationStructure,
+    OperationStructureInfo,
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
@@ -417,6 +418,33 @@ class QueryGraph(QueryGraphModel):
             node_name_map[node.name] = node_global.name
         return self, node_name_map
 
+    def extract_operation_structure_info(
+        self,
+        node: Node,
+        keep_all_source_columns: bool = True,
+        **kwargs: Any,
+    ) -> OperationStructureInfo:
+        """
+        Extract operation structure info from the graph given target node
+
+        Parameters
+        ----------
+        node: Node
+            Target node used to construct the operation structure
+        keep_all_source_columns: bool
+            Whether to keep all source columns in the operation structure
+        kwargs: Any
+            Additional arguments to be passed to the OperationStructureExtractor.extract() method
+
+        Returns
+        -------
+        OperationStructureInfo
+        """
+        op_struct_info = OperationStructureExtractor(graph=self).extract(
+            node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
+        )
+        return op_struct_info
+
     def extract_operation_structure(
         self,
         node: Node,
@@ -439,7 +467,7 @@ class QueryGraph(QueryGraphModel):
         -------
         OperationStructure
         """
-        op_struct_info = OperationStructureExtractor(graph=self).extract(
+        op_struct_info = self.extract_operation_structure_info(
             node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
         )
         return op_struct_info.operation_structure_map[node.name]

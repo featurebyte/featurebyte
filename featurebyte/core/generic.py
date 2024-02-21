@@ -22,7 +22,11 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    NodeOutputCategory,
+    OperationStructure,
+    OperationStructureInfo,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
@@ -98,6 +102,17 @@ class QueryObject(FeatureByteBaseModel):
         cache=operator.attrgetter("_operation_structure_cache"),
         key=get_operation_structure_cache_key,
     )
+    def operation_structure_info(self) -> OperationStructureInfo:
+        """
+        Returns the operation structure of the current node
+
+        Returns
+        -------
+        OperationStructureInfo
+        """
+        return self.graph.extract_operation_structure_info(self.node, keep_all_source_columns=True)
+
+    @property
     def operation_structure(self) -> OperationStructure:
         """
         Returns the operation structure of the current node
@@ -106,7 +121,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         OperationStructure
         """
-        return self.graph.extract_operation_structure(self.node, keep_all_source_columns=True)
+        return self.operation_structure_info.operation_structure_map[self.node_name]
 
     @property
     def row_index_lineage(self) -> Tuple[str, ...]:
