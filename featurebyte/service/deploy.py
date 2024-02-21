@@ -235,6 +235,22 @@ class DeployService(OpsServiceMixin):
             feature_list=feature_list,
         )
 
+    async def _get_feature_list_target_deployed(
+        self, feature_list_id: ObjectId, deployment_id: ObjectId, to_enable_deployment: bool
+    ) -> bool:
+        target_deployed = to_enable_deployment
+        if not to_enable_deployment:
+            # check whether other deployment are using this feature list
+            list_deployment_results = await self.deployment_service.list_documents_as_dict(
+                query_filter={
+                    "feature_list_id": feature_list_id,
+                    "enabled": True,
+                    "_id": {"$ne": deployment_id},
+                }
+            )
+            target_deployed = list_deployment_results["total"] > 0
+        return target_deployed
+
     async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
@@ -265,20 +281,15 @@ class DeployService(OpsServiceMixin):
         Exception
             When there is an unexpected error during feature online_enabled status update
         """
+        # pylint: disable=too-many-locals
         if update_progress:
             await update_progress(0, "Start updating feature list")
 
-        target_deployed = to_enable_deployment
-        if not to_enable_deployment:
-            # check whether other deployment are using this feature list
-            list_deployment_results = await self.deployment_service.list_documents_as_dict(
-                query_filter={
-                    "feature_list_id": feature_list_id,
-                    "enabled": True,
-                    "_id": {"$ne": deployment_id},
-                }
-            )
-            target_deployed = list_deployment_results["total"] > 0
+        target_deployed = await self._get_feature_list_target_deployed(
+            feature_list_id=feature_list_id,
+            deployment_id=deployment_id,
+            to_enable_deployment=to_enable_deployment,
+        )
 
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
         if document.deployed != target_deployed:
