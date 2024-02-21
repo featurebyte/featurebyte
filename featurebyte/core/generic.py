@@ -104,7 +104,7 @@ class QueryObject(FeatureByteBaseModel):
     )
     def operation_structure_info(self) -> OperationStructureInfo:
         """
-        Returns the operation structure of the current node
+        Returns the operation structure info of the current node
 
         Returns
         -------
