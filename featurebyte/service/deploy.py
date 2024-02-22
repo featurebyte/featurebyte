@@ -381,9 +381,6 @@ class DeployFeatureListManagementService:
         deployment_id: ObjectId
             Deployment ID
         """
-        if feature_list.deployed:
-            return
-
         enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
             feature_list_model=feature_list,
             deployment_id=deployment_id,
@@ -398,6 +395,10 @@ class DeployFeatureListManagementService:
             document=feature_list,
             return_document=False,
         )
+
+        if feature_list.deployed:
+            return
+
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list_id=feature_list.id,
