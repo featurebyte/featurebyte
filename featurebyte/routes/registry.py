@@ -68,7 +68,12 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
-from featurebyte.service.deploy import DeployService
+from featurebyte.service.deploy import (
+    DeployFeatureListManagementService,
+    DeployFeatureManagementService,
+    DeployService,
+    FeastIntegrationService,
+)
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
@@ -218,6 +223,9 @@ app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
+app_container_config.register_class(DeployFeatureManagementService)
+app_container_config.register_class(DeployFeatureListManagementService)
+app_container_config.register_class(FeastIntegrationService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
