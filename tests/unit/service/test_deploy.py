@@ -307,13 +307,22 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_is
     assert feature_list_namespace.deployed_feature_list_ids == []
 
 
+@pytest.fixture(name="patched_deploy_service")
+def patched_deploy_service_fixture(deploy_service):
+    """
+    Fixture for a patched DeployService
+    """
+    with patch.object(deploy_service, "_get_enabled_serving_entity_ids", return_value=[]):
+        yield deploy_service
+
+
 @pytest.mark.asyncio
 async def test_update_feature_list_error__state_is_reverted_after_feature_list_namespace_updated(
     app_container,
     feature_list_namespace_service,
     feature_list_service,
     production_ready_feature_list,
-    deploy_service,
+    patched_deploy_service,
     mock_update_data_warehouse,
 ):
     """Test update feature list exception happens after feature list namespace updated"""
@@ -322,7 +331,7 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     assert feature_list.deployed is False
     assert feature_list.online_enabled_feature_ids == []
 
-    # create a enabled deployment first so that feature_list.deployed != target_deployed
+    # create an enabled deployment first so that feature_list.deployed != target_deployed
     await app_container.deployment_service.create_document(
         data=DeploymentModel(
             name="some_deployment",
@@ -337,7 +346,7 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
             raise ValueError("update_progress throws error!!")
 
     with pytest.raises(ValueError) as exc:
-        _ = await deploy_service._update_feature_list(
+        _ = await patched_deploy_service._update_feature_list(
             feature_list_id=feature_list.id,
             deployment_id=ObjectId(),
             to_enable_deployment=False,
@@ -358,10 +367,10 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     # test another exception raised during revert changes
     with pytest.raises(Exception) as exc:
         with patch.object(
-            deploy_service, "_revert_changes", new_callable=AsyncMock
+            patched_deploy_service, "_revert_changes", new_callable=AsyncMock
         ) as mock_update_feature:
             mock_update_feature.side_effect = Exception("Error during revert changes")
-            _ = await deploy_service._update_feature_list(
+            _ = await patched_deploy_service._update_feature_list(
                 feature_list_id=feature_list.id,
                 deployment_id=ObjectId(),
                 to_enable_deployment=False,

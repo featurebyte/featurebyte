@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional
+from typing import Any, AsyncIterator, Callable, Coroutine, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -13,7 +13,7 @@ from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel, ServingEntity
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.persistent import Persistent
@@ -21,7 +21,9 @@ from featurebyte.schema.deployment import DeploymentUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
+from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.entity_relationship_extractor import ServingEntityEnumeration
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -32,6 +34,7 @@ from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.use_case import UseCaseService
 
 
 class DeployService(OpsServiceMixin):
@@ -54,6 +57,8 @@ class DeployService(OpsServiceMixin):
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
         feast_registry_service: FeastRegistryService,
+        use_case_service: UseCaseService,
+        context_service: ContextService,
     ):
         self.persistent = persistent
         self.feature_service = feature_service
@@ -67,6 +72,8 @@ class DeployService(OpsServiceMixin):
         )
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
         self.feast_registry_service = feast_registry_service
+        self.use_case_service = use_case_service
+        self.context_service = context_service
 
     @classmethod
     def _extract_deployed_feature_list_ids(
@@ -200,6 +207,87 @@ class DeployService(OpsServiceMixin):
                         "Only FeatureList object of all production ready features can be deployed."
                     )
 
+    async def _iterate_enabled_deployments_as_dict(
+        self, feature_list_id: ObjectId, deployment_id: ObjectId, target_deployed: bool
+    ) -> AsyncIterator[dict[str, Any]]:
+        """
+        Iterate deployments that are enabled, including the one that is going to be enabled in the
+        current request
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Feature list id
+        deployment_id: ObjectId
+            Deployment id
+        target_deployed: bool
+            Intended final deployed state of the feature list
+
+        Yields
+        ------
+        AsyncIterator[Dict[str, Any]]
+            List query output
+        """
+        async for doc in self.deployment_service.list_documents_as_dict_iterator(
+            query_filter={"feature_list_id": feature_list_id, "enabled": True}
+        ):
+            yield doc
+        if target_deployed:
+            yield await self.deployment_service.get_document_as_dict(deployment_id)
+
+    async def _get_enabled_serving_entity_ids(
+        self, feature_list_model: FeatureListModel, deployment_id: ObjectId, target_deployed: bool
+    ) -> List[ServingEntity]:
+        # List of all possible serving entity ids for the feature list
+        supported_serving_entity_ids_set = {
+            tuple(serving_entity_ids)
+            for serving_entity_ids in feature_list_model.supported_serving_entity_ids
+        }
+
+        # List of enabled serving entity ids is a subset of supported_serving_entity_ids and is
+        # determined by existing deployments
+        enabled_serving_entity_ids = []
+
+        context_id_to_model = {}
+        use_case_id_to_model = {}
+        async for doc in self._iterate_enabled_deployments_as_dict(
+            feature_list_model.id, deployment_id, target_deployed
+        ):
+            context_id = doc["context_id"]
+
+            # Get context from use case if not directly available
+            if context_id is None:
+                use_case_id = doc["use_case_id"]
+                if use_case_id is None:
+                    continue
+                use_case_model = await self.use_case_service.get_document(use_case_id)
+                use_case_id_to_model[use_case_id] = use_case_model
+                context_id = use_case_model.context_id
+
+            context_model = await self.context_service.get_document(context_id)
+            context_id_to_model[context_id] = context_model
+
+            serving_entity_enumeration = ServingEntityEnumeration.create(
+                feature_list_model.relationships_info or []
+            )
+            current_enabled = set()
+            for serving_entity_ids in supported_serving_entity_ids_set:
+                combined_entity_ids = list(serving_entity_ids) + list(
+                    context_model.primary_entity_ids
+                )
+                reduced_entity_ids = serving_entity_enumeration.reduce_entity_ids(
+                    combined_entity_ids
+                )
+                # Include if serving_entity_ids is the same or a parent of use case primary entity
+                if sorted(reduced_entity_ids) == sorted(context_model.primary_entity_ids):
+                    enabled_serving_entity_ids.append(serving_entity_ids)
+                    current_enabled.add(serving_entity_ids)
+
+            # Don't need to test again serving entity ids that were already enabled
+            supported_serving_entity_ids_set.difference_update(current_enabled)
+
+        return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
+
     async def _revert_changes(
         self,
         feature_list_id: ObjectId,
@@ -292,6 +380,12 @@ class DeployService(OpsServiceMixin):
         )
 
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
+        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
+            feature_list_model=document,
+            deployment_id=deployment_id,
+            target_deployed=target_deployed,
+        )
+
         if document.deployed != target_deployed:
             await self._validate_deployed_operation(document, target_deployed)
 
@@ -302,7 +396,10 @@ class DeployService(OpsServiceMixin):
             try:
                 feature_list = await self.feature_list_service.update_document(
                     document_id=feature_list_id,
-                    data=FeatureListServiceUpdate(deployed=target_deployed),
+                    data=FeatureListServiceUpdate(
+                        deployed=target_deployed,
+                        enabled_serving_entity_ids=enabled_serving_entity_ids,
+                    ),
                     document=document,
                     return_document=True,
                 )

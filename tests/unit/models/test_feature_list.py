@@ -36,6 +36,7 @@ def feature_list_model_dict_fixture():
         "features_entity_lookup_info": None,
         "store_info": None,
         "supported_serving_entity_ids": [],
+        "enabled_serving_entity_ids": [],
         "block_modification_by": [],
         "description": None,
     }

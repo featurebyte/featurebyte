@@ -493,6 +493,10 @@ def test_get_feature_list(
 
     # check audit log
     audit_history = saved_feature_list.audit()
+
+    def _get_new_value_from_audit_history(field_name):
+        return audit_history[audit_history["field_name"] == field_name].iloc[0]["new_value"]
+
     expected_audit_history = pd.DataFrame(
         [
             ("block_modification_by", []),
@@ -501,17 +505,21 @@ def test_get_feature_list(
             ("deployed", False),
             ("description", None),
             ("dtype_distribution", [{"dtype": "FLOAT", "count": 1}]),
+            ("enabled_serving_entity_ids", []),
             ("entity_ids", [str(cust_id_entity.id)]),
-            ("feature_clusters", audit_history.new_value.iloc[7]),
+            ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
-            ("features_entity_lookup_info", audit_history.new_value.iloc[10]),
+            (
+                "features_entity_lookup_info",
+                _get_new_value_from_audit_history("features_entity_lookup_info"),
+            ),
             ("features_primary_entity_ids", [[str(cust_id_entity.id)]]),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
-            ("relationships_info", audit_history.new_value.iloc[16]),
+            ("relationships_info", _get_new_value_from_audit_history("relationships_info")),
             ("store_info", None),
             (
                 "supported_serving_entity_ids",
