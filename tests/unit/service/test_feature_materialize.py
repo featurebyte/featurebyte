@@ -16,7 +16,7 @@ from featurebyte.models.offline_store_feature_table import OnlineStoreLastMateri
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
-    deploy_feature_list,
+    deploy_feature_ids,
     extract_session_executed_queries,
 )
 
@@ -101,7 +101,7 @@ async def deployed_feature_list_composite_entity(
     _ = mock_offline_store_feature_manager_dependencies
 
     float_feature_composite_entity.save()
-    feature_list_model = await deploy_feature_list(
+    feature_list_model = await deploy_feature_ids(
         app_container, "my_list", [float_feature_composite_entity.id]
     )
     return feature_list_model
@@ -119,7 +119,7 @@ async def deployed_feature_list_no_entity(
     _ = mock_deployment_flow
 
     feature_without_entity.save()
-    feature_list_model = await deploy_feature_list(
+    feature_list_model = await deploy_feature_ids(
         app_container, "my_list", [feature_without_entity.id]
     )
     return feature_list_model

@@ -21,6 +21,7 @@ from tests.util.helper import (
     assert_equal_json_fixture,
     assert_equal_with_expected_fixture,
     deploy_feature,
+    deploy_feature_list,
     get_relationship_info,
     undeploy_feature,
 )
@@ -68,6 +69,29 @@ async def deployed_float_feature(
 
     feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
     return feature
+
+
+@pytest_asyncio.fixture
+async def deployed_float_feature_list_cust_id_use_case(
+    app_container,
+    float_feature,
+    cust_id_entity,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed float feature for custotmer use case
+    """
+    _ = mock_update_data_warehouse
+    feature_list = await deploy_feature(
+        app_container,
+        float_feature,
+        return_type="feature_list",
+    )
+    assert feature_list.enabled_serving_entity_ids == [[cust_id_entity.id]]
+    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
+    assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
+    return feature_list
 
 
 @pytest_asyncio.fixture
@@ -895,4 +919,41 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
     assert offline_store_table_name_to_feature_ids == {
         "cat1_659ccffa8c6f3c0e0a7_1d": [ObjectId("659cd19b7e511ad3fcdec2fe")],
         "cat1_659ccffb8c6f3c0e0a7_1h": [ObjectId("659cd19b7e511ad3fcdec2fe")],
+    }
+
+
+@pytest.mark.asyncio
+async def test_enabled_serving_entity_ids_updated_no_op_deploy(
+    app_container,
+    document_service,
+    deployed_float_feature_list_cust_id_use_case,
+    float_feature,
+    transaction_entity,
+    cust_id_entity,
+    transaction_to_customer_relationship_info_id,
+):
+    """
+    Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
+    underlying features are already online enabled)
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert set(feature_tables.keys()) == {
+        "cat1_cust_id_30m",
+    }
+
+    # Make a new deployment with transaction use case. Now we need to be able to serve this feature
+    # list using child entity transaaction.
+    feature_list = await deploy_feature_list(
+        app_container,
+        deployed_float_feature_list_cust_id_use_case,
+        context_primary_entity_ids=[transaction_entity.id],
+        deployment_name_override="another_deployment_same_feature_list",
+    )
+
+    # Check enabled_serving_entity_ids and offline feature tables
+    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
+    feature_tables = await get_all_feature_tables(document_service)
+    assert set(feature_tables.keys()) == {
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        "cat1_cust_id_30m",
     }

@@ -238,10 +238,18 @@ class DeployService(OpsServiceMixin):
     async def _get_enabled_serving_entity_ids(
         self, feature_list_model: FeatureListModel, deployment_id: ObjectId, target_deployed: bool
     ) -> List[ServingEntity]:
+        # List of all possible serving entity ids for the feature list
+        supported_serving_entity_ids_set = {
+            tuple(serving_entity_ids)
+            for serving_entity_ids in feature_list_model.supported_serving_entity_ids
+        }
+
+        # List of enabled serving entity ids is a subset of supported_serving_entity_ids and is
+        # determined by existing deployments
         enabled_serving_entity_ids = []
+
         context_id_to_model = {}
         use_case_id_to_model = {}
-
         async for doc in self._iterate_enabled_deployments_as_dict(
             feature_list_model.id, deployment_id, target_deployed
         ):
@@ -262,17 +270,23 @@ class DeployService(OpsServiceMixin):
             serving_entity_enumeration = ServingEntityEnumeration.create(
                 feature_list_model.relationships_info or []
             )
-            for serving_entity_ids in feature_list_model.supported_serving_entity_ids:
+            current_enabled = set()
+            for serving_entity_ids in supported_serving_entity_ids_set:
                 combined_entity_ids = list(serving_entity_ids) + list(
                     context_model.primary_entity_ids
                 )
                 reduced_entity_ids = serving_entity_enumeration.reduce_entity_ids(
                     combined_entity_ids
                 )
+                # Include if serving_entity_ids is the same or a parent of use case primary entity
                 if sorted(reduced_entity_ids) == sorted(context_model.primary_entity_ids):
                     enabled_serving_entity_ids.append(serving_entity_ids)
+                    current_enabled.add(serving_entity_ids)
 
-        return enabled_serving_entity_ids
+            # Don't need to test again serving entity ids that were already enabled
+            supported_serving_entity_ids_set.difference_update(current_enabled)
+
+        return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
 
     async def _revert_changes(
         self,
@@ -474,6 +488,19 @@ class DeployService(OpsServiceMixin):
                 except Exception as revert_exc:
                     raise revert_exc from exc
                 raise exc
+        else:
+            await self.feature_list_service.update_document(
+                document_id=feature_list_id,
+                data=FeatureListServiceUpdate(
+                    enabled_serving_entity_ids=enabled_serving_entity_ids,
+                ),
+                document=document,
+            )
+            await self._update_offline_store_feature_tables(
+                [],
+                target_deployed,
+                update_progress=update_progress,
+            )
 
         return await self.feature_list_service.get_document(document_id=feature_list_id)
 

@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.service.offline_store_feature_table_comment import ColumnComment, TableComment
-from tests.util.helper import deploy_feature, deploy_feature_list
+from tests.util.helper import deploy_feature, deploy_feature_ids
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -76,7 +76,7 @@ async def deployed_features(
     feature_without_entity.save()
 
     fixtures = {
-        "feature_list": await deploy_feature_list(
+        "feature_list": await deploy_feature_ids(
             app_container, "my_list", [float_feature.id, non_time_based_feature.id]
         ),
         "float_feature": await deploy_feature(app_container, float_feature),

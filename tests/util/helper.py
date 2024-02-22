@@ -752,12 +752,48 @@ def check_on_demand_feature_code_generation(
 
 async def deploy_feature_list(
     app_container,
+    feature_list_model,
+    context_primary_entity_ids=None,
+    deployment_name_override=None,
+):
+    """
+    Helper function to deploy a feature list using services
+    """
+    if context_primary_entity_ids is None:
+        context_primary_entity_ids = feature_list_model.primary_entity_ids
+    data = ContextCreate(
+        name=str(ObjectId()),
+        primary_entity_ids=context_primary_entity_ids,
+    )
+    context_model = await app_container.context_service.create_document(data)
+    data = UseCaseCreate(
+        name=str(ObjectId()),
+        context_id=context_model.id,
+        target_namespace_id=ObjectId(),
+    )
+    use_case_model = await app_container.use_case_service.create_document(data)
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list_model.id,
+        deployment_id=ObjectId(),
+        deployment_name=(
+            feature_list_model.name
+            if deployment_name_override is None
+            else deployment_name_override
+        ),
+        to_enable_deployment=True,
+        use_case_id=use_case_model.id,
+    )
+    return await app_container.feature_list_service.get_document(feature_list_model.id)
+
+
+async def deploy_feature_ids(
+    app_container,
     feature_list_name,
     feature_ids,
     context_primary_entity_ids=None,
 ):
     """
-    Helper function to deploy a feature list using services
+    Helper function to deploy a list of features using services
     """
     for feature_id in feature_ids:
         # Update readiness to production ready
@@ -767,27 +803,11 @@ async def deploy_feature_list(
 
     data = FeatureListServiceCreate(name=feature_list_name, feature_ids=feature_ids)
     feature_list_model = await app_container.feature_list_service.create_document(data)
-    if context_primary_entity_ids is None:
-        context_primary_entity_ids = feature_list_model.primary_entity_ids
-    data = ContextCreate(
-        name=f"{feature_list_name}_context",
-        primary_entity_ids=context_primary_entity_ids,
+    return await deploy_feature_list(
+        app_container=app_container,
+        feature_list_model=feature_list_model,
+        context_primary_entity_ids=context_primary_entity_ids,
     )
-    context_model = await app_container.context_service.create_document(data)
-    data = UseCaseCreate(
-        name=f"{feature_list_name}_use_case",
-        context_id=context_model.id,
-        target_namespace_id=ObjectId(),
-    )
-    use_case_model = await app_container.use_case_service.create_document(data)
-    await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list_model.id,
-        deployment_id=ObjectId(),
-        deployment_name=feature_list_model.name,
-        to_enable_deployment=True,
-        use_case_id=use_case_model.id,
-    )
-    return await app_container.feature_list_service.get_document(feature_list_model.id)
 
 
 async def deploy_feature(
@@ -812,7 +832,7 @@ async def deploy_feature(
         feature_list_name = f"{feature.name}_list"
     else:
         feature_list_name = feature_list_name_override
-    feature_list_model = await deploy_feature_list(
+    feature_list_model = await deploy_feature_ids(
         app_container,
         feature_list_name,
         [feature.id],
