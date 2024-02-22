@@ -19,7 +19,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base import BaseSession
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
-    deploy_feature_list,
+    deploy_feature_ids,
     extract_session_executed_queries,
 )
 
@@ -50,7 +50,7 @@ async def deployed_feature_list_multiple_features(
 
     float_feature.save()
     feature_without_entity.save()
-    feature_list_model = await deploy_feature_list(
+    feature_list_model = await deploy_feature_ids(
         app_container, "my_list", [float_feature.id, feature_without_entity.id]
     )
     return feature_list_model

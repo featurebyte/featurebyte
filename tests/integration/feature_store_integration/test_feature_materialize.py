@@ -308,7 +308,6 @@ async def expected_entity_lookup_feature_table_names_fixture(
     customer_entity,
     user_entity,
     status_entity,
-    item_entity,
 ):
     """
     Fixture for expected entity lookup feature table names
@@ -331,7 +330,6 @@ async def expected_entity_lookup_feature_table_names_fixture(
         _get_relationship_info(order_entity, product_action_entity),
         _get_relationship_info(order_entity, user_entity),
         _get_relationship_info(user_entity, status_entity),
-        _get_relationship_info(item_entity, order_entity),
     ]:
         expected.append(f"fb_entity_lookup_{info.id}")
 
@@ -763,6 +761,32 @@ def test_online_features__primary_entity_ids(
     feat_dict = res.json()["features"][0]
     process_output_features_helper(feat_dict, source_type)
     assert_dict_approx_equal(feat_dict, expected_features_order_id_T3850)
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__invalid_child_entity(config, deployed_feature_list):
+    """
+    Check online features using a child entity that is a feature list's supported_serving_entity_ids
+    but not enabled_serving_entity_ids
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list
+
+    entity_serving_names = [
+        {
+            "item_id": "ITEM_42",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    res = client.post(
+        f"/deployment/{deployment.id}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 422
+    assert res.json() == {
+        "detail": 'Required entities are not provided in the request: Order (serving name: "order_id")'
+    }
 
 
 @pytest.mark.order(6)

@@ -107,7 +107,7 @@ def get_entity_lookup_feature_tables(
         entity_lookup_plan = EntityLookupPlanner.generate_plan(
             feature_list.primary_entity_ids, feature_list.relationships_info or []
         )
-        for serving_entity_ids in feature_list.supported_serving_entity_ids:
+        for serving_entity_ids in feature_list.enabled_serving_entity_ids:
             lookup_relationships = entity_lookup_plan.get_entity_lookup_steps(serving_entity_ids)
             if lookup_relationships is not None:
                 required_lookup_relationships.update(lookup_relationships)
