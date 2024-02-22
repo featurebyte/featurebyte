@@ -728,14 +728,15 @@ class DeployService:
             )
 
         # check if feast integration is enabled for the catalog
-        feast_registry = await self.feast_integration_service.get_feast_registry()
-        if feast_registry and features_offline_feature_table_to_update:
-            await self.feast_integration_service.handle_online_disabled_features(
-                features=features_offline_feature_table_to_update,
-                update_progress=get_ranged_progress_callback(
-                    self.task_progress_updater.update_progress, 72, 99
-                ),
-            )
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+            feast_registry = await self.feast_integration_service.get_feast_registry()
+            if feast_registry and features_offline_feature_table_to_update:
+                await self.feast_integration_service.handle_online_disabled_features(
+                    features=features_offline_feature_table_to_update,
+                    update_progress=get_ranged_progress_callback(
+                        self.task_progress_updater.update_progress, 72, 99
+                    ),
+                )
 
         # update deployment status
         await self.deployment_service.update_document(
