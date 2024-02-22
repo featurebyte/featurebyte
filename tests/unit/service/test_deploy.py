@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentNotFoundError, DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.schema.feature_list import FeatureListCreate
 
 
 @pytest.fixture(name="deploy_service")
@@ -260,3 +261,157 @@ async def test_update_deployment__deployment_is_disabled_when_exception_raised(
         for feature_id in feature_list.feature_ids:
             feature = await feature_service.get_document(document_id=feature_id)
             assert feature.online_enabled is False
+
+
+@pytest_asyncio.fixture(name="production_ready_features")
+async def production_ready_features_fixture(app_container, feature, feature_item_event):
+    """Production ready features fixture"""
+    features = [feature, feature_item_event]
+    for feat in features:
+        feat = await app_container.feature_readiness_service.update_feature(
+            feature_id=feat.id, readiness="PRODUCTION_READY", ignore_guardrails=True
+        )
+        assert feat.readiness == "PRODUCTION_READY"
+        assert feat.online_enabled is False
+    return features
+
+
+@pytest.mark.asyncio
+async def test_deploy_service__check_asset_status_update(
+    production_ready_features,
+    app_container,
+    mock_update_data_warehouse,
+):
+    """Test deploy service"""
+    _ = mock_update_data_warehouse
+
+    # create feature lists
+    features = production_ready_features
+    feature_list_controller = app_container.feature_list_controller
+    feature_list1 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list1", feature_ids=[features[0].id])
+    )
+    feature_list2 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list3", feature_ids=[feat.id for feat in features])
+    )
+
+    # create deployments
+    deployment_id1, deployment_id2, deployment_id3 = ObjectId(), ObjectId(), ObjectId()
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list1.id,
+        deployment_id=deployment_id1,
+        deployment_name="deployment1",
+        to_enable_deployment=False,
+    )
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list1.id,
+        deployment_id=deployment_id2,
+        deployment_name="deployment2",
+        to_enable_deployment=False,
+    )
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list2.id,
+        deployment_id=deployment_id3,
+        deployment_name="deployment3",
+        to_enable_deployment=False,
+    )
+
+    async def check_asset_state(
+        deployment_id,
+        feats,
+        expected_deployment_enabled,
+        expected_feature_list_deployed,
+        expected_features_online_enabled,
+    ):
+        """Check asset state"""
+        deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+        assert deployment.enabled == expected_deployment_enabled
+
+        flist = await app_container.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        assert flist.deployed == expected_feature_list_deployed
+
+        enabled_flags = []
+        for feat in feats:
+            feat = await app_container.feature_service.get_document(document_id=feat.id)
+            enabled_flags.append(feat.online_enabled)
+        assert enabled_flags == expected_features_online_enabled
+
+    # enable deployment1
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id1,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id1,
+        features,
+        True,
+        True,
+        [True, False],
+    )
+
+    # enable deployment2
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id2,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id2,
+        features,
+        True,
+        True,
+        [True, False],
+    )
+
+    # enable deployment3
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id3,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id3,
+        features,
+        True,
+        True,
+        [True, True],
+    )
+
+    # disable deployment1
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id1,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id1,
+        features,
+        False,
+        True,  # feature list is still deployed
+        [True, True],  # feature1 is still enabled
+    )
+
+    # disable deployment2
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id2,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id2,
+        features,
+        False,
+        False,
+        [True, True],  # feature1 is still enabled
+    )
+
+    # disable deployment3
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id3,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id3,
+        features,
+        False,
+        False,  # feature list is still deployed
+        [False, False],  # feature1 is still enabled
+    )
