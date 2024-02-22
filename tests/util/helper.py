@@ -39,7 +39,7 @@ from featurebyte.query_graph.transform.null_filling_value import NullFillingValu
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier_v1
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
@@ -148,7 +148,7 @@ def add_groupby_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
-            "tile_id": get_tile_table_identifier("deadbeef1234", groupby_node_params)
+            "tile_id": get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
             if override_tile_id is None
             else override_tile_id,
             "aggregation_id": get_aggregation_identifier(

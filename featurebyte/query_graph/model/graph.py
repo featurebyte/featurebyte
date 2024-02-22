@@ -222,6 +222,8 @@ class QueryGraphModel(FeatureByteBaseModel):
         if node.type == NodeType.INPUT:
             # exclude feature_store_details.details from input node hash if it exists
             node_parameters["feature_store_details"].pop("details", None)
+        if node.type == NodeType.GROUPBY:
+            node_parameters.pop("tile_id_version", None)
         return node_parameters
 
     @classmethod

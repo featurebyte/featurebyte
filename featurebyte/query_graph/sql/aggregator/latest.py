@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import sys
+
 from sqlglot.expressions import Select
 
 from featurebyte.query_graph.sql.aggregator.base import AggregationResult, TileBasedAggregator
@@ -13,6 +15,8 @@ from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
+
+sys.setrecursionlimit(10000)
 
 
 class LatestAggregator(TileBasedAggregator):

@@ -214,4 +214,5 @@ class WindowAggregator(BaseAggregator):
             "names": feature_names,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
+            "tile_id_version": 2,
         }

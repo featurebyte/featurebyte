@@ -7,7 +7,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier_v1
 
 
 def make_lag_node(graph, input_node, column_name, entity_column_name, timestamp_column_name):
@@ -141,7 +141,7 @@ def test_window_function(global_graph, input_node):
         node_type=NodeType.GROUPBY,
         node_params={
             **node_params,
-            "tile_id": get_tile_table_identifier(
+            "tile_id": get_tile_table_identifier_v1(
                 row_index_lineage_hash="deadbeef1234", parameters=node_params
             ),
             "aggregation_id": get_aggregation_identifier(
