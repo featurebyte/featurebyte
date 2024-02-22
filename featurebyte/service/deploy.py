@@ -1,7 +1,9 @@
 """
 DeployService class
 """
-from typing import Any, Callable, Coroutine, List, Optional, Sequence
+from typing import Any, Callable, Coroutine, List, Optional, Sequence, Set
+
+import traceback
 
 from bson import ObjectId
 
@@ -9,6 +11,7 @@ from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
+from featurebyte.logging import get_logger
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -29,6 +32,8 @@ from featurebyte.service.offline_store_feature_table_manager import (
 )
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
+
+logger = get_logger(__name__)
 
 
 class DeployFeatureManagementService:
@@ -88,7 +93,7 @@ class DeployFeatureManagementService:
         self, feature_id: ObjectId, feature_list_id: ObjectId, feature_list_to_deploy: bool
     ) -> FeatureModel:
         document = await self.feature_service.get_document(document_id=feature_id)
-        deployed_feature_list_ids = set(document.deployed_feature_list_ids)
+        deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
             deployed_feature_list_ids.add(feature_list_id)
         else:
@@ -240,7 +245,7 @@ class DeployFeatureListManagementService:
         document = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
         )
-        deployed_feature_list_ids = set(document.deployed_feature_list_ids)
+        deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
             deployed_feature_list_ids.add(feature_list_id)
         else:
@@ -484,11 +489,11 @@ class DeployService:
             features.append(updated_feature)
             await feature_update_progress(
                 int(len(features) / len(feature_list.feature_ids) * 100),
-                "Enabling features online...",
+                f"Enabling feature online ({feature.name}) ...",
             )
 
         # deploy feature list
-        await self._update_progress(71, "Deploying feature list...")
+        await self._update_progress(71, f"Deploying feature list ({feature_list.name}) ...")
         await self.feature_list_management_service.deploy_feature_list(feature_list=feature_list)
 
         if feast_registry:
@@ -498,7 +503,9 @@ class DeployService:
                     self.task_progress_updater.update_progress, 72, 98
                 ),
             )
-            await self._update_progress(99, "Updating deployed feature list...")
+            await self._update_progress(
+                99, f"Updating deployed feature list ({feature_list.name}) ..."
+            )
             await self.feast_integration_service.handle_deployed_feature_list(
                 feature_list=feature_list, online_enabled_features=features
             )
@@ -522,7 +529,7 @@ class DeployService:
                 "_id": {"$ne": exclude_deployment_id},
             }
         )
-        return list_deployment_results["total"] > 0
+        return bool(list_deployment_results["total"] > 0)
 
     async def enable_deployment(
         self,
@@ -547,6 +554,11 @@ class DeployService:
         try:
             await self._enable_deployment(deployment, feature_list)
         except Exception as exc:
+            exc_traceback = traceback.format_exc()
+            logger.error(
+                f"Failed to enable deployment {deployment.id}: {exc}. {exc_traceback}",
+                exc_info=True,
+            )
             await self.disable_deployment(deployment, feature_list)
             raise DocumentUpdateError("Failed to enable deployment") from exc
 
