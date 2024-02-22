@@ -227,8 +227,6 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat = request_col + (request_col - request_col)
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
@@ -236,8 +234,10 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
-        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
-        feat_2 = (feat - feat_1).dt.total_seconds() // 86400
+        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat_1 = request_col + (request_col - request_col)
+        feat_2 = (feat_1 - feat).dt.total_seconds() // 86400
         feat_3 = pd.Series(
             np.where(
                 pd.isna(feat_2) | pd.isna(inputs["__feature_V231227__part1"]),
@@ -330,31 +330,31 @@ def test_feature__ttl_item_aggregate_request_column(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__composite_feature_V231227__part2__ts"], unit="s", utc=True
+            inputs["__composite_feature_V231227__part0__ts"], unit="s", utc=True
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
-        inputs.loc[~mask, "__composite_feature_V231227__part2"] = np.nan
+        inputs.loc[~mask, "__composite_feature_V231227__part0"] = np.nan
         feat = pd.to_datetime(
-            inputs["__composite_feature_V231227__part2"], utc=True
+            inputs["__composite_feature_V231227__part0"], utc=True
         )
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = (request_col - feat).dt.total_seconds() // 86400
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
-            inputs["__composite_feature_V231227__part0__ts"], unit="s", utc=True
+            inputs["__composite_feature_V231227__part1__ts"], unit="s", utc=True
         )
         mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
-        inputs.loc[~mask_1, "__composite_feature_V231227__part0"] = np.nan
+        inputs.loc[~mask_1, "__composite_feature_V231227__part1"] = np.nan
         feat_2 = pd.Series(
             np.where(
-                pd.isna(inputs["__composite_feature_V231227__part0"])
-                | pd.isna(inputs["__composite_feature_V231227__part1"]),
+                pd.isna(inputs["__composite_feature_V231227__part1"])
+                | pd.isna(inputs["__composite_feature_V231227__part2"]),
                 np.nan,
-                inputs["__composite_feature_V231227__part0"]
-                + inputs["__composite_feature_V231227__part1"],
+                inputs["__composite_feature_V231227__part1"]
+                + inputs["__composite_feature_V231227__part2"],
             ),
-            index=inputs["__composite_feature_V231227__part0"].index,
+            index=inputs["__composite_feature_V231227__part1"].index,
         )
         feat_3 = pd.Series(
             np.where(pd.isna(feat_2) | pd.isna(feat_1), np.nan, feat_2 + feat_1),
@@ -422,17 +422,10 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__feature_zscore_V231227__part2__ts"], unit="s", utc=True
-        )
-        mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
-        inputs.loc[~mask, "__feature_zscore_V231227__part2"] = np.nan
-        request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
-        feat_ts_1 = pd.to_datetime(
             inputs["__feature_zscore_V231227__part1__ts"], unit="s", utc=True
         )
-        mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
-        inputs.loc[~mask_1, "__feature_zscore_V231227__part1"] = np.nan
+        mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
+        inputs.loc[~mask, "__feature_zscore_V231227__part1"] = np.nan
         feat = pd.Series(
             np.where(
                 pd.isna(inputs["__feature_zscore_V231227__part0"])
@@ -443,6 +436,13 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
             ),
             index=inputs["__feature_zscore_V231227__part0"].index,
         )
+        request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
+        feat_ts_1 = pd.to_datetime(
+            inputs["__feature_zscore_V231227__part2__ts"], unit="s", utc=True
+        )
+        mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
+        inputs.loc[~mask_1, "__feature_zscore_V231227__part2"] = np.nan
         feat_1 = pd.Series(
             np.where(
                 pd.isna(feat) | pd.isna(inputs["__feature_zscore_V231227__part2"]),
