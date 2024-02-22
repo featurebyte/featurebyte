@@ -44,11 +44,6 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
 from featurebyte.schema.use_case import UseCaseCreate
-from featurebyte.schema.worker.task.deployment_create_update import (
-    CreateDeploymentPayload,
-    DeploymentCreateUpdateTaskPayload,
-    UpdateDeploymentPayload,
-)
 
 
 def reset_global_graph():

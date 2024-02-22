@@ -213,6 +213,20 @@ class DeployService(OpsServiceMixin):
         """
         Iterate deployments that are enabled, including the one that is going to be enabled in the
         current request
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Feature list id
+        deployment_id: ObjectId
+            Deployment id
+        target_deployed: bool
+            Intended final deployed state of the feature list
+
+        Yields
+        ------
+        AsyncIterator[Dict[str, Any]]
+            List query output
         """
         async for doc in self.deployment_service.list_documents_as_dict_iterator(
             query_filter={"feature_list_id": feature_list_id, "enabled": True}
@@ -246,7 +260,7 @@ class DeployService(OpsServiceMixin):
             context_id_to_model[context_id] = context_model
 
             serving_entity_enumeration = ServingEntityEnumeration.create(
-                feature_list_model.relationships_info
+                feature_list_model.relationships_info or []
             )
             for serving_entity_ids in feature_list_model.supported_serving_entity_ids:
                 combined_entity_ids = list(serving_entity_ids) + list(

@@ -308,7 +308,6 @@ async def expected_entity_lookup_feature_table_names_fixture(
     customer_entity,
     user_entity,
     status_entity,
-    item_entity,
 ):
     """
     Fixture for expected entity lookup feature table names
@@ -766,7 +765,7 @@ def test_online_features__primary_entity_ids(
 
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__invalid_child_entity(config, deployed_feature_list, source_type):
+def test_online_features__invalid_child_entity(config, deployed_feature_list):
     """
     Check online features using a child entity that is a feature list's supported_serving_entity_ids
     but not enabled_serving_entity_ids

@@ -323,7 +323,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         # steps
         feature_view_names = {
             feature_view.name
-            for feature_view in feast_store._list_feature_views(
+            for feature_view in feast_store._list_feature_views(  # pylint: disable=protected-access
                 allow_cache=False, hide_dummy_entity=False
             )
         }
