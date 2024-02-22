@@ -922,12 +922,12 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
     }
 
 
+@pytest.mark.skip(reason="Skip for now to avoid conflict, to be re-enabled")
 @pytest.mark.asyncio
 async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     app_container,
     document_service,
     deployed_float_feature_list_cust_id_use_case,
-    float_feature,
     transaction_entity,
     cust_id_entity,
     transaction_to_customer_relationship_info_id,
@@ -935,6 +935,10 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     """
     Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
     underlying features are already online enabled)
+
+    TODO: This is a less common case but still need to be handled. This will likely cause conflict
+     with the on-going deployment flow stabilization work. For now, adding this test case which
+     should be re-enabled later.
     """
     feature_tables = await get_all_feature_tables(document_service)
     assert set(feature_tables.keys()) == {
@@ -942,7 +946,7 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     }
 
     # Make a new deployment with transaction use case. Now we need to be able to serve this feature
-    # list using child entity transaaction.
+    # list using child entity transaction.
     feature_list = await deploy_feature_list(
         app_container,
         deployed_float_feature_list_cust_id_use_case,

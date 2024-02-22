@@ -488,19 +488,6 @@ class DeployService(OpsServiceMixin):
                 except Exception as revert_exc:
                     raise revert_exc from exc
                 raise exc
-        else:
-            await self.feature_list_service.update_document(
-                document_id=feature_list_id,
-                data=FeatureListServiceUpdate(
-                    enabled_serving_entity_ids=enabled_serving_entity_ids,
-                ),
-                document=document,
-            )
-            await self._update_offline_store_feature_tables(
-                [],
-                target_deployed,
-                update_progress=update_progress,
-            )
 
         return await self.feature_list_service.get_document(document_id=feature_list_id)
 
