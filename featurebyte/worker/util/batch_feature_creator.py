@@ -24,6 +24,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import BatchFeatureItem, FeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
@@ -242,6 +243,14 @@ class BatchFeatureCreator:
         feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
+        groupby_node = document.graph.nodes_map.get("groupby_1", None)
+        if groupby_node:
+            assert isinstance(groupby_node, GroupByNode)
+            if groupby_node.parameters.tile_id_version == 1:
+                # do not check the hash if the feature is generated using older SDK client
+                # TODO: remove this check after all the features are generated using the new SDK client
+                return True
+
         is_consistent = expected_hash == generated_hash
         if not is_consistent:
             # log the difference between the expected feature and the saved feature
