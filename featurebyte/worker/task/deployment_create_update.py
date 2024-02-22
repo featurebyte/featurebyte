@@ -84,7 +84,6 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
                 deployment_id=payload.output_document_id,
                 deployment_name=create_deployment_payload.name,
                 to_enable_deployment=create_deployment_payload.enabled,
-                update_progress=self.task_progress_updater.update_progress,
                 use_case_id=create_deployment_payload.use_case_id,
                 context_id=create_deployment_payload.context_id,
             )
@@ -94,5 +93,4 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
             await self.deploy_service.update_deployment(
                 deployment_id=payload.output_document_id,
                 to_enable_deployment=update_deployment_payload.enabled,
-                update_progress=self.task_progress_updater.update_progress,
             )

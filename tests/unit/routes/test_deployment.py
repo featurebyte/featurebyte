@@ -272,6 +272,12 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert feature_list_response.status_code == HTTPStatus.OK
         assert feature_list_dict["deployed"] == expected_deployed
 
+        for feature_id in feature_list_dict["feature_ids"]:
+            feature_response = api_client.get(f"/feature/{feature_id}")
+            assert feature_response.status_code == HTTPStatus.OK
+            feature_dict = feature_response.json()
+            assert feature_dict["online_enabled"] == expected_deployed
+
     def test_update_200__enable_and_disable_single_deployment(
         self, test_api_client_persistent, create_success_response, default_catalog_id
     ):

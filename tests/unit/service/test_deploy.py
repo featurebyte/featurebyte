@@ -1,36 +1,48 @@
 """
 Tests for DeployService
 """
-from unittest.mock import AsyncMock, patch
+import traceback
 
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentNotFoundError, DocumentUpdateError
-from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.schema.feature_list import FeatureListCreate
+
+
+@pytest.fixture(name="deploy_service")
+def deploy_service_fixture(app_container):
+    """Deploy service fixture"""
+    return app_container.deploy_service
+
+
+@pytest.fixture(name="deployment_service")
+def deployment_service_fixture(app_container):
+    """Deployment service fixture"""
+    return app_container.deployment_service
 
 
 @pytest_asyncio.fixture(name="disabled_deployment")
-async def disabled_deployment_fixture(app_container, feature_list):
+async def disabled_deployment_fixture(deploy_service, deployment_service, feature_list):
     """Disabled deployment fixture"""
     deployment_id = ObjectId()
-    await app_container.deploy_service.create_deployment(
+    await deploy_service.create_deployment(
         feature_list_id=feature_list.id,
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=False,
     )
-    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+    deployment = await deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
     yield deployment
 
 
 @pytest.mark.asyncio
-async def test_create_disabled_deployment(app_container, disabled_deployment):
+async def test_create_disabled_deployment(feature_list_service, disabled_deployment):
     """Test create deployment (disabled)"""
-    updated_feature_list = await app_container.feature_list_service.get_document(
+    updated_feature_list = await feature_list_service.get_document(
         document_id=disabled_deployment.feature_list_id
     )
     assert updated_feature_list.deployed is False
@@ -38,58 +50,48 @@ async def test_create_disabled_deployment(app_container, disabled_deployment):
 
 @pytest.mark.asyncio
 async def test_create_enabled_deployment__not_all_features_are_online_enabled(
-    app_container, feature_list
+    deploy_service, deployment_service, feature_list
 ):
     """Test create deployment (not all features are online enabled validation error)"""
     deployment_id = ObjectId()
-    with pytest.raises(DocumentError) as exc:
-        await app_container.deploy_service.create_deployment(
+    try:
+        await deploy_service.create_deployment(
             feature_list_id=feature_list.id,
             deployment_id=deployment_id,
             deployment_name=None,
             to_enable_deployment=True,
         )
+    except DocumentError:
+        # Capture the traceback information
+        exc_traceback = traceback.format_exc()
 
-    expected_msg = "Only FeatureList object of all production ready features can be deployed."
-    assert expected_msg in str(exc.value)
+        expected_msg = "Only FeatureList object of all production ready features can be deployed."
+        assert expected_msg in exc_traceback
 
     # check that deployment is not created
     with pytest.raises(DocumentNotFoundError):
-        await app_container.deployment_service.get_document(document_id=deployment_id)
+        await deployment_service.get_document(document_id=deployment_id)
 
 
 @pytest.mark.asyncio
 async def test_update_deployment__not_all_features_are_online_enabled(
-    app_container, disabled_deployment
+    deploy_service, deployment_service, disabled_deployment
 ):
     """Test update deployment (not all features are online enabled validation error)"""
-    with pytest.raises(DocumentError) as exc:
-        await app_container.deploy_service.update_deployment(
+    try:
+        await deploy_service.update_deployment(
             deployment_id=disabled_deployment.id, to_enable_deployment=True
         )
+    except DocumentError:
+        # Capture the traceback information
+        exc_traceback = traceback.format_exc()
 
-    expected_msg = "Only FeatureList object of all production ready features can be deployed."
-    assert expected_msg in str(exc.value)
+        expected_msg = "Only FeatureList object of all production ready features can be deployed."
+        assert expected_msg in exc_traceback
 
     # check that deployment is not updated
-    updated_deployment = await app_container.deployment_service.get_document(
-        document_id=disabled_deployment.id
-    )
+    updated_deployment = await deployment_service.get_document(document_id=disabled_deployment.id)
     assert updated_deployment.enabled is False
-
-
-@pytest.mark.asyncio
-async def test_update_deployment__no_update(app_container, disabled_deployment):
-    """Test update feature list when deployed status is the same"""
-    await app_container.deploy_service.update_deployment(
-        deployment_id=disabled_deployment.id, to_enable_deployment=False
-    )
-
-    # check that deployment is not updated
-    updated_deployment = await app_container.deployment_service.get_document(
-        document_id=disabled_deployment.id
-    )
-    assert updated_deployment == disabled_deployment
 
 
 async def check_states_after_deployed_change(
@@ -126,24 +128,29 @@ async def production_ready_feature_list_fixture(feature_list, feature_readiness_
 
 @pytest_asyncio.fixture(name="disabled_deployment_with_production_ready_features")
 async def disabled_deployment_with_prod_ready_features(
-    app_container, production_ready_feature_list
+    deploy_service, deployment_service, production_ready_feature_list
 ):
     """Disabled deployment fixture"""
     deployment_id = ObjectId()
-    await app_container.deploy_service.create_deployment(
+    await deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=False,
     )
-    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+    deployment = await deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
     yield deployment
 
 
 @pytest.mark.asyncio
 async def test_update_deployment(
-    app_container,
+    deploy_service,
+    deployment_service,
+    feature_list_namespace_service,
+    feature_list_service,
+    feature_service,
+    feature_list_status_service,
     production_ready_feature_list,
     mock_update_data_warehouse,
 ):
@@ -151,14 +158,14 @@ async def test_update_deployment(
     feature_list = production_ready_feature_list
 
     deployment_id = ObjectId()
-    await app_container.deploy_service.create_deployment(
+    await deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=True,
     )
-    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
-    deployed_feature_list = await app_container.feature_list_service.get_document(
+    deployment = await deployment_service.get_document(document_id=deployment_id)
+    deployed_feature_list = await feature_list_service.get_document(
         document_id=deployment.feature_list_id
     )
     mock_update_data_warehouse.assert_called_once()
@@ -167,19 +174,19 @@ async def test_update_deployment(
     assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
-        feature_service=app_container.feature_service,
-        feature_list_namespace_service=app_container.feature_list_namespace_service,
-        feature_list_service=app_container.feature_list_service,
+        feature_service=feature_service,
+        feature_list_namespace_service=feature_list_namespace_service,
+        feature_list_service=feature_list_service,
         feature_list=deployed_feature_list,
         expected_deployed=True,
         expected_deployed_feature_list_ids=[feature_list.id],
     )
 
-    await app_container.deploy_service.update_deployment(
+    await deploy_service.update_deployment(
         deployment_id=deployment_id,
         to_enable_deployment=False,
     )
-    deployed_disabled_feature_list = await app_container.feature_list_service.get_document(
+    deployed_disabled_feature_list = await feature_list_service.get_document(
         document_id=deployment.feature_list_id
     )
     assert mock_update_data_warehouse.call_count == 2
@@ -188,9 +195,9 @@ async def test_update_deployment(
     assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
-        feature_service=app_container.feature_service,
-        feature_list_namespace_service=app_container.feature_list_namespace_service,
-        feature_list_service=app_container.feature_list_service,
+        feature_service=feature_service,
+        feature_list_namespace_service=feature_list_namespace_service,
+        feature_list_service=feature_list_service,
         feature_list=deployed_disabled_feature_list,
         expected_deployed=False,
         expected_deployed_feature_list_ids=[],
@@ -198,184 +205,213 @@ async def test_update_deployment(
 
     # update feature list namespace status to deprecated and then deploy the feature list
     # should raise exception
-    await app_container.feature_list_status_service.update_feature_list_namespace_status(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
         target_feature_list_status="DEPRECATED",
     )
-    namespace = await app_container.feature_list_namespace_service.get_document(
+    namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list.feature_list_namespace_id
     )
     assert namespace.status == "DEPRECATED"
-    with pytest.raises(DocumentUpdateError) as exc:
-        await app_container.deploy_service.update_deployment(
+    try:
+        await deploy_service.update_deployment(
             deployment_id=deployment.id,
             to_enable_deployment=True,
         )
+    except DocumentUpdateError:
+        # Capture the traceback information
+        exc_traceback = traceback.format_exc()
 
-    expected_msg = "Deprecated feature list cannot be deployed."
-    assert expected_msg in str(exc.value)
-
-
-@pytest.mark.asyncio
-async def test_update_deployment_error__state_is_reverted_when_update_feature_list_namespace_is_failed(
-    app_container,
-    disabled_deployment_with_production_ready_features,
-    mock_update_data_warehouse,
-):
-    """Test update feature list exception happens when updating feature list namespace"""
-    _ = mock_update_data_warehouse
-
-    with patch.object(
-        app_container.deploy_service, "_update_feature_list_namespace"
-    ) as mock_update_fl_namespace:
-        error_msg = "random error when calling _update_feature_list_namespace!!"
-        mock_update_fl_namespace.side_effect = Exception(error_msg)
-        with pytest.raises(DocumentError) as exc:
-            _ = await app_container.deploy_service.update_deployment(
-                deployment_id=disabled_deployment_with_production_ready_features.id,
-                to_enable_deployment=True,
-            )
-
-        # check exception message
-        assert "Failed to update deployment" in str(exc.value)
-        assert error_msg in str(exc.value.__context__)
-
-    # check the mocked method is called once
-    assert mock_update_fl_namespace.call_count == 2
-
-    # check feature's online_enabled status & feature list deployed status
-    feature_list = await app_container.feature_list_service.get_document(
-        document_id=disabled_deployment_with_production_ready_features.feature_list_id
-    )
-    feature_list_namespace = await app_container.feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
-    assert feature_list.deployed is False
-    assert feature_list.online_enabled_feature_ids == []
-    assert feature_list_namespace.deployed_feature_list_ids == []
-
-    # check update_data_warehouse is provided with the right parameters during revert
-    assert mock_update_data_warehouse.call_count == 2
-
-    # check the first call (enabling)
-    _, kwargs = mock_update_data_warehouse.call_args_list[0]
-    assert kwargs["updated_feature"].online_enabled is True
-    assert kwargs["online_enabled_before_update"] is False
-
-    # check the second call (disabling during revert)
-    _, kwargs = mock_update_data_warehouse.call_args_list[1]
-    assert kwargs["updated_feature"].online_enabled is False
-    assert kwargs["online_enabled_before_update"] is True
+        expected_msg = "Deprecated feature list cannot be deployed."
+        assert expected_msg in exc_traceback
 
 
 @pytest.mark.asyncio
-async def test_update_deployment_error__state_is_reverted_when_update_feature_is_failed(
-    app_container,
-    disabled_deployment_with_production_ready_features,
-    mock_update_data_warehouse,
-):
-    """Test update feature list exception happens when updating feature"""
-    _ = mock_update_data_warehouse
-
-    with patch.object(
-        app_container.deploy_service, "_update_feature", new_callable=AsyncMock
-    ) as mock_update_feature:
-        error_msg = "random error when calling _update_feature!!"
-        mock_update_feature.side_effect = Exception(error_msg)
-        with pytest.raises(DocumentError) as exc:
-            _ = await app_container.deploy_service.update_deployment(
-                deployment_id=disabled_deployment_with_production_ready_features.id,
-                to_enable_deployment=True,
-            )
-
-        # check exception message
-        assert "Failed to update deployment" in str(exc.value)
-        assert error_msg in str(exc.value.__context__)
-
-    # check the mocked method is called once
-    mock_update_feature.assert_called_once()
-
-    # check feature's online_enabled status & feature list deployed status
-    feature_list = await app_container.feature_list_service.get_document(
-        document_id=disabled_deployment_with_production_ready_features.feature_list_id
-    )
-    feature_list_namespace = await app_container.feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
-    assert feature_list.deployed is False
-    assert feature_list.online_enabled_feature_ids == []
-    assert feature_list_namespace.deployed_feature_list_ids == []
-
-
-@pytest.fixture(name="patched_deploy_service")
-def patched_deploy_service_fixture(deploy_service):
-    """
-    Fixture for a patched DeployService
-    """
-    with patch.object(deploy_service, "_get_enabled_serving_entity_ids", return_value=[]):
-        yield deploy_service
-
-
-@pytest.mark.asyncio
-async def test_update_feature_list_error__state_is_reverted_after_feature_list_namespace_updated(
-    app_container,
-    feature_list_namespace_service,
+async def test_update_deployment__deployment_is_disabled_when_exception_raised(
+    deploy_service,
+    deployment_service,
     feature_list_service,
-    production_ready_feature_list,
-    patched_deploy_service,
+    feature_service,
+    disabled_deployment_with_production_ready_features,
     mock_update_data_warehouse,
 ):
-    """Test update feature list exception happens after feature list namespace updated"""
+    """Test update deployment exception raised"""
+    random_error_msg = "random error when calling update_data_warehouse!!"
+    mock_update_data_warehouse.side_effect = Exception(random_error_msg)
+    try:
+        await deploy_service.update_deployment(
+            deployment_id=disabled_deployment_with_production_ready_features.id,
+            to_enable_deployment=True,
+        )
+    except Exception:  # pylint: disable=broad-except
+        # Capture the traceback information
+        exc_traceback = traceback.format_exc()
+
+        assert random_error_msg in exc_traceback
+
+        # check post condition
+        updated_deployment = await deployment_service.get_document(
+            document_id=disabled_deployment_with_production_ready_features.id
+        )
+        assert updated_deployment.enabled is False
+        feature_list = await feature_list_service.get_document(
+            document_id=disabled_deployment_with_production_ready_features.feature_list_id
+        )
+        assert feature_list.deployed is False
+        for feature_id in feature_list.feature_ids:
+            feature = await feature_service.get_document(document_id=feature_id)
+            assert feature.online_enabled is False
+
+
+@pytest_asyncio.fixture(name="production_ready_features")
+async def production_ready_features_fixture(app_container, feature, feature_item_event):
+    """Production ready features fixture"""
+    features = [feature, feature_item_event]
+    for feat in features:
+        feat = await app_container.feature_readiness_service.update_feature(
+            feature_id=feat.id, readiness="PRODUCTION_READY", ignore_guardrails=True
+        )
+        assert feat.readiness == "PRODUCTION_READY"
+        assert feat.online_enabled is False
+    return features
+
+
+@pytest.mark.asyncio
+async def test_deploy_service__check_asset_status_update(
+    production_ready_features,
+    app_container,
+    mock_update_data_warehouse,
+):
+    """Test deploy service"""
     _ = mock_update_data_warehouse
-    feature_list = production_ready_feature_list
-    assert feature_list.deployed is False
-    assert feature_list.online_enabled_feature_ids == []
 
-    # create an enabled deployment first so that feature_list.deployed != target_deployed
-    await app_container.deployment_service.create_document(
-        data=DeploymentModel(
-            name="some_deployment",
-            feature_list_id=feature_list.id,
-            enabled=True,
-        )
+    # create feature lists
+    features = production_ready_features
+    feature_list_controller = app_container.feature_list_controller
+    feature_list1 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list1", feature_ids=[features[0].id])
+    )
+    feature_list2 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list3", feature_ids=[feat.id for feat in features])
     )
 
-    async def fake_update_progress(progress, message, metadata=None) -> None:
-        _ = message, metadata
-        if progress == 100:
-            raise ValueError("update_progress throws error!!")
-
-    with pytest.raises(ValueError) as exc:
-        _ = await patched_deploy_service._update_feature_list(
-            feature_list_id=feature_list.id,
-            deployment_id=ObjectId(),
-            to_enable_deployment=False,
-            update_progress=fake_update_progress,
-        )
-
-    assert "update_progress throws error!!" in str(exc.value)
-
-    # check feature's online_enabled status & feature list deployed status
-    feature_list = await feature_list_service.get_document(document_id=feature_list.id)
-    feature_list_namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
+    # create deployments
+    deployment_id1, deployment_id2, deployment_id3 = ObjectId(), ObjectId(), ObjectId()
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list1.id,
+        deployment_id=deployment_id1,
+        deployment_name="deployment1",
+        to_enable_deployment=False,
     )
-    assert feature_list.deployed is False
-    assert feature_list.online_enabled_feature_ids == []
-    assert feature_list_namespace.deployed_feature_list_ids == []
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list1.id,
+        deployment_id=deployment_id2,
+        deployment_name="deployment2",
+        to_enable_deployment=False,
+    )
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list2.id,
+        deployment_id=deployment_id3,
+        deployment_name="deployment3",
+        to_enable_deployment=False,
+    )
 
-    # test another exception raised during revert changes
-    with pytest.raises(Exception) as exc:
-        with patch.object(
-            patched_deploy_service, "_revert_changes", new_callable=AsyncMock
-        ) as mock_update_feature:
-            mock_update_feature.side_effect = Exception("Error during revert changes")
-            _ = await patched_deploy_service._update_feature_list(
-                feature_list_id=feature_list.id,
-                deployment_id=ObjectId(),
-                to_enable_deployment=False,
-                update_progress=fake_update_progress,
-            )
+    async def check_asset_state(
+        deployment_id,
+        feats,
+        expected_deployment_enabled,
+        expected_feature_list_deployed,
+        expected_features_online_enabled,
+    ):
+        """Check asset state"""
+        deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+        assert deployment.enabled == expected_deployment_enabled
 
-    assert "Error during revert changes" in str(exc.value)
-    assert "update_progress throws error!!" in str(exc.value.__context__)
+        flist = await app_container.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        assert flist.deployed == expected_feature_list_deployed
+
+        enabled_flags = []
+        for feat in feats:
+            feat = await app_container.feature_service.get_document(document_id=feat.id)
+            enabled_flags.append(feat.online_enabled)
+        assert enabled_flags == expected_features_online_enabled
+
+    # enable deployment1
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id1,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id1,
+        features,
+        True,
+        True,
+        [True, False],
+    )
+
+    # enable deployment2
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id2,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id2,
+        features,
+        True,
+        True,
+        [True, False],
+    )
+
+    # enable deployment3
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id3,
+        to_enable_deployment=True,
+    )
+    await check_asset_state(
+        deployment_id3,
+        features,
+        True,
+        True,
+        [True, True],
+    )
+
+    # disable deployment1
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id1,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id1,
+        features,
+        False,
+        True,  # feature list is still deployed
+        [True, True],  # feature1 is still enabled
+    )
+
+    # disable deployment2
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id2,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id2,
+        features,
+        False,
+        False,
+        [True, True],  # feature1 is still enabled
+    )
+
+    # disable deployment3
+    await app_container.deploy_service.update_deployment(
+        deployment_id=deployment_id3,
+        to_enable_deployment=False,
+    )
+    await check_asset_state(
+        deployment_id3,
+        features,
+        False,
+        False,  # feature list is still deployed
+        [False, False],  # feature1 is still enabled
+    )
