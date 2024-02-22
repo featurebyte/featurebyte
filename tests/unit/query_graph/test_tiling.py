@@ -264,38 +264,38 @@ def run_groupby_and_get_tile_table_identifier(
     [
         (
             {},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
             "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Features with different windows can share the same tile table
         (
             {"windows": ["2d"], "feature_names": ["sum_2d"]},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
             "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         (
             {"method": "max"},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_MAX_8386BC5866B03E1C3BC2DE69717E050B965EDD31",
             "max_8386bc5866b03e1c3bc2de69717e050b965edd31",
         ),
         (
             {"value_column": "col_int"},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_SUM_976E8AEFA273A14A2998F4148BB19377387408FA",
             "sum_976e8aefa273a14a2998f4148bb19377387408fa",
         ),
         (
             {"frequency": "10m"},
-            "TILE_F600_M300_B600_97D8C386C80C5D2330DCCD7185877E3E115B4B90",
+            "TILE_SUM_2458AD1E0BBDC71E25E4F6AD60C405A66DB1C2F0",
             "sum_2458ad1e0bbdc71e25e4f6ad60c405a66db1c2f0",
         ),
         (
             {"time_modulo_frequency": "10m"},
-            "TILE_F1800_M600_B600_C25381B17CF6D08AA2A08371849FB30D8156234D",
+            "TILE_SUM_8CA0F4BAA7250E0CB73A9E297B136F3F02DF36A4",
             "sum_8ca0f4baa7250e0cb73a9e297b136f3f02df36a4",
         ),
         (
             {"blind_spot": "20m"},
-            "TILE_F1800_M300_B1200_99F9071A3B1F57B70293B49E9D2B31690E60E7ED",
+            "TILE_SUM_522AC2033D65C09A17CE29DF387EA7F54B3138FD",
             "sum_522ac2033d65c09a17ce29df387ea7f54b3138fd",
         ),
     ],
@@ -325,25 +325,25 @@ def test_tile_table_id__agg_parameters(
     [
         (
             {"by_keys": "cust_id"},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
             "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Single groupby key specified as a list should give the same result
         (
             {"by_keys": ["cust_id"]},
-            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
             "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Changing the by_keys changes the tile ID
         (
             {"by_keys": "col_text"},
-            "TILE_F1800_M300_B600_C5EC30A38F5FBC03A29457E6EA9D476B9349BB93",
+            "TILE_SUM_3A8EA84A0B340D67855C98B583FD4542185B78A8",
             "sum_3a8ea84a0b340d67855c98b583fd4542185b78a8",
         ),
         # Changing the category changes the tile ID
         (
             {"by_keys": "col_text", "category": "col_int"},
-            "TILE_F1800_M300_B600_41ADC157A55DB443D156DD5062D3151C360EF564",
+            "TILE_SUM_D831E1D1BA75E56E80304FEE68CB700E80B1898A",
             "sum_d831e1d1ba75e56e80304fee68cb700e80b1898a",
         ),
     ],
@@ -374,7 +374,7 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
         snowflake_event_view_with_entity, kwargs, create_entity=False
     )
     assert (tile_id, agg_id) == (
-        "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+        "TILE_SUM_97E3469A34D3677123A6B2790BC4EF1E884103D6",
         "sum_97e3469a34d3677123a6b2790bc4ef1e884103d6",
     )
 
@@ -385,7 +385,7 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
         snowflake_event_view_with_entity, kwargs, create_entity=False
     )
     assert (tile_id, agg_id) == (
-        "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+        "TILE_SUM_A18A81569B0A6165960E6567ECDB26B882031FC3",
         "sum_a18a81569b0a6165960e6567ecdb26b882031fc3",
     )
 
