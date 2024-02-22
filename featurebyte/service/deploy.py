@@ -697,46 +697,47 @@ class DeployService:
             Feature list of the deployment
         """
         # enable features online
-        feature_update_progress = get_ranged_progress_callback(
-            self.task_progress_updater.update_progress, 0, 70
-        )
-        features = []
-        features_offline_feature_table_to_update = []
-        for feature_id in feature_list.feature_ids:
-            feature = await self.feature_management_service.feature_service.get_document(
-                document_id=feature_id
-            )
-            updated_feature = await self.feature_management_service.online_disable_feature(
-                feature=feature,
-                feature_list=feature_list,
-            )
-            if feature.online_enabled != updated_feature.online_enabled:
-                features_offline_feature_table_to_update.append(updated_feature)
-            features.append(updated_feature)
-            await feature_update_progress(
-                int(len(features) / len(feature_list.feature_ids) * 100),
-                "Disabling features online...",
-            )
-
-        # undeploy feature list if not used in other deployment
-        await self._update_progress(71, "Undeploying feature list...")
         if not await self._check_feature_list_used_in_other_deployment(
             feature_list_id=feature_list.id, exclude_deployment_id=deployment.id
         ):
+            # disable features online
+            feature_update_progress = get_ranged_progress_callback(
+                self.task_progress_updater.update_progress, 0, 70
+            )
+            features = []
+            features_offline_feature_table_to_update = []
+            for feature_id in feature_list.feature_ids:
+                feature = await self.feature_management_service.feature_service.get_document(
+                    document_id=feature_id
+                )
+                updated_feature = await self.feature_management_service.online_disable_feature(
+                    feature=feature,
+                    feature_list=feature_list,
+                )
+                if feature.online_enabled != updated_feature.online_enabled:
+                    features_offline_feature_table_to_update.append(updated_feature)
+                features.append(updated_feature)
+                await feature_update_progress(
+                    int(len(features) / len(feature_list.feature_ids) * 100),
+                    "Disabling features online...",
+                )
+
+            # undeploy feature list if not used in other deployment
+            await self._update_progress(71, "Undeploying feature list...")
             await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list, deployment_id=deployment.id
             )
 
-        # check if feast integration is enabled for the catalog
-        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-            feast_registry = await self.feast_integration_service.get_feast_registry()
-            if feast_registry and features_offline_feature_table_to_update:
-                await self.feast_integration_service.handle_online_disabled_features(
-                    features=features_offline_feature_table_to_update,
-                    update_progress=get_ranged_progress_callback(
-                        self.task_progress_updater.update_progress, 72, 99
-                    ),
-                )
+            # check if feast integration is enabled for the catalog
+            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+                feast_registry = await self.feast_integration_service.get_feast_registry()
+                if feast_registry and features_offline_feature_table_to_update:
+                    await self.feast_integration_service.handle_online_disabled_features(
+                        features=features_offline_feature_table_to_update,
+                        update_progress=get_ranged_progress_callback(
+                            self.task_progress_updater.update_progress, 72, 99
+                        ),
+                    )
 
         # update deployment status
         await self.deployment_service.update_document(
