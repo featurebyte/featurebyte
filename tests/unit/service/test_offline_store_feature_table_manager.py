@@ -24,6 +24,7 @@ from tests.util.helper import (
     deploy_feature_list,
     get_relationship_info,
     undeploy_feature,
+    undeploy_feature_async,
 )
 
 
@@ -471,7 +472,7 @@ async def test_feature_table_undeploy(
     Test feature table creation and update when two features are deployed
     """
     # Simulate online enabling two features then online disable one
-    undeploy_feature(deployed_float_feature)
+    await undeploy_feature_async(deployed_float_feature, app_container)
 
     feature_tables = await get_all_feature_tables(document_service)
     assert set(feature_tables.keys()) == {
@@ -529,7 +530,7 @@ async def test_feature_table_undeploy(
     assert args[1] == ["sum_1d_V231227"]
 
     # Check online disabling the last feature deletes the feature table
-    undeploy_feature(deployed_float_feature_post_processed)
+    await undeploy_feature_async(deployed_float_feature_post_processed, app_container)
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
