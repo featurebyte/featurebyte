@@ -58,7 +58,7 @@ class TileInfoKey:
 
         Returns
         -------
-        TileInfoRefType
+        TileInfoKey
         """
         return cls(
             aggregation_id=tile_info.aggregation_id, tile_id_version=tile_info.tile_id_version
@@ -338,7 +338,7 @@ class TileCache:
 
         Returns
         -------
-        dict[TileInfoRefType, TileGenSql]
+        dict[TileInfoKey, TileGenSql]
         """
         out = {}
         interpreter = GraphInterpreter(graph, source_type=self.source_type)
@@ -420,9 +420,9 @@ class TileCache:
         ----------
         unique_tile_infos : dict[str, TileGenSql]
             Mapping from tile id to TileGenSql
-        keys_with_tracker : list[TileInfoRefType]
+        keys_with_tracker : list[TileInfoKey]
             List of tile ids with existing tracker tables
-        keys_no_tracker : list[TileInfoRefType]
+        keys_no_tracker : list[TileInfoKey]
             List of tile ids without existing tracker table
         request_id : str
             Request ID
@@ -482,9 +482,9 @@ class TileCache:
         ----------
         request_id : str
             Request ID
-        keys : list[TileInfoRefType]
+        keys : list[TileInfoKey]
             List of aggregation ids
-        unique_tile_infos : dict[TileInfoRefType, TileGenSql]
+        unique_tile_infos : dict[TileInfoKey, TileGenSql]
             Mapping from tile id to TileGenSql
 
         Returns
