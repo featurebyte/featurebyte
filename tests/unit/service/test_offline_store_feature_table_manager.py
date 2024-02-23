@@ -922,7 +922,6 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
     }
 
 
-@pytest.mark.skip(reason="Skip for now to avoid conflict, to be re-enabled")
 @pytest.mark.asyncio
 async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     app_container,
@@ -935,10 +934,6 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     """
     Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
     underlying features are already online enabled)
-
-    TODO: This is a less common case but still need to be handled. This will likely cause conflict
-     with the on-going deployment flow stabilization work. For now, adding this test case which
-     should be re-enabled later.
     """
     feature_tables = await get_all_feature_tables(document_service)
     assert set(feature_tables.keys()) == {
