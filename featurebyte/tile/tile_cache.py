@@ -79,6 +79,18 @@ class TileInfoKey:
             f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
         )
 
+    def get_working_table_column_name(self) -> str:
+        """
+        Get the column name corresponding to this key in the tile cache working table
+
+        This is transient, so we don't have to worry about backward compatibility.
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.aggregation_id}_v{self.tile_id_version}"
+
 
 @dataclass
 class OnDemandTileComputeRequest:
@@ -455,11 +467,11 @@ class TileCache:
                 on=expressions.and_(*join_conditions) if join_conditions else None,
             )
             columns.append(
-                f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {key.aggregation_id}"
+                f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {key.get_working_table_column_name()}"
             )
 
         for key in keys_no_tracker:
-            columns.append(f"CAST(null AS TIMESTAMP) AS {key.aggregation_id}")
+            columns.append(f"CAST(null AS TIMESTAMP) AS {key.get_working_table_column_name()}")
 
         table_expr = table_expr.select("REQ.*", *columns)
         table_sql = sql_to_string(table_expr, source_type=self.source_type)
@@ -504,7 +516,6 @@ class TileCache:
         }
 
         for key in keys:
-            agg_id = key.aggregation_id
             tile_info = unique_tile_infos[key]
             point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
             last_tile_start_date_expr = self._get_last_tile_start_date_expr(
@@ -515,13 +526,18 @@ class TileCache:
                     this=expressions.Case(
                         ifs=[
                             expressions.If(
-                                this=expressions.Is(this=agg_id, expression=expressions.Null()),
+                                this=expressions.Is(
+                                    this=key.get_working_table_column_name(),
+                                    expression=expressions.Null(),
+                                ),
                                 true=expressions.false(),
                             ),
                         ],
                         default=expressions.LTE(
                             this=last_tile_start_date_expr,
-                            expression=expressions.Identifier(this=agg_id),
+                            expression=expressions.Identifier(
+                                this=key.get_working_table_column_name()
+                            ),
                         ),
                     ),
                     to=expressions.DataType.build("BIGINT"),
@@ -573,16 +589,21 @@ class TileCache:
         last_tile_start_date_expr = self._get_last_tile_start_date_expr(
             point_in_time_epoch_expr, tile_info
         )
+        working_table_column_name = TileInfoKey.from_tile_info(
+            tile_info
+        ).get_working_table_column_name()
         working_table_filter = expressions.Case(
             ifs=[
                 expressions.If(
-                    this=expressions.Is(this=aggregation_id, expression=expressions.Null()),
+                    this=expressions.Is(
+                        this=working_table_column_name, expression=expressions.Null()
+                    ),
                     true=expressions.true(),
                 ),
             ],
             default=expressions.GT(
                 this=last_tile_start_date_expr,
-                expression=expressions.Identifier(this=aggregation_id),
+                expression=expressions.Identifier(this=working_table_column_name),
             ),
         )
 
@@ -731,7 +752,9 @@ class TileCache:
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
         recorded_last_tile_start_date_expr = self.adapter.any_value(
-            expressions.Identifier(this=tile_info.aggregation_id)
+            expressions.Identifier(
+                this=TileInfoKey.from_tile_info(tile_info).get_working_table_column_name()
+            )
         )
         frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
             frequency, "second", "microsecond"
