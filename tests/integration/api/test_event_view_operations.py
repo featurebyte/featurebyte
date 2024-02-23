@@ -2,6 +2,7 @@
 This module contains session to EventView integration tests
 """
 import json
+import os
 import time
 from unittest import mock
 from unittest.mock import patch
@@ -1364,6 +1365,7 @@ def test_latest_per_category_aggregation(event_view):
     assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
 
 
+@mock.patch.dict(os.environ, {"FEATUREBYTE_TILE_ID_VERSION": "1"})
 def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues
