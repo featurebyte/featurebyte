@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
-from featurebyte.enum import StrEnum
+from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
@@ -62,6 +62,7 @@ class TileSpec(FeatureByteBaseModel):
     parent_column_name: Optional[str]
     category_column_name: Optional[str]
     feature_store_id: Optional[ObjectId]
+    entity_tracker_table_name: str
 
     class Config:
         """
@@ -69,6 +70,18 @@ class TileSpec(FeatureByteBaseModel):
         """
 
         arbitrary_types_allowed: bool = True
+
+    @root_validator(pre=True)
+    @classmethod
+    def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fill in default entity_tracker_table_name if not provided. For tests.
+        """
+        if values.get("entity_tracker_table_name") is None:
+            values["entity_tracker_table_name"] = (
+                values.get("aggregation_id", "") + InternalName.TILE_ENTITY_TRACKER_SUFFIX
+            )
+        return values
 
     @validator("tile_id")
     @classmethod
