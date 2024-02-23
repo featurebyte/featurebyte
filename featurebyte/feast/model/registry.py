@@ -20,7 +20,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     """Feast registry model"""
 
     offline_table_name_prefix: str
-    registry: bytes = Field(default_factory=bytes)
+    registry: bytes = Field(default_factory=bytes, exclude=True)
     feature_store_id: PydanticObjectId
     registry_path: Optional[str] = Field(default=None)
 

@@ -217,7 +217,7 @@ class FeastRegistryService(
         )
 
     async def _populate_registry(self, document: FeastRegistryModel) -> FeastRegistryModel:
-        if document.registry_path and not document.registry:
+        if document.registry_path:
             document.registry = await self.storage.get_bytes(Path(document.registry_path))
         return document
 
@@ -286,22 +286,21 @@ class FeastRegistryService(
         assert recreated_model.id == document_id
 
         if original_doc.registry_path:
+            # remove old registry file
             await self.storage.delete(Path(original_doc.registry_path))
-        await self._move_registry_to_storage(recreated_model)
 
-        updated = await super().update_document(
-            document_id=document_id,
-            data=FeastRegistryUpdate(
-                feature_store_id=recreated_model.feature_store_id,
-                feature_lists=None,
-                registry_path=recreated_model.registry_path,
-            ),
-            exclude_none=exclude_none,
-            document=document,
-            return_document=return_document,
-            skip_block_modification_check=skip_block_modification_check,
+        document = await self._move_registry_to_storage(recreated_model)
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document.id),
+            update={
+                "$set": {"registry_path": document.registry_path},
+                "$unset": {"registry": ""},
+            },
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
-        return cast(FeastRegistryModel, updated)
+        return await self.get_document(document_id=document_id)
 
     async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
         """
