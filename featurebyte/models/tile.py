@@ -74,9 +74,7 @@ class TileSpec(FeatureByteBaseModel):
     @root_validator(pre=True)
     @classmethod
     def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Fill in default entity_tracker_table_name if not provided. For tests.
-        """
+        # Fill in default entity_tracker_table_name if not provided. For tests.
         if values.get("entity_tracker_table_name") is None:
             values["entity_tracker_table_name"] = (
                 values.get("aggregation_id", "") + InternalName.TILE_ENTITY_TRACKER_SUFFIX

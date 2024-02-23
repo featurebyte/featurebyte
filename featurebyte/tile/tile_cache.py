@@ -3,7 +3,7 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional, Tuple, cast
+from typing import Any, Callable, Coroutine, Optional, cast
 
 import time
 from dataclasses import dataclass
