@@ -64,6 +64,7 @@ def update_or_check_payload_fixture(request_payload_dir, name, json_payload, upd
     if update_fixtures:
         with open(filename, "w") as fhandle:
             fhandle.write(json.dumps(json_payload, indent=4, sort_keys=True))
+            fhandle.write("\n")
     else:
         with open(filename, "r") as fhandle:
             stored_payload = json.load(fhandle)
