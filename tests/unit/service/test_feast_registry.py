@@ -60,7 +60,7 @@ async def registry_with_path_fixture(
     mock_offline_store_feature_manager_dependencies,
 ):
     """Fixture for registry without path"""
-    _ = mock_update_data_warehouse
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
 
     await deploy_service.update_deployment(deployment_id=deployment_id, to_enable_deployment=True)
 

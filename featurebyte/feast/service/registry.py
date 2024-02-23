@@ -3,7 +3,7 @@ Feast registry service
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional
 
 import random
 from pathlib import Path

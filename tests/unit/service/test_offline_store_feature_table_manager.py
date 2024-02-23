@@ -23,7 +23,6 @@ from tests.util.helper import (
     deploy_feature,
     deploy_feature_list,
     get_relationship_info,
-    undeploy_feature,
     undeploy_feature_async,
 )
 
