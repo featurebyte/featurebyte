@@ -6,7 +6,7 @@ from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set
 import asyncio
 import concurrent
 import os
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from functools import wraps
 from unittest.mock import patch
 
@@ -103,6 +103,35 @@ def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
             os.environ[variable] = previous_value
         else:
             del os.environ[variable]
+
+
+@contextmanager
+def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
+    """
+    Set multiple environment variables within the context
+
+    Parameters
+    ----------
+    variables: Dict[str, Any]
+        Key value mapping of environment variables to set
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    ctx_managers: List[Any] = []
+
+    for key, value in variables.items():
+        ctx_managers.append(set_environment_variable(key, value))
+
+    if ctx_managers:
+        with ExitStack() as stack:
+            for mgr in ctx_managers:
+                stack.enter_context(mgr)
+            yield
+    else:
+        yield
 
 
 async def execute_sdk_code(
@@ -243,14 +272,6 @@ class BatchFeatureCreator:
         feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
-        groupby_node = document.graph.nodes_map.get("groupby_1", None)
-        if groupby_node:
-            assert isinstance(groupby_node, GroupByNode)
-            if groupby_node.parameters.tile_id_version == 1:
-                # do not check the hash if the feature is generated using older SDK client
-                # TODO: remove this check after all the features are generated using the new SDK client
-                return True
-
         is_consistent = expected_hash == generated_hash
         if not is_consistent:
             # log the difference between the expected feature and the saved feature
@@ -316,9 +337,18 @@ class BatchFeatureCreator:
 
         with timer("execute feature definition", logger, extra={"feature_name": document.name}):
             # execute the code to save the feature
-            await execute_sdk_code(
-                catalog_id=catalog_id, code=definition, feature_controller=self.feature_controller
-            )
+            environment_overrides = {}
+            groupby_node = document.graph.nodes_map.get("groupby_1", None)
+            if groupby_node:
+                assert isinstance(groupby_node, GroupByNode)
+                if groupby_node.parameters.tile_id_version == 1:
+                    environment_overrides["FEATUREBYTE_TILE_ID_VERSION"] = "1"
+            with set_environment_variables(environment_overrides):
+                await execute_sdk_code(
+                    catalog_id=catalog_id,
+                    code=definition,
+                    feature_controller=self.feature_controller,
+                )
 
         with timer("validate feature consistency", logger):
             # retrieve the saved feature & check if it is the same as the expected feature
