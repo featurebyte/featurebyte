@@ -295,7 +295,7 @@ class FeastRegistryService(
             query_filter=self._construct_get_query_filter(document_id=document.id),
             update={
                 "$set": {"registry_path": document.registry_path},
-                "$unset": {"registry": ""},
+                "$unset": {"registry": ""},  # remove registry field from older document
             },
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
