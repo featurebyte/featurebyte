@@ -346,7 +346,8 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_0231EB5AFD24BC0E316565E34C4210D2694985CE",
+                    "tile_id": "TILE_SUM_5075A32B3AD63EF26B142FED42003F7722022559",
+                    "tile_id_version": 2,
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -396,7 +397,8 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_0231EB5AFD24BC0E316565E34C4210D2694985CE",
+                    "tile_id": "TILE_SUM_FA3804C2F2AB322422FB47867A04F7AC554DCC5E",
+                    "tile_id_version": 2,
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,

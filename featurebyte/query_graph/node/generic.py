@@ -688,6 +688,7 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     tile_id: Optional[str]
     aggregation_id: Optional[str]
+    tile_id_version: Optional[int] = Field(default=1)
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):

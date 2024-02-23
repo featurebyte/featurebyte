@@ -203,11 +203,11 @@ def expected_feature_view_specs_fixture(feature_list):
             "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
             "features": [
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "name": f"non_time_time_sum_amount_feature_{version}",
                     "valueType": "DOUBLE",
                 },
                 {
-                    "name": f"non_time_time_sum_amount_feature_{version}",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
                     "valueType": "DOUBLE",
                 },
             ],
@@ -249,11 +249,11 @@ def expected_feature_view_specs_fixture(feature_list):
                 {"name": f"sum_1d_{version}", "valueType": "DOUBLE"},
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
-                    "valueType": "DOUBLE",
+                    "valueType": "UNIX_TIMESTAMP",
                 },
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "UNIX_TIMESTAMP",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "DOUBLE",
                 },
             ],
             "ttl": "3600s",

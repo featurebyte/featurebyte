@@ -345,5 +345,5 @@ async def test_get_historical_features__tile_cache_multiple_batches(
         current_nodes = kwargs["nodes"]
         nodes.extend([node.name for node in current_nodes])
 
-    expected_nodes = ["groupby_2", "groupby_1"]
+    expected_nodes = ["groupby_1", "groupby_2"]
     assert nodes == expected_nodes
