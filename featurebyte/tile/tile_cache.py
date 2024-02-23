@@ -36,38 +36,48 @@ from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
 
-# Tuple of (aggregation_id, tile_id_version)
-TileInfoRefType = Tuple[str, int]
 
-
-def get_tile_info_key_from_tile_info(tile_info: TileGenSql) -> TileInfoRefType:
+@dataclass(frozen=True)
+class TileInfoKey:
     """
-    Get a tile key object from TileGenSql
-
-    Parameters
-    ----------
-    tile_info: TileGenSql
-        TileGenSql object
-
-    Returns
-    -------
-    TileInfoRefType
+    Represents a unique unit of work for tile cache check
     """
-    return tile_info.aggregation_id, tile_info.tile_id_version
 
+    aggregation_id: str
+    tile_id_version: int
 
-def get_entity_tracker_table_name(tile_info_key: TileInfoRefType) -> str:
-    """
-    Get entity tracker table name
+    @classmethod
+    def from_tile_info(cls, tile_info: TileGenSql) -> TileInfoKey:
+        """
+        Get a tile key object from TileGenSql
 
-    Returns
-    -------
-    str
-    """
-    aggregation_id, tile_id_version = tile_info_key
-    if tile_id_version == 1:
-        return f"{aggregation_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
-    return f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
+        Parameters
+        ----------
+        tile_info: TileGenSql
+            TileGenSql object
+
+        Returns
+        -------
+        TileInfoRefType
+        """
+        return cls(
+            aggregation_id=tile_info.aggregation_id, tile_id_version=tile_info.tile_id_version
+        )
+
+    def get_entity_tracker_table_name(self) -> str:
+        """
+        Get entity tracker table name
+
+        Returns
+        -------
+        str
+        """
+        aggregation_id, tile_id_version = self.aggregation_id, self.tile_id_version
+        if tile_id_version == 1:
+            return f"{aggregation_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
+        return (
+            f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
+        )
 
 
 @dataclass
@@ -109,9 +119,9 @@ class OnDemandTileComputeRequest:
             aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,
             feature_store_id=feature_store_id,
-            entity_tracker_table_name=get_entity_tracker_table_name(
-                get_tile_info_key_from_tile_info(self.tile_gen_info)
-            ),
+            entity_tracker_table_name=TileInfoKey.from_tile_info(
+                self.tile_gen_info
+            ).get_entity_tracker_table_name(),
         )
         return tile_spec, self.tracker_sql
 
@@ -299,7 +309,7 @@ class TileCache:
         # Construct requests for outdated aggregation ids
         requests = []
         for key, is_cache_valid in tile_cache_validity.items():
-            agg_id = key[0]
+            agg_id = key.aggregation_id
             if is_cache_valid:
                 logger.debug(f"Cache for {agg_id} can be resued")
             else:
@@ -314,7 +324,7 @@ class TileCache:
 
     def _get_unique_tile_infos(
         self, graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
-    ) -> dict[TileInfoRefType, TileGenSql]:
+    ) -> dict[TileInfoKey, TileGenSql]:
         """Construct mapping from aggregation id to TileGenSql for easier manipulation
 
         Parameters
@@ -340,24 +350,24 @@ class TileCache:
                         info.serving_names = apply_serving_names_mapping(
                             info.serving_names, serving_names_mapping
                         )
-                    out[get_tile_info_key_from_tile_info(info)] = info
+                    out[TileInfoKey.from_tile_info(info)] = info
         return out
 
     async def _filter_keys_with_tracker(
-        self, tile_info_keys: list[TileInfoRefType]
-    ) -> list[TileInfoRefType]:
+        self, tile_info_keys: list[TileInfoKey]
+    ) -> list[TileInfoKey]:
         """Query tracker tables in data warehouse to identify aggregation IDs with existing tracking
         tables
 
         Parameters
         ----------
-        tile_info_keys: list[TileInfoRefType]
-            List of TileInfoRefType
+        tile_info_keys: list[TileInfoKey]
+            List of TileInfoKey
 
         Returns
         -------
-        list[str]
-            List of tile table IDs with existing entity tracker tables
+        list[TileInfoKey]
+            List of TileInfoKey with existing entity tracker tables
         """
         all_trackers = set()
         for table in await self.session.list_tables(
@@ -370,16 +380,16 @@ class TileCache:
 
         out = []
         for tile_info_key in tile_info_keys:
-            agg_id_tracker_name = get_entity_tracker_table_name(tile_info_key)
+            agg_id_tracker_name = tile_info_key.get_entity_tracker_table_name()
             if agg_id_tracker_name in all_trackers:
                 out.append(tile_info_key)
         return out
 
     async def _register_working_table(
         self,
-        unique_tile_infos: dict[TileInfoRefType, TileGenSql],
-        keys_with_tracker: list[TileInfoRefType],
-        keys_no_tracker: list[TileInfoRefType],
+        unique_tile_infos: dict[TileInfoKey, TileGenSql],
+        keys_with_tracker: list[TileInfoKey],
+        keys_no_tracker: list[TileInfoKey],
         request_id: str,
         request_table_name: str,
     ) -> None:
@@ -425,7 +435,7 @@ class TileCache:
         columns = []
         for table_index, key in enumerate(keys_with_tracker):
             tile_info = unique_tile_infos[key]
-            tracker_table_name = get_entity_tracker_table_name(key)
+            tracker_table_name = key.get_entity_tracker_table_name()
             table_alias = f"T{table_index}"
             join_conditions = []
             for serving_name, entity_column_name in zip(
@@ -444,10 +454,12 @@ class TileCache:
                 join_alias=table_alias,
                 on=expressions.and_(*join_conditions) if join_conditions else None,
             )
-            columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {key[0]}")
+            columns.append(
+                f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {key.aggregation_id}"
+            )
 
         for key in keys_no_tracker:
-            columns.append(f"CAST(null AS TIMESTAMP) AS {key[0]}")
+            columns.append(f"CAST(null AS TIMESTAMP) AS {key.aggregation_id}")
 
         table_expr = table_expr.select("REQ.*", *columns)
         table_sql = sql_to_string(table_expr, source_type=self.source_type)
@@ -461,9 +473,9 @@ class TileCache:
     async def _get_tile_cache_validity_from_working_table(
         self,
         request_id: str,
-        keys: list[TileInfoRefType],
-        unique_tile_infos: dict[TileInfoRefType, TileGenSql],
-    ) -> dict[TileInfoRefType, bool]:
+        keys: list[TileInfoKey],
+        unique_tile_infos: dict[TileInfoKey, TileGenSql],
+    ) -> dict[TileInfoKey, bool]:
         """Get a dictionary indicating whether each tile table has updated enough tiles
 
         Parameters
@@ -484,15 +496,15 @@ class TileCache:
         # working table
         validity_exprs = []
 
-        key_to_result_name_mapping: dict[TileInfoRefType, str] = {
-            key: f"{key[0]}_{key[1]}" for key in keys
+        key_to_result_name_mapping: dict[TileInfoKey, str] = {
+            key: f"{key.aggregation_id}_{key.tile_id_version}" for key in keys
         }
-        result_name_to_key_mapping: dict[str, TileInfoRefType] = {
+        result_name_to_key_mapping: dict[str, TileInfoKey] = {
             v: k for (k, v) in key_to_result_name_mapping.items()
         }
 
         for key in keys:
-            agg_id = key[0]
+            agg_id = key.aggregation_id
             tile_info = unique_tile_infos[key]
             point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
             last_tile_start_date_expr = self._get_last_tile_start_date_expr(
@@ -536,10 +548,7 @@ class TileCache:
         assert df_validity is not None
         assert df_validity.shape[0] == 1
         out: dict[str, bool] = df_validity.iloc[0].to_dict()
-        try:
-            return {result_name_to_key_mapping[k.lower()]: v for (k, v) in out.items()}
-        except:
-            raise
+        return {result_name_to_key_mapping[k.lower()]: v for (k, v) in out.items()}
 
     def _construct_request_from_working_table(
         self, request_id: str, tile_info: TileGenSql
