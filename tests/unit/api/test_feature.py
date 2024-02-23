@@ -159,8 +159,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "add_1"},
         {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "add_1"},
         {"source": "add_1", "target": "conditional_1"},
         {"source": "gt_1", "target": "conditional_1"},
     ]
@@ -325,10 +325,7 @@ def saved_feature_fixture(
     groupby_node = graph.nodes_map["groupby_1"]
     assert groupby_node.parameters.names == ["sum_1d"]
     assert groupby_node.parameters.windows == ["1d"]
-    assert (
-        groupby_node.parameters.tile_id
-        == "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB"
-    )
+    assert groupby_node.parameters.tile_id == "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295"
     assert groupby_node.parameters.aggregation_id == "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
 
     assert float_feature.name == "sum_1d"
