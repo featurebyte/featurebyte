@@ -15,7 +15,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
 from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
-from featurebyte.persistent.base import DuplicateDocumentError, Persistent
+from featurebyte.persistent.base import DuplicateDocumentError, Persistent, SortDir
 
 MONGODB_CLIENT = None
 
@@ -151,8 +151,7 @@ class MongoDB(Persistent):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -167,10 +166,8 @@ class MongoDB(Persistent):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and direction to sort by
         page: int
             Page number for pagination
         page_size: int
@@ -189,7 +186,10 @@ class MongoDB(Persistent):
         if sort_by:
             cursor = cursor.sort(
                 [
-                    (str(sort_by), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING),
+                    (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
+                    for sort_key, sort_dir in sort_by
+                ]
+                + [
                     ("_id", pymongo.DESCENDING),  # break ties using _id
                 ]
             )

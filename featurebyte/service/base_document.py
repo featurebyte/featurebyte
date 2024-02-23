@@ -469,8 +469,8 @@ class BaseDocumentService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: str | list[str] | None = "created_at",
+        sort_dir: SortDir | list[SortDir] = "desc",
         use_raw_query_filter: bool = False,
         projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -484,9 +484,9 @@ class BaseDocumentService(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
+        sort_by: str | list[str] | None
             Key used to sort the returning documents
-        sort_dir: SortDir
+        sort_dir: SortDir | list[SortDir]
             Sorting the returning documents in ascending order or descending order
         use_raw_query_filter: bool
             Use only provided query filter

@@ -168,9 +168,54 @@ async def test_find_many(mongo_persistent, test_documents):
     assert total == 3
 
 
+@pytest.mark.asyncio
+async def test_find_multiple_sort_keys(mongo_persistent, test_documents):
+    """
+    Test finding many documents
+    """
+    persistent, client = mongo_persistent
+    await client["test"]["data"].insert_many(test_documents)
+
+    # invalid parameters
+    with pytest.raises(AssertionError) as exc:
+        await persistent.find(
+            collection_name="data",
+            query_filter={},
+            sort_by=["_id", "name", "version"],
+            sort_dir="desc",
+        )
+    assert "sort_by and sort_dir must be of the same type" in str(exc.value)
+
+    # invalid parameters
+    with pytest.raises(AssertionError) as exc:
+        await persistent.find(
+            collection_name="data",
+            query_filter={},
+            sort_by=["_id", "name", "version"],
+            sort_dir=["desc"],
+        )
+    assert "sort_by and sort_dir must have the same length" in str(exc.value)
+
+    # invalid parameters
+    with pytest.raises(AssertionError) as exc:
+        await persistent.find(
+            collection_name="data", query_filter={}, sort_by="_id", sort_dir=["desc"]
+        )
+    assert "sort_by and sort_dir must be of the same type" in str(exc.value)
+
+    docs, total = await persistent.find(
+        collection_name="data",
+        query_filter={},
+        sort_by=["_id", "name", "version"],
+        sort_dir=["desc", "asc", "asc"],
+    )
+    assert docs == test_documents[-1::-1]
+    assert total == 3
+
+
 @pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_update_one(mongo_persistent, test_document, test_documents, disable_audit):
+async def test_update_one(mongo_persistent, test_document, disable_audit):
     """
     Test updating one document
     """

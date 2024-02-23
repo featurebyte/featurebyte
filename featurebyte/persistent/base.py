@@ -44,6 +44,9 @@ class DuplicateDocumentError(Exception):
     """
 
 
+SortDir = Literal["asc", "desc"]
+
+
 class Persistent(ABC):
     """
     Persistent base class
@@ -153,8 +156,8 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[str | list[str]] = None,
+        sort_dir: Optional[SortDir | list[SortDir]] = "asc",
         page: int = 1,
         page_size: int = 0,
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
@@ -171,9 +174,9 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
+        sort_by: Optional[str | list[str]]
             Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
+        sort_dir: Optional[SortDir | list[SortDir]]
             Direction to sort
         page: int
             Page number for pagination
@@ -187,12 +190,25 @@ class Persistent(ABC):
         tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
+        if sort_by:
+            if isinstance(sort_by, str):
+                assert not isinstance(
+                    sort_dir, list
+                ), "sort_by and sort_dir must be of the same type"
+                sort_by_ = [(sort_by, sort_dir or "asc")]
+            else:
+                assert isinstance(sort_dir, list), "sort_by and sort_dir must be of the same type"
+                assert len(sort_by) == len(
+                    sort_dir
+                ), "sort_by and sort_dir must have the same length"
+                sort_by_ = list(zip(sort_by, sort_dir))
+        else:
+            sort_by_ = None
         return await self._find(
             collection_name=collection_name,
             query_filter=query_filter,
             projection=projection,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_by=sort_by_,
             page=page,
             page_size=page_size,
         )
@@ -452,14 +468,17 @@ class Persistent(ABC):
         -------
         list[Document]
         """
+        if sort_by:
+            sort_by_ = [(sort_by, sort_dir or "asc")]
+        else:
+            sort_by_ = None
         _query_filter = copy.deepcopy(query_filter) if query_filter else {}
         _query_filter["document_id"] = document_id
         return await self._find(
             collection_name=get_audit_collection_name(collection_name),
             query_filter=_query_filter,
             projection=projection,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_by=sort_by_,
             page=page,
             page_size=page_size,
         )
@@ -656,8 +675,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
