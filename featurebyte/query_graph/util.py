@@ -89,7 +89,7 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     Parameters
     ----------
     transformations_hash : str
-        A hash that uniquely identifies the applied EventView transformations
+        A hash that uniquely identifies the applied view transformations
     parameters : dict[str, Any]
         Node parameters
 
@@ -200,6 +200,17 @@ def get_tile_table_identifier_v2(transformations_hash: str, parameters: dict[str
     Get tile table identifier that can be used as tile table name
 
     In v2, different aggregations do not share the same tile table.
+
+    Parameters
+    ----------
+    transformations_hash : str
+        A hash that uniquely identifies the applied view transformations
+    parameters : dict[str, Any]
+        Node parameters
+
+    Returns
+    -------
+    str
     """
     aggregation_id = get_aggregation_identifier(
         transformations_hash=transformations_hash, parameters=parameters
