@@ -1370,13 +1370,18 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues
     """
-    feature_group_1 = event_view.groupby("ÜSER ID").aggregate_over(
+    # Make the aggregation_id unique in this test case. Otherwise, the tile cache would have been
+    # calculated using the tile id version 2, causing a tile table not found error. This is a test
+    # specific issue due to the patch and doesn't happen in actual workflow.
+    filtered_event_view = event_view[event_view["ÀMOUNT"] > 1.234]
+
+    feature_group_1 = filtered_event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h"],
     )
     feature_list_1 = FeatureList([feature_group_1], name="feature_list_1")
-    feature_group_2 = event_view.groupby("ÜSER ID").aggregate_over(
+    feature_group_2 = filtered_event_view.groupby("ÜSER ID").aggregate_over(
         value_column="ËVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
