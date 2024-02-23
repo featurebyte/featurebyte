@@ -15,6 +15,7 @@ from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.deployment import (
@@ -381,8 +382,7 @@ class AllDeploymentController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         enabled: bool | None = None,
     ) -> AllDeploymentList:
         """
@@ -394,10 +394,8 @@ class AllDeploymentController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         enabled: bool | None
             Whether to return only enabled deployments
 
@@ -410,7 +408,6 @@ class AllDeploymentController(
                 page=page,
                 page_size=page_size,
                 sort_by=sort_by,
-                sort_dir=sort_dir,
                 query_filter={"enabled": enabled} if enabled is not None else {},
                 use_raw_query_filter=True,
             )

@@ -3,12 +3,13 @@ FeatureNamespace API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 import copy
 
 from bson.objectid import ObjectId
 
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
@@ -78,15 +79,14 @@ class FeatureNamespaceController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         **kwargs: Any,
     ) -> PaginatedDocument:
+        sort_by = sort_by or [("created_at", "desc")]
         document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             **kwargs,
         )
 

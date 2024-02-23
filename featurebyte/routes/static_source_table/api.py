@@ -13,6 +13,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.static_source_table import StaticSourceTableModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_materialized_table_router import BaseMaterializedTableRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -85,7 +86,7 @@ async def list_static_source_tables(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
 ) -> StaticSourceTableList:
@@ -96,8 +97,7 @@ async def list_static_source_tables(
     static_source_table_list: StaticSourceTableList = await controller.list(
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
     )
@@ -111,7 +111,7 @@ async def list_static_source_table_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -122,8 +122,7 @@ async def list_static_source_table_audit_logs(
         document_id=static_source_table_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list

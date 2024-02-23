@@ -13,6 +13,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -90,7 +91,7 @@ async def list_batch_request_tables(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
 ) -> BatchRequestTableList:
@@ -101,8 +102,7 @@ async def list_batch_request_tables(
     batch_request_table_list: BatchRequestTableList = await controller.list(
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
     )
@@ -116,7 +116,7 @@ async def list_batch_request_table_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -127,8 +127,7 @@ async def list_batch_request_table_audit_logs(
         document_id=batch_request_table_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Query, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target import TargetModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -56,7 +57,7 @@ async def list_target(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = SearchQuery,
 ) -> TargetList:
@@ -65,7 +66,11 @@ async def list_target(
     """
     controller = request.state.app_container.target_controller
     target_list: TargetList = await controller.list_target(
-        page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, search=search, name=name
+        page=page,
+        page_size=page_size,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
+        search=search,
+        name=name,
     )
     return target_list
 
@@ -102,7 +107,7 @@ async def list_target_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -113,8 +118,7 @@ async def list_target_audit_logs(
         document_id=target_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list

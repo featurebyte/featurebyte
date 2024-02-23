@@ -3,7 +3,7 @@ This module contains mixin class(es) used in the service directory.
 """
 from __future__ import annotations
 
-from typing import Any, Generic, Literal, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from abc import abstractmethod
 
@@ -14,11 +14,11 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
+from featurebyte.persistent.base import SortDir
 
 GeneralT = TypeVar("GeneralT")
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
-SortDir = Literal["asc", "desc"]
 DEFAULT_PAGE_SIZE = 100
 
 
@@ -116,8 +116,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -129,10 +128,8 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: SortDir
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         kwargs: Any
             Additional keyword arguments
 

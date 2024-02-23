@@ -3,7 +3,7 @@ UserDefinedFunction API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Tuple, cast
+from typing import Any, Dict, List, Tuple, cast
 
 from bson import ObjectId
 
@@ -12,6 +12,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
@@ -197,8 +198,7 @@ class UserDefinedFunctionController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
         feature_store_id: PydanticObjectId | None = None,
@@ -212,10 +212,8 @@ class UserDefinedFunctionController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -228,6 +226,7 @@ class UserDefinedFunctionController(
         UserDefinedFunctionList
             Paginated list of UserDefinedFunction
         """
+        sort_by = sort_by or [("created_at", "desc")]
         params: Dict[str, Any] = {"search": search, "name": name}
         if feature_store_id:
             params["query_filter"] = {"feature_store_id": feature_store_id}
@@ -235,7 +234,6 @@ class UserDefinedFunctionController(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             **params,
         )
 

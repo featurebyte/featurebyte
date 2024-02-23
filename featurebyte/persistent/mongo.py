@@ -3,7 +3,7 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Iterable, List, Literal, Optional, Tuple, cast
+from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
 
 import asyncio
 from asyncio import iscoroutine
@@ -366,8 +366,7 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         pipeline: List[Dict[str, Any]],
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
@@ -375,16 +374,12 @@ class MongoDB(Persistent):
         output_pipeline: List[Dict[str, Any]] = []
 
         if sort_by:
-            output_pipeline.append(
-                {
-                    "$sort": {
-                        str(sort_by): pymongo.ASCENDING
-                        if sort_dir == "asc"
-                        else pymongo.DESCENDING,
-                        "_id": pymongo.DESCENDING,
-                    }
-                }
-            )
+            sort = {
+                str(sort_key): pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING
+                for sort_key, sort_dir in sort_by
+            }
+            sort["_id"] = pymongo.DESCENDING  # break ties using _id
+            output_pipeline.append({"$sort": sort})
 
         if page_size > 0:
             output_pipeline.extend([{"$skip": page_size * (page - 1)}, {"$limit": page_size}])

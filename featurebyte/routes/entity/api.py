@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -65,7 +66,7 @@ async def list_entities(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
 ) -> EntityList:
@@ -76,8 +77,7 @@ async def list_entities(
     entity_list: EntityList = await controller.list(
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
     )
@@ -108,7 +108,7 @@ async def list_entity_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -119,8 +119,7 @@ async def list_entity_audit_logs(
         document_id=entity_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list

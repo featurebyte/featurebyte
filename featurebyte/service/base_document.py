@@ -39,7 +39,7 @@ from featurebyte.models.persistent import (
     FieldValueHistory,
     QueryFilter,
 )
-from featurebyte.persistent.base import Persistent
+from featurebyte.persistent.base import Persistent, SortDir
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import (
@@ -47,7 +47,6 @@ from featurebyte.service.mixin import (
     Document,
     DocumentCreateSchema,
     OpsServiceMixin,
-    SortDir,
 )
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
@@ -469,8 +468,7 @@ class BaseDocumentService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | list[str] | None = "created_at",
-        sort_dir: SortDir | list[SortDir] = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
         projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -484,10 +482,8 @@ class BaseDocumentService(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | list[str] | None
-            Key used to sort the returning documents
-        sort_dir: SortDir | list[SortDir]
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         use_raw_query_filter: bool
             Use only provided query filter
         projection: Optional[Dict[str, Any]]
@@ -505,6 +501,7 @@ class BaseDocumentService(
         QueryNotSupportedError
             If the persistent query is not supported
         """
+        sort_by = sort_by or [("created_at", "desc")]
         query_filter = self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
@@ -514,7 +511,6 @@ class BaseDocumentService(
                 query_filter=query_filter,
                 projection=projection,
                 sort_by=sort_by,
-                sort_dir=sort_dir,
                 page=page,
                 page_size=page_size,
                 user_id=self.user.id,
@@ -629,8 +625,7 @@ class BaseDocumentService(
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -646,10 +641,8 @@ class BaseDocumentService(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: SortDir
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         kwargs: Any
             Additional keyword arguments
 
@@ -664,7 +657,6 @@ class BaseDocumentService(
             document_id=document_id,
             query_filter=query_filter,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
         )
@@ -742,8 +734,7 @@ class BaseDocumentService(
         audit_data = await self.list_document_audits(
             document_id=document_id,
             query_filter={},
-            sort_by="action_at",
-            sort_dir="asc",
+            sort_by=[("action_at", "asc")],
             page=1,
             page_size=0,
         )

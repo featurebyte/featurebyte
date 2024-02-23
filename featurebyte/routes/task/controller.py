@@ -3,12 +3,11 @@ JobStatus API route controller
 """
 from __future__ import annotations
 
-from typing import Literal
-
 from http import HTTPStatus
 
 from fastapi import HTTPException
 
+from featurebyte.persistent.base import SortDir
 from featurebyte.schema.task import Task, TaskList, TaskUpdate
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.task_manager import TaskManager
@@ -52,7 +51,7 @@ class TaskController:
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_dir: SortDir = "desc",
     ) -> TaskList:
         """
         List task statuses of the given user
@@ -63,7 +62,7 @@ class TaskController:
             Page number
         page_size: int
             Number of items per page
-        sort_dir: "asc" or "desc"
+        sort_dir: SortDir
             Sorting the returning documents in ascending order or descending order
 
         Returns

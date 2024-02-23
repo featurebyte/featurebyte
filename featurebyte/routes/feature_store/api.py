@@ -11,6 +11,7 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
@@ -127,11 +128,17 @@ class FeatureStoreRouter(
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
-            request, feature_store_id, page, page_size, sort_by, sort_dir, search
+            request,
+            feature_store_id,
+            page,
+            page_size,
+            sort_by,
+            sort_dir,
+            search,
         )
 
     async def update_description(
