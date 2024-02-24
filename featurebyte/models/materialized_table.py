@@ -63,7 +63,6 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("location.feature_store_id"),
         ]

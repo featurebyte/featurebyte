@@ -97,7 +97,6 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("event_table_id"),
             [
@@ -105,6 +104,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ],
         ]
+        auditable = False
 
 
 class BacktestResult(BaseModel):

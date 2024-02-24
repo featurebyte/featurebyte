@@ -58,3 +58,4 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_store_id"),
         ]
+        auditable = False

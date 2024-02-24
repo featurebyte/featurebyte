@@ -219,7 +219,6 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=None,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("primary_entity_ids"),
@@ -228,6 +227,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("has_ttl"),
             pymongo.operations.IndexModel("entity_lookup_info"),
         ]
+        auditable = False
 
 
 class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
