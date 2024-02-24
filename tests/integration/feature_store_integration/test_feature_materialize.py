@@ -7,7 +7,7 @@ import os
 import textwrap
 import time
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -27,7 +27,7 @@ from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
-from featurebyte.storage import LocalTempStorage
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
@@ -47,8 +47,17 @@ def always_enable_feast_integration_fixture():
         yield
 
 
+@pytest.fixture(name="always_patch_app_get_storage", scope="module", autouse=True)
+def always_patch_app_get_storage_fixture(storage):
+    """
+    Patch app.get_storage for all tests in this module
+    """
+    with patch("featurebyte.app.get_storage", return_value=storage):
+        yield
+
+
 @pytest.fixture(name="app_container", scope="module")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage):
     """
     Return an app container used in tests
     """
@@ -56,8 +65,10 @@ def app_container_fixture(persistent, user, catalog):
         "user": user,
         "persistent": persistent,
         "celery": get_celery(),
-        "storage": LocalTempStorage(),
+        "storage": storage,
         "catalog_id": catalog.id,
+        "redis": Mock(),
+        "redis_uri": REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -212,12 +223,14 @@ def features_fixture(
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
-async def deployed_features_list_fixture(session, features):
+async def deployed_features_list_fixture(session, features, app_container):
     """
     Fixture for deployed feature list
     """
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST")
     feature_list.save()
+
+    deploy_service = app_container.deploy_service
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
@@ -227,10 +240,16 @@ async def deployed_features_list_fixture(session, features):
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-            deployment.enable()
+            await deploy_service.update_deployment(
+                deployment_id=deployment.id,
+                to_enable_deployment=True,
+            )
 
     yield deployment
-    deployment.disable()
+    await deploy_service.update_deployment(
+        deployment_id=deployment.id,
+        to_enable_deployment=False,
+    )
 
     if session.source_type == SourceType.DATABRICKS_UNITY:
         # check that on demand feature udf is dropped
@@ -243,7 +262,7 @@ async def deployed_features_list_fixture(session, features):
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
-async def deployed_features_list_composite_entities_fixture(features):
+async def deployed_features_list_composite_entities_fixture(features, app_container):
     """
     Fixture for deployed feature list
     """
@@ -254,6 +273,8 @@ async def deployed_features_list_composite_entities_fixture(features):
     ]
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES")
     feature_list.save()
+
+    deploy_service = app_container.deploy_service
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
@@ -263,10 +284,16 @@ async def deployed_features_list_composite_entities_fixture(features):
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-            deployment.enable()
+            await deploy_service.update_deployment(
+                deployment_id=deployment.id,
+                to_enable_deployment=True,
+            )
 
     yield deployment
-    deployment.disable()
+    await deploy_service.update_deployment(
+        deployment_id=deployment.id,
+        to_enable_deployment=False,
+    )
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")

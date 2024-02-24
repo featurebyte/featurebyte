@@ -720,11 +720,11 @@ class DeployService:
                 features.append(updated_feature)
                 await feature_update_progress(
                     int(len(features) / len(feature_list.feature_ids) * 100),
-                    "Disabling features online...",
+                    f"Disabling features online ({feature.name}) ...",
                 )
 
             # undeploy feature list if not used in other deployment
-            await self._update_progress(71, "Undeploying feature list...")
+            await self._update_progress(71, f"Undeploying feature list ({feature_list.name}) ...")
             await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list, deployment_id=deployment.id
             )

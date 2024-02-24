@@ -1,10 +1,13 @@
 """
 Feast registry model
 """
+from typing import Optional
+
 import pymongo
 
 # pylint: disable=no-name-in-module
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -17,8 +20,9 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     """Feast registry model"""
 
     offline_table_name_prefix: str
-    registry: bytes
+    registry: bytes = Field(default_factory=bytes, exclude=True)
     feature_store_id: PydanticObjectId
+    registry_path: Optional[str] = Field(default=None)
 
     def registry_proto(self) -> RegistryProto:
         """

@@ -844,11 +844,22 @@ async def deploy_feature(
 
 
 def undeploy_feature(feature):
-    """
-    Helper function to undeploy a single feature
-    """
+    """Helper function to undeploy a single feature"""
     deployment: Deployment = Deployment.get(f"{feature.name}_list")
     deployment.disable()  # pylint: disable=no-member
+
+
+async def undeploy_feature_async(feature, app_container):
+    """
+    Helper function to undeploy a feature. This version can control storage used through the
+    app_container parameter.
+    """
+    async for deployment in app_container.deployment_service.list_documents_iterator(
+        query_filter={"name": f"{feature.name}_list"}
+    ):
+        await app_container.deploy_service.update_deployment(
+            deployment_id=deployment.id, to_enable_deployment=False
+        )
 
 
 def tz_localize_if_needed(df, source_type):

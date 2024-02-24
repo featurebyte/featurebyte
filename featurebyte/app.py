@@ -51,7 +51,7 @@ from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_temp_storage
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
@@ -74,6 +74,7 @@ def _dep_injection_func(
     request.state.app_container = LazyAppContainer(
         user=request.state.user,
         persistent=MongoDBImpl(),
+        storage=get_storage(),
         temp_storage=get_temp_storage(),
         celery=get_celery(),
         catalog_id=active_catalog_id,

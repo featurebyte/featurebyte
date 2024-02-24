@@ -29,6 +29,15 @@ def always_enable_feast_integration_fixture():
         yield
 
 
+@pytest.fixture(name="always_patch_app_get_storage", scope="module", autouse=True)
+def always_patch_app_get_storage_fixture(storage):
+    """
+    Patch app.get_storage for all tests in this module
+    """
+    with patch("featurebyte.app.get_storage", return_value=storage):
+        yield
+
+
 @pytest_asyncio.fixture(name="catalog_online_store_disabled", scope="module")
 def catalog_online_store_disabled_fixture(catalog):
     """

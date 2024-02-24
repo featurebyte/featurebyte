@@ -24,5 +24,5 @@ class FeastRegistryUpdate(BaseDocumentServiceUpdateSchema):
     feature_lists: Optional[List[FeatureListModel]]
 
     # these fields are not expected to be updated directly
-    registry: Optional[bytes]
     feature_store_id: Optional[PydanticObjectId]
+    registry_path: Optional[str]

@@ -3,9 +3,10 @@ Feast registry service
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional
 
 import random
+from pathlib import Path
 
 from bson import ObjectId
 from redis import Redis
@@ -23,6 +24,7 @@ from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureT
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
+from featurebyte.storage import Storage
 
 
 class FeastRegistryService(
@@ -44,6 +46,7 @@ class FeastRegistryService(
         online_store_service: OnlineStoreService,
         catalog_service: CatalogService,
         entity_lookup_feature_table_service: EntityLookupFeatureTableService,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -59,6 +62,7 @@ class FeastRegistryService(
         self.online_store_service = online_store_service
         self.catalog_service = catalog_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
+        self.storage = storage
 
     async def _create_project_name(
         self, catalog_id: ObjectId, hex_digit_num: int = 7, max_try: int = 100
@@ -131,7 +135,8 @@ class FeastRegistryService(
 
         query_result = await self.list_documents_as_dict(query_filter=query_filter, page_size=1)
         if query_result["total"]:
-            return FeastRegistryModel(**query_result["data"][0])
+            registry = await self._populate_registry(FeastRegistryModel(**query_result["data"][0]))
+            return registry
 
         registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[]))
         return registry
@@ -141,6 +146,7 @@ class FeastRegistryService(
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],
         feature_lists: List[FeatureListModel],
+        document_id: Optional[ObjectId] = None,
     ) -> FeastRegistryModel:
         feature_ids = set()
         for feature_list in feature_lists:
@@ -203,11 +209,24 @@ class FeastRegistryService(
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
         return FeastRegistryModel(
+            _id=document_id,
             name=project_name,
             offline_table_name_prefix=offline_table_name_prefix,
             registry=feast_registry_proto.SerializeToString(),
             feature_store_id=feature_store_id,
         )
+
+    async def _populate_registry(self, document: FeastRegistryModel) -> FeastRegistryModel:
+        if document.registry_path:
+            document.registry = await self.storage.get_bytes(Path(document.registry_path))
+        return document
+
+    async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
+        feast_registry_path = Path(f"feast_registry/{document.id}/feast_registry.pb")
+        await self.storage.put_bytes(document.registry, feast_registry_path)
+        document.registry_path = str(feast_registry_path)
+        document.registry = b""
+        return document
 
     async def create_document(self, data: FeastRegistryCreate) -> FeastRegistryModel:
         """
@@ -226,7 +245,23 @@ class FeastRegistryService(
         document = await self._construct_feast_registry_model(
             project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
         )
+        document = await self._move_registry_to_storage(document)
         return await super().create_document(data=document)  # type: ignore
+
+    async def get_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: str | None = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> FeastRegistryModel:
+        document = await super().get_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+        return await self._populate_registry(document)
 
     async def update_document(
         self,
@@ -237,7 +272,6 @@ class FeastRegistryService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
     ) -> Optional[FeastRegistryModel]:
-        assert data.registry is None, "Registry will be generated automatically from feature lists"
         assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
         if data.feature_lists is None:
             return await self.get_document(document_id=document_id)
@@ -247,20 +281,26 @@ class FeastRegistryService(
             project_name=original_doc.name,
             offline_table_name_prefix=original_doc.offline_table_name_prefix,
             feature_lists=data.feature_lists,
-        )
-        updated = await super().update_document(
             document_id=document_id,
-            data=FeastRegistryUpdate(
-                registry=recreated_model.registry,
-                feature_store_id=recreated_model.feature_store_id,
-                feature_lists=None,
-            ),
-            exclude_none=exclude_none,
-            document=document,
-            return_document=return_document,
-            skip_block_modification_check=skip_block_modification_check,
         )
-        return cast(FeastRegistryModel, updated)
+        assert recreated_model.id == document_id
+
+        if original_doc.registry_path:
+            # remove old registry file
+            await self.storage.delete(Path(original_doc.registry_path))
+
+        document = await self._move_registry_to_storage(recreated_model)
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document.id),
+            update={
+                "$set": {"registry_path": document.registry_path},
+                "$unset": {"registry": ""},  # remove registry field from older document
+            },
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        return await self.get_document(document_id=document_id)
 
     async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
         """
@@ -273,5 +313,5 @@ class FeastRegistryService(
         async for feast_registry_model in self.list_documents_iterator(
             query_filter={"catalog_id": self.catalog_id}
         ):
-            return feast_registry_model
+            return await self._populate_registry(feast_registry_model)
         return None
