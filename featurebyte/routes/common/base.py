@@ -3,12 +3,13 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, Generic, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
+from featurebyte.persistent.base import SortDir
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -124,8 +125,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
         **kwargs: Any,
     ) -> PaginatedDocument:
         """
@@ -137,10 +137,8 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[List[Tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         kwargs: Any
             Additional keyword arguments
 
@@ -149,11 +147,11 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         PaginationDocument
             List of documents fulfilled the filtering condition
         """
+        sort_by = sort_by or [("created_at", "desc")]
         document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             **kwargs,
         )
         return cast(PaginatedDocument, self.paginated_document_class(**document_data))
@@ -233,8 +231,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
         **kwargs: Any,
     ) -> AuditDocumentList:
         """
@@ -250,10 +247,8 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[List[Tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         kwargs: Any
             Additional keyword arguments
 
@@ -262,13 +257,13 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         AuditDocumentList
             List of documents fulfilled the filtering condition
         """
+        sort_by = sort_by or [("created_at", "desc")]
         document_data = await self.service.list_document_audits(
             document_id=document_id,
             query_filter=query_filter,
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             **kwargs,
         )
         return AuditDocumentList(**document_data)

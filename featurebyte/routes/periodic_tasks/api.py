@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.periodic_task import PeriodicTask
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     NameQuery,
@@ -65,7 +66,7 @@ class PeriodicTaskRouter(BaseRouter):
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = SortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
     ) -> PeriodicTaskList:
@@ -76,8 +77,7 @@ class PeriodicTaskRouter(BaseRouter):
         periodic_task_list: PeriodicTaskList = await controller.list(
             page=page,
             page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
             search=search,
             name=name,
         )

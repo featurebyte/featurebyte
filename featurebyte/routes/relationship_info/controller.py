@@ -1,11 +1,12 @@
 """
 RelationshipInfo controller
 """
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
 from featurebyte.models.relationship import RelationshipInfoModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.relationship_info import (
     RelationshipInfoCreate,
@@ -95,8 +96,7 @@ class RelationshipInfoController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[str] = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
         search: Optional[str] = None,
         name: Optional[str] = None,
     ) -> RelationshipInfoList:
@@ -109,10 +109,8 @@ class RelationshipInfoController(
             Page number
         page_size: int
             Page size
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[List[Tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -125,7 +123,10 @@ class RelationshipInfoController(
         """
         params: Dict[str, Any] = {"search": search, "name": name}
         return await self.list(
-            page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **params
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            **params,
         )
 
     async def get_info(

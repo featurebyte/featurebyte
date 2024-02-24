@@ -14,6 +14,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target_table import TargetTableModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_materialized_table_router import BaseMaterializedTableRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -138,7 +139,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = SortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
     ) -> TargetTableList:
@@ -149,8 +150,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         target_table_list: TargetTableList = await controller.list(
             page=page,
             page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
             search=search,
             name=name,
         )
@@ -163,7 +163,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         """
@@ -174,8 +174,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             document_id=target_table_id,
             page=page,
             page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
             search=search,
         )
         return audit_doc_list

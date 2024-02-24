@@ -151,8 +151,7 @@ class TaskManager:
             query_filter={},
             page=page,
             page_size=page_size,
-            sort_by="date_done",
-            sort_dir="asc" if ascending else "desc",
+            sort_by=[("date_done", "asc" if ascending else "desc")],
         )
 
         tasks = [

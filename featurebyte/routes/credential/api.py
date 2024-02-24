@@ -11,6 +11,7 @@ from fastapi import Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -82,11 +83,17 @@ class CredentialRouter(
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
-            request, credential_id, page, page_size, sort_by, sort_dir, search
+            request,
+            credential_id,
+            page,
+            page_size,
+            sort_by,
+            sort_dir,
+            search,
         )
 
     async def update_description(
@@ -100,7 +107,7 @@ class CredentialRouter(
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = SortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
         feature_store_id: Optional[PydanticObjectId] = None,
@@ -112,8 +119,7 @@ class CredentialRouter(
         return await controller.list(
             page=page,
             page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,  # type: ignore[arg-type]
+            sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
             search=search,
             name=name,
             query_filter={} if feature_store_id is None else {"feature_store_id": feature_store_id},

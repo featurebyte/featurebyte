@@ -3,7 +3,7 @@ Target controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from http import HTTPStatus
 
@@ -18,6 +18,7 @@ from featurebyte.exception import (
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.target import TargetModel
 from featurebyte.persistent import Persistent
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
@@ -91,8 +92,7 @@ class TargetController(  # pylint: disable=too-many-instance-attributes
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[str] = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         search: Optional[str] = None,
         name: Optional[str] = None,
     ) -> TargetList:
@@ -105,10 +105,8 @@ class TargetController(  # pylint: disable=too-many-instance-attributes
             Page number
         page_size: int
             Page size
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -119,9 +117,13 @@ class TargetController(  # pylint: disable=too-many-instance-attributes
         TargetList
             List of Target objects
         """
+        sort_by = sort_by or [("created_at", "desc")]
         params: Dict[str, Any] = {"search": search, "name": name}
         return await self.list(
-            page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **params
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            **params,
         )
 
     async def service_and_query_pairs_for_checking_reference(

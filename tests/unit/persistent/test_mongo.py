@@ -162,7 +162,25 @@ async def test_find_many(mongo_persistent, test_documents):
 
     # test sort
     docs, total = await persistent.find(
-        collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
+        collection_name="data",
+        query_filter={},
+        sort_by=[("_id", "desc")],
+    )
+    assert docs == test_documents[-1::-1]
+    assert total == 3
+
+
+@pytest.mark.asyncio
+async def test_find_multiple_sort_keys(mongo_persistent, test_documents):
+    """
+    Test finding many documents
+    """
+    persistent, client = mongo_persistent
+    await client["test"]["data"].insert_many(test_documents)
+    docs, total = await persistent.find(
+        collection_name="data",
+        query_filter={},
+        sort_by=[("_id", "desc"), ("name", "asc"), ("version", "asc")],
     )
     assert docs == test_documents[-1::-1]
     assert total == 3
@@ -170,7 +188,7 @@ async def test_find_many(mongo_persistent, test_documents):
 
 @pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_update_one(mongo_persistent, test_document, test_documents, disable_audit):
+async def test_update_one(mongo_persistent, test_document, disable_audit):
     """
     Test updating one document
     """

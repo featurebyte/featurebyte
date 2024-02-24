@@ -10,13 +10,14 @@ from redis import Redis
 
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.persistent import Persistent
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.info import CatalogBriefInfo, OnlineStoreInfo
 from featurebyte.schema.online_store import OnlineStoreCreate
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.catalog import CatalogService
-from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, SortDir
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 
 
 class OnlineStoreService(
@@ -119,17 +120,16 @@ class OnlineStoreService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
         projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        sort_by = sort_by or [("created_at", "desc")]
         documents = await super().list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             use_raw_query_filter=use_raw_query_filter,
             projection=projection,
             **kwargs,

@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import PageQuery, PageSizeQuery, SortDirQuery
 from featurebyte.schema.task import Task, TaskList, TaskUpdate
@@ -61,7 +62,7 @@ class TaskRouter(BaseRouter):
         request: Request,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
     ) -> TaskList:
         """
         List TaskStatus

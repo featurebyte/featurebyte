@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import copy
 from http import HTTPStatus
@@ -21,6 +21,7 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
@@ -213,8 +214,7 @@ class FeatureListController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
         version: str | None = None,
@@ -229,10 +229,8 @@ class FeatureListController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -262,7 +260,6 @@ class FeatureListController(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             projection={"feature_clusters": 0},  # exclude feature_clusters
             **params,
         )

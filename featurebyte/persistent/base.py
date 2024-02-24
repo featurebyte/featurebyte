@@ -44,6 +44,9 @@ class DuplicateDocumentError(Exception):
     """
 
 
+SortDir = Literal["asc", "desc"]
+
+
 class Persistent(ABC):
     """
     Persistent base class
@@ -153,8 +156,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
@@ -171,10 +173,8 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
         page: int
             Page number for pagination
         page_size: int
@@ -192,7 +192,6 @@ class Persistent(ABC):
             query_filter=query_filter,
             projection=projection,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
         )
@@ -421,8 +420,7 @@ class Persistent(ABC):
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = "_id",
-        sort_dir: Optional[Literal["asc", "desc"]] = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -439,10 +437,8 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
         page: int
             Page number for pagination
         page_size: int
@@ -452,6 +448,7 @@ class Persistent(ABC):
         -------
         list[Document]
         """
+        sort_by = sort_by or [("_id", "desc")]
         _query_filter = copy.deepcopy(query_filter) if query_filter else {}
         _query_filter["document_id"] = document_id
         return await self._find(
@@ -459,7 +456,6 @@ class Persistent(ABC):
             query_filter=_query_filter,
             projection=projection,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
         )
@@ -656,8 +652,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -713,8 +708,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         pipeline: List[Dict[str, Any]],
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
@@ -728,10 +722,8 @@ class Persistent(ABC):
             Name of collection to use
         pipeline: List[Dict[str, Any]],
             Pipeline to execute
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
         page: int
             Page number for pagination
         page_size: int

@@ -101,9 +101,9 @@ class BaseApiTestSuite:
             [
                 {
                     "loc": ["query", "sort_dir"],
-                    "msg": 'string does not match regex "^(asc|desc)$"',
-                    "type": "value_error.str.regex",
-                    "ctx": {"pattern": "^(asc|desc)$"},
+                    "msg": "unexpected value; permitted: 'asc', 'desc'",
+                    "type": "value_error.const",
+                    "ctx": {"given": "abcd", "permitted": ["asc", "desc"]},
                 }
             ],
         ),
