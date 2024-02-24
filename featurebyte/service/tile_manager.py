@@ -222,7 +222,7 @@ class TileManagerService:
 
         tile_entity_tracking_ins = TileGenerateEntityTracking(
             session=session,
-            tile_id=tile_spec.aggregation_id,
+            entity_tracker_table_name=tile_spec.entity_tracker_table_name,
             entity_column_names=entity_column_names,
             entity_table=temp_entity_table,
         )

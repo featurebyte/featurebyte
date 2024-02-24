@@ -18,7 +18,7 @@ class TileGenerateEntityTracking(BaseSqlModel):
     """
 
     entity_column_names: List[str]
-    tile_id: str
+    entity_tracker_table_name: str
     entity_table: str
 
     def __init__(self, session: BaseSession, **kwargs: Any):
@@ -39,7 +39,7 @@ class TileGenerateEntityTracking(BaseSqlModel):
         Execute tile generate entity tracking operation
         """
 
-        tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
+        tracking_table_name = self.entity_tracker_table_name
         tracking_table_exist_flag = await self.table_exists(tracking_table_name)
         logger.debug(f"tracking_table_exist_flag: {tracking_table_exist_flag}")
 

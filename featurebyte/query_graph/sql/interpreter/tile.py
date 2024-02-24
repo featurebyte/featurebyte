@@ -49,6 +49,7 @@ class TileGenSql:
 
     # pylint: disable=too-many-instance-attributes
     tile_table_id: str
+    tile_id_version: int
     aggregation_id: str
     sql_template: SqlExpressionTemplate
     columns: list[str]
@@ -195,6 +196,7 @@ class TileSQLGenerator:
         sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
         info = TileGenSql(
             tile_table_id=tile_table_id,
+            tile_id_version=groupby_node.parameters.tile_id_version,
             aggregation_id=aggregation_id,
             sql_template=sql_template,
             columns=groupby_sql_node.columns,
