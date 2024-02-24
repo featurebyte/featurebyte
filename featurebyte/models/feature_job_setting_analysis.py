@@ -104,7 +104,6 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ],
         ]
-        auditable = False
 
 
 class BacktestResult(BaseModel):
