@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 import pytest_asyncio
+import redis
 from sqlglot import parse_one
 
 import featurebyte as fb
@@ -67,7 +68,7 @@ def app_container_fixture(persistent, user, catalog, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": catalog.id,
-        "redis": Mock(),
+        "redis": redis.from_url(REDIS_URI),
         "redis_uri": REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
