@@ -10,6 +10,7 @@ from pathlib import Path
 
 from bson import ObjectId
 from redis import Redis
+from redis.lock import Lock
 
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
@@ -25,6 +26,8 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.storage import Storage
+
+FEAST_REGISTRY_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the lock in seconds
 
 
 class FeastRegistryService(
@@ -63,6 +66,16 @@ class FeastRegistryService(
         self.catalog_service = catalog_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
         self.storage = storage
+
+    def get_registry_storage_lock(self, timeout: int) -> Lock:
+        """
+        Get registry storage lock
+
+        Returns
+        -------
+        Lock
+        """
+        return self.redis.lock(f"feast_registry_storage_update:{self.catalog_id}", timeout=timeout)
 
     async def _create_project_name(
         self, catalog_id: ObjectId, hex_digit_num: int = 7, max_try: int = 100
@@ -223,7 +236,9 @@ class FeastRegistryService(
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
         feast_registry_path = Path(f"feast_registry/{document.id}/feast_registry.pb")
-        await self.storage.put_bytes(document.registry, feast_registry_path)
+        with self.get_registry_storage_lock(timeout=FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
+            await self.storage.put_bytes(document.registry, feast_registry_path)
+
         document.registry_path = str(feast_registry_path)
         document.registry = b""
         return document
@@ -287,7 +302,8 @@ class FeastRegistryService(
 
         if original_doc.registry_path:
             # remove old registry file
-            await self.storage.delete(Path(original_doc.registry_path))
+            with self.get_registry_storage_lock(timeout=FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
+                await self.storage.delete(Path(original_doc.registry_path))
 
         document = await self._move_registry_to_storage(recreated_model)
         await self.persistent.update_one(
