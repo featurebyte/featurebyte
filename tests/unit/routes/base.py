@@ -153,15 +153,14 @@ class BaseApiTestSuite:
         ):
             yield
 
-    @pytest.fixture(name="mock_deployment_flow_and_handle_online_enabled_features")
+    @pytest.fixture(name="mock_deployment_flow")
     def mock_deployment_flow_fixture(self, mock_deployment_flow):
-        """Mock deployment flow"""
-        _ = mock_deployment_flow
+        """Mock deployment flow fixture"""
         with patch(
-            "featurebyte.service.offline_store_feature_table_manager."
-            "OfflineStoreFeatureTableManagerService.handle_online_enabled_features"
+            "featurebyte.service.offline_store_feature_table_manager.OfflineStoreFeatureTableManagerService."
+            "handle_online_enabled_features"
         ):
-            yield
+            yield mock_deployment_flow
 
     @staticmethod
     def make_feature_production_ready(api_client, feature_id, catalog_id):

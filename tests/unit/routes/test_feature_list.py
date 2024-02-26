@@ -94,17 +94,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
     @pytest.fixture(autouse=True)
     def always_patched_observation_table_service(
-        self,
-        patched_observation_table_service_for_preview,
-        mock_deployment_flow_and_handle_online_enabled_features,
+        self, patched_observation_table_service_for_preview, mock_deployment_flow
     ):
         """
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
-        _ = (
-            patched_observation_table_service_for_preview,
-            mock_deployment_flow_and_handle_online_enabled_features,
-        )
+        _ = patched_observation_table_service_for_preview, mock_deployment_flow
 
     def setup_creation_route(self, api_client):
         """
