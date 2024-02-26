@@ -30,6 +30,18 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
+
+
 @pytest.fixture(name="draft_feature")
 def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""

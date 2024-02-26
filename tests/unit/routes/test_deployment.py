@@ -3,6 +3,7 @@ Tests for Deployment route
 """
 import json
 import os
+import tempfile
 import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
@@ -12,6 +13,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
+from featurebyte.storage import LocalStorage
 from tests.unit.routes.base import BaseAsyncApiTestSuite, BaseCatalogApiTestSuite
 
 
@@ -31,10 +33,23 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
     )
 
     @pytest.fixture(autouse=True)
-    def mock_online_enable_service_update_data_warehouse(self):
+    def mock_online_enable_service_update_data_warehouse(
+        self, mock_deployment_flow_and_handle_online_enabled_features
+    ):
         """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
+        _ = mock_deployment_flow_and_handle_online_enabled_features
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
+
+    @pytest.fixture(autouse=True)
+    def always_patch_app_get_storage_fixture(self):
+        """
+        Patch app.get_storage for all tests in this module
+        """
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage = LocalStorage(base_path=tempdir)
+            with patch("featurebyte.app.get_storage", return_value=storage):
+                yield
 
     def setup_creation_route(self, api_client):
         """Setup for post route"""
@@ -535,14 +550,13 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         # Simulate online store being set, but feast registry is not available
         self.update_catalog_online_store_id(test_api_client, default_catalog_id)
 
-        with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
-            # Request online features
-            deployment_id = deployment_doc["_id"]
-            data = {"entity_serving_names": [{"cust_id": 1}]}
-            response = test_api_client.post(
-                f"{self.base_route}/{deployment_id}/online_features",
-                data=json.dumps(data),
-            )
+        # Request online features
+        deployment_id = deployment_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}]}
+        response = test_api_client.post(
+            f"{self.base_route}/{deployment_id}/online_features",
+            data=json.dumps(data),
+        )
         assert response.status_code == HTTPStatus.OK, response.content
 
         # Check result

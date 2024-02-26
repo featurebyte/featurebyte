@@ -386,7 +386,7 @@ def batch_request_table_from_source_fixture(
     snowflake_database_table, snowflake_execute_query_for_materialized_table, catalog
 ):
     """Batch request table from source table fixture"""
-    _ = catalog
+    _ = catalog, snowflake_execute_query_for_materialized_table
     return snowflake_database_table.create_batch_request_table(
         "batch_request_table_from_source_table"
     )

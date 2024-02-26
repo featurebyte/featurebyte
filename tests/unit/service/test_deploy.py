@@ -12,6 +12,18 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.feature_list import FeatureListCreate
 
 
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
+
+
 @pytest.fixture(name="deploy_service")
 def deploy_service_fixture(app_container):
     """Deploy service fixture"""
