@@ -71,6 +71,11 @@ class FeastRegistryService(
         """
         Get registry storage lock
 
+        Parameters
+        ----------
+        timeout: int
+            Maximum life for the lock in seconds
+
         Returns
         -------
         Lock

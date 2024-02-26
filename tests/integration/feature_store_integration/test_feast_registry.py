@@ -26,9 +26,9 @@ def test_registry_service__get_registry_storage_lock(registry_service, caplog):
         """Task that acquires and releases a lock"""
         # Acquire lock
         with service.get_registry_storage_lock(timeout=2):
-            logging.info(f"Lock acquired: {lock_name}")
+            logging.info("Lock acquired: " + lock_name)  # pylint: disable=logging-not-lazy
             time.sleep(1)
-        logging.info(f"Lock released: {lock_name}")
+        logging.info("Lock released: " + lock_name)  # pylint: disable=logging-not-lazy
 
     # Set log level to INFO to capture log messages
     caplog.set_level(logging.INFO)
@@ -44,7 +44,7 @@ def test_registry_service__get_registry_storage_lock(registry_service, caplog):
     thread2.join()
 
     # Check log messages
-    lines = [record.message for record in caplog.records]
+    lines = [record.msg for record in caplog.records]
     assert len(lines) == 4
     assert "Lock acquired: thread" in lines[0]
     assert "Lock released: thread" in lines[1]
