@@ -3,8 +3,6 @@
 from databricks.feature_engineering import FeatureEngineeringClient
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
 {{pyspark_import_statement}}
-from sklearn import linear_model
-import featurebyte as fb
 import mlflow
 
 # Initialize the Feature Engineering client to interact with Databricks Feature Store
@@ -37,29 +35,11 @@ log_model_dataset = fe.create_training_set(
     exclude_columns=exclude_columns,
 )
 
-# Retrieve the training dataframe through FeatureByte's compute_historical_features API
-# Observation table should include the primary entity columns, the request columns, and the target column
-catalog = fb.activate_and_get_catalog("[CATALOG_NAME]")
-feature_list = catalog.get_feature_list("[FEATURE_LIST_NAME]")
-observation_table = catalog.get_observation_table("[OBSERVATION_TABLE_NAME]")
-training_df = feature_list.compute_historical_features(
-    observation_set=observation_table.to_pandas(),
-)
-
-# Separate the features (X_train) and the target variable (y_train) for model training
-X_train = training_df.drop([target_column], axis=1)
-y_train = training_df[target_column]
-
-# Create and train the linear regression model using the training data
-model = linear_model.LinearRegression().fit(X_train, y_train)
-
 # Log the model and register it to the unity catalog
-mlflow.set_registry_uri("databricks-uc")
-
 fe.log_model(
-    model=model,
+    model=model,  # model is the trained model
     artifact_path="main.default.model",
     flavor=mlflow.sklearn,
     training_set=log_model_dataset,
-    registered_model_name="main.default.recommender_model"
+    registered_model_name="main.default.model",
 )
