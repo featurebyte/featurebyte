@@ -1389,6 +1389,15 @@ def storage_fixture():
         yield LocalStorage(base_path=tempdir)
 
 
+@pytest.fixture(name="always_patch_app_get_storage", scope="session", autouse=True)
+def always_patch_app_get_storage_fixture(storage):
+    """
+    Patch app.get_storage for all tests in this module
+    """
+    with patch("featurebyte.app.get_storage", return_value=storage):
+        yield
+
+
 @pytest.fixture(autouse=True, scope="module")
 def mock_task_manager(request, persistent, storage):
     """
@@ -1517,7 +1526,7 @@ def task_manager_fixture(persistent, user, catalog):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1525,7 +1534,7 @@ def app_container_fixture(persistent, user, catalog):
         "user": user,
         "persistent": persistent,
         "celery": get_celery(),
-        "storage": LocalTempStorage(),
+        "storage": storage,
         "catalog_id": catalog.id,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
