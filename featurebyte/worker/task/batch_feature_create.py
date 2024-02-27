@@ -35,6 +35,7 @@ class BatchFeatureCreateTask(BaseTask[BatchFeatureCreateTaskPayload]):
 
     @patch_api_object_cache()
     async def execute(self, payload: BatchFeatureCreateTaskPayload) -> Any:
-        await self.batch_feature_creator.batch_feature_create(
+        feature_ids = await self.batch_feature_creator.batch_feature_create(
             payload=payload, start_percentage=0, end_percentage=100
         )
+        return feature_ids

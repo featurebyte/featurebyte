@@ -108,6 +108,11 @@ async def test_task_executor(random_task_class, persistent, app_container):
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"
 
+    # check get task result
+    task_manager = app_container.task_manager
+    task_result = await task_manager.get_task_result(task_id=str(task_id))
+    assert task_result == 1234
+
 
 def run_process_task(state: Value, exception_value: Value, timeout: int):
     """Run task in a separate process using greenlet thread"""

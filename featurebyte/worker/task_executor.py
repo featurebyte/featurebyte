@@ -116,6 +116,7 @@ class TaskExecutor:
         self.user = User(id=payload.get("user_id"))
         self.task = app_container.get(TASK_REGISTRY_MAP[command])
         self.task_progress_updater = app_container.get(TaskProgressUpdater)
+        self.task_manager = app_container.task_manager
         self.setup_worker_config()
         self.payload_dict = payload
 
@@ -180,7 +181,11 @@ class TaskExecutor:
         try:
             # Execute the task
             await self._update_task_start_time_and_description(payload_obj)
-            await self.task.execute(payload_obj)
+            task_result = await self.task.execute(payload_obj)
+            if task_result is not None:
+                await self.task_manager.update_task_result(
+                    task_id=str(self.task_id), result=task_result
+                )
 
             # Send final progress to indicate task is completed
             await self.task_progress_updater.update_progress(percent=100)

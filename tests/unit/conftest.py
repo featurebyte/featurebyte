@@ -2081,9 +2081,10 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 app_container.override_instance_for_test("progress", Mock())
                 task = app_container.get(TEST_TASK_REGISTRY_MAP[payload.command])
 
+                task_result = None
                 try:
                     task_payload = task.get_payload_obj(kwargs)
-                    await task.execute(task_payload)
+                    task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
                 except Exception:  # pylint: disable=broad-except
@@ -2110,6 +2111,15 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 document = task.dict(by_alias=True)
                 document["_id"] = str(document["_id"])
                 await persistent._db[TaskModel.collection_name()].insert_one(document)
+
+                if task_result is not None:
+                    updated = await persistent.update_one(
+                        collection_name=TaskModel.collection_name(),
+                        query_filter={"_id": str(task_id)},
+                        update={"$set": {"task_result": task_result}},
+                        user_id=user.id,
+                    )
+                    assert updated == 1, "Task result not updated in persistent storage"
                 return task_id
 
             mock_submit.side_effect = submit
