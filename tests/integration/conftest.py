@@ -26,6 +26,7 @@ import pandas as pd
 import pymongo
 import pytest
 import pytest_asyncio
+import redis
 import yaml
 from bson.objectid import ObjectId
 from databricks import sql as databricks_sql
@@ -1409,7 +1410,7 @@ def mock_task_manager(request, persistent, storage):
                     "user": user,
                     "persistent": persistent,
                     "celery": Mock(),
-                    "redis": Mock(),
+                    "redis": redis.from_url(REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
@@ -1511,7 +1512,7 @@ def task_manager_fixture(persistent, user, catalog):
         persistent=persistent,
         celery=get_celery(),
         catalog_id=catalog.id,
-        redis=Mock(),
+        redis=redis.from_url(REDIS_URI),
     )
     return task_manager
 
@@ -1527,6 +1528,7 @@ def app_container_fixture(persistent, user, catalog):
         "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": catalog.id,
+        "redis": redis.from_url(REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1542,6 +1544,7 @@ def app_container_no_catalog_fixture(persistent, user):
         "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": DEFAULT_CATALOG_ID,
+        "redis": redis.from_url(REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
