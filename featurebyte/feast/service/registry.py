@@ -23,6 +23,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.storage import Storage
@@ -43,6 +44,7 @@ class FeastRegistryService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
+        feature_list_service: FeatureListService,
         feature_service: FeatureService,
         entity_service: EntityService,
         feature_store_service: FeatureStoreService,
@@ -59,6 +61,7 @@ class FeastRegistryService(
             block_modification_handler=block_modification_handler,
             redis=redis,
         )
+        self.feature_list_service = feature_list_service
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.feature_store_service = feature_store_service
@@ -241,9 +244,7 @@ class FeastRegistryService(
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
         feast_registry_path = Path(f"feast_registry/{document.id}/feast_registry.pb")
-        with self.get_registry_storage_lock(timeout=FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
-            await self.storage.put_bytes(document.registry, feast_registry_path)
-
+        await self.storage.put_bytes(document.registry, feast_registry_path)
         document.registry_path = str(feast_registry_path)
         document.registry = b""
         return document
@@ -262,11 +263,12 @@ class FeastRegistryService(
         FeastRegistryModel
             Created document
         """
-        document = await self._construct_feast_registry_model(
-            project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
-        )
-        document = await self._move_registry_to_storage(document)
-        return await super().create_document(data=document)  # type: ignore
+        with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
+            document = await self._construct_feast_registry_model(
+                project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
+            )
+            document = await self._move_registry_to_storage(document)
+            return await super().create_document(data=document)  # type: ignore
 
     async def get_document(
         self,
@@ -296,32 +298,32 @@ class FeastRegistryService(
         if data.feature_lists is None:
             return await self.get_document(document_id=document_id)
 
-        original_doc = await self.get_document(document_id=document_id)
-        recreated_model = await self._construct_feast_registry_model(
-            project_name=original_doc.name,
-            offline_table_name_prefix=original_doc.offline_table_name_prefix,
-            feature_lists=data.feature_lists,
-            document_id=document_id,
-        )
-        assert recreated_model.id == document_id
+        with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
+            original_doc = await self.get_document(document_id=document_id)
+            recreated_model = await self._construct_feast_registry_model(
+                project_name=original_doc.name,
+                offline_table_name_prefix=original_doc.offline_table_name_prefix,
+                feature_lists=data.feature_lists,
+                document_id=document_id,
+            )
+            assert recreated_model.id == document_id
 
-        if original_doc.registry_path:
-            # remove old registry file
-            with self.get_registry_storage_lock(timeout=FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
+            if original_doc.registry_path:
+                # remove old registry file
                 await self.storage.delete(Path(original_doc.registry_path))
 
-        document = await self._move_registry_to_storage(recreated_model)
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
-            query_filter=self._construct_get_query_filter(document_id=document.id),
-            update={
-                "$set": {"registry_path": document.registry_path},
-                "$unset": {"registry": ""},  # remove registry field from older document
-            },
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
-        return await self.get_document(document_id=document_id)
+            document = await self._move_registry_to_storage(recreated_model)
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document.id),
+                update={
+                    "$set": {"registry_path": document.registry_path},
+                    "$unset": {"registry": ""},  # remove registry field from older document
+                },
+                user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
+            )
+            return await self.get_document(document_id=document_id)
 
     async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
         """
