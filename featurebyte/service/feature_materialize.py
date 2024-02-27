@@ -3,7 +3,7 @@ FeatureMaterializeService class
 """
 from __future__ import annotations
 
-from typing import AsyncIterator, List, Optional
+from typing import Any, AsyncIterator, List, Optional
 
 import textwrap
 from contextlib import asynccontextmanager
@@ -12,6 +12,8 @@ from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
+from redis.lock import Lock
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SourceType
@@ -43,6 +45,8 @@ from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureT
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+
+OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
 
 
 @dataclass
@@ -93,6 +97,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feast_feature_store_service: FeastFeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         entity_validation_service: EntityValidationService,
+        redis: Redis[Any],
     ):
         self.feature_service = feature_service
         self.online_store_table_version_service = online_store_table_version_service
@@ -102,6 +107,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.feast_feature_store_service = feast_feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.entity_validation_service = entity_validation_service
+        self.redis = redis
 
     @asynccontextmanager
     async def materialize_features(
@@ -227,6 +233,27 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     if_exists=True,
                 )
 
+    def get_table_update_lock(self, offline_store_table_name: str) -> Lock:
+        """
+        Get offline store table update lock.
+
+        This prevents concurrent writes to the same offline store table between scheduled task and
+        deployment task.
+
+        Parameters
+        ----------
+        offline_store_table_name: str
+            Offline store table name
+
+        Returns
+        -------
+        Lock
+        """
+        return self.redis.lock(
+            f"offline_store_table_update:{offline_store_table_name}",
+            timeout=OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS,
+        )
+
     async def scheduled_materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
@@ -241,6 +268,13 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
+        with self.get_table_update_lock(offline_store_table_name=feature_table_model.name):
+            await self._scheduled_materialize_features(feature_table_model)
+
+    async def _scheduled_materialize_features(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> None:
         session = await self._get_session(feature_table_model)
         async with self.materialize_features(
             feature_table_model, use_last_materialized_timestamp=True
@@ -284,6 +318,13 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
+        with self.get_table_update_lock(feature_table_model.name):
+            await self._initialize_new_columns(feature_table_model)
+
+    async def _initialize_new_columns(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> None:
         session = await self._get_session(feature_table_model)
         has_existing_table = await self._feature_table_exists(session, feature_table_model)
 
