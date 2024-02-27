@@ -162,19 +162,26 @@ class FeastRegistryService(
         registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[]))
         return registry
 
-    async def _construct_feast_registry_model(
+    async def _construct_feast_registry_model(  # pylint: disable=too-many-locals
         self,
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],
         feature_lists: List[FeatureListModel],
         document_id: Optional[ObjectId] = None,
     ) -> FeastRegistryModel:
+        # retrieve latest feature lists
         feature_ids = set()
+        recent_feature_lists = []
         for feature_list in feature_lists:
-            feature_ids.update(feature_list.feature_ids)
+            recent_feature_list = await self.feature_list_service.get_document(
+                document_id=feature_list.id
+            )
+            recent_feature_lists.append(recent_feature_list)
+            feature_ids.update(recent_feature_list.feature_ids)
 
         features = []
         entity_ids = set()
+        feature_lists = recent_feature_lists
         feature_store_ids = set()
         async for feature in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(feature_ids)}}
