@@ -38,8 +38,8 @@ log_model_dataset = fe.create_training_set(
 # Log the model and register it to the unity catalog
 fe.log_model(
     model=model,  # model is the trained model
-    artifact_path="main.default.model",
+    artifact_path="[ARTIFACT_PATH]",  # artifact_path is the path to the model
     flavor=mlflow.sklearn,
     training_set=log_model_dataset,
-    registered_model_name="main.default.model",
+    registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
 )
