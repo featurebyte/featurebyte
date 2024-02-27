@@ -137,7 +137,7 @@ class TaskManager:
         await self.persistent.update_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
-            update={"$set": {"result": result}},
+            update={"$set": {"task_result": result}},
             user_id=self.user.id,
         )
 
@@ -160,7 +160,7 @@ class TaskManager:
             query_filter={"_id": task_id},
             user_id=self.user.id,
         )
-        return (document or {}).get("result")
+        return (document or {}).get("task_result")
 
     async def list_tasks(
         self,

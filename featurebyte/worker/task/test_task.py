@@ -39,3 +39,4 @@ class TestTask(BaseTask[TestTaskPayload]):
             if payload.sleep:
                 await asyncio.sleep(payload.sleep)
         logger.debug("Test task completed")
+        return "Test task result"
