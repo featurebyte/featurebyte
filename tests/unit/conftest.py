@@ -2116,7 +2116,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     updated = await persistent.update_one(
                         collection_name=TaskModel.collection_name(),
                         query_filter={"_id": str(task_id)},
-                        update={"$set": {"result": task_result}},
+                        update={"$set": {"task_result": task_result}},
                         user_id=user.id,
                     )
                     assert updated == 1, "Task result not updated in persistent storage"
