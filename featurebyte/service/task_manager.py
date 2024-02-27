@@ -123,6 +123,45 @@ class TaskManager:
             progress=document.get("progress"),
         )
 
+    async def update_task_result(self, task_id: str, result: Any) -> None:
+        """
+        Update task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+        result: Any
+            Task result
+        """
+        await self.persistent.update_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+            update={"$set": {"result": result}},
+            user_id=self.user.id,
+        )
+
+    async def get_task_result(self, task_id: str) -> Any:
+        """
+        Get task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Returns
+        -------
+        Any
+            Task result
+        """
+        document = await self.persistent.find_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+            user_id=self.user.id,
+        )
+        return (document or {}).get("result")
+
     async def list_tasks(
         self,
         page: int = 1,
