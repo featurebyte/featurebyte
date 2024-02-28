@@ -243,7 +243,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         """
         out_feat = None
         query_filter = {"name": name, "version": version.dict()}
-        async for feat in self.list_documents_iterator(query_filter=query_filter, page_size=1):
+        async for feat in self.list_documents_iterator(query_filter=query_filter):
             out_feat = feat
 
         if out_feat is None:

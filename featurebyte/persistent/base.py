@@ -178,7 +178,7 @@ class Persistent(ABC):
         page: int
             Page number for pagination
         page_size: int
-            Page size (0 to return all records)
+            Page size (0 to return all records, -1 to return iterator without count)
         user_id: Optional[ObjectId]
             ID of user who performed this operation
 

@@ -517,13 +517,17 @@ class BaseDocumentService(
             )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc
-        return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
+        return {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "data": list(docs) if page_size >= 0 else docs,
+        }
 
     async def list_documents_as_dict_iterator(
         self,
         query_filter: QueryFilter,
         projection: Optional[Dict[str, Any]] = None,
-        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> AsyncIterator[Dict[str, Any]]:
@@ -536,8 +540,6 @@ class BaseDocumentService(
             Query filter
         projection: Optional[Dict[str, Any]]
             Project fields to return from the query
-        page_size: int
-            Page size
         use_raw_query_filter: bool
             Use only provided query filter
         kwargs: Any
@@ -548,27 +550,20 @@ class BaseDocumentService(
         AsyncIterator[Dict[str, Any]]
             List query output
         """
-        to_iterate, page = True, 1
-
-        while to_iterate:
-            list_results = await self.list_documents_as_dict(
-                page=page,
-                page_size=page_size,
-                query_filter=query_filter,
-                projection=projection,
-                use_raw_query_filter=use_raw_query_filter,
-                **kwargs,
-            )
-            for doc in list_results["data"]:
-                yield doc
-
-            to_iterate = bool(list_results["total"] > (page * page_size))
-            page += 1
+        list_results = await self.list_documents_as_dict(
+            page=0,
+            page_size=-1,
+            query_filter=query_filter,
+            projection=projection,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+        async for doc in list_results["data"]:
+            yield doc
 
     async def list_documents_iterator(
         self,
         query_filter: QueryFilter,
-        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Document]:
         """
@@ -578,8 +573,6 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter
-        page_size: int
-            Page size per query
         use_raw_query_filter: bool
             Use only provided query filter (without any further processing)
 
@@ -588,10 +581,8 @@ class BaseDocumentService(
         AsyncIterator[Document]
             List query output
         """
-        assert page_size > 0, "page_size must be greater than 0"
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
-            page_size=page_size,
             use_raw_query_filter=use_raw_query_filter,
         ):
             yield self.document_class(**doc)

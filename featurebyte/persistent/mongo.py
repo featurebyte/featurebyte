@@ -171,7 +171,7 @@ class MongoDB(Persistent):
         page: int
             Page number for pagination
         page_size: int
-            Page size (0 to return all records)
+            Page size (0 to return all records, -1 to return iterator without count
 
         Returns
         -------
@@ -197,6 +197,9 @@ class MongoDB(Persistent):
         if page_size > 0:
             skips = page_size * (page - 1)
             cursor = cursor.skip(skips).limit(page_size)
+
+        if page_size == -1:
+            return cursor, -1
 
         result: list[Document] = await cursor.to_list(total)
         return result, total
