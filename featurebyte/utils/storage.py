@@ -88,7 +88,10 @@ def get_storage() -> Storage:
         Invalid storage type
     """
     if STORAGE_TYPE == "local":
-        return LocalStorage(base_path=Configurations().storage.local_path)
+        local_path = os.environ.get(
+            "FEATUREBYTE_LOCAL_STORAGE_PATH", Configurations().storage.local_path
+        )
+        return LocalStorage(base_path=local_path)
     if STORAGE_TYPE == "s3":
         return S3Storage(get_client=get_client, bucket_name=S3_BUCKET_NAME)
     if STORAGE_TYPE == "azure":

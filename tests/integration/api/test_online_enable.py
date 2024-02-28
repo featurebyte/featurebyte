@@ -21,13 +21,19 @@ logger = get_logger(__name__)
 
 
 @pytest_asyncio.fixture(scope="session", name="app_service")
-async def app_service_fixture(persistent):
+async def app_service_fixture(persistent, storage):
     """
     Start featurebyte service for testing
     """
     # use the same database as persistent fixture
     env = os.environ.copy()
-    env.update({"MONGODB_URI": MONGO_CONNECTION, "MONGODB_DB": persistent._database})
+    env.update(
+        {
+            "MONGODB_URI": MONGO_CONNECTION,
+            "MONGODB_DB": persistent._database,
+            "FEATUREBYTE_LOCAL_STORAGE_PATH": storage.base_path,
+        }
+    )
     with subprocess.Popen(
         [
             "uvicorn",

@@ -1,13 +1,12 @@
 """
 Common test fixtures used across files in integration directory
 """
+# pylint: disable=too-many-lines
 from typing import Dict, List, cast
 
 import asyncio
 import json
 import os
-
-# pylint: disable=too-many-lines
 import shutil
 import sqlite3
 import tempfile
@@ -65,7 +64,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
-from featurebyte.storage import LocalStorage, LocalTempStorage
+from featurebyte.storage import LocalStorage
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
@@ -192,8 +191,17 @@ def credentials_mapping_fixture():
     }
 
 
+@pytest.fixture(name="storage", scope="session")
+def storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
+
+
 @pytest.fixture(name="config", scope="session")
-def config_fixture():
+def config_fixture(storage):
     """
     Config object for integration testing
     """
@@ -217,16 +225,18 @@ def config_fixture():
             file_handle.write(yaml.dump(config_dict))
             file_handle.flush()
             with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-                with TestClient(app) as client:
+                with mock.patch("featurebyte.app.get_storage") as mock_get_storage:
+                    mock_get_storage.return_value = storage
+                    with TestClient(app) as client:
 
-                    def wrapped_test_client_request_func(*args, stream=None, **kwargs):
-                        _ = stream
-                        response = client.request(*args, **kwargs)
-                        response.iter_content = response.iter_bytes
-                        return response
+                        def wrapped_test_client_request_func(*args, stream=None, **kwargs):
+                            _ = stream
+                            response = client.request(*args, **kwargs)
+                            response.iter_content = response.iter_bytes
+                            return response
 
-                    mock_request.side_effect = wrapped_test_client_request_func
-                    yield Configurations(config_file_path=config_file_path)
+                        mock_request.side_effect = wrapped_test_client_request_func
+                        yield Configurations(config_file_path=config_file_path)
 
 
 @pytest.fixture(scope="session")
@@ -1381,15 +1391,6 @@ def get_get_cred(credentials_mapping):
     return get_credential
 
 
-@pytest.fixture(name="storage", scope="session")
-def storage_fixture():
-    """
-    Storage object fixture
-    """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
-
-
 @pytest.fixture(autouse=True, scope="module")
 def mock_task_manager(request, persistent, storage):
     """
@@ -1519,7 +1520,7 @@ def task_manager_fixture(persistent, user, catalog, storage):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1527,7 +1528,7 @@ def app_container_fixture(persistent, user, catalog):
         "user": user,
         "persistent": persistent,
         "celery": get_celery(),
-        "storage": LocalTempStorage(),
+        "storage": storage,
         "catalog_id": catalog.id,
         "redis": redis.from_url(REDIS_URI),
     }
@@ -1535,7 +1536,7 @@ def app_container_fixture(persistent, user, catalog):
 
 
 @pytest.fixture(name="app_container_no_catalog")
-def app_container_no_catalog_fixture(persistent, user):
+def app_container_no_catalog_fixture(persistent, user, storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1543,7 +1544,7 @@ def app_container_no_catalog_fixture(persistent, user):
         "user": user,
         "persistent": persistent,
         "celery": get_celery(),
-        "storage": LocalTempStorage(),
+        "storage": storage,
         "catalog_id": DEFAULT_CATALOG_ID,
         "redis": redis.from_url(REDIS_URI),
     }
