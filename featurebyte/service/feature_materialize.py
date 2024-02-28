@@ -268,32 +268,17 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
-        with self.get_table_update_lock(offline_store_table_name=feature_table_model.name):
-            feature_timestamp = await self._scheduled_materialize_features_offline(
-                feature_table_model
-            )
-        await self._scheduled_materialize_features_online(feature_table_model, feature_timestamp)
-
-    async def _scheduled_materialize_features_offline(
-        self,
-        feature_table_model: OfflineStoreFeatureTableModel,
-    ) -> datetime:
         session = await self._get_session(feature_table_model)
         async with self.materialize_features(
-            feature_table_model, use_last_materialized_timestamp=True
+            feature_table_model, session=session, use_last_materialized_timestamp=True
         ) as materialized_features:
-            await self._insert_into_feature_table(
-                session,
-                feature_table_model,
-                materialized_features,
-            )
-        return materialized_features.feature_timestamp
+            with self.get_table_update_lock(offline_store_table_name=feature_table_model.name):
+                await self._insert_into_feature_table(
+                    session,
+                    feature_table_model,
+                    materialized_features,
+                )
 
-    async def _scheduled_materialize_features_online(
-        self,
-        feature_table_model: OfflineStoreFeatureTableModel,
-        feature_timestamp: datetime,
-    ) -> None:
         # Feast online materialize
         feature_store = await self._get_feast_feature_store()
         if feature_store is not None and feature_store.config.online_store is not None:
@@ -308,11 +293,13 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 feature_table_model=feature_table_model,
                 columns=feature_table_model.output_column_names,
                 start_date=online_store_last_materialized_at,
-                end_date=feature_timestamp,
+                end_date=materialized_features.feature_timestamp,
             )
 
         # Update offline table last materialized timestamp
-        await self._update_offline_last_materialized_at(feature_table_model, feature_timestamp)
+        await self._update_offline_last_materialized_at(
+            feature_table_model, materialized_features.feature_timestamp
+        )
 
     async def initialize_new_columns(
         self,
