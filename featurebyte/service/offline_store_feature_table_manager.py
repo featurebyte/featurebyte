@@ -208,7 +208,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 if feature.id not in feature_ids_set:
                     feature_ids.append(feature.id)
             if feature_ids != feature_table_dict["feature_ids"]:
-                feature_table_model = await self._update_offline_store_feature_table(
+                feature_table_model = await self._get_updated_offline_store_feature_table(
                     feature_table_dict,
                     feature_ids,
                 )
@@ -228,6 +228,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
+                await self._update_offline_store_feature_table(feature_table_model)
 
         feature_store_model = await self._get_feature_store_model()
         new_tables.extend(
@@ -278,7 +279,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 if feature_id not in feature_ids_to_remove
             ]
             if updated_feature_ids:
-                updated_feature_table = await self._update_offline_store_feature_table(
+                updated_feature_table = await self._get_updated_offline_store_feature_table(
                     feature_table_dict,
                     updated_feature_ids,
                 )
@@ -286,7 +287,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     updated_feature_table, self._get_offline_store_feature_table_columns(features)
                 )
             else:
+                updated_feature_table = None
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
+
+            if updated_feature_table is not None:
+                await self._update_offline_store_feature_table(updated_feature_table)
 
             if update_progress:
                 await update_progress(
@@ -321,7 +326,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             return cast(Dict[str, Any], feature_table_data["data"][0])
         return None
 
-    async def _update_offline_store_feature_table(
+    async def _get_updated_offline_store_feature_table(
         self,
         feature_table_dict: Dict[str, Any],
         updated_feature_ids: List[ObjectId],
@@ -336,11 +341,18 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             has_ttl=feature_table_dict["has_ttl"],
             feature_job_setting=feature_job_setting,
         )
+        feature_table_model.__dict__.update({"id": feature_table_dict["_id"]})
+        return feature_table_model
+
+    async def _update_offline_store_feature_table(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> OfflineStoreFeatureTableModel:
         update_schema = FeaturesUpdate(**feature_table_model.dict(by_alias=True))
         return cast(
             OfflineStoreFeatureTableModel,
             await self.offline_store_feature_table_service.update_document(
-                document_id=feature_table_dict["_id"], data=update_schema
+                document_id=feature_table_model.id, data=update_schema
             ),
         )
 
