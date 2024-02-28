@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import functools
 from collections import defaultdict
+from pathlib import Path
 
 import pymongo
 from bson.objectid import ObjectId
@@ -503,6 +504,13 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
             ]
         return self._feature_clusters
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.feature_clusters_path:
+            paths.append(Path(self.feature_clusters_path))
+        return paths
 
     @property
     def store_info(self) -> StoreInfo:

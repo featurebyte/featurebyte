@@ -59,6 +59,7 @@ class FeastRegistryService(
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
             redis=redis,
         )
         self.feature_list_service = feature_list_service
@@ -68,7 +69,6 @@ class FeastRegistryService(
         self.online_store_service = online_store_service
         self.catalog_service = catalog_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
-        self.storage = storage
 
     def get_registry_storage_lock(self, timeout: int) -> Lock:
         """

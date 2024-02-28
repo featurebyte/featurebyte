@@ -33,6 +33,7 @@ from featurebyte.service.namespace_handler import (
     validate_version_and_namespace_consistency,
 )
 from featurebyte.service.table import TableService
+from featurebyte.storage import Storage
 
 
 class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
@@ -55,6 +56,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         namespace_handler: NamespaceHandler,
         entity_serving_names_service: EntityServingNamesService,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -64,6 +66,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
             derive_primary_entity_helper=derive_primary_entity_helper,
+            storage=storage,
             redis=redis,
         )
         self.table_service = table_service

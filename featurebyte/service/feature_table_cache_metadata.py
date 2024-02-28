@@ -19,6 +19,7 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.schema.feature_table_cache_metadata import FeatureTableCacheMetadataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.storage import Storage
 
 
 class FeatureTableCacheMetadataService(
@@ -41,6 +42,7 @@ class FeatureTableCacheMetadataService(
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         observation_table_service: ObservationTableService,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -48,6 +50,7 @@ class FeatureTableCacheMetadataService(
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
             redis=redis,
         )
         self.observation_table_service = observation_table_service

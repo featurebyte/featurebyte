@@ -18,6 +18,7 @@ from featurebyte.schema.online_store import OnlineStoreCreate
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.storage import Storage
 
 
 class OnlineStoreService(
@@ -36,6 +37,7 @@ class OnlineStoreService(
         catalog_id: Optional[ObjectId],
         catalog_service: CatalogService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -43,6 +45,7 @@ class OnlineStoreService(
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
             redis=redis,
         )
         self.catalog_service = catalog_service

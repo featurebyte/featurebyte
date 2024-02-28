@@ -11,7 +11,6 @@ from pathlib import Path
 from bson import json_util
 from bson.objectid import ObjectId
 from redis import Redis
-from redis.lock import Lock
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
@@ -139,6 +138,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
             redis=redis,
         )
         self.feature_store_service = feature_store_service
@@ -150,24 +150,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
         self.feature_list_entity_relationship_validator = feature_list_entity_relationship_validator
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
-        self.storage = storage
-
-    def get_feature_cluster_lock(self, feature_list_id: ObjectId, timeout: int) -> Lock:
-        """
-        Get feature cluster lock
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            Feature list ID
-        timeout: int
-            Maximum life for the lock in seconds
-
-        Returns
-        -------
-        Lock
-        """
-        return self.redis.lock(f"feature_cluster_update:{feature_list_id}", timeout=timeout)
 
     async def _populate_remote_attributes(self, document: FeatureListModel) -> FeatureListModel:
         if document.feature_clusters_path:
@@ -339,7 +321,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def _create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
+    async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{
@@ -414,12 +396,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
         return await self.get_document(document_id=insert_id)
 
-    async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
-        if data.id is None:
-            data.id = ObjectId()  # type: ignore[assignment]
-        with self.get_feature_cluster_lock(data.id, FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT):  # type: ignore[arg-type]
-            return await self._create_document(data)
-
     async def list_documents_iterator(  # type: ignore[override]
         self,
         query_filter: QueryFilter,
@@ -488,8 +464,15 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 disable_audit=self.should_disable_audit,
             )
 
-    async def _delete_document(self, feature_list: FeatureListModel) -> int:
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
         async with self.persistent.start_transaction():
+            feature_list = await self.get_document(document_id=document_id)
             deleted_count = await super().delete_document(document_id=feature_list.id)
             feature_list_namespace = await self.feature_list_namespace_service.get_document(
                 document_id=feature_list.feature_list_namespace_id
@@ -516,20 +499,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 )
 
         return deleted_count
-
-    async def delete_document(
-        self,
-        document_id: ObjectId,
-        exception_detail: Optional[str] = None,
-        use_raw_query_filter: bool = False,
-        **kwargs: Any,
-    ) -> int:
-        with self.get_feature_cluster_lock(document_id, FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT):
-            feature_list = await self.get_document(document_id=document_id)
-            deleted = await self._delete_document(feature_list=feature_list)
-            if feature_list.feature_clusters_path:
-                await self.storage.delete(Path(feature_list.feature_clusters_path))
-            return deleted
 
     async def get_feature_clusters(self, feature_list_id: ObjectId) -> List[FeatureCluster]:
         """

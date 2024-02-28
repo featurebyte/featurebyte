@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 import json
 import re
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from bson.errors import InvalidId
@@ -322,6 +323,17 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
             collection name
         """
         return cls.Settings.unique_constraints
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        """
+        Remote attribute paths
+
+        Returns
+        -------
+        List[Path]
+        """
+        return []
 
     class Settings:
         """

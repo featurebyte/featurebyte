@@ -49,6 +49,7 @@ from featurebyte.service.mixin import (
     DocumentCreateSchema,
     OpsServiceMixin,
 )
+from featurebyte.storage import Storage
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
@@ -113,6 +114,7 @@ class BaseDocumentService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
         self.user = user
@@ -120,6 +122,7 @@ class BaseDocumentService(
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
         self.block_modification_handler = block_modification_handler
+        self.storage = storage
         self.redis = redis
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
@@ -194,6 +197,11 @@ class BaseDocumentService(
     def get_full_remote_file_path(self, path: str) -> Path:
         """
         Get full remote file path (add catalog_id prefix if catalog specific)
+
+        Parameters
+        ----------
+        path: str
+            File path
 
         Returns
         -------
@@ -432,6 +440,10 @@ class BaseDocumentService(
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
+
+        # remove remote attributes
+        for remote_path in document.remote_attribute_paths:
+            await self.storage.delete(remote_path)
         return int(num_of_records_deleted)
 
     def construct_list_query_filter(

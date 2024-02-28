@@ -15,6 +15,7 @@ from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.storage import Storage
 
 
 class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpdate]):
@@ -32,9 +33,17 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         context_service: ContextService,
         historical_feature_table_service: HistoricalFeatureTableService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.context_service = context_service
         self.historical_feature_table_service = historical_feature_table_service
 

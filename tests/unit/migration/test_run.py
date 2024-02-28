@@ -29,6 +29,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.utils.storage import get_storage
 
 
 @pytest.fixture(name="schema_metadata_service")
@@ -197,6 +198,7 @@ async def test_run_migration(
         get_credential=get_credential,
         celery=get_celery(),
         include_data_warehouse_migrations=False,
+        storage=get_storage(),
         redis=Mock(),
     )
 

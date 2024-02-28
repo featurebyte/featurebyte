@@ -1503,7 +1503,7 @@ def online_store_table_version_service_factory(mongo_database_name, app_containe
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(persistent, user, catalog):
+def task_manager_fixture(persistent, user, catalog, storage):
     """
     Return a task manager used in tests.
     """
@@ -1512,6 +1512,7 @@ def task_manager_fixture(persistent, user, catalog):
         persistent=persistent,
         celery=get_celery(),
         catalog_id=catalog.id,
+        storage=storage,
         redis=redis.from_url(REDIS_URI),
     )
     return task_manager

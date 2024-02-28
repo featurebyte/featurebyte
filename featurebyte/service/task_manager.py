@@ -22,6 +22,7 @@ from featurebyte.schema.task import Task, TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
 
@@ -37,12 +38,14 @@ class TaskManager:
         persistent: Persistent,
         celery: Celery,
         catalog_id: Optional[ObjectId],
+        storage: Storage,
         redis: Redis[Any],
     ) -> None:
         self.user = user
         self.persistent = persistent
         self.celery = celery
         self.catalog_id = catalog_id
+        self.storage = storage
         self.redis = redis
 
     @property
@@ -59,6 +62,7 @@ class TaskManager:
             persistent=self.persistent,
             catalog_id=self.catalog_id,
             block_modification_handler=BlockModificationHandler(),
+            storage=self.storage,
             redis=self.redis,
         )
 

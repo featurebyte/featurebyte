@@ -18,6 +18,7 @@ from featurebyte.schema.context import ContextCreate, ContextUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.table import TableService
+from featurebyte.storage import Storage
 
 
 class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpdate]):
@@ -35,9 +36,17 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
         table_service: TableService,
+        storage: Storage,
         redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.entity_service = entity_service
         self.table_service = table_service
 

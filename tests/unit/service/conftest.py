@@ -385,7 +385,7 @@ async def feature_store_fixture(test_dir, feature_store_service):
 
 
 @pytest_asyncio.fixture(name="catalog")
-async def catalog_fixture(test_dir, user, persistent):
+async def catalog_fixture(test_dir, user, persistent, storage):
     """Catalog model"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/catalog.json")
     # Cannot inject catalog service here because the app_container fixture depends on catalog, which creates a cycle.
@@ -394,6 +394,7 @@ async def catalog_fixture(test_dir, user, persistent):
         persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
         redis=Mock(),
     )
     with open(fixture_path, encoding="utf") as fhandle:

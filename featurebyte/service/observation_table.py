@@ -167,6 +167,7 @@ class ObservationTableService(
         block_modification_handler: BlockModificationHandler,
         primary_entity_validator: PrimaryEntityValidator,
         use_case_service: UseCaseService,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -177,6 +178,7 @@ class ObservationTableService(
             feature_store_service,
             entity_service,
             block_modification_handler,
+            storage,
             redis,
         )
         self.context_service = context_service

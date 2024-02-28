@@ -30,6 +30,7 @@ from featurebyte.service.namespace_handler import (
 )
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_namespace import TargetNamespaceService
+from featurebyte.storage import Storage
 
 
 class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
@@ -54,6 +55,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
         entity_serving_names_service: EntityServingNamesService,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -63,6 +65,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
             derive_primary_entity_helper=derive_primary_entity_helper,
+            storage=storage,
             redis=redis,
         )
         self.target_namespace_service = target_namespace_service
