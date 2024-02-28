@@ -395,14 +395,12 @@ async def test_list_documents_iterator(document_service):
     for page_size in [1, 10, 15, 20]:
         doc_ids = [
             doc["_id"]
-            async for doc in document_service.list_documents_as_dict_iterator(
-                query_filter={}, page_size=page_size
-            )
+            async for doc in document_service.list_documents_as_dict_iterator(query_filter={})
         ]
         assert set(doc_ids) == expected_doc_ids
 
     # check list_documents_iterator output type
-    async for doc in document_service.list_documents_iterator(query_filter={}, page_size=1):
+    async for doc in document_service.list_documents_iterator(query_filter={}):
         assert isinstance(doc, Document)
 
 
