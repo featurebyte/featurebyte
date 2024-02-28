@@ -208,6 +208,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 if feature.id not in feature_ids_set:
                     feature_ids.append(feature.id)
             if feature_ids != feature_table_dict["feature_ids"]:
+                # Get the updated table but update persistent later. This is to prevent scheduled
+                # tasks from accessing the new columns before they are populated in data warehouse
                 feature_table_model = await self._get_updated_offline_store_feature_table(
                     feature_table_dict,
                     feature_ids,
@@ -283,15 +285,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_dict,
                     updated_feature_ids,
                 )
+                # Remove columns in persistent first so scheduled task won't access them
+                await self._update_offline_store_feature_table(updated_feature_table)
+
+                # Drop columns in data warehouse
                 await self.feature_materialize_service.drop_columns(
                     updated_feature_table, self._get_offline_store_feature_table_columns(features)
                 )
             else:
-                updated_feature_table = None
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
-
-            if updated_feature_table is not None:
-                await self._update_offline_store_feature_table(updated_feature_table)
 
             if update_progress:
                 await update_progress(
