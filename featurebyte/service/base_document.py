@@ -9,6 +9,7 @@ from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, 
 import copy
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -190,6 +191,18 @@ class BaseDocumentService(
         """
         return not self.document_class.Settings.auditable
 
+    def get_full_remote_file_path(self, path: str) -> Path:
+        """
+        Get full remote file path (add catalog_id prefix if catalog specific)
+
+        Returns
+        -------
+        Path
+        """
+        if self.is_catalog_specific:
+            return Path(f"catalog/{self.catalog_id}/{path}")
+        return Path(path)
+
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
         """
@@ -330,11 +343,16 @@ class BaseDocumentService(
             raise DocumentNotFoundError(exception_detail)
         return document_dict  # type: ignore
 
+    async def _populate_remote_attributes(self, document: Document) -> Document:
+        _ = self
+        return document
+
     async def get_document(
         self,
         document_id: ObjectId,
         exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
+        populate_remote_attributes: bool = True,
         **kwargs: Any,
     ) -> Document:
         """
@@ -348,6 +366,8 @@ class BaseDocumentService(
             Exception detail message
         use_raw_query_filter: bool
             Use only provided query filter
+        populate_remote_attributes: bool
+            Populate attributes that are stored remotely (e.g. file paths)
         kwargs: Any
             Additional keyword arguments
 
@@ -361,7 +381,10 @@ class BaseDocumentService(
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,
         )
-        return self.document_class(**document_dict)
+        document = self.document_class(**document_dict)
+        if populate_remote_attributes:
+            return await self._populate_remote_attributes(document=document)
+        return document
 
     async def delete_document(
         self,

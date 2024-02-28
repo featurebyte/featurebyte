@@ -5,8 +5,7 @@ import pytest
 
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import RecordUpdateException
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,

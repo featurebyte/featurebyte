@@ -312,9 +312,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters"
-    )
+    feature_clusters_path: Optional[str] = Field(default=None)
+    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters")
     _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list

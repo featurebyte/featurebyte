@@ -224,3 +224,10 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
             document_id=feature_list.id,
             readiness_distribution=FeatureReadinessDistribution(__root__=[]),
         )
+
+    # remove block modification by so that the feature list can be removed later
+    await feature_list_service.remove_block_modification_by(
+        query_filter={"_id": feature_list.id}, reference_info=reference_info
+    )
+    updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert updated_feature_list.block_modification_by == []

@@ -6,7 +6,7 @@ import pytest_asyncio
 from google.protobuf.json_format import MessageToDict
 
 from featurebyte.common.model_util import get_version
-from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
+from featurebyte.feast.schema.registry import FeastRegistryUpdate
 
 
 @pytest.fixture(autouse=True)
@@ -36,12 +36,8 @@ async def feast_registry_fixture(feast_registry_service, feature_list, mock_depl
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
-    feature_list_model = feature_list.cached_model
-    registry = await feast_registry_service.create_document(
-        data=FeastRegistryCreate(
-            feature_lists=[feature_list_model],
-        )
-    )
+    registry = await feast_registry_service.get_feast_registry_for_catalog()
+    assert registry is not None
     return registry
 
 

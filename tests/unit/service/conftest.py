@@ -37,7 +37,6 @@ from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
-from featurebyte.storage import LocalTempStorage
 from featurebyte.utils.messaging import REDIS_URI
 
 
@@ -55,15 +54,15 @@ def get_credential_fixture(credentials):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     instance_map = {
         "user": user,
         "persistent": persistent,
-        "temp_storage": LocalTempStorage(),
-        "storage": LocalTempStorage(),
+        "temp_storage": temp_storage,
+        "storage": storage,
         "catalog_id": catalog.id,
         "user_id": user.id,
         "task_id": uuid4(),
@@ -605,10 +604,15 @@ async def feature_list_fixture(test_dir, feature, feature_list_service):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(
-            data=FeatureListServiceCreate(**payload)
-        )
-        return feature_list
+        feature_list = None
+        try:
+            feature_list = await feature_list_service.create_document(
+                data=FeatureListServiceCreate(**payload)
+            )
+            yield feature_list
+        finally:
+            if feature_list:
+                await feature_list_service.delete_document(document_id=feature_list.id)
 
 
 @pytest_asyncio.fixture(name="feature_list_repeated")
@@ -620,10 +624,15 @@ async def feature_list_repeated_fixture(test_dir, feature, feature_list_service)
     )
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(
-            data=FeatureListServiceCreate(**payload)
-        )
-        return feature_list
+        feature_list = None
+        try:
+            feature_list = await feature_list_service.create_document(
+                data=FeatureListServiceCreate(**payload)
+            )
+            yield feature_list
+        finally:
+            if feature_list:
+                await feature_list_service.delete_document(document_id=feature_list.id)
 
 
 @pytest_asyncio.fixture(name="feature_list_namespace")
@@ -641,8 +650,13 @@ async def production_ready_feature_list_fixture(production_ready_feature, featur
         name="Production Ready Feature List",
         feature_ids=[production_ready_feature.id],
     )
-    result = await feature_list_service.create_document(data)
-    return result
+    feature_list = None
+    try:
+        feature_list = await feature_list_service.create_document(data)
+        yield feature_list
+    finally:
+        if feature_list:
+            await feature_list_service.delete_document(document_id=feature_list.id)
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list")
@@ -748,22 +762,27 @@ async def setup_for_feature_readiness_fixture(
     assert feat_namespace.readiness == "DRAFT"
 
     # create another feature list version
-    new_flist = await feature_list_service.create_document(
-        data=FeatureListServiceCreate(
-            feature_ids=[new_feature_id],
-            feature_list_namespace_id=feature_list.feature_list_namespace_id,
-            name="sf_feature_list",
-            version={"name": "V220914"},
+    new_flist = None
+    try:
+        new_flist = await feature_list_service.create_document(
+            data=FeatureListServiceCreate(
+                feature_ids=[new_feature_id],
+                feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                name="sf_feature_list",
+                version={"name": "V220914"},
+            )
         )
-    )
-    flist_namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
-    assert len(flist_namespace.feature_list_ids) == 2
-    assert new_flist.id in flist_namespace.feature_list_ids
-    assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
-    assert flist_namespace.default_feature_list_id == feature_list.id
-    yield new_feature_id, new_flist.id
+        flist_namespace = await feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        assert len(flist_namespace.feature_list_ids) == 2
+        assert new_flist.id in flist_namespace.feature_list_ids
+        assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
+        assert flist_namespace.default_feature_list_id == feature_list.id
+        yield new_feature_id, new_flist.id
+    finally:
+        if new_flist:
+            await feature_list_service.delete_document(document_id=new_flist.id)
 
 
 async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns):
