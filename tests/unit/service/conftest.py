@@ -599,7 +599,7 @@ async def feature_namespace_fixture(feature_namespace_service, feature):
 
 
 @pytest_asyncio.fixture(name="feature_list")
-async def feature_list_fixture(test_dir, feature, feature_list_service):
+async def feature_list_fixture(test_dir, feature, feature_list_service, storage):
     """Feature list model"""
     _ = feature
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
@@ -610,10 +610,18 @@ async def feature_list_fixture(test_dir, feature, feature_list_service):
             feature_list = await feature_list_service.create_document(
                 data=FeatureListServiceCreate(**payload)
             )
+            full_path = os.path.join(storage.base_path, feature_list.feature_clusters_path)
+
+            # check that the feature clusters path is created
+            assert os.path.exists(full_path)
+
             yield feature_list
         finally:
             if feature_list:
                 await feature_list_service.delete_document(document_id=feature_list.id)
+
+                # check that the feature clusters path is deleted
+                assert not os.path.exists(full_path)
 
 
 @pytest_asyncio.fixture(name="feature_list_repeated")
