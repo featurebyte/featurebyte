@@ -182,6 +182,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             f"feature_list/{document.id}/feature_clusters.json"
         )
         feature_clusters = []
+        assert document.internal_feature_clusters is not None
         for cluster in document.internal_feature_clusters:
             if isinstance(cluster, FeatureCluster):
                 feature_clusters.append(cluster.dict(by_alias=True))
@@ -414,7 +415,9 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         return await self.get_document(document_id=insert_id)
 
     async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
-        with self.get_feature_cluster_lock(data.id, FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT):
+        if data.id is None:
+            data.id = ObjectId()  # type: ignore[assignment]
+        with self.get_feature_cluster_lock(data.id, FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT):  # type: ignore[arg-type]
             return await self._create_document(data)
 
     async def list_documents_iterator(  # type: ignore[override]
