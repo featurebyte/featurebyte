@@ -3,6 +3,8 @@ Module for managing physical feature table cache as well as metadata storage.
 """
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
+from collections import defaultdict
+
 import pandas as pd
 from bson import ObjectId
 from sqlglot import expressions
@@ -59,11 +61,11 @@ class FeatureTableCacheService:
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
 
-    async def definition_hashes_to_nodes(
+    async def definition_hashes_for_nodes(
         self,
         graph: QueryGraph,
         nodes: List[Node],
-    ) -> Dict[str, Node]:
+    ) -> List[str]:
         """
         Compute definition caches for list of nodes
 
@@ -76,13 +78,13 @@ class FeatureTableCacheService:
 
         Returns
         -------
-        Dict[str, Node]
-            Mapping from definition hash to a node
+        List[str]
+            List of definition hashes corresponding to nodes
         """
         node_names = [node.name for node in nodes]
         pruned_graph, node_name_map = graph.quick_prune(target_node_names=node_names)
 
-        hashes = {}
+        hashes = []
         for node in nodes:
             (
                 prepared_graph,
@@ -96,13 +98,14 @@ class FeatureTableCacheService:
             definition_hash = definition_hash_extractor.extract(
                 prepared_graph.get_node_by_name(prepared_node_name)
             ).definition_hash
-            hashes[definition_hash] = node
+            hashes.append(definition_hash)
         return hashes
 
-    def _get_column_expr(
+    def _get_column_exprs(
         self,
         graph: QueryGraph,
-        hashes: Dict[str, Node],
+        nodes: List[Node],
+        hashes: List[str],
         cached_features: Dict[str, str],
     ) -> List[expressions.Alias]:
         return [
@@ -111,7 +114,7 @@ class FeatureTableCacheService:
                 alias=graph.get_node_output_column_name(node.name),
                 quoted=True,
             )
-            for definition_hash, node in hashes.items()
+            for definition_hash, node in zip(hashes, nodes)
         ]
 
     async def get_non_cached_nodes(
@@ -141,20 +144,24 @@ class FeatureTableCacheService:
         List[Tuple[Node, CachedFeatureDefinition]]
             List of non cached nodes and respective newly-created cached feature definitions
         """
-        hashes = await self.definition_hashes_to_nodes(graph, nodes)
+        hashes = await self.definition_hashes_for_nodes(graph, nodes)
 
         cached_hashes = {
             feat.definition_hash: feat for feat in feature_table_cache_metadata.feature_definitions
         }
-
-        return [
-            (
-                node,
-                CachedFeatureDefinition(definition_hash=definition_hash),
+        added_hashes = set()
+        non_cached_nodes = []
+        for definition_hash, node in zip(hashes, nodes):
+            if definition_hash in cached_hashes or definition_hash in added_hashes:
+                continue
+            added_hashes.add(definition_hash)
+            non_cached_nodes.append(
+                (
+                    node,
+                    CachedFeatureDefinition(definition_hash=definition_hash),
+                )
             )
-            for definition_hash, node in hashes.items()
-            if definition_hash not in cached_hashes
-        ]
+        return non_cached_nodes
 
     async def _populate_intermediate_table(  # pylint: disable=too-many-arguments
         self,
@@ -516,7 +523,7 @@ class FeatureTableCacheService:
         pd.DataFrame
             Result data
         """
-        hashes = await self.definition_hashes_to_nodes(graph, nodes)
+        hashes = await self.definition_hashes_for_nodes(graph, nodes)
         cache_metadata = (
             await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
                 observation_table_id=observation_table.id,
@@ -525,7 +532,7 @@ class FeatureTableCacheService:
         cached_hashes = set(
             feature_def.definition_hash for feature_def in cache_metadata.feature_definitions
         )
-        assert set(hashes.keys()) <= cached_hashes, "All nodes must be cached"
+        assert set(hashes) <= cached_hashes, "All nodes must be cached"
 
         cached_features = {
             feature.definition_hash: feature.feature_name
@@ -534,7 +541,9 @@ class FeatureTableCacheService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-        columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
+        columns_expr = self._get_column_exprs(
+            graph, nodes, hashes, cast(Dict[str, str], cached_features)
+        )
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
             .select(*columns_expr)
@@ -609,7 +618,7 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-        hashes = await self.definition_hashes_to_nodes(graph, nodes)
+        hashes = await self.definition_hashes_for_nodes(graph, nodes)
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
@@ -617,7 +626,9 @@ class FeatureTableCacheService:
 
         request_column_names = [col.name for col in observation_table.columns_info]
         request_columns = [quoted_identifier(col) for col in request_column_names]
-        columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
+        columns_expr = self._get_column_exprs(
+            graph, nodes, hashes, cast(Dict[str, str], cached_features)
+        )
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
             .select(*request_columns)

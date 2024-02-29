@@ -148,6 +148,11 @@ def feature_list_fixture(request):
     return request.getfixturevalue(request.param)
 
 
+@pytest.fixture(name="feature_list_with_duplicates")
+def feature_list_with_duplicates_fixture():
+    """Feature list with duplicate definition hashes"""
+
+
 @pytest.mark.asyncio
 async def test_create_feature_table_cache(
     feature_store,
