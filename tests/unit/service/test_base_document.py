@@ -392,12 +392,11 @@ async def test_list_documents_iterator(document_service):
     assert list_results["total"] == total
 
     # retrieve list iterator & check results
-    for page_size in [1, 10, 15, 20]:
-        doc_ids = [
-            doc["_id"]
-            async for doc in document_service.list_documents_as_dict_iterator(query_filter={})
-        ]
-        assert set(doc_ids) == expected_doc_ids
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(query_filter={})
+    ]
+    assert set(doc_ids) == expected_doc_ids
 
     # check list_documents_iterator output type
     async for doc in document_service.list_documents_iterator(query_filter={}):

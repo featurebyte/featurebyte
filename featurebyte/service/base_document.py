@@ -4,7 +4,19 @@ BaseService class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import copy
 from contextlib import contextmanager
@@ -526,9 +538,9 @@ class BaseDocumentService(
 
     async def list_documents_as_dict_iterator(
         self,
-        query_filter: QueryFilter,
-        projection: Optional[Dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
+        projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
@@ -536,29 +548,43 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: QueryFilter
-            Query filter
-        projection: Optional[Dict[str, Any]]
-            Project fields to return from the query
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         use_raw_query_filter: bool
             Use only provided query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         kwargs: Any
-            Additional keyword arguments passed to the list_documents_as_dict
+            Additional keyword arguments
 
         Yields
         ------
         AsyncIterator[Dict[str, Any]]
             List query output
+
+        Raises
+        ------
+        QueryNotSupportedError
+            If the persistent query is not supported
         """
-        list_results = await self.list_documents_as_dict(
-            page=0,
-            page_size=-1,
-            query_filter=query_filter,
-            projection=projection,
-            use_raw_query_filter=use_raw_query_filter,
-            **kwargs,
+        sort_by = sort_by or [("created_at", "desc")]
+        query_filter = self.construct_list_query_filter(
+            use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        async for doc in list_results["data"]:
+        try:
+            docs = cast(
+                AsyncIterator[Dict[str, Any]],
+                await self.persistent.get_iterator(
+                    collection_name=self.collection_name,
+                    query_filter=query_filter,
+                    projection=projection,
+                    sort_by=sort_by,
+                ),
+            )
+        except NotImplementedError as exc:
+            raise QueryNotSupportedError from exc
+
+        async for doc in docs:
             yield doc
 
     async def list_documents_iterator(
