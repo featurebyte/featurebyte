@@ -145,7 +145,6 @@ def get_active_profile() -> Profile:
                 logger.info(
                     "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation."
                 )
-                pass
 
     if not conf.profile:
         logger.error(
