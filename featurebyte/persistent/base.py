@@ -125,8 +125,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
-    ) -> Optional[Document]:  # pylint: disable=unused-argument
+    ) -> Optional[Document]:
         """
         Find one record from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -139,8 +138,6 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------
@@ -159,7 +156,6 @@ class Persistent(ABC):
         sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> tuple[Iterable[Document], int]:
         """
         Find all records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -179,8 +175,6 @@ class Persistent(ABC):
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------

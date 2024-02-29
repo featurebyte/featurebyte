@@ -333,7 +333,6 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if document_dict is None:
             exception_detail = exception_detail or (
@@ -525,16 +524,10 @@ class BaseDocumentService(
                 sort_by=sort_by,
                 page=page,
                 page_size=page_size,
-                user_id=self.user.id,
             )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc
-        return {
-            "page": page,
-            "page_size": page_size,
-            "total": total,
-            "data": list(docs) if page_size >= 0 else docs,
-        }
+        return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
     async def list_documents_as_dict_iterator(
         self,
@@ -835,7 +828,6 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if conflict_doc:
             exception_detail = self._get_conflict_message(

@@ -94,7 +94,6 @@ class FeastRegistryService(
             collection_name=self.collection_name,
             query_filter={"name": project_name},
             projection={"_id": 1},
-            user_id=self.user.id,
         )
         if not document_dict:
             return project_name
@@ -106,7 +105,6 @@ class FeastRegistryService(
                 collection_name=self.collection_name,
                 query_filter={"name": project_name},
                 projection={"_id": 1},
-                user_id=self.user.id,
             )
             if not document_dict:
                 return project_name
