@@ -130,20 +130,22 @@ def get_active_profile() -> Profile:
     # check if we are in DataBricks environment and valid secrets are present create a profile automatically
     db_utils = globals().get("dbutils")
     if db_utils:
-        databricks_auto_profile_name = "databricks-auto-profile"
-        if conf.default_profile_name != databricks_auto_profile_name:
+        if len(conf.profiles) == 1 and conf.profiles[0].name == "local":
+            api_url = None
+            api_token = None
             try:
                 api_url = db_utils.secrets.get(scope="featurebyte", key="api-url")
                 api_token = db_utils.secrets.get(scope="featurebyte", key="api-token")
-                register_profile(
-                    profile_name=databricks_auto_profile_name,
-                    api_url=api_url,
-                    api_token=api_token,
-                    make_default=True,
-                )
             except Exception:  # pylint: disable=broad-except
                 logger.info(
                     "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation."
+                )
+            if api_url and api_token:
+                register_profile(
+                    profile_name="databricks-auto-profile",
+                    api_url=api_url,
+                    api_token=api_token,
+                    make_default=True,
                 )
 
     if not conf.profile:
