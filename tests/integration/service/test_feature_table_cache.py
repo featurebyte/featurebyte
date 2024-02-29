@@ -270,7 +270,7 @@ async def test_create_view_from_cache(
     try:
         feature_cluster = feature_list_model.feature_clusters[0]
         nodes = feature_cluster.nodes[:5]
-        observation_table_cols = list({col.name for col in observation_table_model.columns_info})
+        observation_table_cols = [col.name for col in observation_table_model.columns_info]
         feature_names = [
             feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
         ]
@@ -294,8 +294,8 @@ async def test_create_view_from_cache(
         )
         df = await session.execute_query(query)
         assert df.shape == (50, len(set(feature_names + observation_table_cols)) + 1)
-        assert set(df.columns.tolist()) == set(
-            [InternalName.TABLE_ROW_INDEX] + feature_names + observation_table_cols
+        assert df.columns.tolist() == (
+            [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names
         )
 
         # update cache table with second feature list
@@ -319,8 +319,8 @@ async def test_create_view_from_cache(
         df = await session.execute_query(query)
         assert len(feature_list.feature_names) == 8
         assert df.shape == (50, len(set(feature_list.feature_names + observation_table_cols)) + 1)
-        assert set(df.columns.tolist()) == set(
-            [InternalName.TABLE_ROW_INDEX] + feature_list.feature_names + observation_table_cols
+        assert df.columns.tolist() == (
+            [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_list.feature_names
         )
     finally:
         await session.drop_table(

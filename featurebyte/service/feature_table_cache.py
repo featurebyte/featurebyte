@@ -566,7 +566,7 @@ class FeatureTableCacheService:
         ] = None,
     ) -> None:
         """
-        Create create or update cache table and create a new view which refers to the cached table
+        Create or update cache table and create a new view which refers to the cached table
 
         Parameters
         ----------
