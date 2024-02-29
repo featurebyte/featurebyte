@@ -194,6 +194,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
         projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[list[tuple[str, SortDir]]] = None,
     ) -> AsyncIterator[Document]:
@@ -207,6 +208,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        pipeline: Optional[list[dict[str, Any]]]
+            Pipeline to execute
         projection: Optional[dict[str, Any]]
             Fields to project
         sort_by: Optional[list[tuple[str, SortDir]]]
@@ -220,6 +223,7 @@ class Persistent(ABC):
         return await self._get_iterator(
             collection_name=collection_name,
             query_filter=query_filter,
+            pipeline=pipeline,
             projection=projection,
             sort_by=sort_by,
         )
@@ -691,6 +695,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
         projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[list[tuple[str, SortDir]]] = None,
     ) -> AsyncIterator[Document]:

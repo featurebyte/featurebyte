@@ -556,6 +556,7 @@ class BaseDocumentService(
             docs = await self.persistent.get_iterator(
                 collection_name=self.collection_name,
                 query_filter=query_filter,
+                pipeline=kwargs.get("pipeline"),
                 projection=projection,
                 sort_by=sort_by,
             )
