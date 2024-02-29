@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, cast
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -321,6 +321,54 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
+    async def _create_document(
+        self, feature_list: FeatureListModel, features: List[FeatureModel]
+    ) -> ObjectId:
+        async with self.persistent.start_transaction() as session:
+            insert_id = await session.insert_one(
+                collection_name=self.collection_name,
+                document=feature_list.dict(by_alias=True),
+                user_id=self.user.id,
+            )
+            assert insert_id == feature_list.id
+
+            try:
+                feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                    document_id=feature_list.feature_list_namespace_id,
+                )
+                await validate_feature_list_version_and_namespace_consistency(
+                    feature_list=feature_list,
+                    feature_list_namespace=feature_list_namespace,
+                    feature_service=self.feature_service,
+                )
+                feature_list_namespace = await self.feature_list_namespace_service.update_document(
+                    document_id=feature_list.feature_list_namespace_id,
+                    data=FeatureListNamespaceServiceUpdate(
+                        feature_list_ids=self.include_object_id(
+                            feature_list_namespace.feature_list_ids, feature_list.id
+                        ),
+                    ),
+                    return_document=True,
+                )  # type: ignore[assignment]
+                assert feature_list_namespace is not None
+
+            except DocumentNotFoundError:
+                await self.feature_list_namespace_service.create_document(
+                    data=FeatureListNamespaceModel(
+                        _id=feature_list.feature_list_namespace_id or ObjectId(),
+                        name=feature_list.name,
+                        feature_list_ids=[insert_id],
+                        default_feature_list_id=insert_id,
+                        features=features,
+                    )
+                )
+
+            # update feature's feature_list_ids attribute
+            await self._update_features(
+                feature_list.feature_ids, inserted_feature_list_id=insert_id
+            )
+            return cast(ObjectId, insert_id)
+
     async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
@@ -352,48 +400,15 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             }
         )
         await self._move_feature_cluster_to_storage(document)
-
-        async with self.persistent.start_transaction() as session:
-            insert_id = await session.insert_one(
-                collection_name=self.collection_name,
-                document=document.dict(by_alias=True),
-                user_id=self.user.id,
+        try:
+            insert_id = await self._create_document(
+                feature_list=document, features=feature_data["features"]
             )
-            assert insert_id == document.id
-
-            try:
-                feature_list_namespace = await self.feature_list_namespace_service.get_document(
-                    document_id=document.feature_list_namespace_id,
-                )
-                await validate_feature_list_version_and_namespace_consistency(
-                    feature_list=document,
-                    feature_list_namespace=feature_list_namespace,
-                    feature_service=self.feature_service,
-                )
-                feature_list_namespace = await self.feature_list_namespace_service.update_document(
-                    document_id=document.feature_list_namespace_id,
-                    data=FeatureListNamespaceServiceUpdate(
-                        feature_list_ids=self.include_object_id(
-                            feature_list_namespace.feature_list_ids, document.id
-                        ),
-                    ),
-                    return_document=True,
-                )  # type: ignore[assignment]
-                assert feature_list_namespace is not None
-
-            except DocumentNotFoundError:
-                await self.feature_list_namespace_service.create_document(
-                    data=FeatureListNamespaceModel(
-                        _id=document.feature_list_namespace_id or ObjectId(),
-                        name=document.name,
-                        feature_list_ids=[insert_id],
-                        default_feature_list_id=insert_id,
-                        features=feature_data["features"],
-                    )
-                )
-
-            # update feature's feature_list_ids attribute
-            await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
+        except Exception as exc:
+            # clean up the feature_clusters file if the document creation failed
+            if document.feature_clusters_path:
+                await self.storage.delete(Path(document.feature_clusters_path))
+            raise exc
         return await self.get_document(document_id=insert_id)
 
     async def list_documents_iterator(  # type: ignore[override]
