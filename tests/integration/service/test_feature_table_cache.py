@@ -3,7 +3,6 @@ Integration test for feature table cache
 """
 import time
 
-import pandas as pd
 import pytest
 from bson import ObjectId
 from sqlglot import parse_one
@@ -12,7 +11,6 @@ from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
-from tests.util.helper import create_observation_table_from_dataframe
 
 
 @pytest.fixture(name="feature_list")

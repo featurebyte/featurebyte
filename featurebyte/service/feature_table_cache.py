@@ -246,12 +246,12 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
-            request_column_names = sorted({col.name for col in observation_table.columns_info})
+            request_column_names = [col.name for col in observation_table.columns_info]
             request_columns = [quoted_identifier(col) for col in request_column_names]
             feature_names = [
                 expressions.alias_(
                     quoted_identifier(cast(str, graph.get_node_output_column_name(node.name))),
-                    alias=quoted_identifier(cast(str, feature_definition.feature_name)),
+                    alias=feature_definition.feature_name,
                     quoted=True,
                 )
                 for node, feature_definition in nodes
@@ -615,7 +615,7 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
 
-        request_column_names = sorted({col.name for col in observation_table.columns_info})
+        request_column_names = [col.name for col in observation_table.columns_info]
         request_columns = [quoted_identifier(col) for col in request_column_names]
         columns_expr = self._get_column_expr(graph, hashes, cast(Dict[str, str], cached_features))
         select_expr = (
