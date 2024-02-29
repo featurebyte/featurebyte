@@ -1,7 +1,7 @@
 """
 Pydantic Model for persistent storage
 """
-from typing import Any, Dict, List, Mapping, MutableMapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from datetime import datetime
 
@@ -13,8 +13,8 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.schema.common.base import PaginationMixin
 
-Document = MutableMapping[str, Any]
-QueryFilter = MutableMapping[str, Any]
+Document = Dict[str, Any]
+QueryFilter = Dict[str, Any]
 DocumentUpdate = Mapping[str, Any]
 
 

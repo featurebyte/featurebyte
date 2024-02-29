@@ -41,7 +41,6 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.validator.entity_relationship_validator import (
     FeatureListEntityRelationshipValidator,
@@ -367,7 +366,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
     async def list_documents_iterator(  # type: ignore[override]
         self,
         query_filter: QueryFilter,
-        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[FeatureListModel]:
         raise RuntimeError(

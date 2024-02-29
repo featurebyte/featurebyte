@@ -43,7 +43,6 @@ async def test_progress_update(persistent, user_id):
     updated_doc = await persistent.find_one(
         collection_name=Task.collection_name(),
         query_filter={"_id": task_id},
-        user_id=user_id,
     )
     expected = {
         "percent": 50,

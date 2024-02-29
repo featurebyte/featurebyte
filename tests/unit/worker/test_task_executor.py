@@ -93,7 +93,7 @@ async def test_task_executor(random_task_class, persistent, app_container):
     ).execute()
 
     # check store
-    document = await persistent.find_one("random_collection", {"user_id": user_id}, user_id=user_id)
+    document = await persistent.find_one("random_collection", {"user_id": user_id})
     assert document == {
         "_id": document_id,
         "created_at": document["created_at"],
@@ -103,7 +103,7 @@ async def test_task_executor(random_task_class, persistent, app_container):
 
     # check task start time and description is updated
     document = await persistent.find_one(
-        collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}, user_id=user_id
+        collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}
     )
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"

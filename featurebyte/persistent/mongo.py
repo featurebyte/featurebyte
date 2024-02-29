@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 import pymongo
 from bson.objectid import ObjectId
+from motor.core import AgnosticCursor
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
@@ -178,11 +179,48 @@ class MongoDB(Persistent):
         tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor = self._db[collection_name].find(
-            filter=query_filter, projection=projection, session=self._session
+        cursor: AgnosticCursor = cast(
+            AgnosticCursor,
+            await self._get_iterator(collection_name, query_filter, projection, sort_by),
         )
         total = await self._db[collection_name].count_documents(query_filter, session=self._session)
 
+        if page_size > 0:
+            skips = page_size * (page - 1)
+            cursor = cursor.skip(skips).limit(page_size)
+
+        result: list[Document] = await cursor.to_list(total)
+        return result, total
+
+    async def _get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
+        """
+        Get iterator on records from collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and direction to sort by
+
+        Returns
+        -------
+        AsyncIterator[Document]
+            Retrieved documents
+        """
+        cursor = self._db[collection_name].find(
+            filter=query_filter, projection=projection, session=self._session
+        )
         if sort_by:
             cursor = cursor.sort(
                 [
@@ -194,12 +232,7 @@ class MongoDB(Persistent):
                 ]
             )
 
-        if page_size > 0:
-            skips = page_size * (page - 1)
-            cursor = cursor.skip(skips).limit(page_size)
-
-        result: list[Document] = await cursor.to_list(total)
-        return result, total
+        return cast(AsyncIterator[Document], cursor)
 
     async def _update_one(
         self,

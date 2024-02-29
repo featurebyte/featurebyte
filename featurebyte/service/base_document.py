@@ -321,14 +321,13 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if document_dict is None:
             exception_detail = exception_detail or (
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
             )
             raise DocumentNotFoundError(exception_detail)
-        return document_dict  # type: ignore
+        return document_dict
 
     async def get_document(
         self,
@@ -513,7 +512,6 @@ class BaseDocumentService(
                 sort_by=sort_by,
                 page=page,
                 page_size=page_size,
-                user_id=self.user.id,
             )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc
@@ -521,10 +519,9 @@ class BaseDocumentService(
 
     async def list_documents_as_dict_iterator(
         self,
-        query_filter: QueryFilter,
-        projection: Optional[Dict[str, Any]] = None,
-        page_size: int = DEFAULT_PAGE_SIZE,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
+        projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
@@ -532,43 +529,45 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: QueryFilter
-            Query filter
-        projection: Optional[Dict[str, Any]]
-            Project fields to return from the query
-        page_size: int
-            Page size
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         use_raw_query_filter: bool
             Use only provided query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         kwargs: Any
-            Additional keyword arguments passed to the list_documents_as_dict
+            Additional keyword arguments
 
         Yields
         ------
         AsyncIterator[Dict[str, Any]]
             List query output
-        """
-        to_iterate, page = True, 1
 
-        while to_iterate:
-            list_results = await self.list_documents_as_dict(
-                page=page,
-                page_size=page_size,
+        Raises
+        ------
+        QueryNotSupportedError
+            If the persistent query is not supported
+        """
+        sort_by = sort_by or [("created_at", "desc")]
+        query_filter = self.construct_list_query_filter(
+            use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        try:
+            docs = await self.persistent.get_iterator(
+                collection_name=self.collection_name,
                 query_filter=query_filter,
                 projection=projection,
-                use_raw_query_filter=use_raw_query_filter,
-                **kwargs,
+                sort_by=sort_by,
             )
-            for doc in list_results["data"]:
-                yield doc
+        except NotImplementedError as exc:
+            raise QueryNotSupportedError from exc
 
-            to_iterate = bool(list_results["total"] > (page * page_size))
-            page += 1
+        async for doc in docs:
+            yield doc
 
     async def list_documents_iterator(
         self,
         query_filter: QueryFilter,
-        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Document]:
         """
@@ -578,8 +577,6 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter
-        page_size: int
-            Page size per query
         use_raw_query_filter: bool
             Use only provided query filter (without any further processing)
 
@@ -588,10 +585,8 @@ class BaseDocumentService(
         AsyncIterator[Document]
             List query output
         """
-        assert page_size > 0, "page_size must be greater than 0"
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
-            page_size=page_size,
             use_raw_query_filter=use_raw_query_filter,
         ):
             yield self.document_class(**doc)
@@ -818,7 +813,6 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if conflict_doc:
             exception_detail = self._get_conflict_message(

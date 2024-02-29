@@ -158,7 +158,6 @@ class TaskManager:
         document = await self.persistent.find_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
-            user_id=self.user.id,
         )
         return (document or {}).get("task_result")
 
