@@ -4,19 +4,7 @@ BaseService class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    Generic,
-    Iterator,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
 from contextlib import contextmanager
@@ -339,7 +327,7 @@ class BaseDocumentService(
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
             )
             raise DocumentNotFoundError(exception_detail)
-        return document_dict  # type: ignore
+        return document_dict
 
     async def get_document(
         self,
@@ -565,14 +553,11 @@ class BaseDocumentService(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         try:
-            docs = cast(
-                AsyncIterator[Dict[str, Any]],
-                await self.persistent.get_iterator(
-                    collection_name=self.collection_name,
-                    query_filter=query_filter,
-                    projection=projection,
-                    sort_by=sort_by,
-                ),
+            docs = await self.persistent.get_iterator(
+                collection_name=self.collection_name,
+                query_filter=query_filter,
+                projection=projection,
+                sort_by=sort_by,
             )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc

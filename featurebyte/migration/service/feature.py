@@ -97,7 +97,7 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
 
         # use the normal query filter (contains catalog ID filter)
         query_filter = self.delegate_service.construct_list_query_filter()
-        total_before = await self.get_total_record(query_filter=query_filter)  # type: ignore
+        total_before = await self.get_total_record(query_filter=query_filter)
 
         # migrate all records and audit records
         await self.migrate_all_records(
@@ -159,7 +159,7 @@ class FeatureMigrationServiceV8(BaseMongoCollectionMigration):
 
         # use the normal query filter (contains catalog ID filter)
         query_filter = self.delegate_service.construct_list_query_filter()
-        total_before = await self.get_total_record(query_filter=query_filter)  # type: ignore
+        total_before = await self.get_total_record(query_filter=query_filter)
 
         # migrate all records and audit records
         await self.migrate_all_records(query_filter=query_filter)
