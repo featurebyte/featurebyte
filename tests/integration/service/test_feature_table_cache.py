@@ -3,7 +3,6 @@ Integration test for feature table cache
 """
 import time
 
-import pandas as pd
 import pytest
 from bson import ObjectId
 from sqlglot import parse_one
@@ -12,13 +11,17 @@ from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
-from tests.util.helper import create_observation_table_from_dataframe
 
 
 @pytest.fixture(name="feature_list")
-def feature_list_fixture(feature_group, feature_group_per_category):
+def feature_list_fixture(event_view, feature_group, feature_group_per_category):
     """Feature List fixture"""
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    count_2h_duplicate = event_view.groupby("ÜSER ID").aggregate_over(
+        method="count",
+        windows=["2h"],
+        feature_names=["COUNT_2h_DUPLICATE"],
+    )["COUNT_2h_DUPLICATE"]
     feature_list = FeatureList(
         [
             feature_group["COUNT_2h"],
@@ -29,6 +32,7 @@ def feature_list_fixture(feature_group, feature_group_per_category):
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
             feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+            count_2h_duplicate,
         ],
         name="My Feature List for Materialization",
     )
@@ -119,9 +123,12 @@ async def test_create_feature_table_cache(
             observation_table_id=observation_table.id,
         )
     )
-    features = [definition.feature_name for definition in feature_table_cache.feature_definitions]
+    cached_column_names = [
+        definition.feature_name for definition in feature_table_cache.feature_definitions
+    ]
     hashes = [definition.definition_hash for definition in feature_table_cache.feature_definitions]
-    assert len(features) == len(feature_list_model.feature_ids)
+    # Subtract 1 because one of the features is a duplicate and has the same hash
+    assert len(cached_column_names) == len(feature_list_model.feature_ids) - 1
 
     feature_hashes = []
     async for document in feature_service.list_documents_iterator(
@@ -143,7 +150,7 @@ async def test_create_feature_table_cache(
     assert df.shape[0] == 50
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
     assert set(df.columns.tolist()) == set(
-        [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
+        [InternalName.TABLE_ROW_INDEX] + observation_table_cols + cached_column_names
     )
 
 
@@ -272,7 +279,7 @@ async def test_create_view_from_cache(
     try:
         feature_cluster = feature_list_model.feature_clusters[0]
         nodes = feature_cluster.nodes[:5]
-        observation_table_cols = list({col.name for col in observation_table_model.columns_info})
+        observation_table_cols = [col.name for col in observation_table_model.columns_info]
         feature_names = [
             feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
         ]
@@ -296,8 +303,8 @@ async def test_create_view_from_cache(
         )
         df = await session.execute_query(query)
         assert df.shape == (50, len(set(feature_names + observation_table_cols)) + 1)
-        assert set(df.columns.tolist()) == set(
-            [InternalName.TABLE_ROW_INDEX] + feature_names + observation_table_cols
+        assert df.columns.tolist() == (
+            [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names
         )
 
         # update cache table with second feature list
@@ -319,10 +326,10 @@ async def test_create_view_from_cache(
             source_type=source_type,
         )
         df = await session.execute_query(query)
-        assert len(feature_list.feature_names) == 8
+        assert len(feature_list.feature_names) == 9
         assert df.shape == (50, len(set(feature_list.feature_names + observation_table_cols)) + 1)
-        assert set(df.columns.tolist()) == set(
-            [InternalName.TABLE_ROW_INDEX] + feature_list.feature_names + observation_table_cols
+        assert df.columns.tolist() == (
+            [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_list.feature_names
         )
     finally:
         await session.drop_table(
