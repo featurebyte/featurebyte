@@ -351,6 +351,7 @@ class Configurations:
                 else get_home_path().joinpath("config.yaml")
             )
             self.storage: LocalStorageSettings = LocalStorageSettings()
+            self.default_profile_name: Optional[str] = None
             self._profile: Optional[Profile] = None
             self.profiles: List[Profile] = []
             self.logging: LoggingSettings = LoggingSettings()
@@ -435,8 +436,9 @@ class Configurations:
 
             # Set default _profile if specified
             profile_map = {profile.name: profile for profile in self.profiles}
-            default_profile = settings.pop("default_profile", None)
-            self._profile = profile_map.get(default_profile)
+            self.default_profile_name = settings.pop("default_profile", None)
+            if self.default_profile_name:
+                self._profile = profile_map.get(self.default_profile_name)
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
