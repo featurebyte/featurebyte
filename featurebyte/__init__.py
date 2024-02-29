@@ -126,6 +126,27 @@ def get_active_profile() -> Profile:
         If no profile is found in configuration file
     """
     conf = Configurations()
+
+    # check if we are in DataBricks environment and valid secrets are present create a profile automatically
+    db_utils = globals().get("dbutils")
+    if db_utils:
+        databricks_auto_profile_name = "databricks-auto-profile"
+        if conf.default_profile_name != databricks_auto_profile_name:
+            try:
+                api_url = db_utils.secrets.get(scope="featurebyte", key="api-url")
+                api_token = db_utils.secrets.get(scope="featurebyte", key="api-token")
+                register_profile(
+                    profile_name=databricks_auto_profile_name,
+                    api_url=api_url,
+                    api_token=api_token,
+                    make_default=True,
+                )
+            except Exception:  # pylint: disable=broad-except
+                logger.info(
+                    "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation."
+                )
+                pass
+
     if not conf.profile:
         logger.error(
             "No profile found. Please update your configuration file at {conf.config_file_path}"
@@ -170,7 +191,9 @@ def use_profile(profile: str) -> None:
             pass
 
 
-def register_profile(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
+def register_profile(
+    profile_name: str, api_url: str, api_token: Optional[str] = None, make_default: bool = False
+) -> None:
     """
     Register a profile for connecting to a FeatureByte service in the configuration file.
     If the profile already exists, it will be updated.
@@ -183,6 +206,8 @@ def register_profile(profile_name: str, api_url: str, api_token: Optional[str] =
         Featurebye API Service URL
     api_token: str
         Tutorial api token
+    make_default: bool
+        Whether to make the profile default
 
     Examples
     --------
@@ -217,6 +242,12 @@ def register_profile(profile_name: str, api_url: str, api_token: Optional[str] =
         )
         loaded_config["profile"] = profiles
         updated_profile = True
+
+    if make_default:
+        default_profile = loaded_config.get("default_profile")
+        if default_profile != profile_name:
+            loaded_config["default_profile"] = profile_name
+            updated_profile = True
 
     # Write to config file if profile was updated
     if updated_profile:
