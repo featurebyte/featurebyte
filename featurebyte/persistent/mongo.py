@@ -222,36 +222,29 @@ class MongoDB(Persistent):
         AsyncIterator[Document]
             Retrieved documents
         """
+        if sort_by:
+            sort = {
+                str(sort_key): pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING
+                for sort_key, sort_dir in sort_by
+            }
+            if "_id" not in sort:
+                sort["_id"] = pymongo.DESCENDING  # break ties using _id
+        else:
+            sort = None
+
         if pipeline:
             pipeline = copy.deepcopy(pipeline)
             if query_filter:
                 pipeline.insert(0, {"$match": query_filter})
-            if sort_by:
-                sort = {
-                    str(sort_key): pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING
-                    for sort_key, sort_dir in sort_by
-                }
-                if "_id" not in sort:
-                    sort["_id"] = pymongo.DESCENDING  # break ties using _id
+            if sort:
                 pipeline.append({"$sort": sort})
             cursor = self._db[collection_name].aggregate(pipeline, session=self._session)
         else:
             cursor = self._db[collection_name].find(
                 filter=query_filter, projection=projection, session=self._session
             )
-            if sort_by:
-                cursor = cursor.sort(
-                    [
-                        (
-                            str(sort_key),
-                            pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING,
-                        )
-                        for sort_key, sort_dir in sort_by
-                    ]
-                    + [
-                        ("_id", pymongo.DESCENDING),  # break ties using _id
-                    ]
-                )
+            if sort:
+                cursor = cursor.sort(sort.items())
 
         return cast(AsyncIterator[Document], cursor)
 
