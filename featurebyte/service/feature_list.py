@@ -82,9 +82,11 @@ async def validate_feature_list_version_and_namespace_consistency(
         )
 
     feature_namespace_ids = []
-    for feature_id in feature_list.feature_ids:
-        feature = await feature_service.get_document(document_id=feature_id)
-        feature_namespace_ids.append(feature.feature_namespace_id)
+    async for doc in feature_service.list_documents_as_dict_iterator(
+        query_filter={"_id": {"$in": feature_list.feature_ids}},
+        projection={"feature_namespace_id": 1},
+    ):
+        feature_namespace_ids.append(doc["feature_namespace_id"])
 
     if sorted(feature_namespace_ids) != sorted(feature_list_namespace.feature_namespace_ids):
         raise DocumentInconsistencyError(
