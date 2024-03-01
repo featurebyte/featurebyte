@@ -254,7 +254,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     def create(
         cls, features: List[FeatureModel], feature_store: FeatureStoreModel
     ) -> "DataBricksStoreInfo":
-        exclude_columns = set()
+        exclude_columns = {SpecialColumnName.POINT_IN_TIME.value}
         entity_id_to_column_spec = {}
         request_column_name_to_dtype = {}
         for feature in features:
@@ -300,6 +300,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
         has_point_in_time = False
         for entity_id in sorted(entity_id_to_column_spec.keys()):
             base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
+            exclude_columns.add(entity_id_to_column_spec[entity_id].name)
         for column_name in sorted(request_column_name_to_dtype.keys()):
             base_dataframe_specs.append(
                 ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name])
