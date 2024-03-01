@@ -18,7 +18,11 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list import (
+    FeatureCluster,
+    FeatureListModel,
+    FeatureReadinessDistribution,
+)
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent

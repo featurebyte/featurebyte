@@ -1229,7 +1229,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
         """
-        kwargs = {}
+        kwargs: dict[str, Any] = {}
         if self.saved:
             kwargs["feature_list_id"] = self.id
         else:

@@ -94,6 +94,8 @@ class HistoricalFeatureTableController(
     async def get_additional_info_params(
         self, document: HistoricalFeatureTableModel
     ) -> dict[str, Any]:
+        if document.feature_list_id is None:
+            return {}
         feature_list = await self.feature_list_service.get_document(
             document_id=document.feature_list_id
         )
