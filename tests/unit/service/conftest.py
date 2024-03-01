@@ -993,6 +993,40 @@ async def e_is_parent_of_c_and_d_fixture(
     )
 
 
+@pytest_asyncio.fixture(name="a_is_parent_of_c_and_d")
+async def a_is_parent_of_c_and_d_fixture(
+    entity_a,
+    entity_c,
+    entity_d,
+    entity_service,
+    event_table_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make A a parent of C and D
+    """
+    _ = feature_store
+    await create_table_and_add_parent(
+        test_dir,
+        event_table_service,
+        entity_service,
+        child_entity=entity_c,
+        parent_entity=entity_a,
+        child_column="c",
+        parent_column="a",
+    )
+    await create_table_and_add_parent(
+        test_dir,
+        event_table_service,
+        entity_service,
+        child_entity=entity_d,
+        parent_entity=entity_a,
+        child_column="d",
+        parent_column="a",
+    )
+
+
 @pytest.fixture
 def entity_info_with_ambiguous_relationships(
     entity_a,

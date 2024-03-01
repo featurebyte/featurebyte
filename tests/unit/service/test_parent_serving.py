@@ -258,3 +258,36 @@ async def test_get_join_steps__multiple_provided(
             child_serving_name="C",
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_required_entity__complex_and_should_not_error(
+    entity_a,
+    entity_b,
+    entity_c,
+    entity_d,
+    b_is_parent_of_a,
+    d_is_parent_of_c,
+    a_is_parent_of_c_and_d,
+    parent_entity_lookup_service,
+):
+    """
+    Test a case where lookup parent entity should pass without error
+
+    c --> d --> a (provided) --> b (required)
+     `------>´
+    """
+    data_a_to_b = b_is_parent_of_a
+    _ = d_is_parent_of_c
+    _ = a_is_parent_of_c_and_d
+    entity_info = EntityInfo(required_entities=[entity_b], provided_entities=[entity_a])
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    assert join_steps == [
+        JoinStep(
+            table=data_a_to_b.dict(by_alias=True),
+            parent_key="b",
+            parent_serving_name="B",
+            child_key="a",
+            child_serving_name="A",
+        ),
+    ]
