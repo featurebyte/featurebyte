@@ -1229,12 +1229,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
         """
+        kwargs = {}
+        if self.saved:
+            kwargs["feature_list_id"] = self.id
+        else:
+            kwargs["feature_clusters"] = self._get_feature_clusters()
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
-            feature_list_id=self.id,
-            feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
+            **kwargs,
         )
-        feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id  # type: ignore[index]
+        feature_store_id = self._features[0].tabular_source.feature_store_id
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
             observation_table_id=(
