@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Optional
 
 from featurebyte.exception import (
-    AmbiguousEntityRelationshipError,
     EntityJoinPathNotFoundError,
     RequiredEntityNotProvidedError,
     UnexpectedServingNamesMappingError,
@@ -159,7 +158,7 @@ class EntityValidationService:
             join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                 entity_info
             )
-        except (EntityJoinPathNotFoundError, AmbiguousEntityRelationshipError):
+        except EntityJoinPathNotFoundError:
             raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
                 entity_info.format_missing_entities_error(
                     [entity.id for entity in entity_info.missing_entities]
