@@ -10,7 +10,9 @@ from pathlib import Path
 
 from bson import json_util
 from bson.objectid import ObjectId
+from pymongo.errors import OperationFailure
 from redis import Redis
+from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
@@ -32,7 +34,11 @@ from featurebyte.query_graph.model.entity_relationship_info import (
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import (
+    RETRY_MAX_ATTEMPT_NUM,
+    RETRY_MAX_WAIT_IN_SEC,
+    BaseDocumentService,
+)
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_relationship_extractor import (
     EntityRelationshipExtractorService,
@@ -322,6 +328,12 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
+    @retry(
+        retry=retry_if_exception_type(OperationFailure),
+        wait=wait_chain(
+            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
+        ),
+    )
     async def _create_document(
         self, feature_list: FeatureListModel, features: List[FeatureModel]
     ) -> ObjectId:
