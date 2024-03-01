@@ -1,8 +1,6 @@
 """
 Tests for FeatureList route
 """
-import pdb
-
 # pylint: disable=too-many-lines
 from collections import defaultdict
 from http import HTTPStatus
