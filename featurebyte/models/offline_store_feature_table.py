@@ -3,7 +3,7 @@ OfflineStoreFeatureTableModel class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -147,7 +147,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         """
         if self._feature_cluster is None:
             self._feature_cluster = FeatureCluster(**self.internal_feature_cluster)
-        return self._feature_cluster
+        return cast(FeatureCluster, self._feature_cluster)
 
     def _get_basename(self) -> str:
         # max length of feature table name is 64
