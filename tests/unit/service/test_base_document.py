@@ -405,6 +405,26 @@ async def test_list_documents_iterator(document_service):
     async for doc in document_service.list_documents_iterator(query_filter={}):
         assert isinstance(doc, Document)
 
+    # check list_documents_iterator with pipeline
+    doc_id = doc_ids[0]
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(
+            query_filter={}, pipeline=[{"$match": {"_id": doc_id}}]
+        )
+    ]
+    assert set(doc_ids) == {doc_id}
+
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(
+            query_filter={},
+            pipeline=[{"$match": {"_id": {"$exists": 1}}}],
+            sort_by=[("_id", "desc")],
+        )
+    ]
+    assert doc_ids == sorted(list(doc_ids), reverse=True)
+
 
 @pytest.mark.asyncio
 async def test_delete_document(document_service):

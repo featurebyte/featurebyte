@@ -6,7 +6,9 @@ from __future__ import annotations
 from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
 
 import asyncio
+import copy
 from asyncio import iscoroutine
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 
 import pymongo
@@ -181,7 +183,7 @@ class MongoDB(Persistent):
         """
         cursor: AgnosticCursor = cast(
             AgnosticCursor,
-            await self._get_iterator(collection_name, query_filter, projection, sort_by),
+            await self._get_iterator(collection_name, query_filter, None, projection, sort_by),
         )
         total = await self._db[collection_name].count_documents(query_filter, session=self._session)
 
@@ -196,6 +198,7 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
         projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[list[tuple[str, SortDir]]] = None,
     ) -> AsyncIterator[Document]:
@@ -208,6 +211,8 @@ class MongoDB(Persistent):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        pipeline: Optional[list[dict[str, Any]]]
+            Pipeline to execute
         projection: Optional[dict[str, Any]]
             Fields to project
         sort_by: Optional[list[tuple[str, SortDir]]]
@@ -218,19 +223,31 @@ class MongoDB(Persistent):
         AsyncIterator[Document]
             Retrieved documents
         """
-        cursor = self._db[collection_name].find(
-            filter=query_filter, projection=projection, session=self._session
-        )
         if sort_by:
-            cursor = cursor.sort(
+            sort = OrderedDict(
                 [
                     (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
                     for sort_key, sort_dir in sort_by
                 ]
-                + [
-                    ("_id", pymongo.DESCENDING),  # break ties using _id
-                ]
             )
+            if "_id" not in sort:
+                sort["_id"] = pymongo.DESCENDING  # break ties using _id
+        else:
+            sort = None
+
+        if pipeline:
+            pipeline = copy.deepcopy(pipeline)
+            if query_filter:
+                pipeline.insert(0, {"$match": query_filter})
+            if sort:
+                pipeline.append({"$sort": sort})
+            cursor = self._db[collection_name].aggregate(pipeline, session=self._session)
+        else:
+            cursor = self._db[collection_name].find(
+                filter=query_filter, projection=projection, session=self._session
+            )
+            if sort:
+                cursor = cursor.sort(sort.items())
 
         return cast(AsyncIterator[Document], cursor)
 
