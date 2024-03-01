@@ -7,10 +7,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, PrivateAttr, root_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -58,7 +59,10 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         default_factory=list
     )
 
-    feature_cluster: FeatureCluster
+    feature_cluster_path: Optional[str] = Field(default=None)
+    internal_feature_cluster: Any = Field(alias="feature_cluster")
+    _feature_cluster: Any = PrivateAttr(default=None)
+
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
@@ -83,6 +87,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if not values.get("feature_store_id", None) and values.get("feature_cluster"):
             values["feature_store_id"] = values["feature_cluster"].feature_store_id
         return values
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.feature_cluster_path:
+            paths.append(Path(self.feature_cluster_path))
+        return paths
 
     @property
     def table_signature(self) -> Dict[str, Any]:
@@ -124,6 +135,19 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if self.internal_entity_universe is None:
             raise ValueError("entity_universe is not set")
         return EntityUniverseModel(**self.internal_entity_universe)
+
+    @property
+    def feature_cluster(self) -> FeatureCluster:
+        """
+        Get feature cluster
+
+        Returns
+        -------
+        FeatureCluster
+        """
+        if self._feature_cluster is None:
+            self._feature_cluster = FeatureCluster(**self.internal_feature_cluster)
+        return self._feature_cluster
 
     def _get_basename(self) -> str:
         # max length of feature table name is 64

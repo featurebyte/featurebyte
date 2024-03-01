@@ -4,9 +4,11 @@ OfflineStoreFeatureTableService class
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
-from bson import ObjectId
+from bson import ObjectId, json_util
 
+from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     OfflineStoreFeatureTableUpdate,
@@ -50,6 +52,28 @@ class OfflineStoreFeatureTableService(
             return OfflineStoreFeatureTableModel(**query_result["data"][0])
         return await self.create_document(data)
 
+    async def _populate_remote_attributes(
+        self, document: OfflineStoreFeatureTableModel
+    ) -> OfflineStoreFeatureTableModel:
+        if document.feature_cluster_path:
+            feature_cluster_json = await self.storage.get_text(Path(document.feature_cluster_path))
+            document.internal_feature_cluster = json_util.loads(feature_cluster_json)
+        return document
+
+    async def _move_feature_cluster_to_storage(
+        self, document: OfflineStoreFeatureTableModel
+    ) -> OfflineStoreFeatureTableModel:
+        feature_cluster_path = self.get_full_remote_file_path(
+            f"offline_store_feature_table/{document.id}/feature_cluster.json"
+        )
+        assert isinstance(document.internal_feature_cluster, FeatureCluster)
+        await self.storage.put_text(
+            json_util.dumps(document.internal_feature_cluster.json_dict()), feature_cluster_path
+        )
+        document.feature_cluster_path = str(feature_cluster_path)
+        document.internal_feature_cluster = None
+        return document
+
     async def create_document(
         self, data: OfflineStoreFeatureTableModel
     ) -> OfflineStoreFeatureTableModel:
@@ -78,9 +102,15 @@ class OfflineStoreFeatureTableService(
                 data.name_suffix = str(count)
                 data.name = data.get_name()
 
-        output = await super().create_document(data)
-        assert output.catalog_id == data.catalog_id
-        return output
+        await self._move_feature_cluster_to_storage(data)
+        try:
+            output = await super().create_document(data)
+            assert output.catalog_id == data.catalog_id
+            return output
+        except Exception as exc:
+            if data.feature_cluster_path:
+                await self.storage.delete(Path(data.feature_cluster_path))
+            raise exc
 
     async def update_online_last_materialized_at(
         self,
@@ -100,7 +130,9 @@ class OfflineStoreFeatureTableService(
         last_materialized_at: datetime
             Last materialized at timestamp to use
         """
-        document = await self.get_document(document_id=document_id)
+        document = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         new_entry = OnlineStoreLastMaterializedAt(
             online_store_id=online_store_id,
             value=last_materialized_at,
