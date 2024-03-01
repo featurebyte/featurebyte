@@ -19,7 +19,6 @@ from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
-from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -959,40 +958,6 @@ async def d_is_parent_of_c_fixture(
     )
 
 
-@pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
-async def e_is_parent_of_c_and_d_fixture(
-    entity_c,
-    entity_d,
-    entity_e,
-    entity_service,
-    event_table_service,
-    test_dir,
-    feature_store,
-):
-    """
-    Fixture to make E a parent of C and D
-    """
-    _ = feature_store
-    await create_table_and_add_parent(
-        test_dir,
-        event_table_service,
-        entity_service,
-        child_entity=entity_c,
-        parent_entity=entity_e,
-        child_column="c",
-        parent_column="e",
-    )
-    await create_table_and_add_parent(
-        test_dir,
-        event_table_service,
-        entity_service,
-        child_entity=entity_d,
-        parent_entity=entity_e,
-        child_column="d",
-        parent_column="e",
-    )
-
-
 @pytest_asyncio.fixture(name="a_is_parent_of_c_and_d")
 async def a_is_parent_of_c_and_d_fixture(
     entity_a,
@@ -1025,33 +990,6 @@ async def a_is_parent_of_c_and_d_fixture(
         child_column="d",
         parent_column="a",
     )
-
-
-@pytest.fixture
-def entity_info_with_ambiguous_relationships(
-    entity_a,
-    entity_e,
-    b_is_parent_of_a,
-    c_is_parent_of_b,
-    d_is_parent_of_b,
-    e_is_parent_of_c_and_d,
-) -> EntityInfo:
-    """
-    EntityInfo the arises from ambiguous relationships
-
-    a (provided) --> b --> c ---> e (required)
-                      `--> d --´
-    """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    _ = d_is_parent_of_b
-    _ = e_is_parent_of_c_and_d
-    entity_info = EntityInfo(
-        required_entities=[entity_e],
-        provided_entities=[entity_a],
-        serving_names_mapping={"A": "new_A"},
-    )
-    return entity_info
 
 
 @pytest.fixture

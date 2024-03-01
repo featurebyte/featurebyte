@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 from bson import ObjectId
 
-from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
+from featurebyte.exception import EntityJoinPathNotFoundError
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
@@ -151,36 +151,22 @@ class ParentEntityLookupService:
         ------
         EntityJoinPathNotFoundError
             If a join path cannot be identified
-        AmbiguousEntityRelationshipError
-            If no unique join path can be identified due to ambiguous relationships
         """
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
         queued = set()
-        result = None
 
         while pending:
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity.id in available_entity_ids and result is None:
-                # Do not exit early, continue to see if there are multiple join paths (can be
-                # detected when an entity is queued more than once)
-                result = updated_path
+            if current_entity.id in available_entity_ids:
+                return updated_path
 
             children_entities = await self.entity_service.get_children_entities(current_entity.id)
             for child_entity in children_entities:
                 if child_entity.name not in queued:
                     queued.add(child_entity.name)
                     pending.append((child_entity, updated_path))
-                else:
-                    # There should be only one way to obtain the parent entity. Raise an error
-                    # otherwise.
-                    raise AmbiguousEntityRelationshipError(
-                        f"Cannot find an unambiguous join path for entity {required_entity.name}"
-                    )
-
-        if result is not None:
-            return result
 
         raise EntityJoinPathNotFoundError(
             f"Cannot find a join path for entity {required_entity.name}"
