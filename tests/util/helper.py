@@ -12,7 +12,7 @@ import re
 import sys
 import tempfile
 import textwrap
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -949,3 +949,28 @@ def check_null_filling_value(graph, node_name, expected_value):
     node = graph.get_node_by_name(node_name)
     state = NullFillingValueExtractor(graph=graph).extract(node=node)
     assert state.fill_value == expected_value, state
+
+
+@asynccontextmanager
+async def manage_document(doc_service, create_data, storage):
+    """Asynchronously create and delete a document on exit."""
+    doc = None
+    try:
+        # Asynchronously create the document and yield control back to the caller
+        doc = await doc_service.create_document(data=create_data)
+
+        # check remote paths are created
+        for path in doc.remote_attribute_paths:
+            full_path = os.path.join(storage.base_path, path)
+            assert os.path.exists(full_path), f"Remote path {full_path} not created"
+
+        yield doc
+    finally:
+        if doc:
+            # Ensure the document is deleted even if an exception occurs
+            await doc_service.delete_document(document_id=doc.id)
+
+            # check remote paths are deleted
+            for path in doc.remote_attribute_paths:
+                full_path = os.path.join(storage.base_path, path)
+                assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"

@@ -15,6 +15,7 @@ from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.storage import Storage
 
 
 class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityServiceUpdate]):
@@ -31,9 +32,17 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         catalog_id: Optional[ObjectId],
         catalog_name_injector: CatalogNameInjector,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.catalog_name_injector = catalog_name_injector
 
     @staticmethod

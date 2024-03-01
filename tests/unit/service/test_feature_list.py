@@ -1,6 +1,9 @@
 """
 Test feature list service class
 """
+import os
+from unittest.mock import patch
+
 import pytest
 from bson.objectid import ObjectId
 
@@ -23,7 +26,7 @@ from featurebyte.schema.feature_list import (
 
 
 @pytest.mark.asyncio
-async def test_update_document__duplicated_feature_error(feature_list_service, feature_list):
+async def test_create_document__duplicated_feature_error(feature_list_service, feature_list):
     """Test feature creation - document inconsistency error"""
     data_dict = feature_list.dict(by_alias=True)
     data_dict["_id"] = ObjectId()
@@ -34,6 +37,48 @@ async def test_update_document__duplicated_feature_error(feature_list_service, f
         )
     expected_msg = "Two Feature objects must not share the same name in a FeatureList object."
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_document__clean_up_remote_attributes_on_error(
+    feature, feature_list_service, storage
+):
+    """Test clean up remote attributes on feature list creation error"""
+    feature_list_id = ObjectId()
+    catalog_id = feature.catalog_id
+    expected_full_path = os.path.join(
+        storage.base_path,
+        f"catalog/{catalog_id}/feature_list/{feature_list_id}/feature_clusters.json",
+    )
+
+    def _create_feature_list(feature_list, features):
+        _ = features
+        assert feature_list.id == feature_list_id
+
+        # check that the remote path exists
+        full_path = os.path.join(storage.base_path, feature_list.feature_clusters_path)
+        assert full_path == expected_full_path
+        assert os.path.exists(full_path)
+
+        # raise an error to simulate an error during feature list creation
+        raise DocumentError("Some random error")
+
+    with patch(
+        "featurebyte.service.feature_list.FeatureListService._create_document"
+    ) as mock_feature_list:
+        mock_feature_list.side_effect = _create_feature_list
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(
+                data=FeatureListServiceCreate(
+                    _id=feature_list_id,
+                    name="some_name",
+                    feature_ids=[feature.id],
+                )
+            )
+            assert "Some random error" in str(exc.value)
+
+    # check that the remote path has been removed
+    assert not os.path.exists(expected_full_path)
 
 
 @pytest.mark.asyncio
@@ -224,3 +269,10 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
             document_id=feature_list.id,
             readiness_distribution=FeatureReadinessDistribution(__root__=[]),
         )
+
+    # remove block modification by so that the feature list can be removed later
+    await feature_list_service.remove_block_modification_by(
+        query_filter={"_id": feature_list.id}, reference_info=reference_info
+    )
+    updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert updated_feature_list.block_modification_by == []

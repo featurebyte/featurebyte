@@ -59,6 +59,7 @@ class FeastRegistryService(
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
             redis=redis,
         )
         self.feature_list_service = feature_list_service
@@ -68,7 +69,6 @@ class FeastRegistryService(
         self.online_store_service = online_store_service
         self.catalog_service = catalog_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
-        self.storage = storage
 
     def get_registry_storage_lock(self, timeout: int) -> Lock:
         """
@@ -154,7 +154,9 @@ class FeastRegistryService(
 
         query_result = await self.list_documents_as_dict(query_filter=query_filter, page_size=1)
         if query_result["total"]:
-            registry = await self._populate_registry(FeastRegistryModel(**query_result["data"][0]))
+            registry = await self._populate_remote_attributes(
+                FeastRegistryModel(**query_result["data"][0])
+            )
             return registry
 
         registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[]))
@@ -242,13 +244,15 @@ class FeastRegistryService(
             feature_store_id=feature_store_id,
         )
 
-    async def _populate_registry(self, document: FeastRegistryModel) -> FeastRegistryModel:
+    async def _populate_remote_attributes(self, document: FeastRegistryModel) -> FeastRegistryModel:
         if document.registry_path:
             document.registry = await self.storage.get_bytes(Path(document.registry_path))
         return document
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
-        feast_registry_path = Path(f"feast_registry/{document.id}/feast_registry.pb")
+        feast_registry_path = self.get_full_remote_file_path(
+            f"feast_registry/{document.id}/feast_registry.pb"
+        )
         await self.storage.put_bytes(document.registry, feast_registry_path)
         document.registry_path = str(feast_registry_path)
         document.registry = b""
@@ -274,21 +278,6 @@ class FeastRegistryService(
             )
             document = await self._move_registry_to_storage(document)
             return await super().create_document(data=document)  # type: ignore
-
-    async def get_document(
-        self,
-        document_id: ObjectId,
-        exception_detail: str | None = None,
-        use_raw_query_filter: bool = False,
-        **kwargs: Any,
-    ) -> FeastRegistryModel:
-        document = await super().get_document(
-            document_id=document_id,
-            exception_detail=exception_detail,
-            use_raw_query_filter=use_raw_query_filter,
-            **kwargs,
-        )
-        return await self._populate_registry(document)
 
     async def update_document(
         self,
@@ -341,5 +330,5 @@ class FeastRegistryService(
         async for feast_registry_model in self.list_documents_iterator(
             query_filter={"catalog_id": self.catalog_id}
         ):
-            return await self._populate_registry(feast_registry_model)
+            return await self._populate_remote_attributes(feast_registry_model)
         return None

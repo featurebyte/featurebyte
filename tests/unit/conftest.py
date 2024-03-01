@@ -9,6 +9,7 @@ import os
 import tempfile
 import traceback
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID, uuid4
@@ -58,7 +59,6 @@ from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
@@ -128,8 +128,8 @@ def storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
+    with tempfile.TemporaryDirectory(suffix=f"_{ObjectId()}") as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
 
 
 @pytest.fixture(name="temp_storage")
@@ -137,8 +137,8 @@ def temp_storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
+    with tempfile.TemporaryDirectory(suffix=f"_{ObjectId()}") as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
 
 
 @pytest.fixture(name="mock_get_persistent")
@@ -1985,7 +1985,7 @@ def catalog_fixture(snowflake_feature_store):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
 
@@ -1999,9 +1999,9 @@ def app_container_fixture(persistent, user, catalog):
         instance_map={
             "user": user,
             "persistent": persistent,
-            "temp_storage": LocalTempStorage(),
+            "temp_storage": temp_storage,
             "celery": get_celery(),
-            "storage": LocalTempStorage(),
+            "storage": storage,
             "catalog_id": catalog.id,
             "task_id": uuid4(),
             "progress": Mock(),
@@ -2276,3 +2276,13 @@ def mock_graph_clear_period_fixture():
         # mock graph clear period to high value to clearing graph in tests
         # clearing graph in tests will cause test failures as the task & client sharing the same process space
         yield
+
+
+@pytest.fixture(autouse=True)
+def patch_app_get_storage(storage, temp_storage):
+    """Patch app get storage"""
+    with patch("featurebyte.app.get_storage") as mock_get_storage:
+        with patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
+            mock_get_storage.return_value = storage
+            mock_get_temp_storage.return_value = temp_storage
+            yield

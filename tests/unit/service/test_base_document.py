@@ -67,25 +67,27 @@ class NonAuditableDocumentService(BaseDocumentService):
 
 
 @pytest.fixture(name="document_service")
-def document_service_fixture(user, persistent):
+def document_service_fixture(user, persistent, storage):
     """Fixture for DocumentService"""
     return DocumentService(
         user=user,
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
         redis=Mock(),
     )
 
 
 @pytest.fixture(name="non_auditable_document_service")
-def non_auditable_document_service_fixture(user, persistent):
+def non_auditable_document_service_fixture(user, persistent, storage):
     """Fixture for NonAuditableDocumentService"""
     return NonAuditableDocumentService(
         user=user,
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
         redis=Mock(),
     )
 
@@ -124,7 +126,7 @@ def non_auditable_document_service_fixture(user, persistent):
     ],
 )
 async def test_check_document_creation_conflict(
-    query_filter, conflict_signature, resolution_signature, expected_msg
+    query_filter, conflict_signature, resolution_signature, expected_msg, storage
 ):
     """
     Test check_document_creation_conflict error message
@@ -138,6 +140,7 @@ async def test_check_document_creation_conflict(
             persistent=persistent,
             catalog_id=None,
             block_modification_handler=BlockModificationHandler(),
+            storage=storage,
             redis=Mock(),
         )._check_document_unique_constraint(
             query_filter=query_filter,
@@ -578,7 +581,7 @@ async def test_document_disable_block_modification_check(
         assert document.name == "new_name"
 
 
-def test_catalog_specific_service_requires_catalog_id(user, persistent):
+def test_catalog_specific_service_requires_catalog_id(user, persistent, storage):
     """
     Test catalog specific service initialization without catalog_id
     """
@@ -592,6 +595,7 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
                 persistent=persistent,
                 catalog_id=None,
                 block_modification_handler=BlockModificationHandler(),
+                storage=storage,
                 redis=Mock(),
             )
         assert str(exc.value) == "Catalog not specified. Please specify a catalog."

@@ -1,7 +1,9 @@
 """
 Feast registry model
 """
-from typing import Optional
+from typing import List, Optional
+
+from pathlib import Path
 
 import pymongo
 
@@ -23,6 +25,13 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     registry: bytes = Field(default_factory=bytes, exclude=True)
     feature_store_id: PydanticObjectId
     registry_path: Optional[str] = Field(default=None)
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.registry_path:
+            paths.append(Path(self.registry_path))
+        return paths
 
     def registry_proto(self) -> RegistryProto:
         """

@@ -33,7 +33,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     document_class = TargetTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.TARGET_TABLE
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -43,6 +43,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
         session_manager_service: SessionManagerService,
         temp_storage: Storage,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -53,6 +54,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
             feature_store_service,
             entity_service,
             block_modification_handler,
+            storage,
             redis,
         )
         self.temp_storage = temp_storage

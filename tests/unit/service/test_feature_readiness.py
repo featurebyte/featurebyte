@@ -39,7 +39,9 @@ async def test_update_feature_list__no_update(feature_readiness_service, feature
         from_readiness="DRAFT",
         to_readiness="DRAFT",
     )
-    assert updated_feature_list == feature_list.dict(by_alias=True)
+    expected = feature_list.dict(by_alias=True)
+    expected["feature_clusters"] = None
+    assert updated_feature_list == expected
 
 
 @pytest.mark.asyncio

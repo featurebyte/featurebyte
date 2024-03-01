@@ -1,12 +1,15 @@
 """
 Test feast registry service
 """
+import os
+
 import pytest
 import pytest_asyncio
 from google.protobuf.json_format import MessageToDict
 
 from featurebyte.common.model_util import get_version
-from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
+from featurebyte.exception import DocumentNotFoundError
+from featurebyte.feast.schema.registry import FeastRegistryUpdate
 
 
 @pytest.fixture(autouse=True)
@@ -30,19 +33,32 @@ def feast_feature_store_service_fixture(app_container):
 
 
 @pytest_asyncio.fixture(name="feast_registry")
-async def feast_registry_fixture(feast_registry_service, feature_list, mock_deployment_flow):
+async def feast_registry_fixture(
+    feast_registry_service, feature_list, mock_deployment_flow, storage
+):
     """Feast registry fixture"""
     _ = mock_deployment_flow
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
-    feature_list_model = feature_list.cached_model
-    registry = await feast_registry_service.create_document(
-        data=FeastRegistryCreate(
-            feature_lists=[feature_list_model],
-        )
-    )
-    return registry
+    registry = await feast_registry_service.get_feast_registry_for_catalog()
+    assert registry is not None
+
+    # check that the registry file is created
+    full_path = os.path.join(storage.base_path, registry.registry_path)
+    assert os.path.exists(full_path)
+
+    try:
+        yield registry
+    finally:
+        try:
+            registry = await feast_registry_service.get_document(document_id=registry.id)
+            await feast_registry_service.delete_document(document_id=registry.id)
+
+            # check that the registry file is deleted
+            assert not os.path.exists(full_path)
+        except DocumentNotFoundError:
+            pass
 
 
 @pytest.mark.asyncio
