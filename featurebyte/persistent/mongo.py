@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, ca
 import asyncio
 import copy
 from asyncio import iscoroutine
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 
 import pymongo
@@ -223,10 +224,12 @@ class MongoDB(Persistent):
             Retrieved documents
         """
         if sort_by:
-            sort = {
-                str(sort_key): pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING
-                for sort_key, sort_dir in sort_by
-            }
+            sort = OrderedDict(
+                [
+                    (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
+                    for sort_key, sort_dir in sort_by
+                ]
+            )
             if "_id" not in sort:
                 sort["_id"] = pymongo.DESCENDING  # break ties using _id
         else:
