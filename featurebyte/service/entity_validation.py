@@ -3,7 +3,7 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from featurebyte.exception import (
     EntityJoinPathNotFoundError,
@@ -11,6 +11,7 @@ from featurebyte.exception import (
     UnexpectedServingNamesMappingError,
 )
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -37,8 +38,8 @@ class EntityValidationService:
 
     async def get_entity_info_from_request(
         self,
-        graph: QueryGraphModel,
-        nodes: list[Node],
+        graph_nodes: Optional[Tuple[QueryGraphModel, list[Node]]],
+        feature_list_model: Optional[FeatureListModel],
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> EntityInfo:
@@ -47,10 +48,10 @@ class EntityValidationService:
 
         Parameters
         ----------
-        graph : QueryGraphModel
-            Query graph
-        nodes : list[Node]
-            List of query graph node
+        graph_nodes : Optional[Tuple[QueryGraphModel, list[Node]]
+            Query graph and nodes
+        feature_list_model: Optional[FeatureListModel]
+            Feature list model
         request_column_names: set[str]
             Column names provided in the request
         serving_names_mapping : dict[str, str] | None
@@ -74,17 +75,27 @@ class EntityValidationService:
                 return inv_serving_names_mapping[serving_name]
             return serving_name
 
-        planner = FeatureExecutionPlanner(
-            graph=graph,
-            is_online_serving=False,
-            serving_names_mapping=serving_names_mapping,
-        )
-        plan = planner.generate_plan(nodes)
+        # Infer provided entities from provided request columns
         candidate_serving_names = {_get_original_serving_name(col) for col in request_column_names}
         provided_entities = await self.entity_service.get_entities_with_serving_names(
             candidate_serving_names
         )
-        required_entities = await self.entity_service.get_entities(plan.required_entity_ids)
+
+        # Extract required entities from feature list (faster) or graph
+        if feature_list_model is not None:
+            required_entities = await self.entity_service.get_entities(
+                set(feature_list_model.entity_ids)
+            )
+        else:
+            assert graph_nodes is not None
+            graph, nodes = graph_nodes
+            planner = FeatureExecutionPlanner(
+                graph=graph,
+                is_online_serving=False,
+                serving_names_mapping=serving_names_mapping,
+            )
+            plan = planner.generate_plan(nodes)
+            required_entities = await self.entity_service.get_entities(plan.required_entity_ids)
 
         return EntityInfo(
             provided_entities=provided_entities,
@@ -94,10 +105,10 @@ class EntityValidationService:
 
     async def validate_entities_or_prepare_for_parent_serving(
         self,
-        graph: QueryGraphModel,
-        nodes: list[Node],
         request_column_names: set[str],
         feature_store: FeatureStoreModel,
+        graph_nodes: Optional[Tuple[QueryGraphModel, list[Node]]] = None,
+        feature_list_model: Optional[FeatureListModel] = None,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> Optional[ParentServingPreparation]:
         """
@@ -105,10 +116,10 @@ class EntityValidationService:
 
         Parameters
         ----------
-        graph : QueryGraphModel
-            Query graph
-        nodes : list[Node]
-            List of query graph node
+        graph_nodes : Optional[Tuple[QueryGraphModel, list[Node]]]
+            Query graph and nodes
+        feature_list_model: Optional[FeatureListModel]
+            Feature list model
         request_column_names: set[str]
             Column names provided in the request
         feature_store: FeatureStoreModel
@@ -129,10 +140,11 @@ class EntityValidationService:
         UnexpectedServingNamesMappingError
             When unexpected keys are provided in serving_names_mapping
         """
+        assert graph_nodes is not None or feature_list_model is not None
 
         entity_info = await self.get_entity_info_from_request(
-            graph=graph,
-            nodes=nodes,
+            graph_nodes=graph_nodes,
+            feature_list_model=feature_list_model,
             request_column_names=request_column_names,
             serving_names_mapping=serving_names_mapping,
         )

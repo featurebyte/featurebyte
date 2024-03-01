@@ -180,8 +180,7 @@ class FeatureTableCacheService:
         nodes_only = [node for node, _ in nodes]
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=graph,
-                nodes=nodes_only,
+                graph_nodes=(graph, nodes_only),
                 request_column_names=request_column_names,
                 feature_store=feature_store,
                 serving_names_mapping=serving_names_mapping,

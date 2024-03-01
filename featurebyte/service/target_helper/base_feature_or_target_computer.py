@@ -3,7 +3,7 @@ Base class for feature or target computer
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
+from typing import Any, Callable, Coroutine, Generic, List, Optional, Tuple, TypeVar, Union
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -169,8 +169,8 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
 
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=validation_parameters.graph,
-                nodes=validation_parameters.nodes,
+                graph_nodes=(validation_parameters.graph, validation_parameters.nodes),
+                feature_list_model=validation_parameters.feature_list_model,
                 request_column_names=request_column_names,
                 feature_store=validation_parameters.feature_store,
                 serving_names_mapping=validation_parameters.serving_names_mapping,

@@ -15,6 +15,7 @@ from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
@@ -73,6 +74,7 @@ class ValidationParameters:
     graph: QueryGraph
     nodes: List[Node]
     feature_store: FeatureStoreModel
+    feature_list_model: Optional[FeatureListModel] = None
     serving_names_mapping: Optional[dict[str, str]] = None
 
 
@@ -203,8 +205,8 @@ class FeatureOrTargetTableController(
 
         validation_parameters = await self.get_validation_parameters(data)
         await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-            graph=validation_parameters.graph,
-            nodes=validation_parameters.nodes,
+            graph_nodes=(validation_parameters.graph, validation_parameters.nodes),
+            feature_list_model=validation_parameters.feature_list_model,
             request_column_names=request_column_names,
             feature_store=validation_parameters.feature_store,
             serving_names_mapping=validation_parameters.serving_names_mapping,

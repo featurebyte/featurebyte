@@ -187,8 +187,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 document_id=feature_table_model.feature_cluster.feature_store_id
             )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_table_model.feature_cluster.graph,
-                nodes=nodes,
+                graph_nodes=(feature_table_model.feature_cluster.graph, nodes),
+                feature_list_model=None,
                 request_column_names=set(feature_table_model.serving_names),
                 feature_store=feature_store,
             )

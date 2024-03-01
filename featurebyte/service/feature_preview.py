@@ -198,8 +198,8 @@ class FeaturePreviewService(PreviewService):
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=graph,
-                nodes=[feature_node],
+                graph_nodes=(graph, [feature_node]),
+                feature_list_model=None,
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )
@@ -278,13 +278,16 @@ class FeaturePreviewService(PreviewService):
             Dataframe converted to json string
         """
         if featurelist_preview.feature_list_id is not None:
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
+            feature_list_model = await self.feature_list_service.get_document(
                 featurelist_preview.feature_list_id
             )
+            feature_clusters = feature_list_model.feature_clusters
         else:
             assert featurelist_preview.feature_clusters is not None
+            feature_list_model = None
             feature_clusters = featurelist_preview.feature_clusters
 
+        assert feature_clusters is not None
         # Check if any of the features are time based
         has_time_based_feature = False
         for feature_cluster in feature_clusters:
@@ -315,8 +318,8 @@ class FeaturePreviewService(PreviewService):
                 feature_cluster.feature_store_id
             )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_cluster.graph,
-                nodes=feature_cluster.nodes,
+                graph_nodes=(feature_cluster.graph, feature_cluster.nodes),
+                feature_list_model=feature_list_model,
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )
@@ -423,13 +426,17 @@ class FeaturePreviewService(PreviewService):
             SQL statements
         """
         # multiple feature stores not supported
-        feature_clusters = featurelist_get_historical_features.feature_clusters
-        if not feature_clusters:
-            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
-                featurelist_get_historical_features.feature_list_id  # type: ignore[arg-type]
-            )
+        if featurelist_get_historical_features.feature_list_id is not None:
+            feature_clusters = (
+                await self.feature_list_service.get_document(
+                    featurelist_get_historical_features.feature_list_id
+                )
+            ).feature_clusters
+        else:
+            assert featurelist_get_historical_features.feature_clusters is not None
+            feature_clusters = featurelist_get_historical_features.feature_clusters
 
+        assert feature_clusters is not None
         assert len(feature_clusters) == 1
         feature_cluster = feature_clusters[0]
 

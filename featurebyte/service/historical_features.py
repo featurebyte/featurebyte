@@ -91,6 +91,64 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
             )
 
 
+class HistoricalFeaturesValidationParametersService:
+    """
+    Extracts ValidationParameters for historical features
+
+    For some reason, HistoricalFeaturesService cannot be injected to a service, only tasks
+    (something about the progress dependency from TaskProgressUpdater). To work around that, extract
+    this simpler service that can be reused.
+    """
+
+    def __init__(
+        self,
+        feature_store_service: FeatureStoreService,
+        feature_list_service: FeatureListService,
+    ):
+        self.feature_store_service = feature_store_service
+        self.feature_list_service = feature_list_service
+
+    async def get_validation_parameters(
+        self, request: FeatureListGetHistoricalFeatures
+    ) -> ValidationParameters:
+        """
+        Get ValidationParameters from FeatureListGetHistoricalFeatures
+
+        Parameters
+        ----------
+        request: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+
+        Returns
+        -------
+        ValidationParameters
+        """
+        if request.feature_clusters is not None:
+            feature_clusters = request.feature_clusters
+            feature_list_model = None
+        else:
+            assert request.feature_list_id is not None
+            feature_list_model = await self.feature_list_service.get_document(
+                request.feature_list_id
+            )
+            assert feature_list_model.feature_clusters is not None
+            feature_clusters = feature_list_model.feature_clusters
+
+        assert len(feature_clusters) > 0
+        feature_cluster = feature_clusters[0]
+        graph = feature_cluster.graph
+        nodes = feature_cluster.nodes
+        feature_store_id = feature_cluster.feature_store_id
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
+        return ValidationParameters(
+            graph=graph,
+            nodes=nodes,
+            feature_list_model=feature_list_model,
+            feature_store=feature_store,
+            serving_names_mapping=request.serving_names_mapping,
+        )
+
+
 class HistoricalFeaturesService(
     Computer[FeatureListGetHistoricalFeatures, HistoricalFeatureExecutorParams]
 ):
@@ -106,6 +164,7 @@ class HistoricalFeaturesService(
         query_executor: QueryExecutor[HistoricalFeatureExecutorParams],
         task_progress_updater: TaskProgressUpdater,
         feature_list_service: FeatureListService,
+        historical_features_validation_parameters_service: HistoricalFeaturesValidationParametersService,
     ):
         super().__init__(
             feature_store_service,
@@ -115,29 +174,17 @@ class HistoricalFeaturesService(
             task_progress_updater,
         )
         self.feature_list_service = feature_list_service
+        self.historical_features_validation_parameters_service = (
+            historical_features_validation_parameters_service
+        )
 
     async def get_validation_parameters(
         self, request: FeatureListGetHistoricalFeatures
     ) -> ValidationParameters:
-        # multiple feature stores not supported
-        feature_clusters = request.feature_clusters
-        if not feature_clusters:
-            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
-                request.feature_list_id  # type: ignore[arg-type]
+        return (
+            await self.historical_features_validation_parameters_service.get_validation_parameters(
+                request
             )
-
-        assert len(feature_clusters) == 1
-
-        feature_cluster = feature_clusters[0]
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_cluster.feature_store_id
-        )
-        return ValidationParameters(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            feature_store=feature_store,
-            serving_names_mapping=request.serving_names_mapping,
         )
 
     async def get_executor_params(
