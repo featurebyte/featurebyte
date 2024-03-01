@@ -3,7 +3,7 @@ This module contains Feature list related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import functools
 from collections import defaultdict
@@ -28,6 +28,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list_store_info import DataBricksStoreInfo, StoreInfo
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
@@ -219,6 +220,8 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(default_factory=list)
 
     @property
     def nodes(self) -> List[Node]:
@@ -467,11 +470,24 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             pruned_graph, mapped_nodes = get_combined_graph_and_nodes(
                 feature_objects=group_features
             )
+            feature_node_relationships_info = []
+            combined_relationships_info: Set[EntityRelationshipInfo] = set()
+            for feature, mapped_node in zip(group_features, mapped_nodes):
+                feature_node_relationships_info.append(
+                    FeatureNodeRelationshipsInfo(
+                        node_name=mapped_node.name,
+                        relationships_info=feature.relationships_info or [],
+                        primary_entity_ids=feature.primary_entity_ids,
+                    )
+                )
+                combined_relationships_info.update(feature.relationships_info or [])
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_id=feature_store_id,
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
+                    feature_node_relationships_infos=feature_node_relationships_info,
+                    combined_relationships_info=combined_relationships_info,
                 )
             )
         return feature_clusters
