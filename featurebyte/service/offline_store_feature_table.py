@@ -88,6 +88,11 @@ class OfflineStoreFeatureTableService(
         Returns
         -------
         OfflineStoreFeatureTableModel
+
+        Raises
+        ------
+        Exception
+            If the document creation fails
         """
         if data.entity_lookup_info is None:
             # check if name already exists
