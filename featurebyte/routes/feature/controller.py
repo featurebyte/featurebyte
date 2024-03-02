@@ -103,7 +103,6 @@ class FeatureController(
         payload = BatchFeatureCreateTaskPayload(
             **{
                 **data.dict(by_alias=True),
-                "conflict_resolution": "raise",
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
             }

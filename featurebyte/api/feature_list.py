@@ -655,20 +655,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         assert self.name is not None, "FeatureList name cannot be None"
         self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-
-        # prepare feature list batch feature create payload
-        feature_list_batch_feature_create = self._get_feature_list_batch_feature_create_payload(
-            feature_list_id=self.id,
+        self._save_feature_list(
             feature_list_name=self.name,
+            feature_list_id=self.id,
             conflict_resolution=conflict_resolution,
         )
-        self.post_async_task(
-            route="/feature_list/batch",
-            payload=feature_list_batch_feature_create.json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
-        )
-        object_dict = self._get_object_dict_by_id(id_value=feature_list_batch_feature_create.id)
+        object_dict = self._get_object_dict_by_id(id_value=self.id)
         type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     def delete(self) -> None:

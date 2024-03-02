@@ -43,7 +43,12 @@ from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.feature import BatchFeatureItem
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.schema.feature import (
+    MAX_BATCH_FEATURE_ITEM_COUNT,
+    BatchFeatureCreatePayload,
+    BatchFeatureItem,
+)
 from featurebyte.schema.feature_list import (
     FeatureListCreateWithBatchFeatureCreationPayload,
     FeatureListPreview,
@@ -392,17 +397,19 @@ class BaseFeatureGroup(AsyncMixin):
             response.json(),
         )
 
-    def _get_feature_list_batch_feature_create_payload(
+    def _get_batch_feature_create_payload(
         self,
-        feature_list_id: ObjectId,
-        feature_list_name: str,
+        feature_names: List[str],
         conflict_resolution: ConflictResolution,
-    ) -> FeatureListCreateWithBatchFeatureCreationPayload:
+    ) -> Tuple[BatchFeatureCreatePayload, List[BatchFeatureItem]]:
         pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-            target_node_names=[feat.node_name for feat in self.feature_objects.values()]
+            target_node_names=[
+                self.feature_objects[feat_name].node_name for feat_name in feature_names
+            ]
         )
         batch_feature_items = []
-        for feat in self.feature_objects.values():
+        for feat_name in feature_names:
+            feat = self.feature_objects[feat_name]
             batch_feature_items.append(
                 BatchFeatureItem(
                     id=feat.id,
@@ -411,14 +418,69 @@ class BaseFeatureGroup(AsyncMixin):
                     tabular_source=feat.tabular_source,
                 )
             )
-        feature_list_create = FeatureListCreateWithBatchFeatureCreationPayload(
-            name=feature_list_name,
-            conflict_resolution=conflict_resolution,
+
+        # if feature with same name already exists, retrieve it
+        batch_feature_create = BatchFeatureCreatePayload(
             graph=pruned_graph,
             features=batch_feature_items,
-            _id=feature_list_id,
+            conflict_resolution=conflict_resolution,
         )
-        return feature_list_create
+        return batch_feature_create, batch_feature_items
+
+    @staticmethod
+    def _get_feature_list_create_with_batch_feature_creation_payload(
+        feature_list_id: ObjectId,
+        feature_list_name: str,
+        features: List[BatchFeatureItem],
+        conflict_resolution: ConflictResolution,
+    ) -> FeatureListCreateWithBatchFeatureCreationPayload:
+        return FeatureListCreateWithBatchFeatureCreationPayload(
+            _id=feature_list_id,
+            name=feature_list_name,
+            features=features,
+            graph=QueryGraphModel(),
+            conflict_resolution=conflict_resolution,
+            skip_batch_feature_creation=True,
+        )
+
+    def _save_feature_list(
+        self,
+        feature_list_name: str,
+        feature_list_id: ObjectId,
+        conflict_resolution: ConflictResolution,
+    ) -> None:
+        # save features in batch
+        feature_names = self.feature_names
+        batch_size = MAX_BATCH_FEATURE_ITEM_COUNT
+        feature_items = []
+        for idx in range(0, len(feature_names), batch_size):
+            batch_feature_names = feature_names[idx : idx + batch_size]
+            batch_feature_create, batch_feature_items = self._get_batch_feature_create_payload(
+                feature_names=batch_feature_names, conflict_resolution=conflict_resolution
+            )
+            feature_items.extend(batch_feature_items)
+            self.post_async_task(
+                route="/feature/batch",
+                payload=batch_feature_create.json_dict(),
+                retrieve_result=False,
+                has_output_url=False,
+            )
+
+        # prepare feature list batch feature create payload
+        feature_list_batch_feature_create = (
+            self._get_feature_list_create_with_batch_feature_creation_payload(
+                feature_list_id=feature_list_id,
+                feature_list_name=feature_list_name,
+                features=feature_items,
+                conflict_resolution=conflict_resolution,
+            )
+        )
+        self.post_async_task(
+            route="/feature_list/batch",
+            payload=feature_list_batch_feature_create.json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
 
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
@@ -493,27 +555,19 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         ... ])
         >>> features.save()  # doctest: +SKIP
         """
-        # prepare batch feature create payload
-        feature_list_batch_feature_create = self._get_feature_list_batch_feature_create_payload(
-            feature_list_id=ObjectId(),
+        temp_feature_list_id = ObjectId()
+        self._save_feature_list(
+            feature_list_id=temp_feature_list_id,
             feature_list_name=f"_temporary_feature_list_{datetime.now()}",
             conflict_resolution=conflict_resolution,
         )
 
-        # save temporary feature list with list of features
-        self.post_async_task(
-            route="/feature_list/batch",
-            payload=feature_list_batch_feature_create.json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
-        )
-
         try:
             feature_list_dict = get_api_object_by_id(
-                route="/feature_list", id_value=feature_list_batch_feature_create.id
+                route="/feature_list", id_value=temp_feature_list_id
             )
             items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
-                feature_list_id=feature_list_batch_feature_create.id,
+                feature_list_id=temp_feature_list_id,
                 feature_ids=feature_list_dict["feature_ids"],
             )
             self.items = items
@@ -521,6 +575,4 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
         finally:
             # delete temporary feature list
-            delete_api_object_by_id(
-                route="/feature_list", id_value=feature_list_batch_feature_create.id
-            )
+            delete_api_object_by_id(route="/feature_list", id_value=temp_feature_list_id)

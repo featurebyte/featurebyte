@@ -49,6 +49,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     conflict_resolution: ConflictResolution
+    skip_batch_feature_creation: bool = Field(default=False)
 
 
 class FeatureListCreateWithBatchFeatureCreationPayload(

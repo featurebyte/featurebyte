@@ -967,6 +967,83 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"feature/{feature_create2.id}")
         assert response.status_code == HTTPStatus.OK
 
+    def test_feature_list_batch_feature_create__success_when_skip_batch_feature_creation(
+        self, test_api_client_persistent
+    ):
+        """Test batch feature create async task (success)"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        feature_list_id = str(ObjectId())
+
+        payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [
+                {
+                    "id": str(ObjectId()),
+                    "name": "sum_30m",
+                    "node_name": "non_exist_node",
+                    "tabular_source": {
+                        "feature_store_id": str(ObjectId()),
+                        "table_details": {
+                            "database_name": "db",
+                            "schema_name": "schema",
+                            "table_name": "table",
+                        },
+                    },
+                },
+            ],
+            "graph": {"nodes": [], "edges": []},
+            "conflict_resolution": "retrieve",
+            "skip_batch_feature_creation": True,
+        }
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=payload)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        # retrieve feature list
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "test_feature_list"
+
+    def test_feature_list_batch_feature_create__failure_when_skip_batch_feature_creation(
+        self,
+        test_api_client_persistent,
+    ):
+        """Test batch feature create async task (failure)"""
+        test_api_client, _ = test_api_client_persistent
+
+        unsaved_feature_id = str(ObjectId())
+        payload = {
+            "name": "test_feature_list",
+            "features": [
+                {
+                    "id": unsaved_feature_id,
+                    "name": "non_exist_feature",
+                    "node_name": "non_exist_node",
+                    "tabular_source": {
+                        "feature_store_id": str(ObjectId()),
+                        "table_details": {
+                            "database_name": "db",
+                            "schema_name": "schema",
+                            "table_name": "table",
+                        },
+                    },
+                },
+            ],
+            "graph": {"nodes": [], "edges": []},
+            "conflict_resolution": "raise",
+            "skip_batch_feature_creation": True,
+        }
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=payload)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "FAILURE"
+        traceback = task_response.json()["traceback"]
+        expected_message = (
+            f'Feature (id: "{unsaved_feature_id}") not found. Please save the Feature object first.'
+        )
+        assert expected_message in traceback
+
     def test_request_sample_entity_serving_names(
         self,
         test_api_client_persistent,
