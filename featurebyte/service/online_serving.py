@@ -147,8 +147,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
 
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_cluster.graph,
-                nodes=feature_cluster.nodes,
+                feature_list_model=feature_list,
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )

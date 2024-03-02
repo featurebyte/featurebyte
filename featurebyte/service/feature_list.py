@@ -527,29 +527,6 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
         return deleted_count
 
-    async def get_feature_clusters(self, feature_list_id: ObjectId) -> List[FeatureCluster]:
-        """
-        Get list of FeatureCluster from feature_list_id
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            input feature_list_id
-
-        Returns
-        -------
-        List[FeatureCluster]
-        """
-        feature_list = await self.get_document(document_id=feature_list_id)
-
-        features = []
-        async for feature in self.feature_service.list_documents_iterator(
-            query_filter={"_id": {"$in": feature_list.feature_ids}}
-        ):
-            features.append(feature)
-
-        return FeatureListModel.derive_feature_clusters(features)
-
     async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
         self, feature_list_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:

@@ -417,8 +417,8 @@ class HistoricalFeatureTableInfo(BaseFeatureOrTargetTableInfo):
     Schema for historical feature table info
     """
 
-    feature_list_name: str
-    feature_list_version: str
+    feature_list_name: Optional[str]
+    feature_list_version: Optional[str]
 
 
 class TargetTableInfo(BaseFeatureOrTargetTableInfo):

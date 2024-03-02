@@ -104,6 +104,7 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
     HistoricalFeaturesService,
+    HistoricalFeaturesValidationParametersService,
 )
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
@@ -273,6 +274,7 @@ app_container_config.register_class(HistoricalFeatureTableService)
 app_container_config.register_class(
     HistoricalFeaturesService, dependency_override={"query_executor": "historical_feature_executor"}
 )
+app_container_config.register_class(HistoricalFeaturesValidationParametersService)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(MongoBackedCredentialProvider)
