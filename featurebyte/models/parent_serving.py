@@ -5,9 +5,21 @@ from __future__ import annotations
 
 from typing import List
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
+
+
+class EntityLookupStep(FeatureByteBaseModel):
+    """
+    EntityLookupStep class
+    """
+
+    id: PydanticObjectId
+    child_entity: EntityModel
+    parent_entity: EntityModel
+    relation_table: ProxyTableModel
 
 
 class JoinStep(FeatureByteBaseModel):

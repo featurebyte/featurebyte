@@ -6,13 +6,11 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.entity_lookup_feature_table import (
-    EntityLookupStep,
-    get_entity_lookup_feature_tables,
-)
+from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_feature_tables
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService

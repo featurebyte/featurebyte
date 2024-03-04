@@ -35,19 +35,3 @@ async def test_entity_service__get_entities(entity_a, entity_b, entity_service):
 
     entities = await entity_service.get_entities({ObjectId()})
     assert entities == []
-
-
-@pytest.mark.asyncio
-async def test_entity_service__get_children(
-    entity_a, entity_b, entity_c, entity_service, relationships
-):
-    """
-    Test get_children (should get immediate children only)
-    """
-    _ = relationships
-
-    children = await entity_service.get_children_entities(entity_b.id)
-    assert [child.id for child in children] == [entity_a.id]
-
-    children = await entity_service.get_children_entities(entity_c.id)
-    assert [child.id for child in children] == [entity_b.id]

@@ -35,10 +35,7 @@ from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.entity_lookup_feature_table import (
-    EntityLookupStep,
-    get_entity_lookup_feature_tables,
-)
+from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_feature_tables
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -48,6 +45,7 @@ from featurebyte.models.offline_store_ingest_query import (
     get_time_aggregate_ttl_in_secs,
 )
 from featurebyte.models.online_store import OnlineStoreModel
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.entity import get_combined_serving_names
 

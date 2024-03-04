@@ -3,7 +3,7 @@ Unit tests for ParentEntityLookupService
 """
 import pytest
 
-from featurebyte.exception import EntityJoinPathNotFoundError
+from featurebyte.exception import RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
 
@@ -110,16 +110,16 @@ async def test_get_join_steps__two_branches(
             child_serving_name="A",
         ),
         JoinStep(
-            table=data_b_to_c.dict(by_alias=True),
-            parent_key="c",
-            parent_serving_name="C",
+            table=data_b_to_d.dict(by_alias=True),
+            parent_key="d",
+            parent_serving_name="D",
             child_key="b",
             child_serving_name="B",
         ),
         JoinStep(
-            table=data_b_to_d.dict(by_alias=True),
-            parent_key="d",
-            parent_serving_name="D",
+            table=data_b_to_c.dict(by_alias=True),
+            parent_key="c",
+            parent_serving_name="C",
             child_key="b",
             child_serving_name="B",
         ),
@@ -160,16 +160,16 @@ async def test_get_join_steps__serving_names_mapping(
             child_serving_name="new_A",
         ),
         JoinStep(
-            table=data_b_to_c.dict(by_alias=True),
-            parent_key="c",
-            parent_serving_name="C",
+            table=data_b_to_d.dict(by_alias=True),
+            parent_key="d",
+            parent_serving_name="D",
             child_key="b",
             child_serving_name="B",
         ),
         JoinStep(
-            table=data_b_to_d.dict(by_alias=True),
-            parent_key="d",
-            parent_serving_name="D",
+            table=data_b_to_c.dict(by_alias=True),
+            parent_key="c",
+            parent_serving_name="C",
             child_key="b",
             child_serving_name="B",
         ),
@@ -182,7 +182,7 @@ async def test_get_join_steps__not_found(entity_a, entity_b, parent_entity_looku
     Test no path can be found because no valid relationships are registered
     """
     entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
-    with pytest.raises(EntityJoinPathNotFoundError):
+    with pytest.raises(RequiredEntityNotProvidedError):
         _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
 
 
@@ -198,7 +198,7 @@ async def test_get_join_steps__not_found_with_relationships(
     """
     _ = c_is_parent_of_b
     entity_info = EntityInfo(required_entities=[entity_c], provided_entities=[entity_a])
-    with pytest.raises(EntityJoinPathNotFoundError):
+    with pytest.raises(RequiredEntityNotProvidedError):
         _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
 
 

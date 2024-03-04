@@ -10,8 +10,7 @@ from dataclasses import dataclass
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType, TableDataType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.entity import EntityModel
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
@@ -21,7 +20,7 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -32,17 +31,6 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
-
-
-class EntityLookupStep(FeatureByteBaseModel):
-    """
-    EntityLookupStep class
-    """
-
-    id: PydanticObjectId
-    child_entity: EntityModel
-    parent_entity: EntityModel
-    relation_table: ProxyTableModel
 
 
 @dataclass
