@@ -138,6 +138,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         MaterializedFeatures
             Metadata of the materialized features
         """
+        assert feature_table_model.feature_cluster is not None, "Missing feature cluster"
+
         # Create temporary batch request table with the universe of entities
         if session is None:
             session = await self._get_session(feature_table_model)
@@ -526,6 +528,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
+        assert feature_table_model.feature_cluster is not None, "Missing feature cluster"
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_table_model.feature_cluster.feature_store_id
         )

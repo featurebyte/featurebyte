@@ -2,6 +2,7 @@
 Test feast registry service
 """
 import os
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -152,3 +153,34 @@ async def test_get_feast_feature_store(
 
     fs_names = {feature_service.name for feature_service in feast_fs.list_feature_services()}
     assert fs_names == {f"test_feature_list_{get_version()}"}
+
+
+@pytest.mark.asyncio
+async def test_update_feast_registry__with_failure(
+    feast_registry_service,
+    feast_registry,
+):
+    """Test update feast registry"""
+    registry_path = os.path.join(
+        feast_registry_service.storage.base_path, feast_registry.registry_path
+    )
+
+    assert os.path.exists(registry_path)
+    with patch.object(feast_registry_service, "_move_registry_to_storage") as mock_move:
+        mock_move.side_effect = Exception("Random error")
+        with pytest.raises(Exception, match="Random error"):
+            await feast_registry_service.update_document(
+                document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
+            )
+
+    # check that the registry file is deleted
+    assert not os.path.exists(registry_path)
+
+    # update the registry again & check that the registry file is created
+    updated_doc = await feast_registry_service.update_document(
+        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
+    )
+    registry_path = os.path.join(
+        feast_registry_service.storage.base_path, updated_doc.registry_path
+    )
+    assert os.path.exists(registry_path)

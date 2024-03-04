@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from bson import ObjectId, json_util
+from redis.lock import Lock
 
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import (
@@ -19,6 +20,8 @@ from featurebyte.models.offline_store_feature_table import (
     OnlineStoresLastMaterializedAtUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService
+
+OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the lock in seconds
 
 
 class OfflineStoreFeatureTableService(
@@ -32,6 +35,23 @@ class OfflineStoreFeatureTableService(
 
     document_class = OfflineStoreFeatureTableModel
     document_update_class = OfflineStoreFeatureTableUpdate
+
+    def get_feature_cluster_storage_lock(self, document_id: ObjectId, timeout: int) -> Lock:
+        """
+        Get feature cluster storage lock
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            OfflineStoreFeatureTableModel id
+        timeout: int
+            Maximum life for the lock in seconds
+
+        Returns
+        -------
+        Lock
+        """
+        return self.redis.lock(f"offline_store_feature_table_update:{document_id}", timeout=timeout)
 
     async def get_or_create_document(
         self, data: OfflineStoreFeatureTableModel
@@ -78,26 +98,9 @@ class OfflineStoreFeatureTableService(
         document.feature_cluster = None
         return document
 
-    async def create_document(
+    async def _create_document(
         self, data: OfflineStoreFeatureTableModel
     ) -> OfflineStoreFeatureTableModel:
-        """
-        Create a new document
-
-        Parameters
-        ----------
-        data : OfflineStoreFeatureTableModel
-            Document data
-
-        Returns
-        -------
-        OfflineStoreFeatureTableModel
-
-        Raises
-        ------
-        Exception
-            If the document creation fails
-        """
         if data.entity_lookup_info is None:
             # check if name already exists
             data.name = data.get_name()
@@ -121,23 +124,43 @@ class OfflineStoreFeatureTableService(
                 await self.storage.delete(Path(data.feature_cluster_path))
             raise exc
 
-    async def update_document(
+    async def create_document(
+        self, data: OfflineStoreFeatureTableModel
+    ) -> OfflineStoreFeatureTableModel:
+        """
+        Create a new document
+
+        Parameters
+        ----------
+        data : OfflineStoreFeatureTableModel
+            Document data
+
+        Returns
+        -------
+        OfflineStoreFeatureTableModel
+        """
+        with self.get_feature_cluster_storage_lock(
+            data.id, timeout=OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT
+        ):
+            return await self._create_document(data)
+
+    async def _update_offline_feature_table(
         self,
         document_id: ObjectId,
         data: OfflineStoreFeatureTableUpdate,
         exclude_none: bool = True,
-        document: Optional[OfflineStoreFeatureTableModel] = None,
-        return_document: bool = True,
         skip_block_modification_check: bool = False,
-    ) -> Optional[OfflineStoreFeatureTableModel]:
-        original_doc = await self.get_document(document_id=document_id)
+    ) -> OfflineStoreFeatureTableModel:
+        original_doc = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         if isinstance(data, FeaturesUpdate):
             assert (
                 data.feature_cluster_path is None
             ), "feature_cluster_path should not be set in update"
             if original_doc.feature_cluster_path:
-                # remove the old feature cluster
-                await self.storage.delete(Path(original_doc.feature_cluster_path))
+                # attempt to remove the old feature cluster
+                await self.storage.try_delete_if_exists(Path(original_doc.feature_cluster_path))
 
             table = OfflineStoreFeatureTableModel(
                 **{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)}
@@ -151,10 +174,37 @@ class OfflineStoreFeatureTableService(
             data,
             exclude_none=exclude_none,
             document=original_doc,
-            return_document=return_document,
             skip_block_modification_check=skip_block_modification_check,
         )
+        assert output is not None
         return output
+
+    async def update_document(
+        self,
+        document_id: ObjectId,
+        data: OfflineStoreFeatureTableUpdate,
+        exclude_none: bool = True,
+        document: Optional[OfflineStoreFeatureTableModel] = None,
+        return_document: bool = True,
+        skip_block_modification_check: bool = False,
+    ) -> Optional[OfflineStoreFeatureTableModel]:
+        if isinstance(data, FeaturesUpdate):
+            with self.get_feature_cluster_storage_lock(
+                document_id, timeout=OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT
+            ):
+                return await self._update_offline_feature_table(
+                    document_id,
+                    data,
+                    exclude_none=exclude_none,
+                    skip_block_modification_check=skip_block_modification_check,
+                )
+
+        return await self._update_offline_feature_table(
+            document_id,
+            data,
+            exclude_none=exclude_none,
+            skip_block_modification_check=skip_block_modification_check,
+        )
 
     async def update_online_last_materialized_at(
         self,
