@@ -5,6 +5,7 @@ import textwrap
 from datetime import datetime
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import SourceType
 from featurebyte.models.entity_universe import (
@@ -13,7 +14,7 @@ from featurebyte.models.entity_universe import (
     get_combined_universe,
     get_entity_universe_constructor,
 )
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 
@@ -75,12 +76,19 @@ def join_steps(snowflake_scd_table_with_entity):
     Fixture for a join steps to be applied when constructing entity universe
     """
     return [
-        JoinStep(
+        EntityLookupStep(
+            id=ObjectId(),
             table=snowflake_scd_table_with_entity.cached_model,
-            parent_key="col_text",
-            parent_serving_name="cust_id",
-            child_key="cust_id_child",
-            child_serving_name="cust_id_child_serving_name",
+            parent=EntityLookupInfo(
+                key="col_text",
+                serving_name="cust_id",
+                entity_id=ObjectId(),
+            ),
+            child=EntityLookupInfo(
+                key="cust_id_child",
+                serving_name="cust_id_child_serving_name",
+                entity_id=ObjectId(),
+            ),
         )
     ]
 

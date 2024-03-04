@@ -10,8 +10,7 @@ from dataclasses import dataclass
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType, TableDataType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.entity import EntityModel
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
@@ -21,7 +20,7 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -32,17 +31,6 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
-
-
-class EntityLookupStep(FeatureByteBaseModel):
-    """
-    EntityLookupStep class
-    """
-
-    id: PydanticObjectId
-    child_entity: EntityModel
-    parent_entity: EntityModel
-    relation_table: ProxyTableModel
 
 
 @dataclass
@@ -141,10 +129,10 @@ def get_entity_lookup_feature_tables(
         entity_lookup_feature_table_model = OfflineStoreFeatureTableModel(
             name=get_lookup_feature_table_name(lookup_step.id),
             feature_ids=[],
-            primary_entity_ids=[lookup_step.child_entity.id],
-            serving_names=[lookup_step.child_entity.serving_names[0]],
+            primary_entity_ids=[lookup_step.child.entity_id],
+            serving_names=[lookup_step.child.serving_name],
             feature_cluster=feature_cluster,
-            output_column_names=[lookup_step.parent_entity.serving_names[0]],
+            output_column_names=[lookup_step.parent.serving_name],
             output_dtypes=[lookup_graph_result.feature_dtype],
             entity_universe=entity_universe,
             has_ttl=False,
@@ -160,24 +148,17 @@ def _get_entity_lookup_graph(
     lookup_step: EntityLookupStep,
     feature_store: FeatureStoreModel,
 ) -> EntityLookupGraphResult:
-    relation_table = lookup_step.relation_table
+    relation_table = lookup_step.table
     graph = QueryGraph()
     input_node = graph.add_operation_node(
         node=relation_table.construct_input_node(feature_store_details=feature_store),
         input_nodes=[],
     )
 
-    child_column_name = None
-    parent_column_name = None
     feature_dtype = None
     for column_info in relation_table.columns_info:
-        if column_info.entity_id == lookup_step.child_entity.id:
-            child_column_name = column_info.name
-        elif column_info.entity_id == lookup_step.parent_entity.id:
-            parent_column_name = column_info.name
+        if column_info.entity_id == lookup_step.parent.entity_id:
             feature_dtype = column_info.dtype
-    assert child_column_name is not None
-    assert parent_column_name is not None
     assert feature_dtype is not None
 
     additional_params: Dict[str, Any]
@@ -204,11 +185,11 @@ def _get_entity_lookup_graph(
     lookup_node = graph.add_operation(
         node_type=NodeType.LOOKUP,
         node_params={
-            "input_column_names": [parent_column_name],
-            "feature_names": [lookup_step.parent_entity.serving_names[0]],
-            "entity_column": child_column_name,
-            "serving_name": lookup_step.child_entity.serving_names[0],
-            "entity_id": lookup_step.child_entity.id,
+            "input_column_names": [lookup_step.parent.key],
+            "feature_names": [lookup_step.parent.serving_name],
+            "entity_column": lookup_step.child.key,
+            "serving_name": lookup_step.child.serving_name,
+            "entity_id": lookup_step.child.entity_id,
             **additional_params,
         },
         node_output_type=NodeOutputType.FRAME,
@@ -216,7 +197,7 @@ def _get_entity_lookup_graph(
     )
     feature_node = graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": [lookup_step.parent_entity.serving_names[0]]},
+        node_params={"columns": [lookup_step.parent.serving_name]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[lookup_node],
     )

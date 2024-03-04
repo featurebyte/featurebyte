@@ -1452,11 +1452,18 @@ def parent_serving_preparation_fixture():
     parent_serving_preparation = ParentServingPreparation(
         join_steps=[
             {
+                "id": ObjectId(),
                 "table": data_model,
-                "parent_key": "col_int",
-                "parent_serving_name": "COL_INT",
-                "child_key": "col_text",
-                "child_serving_name": "COL_TEXT",
+                "parent": {
+                    "key": "col_int",
+                    "serving_name": "COL_INT",
+                    "entity_id": ObjectId(),
+                },
+                "child": {
+                    "key": "col_text",
+                    "serving_name": "COL_TEXT",
+                    "entity_id": ObjectId(),
+                },
             }
         ],
         feature_store_details=feature_store_details,

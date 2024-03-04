@@ -166,13 +166,6 @@ class UnexpectedServingNamesMappingError(BaseUnprocessableEntityError):
     """
 
 
-class EntityJoinPathNotFoundError(FeatureByteException):
-    """
-    Raised when it is not possible to identify a join path to an entity using the provided entities
-    as children entities
-    """
-
-
 class InvalidSettingsError(FeatureByteException):
     """
     Raised when configuration has invalid settings

@@ -18,21 +18,22 @@ from bson.objectid import ObjectId
 from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.entity import ParentEntity
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
-from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
+from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
@@ -845,7 +846,7 @@ async def entity_e_fixture(entity_service):
 async def create_table_and_add_parent(
     test_dir,
     event_table_service,
-    entity_service,
+    relationship_info_service,
     child_entity,
     parent_entity,
     child_column,
@@ -860,18 +861,24 @@ async def create_table_and_add_parent(
         event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
     )
-    parents = (await entity_service.get_document(child_entity.id)).parents
-    parents += [ParentEntity(id=parent_entity.id, table_type=table.type, table_id=table.id)]
-    update_parents = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(child_entity.id, update_parents)
-    return table
+    relationship_info = await relationship_info_service.create_document(
+        data=RelationshipInfoCreate(
+            name=f"{child_entity.id}_{parent_entity.id}",
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=child_entity.id,
+            related_entity_id=parent_entity.id,
+            relation_table_id=table.id,
+            enabled=True,
+        )
+    )
+    return table, relationship_info
 
 
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
 async def b_is_parent_of_a_fixture(
     entity_a,
     entity_b,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -883,7 +890,7 @@ async def b_is_parent_of_a_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_a,
         parent_entity=entity_b,
         child_column="a",
@@ -895,7 +902,7 @@ async def b_is_parent_of_a_fixture(
 async def c_is_parent_of_b_fixture(
     entity_b,
     entity_c,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -907,7 +914,7 @@ async def c_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_c,
         child_column="b",
@@ -919,7 +926,7 @@ async def c_is_parent_of_b_fixture(
 async def d_is_parent_of_b_fixture(
     entity_b,
     entity_d,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -931,7 +938,7 @@ async def d_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_d,
         child_column="b",
@@ -943,7 +950,7 @@ async def d_is_parent_of_b_fixture(
 async def d_is_parent_of_c_fixture(
     entity_c,
     entity_d,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -955,7 +962,7 @@ async def d_is_parent_of_c_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_d,
         child_column="c",
@@ -968,7 +975,7 @@ async def a_is_parent_of_c_and_d_fixture(
     entity_a,
     entity_c,
     entity_d,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -980,7 +987,7 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_a,
         child_column="c",
@@ -989,22 +996,12 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_d,
         parent_entity=entity_a,
         child_column="d",
         parent_column="a",
     )
-
-
-@pytest.fixture
-def relationships(b_is_parent_of_a, c_is_parent_of_b):
-    """
-    Fixture to register all relationships
-    """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    yield
 
 
 @pytest.fixture(name="feature_materialize_service")
