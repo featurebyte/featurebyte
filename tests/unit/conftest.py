@@ -1784,7 +1784,7 @@ def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entit
 
 
 @pytest.fixture(name="aggregate_asat_no_entity_feature")
-def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
     """
     Fixture to get an aggregate asat feature from SCD table without entity
     """

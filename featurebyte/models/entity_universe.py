@@ -175,9 +175,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(AggregateAsAtNode, self.node)
 
         if not node.parameters.serving_names:
-            return expressions.select(
-                expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
-            )
+            return get_dummy_entity_universe()
 
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
@@ -266,6 +264,20 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             .from_(self.aggregate_input_expr.subquery())
         )
         return universe_expr
+
+
+def get_dummy_entity_universe() -> Select:
+    """
+    Returns a dummy entity universe (actual value not important since it doesn't affect features
+    calculation)
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(
+        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+    )
 
 
 def get_entity_universe_constructor(
@@ -413,9 +425,7 @@ def construct_window_aggregates_universe(
     Expression
     """
     if not serving_names:
-        return expressions.select(
-            expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
-        )
+        return get_dummy_entity_universe()
 
     assert len(aggregate_result_table_names) > 0
 
