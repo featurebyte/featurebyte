@@ -3,12 +3,12 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from collections import OrderedDict
 
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
@@ -32,7 +32,7 @@ class ParentEntityLookupService:
         self.table_service = table_service
         self.relationship_info_service = relationship_info_service
 
-    async def get_required_join_steps(self, entity_info: EntityInfo) -> list[JoinStep]:
+    async def get_required_join_steps(self, entity_info: EntityInfo) -> list[EntityLookupStep]:
         """
         Get the list of required JoinStep to lookup the missing entities in the request
 
@@ -43,7 +43,7 @@ class ParentEntityLookupService:
 
         Returns
         -------
-        list[JoinStep]
+        list[EntityLookupStep]
         """
 
         if entity_info.are_all_required_entities_provided():
@@ -63,30 +63,32 @@ class ParentEntityLookupService:
 
         # all_join_steps is a mapping from parent serving name to JoinStep. Each parent serving name
         # should be looked up exactly once and then reused.
-        all_join_steps: dict[str, JoinStep] = OrderedDict()
+        all_join_steps: dict[str, EntityLookupStep] = OrderedDict()
 
-        for join_step in await self._get_join_steps(entity_info, lookup_steps):
-            if join_step.parent_serving_name not in all_join_steps:
-                all_join_steps[join_step.parent_serving_name] = join_step
+        for join_step in await self.get_entity_lookup_steps(lookup_steps, entity_info):
+            if join_step.parent.serving_name not in all_join_steps:
+                all_join_steps[join_step.parent.serving_name] = join_step
 
         return list(all_join_steps.values())
 
-    async def _get_join_steps(
+    async def get_entity_lookup_steps(
         self,
-        entity_info: EntityInfo,
         entity_relationships_info: List[EntityRelationshipInfo],
-    ) -> list[JoinStep]:
+        entity_info: Optional[EntityInfo] = None,
+    ) -> list[EntityLookupStep]:
         """
-        Convert a list of join path (list of EntityRelationshipInfo) into a list of JoinStep
+        Convert a list of join path (list of EntityRelationshipInfo) into a list of EntityLookupStep
 
         Parameters
         ---------
         entity_relationships_info: List[EntityRelationshipInfo]
             List of EntityRelationshipInfo objects
+        entity_info: EntityInfo
+            Entity information
 
         Returns
         -------
-        Dict[PydanticObjectId, EntityLookupStep]
+        list[EntityLookupStep]
         """
         # Retrieve all required models in batch
         all_entity_ids = set()
@@ -124,12 +126,27 @@ class ParentEntityLookupService:
             assert child_column_name is not None
             assert parent_column_name is not None
 
-            join_step = JoinStep(
+            join_step = EntityLookupStep(
+                id=info.id,
                 table=relation_table.dict(by_alias=True),
-                parent_key=parent_column_name,
-                parent_serving_name=entity_info.get_effective_serving_name(parent_entity),
-                child_key=child_column_name,
-                child_serving_name=entity_info.get_effective_serving_name(child_entity),
+                parent=EntityLookupInfo(
+                    key=parent_column_name,
+                    serving_name=(
+                        entity_info.get_effective_serving_name(parent_entity)
+                        if entity_info is not None
+                        else parent_entity.serving_names[0]
+                    ),
+                    entity_id=parent_entity.id,
+                ),
+                child=EntityLookupInfo(
+                    key=child_column_name,
+                    serving_name=(
+                        entity_info.get_effective_serving_name(child_entity)
+                        if entity_info is not None
+                        else child_entity.serving_names[0]
+                    ),
+                    entity_id=child_entity.id,
+                ),
             )
             join_steps.append(join_step)
 

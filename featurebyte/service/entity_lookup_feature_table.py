@@ -12,10 +12,9 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.table import TableService
+from featurebyte.service.parent_serving import ParentEntityLookupService
 
 
 class EntityLookupFeatureTableService:
@@ -26,13 +25,11 @@ class EntityLookupFeatureTableService:
 
     def __init__(
         self,
-        entity_service: EntityService,
-        table_service: TableService,
+        parent_entity_lookup_service: ParentEntityLookupService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
     ):
-        self.entity_service = entity_service
-        self.table_service = table_service
+        self.parent_entity_lookup_service = parent_entity_lookup_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
 
@@ -53,23 +50,10 @@ class EntityLookupFeatureTableService:
         Dict[PydanticObjectId, EntityLookupStep]
         """
         out = {}
-        for relationship_info in entity_relationships_info:
-            if relationship_info.id in out:
-                continue
-            child_entity = await self.entity_service.get_document(relationship_info.entity_id)
-            parent_entity = await self.entity_service.get_document(
-                relationship_info.related_entity_id
-            )
-            relation_table = await self.table_service.get_document(
-                relationship_info.relation_table_id
-            )
-            lookup_step = EntityLookupStep(
-                id=relationship_info.id,
-                child_entity=child_entity,
-                parent_entity=parent_entity,
-                relation_table=relation_table,
-            )
-            out[relationship_info.id] = lookup_step
+        for entity_lookup_step in await self.parent_entity_lookup_service.get_entity_lookup_steps(
+            entity_relationships_info
+        ):
+            out[entity_lookup_step.id] = entity_lookup_step
         return out
 
     async def get_entity_lookup_steps_mapping(

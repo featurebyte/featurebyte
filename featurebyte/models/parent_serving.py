@@ -6,26 +6,25 @@ from __future__ import annotations
 from typing import List
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.entity import EntityModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
+class EntityLookupInfo(FeatureByteBaseModel):
+    """
+    Information about an entity such as keys, serving names, that are relevant in the context of an
+    EntityLookupStep
+    """
+
+    entity_id: PydanticObjectId
+    key: str
+    serving_name: str
+
+
 class EntityLookupStep(FeatureByteBaseModel):
     """
-    EntityLookupStep class
-    """
-
-    id: PydanticObjectId
-    child_entity: EntityModel
-    parent_entity: EntityModel
-    relation_table: ProxyTableModel
-
-
-class JoinStep(FeatureByteBaseModel):
-    """
-    JoinStep contains all information required to perform a join between two related entities for
-    the purpose of serving parent features
+    EntityLookupStep contains all information required to perform a join between two related
+    entities for the purpose of serving parent features
 
     table: ProxyTableModel
         The table encoding the relationship between the two entities
@@ -39,11 +38,10 @@ class JoinStep(FeatureByteBaseModel):
         Serving name of the child entity
     """
 
+    id: PydanticObjectId
     table: ProxyTableModel
-    parent_key: str
-    parent_serving_name: str
-    child_key: str
-    child_serving_name: str
+    parent: EntityLookupInfo
+    child: EntityLookupInfo
 
 
 class ParentServingPreparation(FeatureByteBaseModel):
@@ -56,5 +54,5 @@ class ParentServingPreparation(FeatureByteBaseModel):
         Feature store information
     """
 
-    join_steps: List[JoinStep]
+    join_steps: List[EntityLookupStep]
     feature_store_details: FeatureStoreDetails

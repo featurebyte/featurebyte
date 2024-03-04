@@ -862,7 +862,7 @@ async def create_table_and_add_parent(
         event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
     )
-    await relationship_info_service.create_document(
+    relationship_info = await relationship_info_service.create_document(
         data=RelationshipInfoCreate(
             name=f"{child_entity.id}_{parent_entity.id}",
             relationship_type=RelationshipType.CHILD_PARENT,
@@ -872,7 +872,7 @@ async def create_table_and_add_parent(
             enabled=True,
         )
     )
-    return table
+    return table, relationship_info
 
 
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
