@@ -41,7 +41,6 @@ def test_target_table_create(target_id, graph, node_names, expected_error):
     if expected_error:
         with pytest.raises(expected_error):
             TargetTableCreate(graph=graph, node_names=node_names, **common_params)
-        return
     else:
         target_table_create = TargetTableCreate(graph=graph, node_names=node_names, **common_params)
         assert target_table_create.name == "target_name"
