@@ -3,6 +3,8 @@ OfflineStoreFeatureTableService class
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +12,7 @@ from bson import ObjectId, json_util
 
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import (
+    FeaturesUpdate,
     OfflineStoreFeatureTableModel,
     OfflineStoreFeatureTableUpdate,
     OnlineStoreLastMaterializedAt,
@@ -57,7 +60,8 @@ class OfflineStoreFeatureTableService(
     ) -> OfflineStoreFeatureTableModel:
         if document.feature_cluster_path:
             feature_cluster_json = await self.storage.get_text(Path(document.feature_cluster_path))
-            document.internal_feature_cluster = json_util.loads(feature_cluster_json)
+            feature_cluster_dict = json_util.loads(feature_cluster_json)
+            document.feature_cluster = FeatureCluster(**feature_cluster_dict)
         return document
 
     async def _move_feature_cluster_to_storage(
@@ -66,12 +70,12 @@ class OfflineStoreFeatureTableService(
         feature_cluster_path = self.get_full_remote_file_path(
             f"offline_store_feature_table/{document.id}/feature_cluster.json"
         )
-        assert isinstance(document.internal_feature_cluster, FeatureCluster)
+        assert isinstance(document.feature_cluster, FeatureCluster)
         await self.storage.put_text(
-            json_util.dumps(document.internal_feature_cluster.json_dict()), feature_cluster_path
+            json_util.dumps(document.feature_cluster.json_dict()), feature_cluster_path
         )
         document.feature_cluster_path = str(feature_cluster_path)
-        document.internal_feature_cluster = None
+        document.feature_cluster = None
         return document
 
     async def create_document(
@@ -107,7 +111,7 @@ class OfflineStoreFeatureTableService(
                 data.name_suffix = str(count)
                 data.name = data.get_name()
 
-        await self._move_feature_cluster_to_storage(data)
+        data = await self._move_feature_cluster_to_storage(data)
         try:
             output = await super().create_document(data)
             assert output.catalog_id == data.catalog_id
@@ -116,6 +120,41 @@ class OfflineStoreFeatureTableService(
             if data.feature_cluster_path:
                 await self.storage.delete(Path(data.feature_cluster_path))
             raise exc
+
+    async def update_document(
+        self,
+        document_id: ObjectId,
+        data: OfflineStoreFeatureTableUpdate,
+        exclude_none: bool = True,
+        document: Optional[OfflineStoreFeatureTableModel] = None,
+        return_document: bool = True,
+        skip_block_modification_check: bool = False,
+    ) -> Optional[OfflineStoreFeatureTableModel]:
+        original_doc = await self.get_document(document_id=document_id)
+        if isinstance(data, FeaturesUpdate):
+            assert (
+                data.feature_cluster_path is None
+            ), "feature_cluster_path should not be set in update"
+            if original_doc.feature_cluster_path:
+                # remove the old feature cluster
+                await self.storage.delete(Path(original_doc.feature_cluster_path))
+
+            table = OfflineStoreFeatureTableModel(
+                **{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)}
+            )
+            table = await self._move_feature_cluster_to_storage(table)
+            data.feature_cluster = None
+            data.feature_cluster_path = table.feature_cluster_path
+
+        output = await super().update_document(
+            document_id,
+            data,
+            exclude_none=exclude_none,
+            document=original_doc,
+            return_document=return_document,
+            skip_block_modification_check=skip_block_modification_check,
+        )
+        return output
 
     async def update_online_last_materialized_at(
         self,

@@ -488,8 +488,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
 
             if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
-                await self.offline_store_feature_table_service.create_document(
-                    entity_lookup_feature_table
+                entity_lookup_feature_table = (
+                    await self.offline_store_feature_table_service.create_document(
+                        entity_lookup_feature_table
+                    )
                 )
                 await self.feature_materialize_service.initialize_new_columns(
                     entity_lookup_feature_table

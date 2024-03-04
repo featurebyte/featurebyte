@@ -44,7 +44,7 @@ def test_registry_service__get_registry_storage_lock(registry_service, caplog):
     thread2.join()
 
     # Check log messages
-    lines = [record.msg for record in caplog.records]
+    lines = [record.msg for record in caplog.records if record.msg.startswith("Lock")]
     assert len(lines) == 4
     assert "Lock acquired: thread" in lines[0]
     assert "Lock released: thread" in lines[1]

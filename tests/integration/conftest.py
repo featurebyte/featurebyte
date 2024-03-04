@@ -196,7 +196,7 @@ def storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
+    with tempfile.TemporaryDirectory(suffix=str(ObjectId())) as tempdir:
         yield LocalStorage(base_path=Path(tempdir))
 
 

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import BaseModel, Field, PrivateAttr, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -60,8 +60,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     )
 
     feature_cluster_path: Optional[str] = Field(default=None)
-    internal_feature_cluster: Any = Field(alias="feature_cluster")
-    _feature_cluster: Any = PrivateAttr(default=None)
+    feature_cluster: Optional[FeatureCluster]
 
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
@@ -135,20 +134,6 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if self.internal_entity_universe is None:
             raise ValueError("entity_universe is not set")
         return EntityUniverseModel(**self.internal_entity_universe)
-
-    @property
-    def feature_cluster(self) -> FeatureCluster:
-        """
-        Get feature cluster
-
-        Returns
-        -------
-        FeatureCluster
-        """
-        if self._feature_cluster is None:
-            self._feature_cluster = FeatureCluster(**self.internal_feature_cluster)
-        assert isinstance(self._feature_cluster, FeatureCluster)
-        return self._feature_cluster
 
     def _get_basename(self) -> str:
         # max length of feature table name is 64
@@ -261,7 +246,8 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     feature_ids: List[PydanticObjectId]
-    feature_cluster: FeatureCluster
+    feature_cluster: Optional[FeatureCluster]
+    feature_cluster_path: Optional[str]
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
