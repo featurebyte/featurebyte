@@ -174,6 +174,11 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     def get_entity_universe_template(self) -> Expression:
         node = cast(AggregateAsAtNode, self.node)
 
+        if not node.parameters.serving_names:
+            return expressions.select(
+                expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+            )
+
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
