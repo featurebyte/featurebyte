@@ -510,7 +510,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
         method="count", feature_name="Current Number of Users"
     )
     feature_other = scd_view.groupby("User Status").aggregate_asat(
-        method="count", feature_name="Current Number of Users With This Status"
+        method="count", feature_name="Current Number of Users With This Status V2"
     )
 
     # check preview
@@ -565,7 +565,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
             "features": [
                 {
                     "user_status": "STÀTUS_CODE_47",
-                    "Current Number of Users With This Status": 2,
+                    "Current Number of Users With This Status V2": 2,
                     "Current Number of Users": 9,
                 }
             ]
