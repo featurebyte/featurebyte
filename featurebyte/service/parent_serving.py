@@ -49,6 +49,8 @@ class ParentEntityLookupService:
         if entity_info.are_all_required_entities_provided():
             return []
 
+        # Use currently available relationships. Later to be updated to use frozen relationships
+        # stored in the feature list.
         relationships_info = []
         async for info in self.relationship_info_service.list_documents_iterator(
             query_filter={},
