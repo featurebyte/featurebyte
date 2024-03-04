@@ -605,6 +605,7 @@ class BaseDocumentService(
         self,
         query_filter: QueryFilter,
         use_raw_query_filter: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> AsyncIterator[Document]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
@@ -615,6 +616,8 @@ class BaseDocumentService(
             Query filter
         use_raw_query_filter: bool
             Use only provided query filter (without any further processing)
+        populate_remote_attributes: bool
+            Populate attributes that are stored remotely (e.g. file paths)
 
         Yields
         -------
@@ -625,7 +628,10 @@ class BaseDocumentService(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
         ):
-            yield self.document_class(**doc)
+            document = self.document_class(**doc)
+            if populate_remote_attributes:
+                document = await self._populate_remote_attributes(document=document)
+            yield document
 
     def _construct_list_audit_query_filter(
         self, query_filter: Optional[QueryFilter], **kwargs: Any

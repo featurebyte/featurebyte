@@ -293,7 +293,9 @@ class FeastRegistryService(
             return await self.get_document(document_id=document_id)
 
         with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
-            original_doc = await self.get_document(document_id=document_id)
+            original_doc = await self.get_document(
+                document_id=document_id, populate_remote_attributes=False
+            )
             recreated_model = await self._construct_feast_registry_model(
                 project_name=original_doc.name,
                 offline_table_name_prefix=original_doc.offline_table_name_prefix,
@@ -303,8 +305,8 @@ class FeastRegistryService(
             assert recreated_model.id == document_id
 
             if original_doc.registry_path:
-                # remove old registry file
-                await self.storage.delete(Path(original_doc.registry_path))
+                # attempt to remove old registry file
+                await self.storage.try_delete_if_exists(Path(original_doc.registry_path))
 
             document = await self._move_registry_to_storage(recreated_model)
             await self.persistent.update_one(

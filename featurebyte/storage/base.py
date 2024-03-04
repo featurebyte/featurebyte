@@ -53,6 +53,20 @@ class Storage(ABC):
         FileNotFoundError
         """
 
+    async def try_delete_if_exists(self, remote_path: Path) -> None:
+        """
+        Try to delete file in storage
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be deleted
+        """
+        try:
+            await self.delete(remote_path)
+        except FileNotFoundError:
+            pass
+
     @abstractmethod
     async def get(self, remote_path: Path, local_path: Path) -> None:
         """

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 import pymongo
 from bson import ObjectId
@@ -58,7 +59,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         default_factory=list
     )
 
-    feature_cluster: FeatureCluster
+    feature_cluster_path: Optional[str] = Field(default=None)
+    feature_cluster: Optional[FeatureCluster]
+
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
@@ -83,6 +86,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if not values.get("feature_store_id", None) and values.get("feature_cluster"):
             values["feature_store_id"] = values["feature_cluster"].feature_store_id
         return values
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.feature_cluster_path:
+            paths.append(Path(self.feature_cluster_path))
+        return paths
 
     @property
     def table_signature(self) -> Dict[str, Any]:
@@ -236,7 +246,8 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     feature_ids: List[PydanticObjectId]
-    feature_cluster: FeatureCluster
+    feature_cluster: Optional[FeatureCluster]
+    feature_cluster_path: Optional[str]
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
