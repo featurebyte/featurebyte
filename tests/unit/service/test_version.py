@@ -253,10 +253,15 @@ async def feature_list_fixture(test_dir, feature, feature_sum_2h, feature_list_s
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_multi.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(
-            data=FeatureListServiceCreate(**payload)
-        )
-        return feature_list
+        feature_list = None
+        try:
+            feature_list = await feature_list_service.create_document(
+                data=FeatureListServiceCreate(**payload)
+            )
+            yield feature_list
+        finally:
+            if feature_list:
+                await feature_list_service.delete_document(document_id=feature_list.id)
 
 
 @pytest.mark.asyncio

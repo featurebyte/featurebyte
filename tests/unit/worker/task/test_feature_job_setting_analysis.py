@@ -77,7 +77,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         document = await persistent.find_one(
             collection_name=FeatureJobSettingAnalysisModel.collection_name(),
             query_filter={"_id": ObjectId(output_document_id)},
-            user_id=None,
         )
         assert document
         result = FeatureJobSettingAnalysisModel(

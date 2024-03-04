@@ -32,6 +32,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+from featurebyte.storage import Storage
 
 
 class BaseMaterializedTableService(
@@ -52,9 +53,17 @@ class BaseMaterializedTableService(
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service

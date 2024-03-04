@@ -76,13 +76,14 @@ class FamilyRelationshipService(RelationshipService):
 
 
 @pytest.fixture(name="family_document_service")
-def family_document_service_fixture(user, persistent):
+def family_document_service_fixture(user, persistent, storage):
     """FamilyDocumentService object"""
     return FamilyDocumentService(
         user=user,
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
         redis=Mock(),
     )
 

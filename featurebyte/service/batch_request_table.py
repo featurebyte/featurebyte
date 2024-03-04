@@ -20,6 +20,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.storage import Storage
 
 
 class BatchRequestTableService(
@@ -32,7 +33,7 @@ class BatchRequestTableService(
     document_class = BatchRequestTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.BATCH_REQUEST_TABLE
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -42,6 +43,7 @@ class BatchRequestTableService(
         entity_service: EntityService,
         context_service: ContextService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -52,6 +54,7 @@ class BatchRequestTableService(
             feature_store_service,
             entity_service,
             block_modification_handler,
+            storage,
             redis,
         )
         self.context_service = context_service

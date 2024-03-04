@@ -844,8 +844,6 @@ def test_databricks_specs(
         StructType,
         TimestampType,
     )
-    from sklearn import linear_model
-    import featurebyte as fb
     import mlflow
 
     # Initialize the Feature Engineering client to interact with Databricks Feature Store
@@ -905,9 +903,12 @@ def test_databricks_specs(
     # Users should consider including request columns and primary entity columns here
     # This is important if these columns are not features but are only needed for lookup purposes
     exclude_columns = [
+        "POINT_IN_TIME",
         "__feature_V240103__part0",
         "__feature_V240103__part1",
         "__req_col_feature_V240103__part0",
+        "cust_id",
+        "transaction_id",
     ]
 
     # Prepare the dataset for log model
@@ -929,31 +930,13 @@ def test_databricks_specs(
         exclude_columns=exclude_columns,
     )
 
-    # Retrieve the training dataframe through FeatureByte's compute_historical_features API
-    # Observation table should include the primary entity columns, the request columns, and the target column
-    catalog = fb.activate_and_get_catalog("[CATALOG_NAME]")
-    feature_list = catalog.get_feature_list("[FEATURE_LIST_NAME]")
-    observation_table = catalog.get_observation_table("[OBSERVATION_TABLE_NAME]")
-    training_df = feature_list.compute_historical_features(
-        observation_set=observation_table.to_pandas(),
-    )
-
-    # Separate the features (X_train) and the target variable (y_train) for model training
-    X_train = training_df.drop([target_column], axis=1)
-    y_train = training_df[target_column]
-
-    # Create and train the linear regression model using the training data
-    model = linear_model.LinearRegression().fit(X_train, y_train)
-
     # Log the model and register it to the unity catalog
-    mlflow.set_registry_uri("databricks-uc")
-
     fe.log_model(
-        model=model,
-        artifact_path="main.default.model",
+        model=model,  # model is the trained model
+        artifact_path="[ARTIFACT_PATH]",  # artifact_path is the path to the model
         flavor=mlflow.sklearn,
         training_set=log_model_dataset,
-        registered_model_name="main.default.recommender_model",
+        registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
     )
     """
     replace_pairs = [

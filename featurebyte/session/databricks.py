@@ -2,9 +2,7 @@
 DatabricksSession class
 """
 # pylint: disable=duplicate-code
-from __future__ import annotations
-
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, Optional
 
 import json
 import os
@@ -140,7 +138,7 @@ class DatabricksSession(BaseSparkSession):
     def is_threadsafe(cls) -> bool:
         return True
 
-    def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+    def fetch_query_result_impl(self, cursor: Any) -> Optional[pd.DataFrame]:
         schema = None
         if cursor.description:
             schema = {row[0]: row[1] for row in cursor.description}

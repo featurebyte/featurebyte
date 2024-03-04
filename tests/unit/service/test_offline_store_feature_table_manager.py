@@ -307,6 +307,7 @@ async def test_feature_table_one_feature_deployed(
     periodic_task_service,
     deployed_float_feature,
     transaction_to_customer_relationship_info_id,
+    storage,
     update_fixtures,
 ):
     """
@@ -356,6 +357,7 @@ async def test_feature_table_one_feature_deployed(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -374,6 +376,12 @@ async def test_feature_table_one_feature_deployed(
         expected_feature_services={f"sum_1d_list_{get_version()}"},
         expected_project_name=str(app_container.catalog_id)[-7:],
     )
+
+    # check that feature cluster file exists
+    full_feature_cluster_path = os.path.join(
+        storage.base_path, feature_table_dict["feature_cluster_path"]
+    )
+    assert os.path.exists(full_feature_cluster_path)
 
 
 @pytest.mark.asyncio
@@ -432,6 +440,7 @@ async def test_feature_table_two_features_deployed(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -465,6 +474,7 @@ async def test_feature_table_undeploy(
     deployed_float_feature_post_processed,
     transaction_to_customer_relationship_info_id,
     mock_offline_store_feature_manager_dependencies,
+    storage,
     update_fixtures,
 ):
     """
@@ -516,12 +526,19 @@ async def test_feature_table_undeploy(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert_equal_json_fixture(
         feature_cluster,
         "tests/fixtures/offline_store_feature_table/feature_cluster_disabled_one_feature.json",
         update_fixtures,
     )
+
+    # Check the feature cluster file exists
+    full_feature_cluster_path = os.path.join(
+        storage.base_path, feature_table_dict["feature_cluster_path"]
+    )
+    assert os.path.exists(full_feature_cluster_path)
 
     # Check drop_columns called
     args, _ = mock_offline_store_feature_manager_dependencies["drop_columns"].call_args
@@ -533,6 +550,9 @@ async def test_feature_table_undeploy(
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
+
+    # Check the feature cluster file is deleted
+    assert not os.path.exists(full_feature_cluster_path)
 
     drop_table_calls = mock_offline_store_feature_manager_dependencies["drop_table"].call_args_list
     assert {c.args[0].name for c in drop_table_calls} == {
@@ -605,6 +625,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -646,6 +667,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -709,6 +731,7 @@ async def test_feature_table_without_entity(
         "serving_names": [],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -767,6 +790,7 @@ async def test_lookup_feature(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -830,6 +854,7 @@ async def test_aggregate_asat_feature(
         "serving_names": ["gender"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(

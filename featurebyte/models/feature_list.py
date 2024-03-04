@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import functools
 from collections import defaultdict
+from pathlib import Path
 
 import pymongo
 from bson.objectid import ObjectId
@@ -312,9 +313,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters"
-    )
+    feature_clusters_path: Optional[str] = Field(default=None)
+    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters")
     _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
@@ -504,6 +504,13 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
             ]
         return self._feature_clusters
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.feature_clusters_path:
+            paths.append(Path(self.feature_clusters_path))
+        return paths
 
     @property
     def store_info(self) -> StoreInfo:

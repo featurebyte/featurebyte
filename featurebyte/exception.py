@@ -173,13 +173,6 @@ class EntityJoinPathNotFoundError(FeatureByteException):
     """
 
 
-class AmbiguousEntityRelationshipError(FeatureByteException):
-    """
-    Raised when the relationship between entities is ambiguous and automatic serving of parent
-    features is not possible
-    """
-
-
 class InvalidSettingsError(FeatureByteException):
     """
     Raised when configuration has invalid settings

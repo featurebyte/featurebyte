@@ -17,6 +17,7 @@ from featurebyte.schema.table import TableCreate, TableServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document
+from featurebyte.storage import Storage
 
 DocumentCreate = TypeVar("DocumentCreate", bound=TableCreate)
 DocumentUpdate = TypeVar("DocumentUpdate", bound=TableServiceUpdate)
@@ -36,9 +37,17 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         feature_store_service: FeatureStoreService,
+        storage: Storage,
         redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler, redis)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.feature_store_service = feature_store_service
 
     @property

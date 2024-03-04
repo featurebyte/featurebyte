@@ -28,7 +28,7 @@ def celery_fixture():
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id, persistent, celery, catalog):
+def task_manager_fixture(user_id, persistent, celery, catalog, storage):
     """Task manager fixture"""
     user = User(id=user_id)
     task_manager = TaskManager(
@@ -36,6 +36,7 @@ def task_manager_fixture(user_id, persistent, celery, catalog):
         persistent=persistent,
         celery=celery,
         catalog_id=catalog.id,
+        storage=storage,
         redis=Mock(),
     )
     yield task_manager

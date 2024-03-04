@@ -67,6 +67,10 @@ async def test_submit_task(task_manager, payload):
     matching_tasks = [task for task in tasks if str(task.id) == task_id]
     assert len(matching_tasks) == 1
 
+    # check test task result
+    task_result = await task_manager.get_task_result(task_id)
+    assert task_result == "Test task result"
+
 
 @pytest.mark.parametrize("worker_type", ["cpu"], indirect=True)
 @pytest.mark.asyncio

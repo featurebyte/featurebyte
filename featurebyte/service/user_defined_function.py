@@ -58,7 +58,6 @@ class UserDefinedFunctionService(
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter={"name": data.name, "catalog_id": data.catalog_id},
-            user_id=self.user.id,
         )
         if document_dict:
             if data.catalog_id:

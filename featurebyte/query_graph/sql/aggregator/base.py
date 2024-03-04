@@ -256,7 +256,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             left_joinable_subquery.expr.subquery(),
             join_type="left",
             join_alias=agg_table_alias,
-            on=expressions.and_(*join_conditions) if join_conditions else None,
+            on=expressions.and_(*join_conditions) if join_conditions else expressions.true(),
         ).select(*agg_result_name_aliases)
         return updated_table_expr
 

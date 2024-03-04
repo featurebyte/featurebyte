@@ -22,6 +22,7 @@ from featurebyte.schema.task import Task, TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
 
@@ -37,12 +38,14 @@ class TaskManager:
         persistent: Persistent,
         celery: Celery,
         catalog_id: Optional[ObjectId],
+        storage: Storage,
         redis: Redis[Any],
     ) -> None:
         self.user = user
         self.persistent = persistent
         self.celery = celery
         self.catalog_id = catalog_id
+        self.storage = storage
         self.redis = redis
 
     @property
@@ -59,6 +62,7 @@ class TaskManager:
             persistent=self.persistent,
             catalog_id=self.catalog_id,
             block_modification_handler=BlockModificationHandler(),
+            storage=self.storage,
             redis=self.redis,
         )
 
@@ -122,6 +126,44 @@ class TaskManager:
             date_done=document.get("date_done"),
             progress=document.get("progress"),
         )
+
+    async def update_task_result(self, task_id: str, result: Any) -> None:
+        """
+        Update task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+        result: Any
+            Task result
+        """
+        await self.persistent.update_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+            update={"$set": {"task_result": result}},
+            user_id=self.user.id,
+        )
+
+    async def get_task_result(self, task_id: str) -> Any:
+        """
+        Get task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Returns
+        -------
+        Any
+            Task result
+        """
+        document = await self.persistent.find_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+        )
+        return (document or {}).get("task_result")
 
     async def list_tasks(
         self,

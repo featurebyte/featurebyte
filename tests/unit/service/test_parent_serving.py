@@ -3,7 +3,7 @@ Unit tests for ParentEntityLookupService
 """
 import pytest
 
-from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
+from featurebyte.exception import EntityJoinPathNotFoundError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
 
@@ -203,24 +203,6 @@ async def test_get_join_steps__not_found_with_relationships(
 
 
 @pytest.mark.asyncio
-async def test_get_join_steps__ambiguous_relationships(
-    entity_info_with_ambiguous_relationships,
-    parent_entity_lookup_service,
-):
-    """
-    Test looking up parent entity when there are ambiguous relationships
-
-    a (provided) --> b --> c ---> e (required)
-                      `--> d --´
-    """
-    with pytest.raises(AmbiguousEntityRelationshipError) as exc_info:
-        await parent_entity_lookup_service.get_required_join_steps(
-            entity_info_with_ambiguous_relationships
-        )
-    assert str(exc_info.value) == "Cannot find an unambiguous join path for entity entity_e"
-
-
-@pytest.mark.asyncio
 async def test_get_join_steps__multiple_provided(
     entity_a,
     entity_b,
@@ -256,5 +238,36 @@ async def test_get_join_steps__multiple_provided(
             parent_serving_name="D",
             child_key="c",
             child_serving_name="C",
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_required_entity__complex_and_should_not_error(
+    entity_a,
+    entity_b,
+    b_is_parent_of_a,
+    d_is_parent_of_c,
+    a_is_parent_of_c_and_d,
+    parent_entity_lookup_service,
+):
+    """
+    Test a case where lookup parent entity should pass without error
+
+    c --> d --> a (provided) --> b (required)
+     `------>´
+    """
+    data_a_to_b = b_is_parent_of_a
+    _ = d_is_parent_of_c
+    _ = a_is_parent_of_c_and_d
+    entity_info = EntityInfo(required_entities=[entity_b], provided_entities=[entity_a])
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    assert join_steps == [
+        JoinStep(
+            table=data_a_to_b.dict(by_alias=True),
+            parent_key="b",
+            parent_serving_name="B",
+            child_key="a",
+            child_serving_name="A",
         ),
     ]

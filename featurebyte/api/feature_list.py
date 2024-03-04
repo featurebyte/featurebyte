@@ -655,20 +655,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         assert self.name is not None, "FeatureList name cannot be None"
         self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-
-        # prepare feature list batch feature create payload
-        feature_list_batch_feature_create = self._get_feature_list_batch_feature_create_payload(
-            feature_list_id=self.id,
+        self._save_feature_list(
             feature_list_name=self.name,
+            feature_list_id=self.id,
             conflict_resolution=conflict_resolution,
         )
-        self.post_async_task(
-            route="/feature_list/batch",
-            payload=feature_list_batch_feature_create.json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
-        )
-        object_dict = self._get_object_dict_by_id(id_value=feature_list_batch_feature_create.id)
+        object_dict = self._get_object_dict_by_id(id_value=self.id)
         type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     def delete(self) -> None:
@@ -1229,12 +1221,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
         """
+        kwargs: dict[str, Any] = {}
+        if self.saved:
+            kwargs["feature_list_id"] = self.id
+        else:
+            kwargs["feature_clusters"] = self._get_feature_clusters()
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
-            feature_list_id=self.id,
-            feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
+            **kwargs,
         )
-        feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id  # type: ignore[index]
+        feature_store_id = self._features[0].tabular_source.feature_store_id
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
             observation_table_id=(

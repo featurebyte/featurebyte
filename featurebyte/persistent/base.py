@@ -125,8 +125,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
-    ) -> Optional[Document]:  # pylint: disable=unused-argument
+    ) -> Optional[Document]:
         """
         Find one record from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -139,8 +138,6 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------
@@ -159,7 +156,6 @@ class Persistent(ABC):
         sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> tuple[Iterable[Document], int]:
         """
         Find all records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -179,8 +175,6 @@ class Persistent(ABC):
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------
@@ -194,6 +188,44 @@ class Persistent(ABC):
             sort_by=sort_by,
             page=page,
             page_size=page_size,
+        )
+
+    async def get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
+        """
+        Find all records from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        pipeline: Optional[list[dict[str, Any]]]
+            Pipeline to execute
+        projection: Optional[dict[str, Any]]
+            Fields to project
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
+
+        Returns
+        -------
+        AsyncIterator[Dict[str, Any]]
+            Retrieved documents
+        """
+        return await self._get_iterator(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            pipeline=pipeline,
+            projection=projection,
+            sort_by=sort_by,
         )
 
     @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.UPDATE)
@@ -656,6 +688,17 @@ class Persistent(ABC):
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
+        pass
+
+    @abstractmethod
+    async def _get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
         pass
 
     @abstractmethod

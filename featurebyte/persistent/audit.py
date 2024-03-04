@@ -3,7 +3,7 @@ Audit logging for persistent operations
 """
 from __future__ import annotations
 
-from typing import Any, List, MutableMapping, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from functools import wraps
 
@@ -140,8 +140,6 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             number of records updated,
             list of affected documents prior to transaction
         """
-        original_docs: List[MutableMapping[str, Any]] = []
-
         if action_type == AuditActionType.INSERT:
             # insertion of new document(s)
             return_value = await async_execution
