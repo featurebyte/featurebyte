@@ -18,7 +18,6 @@ from bson.objectid import ObjectId
 from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.entity import ParentEntity
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -27,7 +26,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
-from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
+from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate

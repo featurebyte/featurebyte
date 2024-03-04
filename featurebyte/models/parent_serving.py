@@ -14,6 +14,14 @@ class EntityLookupInfo(FeatureByteBaseModel):
     """
     Information about an entity such as keys, serving names, that are relevant in the context of an
     EntityLookupStep
+
+    entity_id: PydanticObjectId
+        Entity id
+    key: str
+        Column name in the table that is tagged as the entity
+    serving_name: str
+        Serving name of the entity. Alternatively, this can be thought of as the input or output
+        column name of the parent entity lookup operation.
     """
 
     entity_id: PydanticObjectId
@@ -26,16 +34,14 @@ class EntityLookupStep(FeatureByteBaseModel):
     EntityLookupStep contains all information required to perform a join between two related
     entities for the purpose of serving parent features
 
+    id: PydanticObjectId
+        Identifier of the EntityRelationshipInfo corresponding to this lookup step
     table: ProxyTableModel
         The table encoding the relationship between the two entities
-    parent_key: str
-        Column name in the table that is tagged as the parent entity
-    parent_serving_name: str
-        Serving name of the parent entity
-    child_key: str
-        Column name in the table that is tagged as the child entity
-    child_serving_name: str
-        Serving name of the child entity
+    parent: EntityLookupInfo
+        Information about the parent entity
+    child: EntityLookupInfo
+        Information about the child entity
     """
 
     id: PydanticObjectId
