@@ -155,17 +155,10 @@ def _get_entity_lookup_graph(
         input_nodes=[],
     )
 
-    child_column_name = None
-    parent_column_name = None
     feature_dtype = None
     for column_info in relation_table.columns_info:
-        if column_info.entity_id == lookup_step.child.entity_id:
-            child_column_name = column_info.name
-        elif column_info.entity_id == lookup_step.parent.entity_id:
-            parent_column_name = column_info.name
+        if column_info.entity_id == lookup_step.parent.entity_id:
             feature_dtype = column_info.dtype
-    assert child_column_name is not None
-    assert parent_column_name is not None
     assert feature_dtype is not None
 
     additional_params: Dict[str, Any]
@@ -192,9 +185,9 @@ def _get_entity_lookup_graph(
     lookup_node = graph.add_operation(
         node_type=NodeType.LOOKUP,
         node_params={
-            "input_column_names": [parent_column_name],
+            "input_column_names": [lookup_step.parent.key],
             "feature_names": [lookup_step.parent.serving_name],
-            "entity_column": child_column_name,
+            "entity_column": lookup_step.child.key,
             "serving_name": lookup_step.child.serving_name,
             "entity_id": lookup_step.child.entity_id,
             **additional_params,
