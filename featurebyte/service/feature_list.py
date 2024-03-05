@@ -10,12 +10,11 @@ from pathlib import Path
 
 from bson import json_util
 from bson.objectid import ObjectId
-from pymongo.errors import OperationFailure
 from redis import Redis
-from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.logging import get_logger
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
@@ -34,11 +33,7 @@ from featurebyte.query_graph.model.entity_relationship_info import (
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_document import (
-    RETRY_MAX_ATTEMPT_NUM,
-    RETRY_MAX_WAIT_IN_SEC,
-    BaseDocumentService,
-)
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_relationship_extractor import (
     EntityRelationshipExtractorService,
@@ -56,6 +51,8 @@ from featurebyte.service.validator.entity_relationship_validator import (
 from featurebyte.storage import Storage
 
 FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT = 60
+
+logger = get_logger(__name__)
 
 
 async def validate_feature_list_version_and_namespace_consistency(
@@ -330,19 +327,15 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    @retry(
-        retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(
-            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
-        ),
-    )
     async def _create_document(
         self, feature_list: FeatureListModel, features: List[FeatureModel]
     ) -> ObjectId:
-        async with self.persistent.start_transaction() as session:
-            insert_id = await session.insert_one(
+        assert feature_list.feature_clusters is None
+        feature_list_doc = feature_list.dict(by_alias=True)
+        async with self.persistent.start_transaction():
+            insert_id = await self.persistent.insert_one(
                 collection_name=self.collection_name,
-                document=feature_list.dict(by_alias=True),
+                document=feature_list_doc,
                 user_id=self.user.id,
             )
             assert insert_id == feature_list.id
@@ -398,7 +391,10 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         await self._check_document_unique_constraints(document=document)
 
         # check whether the feature(s) in the feature list saved to persistent or not
+        logger.info("Extracting feature data")
         feature_data = await self._extract_feature_data(document)
+
+        logger.info("Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
             features=feature_data["features"]
         )
@@ -414,14 +410,18 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
             }
         )
+
+        logger.info("Moving feature clusters to storage")
         await self._move_feature_cluster_to_storage(document)
         try:
+            logger.info("Creating feature list document")
             insert_id = await self._create_document(
                 feature_list=document, features=feature_data["features"]
             )
         except Exception as exc:
             # clean up the feature_clusters file if the document creation failed
             if document.feature_clusters_path:
+                logger.info("Cleaning up feature clusters file after document creation failure")
                 await self.storage.delete(Path(document.feature_clusters_path))
             raise exc
         return await self.get_document(document_id=insert_id)
