@@ -11,8 +11,10 @@ from pathlib import Path
 from bson import json_util
 from bson.objectid import ObjectId
 from redis import Redis
+from redis.lock import Lock
 
 from featurebyte.common.model_util import get_version
+from featurebyte.common.utils import timer
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import VersionIdentifier
@@ -50,15 +52,15 @@ from featurebyte.service.validator.entity_relationship_validator import (
 )
 from featurebyte.storage import Storage
 
-FEATURE_CLUSTER_REDIS_LOCK_TIMEOUT = 60
+FEATURE_LIST_CREATION_REDIS_LOCK_TIMEOUT = 60
 
 logger = get_logger(__name__)
 
 
-async def validate_feature_list_version_and_namespace_consistency(
+def validate_feature_list_version_and_namespace_consistency(
     feature_list: FeatureListModel,
     feature_list_namespace: FeatureListNamespaceModel,
-    feature_service: FeatureService,
+    feature_namespace_ids: Sequence[ObjectId],
 ) -> None:
     """
     Validate whether the feature list & feature list namespace are consistent
@@ -69,8 +71,8 @@ async def validate_feature_list_version_and_namespace_consistency(
         Feature list object
     feature_list_namespace: FeatureListNamespaceModel
         Feature list namespace object
-    feature_service: FeatureService
-        Feature Service object
+    feature_namespace_ids: Sequence[ObjectId]
+        List of feature namespace ids of the feature list
 
     Raises
     ------
@@ -83,13 +85,6 @@ async def validate_feature_list_version_and_namespace_consistency(
             f'must have the same "name" value (namespace: "{feature_list_namespace.name}", '
             f'feature_list: "{feature_list.name}").'
         )
-
-    feature_namespace_ids = []
-    async for doc in feature_service.list_documents_as_dict_iterator(
-        query_filter={"_id": {"$in": feature_list.feature_ids}},
-        projection={"feature_namespace_id": 1},
-    ):
-        feature_namespace_ids.append(doc["feature_namespace_id"])
 
     if sorted(feature_namespace_ids) != sorted(feature_list_namespace.feature_namespace_ids):
         raise DocumentInconsistencyError(
@@ -154,6 +149,21 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
         self.feature_list_entity_relationship_validator = feature_list_entity_relationship_validator
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
+
+    def get_feature_list_creation_lock(self, timeout: int) -> Lock:
+        """
+        Get feature list creation lock
+
+        Parameters
+        ----------
+        timeout: int
+            Maximum life for the lock in seconds
+
+        Returns
+        -------
+        Lock
+        """
+        return self.redis.lock(f"feature_list_creation:{self.catalog_id}", timeout=timeout)
 
     async def _populate_remote_attributes(self, document: FeatureListModel) -> FeatureListModel:
         if document.feature_clusters_path:
@@ -332,50 +342,58 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
     ) -> ObjectId:
         assert feature_list.feature_clusters is None
         feature_list_doc = feature_list.dict(by_alias=True)
-        async with self.persistent.start_transaction():
-            insert_id = await self.persistent.insert_one(
-                collection_name=self.collection_name,
-                document=feature_list_doc,
-                user_id=self.user.id,
-            )
-            assert insert_id == feature_list.id
+        feature_namespace_ids = [feature.feature_namespace_id for feature in features]
 
-            try:
-                feature_list_namespace = await self.feature_list_namespace_service.get_document(
-                    document_id=feature_list.feature_list_namespace_id,
+        # check whether feature list namespace exists or not
+        feature_list_namespace = None
+        try:
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id,
+            )
+            validate_feature_list_version_and_namespace_consistency(
+                feature_list=feature_list,
+                feature_list_namespace=feature_list_namespace,
+                feature_namespace_ids=feature_namespace_ids,
+            )
+        except DocumentNotFoundError:
+            pass
+
+        # create feature list document
+        with self.get_feature_list_creation_lock(FEATURE_LIST_CREATION_REDIS_LOCK_TIMEOUT):
+            async with self.persistent.start_transaction():
+                insert_id = await self.persistent.insert_one(
+                    collection_name=self.collection_name,
+                    document=feature_list_doc,
+                    user_id=self.user.id,
                 )
-                await validate_feature_list_version_and_namespace_consistency(
-                    feature_list=feature_list,
-                    feature_list_namespace=feature_list_namespace,
-                    feature_service=self.feature_service,
-                )
-                feature_list_namespace = await self.feature_list_namespace_service.update_document(
-                    document_id=feature_list.feature_list_namespace_id,
-                    data=FeatureListNamespaceServiceUpdate(
-                        feature_list_ids=self.include_object_id(
-                            feature_list_namespace.feature_list_ids, feature_list.id
+                assert insert_id == feature_list.id
+
+                if feature_list_namespace:
+                    await self.feature_list_namespace_service.update_document(
+                        document_id=feature_list.feature_list_namespace_id,
+                        data=FeatureListNamespaceServiceUpdate(
+                            feature_list_ids=self.include_object_id(
+                                feature_list_namespace.feature_list_ids, feature_list.id
+                            ),
                         ),
-                    ),
-                    return_document=True,
-                )  # type: ignore[assignment]
-                assert feature_list_namespace is not None
-
-            except DocumentNotFoundError:
-                await self.feature_list_namespace_service.create_document(
-                    data=FeatureListNamespaceModel(
-                        _id=feature_list.feature_list_namespace_id or ObjectId(),
-                        name=feature_list.name,
-                        feature_list_ids=[insert_id],
-                        default_feature_list_id=insert_id,
-                        features=features,
+                        return_document=True,
                     )
-                )
+                else:
+                    await self.feature_list_namespace_service.create_document(
+                        data=FeatureListNamespaceModel(
+                            _id=feature_list.feature_list_namespace_id or ObjectId(),
+                            name=feature_list.name,
+                            feature_list_ids=[insert_id],
+                            default_feature_list_id=insert_id,
+                            features=features,
+                        )
+                    )
 
-            # update feature's feature_list_ids attribute
-            await self._update_features(
-                feature_list.feature_ids, inserted_feature_list_id=insert_id
-            )
-            return cast(ObjectId, insert_id)
+                # update feature's feature_list_ids attribute
+                await self._update_features(
+                    feature_list.feature_ids, inserted_feature_list_id=insert_id
+                )
+                return cast(ObjectId, insert_id)
 
     async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
@@ -414,10 +432,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         logger.info("Moving feature clusters to storage")
         await self._move_feature_cluster_to_storage(document)
         try:
-            logger.info("Creating feature list document")
-            insert_id = await self._create_document(
-                feature_list=document, features=feature_data["features"]
-            )
+            with timer("Creating feature list document", logger):
+                insert_id = await self._create_document(
+                    feature_list=document, features=feature_data["features"]
+                )
+
         except Exception as exc:
             # clean up the feature_clusters file if the document creation failed
             if document.feature_clusters_path:
