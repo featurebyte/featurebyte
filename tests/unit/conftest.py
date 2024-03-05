@@ -1771,7 +1771,7 @@ def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
 @pytest.fixture(name="aggregate_asat_feature")
 def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
     """
-    Fixture to get a lookup feature from SCD table
+    Fixture to get an aggregate asat feature from SCD table
     """
     snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
     scd_view = snowflake_scd_table_with_entity.get_view()
@@ -1779,6 +1779,20 @@ def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entit
         value_column=None,
         method="count",
         feature_name="asat_gender_count",
+    )
+    return feature
+
+
+@pytest.fixture(name="aggregate_asat_no_entity_feature")
+def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get an aggregate asat feature from SCD table without entity
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby([]).aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_overall_count",
     )
     return feature
 

@@ -509,6 +509,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     feature = scd_view.groupby([]).aggregate_asat(
         method="count", feature_name="Current Number of Users"
     )
+    feature_other = scd_view.groupby("User Status").aggregate_asat(
+        method="count", feature_name="Current Number of Users With This Status V2"
+    )
 
     # check preview
     df = feature.preview(
@@ -544,18 +547,29 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
     # check online serving
+    feature_list = FeatureList([feature, feature_other], "feature_list")
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
 
     try:
-        data = OnlineFeaturesRequestPayload(entity_serving_names=[{"row_number": 1}])
+        data = OnlineFeaturesRequestPayload(
+            entity_serving_names=[{"user_status": "STÀTUS_CODE_47"}]
+        )
         res = config.get_client().post(
             f"/deployment/{deployment.id}/online_features",
             json=data.json_dict(),
         )
         assert res.status_code == 200
-        assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
+        assert res.json() == {
+            "features": [
+                {
+                    "user_status": "STÀTUS_CODE_47",
+                    "Current Number of Users With This Status V2": 2,
+                    "Current Number of Users": 9,
+                }
+            ]
+        }
     finally:
         deployment.disable()
 

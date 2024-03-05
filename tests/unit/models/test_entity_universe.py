@@ -47,6 +47,18 @@ def aggregate_asat_graph_and_node(aggregate_asat_feature):
 
 
 @pytest.fixture
+def aggregate_asat_no_entity_graph_and_node(aggregate_asat_no_entity_feature):
+    """
+    Fixture for an aggregate_asat aggregate node (no entity)
+    """
+    graph = aggregate_asat_no_entity_feature.graph
+    aggregate_asat_node = get_node_from_feature(
+        aggregate_asat_no_entity_feature, NodeType.AGGREGATE_AS_AT
+    )
+    return graph, aggregate_asat_node
+
+
+@pytest.fixture
 def lookup_graph_and_node_same_input(scd_lookup_feature):
     """
     Fixture for a new lookup feature that has the same input as the original lookup feature
@@ -154,6 +166,22 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        """
+    ).strip()
+    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+
+
+def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_graph_and_node):
+    """
+    Test aggregate as-at feature's universe (no entity)
+    """
+    _ = catalog
+    graph, node = aggregate_asat_no_entity_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          1 AS "dummy_entity"
         """
     ).strip()
     assert constructor.get_entity_universe_template().sql(pretty=True) == expected
