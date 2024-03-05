@@ -122,6 +122,7 @@ class FeatureListController(
                 **data.dict(by_alias=True),
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
             }
         )
         task_id = await self.task_manager.submit(payload=payload)
