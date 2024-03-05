@@ -7,6 +7,7 @@ from typing import Any, Sequence
 
 from bson import ObjectId
 
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
@@ -84,7 +85,12 @@ class FeatureListCreateWithBatchFeatureCreationTask(
         feature_list_create = FeatureListCreate(
             _id=payload.id, name=payload.name, feature_ids=feature_ids
         )
-        await self.feature_list_controller.create_feature_list(data=feature_list_create)
+        await self.feature_list_controller.create_feature_list(
+            data=feature_list_create,
+            progress_callback=get_ranged_progress_callback(
+                self.task_progress_updater.update_progress, 90, 100
+            ),
+        )
         await self.task_progress_updater.update_progress(
             percent=100, message="Completed feature list creation"
         )

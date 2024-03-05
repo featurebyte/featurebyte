@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, cast
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +14,7 @@ from redis import Redis
 from redis.lock import Lock
 
 from featurebyte.common.model_util import get_version
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.logging import get_logger
@@ -236,8 +237,10 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         }
         return derived_output
 
-    async def extract_entity_relationship_data(
-        self, features: List[FeatureModel]
+    async def extract_entity_relationship_data(  # pylint: disable=too-many-locals
+        self,
+        features: List[FeatureModel],
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListEntityRelationshipData:
         """
         Extract entity relationship data from feature models
@@ -246,6 +249,8 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         ----------
         features: List[FeatureModel]
             List of feature models
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback
 
         Returns
         -------
@@ -273,7 +278,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 entity_ids=list(set().union(*[feature.entity_ids for feature in features]))
             )
         )
-        for feature in features:
+        for idx, feature in enumerate(features):
             feature_list_to_feature_primary_entity_join_steps = (
                 EntityLookupPlanner.generate_lookup_steps(
                     available_entity_ids=fl_primary_entity_ids,
@@ -303,6 +308,12 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             )
             if feature_entity_lookup_info.join_steps:
                 features_entity_lookup_info.append(feature_entity_lookup_info)
+
+            if progress_callback:
+                await progress_callback(
+                    (idx + 1) * 100 // len(features),
+                    f"Extracting entity relationship data for feature {feature.name}",
+                )
 
         return FeatureListEntityRelationshipData(
             primary_entity_ids=fl_primary_entity_ids,
@@ -432,7 +443,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 )
                 raise exc
 
-    async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
+    async def create_document(
+        self,
+        data: FeatureListServiceCreate,
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{
@@ -446,12 +461,17 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         await self._check_document_unique_constraints(document=document)
 
         # check whether the feature(s) in the feature list saved to persistent or not
-        logger.info("Extracting feature data")
+        if progress_callback:
+            await progress_callback(10, "Extracting feature data")
         feature_data = await self._extract_feature_data(document)
 
-        logger.info("Extracting entity relationship data")
+        if progress_callback:
+            await progress_callback(30, "Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
-            features=feature_data["features"]
+            features=feature_data["features"],
+            progress_callback=get_ranged_progress_callback(progress_callback, 30, 60)
+            if progress_callback
+            else None,
         )
 
         # update document with derived output
@@ -466,8 +486,12 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             }
         )
 
-        logger.info("Moving feature clusters to storage")
+        if progress_callback:
+            await progress_callback(70, "Moving feature clusters to storage")
         await self._move_feature_cluster_to_storage(document)
+
+        if progress_callback:
+            await progress_callback(80, "Creating feature list document")
         try:
             with timer("Creating feature list document", logger):
                 insert_id = await self._create_document(
@@ -480,6 +504,9 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 logger.info("Cleaning up feature clusters file after document creation failure")
                 await self.storage.delete(Path(document.feature_clusters_path))
             raise exc
+
+        if progress_callback:
+            await progress_callback(100, "Feature list document created")
         return await self.get_document(document_id=insert_id)
 
     async def list_documents_iterator(  # type: ignore[override]
