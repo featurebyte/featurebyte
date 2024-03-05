@@ -31,7 +31,7 @@ class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     type: Literal["databricks_unity.offline"] = "databricks_unity.offline"
     """ Offline store type selector"""
 
-    storage_path: Optional[str]
+    storage_path: Optional[str]  # type: ignore
     group_name: str
     database_credential: AccessTokenCredential
 
