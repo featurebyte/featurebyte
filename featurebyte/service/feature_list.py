@@ -182,21 +182,23 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         document.internal_feature_clusters = None
         return document
 
-    async def _feature_iterator(
-        self, feature_ids: Sequence[ObjectId]
-    ) -> AsyncIterator[FeatureModel]:
-        # use this iterator to check whether the feature(s) in the feature list saved to persistent or not
-        # if not, raise DocumentNotFoundError
-        for feature_id in feature_ids:
-            feature = await self.feature_service.get_document(document_id=feature_id)
-            yield feature
-
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_namespace_ids = set()
         features = []
-        async for feature in self._feature_iterator(feature_ids=document.feature_ids):
+        feature_id_to_feature = {
+            feature.id: feature
+            async for feature in self.feature_service.list_documents_iterator(
+                query_filter={"_id": {"$in": document.feature_ids}},
+            )
+        }
+        for feature_id in document.feature_ids:
+            if feature_id not in feature_id_to_feature:
+                # call get_document to raise DocumentNotFoundError
+                await self.feature_service.get_document(document_id=feature_id)
+
             # retrieve feature from the persistent
+            feature = feature_id_to_feature[feature_id]
             features.append(feature)
 
             # validate the feature list
