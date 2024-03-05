@@ -337,6 +337,36 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
+    async def _clean_up_mongo_create_document(
+        self,
+        feature_list: FeatureListModel,
+        feature_list_namespace: Optional[FeatureListNamespaceModel],
+    ) -> None:
+        await self.persistent.delete_one(
+            collection_name=self.collection_name,
+            query_filter={"_id": feature_list.id},
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        if feature_list_namespace:
+            feature_list_ids = self.exclude_object_id(
+                feature_list_namespace.feature_list_ids, feature_list.id
+            )
+            if feature_list_ids:
+                await self.feature_list_namespace_service.update_document(
+                    document_id=feature_list.feature_list_namespace_id,
+                    data=FeatureListNamespaceServiceUpdate(feature_list_ids=feature_list_ids),
+                    return_document=False,
+                )
+            else:
+                await self.feature_list_namespace_service.delete_document(
+                    document_id=feature_list.feature_list_namespace_id
+                )
+
+        await self._update_features(
+            feature_list.feature_ids, deleted_feature_list_id=feature_list.id
+        )
+
     async def _create_document(
         self, feature_list: FeatureListModel, features: List[FeatureModel]
     ) -> ObjectId:
@@ -360,7 +390,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
         # create feature list document
         with self.get_feature_list_creation_lock(FEATURE_LIST_CREATION_REDIS_LOCK_TIMEOUT):
-            async with self.persistent.start_transaction():
+            try:
                 insert_id = await self.persistent.insert_one(
                     collection_name=self.collection_name,
                     document=feature_list_doc,
@@ -379,13 +409,15 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                         return_document=True,
                     )
                 else:
-                    await self.feature_list_namespace_service.create_document(
-                        data=FeatureListNamespaceModel(
-                            _id=feature_list.feature_list_namespace_id or ObjectId(),
-                            name=feature_list.name,
-                            feature_list_ids=[insert_id],
-                            default_feature_list_id=insert_id,
-                            features=features,
+                    feature_list_namespace = (
+                        await self.feature_list_namespace_service.create_document(
+                            data=FeatureListNamespaceModel(
+                                _id=feature_list.feature_list_namespace_id or ObjectId(),
+                                name=feature_list.name,
+                                feature_list_ids=[insert_id],
+                                default_feature_list_id=insert_id,
+                                features=features,
+                            )
                         )
                     )
 
@@ -394,6 +426,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                     feature_list.feature_ids, inserted_feature_list_id=insert_id
                 )
                 return cast(ObjectId, insert_id)
+            except Exception as exc:
+                await self._clean_up_mongo_create_document(
+                    feature_list=feature_list, feature_list_namespace=feature_list_namespace
+                )
+                raise exc
 
     async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
