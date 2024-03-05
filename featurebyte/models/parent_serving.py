@@ -77,6 +77,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             relation_table = tables_by_id[info.relation_table_id]
             parent_entity = entities_by_id[info.related_entity_id]
             child_entity = entities_by_id[info.entity_id]
+
             child_column_name = None
             parent_column_name = None
             for column_info in relation_table.columns_info:
@@ -86,6 +87,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
                     parent_column_name = column_info.name
             assert child_column_name is not None
             assert parent_column_name is not None
+
             default_entity_lookup_steps[info.id] = EntityLookupStep(
                 id=info.id,
                 table=relation_table.dict(by_alias=True),
@@ -100,6 +102,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
                     entity_id=child_entity.id,
                 ),
             )
+
         values["default_entity_lookup_steps"] = default_entity_lookup_steps
         return values
 
@@ -109,6 +112,25 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
         child_serving_name_override: Optional[str] = None,
         parent_serving_name_override: Optional[str] = None,
     ) -> EntityLookupStep:
+        """
+        Get a EntityLookupStep object given the id of the relationship info and optional serving
+        name overrides
+
+        Parameters
+        ----------
+        relationship_info_id: PydanticObjectId
+            Id of the EntityRelationshipInfo
+        child_serving_name_override: Optional[str]
+            Override child entity's serving name. This is the input column name for the parent
+            entity lookup step.
+        parent_serving_name_override: Optional[str]
+            Override parent entity's serving name. This is the output column name for the parent
+            entity lookup step.
+
+        Returns
+        -------
+        EntityLookupStep
+        """
         assert relationship_info_id in self.default_entity_lookup_steps
         entity_lookup_step = self.default_entity_lookup_steps[relationship_info_id]
         if child_serving_name_override is not None or parent_serving_name_override is not None:
