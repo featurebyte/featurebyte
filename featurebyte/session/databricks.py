@@ -2,11 +2,10 @@
 DatabricksSession class
 """
 # pylint: disable=duplicate-code
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, BinaryIO, Dict, Optional
 
 import json
 import os
-from base64 import b64encode
 from io import BytesIO
 
 import pandas as pd
@@ -17,6 +16,7 @@ from pydantic import Field, PrivateAttr
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import SourceType
+from featurebyte.session.base import APPLICATION_NAME
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
@@ -92,25 +92,35 @@ class DatabricksSession(BaseSparkSession):
             access_token=self.database_credential.access_token,
             catalog=self.catalog_name,
             schema=self.schema_name,
+            _user_agent_entry=APPLICATION_NAME,
+        )
+
+    @property
+    def _workspace_client(self) -> WorkspaceClient:
+        # ensure google credentials not in environment variables to avoid conflict
+        os.environ.pop("GOOGLE_CREDENTIALS", None)
+        return WorkspaceClient(
+            host=self.host,
+            token=self.database_credential.access_token,
         )
 
     def _initialize_storage(self) -> None:
         self.storage_path = self.storage_path.rstrip("/")
         self._storage_base_path = self.storage_path.lstrip("dbfs:")
-        # ensure google credentials not in environment variables to avoid conflict
-        os.environ.pop("GOOGLE_CREDENTIALS", None)
-        workspace_client = WorkspaceClient(
-            host=self.host,
-            token=self.database_credential.access_token,
-        )
-        self._dbfs_client = DbfsExt(workspace_client.api_client)
+        self._dbfs_client = DbfsExt(self._workspace_client.api_client)
+
+    def _upload_file_to_storage(self, path: str, src: BinaryIO) -> None:
+        self._dbfs_client.upload(path=path, src=src, overwrite=True)
+
+    def _delete_file_from_storage(self, path: str) -> None:
+        self._dbfs_client.delete(path=path)
 
     def test_storage_connection(self) -> None:
         # test connectivity
         conn_test_filename = f"_conn_test_{ObjectId()}"
         path = f"{self._storage_base_path}/{conn_test_filename}"
-        self._dbfs_client.put(path, contents=b64encode("OK".encode("utf8")).decode("utf-8"))
-        self._dbfs_client.delete(path=path)
+        self._upload_file_to_storage(path, BytesIO(b"OK"))
+        self._delete_file_from_storage(path)
 
     def upload_file_to_storage(
         self, local_path: str, remote_path: str, is_binary: bool = True
@@ -121,18 +131,18 @@ class DatabricksSession(BaseSparkSession):
         )
         path = f"{self._storage_base_path}/{remote_path}"
         with open(local_path, mode="rb") as in_file_obj:
-            self._dbfs_client.upload(path=path, src=in_file_obj, overwrite=True)
+            self._upload_file_to_storage(path, in_file_obj)
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         buffer = BytesIO()
         dataframe.to_parquet(buffer, version="2.4")
         buffer.seek(0)
         path = f"{self._storage_base_path}/{remote_path}"
-        self._dbfs_client.upload(path=path, src=buffer, overwrite=True)
+        self._upload_file_to_storage(path, buffer)
 
     def delete_path_from_storage(self, remote_path: str) -> None:
         path = f"{self._storage_base_path}/{remote_path}"
-        self._dbfs_client.delete(path=path)
+        self._delete_file_from_storage(path)
 
     @classmethod
     def is_threadsafe(cls) -> bool:

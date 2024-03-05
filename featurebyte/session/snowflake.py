@@ -32,7 +32,7 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
@@ -72,6 +72,7 @@ class SnowflakeSession(BaseSession):
                 database=self.database_name,
                 schema=self.schema_name,
                 role_name=self.role_name,
+                application=APPLICATION_NAME,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc

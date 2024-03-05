@@ -382,7 +382,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             catalog_name=os.getenv("DATABRICKS_CATALOG"),
             schema_name=temp_schema_name,
-            group_name="testing",
             storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
@@ -395,7 +394,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
             schema_name=temp_schema_name,
             group_name="developers",
-            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":

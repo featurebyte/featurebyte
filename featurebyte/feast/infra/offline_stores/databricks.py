@@ -1,7 +1,7 @@
 """
 DataBricks offline store
 """
-from typing import Literal
+from typing import Literal, Optional
 
 from featurebyte import AccessTokenCredential
 from featurebyte.feast.infra.offline_stores.spark_thrift import (
@@ -31,6 +31,7 @@ class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     type: Literal["databricks_unity.offline"] = "databricks_unity.offline"
     """ Offline store type selector"""
 
+    storage_path: Optional[str]
     group_name: str
     database_credential: AccessTokenCredential
 

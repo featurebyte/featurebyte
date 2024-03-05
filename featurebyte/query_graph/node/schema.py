@@ -105,9 +105,11 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         description="The name of the schema to use for creation of output tables."
     )
     group_name: Optional[StrictStr] = Field(
-        description="The name of the group to use for creation of output tables."
+        description="The name of the group to use for creation of output tables. Required for Unity Catalog."
     )
-    storage_path: StrictStr = Field(description="DBFS path to use for file storage.")
+    storage_path: Optional[StrictStr] = Field(
+        description="DBFS path to use for file storage. Not required for Unity Catalog."
+    )
 
     @root_validator(pre=True)
     @classmethod
