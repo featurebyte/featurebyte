@@ -893,7 +893,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS"
-        assert response_dict["output_path"] is None
+        assert response_dict["output_path"] == f"/feature_list/{feature_list_id}"
         assert response_dict["traceback"] is None
 
         # check feature_list & feature is created
