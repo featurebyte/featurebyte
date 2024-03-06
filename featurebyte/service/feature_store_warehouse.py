@@ -7,12 +7,14 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, MaterializedTableNamePrefix
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.materialisation import get_feature_store_id_expr
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -106,6 +108,20 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
 
+    @staticmethod
+    def _is_visible_table(table_name: str, filter_featurebyte_tables: bool) -> bool:
+        if table_name.startswith("__"):
+            return False
+        if not filter_featurebyte_tables:
+            return True
+        # quick filter for materialized tables
+        if "TABLE" not in table_name:
+            return False
+        for prefix in MaterializedTableNamePrefix.visible():
+            if table_name.startswith(prefix):
+                return True
+        return False
+
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
@@ -139,6 +155,20 @@ class FeatureStoreWarehouseService:
             feature_store=feature_store
         )
 
+        is_featurebyte_schema = False
+        try:
+            sql_expr = get_feature_store_id_expr(
+                database_name=database_name, schema_name=schema_name
+            )
+            sql = sql_to_string(
+                sql_expr,
+                source_type=db_session.source_type,
+            )
+            _ = await db_session.execute_query(sql)
+            is_featurebyte_schema = True
+        except db_session.no_schema_error:
+            pass
+
         try:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name
@@ -146,8 +176,9 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
 
-        # exclude tables with names that has a "__" prefix
-        return [table for table in tables if not table.name.startswith("__")]
+        return [
+            table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
+        ]
 
     async def list_columns(
         self,

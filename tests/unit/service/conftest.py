@@ -78,6 +78,12 @@ def feature_store_service_fixture(app_container):
     return app_container.feature_store_service
 
 
+@pytest.fixture(name="feature_store_warehouse_service")
+def feature_store_warehouse_service_fixture(app_container):
+    """FeatureStore Warehouse service"""
+    return app_container.feature_store_warehouse_service
+
+
 @pytest.fixture(name="entity_service")
 def entity_service_fixture(app_container):
     """Entity service"""

@@ -474,6 +474,17 @@ class MaterializedTableNamePrefix(StrEnum):
         """
         return [c.value for c in cls]
 
+    @classmethod
+    def visible(cls) -> list[str]:
+        """
+        List all prefixes for visible tables
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls if c.value != cls.FEATURE_TABLE_CACHE]
+
 
 class FunctionParameterInputForm(StrEnum):
     """Generic function's parameter input form type"""
