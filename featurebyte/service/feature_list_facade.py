@@ -1,6 +1,8 @@
 """
 Feature List Facade Service which is responsible for handling high level feature list operations
 """
+from typing import Any, Callable, Coroutine, Optional
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError, DocumentNotFoundError
@@ -35,7 +37,11 @@ class FeatureListFacadeService:
         self.feature_readiness_service = feature_readiness_service
         self.version_service = version_service
 
-    async def create_feature_list(self, data: FeatureListServiceCreate) -> FeatureListModel:
+    async def create_feature_list(
+        self,
+        data: FeatureListServiceCreate,
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ) -> FeatureListModel:
         """
         Create a new feature list
 
@@ -43,12 +49,16 @@ class FeatureListFacadeService:
         ----------
         data: FeatureListServiceCreate
             Feature list service create payload
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback
 
         Returns
         -------
         FeatureListModel
         """
-        document = await self.feature_list_service.create_document(data=data)
+        document = await self.feature_list_service.create_document(
+            data=data, progress_callback=progress_callback
+        )
         await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
         )

@@ -69,23 +69,6 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         )
         return [doc async for doc in docs]
 
-    async def get_children_entities(self, entity_id: ObjectId) -> list[EntityModel]:
-        """
-        Retrieve the children of an entity
-
-        Parameters
-        ----------
-        entity_id: ObjectId
-            Entity identifier
-
-        Returns
-        -------
-        list[EntityModel]
-        """
-        query_filter = {"parents": {"$elemMatch": {"id": ObjectId(entity_id)}}}
-        docs = self.list_documents_iterator(query_filter=query_filter)
-        return [doc async for doc in docs]
-
     async def get_entities(self, entity_ids: set[ObjectId]) -> list[EntityModel]:
         """
         Retrieve entities given a list of entity ids

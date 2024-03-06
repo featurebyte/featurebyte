@@ -12,10 +12,12 @@ from featurebyte.exception import (
     DocumentError,
     DocumentInconsistencyError,
     DocumentModificationBlockedError,
+    DocumentNotFoundError,
 )
 from featurebyte.models.base import ReferenceInfo
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_list import FeatureReadinessDistribution
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
@@ -79,6 +81,91 @@ async def test_create_document__clean_up_remote_attributes_on_error(
 
     # check that the remote path has been removed
     assert not os.path.exists(expected_full_path)
+
+
+@pytest.mark.asyncio
+async def test_create_document__clean_up_mongo(
+    feature, feature_list_service, feature_list_namespace_service
+):
+    """Test clean up mongo on feature list creation error"""
+    feature_list_id = ObjectId()
+    namespace_id = ObjectId()
+    create_data = FeatureListServiceCreate(
+        _id=feature_list_id,
+        name="some_name",
+        feature_ids=[feature.id],
+        feature_list_namespace_id=namespace_id,
+    )
+
+    # test error during feature list creation (namespace not found)
+    with patch.object(
+        feature_list_service.feature_list_namespace_service, "create_document"
+    ) as mock_namespace_create:
+        mock_namespace_create.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with patch.object(
+        feature_list_service.feature_service, "update_documents"
+    ) as mock_features_update:
+        mock_features_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed & namespace not created
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_namespace_service.get_document(document_id=namespace_id)
+
+    # create a new namespace
+    default_feature_list_id = ObjectId()
+    await feature_list_namespace_service.create_document(
+        data=FeatureListNamespaceModel(
+            _id=namespace_id,
+            name=create_data.name,
+            feature_namespace_ids=[feature.feature_namespace_id],
+            feature_list_ids=[default_feature_list_id],
+            default_feature_list_id=default_feature_list_id,
+            catalog_id=feature_list_service.catalog_id,
+            user_id=feature_list_service.user.id,
+        )
+    )
+
+    # test error during feature list creation (namespace found)
+    with patch.object(
+        feature_list_service.feature_list_namespace_service, "update_document"
+    ) as mock_namespace_update:
+        mock_namespace_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with patch.object(
+        feature_list_service.feature_service, "update_documents"
+    ) as mock_features_update:
+        mock_features_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed & namespace not updated
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    namespace = await feature_list_namespace_service.get_document(document_id=namespace_id)
+    assert namespace.feature_list_ids == [default_feature_list_id]
 
 
 @pytest.mark.asyncio

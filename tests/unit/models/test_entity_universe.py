@@ -5,6 +5,7 @@ import textwrap
 from datetime import datetime
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import SourceType
 from featurebyte.models.entity_universe import (
@@ -13,7 +14,7 @@ from featurebyte.models.entity_universe import (
     get_combined_universe,
     get_entity_universe_constructor,
 )
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 
@@ -42,6 +43,18 @@ def aggregate_asat_graph_and_node(aggregate_asat_feature):
     """
     graph = aggregate_asat_feature.graph
     aggregate_asat_node = get_node_from_feature(aggregate_asat_feature, NodeType.AGGREGATE_AS_AT)
+    return graph, aggregate_asat_node
+
+
+@pytest.fixture
+def aggregate_asat_no_entity_graph_and_node(aggregate_asat_no_entity_feature):
+    """
+    Fixture for an aggregate_asat aggregate node (no entity)
+    """
+    graph = aggregate_asat_no_entity_feature.graph
+    aggregate_asat_node = get_node_from_feature(
+        aggregate_asat_no_entity_feature, NodeType.AGGREGATE_AS_AT
+    )
     return graph, aggregate_asat_node
 
 
@@ -75,12 +88,19 @@ def join_steps(snowflake_scd_table_with_entity):
     Fixture for a join steps to be applied when constructing entity universe
     """
     return [
-        JoinStep(
+        EntityLookupStep(
+            id=ObjectId(),
             table=snowflake_scd_table_with_entity.cached_model,
-            parent_key="col_text",
-            parent_serving_name="cust_id",
-            child_key="cust_id_child",
-            child_serving_name="cust_id_child_serving_name",
+            parent=EntityLookupInfo(
+                key="col_text",
+                serving_name="cust_id",
+                entity_id=ObjectId(),
+            ),
+            child=EntityLookupInfo(
+                key="cust_id_child",
+                serving_name="cust_id_child_serving_name",
+                entity_id=ObjectId(),
+            ),
         )
     ]
 
@@ -146,6 +166,22 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        """
+    ).strip()
+    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+
+
+def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_graph_and_node):
+    """
+    Test aggregate as-at feature's universe (no entity)
+    """
+    _ = catalog
+    graph, node = aggregate_asat_no_entity_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          1 AS "dummy_entity"
         """
     ).strip()
     assert constructor.get_entity_universe_template().sql(pretty=True) == expected

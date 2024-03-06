@@ -5,11 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-from featurebyte.exception import (
-    EntityJoinPathNotFoundError,
-    RequiredEntityNotProvidedError,
-    UnexpectedServingNamesMappingError,
-)
+from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -170,7 +166,7 @@ class EntityValidationService:
             join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                 entity_info
             )
-        except EntityJoinPathNotFoundError:
+        except RequiredEntityNotProvidedError:
             raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
                 entity_info.format_missing_entities_error(
                     [entity.id for entity in entity_info.missing_entities]

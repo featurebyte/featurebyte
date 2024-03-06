@@ -14,7 +14,7 @@ from sqlglot.expressions import Expression, Select, Subqueryable, select
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -46,7 +46,7 @@ class EntityUniverseParams:
 
     graph: QueryGraphModel
     node: Node
-    join_steps: Optional[List[JoinStep]]
+    join_steps: Optional[List[EntityLookupStep]]
 
 
 class BaseEntityUniverseConstructor:
@@ -174,6 +174,9 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     def get_entity_universe_template(self) -> Expression:
         node = cast(AggregateAsAtNode, self.node)
 
+        if not node.parameters.serving_names:
+            return get_dummy_entity_universe()
+
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
@@ -263,6 +266,20 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         return universe_expr
 
 
+def get_dummy_entity_universe() -> Select:
+    """
+    Returns a dummy entity universe (actual value not important since it doesn't affect features
+    calculation)
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(
+        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+    )
+
+
 def get_entity_universe_constructor(
     graph: QueryGraphModel, node: Node, source_type: SourceType
 ) -> BaseEntityUniverseConstructor:
@@ -297,14 +314,14 @@ def get_entity_universe_constructor(
     raise NotImplementedError(f"Unsupported node type: {node.type}")
 
 
-def _apply_join_step(universe_expr: Expression, join_step: JoinStep) -> Expression:
+def _apply_join_step(universe_expr: Expression, join_step: EntityLookupStep) -> Expression:
     assert isinstance(universe_expr, Subqueryable)
     table_details_dict = join_step.table.tabular_source.table_details.dict()
     updated_universe_expr = (
         select(
             expressions.alias_(
-                get_qualified_column_identifier(join_step.child_key, "CHILD"),
-                alias=join_step.child_serving_name,
+                get_qualified_column_identifier(join_step.child.key, "CHILD"),
+                alias=join_step.child.serving_name,
                 quoted=True,
             )
         )
@@ -314,8 +331,8 @@ def _apply_join_step(universe_expr: Expression, join_step: JoinStep) -> Expressi
             join_alias="CHILD",
             join_type="LEFT",
             on=expressions.EQ(
-                this=get_qualified_column_identifier(join_step.parent_serving_name, "PARENT"),
-                expression=get_qualified_column_identifier(join_step.parent_key, "CHILD"),
+                this=get_qualified_column_identifier(join_step.parent.serving_name, "PARENT"),
+                expression=get_qualified_column_identifier(join_step.parent.key, "CHILD"),
             ),
         )
         .distinct()
@@ -323,7 +340,7 @@ def _apply_join_step(universe_expr: Expression, join_step: JoinStep) -> Expressi
     return updated_universe_expr
 
 
-def apply_join_steps(universe_expr: Expression, join_steps: List[JoinStep]) -> Expression:
+def apply_join_steps(universe_expr: Expression, join_steps: List[EntityLookupStep]) -> Expression:
     """
     Apply join steps to lookup child entities from parent entities
 
@@ -335,7 +352,7 @@ def apply_join_steps(universe_expr: Expression, join_steps: List[JoinStep]) -> E
     ----------
     universe_expr: Expression
         Entity universe query in non-primary entity
-    join_steps: List[JoinStep]
+    join_steps: List[EntityLookupStep]
         A series of join steps that convert the entity universe to be in terms of primary entity
 
     Returns
@@ -408,9 +425,7 @@ def construct_window_aggregates_universe(
     Expression
     """
     if not serving_names:
-        return expressions.select(
-            expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
-        )
+        return get_dummy_entity_universe()
 
     assert len(aggregate_result_table_names) > 0
 

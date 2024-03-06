@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Union
 
 import copy
 from http import HTTPStatus
@@ -122,13 +122,16 @@ class FeatureListController(
                 **data.dict(by_alias=True),
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
             }
         )
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature_list(
-        self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
+        self,
+        data: Union[FeatureListCreate, FeatureListNewVersionCreate],
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModelResponse:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
@@ -137,6 +140,8 @@ class FeatureListController(
         ----------
         data: FeatureListCreate | FeatureListNewVersionCreate
             Feature list creation payload
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback
 
         Returns
         -------
@@ -145,7 +150,9 @@ class FeatureListController(
         """
         if isinstance(data, FeatureListCreate):
             create_data = FeatureListServiceCreate(**data.dict(by_alias=True))
-            document = await self.feature_list_facade_service.create_feature_list(data=create_data)
+            document = await self.feature_list_facade_service.create_feature_list(
+                data=create_data, progress_callback=progress_callback
+            )
         else:
             document = await self.feature_list_facade_service.create_new_version(data=data)
         return await self.get(document_id=document.id)
