@@ -28,6 +28,7 @@ from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
 )
+from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -38,6 +39,17 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
+
+
+class FeatureListCreateJob(FeatureByteBaseModel):
+    """
+    Feature List Job Creation schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    features: List[FeatureParameters] = Field(min_items=1)
+    features_conflict_resolution: ConflictResolution
 
 
 class FeatureListServiceCreate(FeatureListCreate):

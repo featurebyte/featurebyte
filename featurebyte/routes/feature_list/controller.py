@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 import copy
 from http import HTTPStatus
 
+from bson import json_util
 from bson.objectid import ObjectId
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
@@ -27,6 +28,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateJob,
     FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListModelResponse,
@@ -49,6 +51,10 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
+from featurebyte.schema.worker.task.feature_list_create import (
+    FeatureListCreateTaskPayload,
+    FeaturesParameters,
+)
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
 )
@@ -62,6 +68,7 @@ from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_job_log import TileJobLogService
+from featurebyte.storage import Storage
 
 
 # pylint: disable=too-many-instance-attributes
@@ -88,6 +95,7 @@ class FeatureListController(
         tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
         task_manager: TaskManager,
+        storage: Storage,
     ):
         super().__init__(feature_list_service)
         self.feature_list_facade_service = feature_list_facade_service
@@ -100,6 +108,7 @@ class FeatureListController(
         self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
         self.task_manager = task_manager
+        self.storage = storage
 
     async def submit_feature_list_create_with_batch_feature_create_task(
         self, data: FeatureListCreateWithBatchFeatureCreation
@@ -120,6 +129,42 @@ class FeatureListController(
         payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(
             **{
                 **data.dict(by_alias=True),
+                "user_id": self.service.user.id,
+                "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
+            }
+        )
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_manager.get_task(task_id=str(task_id))
+
+    async def submit_feature_list_create_job(self, data: FeatureListCreateJob) -> Optional[Task]:
+        """
+        Submit feature list creation task
+
+        Parameters
+        ----------
+        data: FeatureListCreateJob
+            Feature list creation job payload
+
+        Returns
+        -------
+        Optional[Task]
+            Task object
+        """
+
+        features_parameters_path = self.service.get_full_remote_file_path(
+            f"feature_list/{data.id}/features_parameters_{ObjectId()}.json"
+        )
+        feature_parameters = FeaturesParameters(features=data.features)
+        await self.storage.put_text(
+            json_util.dumps(feature_parameters.dict(by_alias=True)), features_parameters_path
+        )
+        payload = FeatureListCreateTaskPayload(
+            **{
+                "feature_list_id": data.id,
+                "feature_list_name": data.name,
+                "features_parameters_path": str(features_parameters_path),
+                "features_conflict_resolution": data.features_conflict_resolution,
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
                 "output_document_id": data.id,

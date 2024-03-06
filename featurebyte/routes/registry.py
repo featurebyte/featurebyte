@@ -181,6 +181,7 @@ from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,
 )
+from featurebyte.worker.task.feature_list_create import FeatureListCreateTask
 from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
@@ -376,6 +377,7 @@ app_container_config.register_class(BatchRequestTableTask)
 app_container_config.register_class(BatchFeatureTableTask)
 app_container_config.register_class(MaterializedTableDeleteTask)
 app_container_config.register_class(BatchFeatureCreateTask)
+app_container_config.register_class(FeatureListCreateTask)
 app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTask)
 app_container_config.register_class(StaticSourceTableTask)
 app_container_config.register_class(TileTask)
