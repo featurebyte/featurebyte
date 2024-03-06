@@ -428,13 +428,13 @@ class BaseFeatureGroup(AsyncMixin):
         feature_list_id: ObjectId,
         feature_list_name: str,
         features: List[BatchFeatureItem],
-        conflict_resolution: ConflictResolution,
+        features_conflict_resolution: ConflictResolution,
     ) -> FeatureListCreateJob:
         return FeatureListCreateJob(
             _id=feature_list_id,
             name=feature_list_name,
             features=[FeatureParameters(id=feature.id, name=feature.name) for feature in features],
-            features_conflict_resolution=conflict_resolution,
+            features_conflict_resolution=features_conflict_resolution,
         )
 
     def _save_feature_list(
@@ -465,7 +465,7 @@ class BaseFeatureGroup(AsyncMixin):
             feature_list_id=feature_list_id,
             feature_list_name=feature_list_name,
             features=feature_items,
-            conflict_resolution=conflict_resolution,
+            features_conflict_resolution=conflict_resolution,
         )
         self.post_async_task(
             route="/feature_list/job",
