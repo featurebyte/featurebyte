@@ -9,7 +9,7 @@ from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServ
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.parent_serving import EntityRelationshipsContext, ParentServingPreparation
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
@@ -79,11 +79,9 @@ class EntityValidationService:
 
         # Extract required entities from feature list (faster) or graph
         if feature_list_model is not None:
-            if self._to_use_frozen_relationships(feature_list_model):
-                required_entity_ids = feature_list_model.primary_entity_ids
-            else:
-                required_entity_ids = feature_list_model.entity_ids
-            required_entities = await self.entity_service.get_entities(set(required_entity_ids))
+            required_entities = await self.entity_service.get_entities(
+                set(feature_list_model.entity_ids)
+            )
         else:
             assert graph_nodes is not None
             graph, nodes = graph_nodes
@@ -108,7 +106,7 @@ class EntityValidationService:
         graph_nodes: Optional[Tuple[QueryGraphModel, list[Node]]] = None,
         feature_list_model: Optional[FeatureListModel] = None,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> ParentServingPreparation:
+    ) -> Optional[ParentServingPreparation]:
         """
         Validate that entities are provided correctly in feature requests
 
@@ -128,7 +126,7 @@ class EntityValidationService:
 
         Returns
         -------
-        ParentServingPreparation
+        Optional[ParentServingPreparation]
 
         Raises
         ------
@@ -161,64 +159,21 @@ class EntityValidationService:
                 )
 
         if entity_info.are_all_required_entities_provided():
-            join_steps = []
-        else:
-            # Try to see if missing entities can be obtained using the provided entities as children
-            try:
-                join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
-                    entity_info
+            return None
+
+        # Try to see if missing entities can be obtained using the provided entities as children
+        try:
+            join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                entity_info
+            )
+        except RequiredEntityNotProvidedError:
+            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
+                entity_info.format_missing_entities_error(
+                    [entity.id for entity in entity_info.missing_entities]
                 )
-            except RequiredEntityNotProvidedError:
-                raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                    entity_info.format_missing_entities_error(
-                        [entity.id for entity in entity_info.missing_entities]
-                    )
-                )
+            )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())
-        entity_relationships_context = await self._get_entity_relationships_context(
-            entity_info,
-            feature_list_model,
-        )
         return ParentServingPreparation(
-            join_steps=join_steps,
-            feature_store_details=feature_store_details,
-            entity_relationships_context=entity_relationships_context,
-        )
-
-    @staticmethod
-    def _to_use_frozen_relationships(feature_list_model: FeatureListModel) -> bool:
-        return (
-            feature_list_model.feature_clusters is not None
-            and feature_list_model.feature_clusters[0].feature_node_relationships_infos is not None
-        )
-
-    async def _get_entity_relationships_context(
-        self,
-        entity_info: EntityInfo,
-        feature_list_model: Optional[FeatureListModel],
-    ) -> Optional[EntityRelationshipsContext]:
-        if feature_list_model is None or feature_list_model.feature_clusters is None:
-            return None
-
-        feature_cluster = feature_list_model.feature_clusters[0]
-        if feature_cluster.feature_node_relationships_infos is None:
-            return None
-
-        all_relationships = set(feature_list_model.relationships_info or [])
-        all_relationships.update(feature_list_model.feature_clusters[0].combined_relationships_info)
-        entity_lookup_step_creator = (
-            await self.parent_entity_lookup_service.get_entity_lookup_step_creator(
-                list(all_relationships)
-            )
-        )
-        return EntityRelationshipsContext(
-            feature_list_primary_entity_ids=feature_list_model.primary_entity_ids,
-            feature_list_serving_names=[
-                entity_info.get_effective_serving_name(entity_info.get_entity(entity_id))
-                for entity_id in feature_list_model.primary_entity_ids
-            ],
-            feature_list_relationships_info=feature_list_model.relationships_info,
-            feature_node_relationships_infos=feature_cluster.feature_node_relationships_infos,
-            entity_lookup_step_creator=entity_lookup_step_creator,
+            join_steps=join_steps, feature_store_details=feature_store_details
         )
