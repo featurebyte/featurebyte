@@ -104,3 +104,4 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ],
         ]
+        auditable = False

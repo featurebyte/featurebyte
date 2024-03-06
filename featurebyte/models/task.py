@@ -50,3 +50,4 @@ class Task(FeatureByteBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ],
         ]
+        auditable = False
