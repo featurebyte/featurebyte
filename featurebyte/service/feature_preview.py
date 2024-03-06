@@ -289,6 +289,11 @@ class FeaturePreviewService(PreviewService):
         -------
         dict[str, Any]
             Dataframe converted to json string
+
+        Raises
+        ------
+        LimitExceededError
+            raised if the feature list preview has more than 30 features
         """
         if featurelist_preview.feature_list_id is not None:
             feature_list_model = await self.feature_list_service.get_document(
