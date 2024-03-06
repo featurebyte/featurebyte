@@ -63,7 +63,7 @@ class DatabricksUnitySession(DatabricksSession):
         # set storage path based on catalog and schema name
         catalog_name = data.get("catalog_name")
         schema_name = data.get("schema_name")
-        data["storage_path"] = f"dbfs:/Volumes/{catalog_name}/{schema_name}/staging"
+        data["storage_path"] = f"/Volumes/{catalog_name}/{schema_name}/staging"
         super().__init__(**data)
 
     def initializer(self) -> BaseSchemaInitializer:
@@ -82,7 +82,8 @@ class DatabricksUnitySession(DatabricksSession):
         return f"`{self.catalog_name}`.`{self.schema_name}`.`staging`"
 
     def _initialize_storage(self) -> None:
-        super()._initialize_storage()
+        self.storage_path = self.storage_path.rstrip("/")
+        self._storage_base_path = self.storage_path
         self._files_client = FilesAPI(self._workspace_client.api_client)
 
     def _upload_file_to_storage(self, path: str, src: BinaryIO) -> None:

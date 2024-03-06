@@ -134,11 +134,11 @@ class DatabricksSession(BaseSparkSession):
             self._upload_file_to_storage(path, in_file_obj)
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
-        buffer = BytesIO()
-        dataframe.to_parquet(buffer, version="2.4")
-        buffer.seek(0)
         path = f"{self._storage_base_path}/{remote_path}"
-        self._upload_file_to_storage(path, buffer)
+        with BytesIO() as buffer:
+            dataframe.to_parquet(buffer, version="2.4")
+            buffer.seek(0)
+            self._upload_file_to_storage(path, buffer)
 
     def delete_path_from_storage(self, remote_path: str) -> None:
         path = f"{self._storage_base_path}/{remote_path}"
