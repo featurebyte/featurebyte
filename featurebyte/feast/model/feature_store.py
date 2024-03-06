@@ -21,7 +21,11 @@ from featurebyte.models.credential import (
     BaseStorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.query_graph.node.schema import BaseDatabaseDetails, DatabricksDetails
+from featurebyte.query_graph.node.schema import (
+    BaseDatabaseDetails,
+    DatabricksDetails,
+    DatabricksUnityDetails,
+)
 from featurebyte.query_graph.node.schema import FeatureStoreDetails as BaseFeatureStoreDetails
 from featurebyte.query_graph.node.schema import SnowflakeDetails as BaseSnowflakeDetails
 from featurebyte.query_graph.node.schema import SparkDetails
@@ -249,16 +253,65 @@ class FeastDataBricksDetails(AbstractDatabaseDetailsForFeast, DatabricksDetails)
         database_credential: Optional[BaseDatabaseCredential],
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
-        if self.group_name is None:
-            return DataBricksOfflineStoreConfig(
-                **self.dict(), database_credential=database_credential
-            )
+        return DataBricksOfflineStoreConfig(**self.dict(), database_credential=database_credential)
+
+
+class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUnityDetails):
+    """
+    Databricks Unity details.
+    """
+
+    def create_feast_data_source(
+        self,
+        name: str,
+        table_name: str,
+        timestamp_field: str,
+        created_timestamp_column: Optional[str] = None,
+    ) -> DataSource:
+        """
+        Create a Feast DataSource from the details in this class
+
+        Parameters
+        ----------
+        name: str
+            Name of the DataSource
+        table_name: str
+            Name of the table to create a DataSource for
+        timestamp_field: str
+            Event timestamp field used for point in time joins of feature values
+        created_timestamp_column: Optional[str]
+            Timestamp column indicating when the row was created, used for de-duplicating rows.
+
+        Returns
+        -------
+        DataSource
+            Feast DataSource object
+        """
+        return cast(
+            DataSource,
+            SparkThriftSource(
+                name=name,
+                timestamp_field=timestamp_field,
+                catalog=self.catalog_name,
+                schema=self.schema_name,
+                table=table_name,
+                created_timestamp_column=created_timestamp_column,
+            ),
+        )
+
+    def get_offline_store_config(
+        self,
+        database_credential: Optional[BaseDatabaseCredential],
+        storage_credential: Optional[BaseStorageCredential],
+    ) -> Any:
         return DataBricksUnityOfflineStoreConfig(
             **self.dict(), database_credential=database_credential
         )
 
 
-FeastDatabaseDetails = Union[FeastSnowflakeDetails, FeastSparkDetails, FeastDataBricksDetails]
+FeastDatabaseDetails = Union[
+    FeastSnowflakeDetails, FeastSparkDetails, FeastDataBricksDetails, FeastDataBricksUnityDetails
+]
 
 
 class FeatureStoreDetailsWithFeastConfiguration(BaseFeatureStoreDetails):

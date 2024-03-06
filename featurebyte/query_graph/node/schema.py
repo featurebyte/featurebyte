@@ -76,7 +76,26 @@ class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     is_local_source: ClassVar[bool] = True
 
 
-class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+    """
+    Base model for details used to connect to a Databricks data source.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
+
+    host: StrictStr = Field(
+        description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
+    )
+    http_path: StrictStr = Field(description="Databricks compute resource URL.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
+
+
+class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Databricks data source.
 
@@ -87,7 +106,6 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     ...   http_path="<http_path>",
     ...   catalog_name="hive_metastore",
     ...   schema_name="<schema_name>",
-    ...   group_name="<group_name>",
     ...   storage_path="dbfs:/FileStore/<schema_name>",
     ... )
     """
@@ -104,12 +122,7 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     schema_name: StrictStr = Field(
         description="The name of the schema to use for creation of output tables."
     )
-    group_name: Optional[StrictStr] = Field(
-        description="The name of the group to use for creation of output tables. Required for Unity Catalog."
-    )
-    storage_path: Optional[StrictStr] = Field(
-        description="DBFS path to use for file storage. Not required for Unity Catalog."
-    )
+    storage_path: StrictStr = Field(description="DBFS path to use for file storage.")
 
     @root_validator(pre=True)
     @classmethod
@@ -125,6 +138,38 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         if storage_spark_url:
             values["storage_path"] = storage_spark_url
         return values
+
+
+class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
+    """
+    Model for details used to connect to a Databricks Unity data source.
+
+    Examples
+    --------
+    >>> details = fb.DatabricksUnityDetails(
+    ...   host="<host_name>",
+    ...   http_path="<http_path>",
+    ...   catalog_name="hive_metastore",
+    ...   schema_name="<schema_name>",
+    ...   group_name="<group_name>",
+    ... )
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksUnityDetails")
+
+    host: StrictStr = Field(
+        description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
+    )
+    http_path: StrictStr = Field(description="Databricks compute resource URL.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
+    group_name: StrictStr = Field(
+        description="The name of the group to use for creation of output tables."
+    )
 
 
 class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
@@ -196,7 +241,12 @@ class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-meth
 
 
 DatabaseDetails = Union[
-    SnowflakeDetails, SparkDetails, SQLiteDetails, DatabricksDetails, TestDatabaseDetails
+    SnowflakeDetails,
+    SparkDetails,
+    SQLiteDetails,
+    DatabricksDetails,
+    DatabricksUnityDetails,
+    TestDatabaseDetails,
 ]
 
 
