@@ -139,12 +139,6 @@ class FeatureStoreWarehouseService:
             feature_store=feature_store
         )
 
-        # check database exists
-        await self.list_schemas(
-            feature_store=feature_store,
-            database_name=database_name,
-        )
-
         try:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name
@@ -188,13 +182,6 @@ class FeatureStoreWarehouseService:
         """
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
-        )
-
-        # check database and schema exists
-        await self.list_tables(
-            feature_store=feature_store,
-            database_name=database_name,
-            schema_name=schema_name,
         )
 
         try:

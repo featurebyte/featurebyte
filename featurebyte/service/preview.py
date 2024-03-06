@@ -295,6 +295,83 @@ class PreviewService:
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         return df_result.set_index("key")["count"].to_dict()  # type: ignore
 
+    async def _get_table_shape(
+        self, location: TabularSource, db_session: BaseSession
+    ) -> Tuple[FeatureStoreShape, bool, list[str]]:
+        # check size of the table
+        sql_expr = get_source_count_expr(source=location.table_details)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
+        assert result is not None
+        columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
+        has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
+        columns = [
+            col_name
+            for col_name in columns_specs.keys()
+            if col_name != InternalName.TABLE_ROW_INDEX
+        ]
+        return (
+            FeatureStoreShape(num_rows=result["row_count"].iloc[0], num_cols=len(columns)),
+            has_row_index,
+            columns,
+        )
+
+    async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
+        """
+        Get the shape table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to get shape from
+
+        Returns
+        -------
+        FeatureStoreShape
+            Row and column counts
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        )
+        shape, _, _ = await self._get_table_shape(location, db_session)
+        return shape
+
+    async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
+        """
+        Preview table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to preview from
+        limit: int
+            Row limit on preview results
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        )
+        sql_expr = get_source_expr(source=location.table_details).limit(limit)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
+        return dataframe_to_json(result)
+
     async def download_table(
         self,
         location: TabularSource,
@@ -324,23 +401,7 @@ class PreviewService:
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
 
-        # check size of the table
-        sql_expr = get_source_count_expr(source=location.table_details)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        result = await db_session.execute_query(sql)
-        assert result is not None
-        columns = await db_session.list_table_schema(**location.table_details.json_dict())
-        has_row_index = InternalName.TABLE_ROW_INDEX in columns
-        columns = {  # type: ignore[assignment]
-            col_name: v
-            for (col_name, v) in columns.items()
-            if col_name != InternalName.TABLE_ROW_INDEX
-        }
-        shape = (result["row_count"].iloc[0], len(columns))
-
+        shape, has_row_index, columns = await self._get_table_shape(location, db_session)
         logger.debug(
             "Downloading table from feature store",
             extra={
@@ -349,10 +410,10 @@ class PreviewService:
             },
         )
 
-        if shape[0] * shape[0] > MAX_TABLE_CELLS:
+        if shape.num_rows * shape.num_cols > MAX_TABLE_CELLS:
             raise LimitExceededError(f"Table size {shape} exceeds download limit.")
 
-        sql_expr = get_source_expr(source=location.table_details, column_names=list(columns.keys()))
+        sql_expr = get_source_expr(source=location.table_details, column_names=columns)
         if has_row_index:
             sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
         sql = sql_to_string(

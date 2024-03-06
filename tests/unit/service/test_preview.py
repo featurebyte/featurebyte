@@ -8,13 +8,14 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureStore
+from featurebyte.common.utils import dataframe_to_json
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListPreview
-from featurebyte.schema.feature_store import FeatureStorePreview
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreShape
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 
@@ -317,4 +318,76 @@ async def test_download_table(
             """
         ).strip()
     args, _ = mock_snowflake_session.get_async_query_stream.call_args
+    assert args[0] == expected_query
+
+
+@pytest.mark.asyncio
+async def test_table_shape(
+    preview_service,
+    feature_store,
+    mock_snowflake_session,
+):
+    """
+    Test value counts
+    """
+    mock_snowflake_session.list_table_schema.return_value = {
+        "col_a": {"name": "col_a"},
+        "col_b": {"name": "col_b"},
+    }
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "row_count": [100],
+        }
+    )
+    result = await preview_service.table_shape(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="my_db",
+                schema_name="my_schema",
+                table_name="my_table",
+            ),
+        ),
+    )
+    assert result == FeatureStoreShape(num_rows=100, num_cols=2)
+
+
+@pytest.mark.asyncio
+async def test_table_preview(
+    preview_service,
+    feature_store,
+    mock_snowflake_session,
+):
+    """
+    Test value counts
+    """
+    expected_data = pd.DataFrame(
+        {
+            "col_a": [1, 2, 3],
+            "col_b": ["a", "b", "c"],
+        }
+    )
+    mock_snowflake_session.execute_query.return_value = expected_data
+    result = await preview_service.table_preview(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="my_db",
+                schema_name="my_schema",
+                table_name="my_table",
+            ),
+        ),
+        limit=3,
+    )
+    assert result == dataframe_to_json(expected_data)
+
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          *
+        FROM "my_db"."my_schema"."my_table"
+        LIMIT 3
+        """
+    ).strip()
+    args, _ = mock_snowflake_session.execute_query.call_args
     assert args[0] == expected_query
