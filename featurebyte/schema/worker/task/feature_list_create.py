@@ -3,7 +3,7 @@ Feature list creation creation schema
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel, Field, StrictStr
 
@@ -23,7 +23,7 @@ class FeatureParameters(BaseModel):
 class FeaturesParameters(BaseModel):
     """Feature list feature parameters"""
 
-    features: List[FeatureParameters]
+    features: Union[List[FeatureParameters], List[PydanticObjectId]]
 
 
 class FeatureListCreateTaskPayload(BaseTaskPayload):

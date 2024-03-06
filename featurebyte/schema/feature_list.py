@@ -3,7 +3,7 @@ FeatureList API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
@@ -48,7 +48,7 @@ class FeatureListCreateJob(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    features: List[FeatureParameters] = Field(min_items=1)
+    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
     features_conflict_resolution: ConflictResolution
 
 

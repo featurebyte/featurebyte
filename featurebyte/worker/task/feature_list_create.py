@@ -7,12 +7,13 @@ from typing import Any
 
 from pathlib import Path
 
-from bson import json_util
+from bson import ObjectId, json_util
 
 from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.worker.task.feature_list_create import (
     FeatureListCreateTaskPayload,
+    FeatureParameters,
     FeaturesParameters,
 )
 from featurebyte.service.feature import FeatureService
@@ -56,8 +57,11 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
         # extract feature ids from payload
         request_feature_ids, feature_names = [], []
         for feature in features_parameters.features:
-            request_feature_ids.append(feature.id)
-            feature_names.append(feature.name)
+            if isinstance(feature, FeatureParameters):
+                request_feature_ids.append(feature.id)
+                feature_names.append(feature.name)
+            elif isinstance(feature, ObjectId):
+                request_feature_ids.append(feature)
 
         saved_feature_ids = await self.batch_feature_creator.identify_saved_feature_ids(
             feature_ids=request_feature_ids
@@ -70,13 +74,21 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
         )
         feature_ids = []
         for feature in features_parameters.features:
-            if feature.id in saved_feature_ids:
-                feature_ids.append(feature.id)
+            if isinstance(feature, FeatureParameters):
+                feature_id = feature.id
+                feature_name = feature.name
             else:
-                if feature.name not in conflict_to_resolution_feature_id_map:
+                feature_id = feature
+                feature_name = None
+
+            if feature_id in saved_feature_ids:
+                feature_ids.append(feature_id)
+            else:
+                if feature_name not in conflict_to_resolution_feature_id_map:
                     # retrieve non-existing feature to trigger a not found error
-                    await self.feature_service.get_document(document_id=feature.id)
-                feature_ids.append(conflict_to_resolution_feature_id_map[feature.name])
+                    await self.feature_service.get_document(document_id=feature_id)
+                assert feature_name is not None
+                feature_ids.append(conflict_to_resolution_feature_id_map[feature_name])
 
         # create feature list
         feature_list_create = FeatureListCreate(
