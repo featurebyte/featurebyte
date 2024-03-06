@@ -2,6 +2,7 @@
 Tests for FeatureList route
 """
 # pylint: disable=too-many-lines
+import os
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -759,6 +760,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_feature_list_preview__exceed_max_feature_limit(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+    ):
+        """Test feature list preview with too many features"""
+        with patch.dict(os.environ, {"FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM": "0"}):
+            test_api_client, _ = test_api_client_persistent
+            response = test_api_client.post(
+                f"{self.base_route}/preview", json=featurelist_preview_payload
+            )
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+            assert response.json()["detail"] == "Feature list preview must have 0 features or less"
 
     @pytest.fixture(name="featurelist_get_historical_features_payload")
     def featurelist_get_historical_features_payload_fixture(self, featurelist_feature_clusters):

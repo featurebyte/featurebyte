@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
+import os
+
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
@@ -63,6 +65,17 @@ class FeaturePreviewService(PreviewService):
         self.observation_table_service = observation_table_service
         self.feature_service = feature_service
         self.target_service = target_service
+
+    @property
+    def feature_list_preview_max_features_number(self) -> int:
+        """
+        Feature list preview max features number
+
+        Returns
+        -------
+        int
+        """
+        return int(os.getenv("FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM", "30"))
 
     async def _update_point_in_time_if_needed(
         self,
@@ -288,6 +301,14 @@ class FeaturePreviewService(PreviewService):
             feature_clusters = featurelist_preview.feature_clusters
 
         assert feature_clusters is not None
+
+        # Check if the total number of features is within the limit
+        total_features = sum(len(feature_cluster.nodes) for feature_cluster in feature_clusters)
+        if total_features > self.feature_list_preview_max_features_number:
+            raise LimitExceededError(
+                f"Feature list preview must have {self.feature_list_preview_max_features_number} features or less"
+            )
+
         # Check if any of the features are time based
         has_time_based_feature = False
         for feature_cluster in feature_clusters:
