@@ -19,6 +19,7 @@ from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,
 )
+from featurebyte.worker.task.feature_list_create import FeatureListCreateTask
 from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
@@ -45,7 +46,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.BATCH_FEATURE_TABLE_CREATE: BatchFeatureTableTask,
     WorkerCommand.MATERIALIZED_TABLE_DELETE: MaterializedTableDeleteTask,
     WorkerCommand.BATCH_FEATURE_CREATE: BatchFeatureCreateTask,
-    WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
+    WorkerCommand.FEATURE_LIST_CREATE: FeatureListCreateTask,
     WorkerCommand.FEATURE_LIST_MAKE_PRODUCTION_READY: FeatureListMakeProductionReadyTask,
     WorkerCommand.STATIC_SOURCE_TABLE_CREATE: StaticSourceTableTask,
     WorkerCommand.TARGET_TABLE_CREATE: TargetTableTask,
@@ -54,4 +55,6 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
     WorkerCommand.TEST: TestTask,
+    # TO BE DEPRECATED
+    WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
 }
