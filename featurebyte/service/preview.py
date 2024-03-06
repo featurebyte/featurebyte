@@ -297,7 +297,7 @@ class PreviewService:
 
     async def _get_table_shape(
         self, location: TabularSource, db_session: BaseSession
-    ) -> Tuple[FeatureStoreShape, bool, list[str]]:
+    ) -> Tuple[Tuple[int, int], bool, list[str]]:
         # check size of the table
         sql_expr = get_source_count_expr(source=location.table_details)
         sql = sql_to_string(
@@ -314,7 +314,7 @@ class PreviewService:
             if col_name != InternalName.TABLE_ROW_INDEX
         ]
         return (
-            FeatureStoreShape(num_rows=result["row_count"].iloc[0], num_cols=len(columns)),
+            (result["row_count"].iloc[0], len(columns)),
             has_row_index,
             columns,
         )
@@ -340,7 +340,7 @@ class PreviewService:
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
         shape, _, _ = await self._get_table_shape(location, db_session)
-        return shape
+        return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
 
     async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
         """
@@ -410,7 +410,7 @@ class PreviewService:
             },
         )
 
-        if shape.num_rows * shape.num_cols > MAX_TABLE_CELLS:
+        if shape[0] * shape[1] > MAX_TABLE_CELLS:
             raise LimitExceededError(f"Table size {shape} exceeds download limit.")
 
         sql_expr = get_source_expr(source=location.table_details, column_names=columns)

@@ -2300,3 +2300,13 @@ def patch_app_get_storage(storage, temp_storage):
             mock_get_storage.return_value = storage
             mock_get_temp_storage.return_value = temp_storage
             yield
+
+
+@pytest.fixture(name="mock_is_featurebyte_schema")
+def patch_is_featurebyte_schema():
+    """Patch is_featurebyte_schema"""
+    with patch(
+        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._is_featurebyte_schema"
+    ) as mock_is_featurebyte_schema:
+        mock_is_featurebyte_schema.return_value = False
+        yield

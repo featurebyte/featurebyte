@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import get_feature_store_id_expr
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import BaseSession
 
 
 class FeatureStoreWarehouseService:
@@ -122,6 +123,23 @@ class FeatureStoreWarehouseService:
                 return True
         return False
 
+    @staticmethod
+    async def _is_featurebyte_schema(
+        db_session: BaseSession, database_name: str, schema_name: str
+    ) -> bool:
+        try:
+            sql_expr = get_feature_store_id_expr(
+                database_name=database_name, schema_name=schema_name
+            )
+            sql = sql_to_string(
+                sql_expr,
+                source_type=db_session.source_type,
+            )
+            _ = await db_session.execute_query(sql)
+            return True
+        except db_session.no_schema_error:
+            return False
+
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
@@ -154,21 +172,9 @@ class FeatureStoreWarehouseService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-
-        is_featurebyte_schema = False
-        try:
-            sql_expr = get_feature_store_id_expr(
-                database_name=database_name, schema_name=schema_name
-            )
-            sql = sql_to_string(
-                sql_expr,
-                source_type=db_session.source_type,
-            )
-            _ = await db_session.execute_query(sql)
-            is_featurebyte_schema = True
-        except db_session.no_schema_error:
-            pass
-
+        is_featurebyte_schema = await self._is_featurebyte_schema(
+            db_session, database_name, schema_name
+        )
         try:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name

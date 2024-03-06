@@ -242,11 +242,16 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         }
 
     def test_list_tables__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+        mock_is_featurebyte_schema,
     ):
         """
         Test list tables
         """
+        _ = mock_is_featurebyte_schema
         test_api_client, _ = test_api_client_persistent
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
