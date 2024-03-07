@@ -844,6 +844,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksUnityDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),

@@ -281,7 +281,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 http_path="http_path",
                 catalog_name="spark_catalog",
                 schema_name="featurebyte",
-                group_name="testing",
                 storage_path="dbfs:/FileStore/featurebyte",
             )
             feature_store.type = SourceType.DATABRICKS

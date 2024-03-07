@@ -21,7 +21,11 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
-from featurebyte.query_graph.node.schema import ColumnSpec, DatabricksDetails
+from featurebyte.query_graph.node.schema import (
+    ColumnSpec,
+    DatabricksDetails,
+    DatabricksUnityDetails,
+)
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
 
@@ -181,7 +185,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     @staticmethod
     def _get_fully_qualified_schema_name(feature_store: FeatureStoreModel) -> str:
         feature_store_details = feature_store.details
-        assert isinstance(feature_store_details, DatabricksDetails)
+        assert isinstance(feature_store_details, (DatabricksDetails, DatabricksUnityDetails))
         catalog_name = feature_store_details.catalog_name
         schema_name = feature_store_details.schema_name
         return f"{catalog_name}.{schema_name}"

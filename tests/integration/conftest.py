@@ -55,7 +55,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails
+from featurebyte.query_graph.node.schema import DatabricksUnityDetails, SparkDetails, SQLiteDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
@@ -382,20 +382,18 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             catalog_name=os.getenv("DATABRICKS_CATALOG"),
             schema_name=temp_schema_name,
-            group_name="testing",
             storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-        return DatabricksDetails(
+        return DatabricksUnityDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
             catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
             schema_name=temp_schema_name,
             group_name="developers",
-            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":

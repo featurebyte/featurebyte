@@ -36,7 +36,6 @@ class BaseSparkThriftOfflineStoreConfig(FeastConfigBaseModel):
 
     host: str
     http_path: str
-    storage_path: str
     catalog_name: str
     schema_name: str
 
@@ -87,6 +86,7 @@ class SparkThriftOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     port: int
     use_http_transport: bool
     use_ssl: bool
+    storage_path: str
     storage_type: StorageType
     storage_url: str
     database_credential: Optional[SparkDatabaseCredential]
