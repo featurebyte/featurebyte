@@ -23,6 +23,7 @@ from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import (
     CatalogNotSpecifiedError,
     DocumentConflictError,
+    DocumentDeletionError,
     DocumentModificationBlockedError,
     DocumentNotFoundError,
     QueryNotSupportedError,
@@ -229,7 +230,9 @@ class BaseDocumentService(
         str
             Lock ID
         """
-        return self.redis.lock(f"{self.collection_name}_delete:{document_id}", timeout=timeout)
+        return self.redis.lock(
+            f"{self.collection_name}_delete:{document_id}", timeout=timeout, blocking=False
+        )
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
@@ -439,9 +442,10 @@ class BaseDocumentService(
         int
             number of records deleted
         """
-        with self.get_document_deletion_lock(
+        lock = self.get_document_deletion_lock(
             document_id=document_id, timeout=DOCUMENT_DELETION_LOCK_TIMEOUT
-        ):
+        )
+        if lock.acquire(blocking=False):
             document = await self.get_document(
                 document_id=document_id,
                 exception_detail=exception_detail,
@@ -467,6 +471,10 @@ class BaseDocumentService(
             for remote_path in document.remote_attribute_paths:
                 await self.storage.try_delete_if_exists(remote_path)
             return int(num_of_records_deleted)
+
+        raise DocumentDeletionError(
+            f"{self.class_name} (id: {document_id}) is being modified. Please try again later."
+        )
 
     def construct_list_query_filter(
         self,
