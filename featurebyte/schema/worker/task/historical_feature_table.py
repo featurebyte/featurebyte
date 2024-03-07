@@ -18,5 +18,5 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
 
     output_collection_name = HistoricalFeatureTableModel.collection_name()
     command = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
-    task_type = TaskType.IO_TASK
+    task_type = TaskType.CPU_TASK
     observation_set_storage_path: Optional[str]

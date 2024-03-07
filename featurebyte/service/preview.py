@@ -3,23 +3,16 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, Tuple
-
-import os
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
-from featurebyte.enum import InternalName
-from featurebyte.exception import LimitExceededError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -28,10 +21,6 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
-
-MAX_TABLE_CELLS = int(
-    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
-)  # 10 million rows, 300 columns
 
 DEFAULT_COLUMNS_BATCH_SIZE = 50
 
@@ -294,130 +283,3 @@ class PreviewService:
         df_result = await session.execute_query(value_counts_sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         return df_result.set_index("key")["count"].to_dict()  # type: ignore
-
-    async def _get_table_shape(
-        self, location: TabularSource, db_session: BaseSession
-    ) -> Tuple[Tuple[int, int], bool, list[str]]:
-        # check size of the table
-        sql_expr = get_source_count_expr(source=location.table_details)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        result = await db_session.execute_query(sql)
-        assert result is not None
-        columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
-        has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
-        columns = [
-            col_name
-            for col_name in columns_specs.keys()
-            if col_name != InternalName.TABLE_ROW_INDEX
-        ]
-        return (
-            (result["row_count"].iloc[0], len(columns)),
-            has_row_index,
-            columns,
-        )
-
-    async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
-        """
-        Get the shape table from location.
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to get shape from
-
-        Returns
-        -------
-        FeatureStoreShape
-            Row and column counts
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
-        )
-        shape, _, _ = await self._get_table_shape(location, db_session)
-        return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
-
-    async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
-        """
-        Preview table from location.
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to preview from
-        limit: int
-            Row limit on preview results
-
-        Returns
-        -------
-        dict[str, Any]
-            Dataframe converted to json string
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
-        )
-        sql_expr = get_source_expr(source=location.table_details).limit(limit)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        result = await db_session.execute_query(sql)
-        return dataframe_to_json(result)
-
-    async def download_table(
-        self,
-        location: TabularSource,
-    ) -> Optional[AsyncGenerator[bytes, None]]:
-        """
-        Download table from location.
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to download from
-
-        Returns
-        -------
-        AsyncGenerator[bytes, None]
-            Asynchronous bytes generator
-
-        Raises
-        ------
-        LimitExceededError
-            Table size exceeds the limit.
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
-        )
-
-        shape, has_row_index, columns = await self._get_table_shape(location, db_session)
-        logger.debug(
-            "Downloading table from feature store",
-            extra={
-                "location": location.json_dict(),
-                "shape": shape,
-            },
-        )
-
-        if shape[0] * shape[1] > MAX_TABLE_CELLS:
-            raise LimitExceededError(f"Table size {shape} exceeds download limit.")
-
-        sql_expr = get_source_expr(source=location.table_details, column_names=columns)
-        if has_row_index:
-            sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        return db_session.get_async_query_stream(sql)

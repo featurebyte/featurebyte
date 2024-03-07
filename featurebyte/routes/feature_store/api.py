@@ -13,6 +13,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -87,8 +88,20 @@ class FeatureStoreRouter(
             response_model=FeatureStoreShape,
         )
         self.router.add_api_route(
+            "/table_shape",
+            self.get_table_shape,
+            methods=["POST"],
+            response_model=FeatureStoreShape,
+        )
+        self.router.add_api_route(
             "/preview",
             self.get_data_preview,
+            methods=["POST"],
+            response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/table_preview",
+            self.get_table_preview,
             methods=["POST"],
             response_model=Dict[str, Any],
         )
@@ -265,6 +278,17 @@ class FeatureStoreRouter(
         return await controller.shape(preview=preview)
 
     @staticmethod
+    async def get_table_shape(
+        request: Request,
+        location: TabularSource,
+    ) -> FeatureStoreShape:
+        """
+        Retrieve shape for a tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_shape(location=location)
+
+    @staticmethod
     async def get_data_preview(
         request: Request,
         preview: FeatureStorePreview,
@@ -275,6 +299,18 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.preview(preview=preview, limit=limit)
+
+    @staticmethod
+    async def get_table_preview(
+        request: Request,
+        location: TabularSource,
+        limit: int = Query(default=10, gt=0, le=10000),
+    ) -> Dict[str, Any]:
+        """
+        Retrieve data preview for tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_preview(location=location, limit=limit)
 
     @staticmethod
     async def get_data_sample(

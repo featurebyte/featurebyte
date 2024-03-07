@@ -497,7 +497,7 @@ class BaseSession(BaseModel):
         return dataframe_from_arrow_stream(data)
 
     async def execute_query_interactive(
-        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a short time

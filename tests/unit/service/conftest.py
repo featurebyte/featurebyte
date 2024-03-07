@@ -79,9 +79,14 @@ def feature_store_service_fixture(app_container):
 
 
 @pytest.fixture(name="feature_store_warehouse_service")
-def feature_store_warehouse_service_fixture(app_container):
+def feature_store_warehouse_service_fixture(
+    app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session
+):
     """FeatureStore Warehouse service"""
-    return app_container.feature_store_warehouse_service
+    with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
+        mocked.return_value = feature_store, mock_snowflake_session
+        mock_get_feature_store_session.return_value = mock_snowflake_session
+        yield app_container.feature_store_warehouse_service
 
 
 @pytest.fixture(name="entity_service")

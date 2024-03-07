@@ -17,7 +17,7 @@ from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 
 
 class BatchRequestTableController(
@@ -34,12 +34,15 @@ class BatchRequestTableController(
     def __init__(
         self,
         batch_request_table_service: BatchRequestTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         batch_feature_table_service: BatchFeatureTableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(service=batch_request_table_service, preview_service=preview_service)
+        super().__init__(
+            service=batch_request_table_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
+        )
         self.batch_feature_table_service = batch_feature_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service

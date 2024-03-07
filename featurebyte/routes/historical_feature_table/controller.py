@@ -26,10 +26,10 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesValidationParametersService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 
 
 class HistoricalFeatureTableController(
@@ -52,7 +52,7 @@ class HistoricalFeatureTableController(
     def __init__(
         self,
         historical_feature_table_service: HistoricalFeatureTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
@@ -62,7 +62,7 @@ class HistoricalFeatureTableController(
     ):
         super().__init__(
             service=historical_feature_table_service,
-            preview_service=preview_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
             observation_table_service=observation_table_service,
             entity_validation_service=entity_validation_service,
             task_controller=task_controller,
