@@ -566,6 +566,30 @@ def snowflake_query_map_fixture():
             }
         ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
+        'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
+            {"row_count": 100}
+        ],
+        'SELECT\n  *\nFROM "sf_database"."sf_schema"."sf_table"\nLIMIT 3': [
+            {
+                "col_int": [1, 2, 3],
+                "col_float": [1.0, 2.0, 3.0],
+                "col_char": ["a", "b", "c"],
+                "col_text": ["abc", "def", "ghi"],
+                "col_binary": [1, 0, 1],
+                "col_boolean": [True, False, True],
+                "event_timestamp": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "created_at": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "cust_id": [1, 2, 3],
+            }
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
@@ -2300,3 +2324,13 @@ def patch_app_get_storage(storage, temp_storage):
             mock_get_storage.return_value = storage
             mock_get_temp_storage.return_value = temp_storage
             yield
+
+
+@pytest.fixture(name="mock_is_featurebyte_schema")
+def patch_is_featurebyte_schema():
+    """Patch is_featurebyte_schema"""
+    with patch(
+        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._is_featurebyte_schema"
+    ) as mock_is_featurebyte_schema:
+        mock_is_featurebyte_schema.return_value = False
+        yield

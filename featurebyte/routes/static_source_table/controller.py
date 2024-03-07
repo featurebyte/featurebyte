@@ -15,7 +15,7 @@ from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 
@@ -34,12 +34,15 @@ class StaticSourceTableController(
     def __init__(
         self,
         static_source_table_service: StaticSourceTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         table_service: TableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(service=static_source_table_service, preview_service=preview_service)
+        super().__init__(
+            service=static_source_table_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
+        )
         self.table_service = table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
