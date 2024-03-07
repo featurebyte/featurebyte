@@ -227,8 +227,7 @@ class BaseDocumentService(
 
         Returns
         -------
-        str
-            Lock ID
+        Lock
         """
         return self.redis.lock(
             f"{self.collection_name}_delete:{document_id}", timeout=timeout, blocking=False
@@ -441,6 +440,11 @@ class BaseDocumentService(
         -------
         int
             number of records deleted
+
+        Raises
+        ------
+        DocumentDeletionError
+            If the requested document is being modified
         """
         lock = self.get_document_deletion_lock(
             document_id=document_id, timeout=DOCUMENT_DELETION_LOCK_TIMEOUT

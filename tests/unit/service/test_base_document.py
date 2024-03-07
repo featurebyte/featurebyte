@@ -4,7 +4,7 @@ Tests functions/methods in routes/common directory
 from typing import List
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
