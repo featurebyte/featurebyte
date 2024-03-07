@@ -16,6 +16,7 @@ import pandas as pd
 from bson.objectid import ObjectId
 from pymongo.errors import OperationFailure
 from redis import Redis
+from redis.lock import Lock
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.dict_util import get_field_path_value
@@ -59,6 +60,7 @@ RAW_QUERY_FILTER_WARNING = (
 )
 RETRY_MAX_WAIT_IN_SEC = 2
 RETRY_MAX_ATTEMPT_NUM = 3
+DOCUMENT_DELETION_LOCK_TIMEOUT = 120
 
 
 logger = get_logger(__name__)
@@ -210,6 +212,24 @@ class BaseDocumentService(
         if self.is_catalog_specific:
             return Path(f"catalog/{self.catalog_id}/{path}")
         return Path(path)
+
+    def get_document_deletion_lock(self, document_id: ObjectId, timeout: int) -> Lock:
+        """
+        Get document deletion lock
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID to lock
+        timeout: int
+            Lock timeout in seconds
+
+        Returns
+        -------
+        str
+            Lock ID
+        """
+        return self.redis.lock(f"{self.collection_name}_delete:{document_id}", timeout=timeout)
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
@@ -419,31 +439,34 @@ class BaseDocumentService(
         int
             number of records deleted
         """
-        document = await self.get_document(
-            document_id=document_id,
-            exception_detail=exception_detail,
-            use_raw_query_filter=use_raw_query_filter,
-            disable_audit=self.should_disable_audit,
-            **kwargs,
-        )
+        with self.get_document_deletion_lock(
+            document_id=document_id, timeout=DOCUMENT_DELETION_LOCK_TIMEOUT
+        ):
+            document = await self.get_document(
+                document_id=document_id,
+                exception_detail=exception_detail,
+                use_raw_query_filter=use_raw_query_filter,
+                disable_audit=self.should_disable_audit,
+                **kwargs,
+            )
 
-        # check if document is modifiable
-        self._check_document_modifiable(document=document.dict(by_alias=True))
+            # check if document is modifiable
+            self._check_document_modifiable(document=document.dict(by_alias=True))
 
-        query_filter = self._construct_get_query_filter(
-            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
-        )
-        num_of_records_deleted = await self.persistent.delete_one(
-            collection_name=self.collection_name,
-            query_filter=query_filter,
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
+            query_filter = self._construct_get_query_filter(
+                document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+            )
+            num_of_records_deleted = await self.persistent.delete_one(
+                collection_name=self.collection_name,
+                query_filter=query_filter,
+                user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
+            )
 
-        # remove remote attributes
-        for remote_path in document.remote_attribute_paths:
-            await self.storage.delete(remote_path)
-        return int(num_of_records_deleted)
+            # remove remote attributes
+            for remote_path in document.remote_attribute_paths:
+                await self.storage.try_delete_if_exists(remote_path)
+            return int(num_of_records_deleted)
 
     def construct_list_query_filter(
         self,
