@@ -329,6 +329,20 @@ async def test_online_enabled_feature_spec(
     assert list(result)[:3] == expect_cols
 
 
+@pytest.fixture
+def patch_materialize_datetime():
+    """Patch the materialize datetime"""
+    with patch(
+        "featurebyte.service.feature_manager.get_next_job_datetime",
+        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
+    ):
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            yield mock_datetime
+
+
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_disable(
@@ -339,10 +353,13 @@ async def test_online_disable(
     feature_service,
     online_store_compute_query_service,
     online_store_cleanup_scheduler_service,
+    patch_materialize_datetime,
 ):
     """
     Test online_disable behaves correctly
     """
+    _ = patch_materialize_datetime
+
     with create_and_enable_deployment(feature_sum_30h) as deployment1:
         with create_and_enable_deployment(feature_sum_30h_transformed) as deployment2:
             # 1. Check that both features share the same tile tasks
