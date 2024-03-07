@@ -24,6 +24,7 @@ def test_aggregation_spec__from_groupby_query_node(
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
+            node_name=groupby_node.name,
             window=7200,
             frequency=3600,
             blind_spot=900,
@@ -50,6 +51,7 @@ def test_aggregation_spec__from_groupby_query_node(
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
+            node_name=groupby_node.name,
             window=172800,
             frequency=3600,
             blind_spot=900,
@@ -100,6 +102,7 @@ def test_aggregation_spec__override_serving_names(
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
+            node_name=groupby_node.name,
             window=7200,
             frequency=3600,
             blind_spot=900,
@@ -126,6 +129,7 @@ def test_aggregation_spec__override_serving_names(
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
+            node_name=groupby_node.name,
             window=172800,
             frequency=3600,
             blind_spot=900,

@@ -30,6 +30,8 @@ def aggregation_spec_order_size(item_aggregation_source):
         name="order_size",
     )
     return ItemAggregationSpec(
+        node_name="item_groupby_1",
+        feature_name=params.name,
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
@@ -49,6 +51,8 @@ def aggregation_spec_max_item_price(item_aggregation_source):
         name="max_item_price",
     )
     return ItemAggregationSpec(
+        node_name="item_groupby_2",
+        feature_name=params.name,
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
@@ -69,6 +73,8 @@ def aggregation_spec_with_category(item_aggregation_source):
         name="max_item_price_by_type",
     )
     return ItemAggregationSpec(
+        node_name="item_groupby_3",
+        feature_name=params.name,
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,

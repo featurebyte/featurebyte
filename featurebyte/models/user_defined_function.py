@@ -303,6 +303,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 source_type=source_type,
                 to_filter_scd_by_current_flag=False,
                 event_table_timestamp_filter=None,
+                aggregation_specs=None,
             )
         )
         sql_tree = select(sql_node.sql)

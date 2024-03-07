@@ -605,7 +605,7 @@ class FeatureExecutionPlanner:
         for agg_spec in self.get_aggregation_specs(node):
             self.plan.add_aggregation_spec(agg_spec, original_node_name)
             aggregation_specs[agg_spec.node_name].append(agg_spec)
-        self.update_feature_specs(node, dict(aggregation_specs))
+        self.update_feature_specs(node, dict(aggregation_specs))  # type: ignore[arg-type]
 
     def get_aggregation_specs(  # pylint: disable=too-many-branches
         self, node: Node

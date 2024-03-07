@@ -152,7 +152,7 @@ class JoinFeature(TableNode):
             current_columns=view_node.columns,
             current_query_index=0,
         )
-        return result.updated_table_expr, dict(agg_specs_mapping)
+        return result.updated_table_expr, dict(agg_specs_mapping)  # type: ignore[arg-type]
 
     @staticmethod
     def _get_feature_expr(

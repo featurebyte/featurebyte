@@ -113,7 +113,7 @@ class SQLOperationGraph:
         source_type: SourceType,
         to_filter_scd_by_current_flag: bool = False,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
-        aggregation_specs: dict[str, list[AggregationSpec]] = None,
+        aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph

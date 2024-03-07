@@ -38,6 +38,8 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
     forward spec fixture
     """
     return ForwardAggregateSpec(
+        node_name="forward_aggregate_1",
+        feature_name=forward_node_parameters.name,
         serving_names=["serving_cust_id", "other_serving_key"],
         serving_names_mapping=None,
         parameters=forward_node_parameters,
