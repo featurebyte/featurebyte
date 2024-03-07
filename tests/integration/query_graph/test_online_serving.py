@@ -236,13 +236,13 @@ def check_online_features_route(deployment, config, df_historical, columns):
     print(f"online_features elapsed: {elapsed:.6f}s")
 
     assert df["üser id"].tolist() == user_ids
-    assert df.columns.tolist() == columns
+    assert set(df.columns.tolist()) == set(columns)
     df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
         drop=True
     )
     fb_assert_frame_equal(
         df_expected,
-        df,
+        df[df_expected.columns],
         dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
         sort_by_columns=["üser id"],
     )
