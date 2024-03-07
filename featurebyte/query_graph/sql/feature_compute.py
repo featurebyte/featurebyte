@@ -717,6 +717,8 @@ class FeatureExecutionPlanner:
         ----------
         node : Node
             Query graph node
+        aggregation_specs: dict[str, list[AggregationSpec]]
+            Aggregation specs to use when constructing SQLOperationGraph
         """
         sql_graph = SQLOperationGraph(
             self.graph,

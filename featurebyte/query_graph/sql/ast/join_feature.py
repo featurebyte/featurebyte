@@ -172,6 +172,8 @@ class JoinFeature(TableNode):
             Query node for the item aggregation feature
         source_type: SourceType
             Source type information
+        aggregation_specs: dict[str, list[AggregationSpec]]
+            Aggregation specs to use when constructing SQLOperationGraph
 
         Returns
         -------
