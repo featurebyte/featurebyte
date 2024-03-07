@@ -3,8 +3,9 @@ SQL generation for JOIN_FEATURE query node type
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional, Tuple, cast
 
+from collections import defaultdict
 from dataclasses import dataclass
 
 from sqlglot.expressions import Expression, Select, select
@@ -14,16 +15,14 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
-from featurebyte.query_graph.sql.ast.base import (
-    EventTableTimestampFilter,
-    SQLNodeContext,
-    TableNode,
-)
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
     SQLType,
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
 @dataclass
@@ -46,7 +45,7 @@ class JoinFeature(TableNode):
         view_node = cast(TableNode, context.input_sql_nodes[0])
 
         # Perform item aggregation and join the result with the EventView
-        aggregated_table_expr = cls._join_intermediate_aggregation_result(
+        aggregated_table_expr, aggregation_specs = cls._join_intermediate_aggregation_result(
             graph=context.graph,
             feature_query_node=feature_query_node,
             view_node=view_node,
@@ -60,6 +59,7 @@ class JoinFeature(TableNode):
             graph=context.graph,
             feature_query_node=feature_query_node,
             source_type=context.source_type,
+            aggregation_specs=aggregation_specs,
         )
 
         columns_map = {}
@@ -82,7 +82,7 @@ class JoinFeature(TableNode):
         view_entity_column: str,
         source_type: SourceType,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
-    ) -> Select:
+    ) -> Tuple[Select, dict[str, list[AggregationSpec]]]:
         """
         Join the intermediate aggregation result of item aggregation with the EventView
 
@@ -122,6 +122,7 @@ class JoinFeature(TableNode):
         )
         item_groupby_nodes = list(graph.iterate_nodes(feature_query_node, NodeType.ITEM_GROUPBY))
 
+        agg_specs_mapping = defaultdict(list)
         for item_groupby_node in item_groupby_nodes:
             item_groupby_node_params = cast(ItemGroupbyParameters, item_groupby_node.parameters)
 
@@ -139,6 +140,7 @@ class JoinFeature(TableNode):
             )
             for agg_spec in agg_specs:
                 item_aggregator.update(agg_spec)
+                agg_specs_mapping[agg_spec.node_name].append(agg_spec)
 
         view_table_expr = select(
             *[get_qualified_column_identifier(col, "REQ") for col in view_node.columns]
@@ -150,13 +152,14 @@ class JoinFeature(TableNode):
             current_columns=view_node.columns,
             current_query_index=0,
         )
-        return result.updated_table_expr
+        return result.updated_table_expr, dict(agg_specs_mapping)
 
     @staticmethod
     def _get_feature_expr(
         graph: QueryGraphModel,
         feature_query_node: Node,
         source_type: SourceType,
+        aggregation_specs: dict[str, list[AggregationSpec]],
     ) -> Expression:
         """
         Get the SQL expression for the feature
@@ -179,6 +182,11 @@ class JoinFeature(TableNode):
             SQLOperationGraph,
         )
 
-        sql_graph = SQLOperationGraph(graph, SQLType.POST_AGGREGATION, source_type=source_type)
+        sql_graph = SQLOperationGraph(
+            graph,
+            SQLType.POST_AGGREGATION,
+            source_type=source_type,
+            aggregation_specs=aggregation_specs,
+        )
         sql_node = sql_graph.build(feature_query_node)
         return cast(Expression, sql_node.sql)

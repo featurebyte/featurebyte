@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Iterable, Optional, Sequence, Type, Union
 
 import sys
+from collections import defaultdict
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -600,10 +601,11 @@ class FeatureExecutionPlanner:
             Name of the query graph node before flattening. This is used to retrieve the
             corresponding FeatureNodeRelationshipsInfo object.
         """
-        agg_specs = self.get_aggregation_specs(node)
-        for agg_spec in agg_specs:
+        aggregation_specs = defaultdict(list)
+        for agg_spec in self.get_aggregation_specs(node):
             self.plan.add_aggregation_spec(agg_spec, original_node_name)
-        self.update_feature_specs(node)
+            aggregation_specs[agg_spec.node_name].append(agg_spec)
+        self.update_feature_specs(node, dict(aggregation_specs))
 
     def get_aggregation_specs(  # pylint: disable=too-many-branches
         self, node: Node
@@ -706,7 +708,9 @@ class FeatureExecutionPlanner:
             is_online_serving=self.is_online_serving,
         )
 
-    def update_feature_specs(self, node: Node) -> None:
+    def update_feature_specs(
+        self, node: Node, aggregation_specs: dict[str, list[AggregationSpec]]
+    ) -> None:
         """Update FeatureExecutionPlan with a query graph node
 
         Parameters
@@ -715,7 +719,10 @@ class FeatureExecutionPlanner:
             Query graph node
         """
         sql_graph = SQLOperationGraph(
-            self.graph, SQLType.POST_AGGREGATION, source_type=self.source_type
+            self.graph,
+            SQLType.POST_AGGREGATION,
+            source_type=self.source_type,
+            aggregation_specs=aggregation_specs,
         )
         sql_node = sql_graph.build(node)
 

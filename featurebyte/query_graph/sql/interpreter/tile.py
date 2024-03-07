@@ -14,9 +14,8 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor

@@ -323,32 +323,32 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         return sql_node
 
 
-@dataclass
-class AggregatedTilesNode(TableNode):
-    """Node with tiles already aggregated
-
-    The purpose of this node is to allow feature SQL generation to retrieve the post-aggregation
-    feature transform expression. The columns_map of this node has the mapping from user defined
-    feature names to internal aggregated column names. The feature expression can be obtained by
-    calling get_column_expr().
-    """
-
-    query_node_type = NodeType.GROUPBY
-
-    @property
-    def sql(self) -> Expression:
-        # This will not be called anywhere
-        raise NotImplementedError()
-
-    @classmethod
-    def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
-        sql_node = None
-        if context.sql_type == SQLType.POST_AGGREGATION:
-            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-                context.graph, context.query_node, context.adapter
-            )
-            columns_map = {}
-            for agg_spec in agg_specs:
-                columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)
-            sql_node = AggregatedTilesNode(context=context, columns_map=columns_map)
-        return sql_node
+# @dataclass
+# class AggregatedTilesNode(TableNode):
+#     """Node with tiles already aggregated
+#
+#     The purpose of this node is to allow feature SQL generation to retrieve the post-aggregation
+#     feature transform expression. The columns_map of this node has the mapping from user defined
+#     feature names to internal aggregated column names. The feature expression can be obtained by
+#     calling get_column_expr().
+#     """
+#
+#     query_node_type = NodeType.GROUPBY
+#
+#     @property
+#     def sql(self) -> Expression:
+#         # This will not be called anywhere
+#         raise NotImplementedError()
+#
+#     @classmethod
+#     def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
+#         sql_node = None
+#         if context.sql_type == SQLType.POST_AGGREGATION:
+#             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+#                 context.graph, context.query_node, context.adapter
+#             )
+#             columns_map = {}
+#             for agg_spec in agg_specs:
+#                 columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)
+#             sql_node = AggregatedTilesNode(context=context, columns_map=columns_map)
+#         return sql_node
