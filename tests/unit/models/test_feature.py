@@ -121,9 +121,9 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "block_modification_by": [],
         "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "aggregation_result_names": [
-            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-            "_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-            "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+            "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+            "_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+            "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ],
         "description": None,
         "definition_hash": None,

@@ -88,7 +88,7 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -98,7 +98,7 @@ WITH REQUEST_TABLE AS (
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-        FIRST_VALUE(value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
+        FIRST_VALUE(value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
@@ -133,5 +133,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "a_latest_value_past_90d"
+  "_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "a_latest_value_past_90d"
 FROM _FB_AGGREGATED AS AGG

@@ -13,20 +13,20 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."CUSTOMER_ID",
     REQ."order_id",
     REQ."POINT_IN_TIME",
-    "T0"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T1"."_fb_internal_item_count_None_order_id_None_input_2" AS "_fb_internal_item_count_None_order_id_None_input_2"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T1"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "CUSTOMER_ID" AS "CUSTOMER_ID",
-      "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-      "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+      "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+      "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
     FROM (
       SELECT
         "CUSTOMER_ID",
-        "'_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35'" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-        "'_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35'" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+        "'_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35'" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+        "'_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35'" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
       FROM (
         SELECT
           "CUSTOMER_ID",
@@ -40,23 +40,23 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', 0),
-              ('_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35', 1)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              ('_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', 0),
+              ('_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35', 1)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
             AND R."VERSION" = L."LATEST_VERSION"
         )
         WHERE
-          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', '_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', '_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35'))
+          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', '_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35')
+      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35', '_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35'))
     )
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_2"
+      COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -75,6 +75,6 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."CUSTOMER_ID",
   AGG."order_id",
-  "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average",
-  "_fb_internal_item_count_None_order_id_None_input_2" AS "order_size"
+  "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average",
+  "_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

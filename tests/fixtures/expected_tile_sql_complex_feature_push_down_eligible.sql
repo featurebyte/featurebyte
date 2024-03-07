@@ -26,7 +26,7 @@ FROM (
         "created_at_scd" AS "created_at_scd",
         "cust_id_scd" AS "cust_id_scd",
         (
-          "_fb_internal_item_sum_item_amount_event_id_col_None_join_1" + "col_float_scd"
+          "_fb_internal_cust_id_item_sum_item_amount_event_id_col_None_join_1" + "col_float_scd"
         ) AS "added_feature"
       FROM (
         SELECT
@@ -44,7 +44,7 @@ FROM (
           REQ."date_of_birth_scd",
           REQ."created_at_scd",
           REQ."cust_id_scd",
-          "T0"."_fb_internal_item_sum_item_amount_event_id_col_None_join_1" AS "_fb_internal_item_sum_item_amount_event_id_col_None_join_1"
+          "T0"."_fb_internal_cust_id_item_sum_item_amount_event_id_col_None_join_1" AS "_fb_internal_cust_id_item_sum_item_amount_event_id_col_None_join_1"
         FROM (
           SELECT
             L."col_int" AS "col_int",
@@ -167,7 +167,7 @@ FROM (
         LEFT JOIN (
           SELECT
             ITEM."event_id_col" AS "cust_id",
-            SUM(ITEM."item_amount") AS "_fb_internal_item_sum_item_amount_event_id_col_None_join_1"
+            SUM(ITEM."item_amount") AS "_fb_internal_cust_id_item_sum_item_amount_event_id_col_None_join_1"
           FROM (
             SELECT
               L."event_id_col" AS "event_id_col",

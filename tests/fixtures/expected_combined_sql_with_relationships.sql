@@ -107,15 +107,15 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
     REQ."c",
     REQ."COL_INT",
     REQ."cust_id_100000000000000000000000",
-    "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T1"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T2"."_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+    "T0"."_fb_internal_cust_id_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_cust_id_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T1"."_fb_internal_cust_id_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_cust_id_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T2"."_fb_internal_cust_id_100000000000000000000000_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "_fb_internal_cust_id_100000000000000000000000_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
   FROM JOINED_PARENTS_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_cust_id_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -152,7 +152,7 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_cust_id_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -189,7 +189,7 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
     SELECT
       "POINT_IN_TIME",
       "cust_id_100000000000000000000000",
-      SUM(value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774) AS "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+      SUM(value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774) AS "_fb_internal_cust_id_100000000000000000000000_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -227,6 +227,9 @@ SELECT
   AGG."b",
   AGG."c",
   (
-    "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" / NULLIF("_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774", 0)
+    "_fb_internal_cust_id_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" / NULLIF(
+      "_fb_internal_cust_id_100000000000000000000000_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
+      0
+    )
   ) AS "a_2h_avg_by_user_div_7d_by_biz"
 FROM _FB_AGGREGATED AS AGG
