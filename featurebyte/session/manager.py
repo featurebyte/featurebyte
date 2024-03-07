@@ -3,14 +3,14 @@ SessionManager class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Hashable
 
 import json
 import time
 from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
 
 from asyncache import cached
-from cachetools import TTLCache
+from cachetools import TTLCache, keys
 from pydantic import BaseModel
 
 from featurebyte.enum import SourceType
@@ -91,7 +91,26 @@ async def get_new_session(item: str, credential_params: str, timeout: float) -> 
     return session
 
 
-@cached(cache=session_cache)
+def _session_hash_key(*args: Any, **kwargs: Any) -> tuple[Hashable, ...]:
+    """
+    Return a cache key for the specified hashable arguments.
+
+    Parameters
+    ----------
+    *args: Any
+        Positional arguments
+    **kwargs: Any
+        Keyword arguments
+
+    Returns
+    -------
+    tuple[Hashable, ...]
+    """
+    # exclude timeout from hash
+    return keys.hashkey(*args, **{key: value for key, value in kwargs.items() if key != "timeout"})
+
+
+@cached(cache=session_cache, key=_session_hash_key)
 async def get_session(item: str, credential_params: str, timeout: float) -> BaseSession:
     """
     Retrieve or create a new session for the given database source key. If a new session is created,
