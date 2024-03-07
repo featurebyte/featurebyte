@@ -630,7 +630,7 @@ async def test_materialize_features_no_entity_databricks_unity(
     _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"

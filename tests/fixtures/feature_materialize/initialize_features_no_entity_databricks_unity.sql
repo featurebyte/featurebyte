@@ -1,7 +1,6 @@
 SELECT
-  *
-FROM `cat1__no_entity_1d`
-LIMIT 1;
+  COUNT(*)
+FROM `cat1__no_entity_1d`;
 
 CREATE OR REPLACE TABLE `sf_db`.`sf_schema`.`TEMP_REQUEST_TABLE_000000000000000000000000`
 USING DELTA
