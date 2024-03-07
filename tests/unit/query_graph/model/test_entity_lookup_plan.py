@@ -4,7 +4,7 @@ Tests for featurebyte/query_graph/model/entity_lookup_plan.py
 import pytest
 from bson import ObjectId
 
-from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 
 
@@ -214,3 +214,82 @@ def test_generate_lookup_steps_parallel_parents(
         relationships_info=relationships_info,
     )
     assert lookup_steps == [c_is_parent_of_b, d_is_parent_of_b]
+
+
+def test_entity_column__single_branch(
+    entity_a,
+    entity_b,
+    entity_c,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+):
+    """
+    Test EntityColumn class (single branch)
+
+    (child)     (parent)
+    a        -> b
+    """
+    entity_column = EntityColumn(
+        entity_id=entity_a,
+        serving_name="colA",
+        child_serving_name=None,
+        relationship_info_id=None,
+    )
+    parent_entity_columns = entity_column.get_parent_entity_columns(
+        [b_is_parent_of_a, c_is_parent_of_b],
+    )
+    assert parent_entity_columns == [
+        entity_column,
+        EntityColumn(
+            entity_id=entity_b,
+            serving_name=f"colA_{b_is_parent_of_a.id}",
+            child_serving_name="colA",
+            relationship_info_id=b_is_parent_of_a.id,
+        ),
+        EntityColumn(
+            entity_id=entity_c,
+            serving_name=f"colA_{b_is_parent_of_a.id}_{c_is_parent_of_b.id}",
+            child_serving_name=f"colA_{b_is_parent_of_a.id}",
+            relationship_info_id=c_is_parent_of_b.id,
+        ),
+    ]
+
+
+def test_entity_column__two_branches(
+    entity_b,
+    entity_c,
+    entity_d,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+):
+    """
+    Test EntityColumn class (two branches)
+
+    (child)     (parent)
+    b        -> c
+             -> d
+    """
+    entity_column = EntityColumn(
+        entity_id=entity_b,
+        serving_name="colB",
+        child_serving_name=None,
+        relationship_info_id=None,
+    )
+    parent_entity_columns = entity_column.get_parent_entity_columns(
+        [c_is_parent_of_b, d_is_parent_of_b],
+    )
+    assert parent_entity_columns == [
+        entity_column,
+        EntityColumn(
+            entity_id=entity_c,
+            serving_name=f"colB_{c_is_parent_of_b.id}",
+            child_serving_name="colB",
+            relationship_info_id=c_is_parent_of_b.id,
+        ),
+        EntityColumn(
+            entity_id=entity_d,
+            serving_name=f"colB_{d_is_parent_of_b.id}",
+            child_serving_name="colB",
+            relationship_info_id=d_is_parent_of_b.id,
+        ),
+    ]

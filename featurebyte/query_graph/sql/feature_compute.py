@@ -5,9 +5,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence, Type, Union
 
-import copy
 import sys
-from dataclasses import dataclass
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -21,8 +19,7 @@ from featurebyte.models.parent_serving import (
     ParentServingPreparation,
 )
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
-from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
@@ -536,48 +533,6 @@ class FeatureExecutionPlan:
             exclude_columns=exclude_columns,
         )
         return post_aggregation_sql
-
-
-@dataclass
-class EntityColumn:
-    """
-    Entity column that can be transformed into parent's entity column
-    """
-
-    entity_id: ObjectId
-    serving_name: str
-    child_serving_name: Optional[str]
-    relationship_info_id: Optional[ObjectId]
-
-    def get_parent_entity_columns(
-        self, lookup_steps: list[EntityRelationshipInfo]
-    ) -> list[EntityColumn]:
-        """
-        Apply entity lookup steps and generate new entity columns that are the parents
-
-        Parameters
-        ----------
-        lookup_steps: list[EntityRelationshipInfo]
-            Lookup steps to apply
-
-        Returns
-        -------
-        list[EntityColumn]
-        """
-        columns = [copy.deepcopy(self)]
-        for lookup_step in lookup_steps:
-            new_columns = []
-            for column in columns:
-                if lookup_step.entity_id == column.entity_id:
-                    current = EntityColumn(
-                        entity_id=lookup_step.related_entity_id,
-                        serving_name=column.serving_name + f"_{lookup_step.id}",
-                        child_serving_name=column.serving_name,
-                        relationship_info_id=lookup_step.id,
-                    )
-                    new_columns.append(current)
-            columns.extend(new_columns)
-        return columns
 
 
 class FeatureExecutionPlanner:
