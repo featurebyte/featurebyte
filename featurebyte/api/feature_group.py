@@ -43,17 +43,13 @@ from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import (
     MAX_BATCH_FEATURE_ITEM_COUNT,
     BatchFeatureCreatePayload,
     BatchFeatureItem,
 )
-from featurebyte.schema.feature_list import (
-    FeatureListCreateWithBatchFeatureCreationPayload,
-    FeatureListPreview,
-    FeatureListSQL,
-)
+from featurebyte.schema.feature_list import FeatureListCreateJob, FeatureListPreview, FeatureListSQL
+from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 
 logger = get_logger(__name__)
 
@@ -428,19 +424,17 @@ class BaseFeatureGroup(AsyncMixin):
         return batch_feature_create, batch_feature_items
 
     @staticmethod
-    def _get_feature_list_create_with_batch_feature_creation_payload(
+    def _get_feature_list_create_job_payload(
         feature_list_id: ObjectId,
         feature_list_name: str,
         features: List[BatchFeatureItem],
-        conflict_resolution: ConflictResolution,
-    ) -> FeatureListCreateWithBatchFeatureCreationPayload:
-        return FeatureListCreateWithBatchFeatureCreationPayload(
+        features_conflict_resolution: ConflictResolution,
+    ) -> FeatureListCreateJob:
+        return FeatureListCreateJob(
             _id=feature_list_id,
             name=feature_list_name,
-            features=features,
-            graph=QueryGraphModel(),
-            conflict_resolution=conflict_resolution,
-            skip_batch_feature_creation=True,
+            features=[FeatureParameters(id=feature.id, name=feature.name) for feature in features],
+            features_conflict_resolution=features_conflict_resolution,
         )
 
     def _save_feature_list(
@@ -467,16 +461,14 @@ class BaseFeatureGroup(AsyncMixin):
             )
 
         # prepare feature list batch feature create payload
-        feature_list_batch_feature_create = (
-            self._get_feature_list_create_with_batch_feature_creation_payload(
-                feature_list_id=feature_list_id,
-                feature_list_name=feature_list_name,
-                features=feature_items,
-                conflict_resolution=conflict_resolution,
-            )
+        feature_list_batch_feature_create = self._get_feature_list_create_job_payload(
+            feature_list_id=feature_list_id,
+            feature_list_name=feature_list_name,
+            features=feature_items,
+            features_conflict_resolution=conflict_resolution,
         )
         self.post_async_task(
-            route="/feature_list/batch",
+            route="/feature_list/job",
             payload=feature_list_batch_feature_create.json_dict(),
             retrieve_result=False,
             has_output_url=False,

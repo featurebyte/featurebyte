@@ -2,6 +2,7 @@
 Tests for FeatureList route
 """
 # pylint: disable=too-many-lines
+import os
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -760,6 +761,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
+    def test_feature_list_preview__exceed_max_feature_limit(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+    ):
+        """Test feature list preview with too many features"""
+        with patch.dict(os.environ, {"FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM": "0"}):
+            test_api_client, _ = test_api_client_persistent
+            response = test_api_client.post(
+                f"{self.base_route}/preview", json=featurelist_preview_payload
+            )
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+            assert response.json()["detail"] == "Feature list preview must have 0 features or less"
+
     @pytest.fixture(name="featurelist_get_historical_features_payload")
     def featurelist_get_historical_features_payload_fixture(self, featurelist_feature_clusters):
         """
@@ -1043,6 +1058,109 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             f'Feature (id: "{unsaved_feature_id}") not found. Please save the Feature object first.'
         )
         assert expected_message in traceback
+
+    def test_feature_list_creation_job(self, test_api_client_persistent):
+        """Test feature list creation job"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create feature list
+        feature_list_id = str(ObjectId())
+        feat_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_list_create_payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [{"name": feat_payload["name"], "id": feat_payload["_id"]}],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        self.wait_for_results(test_api_client, task_response)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        feature_list_response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+        # check when the feature is not found
+        unknown_feature_id = str(ObjectId())
+        feature_list_create_payload["features"][0]["id"] = unknown_feature_id
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        expected_error = (
+            f'Feature (id: "{unknown_feature_id}") not found. Please save the Feature object first.'
+        )
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "FAILURE"
+        assert expected_error in task_response.json()["traceback"]
+
+        # check resolve conflict
+        another_test_feature_list_id = str(ObjectId())
+        feature_list_create_payload["name"] = "another_test_feature_list"
+        feature_list_create_payload["_id"] = another_test_feature_list_id
+        feature_list_create_payload["features_conflict_resolution"] = "retrieve"
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        # check newly created feature list
+        feature_list_response = test_api_client.get(
+            f"{self.base_route}/{another_test_feature_list_id}"
+        )
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "another_test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+    def test_feature_list_creation_job__using_feature_ids_only(self, test_api_client_persistent):
+        """Test feature list creation job using feature ids only"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create feature list
+        feature_list_id = str(ObjectId())
+        feat_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_list_create_payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [feat_payload["_id"]],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        self.wait_for_results(test_api_client, task_response)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        feature_list_response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+    def test_feature_list_creation_job__without_features(self, test_api_client_persistent):
+        """Test feature list creation job using feature ids only"""
+        test_api_client, _ = test_api_client_persistent
+
+        feature_list_create_payload = {
+            "_id": str(ObjectId()),
+            "name": "test_feature_list",
+            "features": [],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        assert task_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert task_response.json()["detail"][0]["msg"] == "ensure this value has at least 1 items"
 
     def test_request_sample_entity_serving_names(
         self,

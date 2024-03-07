@@ -3,7 +3,7 @@ FeatureList API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
@@ -28,6 +28,7 @@ from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
 )
+from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -38,6 +39,17 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
+
+
+class FeatureListCreateJob(FeatureByteBaseModel):
+    """
+    Feature List Job Creation schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
+    features_conflict_resolution: ConflictResolution
 
 
 class FeatureListServiceCreate(FeatureListCreate):

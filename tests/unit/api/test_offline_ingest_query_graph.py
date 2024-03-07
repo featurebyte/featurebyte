@@ -823,7 +823,6 @@ def test_databricks_specs(
                 http_path="sql/protocalv1/some_path",
                 catalog_name="feature_engineering",
                 schema_name="some_schema",
-                group_name="testing",
                 storage_path=f"dbfs:/FileStore/some_storage_path",
             ),
         )

@@ -29,6 +29,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateJob,
     FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListModelResponse,
@@ -73,10 +74,22 @@ async def submit_feature_create_with_batch_feature_create_task(
     """
     Submit FeatureList create with batch feature create task
     """
+    # TO BE DEPRECATED: Use /job instead
+    # This endpoint is for backward compatibility
     controller = request.state.app_container.feature_list_controller
     task: Task = await controller.submit_feature_list_create_with_batch_feature_create_task(
         data=data
     )
+    return task
+
+
+@router.post("/job", response_model=Task, status_code=HTTPStatus.CREATED)
+async def submit_feature_list_creation_job(request: Request, data: FeatureListCreateJob) -> Task:
+    """
+    Submit Feature List creation job
+    """
+    controller = request.state.app_container.feature_list_controller
+    task: Task = await controller.submit_feature_list_create_job(data=data)
     return task
 
 

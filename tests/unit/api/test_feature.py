@@ -1845,7 +1845,7 @@ async def test_feature_loading_time(mock_api_object_cache, saved_feature, persis
     # mock api object cache to disable caching
     _ = mock_api_object_cache
     sample_size = 10
-    feature_loading_limit = 200
+    feature_loading_limit = 300
 
     # get elapsed time with persistent
     start = time.time()

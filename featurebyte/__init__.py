@@ -85,7 +85,12 @@ from featurebyte.query_graph.node.cleaning_operation import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
+from featurebyte.query_graph.node.schema import (
+    DatabricksDetails,
+    DatabricksUnityDetails,
+    SnowflakeDetails,
+    SparkDetails,
+)
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -465,6 +470,7 @@ __all__ = [
     "Catalog",
     "ChangeView",
     "DatabricksDetails",
+    "DatabricksUnityDetails",
     "DataSource",
     "Deployment",
     "DimensionTable",
