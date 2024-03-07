@@ -498,7 +498,7 @@ def test_feature_execution_planner__entity_relationships_context(
     customer_entity_id,
     business_entity_id,
     relation_table,
-    snowflake_feature_store_details,
+    parent_serving_preparation,
     update_fixtures,
 ):
     """
@@ -513,13 +513,8 @@ def test_feature_execution_planner__entity_relationships_context(
             feature_node_relationships_info_business_is_parent_of_user
         ],
         entity_lookup_step_creator=entity_lookup_step_creator,
-        feature_store_details=snowflake_feature_store_details,
     )
-    parent_serving_preparation = ParentServingPreparation(
-        join_steps=[],
-        feature_store_details=snowflake_feature_store_details,
-        entity_relationships_context=entity_relationships_context,
-    )
+    parent_serving_preparation.entity_relationships_context = entity_relationships_context
     planner = FeatureExecutionPlanner(
         graph,
         source_type=SourceType.SNOWFLAKE,

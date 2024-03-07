@@ -3,14 +3,42 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
     REQ."a" AS "a",
     REQ."b" AS "b",
     REQ."c" AS "c",
+    REQ."COL_INT" AS "COL_INT",
     REQ."cust_id_100000000000000000000000" AS "cust_id_100000000000000000000000"
   FROM (
     SELECT
-      REQ."a",
-      REQ."b",
-      REQ."c",
+      REQ."a" AS "a",
+      REQ."b" AS "b",
+      REQ."c" AS "c",
+      REQ."COL_INT" AS "COL_INT",
       "T0"."cust_id_100000000000000000000000" AS "cust_id_100000000000000000000000"
-    FROM REQUEST_TABLE AS REQ
+    FROM (
+      SELECT
+        REQ."a",
+        REQ."b",
+        REQ."c",
+        "T0"."COL_INT" AS "COL_INT"
+      FROM REQUEST_TABLE AS REQ
+      LEFT JOIN (
+        SELECT
+          "col_text" AS "COL_TEXT",
+          "col_int" AS "COL_INT"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."dimension_table"
+        )
+      ) AS T0
+        ON REQ."COL_TEXT" = T0."COL_TEXT"
+    ) AS REQ
     LEFT JOIN (
       SELECT
         "relation_cust_id" AS "cust_id",
@@ -77,6 +105,7 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
     REQ."a",
     REQ."b",
     REQ."c",
+    REQ."COL_INT",
     REQ."cust_id_100000000000000000000000",
     "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
     "T1"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
