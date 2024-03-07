@@ -373,6 +373,11 @@ class FeatureStoreWarehouseService:
             source_type=db_session.source_type,
         )
         result = await db_session.execute_query(sql)
+
+        # drop row index column if present
+        if result is not None and InternalName.TABLE_ROW_INDEX in result.columns:
+            result.drop(columns=[InternalName.TABLE_ROW_INDEX], inplace=True)
+
         return dataframe_to_json(result)
 
     async def download_table(
