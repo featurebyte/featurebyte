@@ -389,7 +389,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     """
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
@@ -437,6 +437,8 @@ async def test_initialize_new_columns__table_exists(
         return {"some_existing_col": "some_info"}
 
     async def mock_execute_query(query):
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": "2022-10-15 10:00:00"}])
 
@@ -465,6 +467,51 @@ async def test_initialize_new_columns__table_exists(
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
+async def test_initialize_new_columns__table_exists_but_empty(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    mock_materialize_partial,
+    update_fixtures,
+):
+    """
+    Test initialize_new_columns when feature table already exists but empty
+    """
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {"some_existing_col": "some_info"}
+
+    async def mock_execute_query(query):
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"RESULT": [0]})
+
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
+    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/feature_materialize/initialize_new_columns_existing_table_empty.sql",
+        update_fixtures,
+    )
+
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "cat1_cust_id_30m"
+    assert kwargs == {
+        "columns": [f"sum_30m_{get_version()}"],
+        "end_date": datetime(2022, 1, 1, 0, 0, 0),
+        "start_date": None,
+        "with_feature_timestamp": True,
+    }
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
 async def test_initialize_new_columns__databricks_unity(
     feature_materialize_service,
     mock_snowflake_session,
@@ -477,7 +524,7 @@ async def test_initialize_new_columns__databricks_unity(
     """
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
@@ -583,7 +630,7 @@ async def test_materialize_features_no_entity_databricks_unity(
     _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
