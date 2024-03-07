@@ -185,8 +185,8 @@ class FeatureExecutionPlan:
 
     def update_feature_entity_lookup_steps(self, agg_spec: AggregationSpec, node_name: str) -> None:
         """
-        Check if any entity lookup steps are required for the aggregation spec and if so update it
-        in place. Add the required lookup steps into the plan.
+        Check if any entity lookup steps are required for the aggregation spec and if so update its
+        serving_names attribute in place. Also add the required lookup steps into the plan.
 
         Parameters
         ----------
@@ -195,9 +195,6 @@ class FeatureExecutionPlan:
         node_name: str
             Feature node name associated with the aggregation specification
         """
-        # TODO: Different agg specs can be for different windows only. Can cache the result
-        # by agg_spec.entity_ids. Different fl_lookup_steps should be cached also.
-
         entity_relationships_context = (
             self.parent_serving_preparation.entity_relationships_context
             if self.parent_serving_preparation is not None
