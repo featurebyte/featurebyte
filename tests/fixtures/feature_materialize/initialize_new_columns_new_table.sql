@@ -1,7 +1,6 @@
 SELECT
-  *
-FROM "cat1_cust_id_30m"
-LIMIT 1;
+  COUNT(*)
+FROM "cat1_cust_id_30m";
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
