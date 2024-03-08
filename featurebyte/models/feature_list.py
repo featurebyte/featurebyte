@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pymongo
 from bson.objectid import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
+from pydantic import Field, PrivateAttr, StrictStr, parse_obj_as, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -25,7 +25,13 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list_store_info import DataBricksStoreInfo, StoreInfo
+from featurebyte.models.feature_list_store_info import (
+    DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
+    SnowflakeStoreInfo,
+    SparkStoreInfo,
+    StoreInfo,
+)
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -520,15 +526,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Returns
         -------
         StoreInfo
-
-        Raises
-        ------
-        ValueError
-            If store info is not available
         """
-        if self.internal_store_info is None:
-            raise ValueError("Store info is not available.")
-        return StoreInfo(**self.internal_store_info)
+        return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
 
     def initialize_store_info(
         self, features: List[FeatureModel], feature_store: FeatureStoreModel
@@ -544,7 +543,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             Feature store model
         """
         store_type_to_store_info_class = {
-            SourceType.DATABRICKS_UNITY: DataBricksStoreInfo,
+            SourceType.SNOWFLAKE: SnowflakeStoreInfo,
+            SourceType.DATABRICKS: DataBricksStoreInfo,
+            SourceType.DATABRICKS_UNITY: DataBricksUnityStoreInfo,
+            SourceType.SPARK: SparkStoreInfo,
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]

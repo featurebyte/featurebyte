@@ -3,13 +3,12 @@ This module contains Feature list store info related models
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple, Union
-
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing_extensions import Annotated
 
 from pydantic import Field
 
-from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -28,17 +27,21 @@ from featurebyte.query_graph.node.schema import (
 )
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
+StoreInfoType = Literal["uninitialized", "snowflake", "databricks", "databricks_unity", "spark"]
+
 
 class BaseStoreInfo(FeatureByteBaseModel):
     """
     Base class for store info
     """
 
-    type: SourceType
+    type: StoreInfoType
+    feast_enabled: bool = Field(default=False)
 
     @classmethod
-    @abstractmethod
-    def create(cls, features: List[FeatureModel], feature_store: FeatureStoreModel) -> StoreInfo:
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> BaseStoreInfo:
         """
         Create store info for a feature list
 
@@ -53,6 +56,46 @@ class BaseStoreInfo(FeatureByteBaseModel):
         -------
         StoreInfo
         """
+        _ = features, feature_store
+        return cls(feast_enabled=True)
+
+
+class UninitializedStoreInfo(BaseStoreInfo):
+    """
+    Uninitialized store info
+    """
+
+    type: Literal["uninitialized"] = Field("uninitialized", const=True)
+
+    @classmethod
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> UninitializedStoreInfo:
+        return cls(feast_enabled=False)
+
+
+class SnowflakeStoreInfo(BaseStoreInfo):
+    """
+    Snowflake store info
+    """
+
+    type: Literal["snowflake"] = Field("snowflake", const=True)
+
+
+class DataBricksStoreInfo(BaseStoreInfo):
+    """
+    DataBricks store info
+    """
+
+    type: Literal["databricks"] = Field(default="databricks", const=True)
+
+
+class SparkStoreInfo(BaseStoreInfo):
+    """
+    Spark store info
+    """
+
+    type: Literal["spark"] = Field(default="spark", const=True)
 
 
 class DataBricksFeatureLookup(FeatureByteBaseModel):
@@ -94,12 +137,12 @@ class DataBricksFeatureFunction(FeatureByteBaseModel):
         return "FeatureFunction"
 
 
-class DataBricksStoreInfo(BaseStoreInfo):
+class DataBricksUnityStoreInfo(BaseStoreInfo):
     """
     DataBricks store info
     """
 
-    type: SourceType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
+    type: Literal["databricks_unity"] = Field(default="databricks_unity", const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]
@@ -257,7 +300,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     @classmethod
     def create(
         cls, features: List[FeatureModel], feature_store: FeatureStoreModel
-    ) -> "DataBricksStoreInfo":
+    ) -> DataBricksUnityStoreInfo:
         exclude_columns = {SpecialColumnName.POINT_IN_TIME.value}
         entity_id_to_column_spec = {}
         request_column_name_to_dtype = {}
@@ -318,6 +361,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
             )
 
         return cls(
+            feast_enabled=True,
             feature_specs=feature_specs,
             base_dataframe_specs=base_dataframe_specs,
             exclude_columns=sorted(exclude_columns),
@@ -325,4 +369,13 @@ class DataBricksStoreInfo(BaseStoreInfo):
         )
 
 
-StoreInfo = DataBricksStoreInfo
+StoreInfo = Annotated[
+    Union[
+        UninitializedStoreInfo,
+        SnowflakeStoreInfo,
+        DataBricksStoreInfo,
+        DataBricksUnityStoreInfo,
+        SparkStoreInfo,
+    ],
+    Field(discriminator="type"),
+]

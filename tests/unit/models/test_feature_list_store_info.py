@@ -8,7 +8,7 @@ import pytest
 from featurebyte.models.feature_list_store_info import (
     DataBricksFeatureFunction,
     DataBricksFeatureLookup,
-    DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
 )
 from featurebyte.query_graph.node.schema import ColumnSpec
 
@@ -18,7 +18,7 @@ def databricks_store_info_fixture():
     """
     DataBricks store info fixture
     """
-    return DataBricksStoreInfo(
+    return DataBricksUnityStoreInfo(
         feature_specs=[
             DataBricksFeatureLookup(
                 table_name="ml.feature_table.column1",
