@@ -237,7 +237,18 @@ class FeatureCluster(FeatureByteBaseModel):
     node_names: List[StrictStr]
     feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
     feature_node_attributes: Optional[List[FeatureNodeAttributes]]
-    combined_relationships_info: List[EntityRelationshipInfo] = Field(default_factory=list)
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "combined_relationships_info" in values:
+            return values
+        combined_relationships_info: Set[EntityRelationshipInfo] = set()
+        for info in values.get("feature_node_relationships_infos", []):
+            combined_relationships_info.update(info.relationships_info or [])
+        values["combined_relationships_info"] = list(combined_relationships_info)
+        return values
 
     @property
     def nodes(self) -> List[Node]:
@@ -488,7 +499,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             )
             feature_node_relationships_info = []
             feature_node_attributes = []
-            combined_relationships_info: Set[EntityRelationshipInfo] = set()
             for feature, mapped_node in zip(group_features, mapped_nodes):
                 feature_node_relationships_info.append(
                     FeatureNodeRelationshipsInfo(
@@ -503,7 +513,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                         definition_hash=feature.definition_hash,
                     )
                 )
-                combined_relationships_info.update(feature.relationships_info or [])
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_id=feature_store_id,
@@ -511,7 +520,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     node_names=[node.name for node in mapped_nodes],
                     feature_node_relationships_infos=feature_node_relationships_info,
                     feature_node_attributes=feature_node_attributes,
-                    combined_relationships_info=combined_relationships_info,
                 )
             )
         return feature_clusters
