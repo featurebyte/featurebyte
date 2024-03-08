@@ -1,7 +1,7 @@
 SELECT
   "BUSINESS_ID",
-  CAST('_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774' AS VARCHAR) AS "AGGREGATION_RESULT_NAME",
-  "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "VALUE"
+  CAST('_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774' AS VARCHAR) AS "AGGREGATION_RESULT_NAME",
+  "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "VALUE"
 FROM (
   WITH REQUEST_TABLE AS (
     SELECT DISTINCT
@@ -39,13 +39,13 @@ FROM (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."BUSINESS_ID",
-      "T0"."_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+      "T0"."_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
     FROM REQUEST_TABLE AS REQ
     LEFT JOIN (
       SELECT
         "POINT_IN_TIME",
         "BUSINESS_ID",
-        SUM(value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774) AS "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+        SUM(value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774) AS "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
@@ -80,6 +80,6 @@ FROM (
   SELECT
     AGG."POINT_IN_TIME",
     AGG."BUSINESS_ID",
-    "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+    "_fb_internal_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
   FROM _FB_AGGREGATED AS AGG
 )

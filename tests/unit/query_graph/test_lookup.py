@@ -51,5 +51,5 @@ def test_lookup_node_post_aggregation(global_graph, lookup_feature_node, lookup_
     expr = sql_graph.build(lookup_feature_node).sql
     assert (
         expr.sql()
-        == '("_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_1" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1")'
+        == '("_fb_internal_lookup_cust_value_1_input_1" + "_fb_internal_lookup_cust_value_2_input_1")'
     )

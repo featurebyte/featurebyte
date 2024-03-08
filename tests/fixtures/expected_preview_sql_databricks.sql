@@ -99,14 +99,14 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ.`POINT_IN_TIME`,
     REQ.`CUSTOMER_ID`,
-    `T0`.`_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`,
-    `T1`.`_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+    `T0`.`_fb_internal_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`,
+    `T1`.`_fb_internal_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       `POINT_IN_TIME`,
       `CUSTOMER_ID`,
-      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
     FROM (
       SELECT
         REQ.`POINT_IN_TIME`,
@@ -143,7 +143,7 @@ WITH REQUEST_TABLE AS (
     SELECT
       `POINT_IN_TIME`,
       `CUSTOMER_ID`,
-      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
     FROM (
       SELECT
         REQ.`POINT_IN_TIME`,
@@ -180,6 +180,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG.`POINT_IN_TIME`,
   AGG.`CUSTOMER_ID`,
-  `_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `a_2h_average`,
-  `_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `a_48h_average`
+  `_fb_internal_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `a_2h_average`,
+  `_fb_internal_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `a_48h_average`
 FROM _FB_AGGREGATED AS AGG

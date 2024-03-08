@@ -4,15 +4,15 @@ WITH _FB_AGGREGATED AS (
     REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e",
-    "T0"."_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
-    "T0"."_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+    REQ."_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e",
+    "T0"."_fb_internal_lookup_cust_value_1_input_2" AS "_fb_internal_lookup_cust_value_1_input_2",
+    "T0"."_fb_internal_lookup_cust_value_2_input_2" AS "_fb_internal_lookup_cust_value_2_input_2"
   FROM (
     SELECT
       L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R.value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+      R.value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e AS "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -73,8 +73,8 @@ WITH _FB_AGGREGATED AS (
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
-      "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      "cust_value_1" AS "_fb_internal_lookup_cust_value_1_input_2",
+      "cust_value_2" AS "_fb_internal_lookup_cust_value_2_input_2"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
@@ -89,8 +89,8 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "a_latest_value",
+  "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "a_latest_value",
   (
-    "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+    "_fb_internal_lookup_cust_value_1_input_2" + "_fb_internal_lookup_cust_value_2_input_2"
   ) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG

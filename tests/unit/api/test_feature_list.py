@@ -923,16 +923,16 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
           ) AS "production_ready_feature",
           (
             (
-              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
-              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG

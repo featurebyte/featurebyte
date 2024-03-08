@@ -68,7 +68,7 @@ def test_forward_aggregator(forward_spec):
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1" AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1"
+          "T0"."_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1" AS "_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
@@ -82,16 +82,16 @@ def test_forward_aggregator(forward_spec):
                 ELSE CAST(INNER_."col_float" AS TEXT)
               END,
               TO_VARIANT(
-                INNER_."_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
+                INNER_."_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
               )
-            ) AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1"
+            ) AS "_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1"
           FROM (
             SELECT
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
               REQ."serving_cust_id" AS "serving_cust_id",
               REQ."other_serving_key" AS "other_serving_key",
               SOURCE_TABLE."col_float" AS "col_float",
-              SUM(SOURCE_TABLE."value") AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
+              SUM(SOURCE_TABLE."value") AS "_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
             FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id_other_serving_key" AS REQ
             INNER JOIN (
               SELECT
