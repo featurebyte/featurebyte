@@ -119,6 +119,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
+                "agg_result_name_include_serving_names": True,
             }
         }
         if sanitize_for_definition:

@@ -31,6 +31,7 @@ class LookupSpec(BaseLookupSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[LookupSpec]:
         assert isinstance(node, LookupNode)
         params = node.parameters
@@ -47,6 +48,7 @@ class LookupSpec(BaseLookupSpec):
                 aggregation_source=aggregation_source,
                 scd_parameters=params.scd_parameters,
                 event_parameters=params.event_parameters,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             specs.append(spec)
         return specs
