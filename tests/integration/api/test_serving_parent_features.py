@@ -257,6 +257,7 @@ def feature_list_with_complex_features_fixture(
             deployment.disable()
 
 
+@pytest.mark.order(1)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -300,6 +301,7 @@ def test_preview(
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
+@pytest.mark.order(1)
 @pytest.fixture(name="observations_set_with_expected_features")
 def observations_set_with_expected_features_fixture():
     observations_set_with_expected_features = pd.DataFrame(
@@ -339,6 +341,7 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
+@pytest.mark.order(1)
 def test_historical_features(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -358,6 +361,7 @@ def test_historical_features(
     )
 
 
+@pytest.mark.order(1)
 def test_historical_features_with_serving_names_mapping(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -383,6 +387,7 @@ def test_historical_features_with_serving_names_mapping(
     )
 
 
+@pytest.mark.order(1)
 def test_historical_features_with_complex_features(
     feature_list_with_complex_features,
     observations_set_with_expected_features,
@@ -402,29 +407,7 @@ def test_historical_features_with_complex_features(
     )
 
 
-def test_historical_features_with_complex_features__relationships_removed(
-    feature_list_with_complex_features,
-    observations_set_with_expected_features,
-    customer_table,
-):
-    """
-    Test get historical features still work even if parent child relationships are removed
-    """
-    # Check relationship used by combined_user_city_country_feature exists (user -> city)
-    relationships_before = Relationship.list()
-    assert customer_table.name in relationships_before["relation_table"].to_list()
-
-    # Remove that relationship
-    customer_table["scd_cust_id"].as_entity(None)
-    relationships_after = Relationship.list()
-    assert customer_table.name not in relationships_after["relation_table"].to_list()
-
-    test_historical_features_with_complex_features(
-        feature_list_with_complex_features,
-        observations_set_with_expected_features,
-    )
-
-
+@pytest.mark.order(1)
 def test_online_features(config, feature_list_deployment_with_child_entities):
     """
     Test requesting online features
@@ -439,6 +422,7 @@ def test_online_features(config, feature_list_deployment_with_child_entities):
     assert res.json() == {"features": [{"serving_event_id": 1, "Country Name": "japan"}]}
 
 
+@pytest.mark.order(1)
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_feature_info_primary_entity(feature_list_with_parent_child_features):
     """
@@ -466,6 +450,7 @@ def test_feature_info_primary_entity(feature_list_with_parent_child_features):
     ]
 
 
+@pytest.mark.order(1)
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_online_serving_code_uses_primary_entity(
     feature_list_with_parent_child_features, update_fixtures
@@ -489,6 +474,7 @@ def test_online_serving_code_uses_primary_entity(
     deployment.disable()
 
 
+@pytest.mark.order(1)
 def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_feature):
     """
     Check historical features work when parent entities lookup is required for tile computation
@@ -517,3 +503,27 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     df = feature_list.compute_historical_features(observations_set)
 
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
+
+
+@pytest.mark.order(2)
+def test_historical_features_with_complex_features__relationships_removed(
+    feature_list_with_complex_features,
+    observations_set_with_expected_features,
+    customer_table,
+):
+    """
+    Test get historical features still work even if parent child relationships are removed
+    """
+    # Check relationship used by combined_user_city_country_feature exists (user -> city)
+    relationships_before = Relationship.list()
+    assert customer_table.name in relationships_before["relation_table"].to_list()
+
+    # Remove that relationship
+    customer_table["scd_cust_id"].as_entity(None)
+    relationships_after = Relationship.list()
+    assert customer_table.name not in relationships_after["relation_table"].to_list()
+
+    test_historical_features_with_complex_features(
+        feature_list_with_complex_features,
+        observations_set_with_expected_features,
+    )
