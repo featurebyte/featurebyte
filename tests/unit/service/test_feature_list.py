@@ -370,7 +370,8 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
 @pytest.mark.parametrize(
     "situation",
     [
-        "missing_feature_clusters_path" "feature_list_namespace_id_not_found",
+        "missing_feature_clusters_path",
+        "feature_list_namespace_id_not_found",
         "feature_does_not_reference_feature_list",
     ],
 )
@@ -390,7 +391,7 @@ async def test_delete_feature_list(
     if situation == "missing_feature_clusters_path":
         await storage.delete(Path(feature_list.feature_clusters_path))
         with pytest.raises(FileNotFoundError):
-            await storage.get(Path(feature_list.feature_clusters_path))
+            await storage.get_text(Path(feature_list.feature_clusters_path))
 
     if situation == "feature_list_namespace_id_not_found":
         await feature_list_namespace_service.delete_document(
