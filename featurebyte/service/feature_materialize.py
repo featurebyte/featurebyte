@@ -3,7 +3,7 @@ FeatureMaterializeService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, List, Optional, Tuple
+from typing import Any, AsyncIterator, List, Optional, Tuple, cast
 
 import textwrap
 from contextlib import asynccontextmanager
@@ -332,9 +332,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel,
     ) -> Optional[Tuple[List[str], datetime]]:
         session = await self._get_session(feature_table_model)
-        has_existing_table = await self._feature_table_exists(session, feature_table_model)
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, feature_table_model
+        )
 
-        if has_existing_table:
+        if num_rows_in_feature_table is not None:
             selected_columns = await self._ensure_compatible_schema(session, feature_table_model)
             if not selected_columns:
                 return None
@@ -347,7 +349,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             selected_columns=selected_columns,
             use_last_materialized_timestamp=False,
         ) as materialized_features:
-            if not has_existing_table:
+            if num_rows_in_feature_table is None:
                 # Create feature table is it doesn't exist yet
                 await self._create_feature_table(
                     session,
@@ -359,17 +361,23 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 )
                 materialize_end_date = materialized_features.feature_timestamp
             else:
-                # Merge into existing feature table
-                last_feature_timestamp = await self._get_last_feature_timestamp(
-                    session, feature_table_model.name
-                )
+                if num_rows_in_feature_table == 0:
+                    feature_timestamp_value = materialized_features.feature_timestamp.isoformat()
+                else:
+                    feature_timestamp_value = await self._get_last_feature_timestamp(
+                        session, feature_table_model.name
+                    )
+                # Merge into existing feature table. If the table exists but is empty, do not
+                # specify merge conditions so that the merge operation simply inserts rows with
+                # new columns.
                 await self._merge_into_feature_table(
                     session=session,
                     feature_table_model=feature_table_model,
                     materialized_features=materialized_features,
-                    feature_timestamp_value=last_feature_timestamp,
+                    feature_timestamp_value=feature_timestamp_value,
+                    to_specify_merge_conditions=num_rows_in_feature_table > 0,
                 )
-                materialize_end_date = pd.Timestamp(last_feature_timestamp).to_pydatetime()
+                materialize_end_date = pd.Timestamp(feature_timestamp_value).to_pydatetime()
 
             return materialized_features.column_names, materialize_end_date
 
@@ -667,22 +675,28 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel,
         materialized_features: MaterializedFeatures,
         feature_timestamp_value: str,
+        to_specify_merge_conditions: bool,
     ) -> None:
         feature_timestamp_value_expr = expressions.Anonymous(
             this="TO_TIMESTAMP", expressions=[make_literal_value(feature_timestamp_value)]
         )
-        merge_conditions = [
-            expressions.EQ(
-                this=get_qualified_column_identifier(serving_name, "offline_store_table"),
-                expression=get_qualified_column_identifier(serving_name, "materialized_features"),
-            )
-            for serving_name in feature_table_model.serving_names
-        ] + [
-            expressions.EQ(
-                this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN),
-                expression=feature_timestamp_value_expr,
-            ),
-        ]
+        if to_specify_merge_conditions:
+            merge_conditions = [
+                expressions.EQ(
+                    this=get_qualified_column_identifier(serving_name, "offline_store_table"),
+                    expression=get_qualified_column_identifier(
+                        serving_name, "materialized_features"
+                    ),
+                )
+                for serving_name in feature_table_model.serving_names
+            ] + [
+                expressions.EQ(
+                    this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN),
+                    expression=feature_timestamp_value_expr,
+                ),
+            ]
+        else:
+            merge_conditions = []
 
         update_expr = expressions.Update(
             expressions=[
@@ -722,7 +736,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             )
             .from_(quoted_identifier(materialized_features.materialized_table_name))
             .subquery(alias="materialized_features"),
-            on=expressions.and_(*merge_conditions),
+            on=expressions.and_(*merge_conditions) if merge_conditions else expressions.false(),
             expressions=[
                 expressions.When(
                     this=expressions.Column(this=expressions.Identifier(this="MATCHED")),
@@ -741,20 +755,22 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         await session.execute_query(query)
 
     @classmethod
-    async def _feature_table_exists(
+    async def _num_rows_in_feature_table(
         cls,
         session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
-    ) -> bool:
+    ) -> Optional[int]:
         try:
             query = sql_to_string(
-                expressions.select("*").from_(quoted_identifier(feature_table_model.name)).limit(1),
+                expressions.select(expressions.Count(this=expressions.Star())).from_(
+                    quoted_identifier(feature_table_model.name)
+                ),
                 source_type=session.source_type,
             )
-            await session.execute_query(query)
-            return True
+            result = await session.execute_query(query)
+            return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
         except session._no_schema_error:  # pylint: disable=protected-access
-            return False
+            return None
 
     @classmethod
     async def _ensure_compatible_schema(

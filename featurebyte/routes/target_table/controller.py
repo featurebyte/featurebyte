@@ -20,8 +20,8 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_table import TargetTableService
 
@@ -46,7 +46,7 @@ class TargetTableController(
     def __init__(
         self,
         target_table_service: TargetTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
@@ -55,7 +55,7 @@ class TargetTableController(
     ):
         super().__init__(
             service=target_table_service,
-            preview_service=preview_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
             observation_table_service=observation_table_service,
             entity_validation_service=entity_validation_service,
             task_controller=task_controller,

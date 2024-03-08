@@ -94,7 +94,10 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
         feature_list_create = FeatureListCreate(
             _id=payload.feature_list_id, name=payload.feature_list_name, feature_ids=feature_ids
         )
-        await self.feature_list_controller.create_feature_list(data=feature_list_create)
+        await self.feature_list_controller.create_feature_list(
+            data=feature_list_create,
+            progress_callback=self.task_progress_updater.update_progress,
+        )
         await self.task_progress_updater.update_progress(
             percent=100, message="Completed feature list creation"
         )

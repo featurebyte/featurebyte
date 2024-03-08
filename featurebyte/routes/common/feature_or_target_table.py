@@ -37,9 +37,9 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 )
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.target_table import TargetTableService
 
 InfoTypeT = TypeVar("InfoTypeT", HistoricalFeatureTableInfo, TargetTableInfo)
@@ -100,12 +100,14 @@ class FeatureOrTargetTableController(
     def __init__(
         self,
         service: Any,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(
+            service=service, feature_store_warehouse_service=feature_store_warehouse_service
+        )
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller

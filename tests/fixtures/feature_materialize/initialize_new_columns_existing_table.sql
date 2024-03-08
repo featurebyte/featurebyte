@@ -1,7 +1,6 @@
 SELECT
-  *
-FROM "cat1_cust_id_30m"
-LIMIT 1;
+  COUNT(*)
+FROM "cat1_cust_id_30m";
 
 ALTER TABLE "cat1_cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
 

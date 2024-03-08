@@ -1351,15 +1351,15 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
 
         mock_session = mock_get_session.return_value
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
-        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [300 * 10000000]})
+        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [301 * 10000000]})
         mock_session.list_table_schema.return_value = {
             "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
         }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         response = test_api_client.get(f"{self.base_route}/pyarrow_table/{doc_id}")
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Table size (3000000000, 1) exceeds download limit."}
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json() == {"detail": "Table size (3010000000, 1) exceeds download limit."}
 
     def test_download(self, test_api_client_persistent, create_success_response, mock_get_session):
         """Test download (success)"""

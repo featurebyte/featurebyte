@@ -217,7 +217,7 @@ def test_create_observation_table(
     assert len(mock_log_handler.records) == 1
     parts = mock_log_handler.records[0].split("|")
     assert "|".join(parts[1:]) == (
-        " WARNING  | featurebyte.api.source_table | create_observation_table:1066 | "
+        " WARNING  | featurebyte.api.source_table | create_observation_table:1072 | "
         "Primary entities will be a mandatory parameter in SDK version 0.7. | {}"
     )
 
@@ -331,3 +331,25 @@ def test_bad_materialized_tables_cleaned_up(
     assert snowflake_execute_query.call_args[0][0].startswith(
         'DROP TABLE IF EXISTS "sf_database"."sf_schema"."OBSERVATION_TABLE_'
     )
+
+
+def test_table_shape(snowflake_database_table):
+    """Test table shape"""
+    assert snowflake_database_table.shape() == (100, 9)
+
+
+def test_table_preview(snowflake_database_table):
+    """Test table preview"""
+    assert snowflake_database_table.preview(limit=3).to_dict() == {
+        "col_int": {0: [1, 2, 3]},
+        "col_float": {0: [1.0, 2.0, 3.0]},
+        "col_char": {0: ["a", "b", "c"]},
+        "col_text": {0: ["abc", "def", "ghi"]},
+        "col_binary": {0: [1, 0, 1]},
+        "col_boolean": {0: [True, False, True]},
+        "event_timestamp": {
+            0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]
+        },
+        "created_at": {0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]},
+        "cust_id": {0: [1, 2, 3]},
+    }

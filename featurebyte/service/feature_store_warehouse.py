@@ -5,16 +5,41 @@ We split this into a separate service, as these typically require a session obje
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, AsyncGenerator, List, Optional, Tuple
 
-from featurebyte.enum import InternalName
-from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
+import os
+
+from featurebyte.common.utils import dataframe_to_json
+from featurebyte.enum import InternalName, MaterializedTableNamePrefix
+from featurebyte.exception import (
+    DatabaseNotFoundError,
+    LimitExceededError,
+    SchemaNotFoundError,
+    TableNotFoundError,
+)
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.materialisation import (
+    get_feature_store_id_expr,
+    get_source_count_expr,
+    get_source_expr,
+)
+from featurebyte.schema.feature_store import FeatureStoreShape
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+
+MAX_TABLE_CELLS = int(
+    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
+)  # 10 million rows, 300 columns
+
+
+logger = get_logger(__name__)
 
 
 class FeatureStoreWarehouseService:
@@ -106,6 +131,37 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
 
+    @staticmethod
+    def _is_visible_table(table_name: str, filter_featurebyte_tables: bool) -> bool:
+        if table_name.startswith("__"):
+            return False
+        if not filter_featurebyte_tables:
+            return True
+        # quick filter for materialized tables
+        if "TABLE" not in table_name:
+            return False
+        for prefix in MaterializedTableNamePrefix.visible():
+            if table_name.startswith(prefix):
+                return True
+        return False
+
+    @staticmethod
+    async def _is_featurebyte_schema(
+        db_session: BaseSession, database_name: str, schema_name: str
+    ) -> bool:
+        try:
+            sql_expr = get_feature_store_id_expr(
+                database_name=database_name, schema_name=schema_name
+            )
+            sql = sql_to_string(
+                sql_expr,
+                source_type=db_session.source_type,
+            )
+            _ = await db_session.execute_query(sql)
+            return True
+        except db_session.no_schema_error:
+            return False
+
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
@@ -138,13 +194,9 @@ class FeatureStoreWarehouseService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-
-        # check database exists
-        await self.list_schemas(
-            feature_store=feature_store,
-            database_name=database_name,
+        is_featurebyte_schema = await self._is_featurebyte_schema(
+            db_session, database_name, schema_name
         )
-
         try:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name
@@ -152,8 +204,9 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
 
-        # exclude tables with names that has a "__" prefix
-        return [table for table in tables if not table.name.startswith("__")]
+        return [
+            table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
+        ]
 
     async def list_columns(
         self,
@@ -188,13 +241,6 @@ class FeatureStoreWarehouseService:
         """
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
-        )
-
-        # check database and schema exists
-        await self.list_tables(
-            feature_store=feature_store,
-            database_name=database_name,
-            schema_name=schema_name,
         )
 
         try:
@@ -251,3 +297,135 @@ class FeatureStoreWarehouseService:
             )
         except db_session.no_schema_error as exc:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
+
+    async def _get_table_shape(
+        self, location: TabularSource, db_session: BaseSession
+    ) -> Tuple[Tuple[int, int], bool, list[str]]:
+        # check size of the table
+        sql_expr = get_source_count_expr(source=location.table_details)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
+        assert result is not None
+        columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
+        has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
+        columns = [
+            col_name
+            for col_name in columns_specs.keys()
+            if col_name != InternalName.TABLE_ROW_INDEX
+        ]
+        return (
+            (result["row_count"].iloc[0], len(columns)),
+            has_row_index,
+            columns,
+        )
+
+    async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
+        """
+        Get the shape table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to get shape from
+
+        Returns
+        -------
+        FeatureStoreShape
+            Row and column counts
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        )
+        shape, _, _ = await self._get_table_shape(location, db_session)
+        return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
+
+    async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
+        """
+        Preview table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to preview from
+        limit: int
+            Row limit on preview results
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        )
+        sql_expr = get_source_expr(source=location.table_details).limit(limit)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
+
+        # drop row index column if present
+        if result is not None and InternalName.TABLE_ROW_INDEX in result.columns:
+            result.drop(columns=[InternalName.TABLE_ROW_INDEX], inplace=True)
+
+        return dataframe_to_json(result)
+
+    async def download_table(
+        self,
+        location: TabularSource,
+    ) -> Optional[AsyncGenerator[bytes, None]]:
+        """
+        Download table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to download from
+
+        Returns
+        -------
+        AsyncGenerator[bytes, None]
+            Asynchronous bytes generator
+
+        Raises
+        ------
+        LimitExceededError
+            Table size exceeds the limit.
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        )
+
+        shape, has_row_index, columns = await self._get_table_shape(location, db_session)
+        logger.debug(
+            "Downloading table from feature store",
+            extra={
+                "location": location.json_dict(),
+                "shape": shape,
+            },
+        )
+
+        if shape[0] * shape[1] > MAX_TABLE_CELLS:
+            raise LimitExceededError(f"Table size {shape} exceeds download limit.")
+
+        sql_expr = get_source_expr(source=location.table_details, column_names=columns)
+        if has_row_index:
+            sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        return db_session.get_async_query_stream(sql)

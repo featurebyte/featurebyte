@@ -169,7 +169,9 @@ class BaseSparkSession(BaseSession, ABC):
                     f"(path '{self.storage_path}/{temp_filename}')"
                 )
                 # cache table so we can remove the temp file
-                await self.execute_query(f"CACHE TABLE `{table_name}`")
+                await self.execute_query(
+                    f"CACHE TABLE `{table_name}` OPTIONS ('storageLevel' 'DISK_ONLY')"
+                )
             else:
                 # register a permanent table from uncached temp view
                 request_id = self.generate_session_unique_id()

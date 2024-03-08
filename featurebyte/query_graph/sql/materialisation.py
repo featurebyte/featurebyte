@@ -163,3 +163,30 @@ def get_row_index_column_expr() -> Expression:
         alias=InternalName.TABLE_ROW_INDEX,
         quoted=True,
     )
+
+
+def get_feature_store_id_expr(
+    database_name: Optional[str],
+    schema_name: Optional[str],
+) -> Select:
+    """
+    Construct SQL query to get the feature store id of a featurebyte schema
+
+    Parameters
+    ----------
+    database_name: Optional[str]
+        Database name
+    schema_name: Optional[str]
+        Schema name
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(quoted_identifier("FEATURE_STORE_ID")).from_(
+        expressions.Table(
+            this=quoted_identifier("METADATA_SCHEMA"),
+            db=quoted_identifier(schema_name) if schema_name else None,
+            catalog=quoted_identifier(database_name) if database_name else None,
+        )
+    )

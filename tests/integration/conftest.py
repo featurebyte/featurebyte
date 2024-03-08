@@ -1147,13 +1147,6 @@ def create_transactions_event_table_from_data_source(
     """
     Helper function to create an EventTable with the given feature store
     """
-    available_tables = data_source.list_source_tables(
-        database_name=database_name,
-        schema_name=schema_name,
-    )
-    # check table exists (case-insensitive since some data warehouses change the casing)
-    available_tables = [x.upper() for x in available_tables]
-    assert table_name.upper() in available_tables
 
     database_table = data_source.get_source_table(
         database_name=database_name,

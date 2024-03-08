@@ -23,9 +23,9 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.target_table import TargetTableService
 
@@ -60,9 +60,11 @@ class BaseMaterializedTableController(
 
     task_controller: TaskController
 
-    def __init__(self, service: Any, preview_service: PreviewService) -> None:
+    def __init__(
+        self, service: Any, feature_store_warehouse_service: FeatureStoreWarehouseService
+    ) -> None:
         super().__init__(service)
-        self.preview_service = preview_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def delete_materialized_table(self, document_id: ObjectId) -> Task:
         """
@@ -106,7 +108,7 @@ class BaseMaterializedTableController(
             StreamingResponse object
         """
         table = await self.service.get_document(document_id=document_id)
-        bytestream = await self.preview_service.download_table(
+        bytestream = await self.feature_store_warehouse_service.download_table(
             location=table.location,
         )
         assert bytestream is not None
@@ -132,7 +134,7 @@ class BaseMaterializedTableController(
         -------
         AsyncGenerator[bytes, None]
         """
-        bytestream = await self.preview_service.download_table(
+        bytestream = await self.feature_store_warehouse_service.download_table(
             location=location,
         )
         assert bytestream is not None

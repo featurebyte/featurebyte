@@ -12,10 +12,17 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.enum import SourceType
-from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.parent_serving import (
+    EntityLookupStep,
+    EntityRelationshipsContext,
+    FeatureNodeRelationshipsInfo,
+    ParentServingPreparation,
+)
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.aggregator.base import TileBasedAggregator
@@ -74,6 +81,7 @@ class FeatureExecutionPlan:
         source_type: SourceType,
         is_online_serving: bool,
         parent_serving_preparation: ParentServingPreparation | None = None,
+        feature_store_details: Optional[FeatureStoreDetails] = None,
     ) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
         self.aggregators: dict[str, AggregatorType] = {
@@ -86,9 +94,11 @@ class FeatureExecutionPlan:
             AggregationType.FORWARD: ForwardAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
+        self.feature_entity_lookup_steps: dict[str, EntityLookupStep] = {}
         self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
         self.parent_serving_preparation = parent_serving_preparation
+        self.feature_store_details = feature_store_details
 
     @property
     def required_serving_names(self) -> set[str]:
@@ -154,6 +164,7 @@ class FeatureExecutionPlan:
     def add_aggregation_spec(
         self,
         aggregation_spec: AggregationSpec,
+        node_name: str,
     ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
@@ -161,10 +172,103 @@ class FeatureExecutionPlan:
         ----------
         aggregation_spec : AggregationSpec
             Aggregation specification
+        node_name: str
+            Feature node name associated with the aggregation specification
         """
+        self.update_feature_entity_lookup_steps(aggregation_spec, node_name)
         key = aggregation_spec.aggregation_type
         aggregator = self.aggregators[key]
         aggregator.update(aggregation_spec)  # type: ignore
+
+    def update_feature_entity_lookup_steps(self, agg_spec: AggregationSpec, node_name: str) -> None:
+        """
+        Check if any entity lookup steps are required for the aggregation spec and if so update its
+        serving_names attribute in place. Also add the required lookup steps into the plan.
+
+        Parameters
+        ----------
+        agg_spec: AggregationSpec
+            Aggregation specification
+        node_name: str
+            Feature node name associated with the aggregation specification
+        """
+        entity_relationships_context = (
+            self.parent_serving_preparation.entity_relationships_context
+            if self.parent_serving_preparation is not None
+            else None
+        )
+        if entity_relationships_context is None:
+            return
+
+        parent_entity_columns = self._get_parent_entity_columns(
+            entity_relationships_context=entity_relationships_context,
+            node_info=entity_relationships_context.get_node_info(node_name),
+            agg_spec=agg_spec,
+        )
+
+        # Add to overall feature entity lookup steps
+        for entity_column in parent_entity_columns.values():
+            if entity_column.relationship_info_id is not None:
+                entity_lookup_step = (
+                    entity_relationships_context.entity_lookup_step_creator.get_entity_lookup_step(
+                        relationship_info_id=entity_column.relationship_info_id,
+                        child_serving_name_override=entity_column.child_serving_name,
+                        parent_serving_name_override=entity_column.serving_name,
+                    )
+                )
+                self.add_feature_entity_lookup_step(entity_lookup_step)
+
+        # Get updated serving names in aggregation spec
+        assert agg_spec.entity_ids is not None
+        new_serving_names = []
+        for entity_id, serving_name in zip(agg_spec.entity_ids, agg_spec.serving_names):
+            if entity_id in parent_entity_columns:
+                new_serving_name = parent_entity_columns[entity_id].serving_name
+            else:
+                new_serving_name = serving_name
+            new_serving_names.append(new_serving_name)
+        agg_spec.serving_names = new_serving_names
+
+    @staticmethod
+    def _get_parent_entity_columns(
+        entity_relationships_context: EntityRelationshipsContext,
+        node_info: FeatureNodeRelationshipsInfo,
+        agg_spec: AggregationSpec,
+    ) -> dict[ObjectId, EntityColumn]:
+        # Lookup feature primary entity from feature list primary entity
+        fl_lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+            available_entity_ids=entity_relationships_context.feature_list_primary_entity_ids,
+            required_entity_ids=node_info.primary_entity_ids,
+            relationships_info=entity_relationships_context.feature_list_relationships_info,
+        )
+
+        # Lookup feature non-primary entity from feature primary entity
+        feature_lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+            available_entity_ids=node_info.primary_entity_ids,
+            required_entity_ids=agg_spec.entity_ids or [],
+            relationships_info=node_info.relationships_info,
+        )
+
+        # Get new columns that should be generated by parent entity lookup using feature
+        # list primary entity as the starting point
+        lookup_steps = fl_lookup_steps + feature_lookup_steps
+        parent_entity_columns = {}
+        for entity_id, serving_name in zip(
+            entity_relationships_context.feature_list_primary_entity_ids,
+            entity_relationships_context.feature_list_serving_names,
+        ):
+            fl_primary_entity_column = EntityColumn(
+                entity_id=entity_id,
+                serving_name=serving_name,
+                child_serving_name=None,
+                relationship_info_id=None,
+            )
+            for parent_entity_column in fl_primary_entity_column.get_parent_entity_columns(
+                lookup_steps
+            ):
+                if parent_entity_column.entity_id not in parent_entity_columns:
+                    parent_entity_columns[parent_entity_column.entity_id] = parent_entity_column
+        return parent_entity_columns
 
     def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
         """Add FeatureSpec to be incorporated when generating SQL
@@ -184,8 +288,23 @@ class FeatureExecutionPlan:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
 
+    def add_feature_entity_lookup_step(self, entity_lookup_step: EntityLookupStep) -> None:
+        """
+        Add an EntityLookupStep to the plan. This looks up a required parent entity column based on
+        the relationships defined at feature level.
+
+        Parameters
+        ----------
+        entity_lookup_step: EntityLookupStep
+            EntityLookupStep object
+        """
+        key = entity_lookup_step.parent.serving_name
+        if key not in self.feature_entity_lookup_steps:
+            self.feature_entity_lookup_steps[key] = entity_lookup_step
+
     def construct_request_table_with_parent_entities(
         self,
+        entity_lookup_steps: list[EntityLookupStep],
         request_table_name: str,
         request_table_columns: list[str],
     ) -> tuple[expressions.Select, list[str]]:
@@ -194,6 +313,8 @@ class FeatureExecutionPlan:
 
         Parameters
         ----------
+        entity_lookup_steps: list[EntityLookupStep]
+            All the entity lookup steps that need to be performed
         request_table_name: str
             Name of the request table
         request_table_columns: list[str]
@@ -207,7 +328,7 @@ class FeatureExecutionPlan:
         parent_serving_result = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
-            join_steps=self.parent_serving_preparation.join_steps,
+            join_steps=entity_lookup_steps,
             feature_store_details=self.parent_serving_preparation.feature_store_details,
         )
         return parent_serving_result.table_expr, parent_serving_result.parent_entity_columns
@@ -323,6 +444,20 @@ class FeatureExecutionPlan:
         )
         return table_expr
 
+    def get_overall_entity_lookup_steps(self) -> list[EntityLookupStep]:
+        """
+        Get all the entity lookup steps required
+
+        Returns
+        -------
+        list[EntityLookupStep]
+        """
+        out = []
+        if self.parent_serving_preparation is not None:
+            out.extend(self.parent_serving_preparation.join_steps)
+        out.extend(self.feature_entity_lookup_steps.values())
+        return out
+
     def construct_combined_sql(
         self,
         request_table_name: str,
@@ -363,12 +498,14 @@ class FeatureExecutionPlan:
         if exclude_columns is None:
             exclude_columns = set()
 
-        if self.parent_serving_preparation is not None:
+        overall_entity_lookup_steps = self.get_overall_entity_lookup_steps()
+        if overall_entity_lookup_steps:
             assert request_table_columns is not None
             (
                 updated_request_table_expr,
                 new_columns,
             ) = self.construct_request_table_with_parent_entities(
+                entity_lookup_steps=overall_entity_lookup_steps,
                 request_table_name=request_table_name,
                 request_table_columns=request_table_columns,
             )
@@ -449,20 +586,23 @@ class FeatureExecutionPlanner:
         for node in nodes:
             # map the input node to the node inside the flattened graph (self.graph)
             mapped_node = self.graph.get_node_by_name(self.node_name_map[node.name])
-            self.process_node(mapped_node)
+            self.process_node(mapped_node, original_node_name=node.name)
         return self.plan
 
-    def process_node(self, node: Node) -> None:
+    def process_node(self, node: Node, original_node_name: str) -> None:
         """Update plan state for a given query graph Node
 
         Parameters
         ----------
         node : Node
             Query graph node
+        original_node_name: str
+            Name of the query graph node before flattening. This is used to retrieve the
+            corresponding FeatureNodeRelationshipsInfo object.
         """
         agg_specs = self.get_aggregation_specs(node)
         for agg_spec in agg_specs:
-            self.plan.add_aggregation_spec(agg_spec)
+            self.plan.add_aggregation_spec(agg_spec, original_node_name)
         self.update_feature_specs(node)
 
     def get_aggregation_specs(  # pylint: disable=too-many-branches

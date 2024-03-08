@@ -10,6 +10,12 @@ from bson import ObjectId
 from sqlglot import select
 
 from featurebyte.enum import AggFunc, DBVarType, SourceType
+from featurebyte.models.parent_serving import (
+    EntityLookupInfo,
+    EntityLookupStep,
+    EntityRelationshipsContext,
+    ParentServingPreparation,
+)
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
@@ -21,6 +27,7 @@ from featurebyte.query_graph.sql.specs import (
     ItemAggregationSpec,
     TileBasedAggregationSpec,
 )
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="agg_spec_template")
@@ -482,3 +489,79 @@ def test_feature_execution_planner__feature_no_entity_ids(
     )
     plan = planner.generate_plan([groupby_node])
     assert plan.required_entity_ids == set()
+
+
+def test_feature_execution_planner__entity_relationships_context(
+    complex_feature_query_graph,
+    feature_node_relationships_info_business_is_parent_of_user,
+    entity_lookup_step_creator,
+    customer_entity_id,
+    business_entity_id,
+    relation_table,
+    parent_serving_preparation,
+    update_fixtures,
+):
+    """
+    Test FeatureExecutionPlanner with EntityRelationshipsContext specified
+    """
+    node, graph = complex_feature_query_graph
+    entity_relationships_context = EntityRelationshipsContext(
+        feature_list_primary_entity_ids=[customer_entity_id],
+        feature_list_serving_names=["cust_id"],
+        feature_list_relationships_info=[],
+        feature_node_relationships_infos=[
+            feature_node_relationships_info_business_is_parent_of_user
+        ],
+        entity_lookup_step_creator=entity_lookup_step_creator,
+    )
+    parent_serving_preparation.entity_relationships_context = entity_relationships_context
+    planner = FeatureExecutionPlanner(
+        graph,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    plan = planner.generate_plan([node])
+
+    # Check aggregation specs serving names updated correctly
+    for agg_specs in plan.aggregators[
+        "window"
+    ].window_aggregation_spec_set.get_grouped_aggregation_specs():
+        for agg_spec in agg_specs:
+            assert agg_spec.keys[0] in {"cust_id", "biz_id"}
+            if agg_spec.keys[0] == "cust_id":
+                assert agg_spec.serving_names == ["cust_id"]
+            else:
+                assert agg_spec.serving_names == ["cust_id_100000000000000000000000"]
+
+    # Check entity lookup steps recorded in plan correctly
+    assert plan.feature_entity_lookup_steps == {
+        "cust_id_100000000000000000000000": EntityLookupStep(
+            id=ObjectId("100000000000000000000000"),
+            table=relation_table.dict(by_alias=True),
+            parent=EntityLookupInfo(
+                entity_id=business_entity_id,
+                key="relation_biz_id",
+                serving_name="cust_id_100000000000000000000000",
+            ),
+            child=EntityLookupInfo(
+                entity_id=customer_entity_id,
+                key="relation_cust_id",
+                serving_name="cust_id",
+            ),
+        )
+    }
+
+    # Check combined sql
+    sql = plan.construct_combined_sql(
+        request_table_name="REQUEST_TABLE",
+        point_in_time_column="POINT_IN_TIME",
+        request_table_columns=["a", "b", "c"],
+        prior_cte_statements=[],
+        exclude_columns=None,
+    ).sql(pretty=True)
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_combined_sql_with_relationships.sql",
+        update_fixture=update_fixtures,
+    )
