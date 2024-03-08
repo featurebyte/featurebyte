@@ -39,6 +39,7 @@ class LookupTargetSpec(BaseLookupSpec):
         specs = []
         for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):
             spec = LookupTargetSpec(
+                node_name=node.name,
                 input_column_name=input_column_name,
                 feature_name=feature_name,
                 entity_column=params.entity_column,

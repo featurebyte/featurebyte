@@ -48,6 +48,8 @@ def aggregation_spec_without_end_timestamp(
     aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
+        node_name="aggregate_as_at_1",
+        feature_name=aggregate_as_at_node_parameters.name,
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=aggregate_as_at_node_parameters,
@@ -62,6 +64,8 @@ def aggregation_spec_with_end_timestamp(
     aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
+        node_name="aggregate_as_at_2",
+        feature_name=aggregate_as_at_node_parameters_with_end_timestamp.name,
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
@@ -76,6 +80,8 @@ def aggregation_spec_with_serving_names_mapping(
     aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
+        node_name="aggregate_as_at_3",
+        feature_name=aggregate_as_at_node_parameters_with_end_timestamp.name,
         serving_names=["serving_cust_id"],
         serving_names_mapping={"serving_cust_id": "new_serving_cust_id"},
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
@@ -100,9 +106,11 @@ def aggregation_specs_same_source_different_agg_funcs(
     params_2.agg_func = "max"
 
     specs = []
-    for params in [params_1, params_2]:
+    for i, params in enumerate([params_1, params_2]):
         specs.append(
             AggregateAsAtSpec(
+                node_name=f"aggregate_as_at_{i}",
+                feature_name=params.name,
                 serving_names=["serving_cust_id"],
                 serving_names_mapping=None,
                 parameters=params,
@@ -130,9 +138,11 @@ def aggregation_specs_same_source_different_keys(
     params_2.__dict__.update({"keys": ["key_2"], "serving_names": ["serving_key_2"]})
 
     specs = []
-    for params in [params_1, params_2]:
+    for i, params in enumerate([params_1, params_2]):
         specs.append(
             AggregateAsAtSpec(
+                node_name=f"aggregate_as_at_{i}",
+                feature_name=params.name,
                 serving_names=params.serving_names,
                 serving_names_mapping=None,
                 parameters=params,
@@ -152,6 +162,8 @@ def aggregation_spec_with_category(
     parameters = aggregate_as_at_node_parameters_with_end_timestamp.copy()
     parameters.value_by = "category_col"
     return AggregateAsAtSpec(
+        node_name="aggregate_as_at_1",
+        feature_name=parameters.name,
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=parameters,

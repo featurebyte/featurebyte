@@ -29,8 +29,10 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
-from featurebyte.query_graph.sql.common import apply_serving_names_mapping
+from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
+    apply_serving_names_mapping,
+)
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -64,6 +66,8 @@ class AggregationSpec(ABC):
     Base class of all aggregation specifications
     """
 
+    node_name: str
+    feature_name: str
     entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
@@ -218,6 +222,8 @@ class TileBasedAggregationSpec(AggregationSpec):
                 feature_name=feature_name,
             )
             agg_spec = cls(
+                node_name=groupby_node.name,
+                feature_name=feature_name,
                 window=window_secs,
                 frequency=groupby_node_params.frequency,
                 time_modulo_frequency=groupby_node_params.time_modulo_frequency,
@@ -229,7 +235,6 @@ class TileBasedAggregationSpec(AggregationSpec):
                 serving_names_mapping=serving_names_mapping,
                 value_by=groupby_node_params.value_by,
                 merge_expr=aggregator.merge(aggregation_id),
-                feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
                 entity_ids=groupby_node_params.entity_ids,  # type: ignore[arg-type]
@@ -592,6 +597,8 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         assert isinstance(node, ItemGroupbyNode)
         return [
             ItemAggregationSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
@@ -658,6 +665,8 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         assert isinstance(node, AggregateAsAtNode)
         return [
             AggregateAsAtSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 parameters=node.parameters,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 aggregation_source=aggregation_source,
@@ -706,6 +715,8 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         assert isinstance(node, ForwardAggregateNode)
         return [
             ForwardAggregateSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),

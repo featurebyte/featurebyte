@@ -152,6 +152,7 @@ def _get_lookup_spec_from_join_step(
     )
 
     return LookupSpec(
+        node_name="dummy",
         input_column_name=join_step.parent.key,
         feature_name=join_step.parent.serving_name,
         entity_column=join_step.child.key,

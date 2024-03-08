@@ -26,7 +26,6 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     """
 
     input_column_name: str
-    feature_name: str
     entity_column: str
     serving_names: list[str]
     scd_parameters: Optional[SCDLookupParameters]
