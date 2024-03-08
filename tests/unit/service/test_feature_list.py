@@ -2,6 +2,7 @@
 Test feature list service class
 """
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -363,3 +364,53 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
     )
     updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
     assert updated_feature_list.block_modification_by == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "situation",
+    [
+        "missing_feature_clusters_path" "feature_list_namespace_id_not_found",
+        "feature_does_not_reference_feature_list",
+    ],
+)
+async def test_delete_feature_list(
+    feature_list_service,
+    feature_list_namespace_service,
+    feature_service,
+    feature,
+    storage,
+    situation,
+):
+    """Test delete feature list method"""
+    feature_list = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(name="my_feature_list", feature_ids=[feature.id])
+    )
+
+    if situation == "missing_feature_clusters_path":
+        await storage.delete(Path(feature_list.feature_clusters_path))
+        with pytest.raises(FileNotFoundError):
+            await storage.get(Path(feature_list.feature_clusters_path))
+
+    if situation == "feature_list_namespace_id_not_found":
+        await feature_list_namespace_service.delete_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        with pytest.raises(DocumentNotFoundError):
+            await feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+
+    if situation == "feature_does_not_reference_feature_list":
+        await feature_service.update_documents(
+            query_filter={"_id": feature.id},
+            update={"$pull": {"feature_list_ids": feature_list.id}},
+        )
+        feature = await feature_service.get_document(document_id=feature.id)
+        assert feature.feature_list_ids == []
+
+    await feature_list_service.delete_document(document_id=feature_list.id)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list.id)

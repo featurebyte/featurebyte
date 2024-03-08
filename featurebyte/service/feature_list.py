@@ -584,34 +584,36 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> int:
-        async with self.persistent.start_transaction():
-            feature_list = await self.get_document(document_id=document_id)
-            deleted_count = await super().delete_document(document_id=feature_list.id)
-            feature_list_namespace = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list.feature_list_namespace_id
-            )
-            feature_list_namespace = await self.feature_list_namespace_service.update_document(
-                document_id=feature_list.feature_list_namespace_id,
-                data=FeatureListNamespaceServiceUpdate(
-                    feature_list_ids=self.exclude_object_id(
-                        feature_list_namespace.feature_list_ids, feature_list.id
-                    ),
-                ),
-                return_document=True,
-            )  # type: ignore[assignment]
+        feature_list = await self.get_document(
+            document_id=document_id,
+            populate_remote_attributes=False,
+        )
+        await self.feature_list_namespace_service.update_documents(
+            query_filter={"_id": feature_list.feature_list_namespace_id},
+            update={"$pull": {"feature_list_ids": feature_list.id}},
+        )
 
-            # update feature's feature_list_ids attribute
-            await self._update_features(
-                feature_ids=feature_list.feature_ids, deleted_feature_list_id=feature_list.id
-            )
+        # update feature's feature_list_ids attribute
+        await self._update_features(
+            feature_ids=feature_list.feature_ids, deleted_feature_list_id=feature_list.id
+        )
 
-            if not feature_list_namespace.feature_list_ids:
+        try:
+            feature_list_namespace_dict = (
+                await self.feature_list_namespace_service.get_document_as_dict(
+                    document_id=feature_list.feature_list_namespace_id
+                )
+            )
+            if not feature_list_namespace_dict["feature_list_ids"]:
                 # delete feature list namespace if it has no more feature list
                 await self.feature_list_namespace_service.delete_document(
                     document_id=feature_list.feature_list_namespace_id
                 )
 
-        return deleted_count
+        except DocumentNotFoundError:
+            pass
+
+        return await super().delete_document(document_id=feature_list.id)
 
     async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
         self, feature_list_id: ObjectId, count: int
