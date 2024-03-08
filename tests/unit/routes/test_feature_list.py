@@ -791,7 +791,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
+            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -1213,3 +1213,25 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 {"cust_id": "1"},
             ],
         }
+
+    @pytest.mark.asyncio
+    async def test_delete_feature_list_with_missing_remote_path(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        storage,
+    ):
+        """Test delete feature list with missing remote path"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+        feature_list_id = feature_list_doc["_id"]
+        await storage.delete(feature_list_doc["feature_clusters_path"])
+        with pytest.raises(FileNotFoundError):
+            await storage.get_text(feature_list_doc["feature_clusters_path"])
+
+        response = test_api_client.delete(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        # check that feature list is deleted
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

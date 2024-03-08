@@ -5,8 +5,10 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Sequence, Tuple, Union
 
+from dataclasses import dataclass
 from enum import Enum
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
@@ -189,3 +191,21 @@ class SQLType(Enum):
     MATERIALIZE = "materialize"
     AGGREGATION = "aggregation"
     POST_AGGREGATION = "post_aggregation"
+
+
+@dataclass
+class EventTableTimestampFilter:
+    """
+    Information about the timestamp filter to be applied when selecting from EventTable
+
+    timestamp_column_name: str
+        Name of the timestamp column
+    event_table_id: ObjectId
+        Id of the EventTable. Only EventTable matching this id should be filtered.
+    """
+
+    timestamp_column_name: str
+    event_table_id: ObjectId
+    start_timestamp_placeholder_name: Optional[str] = None
+    end_timestamp_placeholder_name: Optional[str] = None
+    to_cast_placeholders: Optional[bool] = True

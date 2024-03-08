@@ -22,10 +22,10 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import AggregateAsAtNode, ItemGroupbyNode, LookupNode
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
     SQLType,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,

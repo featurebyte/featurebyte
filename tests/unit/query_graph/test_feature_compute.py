@@ -34,6 +34,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
 def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
     """Fixture for an AggregationSpec"""
     agg_spec = TileBasedAggregationSpec(
+        node_name=expected_pruned_graph_and_node_1["pruned_node"].name,
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -92,6 +93,8 @@ def item_agg_spec_fixture():
         agg_func="count",
     )
     agg_spec = ItemAggregationSpec(
+        node_name="item_groupby_1",
+        feature_name=parameters.name,
         parameters=parameters,
         serving_names=["OID"],
         serving_names_mapping=None,
@@ -244,11 +247,13 @@ def test_feature_execution_planner(
         query_graph_with_groupby, source_type=SourceType.SNOWFLAKE, is_online_serving=False
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(
+    actual = list(
         plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
-    ) == [
+    )
+    expected = [
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -277,6 +282,7 @@ def test_feature_execution_planner(
         ],
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -304,17 +310,18 @@ def test_feature_execution_planner(
             )
         ],
     ]
+    assert actual == expected
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
         ),
     }
@@ -342,6 +349,7 @@ def test_feature_execution_planner__serving_names_mapping(
     ) == [
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -370,6 +378,7 @@ def test_feature_execution_planner__serving_names_mapping(
         ],
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -401,13 +410,13 @@ def test_feature_execution_planner__serving_names_mapping(
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_NEW_CUST_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_NEW_CUST_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
         ),
     }
@@ -436,8 +445,8 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     agg_result_dict.pop("adapter")
     assert agg_result_dict == {
         "column_names": [
-            "_fb_internal_lookup_cust_value_1_input_1",
-            "_fb_internal_lookup_cust_value_2_input_1",
+            "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_1",
+            "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1",
         ],
         "join_keys": ["CUSTOMER_ID"],
         "forward_point_in_time_offset": None,
@@ -462,13 +471,13 @@ def test_feature_execution_planner__query_graph_with_graph_node(
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
         ),
     }
