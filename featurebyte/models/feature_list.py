@@ -27,7 +27,9 @@ from featurebyte.models.base import (
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list_store_info import (
     DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
     SnowflakeStoreInfo,
+    SparkStoreInfo,
     StoreInfo,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -542,7 +544,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         """
         store_type_to_store_info_class = {
             SourceType.SNOWFLAKE: SnowflakeStoreInfo,
-            SourceType.DATABRICKS_UNITY: DataBricksStoreInfo,
+            SourceType.DATABRICKS: DataBricksStoreInfo,
+            SourceType.DATABRICKS_UNITY: DataBricksUnityStoreInfo,
+            SourceType.SPARK: SparkStoreInfo,
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]
