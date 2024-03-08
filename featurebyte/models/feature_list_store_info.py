@@ -3,7 +3,8 @@ This module contains Feature list store info related models
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
@@ -28,13 +29,16 @@ from featurebyte.query_graph.node.schema import (
 )
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
+StoreInfoType = Literal["uninitialized", SourceType.SNOWFLAKE, SourceType.DATABRICKS_UNITY]
+
 
 class BaseStoreInfo(FeatureByteBaseModel):
     """
     Base class for store info
     """
 
-    type: SourceType
+    type: StoreInfoType
+    feast_enabled: bool = Field(default=False)
 
     @classmethod
     @abstractmethod
@@ -53,6 +57,34 @@ class BaseStoreInfo(FeatureByteBaseModel):
         -------
         StoreInfo
         """
+
+
+class UninitializedStoreInfo(BaseStoreInfo):
+    """
+    Uninitialized store info
+    """
+
+    type: StoreInfoType = Field(default="uninitialized", const=True)
+
+    @classmethod
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> "UninitializedStoreInfo":
+        return cls(feast_enabled=False)
+
+
+class SnowflakeStoreInfo(BaseStoreInfo):
+    """
+    Snowflake store info
+    """
+
+    type: StoreInfoType = Field(default=SourceType.SNOWFLAKE, const=True)
+
+    @classmethod
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> "SnowflakeStoreInfo":
+        return cls(feast_enabled=True)
 
 
 class DataBricksFeatureLookup(FeatureByteBaseModel):
@@ -99,7 +131,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: SourceType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
+    type: StoreInfoType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]
@@ -318,6 +350,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
             )
 
         return cls(
+            feast_enabled=True,
             feature_specs=feature_specs,
             base_dataframe_specs=base_dataframe_specs,
             exclude_columns=sorted(exclude_columns),
@@ -325,4 +358,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
         )
 
 
-StoreInfo = DataBricksStoreInfo
+StoreInfo = Annotated[
+    Union[UninitializedStoreInfo, SnowflakeStoreInfo, DataBricksStoreInfo],
+    Field(discriminator="type"),
+]
