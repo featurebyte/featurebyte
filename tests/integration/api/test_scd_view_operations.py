@@ -350,7 +350,10 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), deployment, [params])
-        assert online_result.json()["features"] == [
+        online_result_dict = online_result.json()
+        if online_result.status_code != 200:
+            raise AssertionError(f"Online request failed: {online_result_dict}")
+        assert online_result_dict["features"] == [
             {
                 "üser id": 1,
                 "item_id": "item_42",
