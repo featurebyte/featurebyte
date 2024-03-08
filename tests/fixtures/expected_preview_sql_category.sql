@@ -106,8 +106,8 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "_fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6",
-    "T1"."_fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "_fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6",
+    "T1"."_fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -120,15 +120,15 @@ WITH REQUEST_TABLE AS (
           ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(
-          INNER_."inner__fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+          INNER_."inner__fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
         )
-      ) AS "_fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+      ) AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
     FROM (
       SELECT
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         "product_type",
-        SUM(sum_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) / SUM(count_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) AS "inner__fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+        SUM(sum_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) / SUM(count_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) AS "inner__fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
@@ -179,15 +179,15 @@ WITH REQUEST_TABLE AS (
           ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(
-          INNER_."inner__fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+          INNER_."inner__fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
         )
-      ) AS "_fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+      ) AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
     FROM (
       SELECT
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         "product_type",
-        SUM(sum_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) / SUM(count_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) AS "inner__fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+        SUM(sum_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) / SUM(count_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6) AS "inner__fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
@@ -231,6 +231,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "a_2h_average",
-  "_fb_internal_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "a_48h_average"
+  "_fb_internal_CUSTOMER_ID_window_w7200_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "a_2h_average",
+  "_fb_internal_CUSTOMER_ID_window_w172800_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6" AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG

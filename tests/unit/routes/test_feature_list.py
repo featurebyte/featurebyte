@@ -791,7 +791,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
+            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 

@@ -230,13 +230,15 @@ def test_lookup_aggregator__online_with_current_flag(
 
     direct_lookups = aggregator.get_direct_lookups()
     assert len(direct_lookups) == 1
-    assert direct_lookups[0].column_names == ["_fb_internal_lookup_membership_status_input_1"]
+    assert direct_lookups[0].column_names == [
+        "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+    ]
     assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
     expected_sql = textwrap.dedent(
         """
         SELECT
           "cust_id" AS "CUSTOMER_ID",
-          "membership_status" AS "_fb_internal_lookup_membership_status_input_1"
+          "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
         FROM (
           SELECT
             "effective_ts" AS "effective_ts",

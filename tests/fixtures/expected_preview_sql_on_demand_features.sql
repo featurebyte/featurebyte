@@ -88,7 +88,7 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091" AS "_fb_internal_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091" AS "_fb_internal_CUSTOMER_ID_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -98,7 +98,7 @@ WITH REQUEST_TABLE AS (
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-        FIRST_VALUE(value_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
+        FIRST_VALUE(value_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_CUSTOMER_ID_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
@@ -137,7 +137,7 @@ SELECT
     DATEDIFF(
       microsecond,
       "POINT_IN_TIME",
-      "_fb_internal_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
+      "_fb_internal_CUSTOMER_ID_window_w7776000_latest_60ed71704cc8f918877b7fc2cf2d325fba7e8091"
     ) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)
   ) AS "time_since_last_event"
 FROM _FB_AGGREGATED AS AGG
