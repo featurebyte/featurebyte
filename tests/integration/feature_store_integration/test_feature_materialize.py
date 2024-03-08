@@ -401,6 +401,28 @@ def test_feature_tables_expected(
     assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
 
 
+@pytest.mark.order(1)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_feature_cluster_with_expected_internal_relationships(offline_store_feature_tables):
+    """
+    Check that feature level relationship information are included in feature cluster correctly
+
+    Table cat1_userid_1d is one such table. It should include non-empty relationships info because
+    the complex feature "Complex Feature by User" requires parent-child relationship within the
+    feature table.
+    """
+    feature_tables_with_internal_relationships = {}
+    for name, feature_table_model in offline_store_feature_tables.items():
+        if feature_table_model.feature_cluster.feature_node_relationships_infos is None:
+            continue
+        for info in feature_table_model.feature_cluster.feature_node_relationships_infos:
+            if info.relationships_info:
+                feature_tables_with_internal_relationships[name] = feature_table_model
+                break
+    feature_table_names = list(feature_tables_with_internal_relationships.keys())
+    assert feature_table_names == ["cat1_userid_1d"]
+
+
 @pytest.mark.order(2)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio

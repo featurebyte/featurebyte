@@ -850,6 +850,12 @@ def transaction_entity_id_fixture():
     return ObjectId("63f94ed6ea1f050131379204")
 
 
+@pytest.fixture(name="gender_entity_id")
+def gender_entity_id_fixture():
+    """Gender entity ID"""
+    return ObjectId("65f11f1d8a03610e41399306")
+
+
 @pytest.fixture(name="snowflake_event_table")
 def snowflake_event_table_fixture(
     snowflake_database_table,
@@ -1076,12 +1082,12 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
 
 
 @pytest.fixture(name="gender_entity")
-def gender_entity_fixture(catalog):
+def gender_entity_fixture(gender_entity_id, catalog):
     """
     Gender entity fixture
     """
     _ = catalog
-    entity = Entity(name="gender", serving_names=["gender"])
+    entity = Entity(name="gender", serving_names=["gender"], _id=gender_entity_id)
     entity.save()
     yield entity
 
@@ -1824,6 +1830,22 @@ def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
         method="count",
         feature_name="asat_overall_count",
     )
+    return feature
+
+
+@pytest.fixture(name="feature_with_internal_parent_child_relationships")
+def feature_with_internal_parent_child_relationships_fixture(
+    scd_lookup_feature, aggregate_asat_feature
+):
+    """
+    Feature with internal parent child relationships, for example:
+
+    C = A + B
+
+    where B is a parent of A
+    """
+    feature = scd_lookup_feature.astype(str) + "_" + aggregate_asat_feature.astype(str)
+    feature.name = "complex_parent_child_feature"
     return feature
 
 
