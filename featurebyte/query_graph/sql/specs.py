@@ -507,7 +507,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
         graph: QueryGraphModel,
-        agg_result_name_include_serving_names: bool,
+        agg_result_name_include_serving_names: bool = True,
         aggregation_source: Optional[AggregationSource] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,

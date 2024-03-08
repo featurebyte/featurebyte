@@ -129,6 +129,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         },
         {
             "node_name": lookup_node.name,
@@ -141,6 +142,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         },
     ]
 
@@ -184,6 +186,7 @@ def test_lookup_aggregator__offline_scd_only(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -225,6 +228,7 @@ def test_lookup_aggregator__online_with_current_flag(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -296,6 +300,7 @@ def test_lookup_aggregator__online_without_current_flag(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -340,6 +345,7 @@ def test_lookup_aggregator__online_with_offset(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -370,6 +376,7 @@ def test_lookup_aggregator__event_table(
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
