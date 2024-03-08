@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import Entity, FeatureList, Table
+from featurebyte import Entity, FeatureList, Relationship, Table
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import tz_localize_if_needed
 
@@ -122,6 +122,15 @@ async def tables_fixture(session, data_source):
     dimension_table_1["country"].as_entity(country_entity.name)
 
 
+@pytest.fixture(name="customer_table", scope="session")
+def customer_table_fixture(tables):
+    """
+    Fixture for the customer table
+    """
+    _ = tables
+    return Table.get(f"{table_prefix}_scd_table_1")
+
+
 @pytest.fixture(name="customer_feature", scope="session")
 def customer_feature_fixture(tables):
     """
@@ -134,12 +143,11 @@ def customer_feature_fixture(tables):
 
 
 @pytest.fixture(name="city_feature", scope="session")
-def city_feature_fixture(tables):
+def city_feature_fixture(customer_table):
     """
     Feature of customer entity (customer's city)
     """
-    _ = tables
-    view = Table.get(f"{table_prefix}_scd_table_1").get_view()
+    view = customer_table.get_view()
     feature = view["scd_city"].as_feature("Customer City")
     return feature
 
@@ -391,6 +399,29 @@ def test_historical_features_with_complex_features(
     assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
     pd.testing.assert_frame_equal(
         df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
+
+
+def test_historical_features_with_complex_features__relationships_removed(
+    feature_list_with_complex_features,
+    observations_set_with_expected_features,
+    customer_table,
+):
+    """
+    Test get historical features still work even if parent child relationships are removed
+    """
+    # Check relationship used by combined_user_city_country_feature exists (user -> city)
+    relationships_before = Relationship.list()
+    assert customer_table.name in relationships_before["relation_table"].to_list()
+
+    # Remove that relationship
+    customer_table["scd_cust_id"].as_entity(None)
+    relationships_after = Relationship.list()
+    assert customer_table.name not in relationships_after["relation_table"].to_list()
+
+    test_historical_features_with_complex_features(
+        feature_list_with_complex_features,
+        observations_set_with_expected_features,
     )
 
 
