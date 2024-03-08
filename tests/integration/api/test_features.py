@@ -1,9 +1,11 @@
 """
 Tests for more features
 """
+import logging
+from threading import Thread
+
 import numpy as np
 import pandas as pd
-import pytest
 from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
@@ -190,3 +192,39 @@ def test_relative_frequency_with_filter(event_table, scd_table):
         }
     ]
     assert df.to_dict("records") == expected
+
+
+def test_delete_feature(event_table, caplog):
+    """Test deleting a feature"""
+    event_view = event_table.get_view()
+    lookup_feature = event_view["PRODUCT_ACTION"].as_feature("prod_action")
+    lookup_feature.save()
+
+    def delete_feature(feature):
+        try:
+            feature.delete()
+        except Exception as exc:
+            logging.error(str(exc))
+
+    # Set log level to INFO to capture log messages
+    caplog.set_level(logging.INFO)
+
+    thread1 = Thread(target=delete_feature, args=(lookup_feature,))
+    thread2 = Thread(target=delete_feature, args=(lookup_feature,))
+
+    thread1.start()
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
+
+    # check that the feature is deleted
+    assert lookup_feature.saved is False
+
+    expected_error = f"Feature (id: {lookup_feature.id}) is being modified. Please try again later."
+    has_expected_error = False
+    for record in caplog.records:
+        if expected_error in record.msg:
+            has_expected_error = True
+            break
+    assert has_expected_error
