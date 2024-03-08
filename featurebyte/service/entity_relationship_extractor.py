@@ -239,11 +239,9 @@ class EntityRelationshipExtractorService:
         List[EntityRelationshipInfo]
         """
         output = []
-        relation_table_ids = set()
         async for relationship_info in self.relationship_info_service.list_documents_iterator(
             query_filter={"_id": {"$in": relationship_ids}},
         ):
-            relation_table_ids.add(relationship_info.relation_table_id)
             output.append(EntityRelationshipInfo(**relationship_info.dict(by_alias=True)))
         return output
 
