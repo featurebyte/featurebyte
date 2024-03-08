@@ -24,6 +24,8 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
+    entity_column_name: Optional[str]
+    related_entity_column_name: Optional[str]
     enabled: bool
     updated_by: Optional[PydanticObjectId]
 

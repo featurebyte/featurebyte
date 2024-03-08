@@ -1,7 +1,7 @@
 """
 This module contains entity relationship info related classes.
 """
-from typing import Dict, List, Sequence, Set
+from typing import Dict, List, Optional, Sequence, Set
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -27,6 +27,8 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
+    entity_column_name: Optional[str]
+    related_entity_column_name: Optional[str]
 
     def __hash__(self) -> int:
         key = (
@@ -34,6 +36,8 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
             self.entity_id,
             self.related_entity_id,
             self.relation_table_id,
+            self.entity_column_name,
+            self.related_entity_column_name,
         )
         return hash(key)
 
