@@ -22,7 +22,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     SELECT
       "cust_id" AS "cust_id",
       "another_key" AS "another_key",
-      "_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c"
+      "_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c" AS "_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c"
     FROM (
       SELECT
         """cust_id""" AS "cust_id",

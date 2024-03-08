@@ -13,7 +13,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       "CUSTOMER_ID" AS "CUSTOMER_ID",
-      "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+      "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
     FROM (
       SELECT
         "CUSTOMER_ID",
@@ -46,7 +46,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       "BUSINESS_ID" AS "BUSINESS_ID",
-      "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
+      "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774" AS "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774"
     FROM (
       SELECT
         "BUSINESS_ID",

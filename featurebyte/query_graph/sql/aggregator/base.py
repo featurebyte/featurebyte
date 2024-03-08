@@ -3,11 +3,10 @@ Base class for aggregation SQL generators
 """
 from __future__ import annotations
 
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Any, Generic, Sequence, Tuple, TypeVar
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -307,6 +306,49 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         """
 
 
+@dataclass
+class TileBasedAggregatorOnlineJoinInfo:
+    """
+    Information required to perform a join with an online store table
+    """
+
+    # Serving names as stored in the online store table
+    original_serving_names: list[str]
+
+    # Serving names expected in the request table
+    request_serving_names: list[str]
+
+    # Data type of the online store table
+    dtype: DBVarType
+
+    # Mapping from original aggregation result name to serving names specific aggregation result
+    # names
+    agg_result_name_aliases: dict[str, str] = field(default_factory=dict)
+
+    def get_original_agg_result_names(self) -> list[str]:
+        """
+        Get the list of aggregation result names as they would appear in the online store table
+
+        Returns
+        -------
+        list[str]
+        """
+        return list(self.agg_result_name_aliases.keys())
+
+    def get_mapped_agg_result_names(self) -> list[str]:
+        """
+        Get the list of aggregation result names in the final feature query
+
+        Returns
+        -------
+        list[str]
+        """
+        return list(self.agg_result_name_aliases.values())
+
+
+OnlineJoinInfoKeyType = Tuple[str, Tuple[str, ...]]
+
+
 class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
     """
     Aggregator that handles TileBasedAggregationSpec
@@ -314,10 +356,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.agg_result_names_by_online_store_table: dict[str, set[str]] = defaultdict(set)
-        self.original_serving_names_by_online_store_table: dict[str, list[str]] = {}
-        self.request_serving_names_by_online_store_table: dict[str, list[str]] = {}
-        self.dtype_by_online_store_table: dict[str, DBVarType] = {}
+        self.online_join_info: dict[OnlineJoinInfoKeyType, TileBasedAggregatorOnlineJoinInfo] = {}
 
     def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         super().update(aggregation_spec)
@@ -326,16 +365,17 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                 set(aggregation_spec.entity_ids if aggregation_spec.entity_ids is not None else []),
                 self.adapter.get_physical_type_from_dtype(aggregation_spec.dtype),
             )
-            self.agg_result_names_by_online_store_table[table_name].add(
-                aggregation_spec.agg_result_name
-            )
-            self.original_serving_names_by_online_store_table[
-                table_name
-            ] = aggregation_spec.original_serving_names
-            self.request_serving_names_by_online_store_table[
-                table_name
-            ] = aggregation_spec.serving_names
-            self.dtype_by_online_store_table[table_name] = aggregation_spec.dtype
+            request_serving_names = aggregation_spec.serving_names
+            key = (table_name, tuple(request_serving_names))
+            if key not in self.online_join_info:
+                self.online_join_info[key] = TileBasedAggregatorOnlineJoinInfo(
+                    original_serving_names=aggregation_spec.original_serving_names,
+                    request_serving_names=request_serving_names,
+                    dtype=aggregation_spec.dtype,
+                )
+            self.online_join_info[key].agg_result_name_aliases[
+                aggregation_spec.original_agg_result_name
+            ] = aggregation_spec.agg_result_name
 
     def update_aggregation_table_expr(
         self,
@@ -408,27 +448,30 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         """
         left_join_queries = []
 
-        for (
-            table_name,
-            agg_result_names_set,
-        ) in self.agg_result_names_by_online_store_table.items():
-            agg_result_names = sorted(agg_result_names_set)
-            serving_names = self._alias_original_serving_names_to_request_serving_names(table_name)
-            quoted_agg_result_names = [quoted_identifier(name) for name in agg_result_names]
+        for (table_name, _), info in self.online_join_info.items():
+            serving_names = self._alias_original_serving_names_to_request_serving_names(info)
+            agg_result_names_exprs = [
+                alias_(
+                    quoted_identifier(original_name),
+                    alias=transformed_name,
+                    quoted=True,
+                )
+                for original_name, transformed_name in info.agg_result_name_aliases.items()
+            ]
             pivoted_online_store = self._pivot_online_store_table(
                 table_name=table_name,
-                agg_result_names=agg_result_names,
-                serving_names=self.original_serving_names_by_online_store_table[table_name],
-                dtype=self.dtype_by_online_store_table[table_name],
+                agg_result_names=list(info.get_original_agg_result_names()),
+                serving_names=info.original_serving_names,
+                dtype=info.dtype,
             )
-            expr = select(*serving_names, *quoted_agg_result_names).from_(
-                pivoted_online_store.subquery()
-            )
-            join_keys = self.request_serving_names_by_online_store_table[table_name]
+            expr = select(
+                *serving_names,
+                *agg_result_names_exprs,
+            ).from_(pivoted_online_store.subquery())
             query = LeftJoinableSubquery(
                 expr,
-                agg_result_names,
-                join_keys=join_keys,
+                list(info.get_mapped_agg_result_names()),
+                join_keys=info.request_serving_names,
             )
             left_join_queries.append(query)
 
@@ -577,17 +620,11 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         return pivot_result
 
     def _alias_original_serving_names_to_request_serving_names(
-        self, online_store_table_name: str
+        self, info: TileBasedAggregatorOnlineJoinInfo
     ) -> list[expressions.Expression]:
-        original_serving_names = self.original_serving_names_by_online_store_table[
-            online_store_table_name
-        ]
-        request_serving_names = self.request_serving_names_by_online_store_table[
-            online_store_table_name
-        ]
         out = []
         for original_serving_name, request_serving_name in zip(
-            original_serving_names, request_serving_names
+            info.original_serving_names, info.request_serving_names
         ):
             out.append(
                 alias_(

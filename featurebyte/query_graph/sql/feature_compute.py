@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence, Type, Union
+from typing import Iterable, Optional, Sequence, Set, Type, Union
 
 import sys
 from collections import defaultdict
@@ -145,11 +145,11 @@ class FeatureExecutionPlan:
         -------
         list[str]
         """
-        out = set()
+        out: Set[str] = set()
         for aggregator in self.iter_aggregators():
             if isinstance(aggregator, TileBasedAggregator):
-                for result_names in aggregator.agg_result_names_by_online_store_table.values():
-                    out.update(result_names)
+                for info in aggregator.online_join_info.values():
+                    out.update(info.get_original_agg_result_names())
         return list(out)
 
     def iter_aggregators(self) -> Iterable[AggregatorType]:
