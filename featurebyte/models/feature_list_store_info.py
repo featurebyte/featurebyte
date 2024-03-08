@@ -10,7 +10,7 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
 
-from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -29,7 +29,7 @@ from featurebyte.query_graph.node.schema import (
 )
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
-StoreInfoType = Literal["uninitialized", SourceType.SNOWFLAKE, SourceType.DATABRICKS_UNITY]
+StoreInfoType = Literal["uninitialized", "snowflake", "databricks_unity"]
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
@@ -64,7 +64,7 @@ class UninitializedStoreInfo(BaseStoreInfo):
     Uninitialized store info
     """
 
-    type: StoreInfoType = Field(default="uninitialized", const=True)
+    type: Literal["uninitialized"] = Field("uninitialized", const=True)
 
     @classmethod
     def create(
@@ -78,7 +78,7 @@ class SnowflakeStoreInfo(BaseStoreInfo):
     Snowflake store info
     """
 
-    type: StoreInfoType = Field(default=SourceType.SNOWFLAKE, const=True)
+    type: Literal["snowflake"] = Field("snowflake", const=True)
 
     @classmethod
     def create(
@@ -131,7 +131,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: StoreInfoType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
+    type: Literal["databricks_unity"] = Field(default="databricks_unity", const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]

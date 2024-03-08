@@ -525,7 +525,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         -------
         StoreInfo
         """
-        return parse_obj_as(StoreInfo, self.internal_store_info or {})  # type: ignore
+        return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
 
     def initialize_store_info(
         self, features: List[FeatureModel], feature_store: FeatureStoreModel

@@ -246,6 +246,12 @@ async def deployed_features_list_fixture(session, features, app_container):
                 to_enable_deployment=True,
             )
 
+    # check that the feature list's feast_enabled attribute is set to True
+    feature_list_model = await app_container.feature_list_service.get_document(
+        feature_list.id, populate_remote_attributes=False
+    )
+    assert feature_list_model.store_info.feast_enabled
+
     yield deployment
     await deploy_service.update_deployment(
         deployment_id=deployment.id,
