@@ -116,7 +116,7 @@ class AggregationSpec(ABC):
         str
             Aggregation result name
         """
-        parts = [FB_INTERNAL_COLUMN_PREFIX, *self.serving_names, self.aggregation_type]
+        parts = [FB_INTERNAL_COLUMN_PREFIX, self.aggregation_type]
         parts.extend([f"{arg}" for arg in args])
         return "_".join(parts)
 

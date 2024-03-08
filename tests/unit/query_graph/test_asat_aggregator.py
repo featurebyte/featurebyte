@@ -190,13 +190,13 @@ def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+          "T0"."_fb_internal_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."serving_cust_id" AS "serving_cust_id",
-            SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -257,13 +257,13 @@ def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_t
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+          "T0"."_fb_internal_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."serving_cust_id" AS "serving_cust_id",
-            SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -308,13 +308,13 @@ def test_asat_aggregate_scd_table_with_serving_names_mapping(
           a,
           b,
           c,
-          "T0"."_fb_internal_new_serving_cust_id_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_new_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+          "T0"."_fb_internal_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."new_serving_cust_id" AS "new_serving_cust_id",
-            SUM(SCD."value") AS "_fb_internal_new_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_cust_id_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_new_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -359,15 +359,15 @@ def test_same_source_different_agg_funcs(aggregation_specs_same_source_different
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_cust_id_as_at_min_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_min_value_cust_id_None_input_1",
-          "T0"."_fb_internal_serving_cust_id_as_at_max_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_max_value_cust_id_None_input_1"
+          "T0"."_fb_internal_as_at_min_value_cust_id_None_input_1" AS "_fb_internal_as_at_min_value_cust_id_None_input_1",
+          "T0"."_fb_internal_as_at_max_value_cust_id_None_input_1" AS "_fb_internal_as_at_max_value_cust_id_None_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."serving_cust_id" AS "serving_cust_id",
-            MIN(SCD."value") AS "_fb_internal_serving_cust_id_as_at_min_value_cust_id_None_input_1",
-            MAX(SCD."value") AS "_fb_internal_serving_cust_id_as_at_max_value_cust_id_None_input_1"
+            MIN(SCD."value") AS "_fb_internal_as_at_min_value_cust_id_None_input_1",
+            MAX(SCD."value") AS "_fb_internal_as_at_max_value_cust_id_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -412,14 +412,14 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_key_1_as_at_sum_value_key_1_None_input_1" AS "_fb_internal_serving_key_1_as_at_sum_value_key_1_None_input_1",
-          "T1"."_fb_internal_serving_key_2_as_at_sum_value_key_2_None_input_1" AS "_fb_internal_serving_key_2_as_at_sum_value_key_2_None_input_1"
+          "T0"."_fb_internal_as_at_sum_value_key_1_None_input_1" AS "_fb_internal_as_at_sum_value_key_1_None_input_1",
+          "T1"."_fb_internal_as_at_sum_value_key_2_None_input_1" AS "_fb_internal_as_at_sum_value_key_2_None_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."serving_key_1" AS "serving_key_1",
-            SUM(SCD."value") AS "_fb_internal_serving_key_1_as_at_sum_value_key_1_None_input_1"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_key_1_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_1" AS REQ
           INNER JOIN (
             SELECT
@@ -442,7 +442,7 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."serving_key_2" AS "serving_key_2",
-            SUM(SCD."value") AS "_fb_internal_serving_key_2_as_at_sum_value_key_2_None_input_1"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_key_2_None_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_2" AS REQ
           INNER JOIN (
             SELECT
@@ -483,7 +483,7 @@ def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
           a,
           b,
           c,
-          "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1"
+          "T0"."_fb_internal_as_at_sum_value_cust_id_category_col_input_1" AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
@@ -495,16 +495,14 @@ def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
                 THEN '__MISSING__'
                 ELSE CAST(INNER_."category_col" AS TEXT)
               END,
-              TO_VARIANT(
-                INNER_."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner"
-              )
-            ) AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1"
+              TO_VARIANT(INNER_."_fb_internal_as_at_sum_value_cust_id_category_col_input_1_inner")
+            ) AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1"
           FROM (
             SELECT
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
               REQ."serving_cust_id" AS "serving_cust_id",
               SCD."category_col" AS "category_col",
-              SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner"
+              SUM(SCD."value") AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1_inner"
             FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
             INNER JOIN (
               SELECT
