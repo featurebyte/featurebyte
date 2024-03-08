@@ -146,19 +146,23 @@ class FeatureListFacadeService:
         DocumentDeletionError
             If feature list is not in DRAFT status
         """
-        feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
-        feature_list_namespace = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list.feature_list_namespace_id
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=feature_list_id
         )
-        if feature_list_namespace.status != FeatureListStatus.DRAFT:
-            raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
-
-        await self.feature_list_service.delete_document(document_id=feature_list_id)
         try:
+            feature_list_namespace_id = feature_list_doc["feature_list_namespace_id"]
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list_namespace_id
+            )
+            if feature_list_namespace.status != FeatureListStatus.DRAFT:
+                raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
+
             await self.feature_readiness_service.update_feature_list_namespace(
-                feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                feature_list_namespace_id=feature_list_namespace_id,
                 deleted_feature_list_ids=[feature_list_id],
             )
         except DocumentNotFoundError:
             # if feature list namespace is deleted, do nothing
             pass
+
+        await self.feature_list_service.delete_document(document_id=feature_list_id)

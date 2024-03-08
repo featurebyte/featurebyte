@@ -424,6 +424,7 @@ class BaseDocumentService(
             exception_detail=exception_detail,
             use_raw_query_filter=use_raw_query_filter,
             disable_audit=self.should_disable_audit,
+            populate_remote_attributes=False,
             **kwargs,
         )
 
@@ -442,7 +443,7 @@ class BaseDocumentService(
 
         # remove remote attributes
         for remote_path in document.remote_attribute_paths:
-            await self.storage.delete(remote_path)
+            await self.storage.try_delete_if_exists(remote_path)
         return int(num_of_records_deleted)
 
     def construct_list_query_filter(
