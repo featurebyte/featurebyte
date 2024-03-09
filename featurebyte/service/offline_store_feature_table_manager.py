@@ -167,6 +167,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
+        deploy_feature_list: FeatureListModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -177,11 +178,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: List[FeatureModel]
             Features to be enabled for online serving
+        deploy_feature_list: FeatureListModel
+            Feature list model to be deployed
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
-        feature_lists = await self._get_online_enabled_feature_lists()
+        feature_lists = await self._get_online_enabled_feature_lists(deploy_feature_list)
         # Refresh feast registry since it's needed for when materializing the features from offline
         # store feature tables to online store
         await self._create_or_update_feast_registry(feature_lists)
@@ -419,10 +422,20 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         return sorted(set(filtered_table_names))
 
-    async def _get_online_enabled_feature_lists(self) -> List[FeatureListModel]:
+    async def _get_online_enabled_feature_lists(
+        self, deploy_feature_list: Optional[FeatureListModel] = None
+    ) -> List[FeatureListModel]:
         feature_lists = []
+        include_deploy_feature_list = False
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
-            feature_lists.append(FeatureListModel(**feature_list_dict))
+            feature_list = FeatureListModel(**feature_list_dict)
+            if feature_list.store_info.feast_enabled:
+                feature_lists.append(feature_list)
+                if deploy_feature_list and feature_list.id == deploy_feature_list.id:
+                    include_deploy_feature_list = True
+
+        if deploy_feature_list and not include_deploy_feature_list:
+            feature_lists.append(deploy_feature_list)
         return feature_lists
 
     async def _create_or_update_feast_registry(
