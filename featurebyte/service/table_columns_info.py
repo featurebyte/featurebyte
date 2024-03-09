@@ -230,14 +230,26 @@ class TableColumnsInfoService(OpsServiceMixin):
                 related_entity_id=removed_parent_entity_id,
             )
 
+    @staticmethod
+    def _get_column_name_for_entity_id(columns_info: List[ColumnInfo], entity_id: ObjectId) -> str:
+        for column_info in columns_info:
+            if column_info.entity_id == entity_id:
+                return column_info.name
+        raise AssertionError(f"Entity column for entity {entity_id} not found")
+
     async def _add_new_child_parent_relationships(
         self,
         entity_id: ObjectId,
         table_id: ObjectId,
+        updated_columns_info: List[ColumnInfo],
         parent_entity_ids_to_add: List[ObjectId],
     ) -> None:
         # Add relationship info links for new parent entity relationships
+        entity_column_name = self._get_column_name_for_entity_id(updated_columns_info, entity_id)
         for new_parent_entity_id in parent_entity_ids_to_add:
+            related_entity_column_name = self._get_column_name_for_entity_id(
+                updated_columns_info, new_parent_entity_id
+            )
             await self.relationship_info_service.create_document(
                 data=RelationshipInfoCreate(
                     name=f"{entity_id}_{new_parent_entity_id}",
@@ -245,6 +257,8 @@ class TableColumnsInfoService(OpsServiceMixin):
                     entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     relation_table_id=PydanticObjectId(table_id),
+                    entity_column_name=entity_column_name,
+                    related_entity_column_name=related_entity_column_name,
                     enabled=True,
                     updated_by=self.user.id,
                 )
@@ -253,6 +267,7 @@ class TableColumnsInfoService(OpsServiceMixin):
     async def _update_entity_relationship(
         self,
         document: TableModel,
+        updated_columns_info: List[ColumnInfo],
         old_primary_entities: set[ObjectId],
         old_parent_entities: set[ObjectId],
         new_primary_entities: set[ObjectId],
@@ -281,7 +296,7 @@ class TableColumnsInfoService(OpsServiceMixin):
 
                 # Add relationship info links for new parent entity relationships
                 await self._add_new_child_parent_relationships(
-                    entity_id, document.id, new_parent_entity_ids
+                    entity_id, document.id, updated_columns_info, new_parent_entity_ids
                 )
 
         if old_diff_new_primary_entities:
@@ -333,7 +348,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                         )
                     # Add relationship info links for new parent entity relationships
                     await self._add_new_child_parent_relationships(
-                        entity_id, document.id, new_parent_entity_ids
+                        entity_id, document.id, updated_columns_info, new_parent_entity_ids
                     )
                     # Remove relationship info links for old parent entity relationships
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
@@ -388,6 +403,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         )
         await self._update_entity_relationship(
             document=document,
+            updated_columns_info=columns_info,
             old_primary_entities=old_primary_entities,
             old_parent_entities=old_parent_entities,
             new_primary_entities=new_primary_entities,

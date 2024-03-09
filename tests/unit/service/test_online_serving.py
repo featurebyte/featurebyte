@@ -157,7 +157,7 @@ def expected_online_feature_query_fixture():
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
@@ -315,7 +315,7 @@ async def test_feature_list_deployed_with_batch_request_table(
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",

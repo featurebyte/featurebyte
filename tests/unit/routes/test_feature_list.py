@@ -667,6 +667,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 "feature_store_id": feature_store_id,
                 "graph": feature["graph"],
                 "node_names": [feature["node_name"]],
+                "feature_node_relationships_infos": [
+                    {
+                        "node_name": "project_1",
+                        "relationships_info": [],
+                        "primary_entity_ids": feature["primary_entity_ids"],
+                    }
+                ],
+                "combined_relationships_info": [],
             }
         ]
 

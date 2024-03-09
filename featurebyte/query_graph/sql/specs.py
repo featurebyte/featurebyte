@@ -75,6 +75,7 @@ class AggregationSpec(ABC):
 
     def __post_init__(self) -> None:
         self.original_serving_names = self.serving_names[:]
+        self.original_agg_result_name: str = self.agg_result_name
         if self.serving_names_mapping is not None:
             self.serving_names = apply_serving_names_mapping(
                 self.serving_names, self.serving_names_mapping

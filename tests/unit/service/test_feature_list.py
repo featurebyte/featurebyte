@@ -9,6 +9,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
+from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     DocumentError,
     DocumentInconsistencyError,
@@ -19,6 +20,7 @@ from featurebyte.models.base import ReferenceInfo
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_list import FeatureReadinessDistribution
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
@@ -209,7 +211,7 @@ async def test_update_document__inconsistency_error(
     assert expected_msg in str(exc.value)
 
 
-async def create_entity_family(
+async def create_entity_family(  # pylint: disable=too-many-locals
     entity_service,
     table_columns_info_service,
     entity_relationship_service,
@@ -248,11 +250,24 @@ async def create_entity_family(
         (sibling_entity.id, parent_entity.id, dimension_table),
         (unrelated_entity.id, unrelated_parent_entity.id, dimension_table),
     ]
+    all_entity_ids = set()
+    for parent_entity_id, child_entity_id, _ in parent_child_table_triples:
+        all_entity_ids.add(parent_entity_id)
+        all_entity_ids.add(child_entity_id)
+    mock_columns_info = [
+        ColumnInfo(
+            name=f"col_{entity_id}",
+            dtype=DBVarType.VARCHAR,
+            entity_id=entity_id,
+        )
+        for entity_id in all_entity_ids
+    ]
     for child_id, parent_id, table in parent_child_table_triples:
         await table_columns_info_service._add_new_child_parent_relationships(
             entity_id=child_id,
             table_id=table.id,
             parent_entity_ids_to_add=[parent_id],
+            updated_columns_info=mock_columns_info,
         )
         await entity_relationship_service.add_relationship(
             parent=ParentEntity(id=parent_id, table_id=table.id, table_type=table.type),
