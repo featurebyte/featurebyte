@@ -18,7 +18,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64" AS "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
+      "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
     FROM (
       SELECT
         "'_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64'" AS "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
@@ -80,7 +80,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       "cust_id" AS "cust_id",
-      "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+      "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM (
       SELECT
         """cust_id""" AS "cust_id",
