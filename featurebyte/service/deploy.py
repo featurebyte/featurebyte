@@ -489,7 +489,6 @@ class FeastIntegrationService:
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
-        deploy_feature_list: FeatureListModel,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
     ) -> None:
         """
@@ -499,14 +498,11 @@ class FeastIntegrationService:
         ----------
         features: List[FeatureModel]
             List of features to be enabled online
-        deploy_feature_list: FeatureListModel
-            Target feature list
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
             features=features,
-            deploy_feature_list=deploy_feature_list,
             update_progress=update_progress,
         )
 
@@ -622,18 +618,14 @@ class DeployService:
         )
 
         if feast_registry:
+            await self.feast_integration_service.handle_deployed_feature_list(
+                feature_list=feature_list, online_enabled_features=features
+            )
             await self.feast_integration_service.handle_online_enabled_features(
                 features=features_offline_feature_table_to_update,
-                deploy_feature_list=feature_list,
                 update_progress=get_ranged_progress_callback(
                     self.task_progress_updater.update_progress, 72, 98
                 ),
-            )
-            await self._update_progress(
-                99, f"Updating deployed feature list ({feature_list.name}) ..."
-            )
-            await self.feast_integration_service.handle_deployed_feature_list(
-                feature_list=feature_list, online_enabled_features=features
             )
 
         # update deployment status
