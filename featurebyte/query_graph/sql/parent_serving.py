@@ -163,4 +163,5 @@ def _get_lookup_spec_from_join_step(
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
+        agg_result_name_include_serving_names=True,
     )

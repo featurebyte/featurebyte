@@ -551,6 +551,7 @@ class FeatureModel(BaseFeatureModel):
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
     online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
+    agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
     last_updated_by_scheduled_task_at: Optional[datetime] = Field(
         allow_mutation=False, default=None
     )
@@ -590,7 +591,10 @@ class FeatureModel(BaseFeatureModel):
         values["aggregation_result_names"] = []
         online_store_table_names = set()
         for query in get_online_store_precompute_queries(
-            graph, graph.get_node_by_name(node_name), feature_store_type
+            graph,
+            graph.get_node_by_name(node_name),
+            feature_store_type,
+            values["agg_result_name_include_serving_names"],
         ):
             values["aggregation_result_names"].append(query.result_name)
             online_store_table_names.add(query.table_name)

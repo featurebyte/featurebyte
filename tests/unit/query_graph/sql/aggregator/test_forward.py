@@ -48,6 +48,7 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
         ),
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 

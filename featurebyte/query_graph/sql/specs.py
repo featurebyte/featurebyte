@@ -71,6 +71,7 @@ class AggregationSpec(ABC):
     entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
+    agg_result_name_include_serving_names: bool
 
     def __post_init__(self) -> None:
         self.original_serving_names = self.serving_names[:]
@@ -116,7 +117,10 @@ class AggregationSpec(ABC):
         str
             Aggregation result name
         """
-        parts = [FB_INTERNAL_COLUMN_PREFIX, *self.serving_names, self.aggregation_type]
+        parts = [FB_INTERNAL_COLUMN_PREFIX]
+        if self.agg_result_name_include_serving_names:
+            parts.extend(self.serving_names)
+        parts.append(self.aggregation_type)
         parts.extend([f"{arg}" for arg in args])
         return "_".join(parts)
 
@@ -173,6 +177,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         graph: QueryGraphModel,
         groupby_node: Node,
         adapter: BaseAdapter,
+        agg_result_name_include_serving_names: bool,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
@@ -187,6 +192,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Instance of BaseAdapter
         serving_names_mapping : dict[str, str]
             Mapping from original serving name to new serving name
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
 
         Returns
         -------
@@ -242,6 +249,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,
                 agg_func=groupby_node_params.agg_func,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             aggregation_specs.append(agg_spec)
 
@@ -454,6 +462,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[NonTileBasedAggregationSpecT]:
         """
         Construct the list of specifications
@@ -468,6 +477,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Serving names mapping
         graph: Optional[QueryGraphModel]
             Query graph
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         """
 
     @classmethod
@@ -500,6 +511,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
         graph: QueryGraphModel,
+        agg_result_name_include_serving_names: bool = True,
         aggregation_source: Optional[AggregationSource] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
@@ -514,6 +526,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         graph: QueryGraphModel
             Query graph. Mandatory if aggregation_source is not provided
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
         source_type: Optional[SourceType]
@@ -549,6 +563,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             aggregation_source=aggregation_source,
             serving_names_mapping=serving_names_mapping,
             graph=graph,
+            agg_result_name_include_serving_names=agg_result_name_include_serving_names,
         )
 
 
@@ -593,6 +608,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
@@ -605,6 +621,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 
@@ -661,6 +678,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         return [
@@ -673,6 +691,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 
@@ -711,6 +730,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [
@@ -723,6 +743,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 

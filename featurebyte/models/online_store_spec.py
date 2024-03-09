@@ -51,6 +51,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
             graph=feature.graph,
             node=feature.node,
             source_type=feature.feature_store_type,
+            agg_result_name_include_serving_names=feature.agg_result_name_include_serving_names,
         )
         return precompute_queries
 
