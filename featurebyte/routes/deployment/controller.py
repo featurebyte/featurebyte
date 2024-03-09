@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
-from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
@@ -225,10 +225,7 @@ class DeploymentController(
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
-            if (
-                FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
-                and catalog.online_store_id is not None
-            ):
+            if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
                     await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
                 )
