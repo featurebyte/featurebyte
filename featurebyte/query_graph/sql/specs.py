@@ -192,6 +192,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Instance of BaseAdapter
         serving_names_mapping : dict[str, str]
             Mapping from original serving name to new serving name
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
 
         Returns
         -------
@@ -475,6 +477,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Serving names mapping
         graph: Optional[QueryGraphModel]
             Query graph
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         """
 
     @classmethod
@@ -522,6 +526,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         graph: QueryGraphModel
             Query graph. Mandatory if aggregation_source is not provided
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
         source_type: Optional[SourceType]

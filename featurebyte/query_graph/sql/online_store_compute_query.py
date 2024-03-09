@@ -275,6 +275,8 @@ class OnlineStorePrecomputePlan:
             Query graph
         node: Node
             Query graph node
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         """
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
@@ -316,6 +318,8 @@ def get_online_store_precompute_queries(
         Query graph node
     source_type : SourceType
         Source type information
+    agg_result_name_include_serving_names: bool
+        Whether to include serving names in the aggregation result names
 
     Returns
     -------
