@@ -140,7 +140,8 @@ async def test_snowflake_session__credential_from_config(
             "TABLE_NAME": "sf_table",
             "TABLE_TYPE": "VIEW",
             "COMMENT": None,
-        }
+        },
+        fully_qualified_name='"sf_database"."sf_schema"."sf_table"',
     )
     assert table_details.description == None
 
