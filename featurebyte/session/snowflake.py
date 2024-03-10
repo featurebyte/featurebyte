@@ -31,7 +31,11 @@ from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
@@ -103,10 +107,12 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query_interactive("SHOW DATABASES")
+        databases = await self.execute_query_interactive(
+            "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES"
+        )
         output = []
         if databases is not None:
-            output.extend(databases["name"])
+            output.extend(databases["DATABASE_NAME"].tolist())
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
@@ -123,11 +129,11 @@ class SnowflakeSession(BaseSession):
         list[str]
         """
         schemas = await self.execute_query_interactive(
-            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
+            f'SELECT SCHEMA_NAME FROM "{database_name}".INFORMATION_SCHEMA.SCHEMATA'
         )
         output = []
         if schemas is not None:
-            output.extend(schemas["name"])
+            output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
     async def list_tables(
@@ -136,20 +142,12 @@ class SnowflakeSession(BaseSession):
         schema_name: str | None = None,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
+            f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
+            f"WHERE TABLE_SCHEMA = '{schema_name}'"
         )
-        views = await self.execute_query_interactive(
-            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-        )
-
         output = []
-
         if tables is not None:
-            for _, (name, comment) in tables[["name", "comment"]].iterrows():
-                output.append(TableSpec(name=name, description=comment or None))
-
-        if views is not None:
-            for _, (name, comment) in views[["name", "comment"]].iterrows():
+            for _, (name, comment) in tables[["TABLE_NAME", "COMMENT"]].iterrows():
                 output.append(TableSpec(name=name, description=comment or None))
 
         return output
@@ -312,8 +310,14 @@ class SnowflakeSession(BaseSession):
         if details is None or details.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
         return TableDetails(
             details=details.iloc[0].to_dict(),
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
         )
 
     @staticmethod

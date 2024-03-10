@@ -15,8 +15,10 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import parquet_from_arrow_stream
 from featurebyte.config import Configurations
+from featurebyte.enum import SourceType
 from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.models.materialized_table import MaterializedTableModel
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
 
 class MaterializedTableMixin(MaterializedTableModel):
@@ -74,6 +76,37 @@ class MaterializedTableMixin(MaterializedTableModel):
             output_path = os.path.join(temp_dir, "temp.parquet")
             self.download(output_path=output_path)
             return pd.read_parquet(output_path)
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+
+        Raises
+        ------
+        NotImplementedError
+            When spark is not available in the current environment.
+        """
+
+        spark = globals().get("spark")
+        if spark is None:
+            raise NotImplementedError("Spark is not available in the current environment.")
+
+        fully_qualified_table_name = sql_to_string(
+            get_fully_qualified_table_name(
+                {
+                    "table_name": self.location.table_details.table_name,
+                    "schema_name": self.location.table_details.schema_name,
+                    "database_name": self.location.table_details.database_name,
+                }
+            ),
+            source_type=SourceType.SPARK,
+        )
+        return spark.table(fully_qualified_table_name)
 
     def delete(self) -> None:
         """

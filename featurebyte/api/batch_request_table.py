@@ -4,7 +4,7 @@ BatchRequestTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from pathlib import Path
 
@@ -54,6 +54,18 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         >>> batch_request_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+        """
+
+        return super().to_spark_df()
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """

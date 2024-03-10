@@ -4,7 +4,7 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Sequence, Union
+from typing import Any, List, Literal, Optional, Sequence, Union
 
 import os
 from pathlib import Path
@@ -205,6 +205,18 @@ class ObservationTable(
         >>> observation_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+        """
+
+        return super().to_spark_df()
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """

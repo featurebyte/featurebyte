@@ -19,6 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -284,7 +285,15 @@ class BaseSparkSession(BaseSession, ABC):
                         break
                     details[column_name] = var_info
 
-        return TableDetails(details=details)
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
+        return TableDetails(
+            details=details,
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
+        )
 
     def _format_comment(self, comment: str) -> str:
         return self.sql_to_string(make_literal_value(comment))
