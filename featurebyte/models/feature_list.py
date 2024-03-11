@@ -220,7 +220,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
 
 class FeatureNodeDefinitionHashes(FeatureByteBaseModel):
     """
-    Additional information about each node in the FeatureCluster
+    Feature definition hash for each node in the FeatureCluster
     """
 
     node_name: str
