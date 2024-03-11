@@ -10,7 +10,7 @@
         "feature_clusters": [
             {
                 "combined_relationships_info": [],
-                "feature_node_attributes": [
+                "feature_node_definition_hashes": [
                     {
                         "definition_hash": null,
                         "node_name": "project_1"

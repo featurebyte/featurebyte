@@ -218,7 +218,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
-class FeatureNodeAttributes(FeatureByteBaseModel):
+class FeatureNodeDefinitionHashes(FeatureByteBaseModel):
     """
     Additional information about each node in the FeatureCluster
     """
@@ -236,12 +236,12 @@ class FeatureCluster(FeatureByteBaseModel):
     graph: QueryGraph
     node_names: List[StrictStr]
     feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
-    feature_node_attributes: Optional[List[FeatureNodeAttributes]]
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHashes]]
     combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
 
     @root_validator(pre=True)
     @classmethod
-    def _derive_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "combined_relationships_info" in values:
             return values
         combined_relationships_info: Set[EntityRelationshipInfo] = set()
@@ -498,7 +498,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 feature_objects=group_features
             )
             feature_node_relationships_info = []
-            feature_node_attributes = []
+            feature_node_definition_hashes = []
             for feature, mapped_node in zip(group_features, mapped_nodes):
                 feature_node_relationships_info.append(
                     FeatureNodeRelationshipsInfo(
@@ -507,8 +507,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                         primary_entity_ids=feature.primary_entity_ids,
                     )
                 )
-                feature_node_attributes.append(
-                    FeatureNodeAttributes(
+                feature_node_definition_hashes.append(
+                    FeatureNodeDefinitionHashes(
                         node_name=mapped_node.name,
                         definition_hash=feature.definition_hash,
                     )
@@ -519,7 +519,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
                     feature_node_relationships_infos=feature_node_relationships_info,
-                    feature_node_attributes=feature_node_attributes,
+                    feature_node_definition_hashes=feature_node_definition_hashes,
                 )
             )
         return feature_clusters

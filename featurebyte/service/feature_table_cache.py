@@ -133,9 +133,9 @@ class FeatureTableCacheService:
         if feature_list_id is not None:
             feature_list = await self.feature_list_service.get_document(feature_list_id)
             if feature_list.feature_clusters is not None:
-                feature_node_attributes = feature_list.feature_clusters[0].feature_node_attributes
-                if feature_node_attributes is not None:
-                    for info in feature_node_attributes:
+                stored_hashes = feature_list.feature_clusters[0].feature_node_definition_hashes
+                if stored_hashes is not None:
+                    for info in stored_hashes:
                         if info.definition_hash is not None:
                             definition_hashes_mapping[info.node_name] = info.definition_hash
 
