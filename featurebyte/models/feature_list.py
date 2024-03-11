@@ -218,6 +218,15 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
+class FeatureNodeAttributes(FeatureByteBaseModel):
+    """
+    Additional information about each node in the FeatureCluster
+    """
+
+    node_name: str
+    definition_hash: Optional[str]
+
+
 class FeatureCluster(FeatureByteBaseModel):
     """
     Schema for a group of features from the same feature store
@@ -227,6 +236,7 @@ class FeatureCluster(FeatureByteBaseModel):
     graph: QueryGraph
     node_names: List[StrictStr]
     feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
+    feature_node_attributes: Optional[List[FeatureNodeAttributes]]
     combined_relationships_info: List[EntityRelationshipInfo] = Field(default_factory=list)
 
     @property
@@ -477,6 +487,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 feature_objects=group_features
             )
             feature_node_relationships_info = []
+            feature_node_attributes = []
             combined_relationships_info: Set[EntityRelationshipInfo] = set()
             for feature, mapped_node in zip(group_features, mapped_nodes):
                 feature_node_relationships_info.append(
@@ -486,6 +497,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                         primary_entity_ids=feature.primary_entity_ids,
                     )
                 )
+                feature_node_attributes.append(
+                    FeatureNodeAttributes(
+                        node_name=mapped_node.name,
+                        definition_hash=feature.definition_hash,
+                    )
+                )
                 combined_relationships_info.update(feature.relationships_info or [])
             feature_clusters.append(
                 FeatureCluster(
@@ -493,6 +510,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
                     feature_node_relationships_infos=feature_node_relationships_info,
+                    feature_node_attributes=feature_node_attributes,
                     combined_relationships_info=combined_relationships_info,
                 )
             )

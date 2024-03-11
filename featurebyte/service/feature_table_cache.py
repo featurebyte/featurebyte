@@ -72,7 +72,7 @@ class FeatureTableCacheService:
         nodes: List[Node],
     ) -> List[str]:
         """
-        Compute definition caches for list of nodes
+        Compute definition hashes for list of nodes
 
         Parameters
         ----------
@@ -106,6 +106,48 @@ class FeatureTableCacheService:
             hashes.append(definition_hash)
         return hashes
 
+    async def get_feature_definition_hashes(
+        self,
+        graph: QueryGraph,
+        nodes: List[Node],
+        feature_list_id: Optional[ObjectId],
+    ) -> List[str]:
+        """
+        Get definition hashes for list of nodes. Retrieve the result from feature list if available.
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            Query graph
+        nodes: List[Node]
+            Nodes
+        feature_list_id: ObjectId
+            Feature list id
+
+        Returns
+        -------
+        List[str]
+        """
+        # Retrieve definition hashes if stored in feature list
+        definition_hashes_mapping = {}
+        if feature_list_id is not None:
+            feature_list = await self.feature_list_service.get_document(feature_list_id)
+            if feature_list.feature_clusters is not None:
+                feature_node_attributes = feature_list.feature_clusters[0].feature_node_attributes
+                if feature_node_attributes is not None:
+                    for info in feature_node_attributes:
+                        if info.definition_hash is not None:
+                            definition_hashes_mapping[info.node_name] = info.definition_hash
+
+        # Fallback to deriving the hashes from scratch
+        missing_nodes = [node for node in nodes if node.name not in definition_hashes_mapping]
+        if missing_nodes:
+            missing_definition_hashes = await self.definition_hashes_for_nodes(graph, missing_nodes)
+            for node, definition_hash in zip(missing_nodes, missing_definition_hashes):
+                definition_hashes_mapping[node.name] = definition_hash
+
+        return [definition_hashes_mapping[node.name] for node in nodes]
+
     def _get_column_exprs(
         self,
         graph: QueryGraph,
@@ -125,7 +167,6 @@ class FeatureTableCacheService:
     async def get_non_cached_nodes(
         self,
         feature_table_cache_metadata: FeatureTableCacheMetadataModel,
-        graph: QueryGraph,
         nodes: List[Node],
         hashes: List[str],
     ) -> List[Tuple[Node, CachedFeatureDefinition]]:
@@ -140,10 +181,10 @@ class FeatureTableCacheService:
         ----------
         feature_table_cache_metadata: FeatureTableCacheMetadataModel
             Feature table cache metadata
-        graph: QueryGraph
-            Graph definition
         nodes: List[Node]
             Input node names
+        hashes: List[str]
+            Definition hashes corresponding to the list of nodes
 
         Returns
         -------
@@ -439,6 +480,11 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        List[str]
+            List of feature definitions corresponding to nodes
         """
         if progress_callback:
             await progress_callback(1, "Checking feature table cache status")
@@ -454,8 +500,8 @@ class FeatureTableCacheService:
         )
         feature_table_cache_exists = bool(cache_metadata.feature_definitions)
 
-        hashes = await self.definition_hashes_for_nodes(graph, nodes)
-        non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, graph, nodes, hashes)
+        hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
+        non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, nodes, hashes)
 
         if progress_callback:
             await progress_callback(
