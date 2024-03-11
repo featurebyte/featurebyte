@@ -675,6 +675,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                     }
                 ],
                 "combined_relationships_info": [],
+                "feature_node_definition_hashes": [
+                    {
+                        "node_name": "project_1",
+                        "definition_hash": "e08e2ffd6a5817b174d075895b17ee3a3bb9df38",
+                    }
+                ],
             }
         ]
 
