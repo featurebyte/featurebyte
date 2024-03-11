@@ -7,8 +7,11 @@ import pandas as pd
 from bson import ObjectId
 from sqlglot import expressions
 
+from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.feature_table_cache_metadata import (
@@ -36,6 +39,10 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.session.base import BaseSession
+
+FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
+
+logger = get_logger(__name__)
 
 
 class FeatureTableCacheService:
@@ -434,6 +441,9 @@ class FeatureTableCacheService:
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
+        if progress_callback:
+            await progress_callback(1, "Checking feature table cache status")
+
         assert (
             observation_table.has_row_index
         ), "Observation Tables without row index are not supported"
@@ -446,6 +456,17 @@ class FeatureTableCacheService:
         feature_table_cache_exists = bool(cache_metadata.feature_definitions)
 
         non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, graph, nodes)
+
+        if progress_callback:
+            await progress_callback(
+                FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
+                "Checking feature table cache",
+            )
+            remaining_progress_callback = get_ranged_progress_callback(
+                progress_callback, FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE, 100
+            )
+        else:
+            remaining_progress_callback = None
 
         if non_cached_nodes:
             is_feature_list_deployed = False
@@ -472,7 +493,7 @@ class FeatureTableCacheService:
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
                     is_feature_list_deployed=is_feature_list_deployed,
-                    progress_callback=progress_callback,
+                    progress_callback=remaining_progress_callback,
                 )
             else:
                 # if feature table doesn't exist yet - create from scratch
@@ -486,7 +507,7 @@ class FeatureTableCacheService:
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
                     is_feature_list_deployed=is_feature_list_deployed,
-                    progress_callback=progress_callback,
+                    progress_callback=remaining_progress_callback,
                 )
 
             await self.feature_table_cache_metadata_service.update_feature_table_cache(
@@ -596,16 +617,21 @@ class FeatureTableCacheService:
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
-        await self.create_or_update_feature_table_cache(
-            feature_store=feature_store,
-            observation_table=observation_table,
-            graph=graph,
-            nodes=nodes,
-            is_target=is_target,
-            feature_list_id=feature_list_id,
-            serving_names_mapping=serving_names_mapping,
-            progress_callback=progress_callback,
-        )
+        with timer(
+            "Update feature table cache",
+            logger,
+            extra={"catalog_id": str(observation_table.catalog_id)},
+        ):
+            await self.create_or_update_feature_table_cache(
+                feature_store=feature_store,
+                observation_table=observation_table,
+                graph=graph,
+                nodes=nodes,
+                is_target=is_target,
+                feature_list_id=feature_list_id,
+                serving_names_mapping=serving_names_mapping,
+                progress_callback=progress_callback,
+            )
         cache_metadata = (
             await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
                 observation_table_id=observation_table.id,
