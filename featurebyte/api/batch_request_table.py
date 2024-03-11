@@ -57,7 +57,7 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
     def to_spark_df(self) -> Any:
         """
-        Get a spark dataframe from the table.
+        Get a spark dataframe from the batch request table.
 
         Returns
         -------
