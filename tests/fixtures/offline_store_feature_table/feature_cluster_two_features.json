@@ -1,5 +1,6 @@
 {
     "combined_relationships_info": [],
+    "feature_node_definition_hashes": null,
     "feature_node_relationships_infos": null,
     "feature_store_id": {
         "$oid": "646f6c190ed28a5271fb02a1"

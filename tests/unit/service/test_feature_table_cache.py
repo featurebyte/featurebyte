@@ -93,7 +93,14 @@ async def features_fixture(event_table, entity, feature_service, test_dir):
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads", file_name)
         with open(fixture_path, encoding="utf") as fhandle:
             payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
+        # Simulate the actual feature saving process
+        sanitized_document = await feature_service.prepare_feature_model(
+            data=FeatureServiceCreate(**payload),
+            sanitize_for_definition=True,
+        )
+        feature = await feature_service.create_document(
+            data=FeatureServiceCreate(**sanitized_document.dict(by_alias=True))
+        )
         features.append(feature)
     return features
 
@@ -148,9 +155,47 @@ def feature_list_fixture(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(name="feature_list_with_duplicates")
-def feature_list_with_duplicates_fixture():
-    """Feature list with duplicate definition hashes"""
+@pytest.fixture(name="intercepted_definition_hashes_for_nodes")
+def intercepted_definition_hashes_for_nodes_fixture(feature_table_cache_service):
+    """
+    Fixture for intercepted definition_hashes_for_nodes method
+    """
+    original_method = feature_table_cache_service.definition_hashes_for_nodes
+
+    async def intercepted_method(*args, **kwargs):
+        return await original_method(*args, **kwargs)
+
+    with patch.object(
+        feature_table_cache_service,
+        "definition_hashes_for_nodes",
+        side_effect=intercepted_method,
+    ) as mocked_method:
+        yield mocked_method
+
+
+@pytest.mark.parametrize("feature_list_id_provided", [True, False])
+@pytest.mark.asyncio
+async def test_get_feature_definition_hashes(
+    feature_list_id_provided,
+    feature_table_cache_service,
+    regular_feature_list,
+    intercepted_definition_hashes_for_nodes,
+):
+    """Test get_feature_definition_hashes"""
+    hashes = await feature_table_cache_service.get_feature_definition_hashes(
+        graph=regular_feature_list.feature_clusters[0].graph,
+        nodes=regular_feature_list.feature_clusters[0].nodes,
+        **{"feature_list_id": regular_feature_list.id if feature_list_id_provided else None},
+    )
+    if feature_list_id_provided:
+        assert intercepted_definition_hashes_for_nodes.call_count == 0
+    else:
+        assert intercepted_definition_hashes_for_nodes.call_count == 1
+    expected = {
+        "1032f6901100176e575f87c44398a81f0d5db5c5",
+        "ada88371db4be31a4e9c0538fb675d8e573aed24",
+    }
+    assert set(hashes) == expected
 
 
 @pytest.mark.asyncio
@@ -162,6 +207,7 @@ async def test_create_feature_table_cache(
     feature_list,
     mock_get_historical_features,
     mock_snowflake_session,
+    intercepted_definition_hashes_for_nodes,
 ):
     """Test create feature table cache from scratch"""
     await feature_table_cache_service.create_or_update_feature_table_cache(
@@ -171,6 +217,7 @@ async def test_create_feature_table_cache(
         nodes=feature_list.feature_clusters[0].nodes,
         feature_list_id=feature_list.id,
     )
+    assert intercepted_definition_hashes_for_nodes.call_count == 0
     assert mock_get_historical_features.await_count == 1
 
     params = mock_get_historical_features.await_args.kwargs
