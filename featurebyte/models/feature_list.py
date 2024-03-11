@@ -218,7 +218,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
-class FeatureNodeDefinitionHashes(FeatureByteBaseModel):
+class FeatureNodeDefinitionHash(FeatureByteBaseModel):
     """
     Feature definition hash for each node in the FeatureCluster
     """
@@ -236,7 +236,7 @@ class FeatureCluster(FeatureByteBaseModel):
     graph: QueryGraph
     node_names: List[StrictStr]
     feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
-    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHashes]]
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]]
     combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
 
     @root_validator(pre=True)
@@ -508,7 +508,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     )
                 )
                 feature_node_definition_hashes.append(
-                    FeatureNodeDefinitionHashes(
+                    FeatureNodeDefinitionHash(
                         node_name=mapped_node.name,
                         definition_hash=feature.definition_hash,
                     )
