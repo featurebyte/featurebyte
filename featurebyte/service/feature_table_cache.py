@@ -127,6 +127,7 @@ class FeatureTableCacheService:
         feature_table_cache_metadata: FeatureTableCacheMetadataModel,
         graph: QueryGraph,
         nodes: List[Node],
+        hashes: List[str],
     ) -> List[Tuple[Node, CachedFeatureDefinition]]:
         """
         Given an observation table, graph and set of nodes
@@ -149,8 +150,6 @@ class FeatureTableCacheService:
         List[Tuple[Node, CachedFeatureDefinition]]
             List of non cached nodes and respective newly-created cached feature definitions
         """
-        hashes = await self.definition_hashes_for_nodes(graph, nodes)
-
         cached_hashes = {
             feat.definition_hash: feat for feat in feature_table_cache_metadata.feature_definitions
         }
@@ -411,6 +410,7 @@ class FeatureTableCacheService:
         observation_table: ObservationTableModel,
         graph: QueryGraph,
         nodes: List[Node],
+        hashes: List[str],
         is_target: bool = False,
         feature_list_id: Optional[PydanticObjectId] = None,
         serving_names_mapping: Optional[Dict[str, str]] = None,
@@ -455,12 +455,12 @@ class FeatureTableCacheService:
         )
         feature_table_cache_exists = bool(cache_metadata.feature_definitions)
 
-        non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, graph, nodes)
+        non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, graph, nodes, hashes)
 
         if progress_callback:
             await progress_callback(
                 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
-                "Checking feature table cache",
+                "Feature table cache status check completed",
             )
             remaining_progress_callback = get_ranged_progress_callback(
                 progress_callback, FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE, 100
@@ -622,11 +622,13 @@ class FeatureTableCacheService:
             logger,
             extra={"catalog_id": str(observation_table.catalog_id)},
         ):
+            hashes = await self.definition_hashes_for_nodes(graph, nodes)
             await self.create_or_update_feature_table_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 graph=graph,
                 nodes=nodes,
+                hashes=hashes,
                 is_target=is_target,
                 feature_list_id=feature_list_id,
                 serving_names_mapping=serving_names_mapping,
@@ -641,7 +643,6 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-        hashes = await self.definition_hashes_for_nodes(graph, nodes)
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
