@@ -178,21 +178,26 @@ def mock_snowflake_connector():
 def snowflake_query_map_fixture():
     """snowflake query map fixture"""
     query_map = {
-        "SHOW DATABASES": [{"name": "sf_database"}],
-        'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_table", "comment": ""},
-            {"name": "sf_table_no_tz", "comment": None},
-            {"name": "items_table", "comment": "Item table"},
-            {"name": "items_table_same_event_id", "comment": None},
-            {"name": "fixed_table", "comment": None},
-            {"name": "non_scalar_table", "comment": None},
-            {"name": "scd_table", "comment": "SCD table"},
-            {"name": "scd_table_state_map", "comment": None},
-            {"name": "dimension_table", "comment": "Dimension table"},
+        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [
+            {"DATABASE_NAME": "sf_database"}
         ],
-        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_view", "comment": "this is view"}
+        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [
+            {"SCHEMA_NAME": "sf_schema"}
+        ],
+        (
+            'SELECT TABLE_NAME, COMMENT FROM "sf_database".INFORMATION_SCHEMA.TABLES WHERE '
+            "TABLE_SCHEMA = 'sf_schema'"
+        ): [
+            {"TABLE_NAME": "sf_table", "COMMENT": ""},
+            {"TABLE_NAME": "sf_table_no_tz", "COMMENT": None},
+            {"TABLE_NAME": "items_table", "COMMENT": "Item table"},
+            {"TABLE_NAME": "items_table_same_event_id", "COMMENT": None},
+            {"TABLE_NAME": "fixed_table", "COMMENT": None},
+            {"TABLE_NAME": "non_scalar_table", "COMMENT": None},
+            {"TABLE_NAME": "scd_table", "COMMENT": "SCD table"},
+            {"TABLE_NAME": "scd_table_state_map", "COMMENT": None},
+            {"TABLE_NAME": "dimension_table", "COMMENT": "Dimension table"},
+            {"TABLE_NAME": "sf_view", "COMMENT": "this is view"},
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {

@@ -639,6 +639,7 @@ class TableDetails(FeatureByteBaseModel):
     """
 
     details: Dict[str, Any] = Field(default_factory=dict)
+    fully_qualified_name: str
 
     @property
     def description(self) -> str:

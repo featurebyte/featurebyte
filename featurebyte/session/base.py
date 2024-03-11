@@ -331,7 +331,7 @@ class BaseSession(BaseModel):
         """
         _ = database_name, schema_name, table_name
         # return empty details as fallback
-        return TableDetails()
+        return TableDetails(fully_qualified_name=table_name)
 
     async def check_user_defined_function(
         self,

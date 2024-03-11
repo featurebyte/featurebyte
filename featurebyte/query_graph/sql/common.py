@@ -92,14 +92,14 @@ def get_qualified_column_identifier(
 
 
 def get_fully_qualified_table_name(
-    table_details_dict: Dict[str, str], alias: Optional[str] = None
+    table_details_dict: Union[Dict[str, str], Dict[str, str | None]], alias: Optional[str] = None
 ) -> Expression:
     """
     Get an expression for fully qualified table name
 
     Parameters
     ----------
-    table_details_dict: Dict[str, str]
+    table_details_dict: Union[Dict[str, str], Dict[str, str | None]]
         Table details dictionary
     alias: Optional[str]
         Table alias
