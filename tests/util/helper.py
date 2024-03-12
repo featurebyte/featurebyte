@@ -359,6 +359,16 @@ def assert_preview_result_equal(df_preview, expected_dict, dict_like_columns=Non
     fb_assert_frame_equal(df_preview, df_expected, dict_like_columns=dict_like_columns)
 
 
+def assert_sql_equal(actual, expected):
+    """
+    Compare sql potentially with multiple lines. Leading and trailing spaces and newlines are
+    stripped before comparison.
+    """
+    actual = textwrap.dedent(actual).strip()
+    expected = textwrap.dedent(expected).strip()
+    assert actual == expected
+
+
 def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
     """
     Create feature to capture the entropy of inter-event interval time,

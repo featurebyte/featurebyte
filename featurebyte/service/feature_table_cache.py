@@ -445,6 +445,22 @@ class FeatureTableCacheService:
                 if_exists=True,
             )
 
+    @staticmethod
+    async def _feature_table_cache_exists(
+        cache_metadata: FeatureTableCacheMetadataModel, session: BaseSession
+    ) -> bool:
+        try:
+            query = sql_to_string(
+                expressions.select(expressions.Count(this=expressions.Star()))
+                .from_(quoted_identifier(cache_metadata.table_name))
+                .limit(1),
+                source_type=session.source_type,
+            )
+            _ = await session.execute_query(query)
+            return True
+        except session._no_schema_error:  # pylint: disable=protected-access
+            return False
+
     async def create_or_update_feature_table_cache(
         self,
         feature_store: FeatureStoreModel,
@@ -457,7 +473,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> List[str]:
+    ) -> Tuple[List[str], BaseSession]:
         """
         Create or update feature table cache
 
@@ -483,8 +499,8 @@ class FeatureTableCacheService:
 
         Returns
         -------
-        List[str]
-            List of feature definitions corresponding to nodes
+        Tuple[List[str], BaseSession]
+            Tuple of feature definitions corresponding to nodes, session object
         """
         if progress_callback:
             await progress_callback(1, "Checking feature table cache status")
@@ -498,7 +514,12 @@ class FeatureTableCacheService:
                 observation_table_id=observation_table.id,
             )
         )
-        feature_table_cache_exists = bool(cache_metadata.feature_definitions)
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store
+        )
+        feature_table_cache_exists = await self._feature_table_cache_exists(
+            cache_metadata, db_session
+        )
 
         hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
         non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, nodes, hashes)
@@ -522,10 +543,6 @@ class FeatureTableCacheService:
                     is_feature_list_deployed = feature_list.deployed
                 except DocumentNotFoundError:
                     is_feature_list_deployed = False
-
-            db_session = await self.session_manager_service.get_feature_store_session(
-                feature_store=feature_store
-            )
 
             if feature_table_cache_exists:
                 # if feature table cache exists - update existing table with new features
@@ -561,7 +578,7 @@ class FeatureTableCacheService:
                 feature_definitions=[definition for _, definition in non_cached_nodes],
             )
 
-        return hashes
+        return hashes, db_session
 
     async def read_from_cache(
         self,
@@ -670,7 +687,7 @@ class FeatureTableCacheService:
             logger,
             extra={"catalog_id": str(observation_table.catalog_id)},
         ):
-            hashes = await self.create_or_update_feature_table_cache(
+            hashes, db_session = await self.create_or_update_feature_table_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 graph=graph,
@@ -689,10 +706,6 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
 
         request_column_names = [col.name for col in observation_table.columns_info]
         request_columns = [quoted_identifier(col) for col in request_column_names]
