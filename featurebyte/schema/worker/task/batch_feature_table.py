@@ -6,7 +6,7 @@ from __future__ import annotations
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
-from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskPriority
 
 
 class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
@@ -16,4 +16,4 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
 
     output_collection_name = BatchFeatureTableModel.collection_name()
     command = WorkerCommand.BATCH_FEATURE_TABLE_CREATE
-    priority: int = 0  # highest priority for production workload
+    priority = TaskPriority.CRITICAL
