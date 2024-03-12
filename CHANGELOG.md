@@ -14,6 +14,7 @@
 + `profile` Create a profile from databricks secrets to simplify access from a Databricks workspace.
 + `service` Improve efficiency of feature table cache checks for saved feature lists
 + `session` Add client_session_keep_alive to snowflake connector to keep the session alive
++ `service` Support cancellation for historical features table creation task
 
 ### 🐛 Bug Fixes
 

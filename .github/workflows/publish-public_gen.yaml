@@ -46,8 +46,8 @@ concurrency:
   group: ${{ github.workflow }}
 jobs:
   publish:
-    runs-on: ubuntu-latest-4-cores
-    timeout-minutes: 200
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
     strategy:
       matrix:
         python-version:
