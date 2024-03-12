@@ -52,13 +52,9 @@ jobs:
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
-      run: |
-        task install
-        ls -l featurebyte/sql/spark
+      run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
     - name: Retag docker image
       run: task docker-tag-featurebyte-version
     - name: Run notebook tests
@@ -96,13 +92,9 @@ jobs:
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
-      run: |
-        task install
-        ls -l featurebyte/sql/spark
+      run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
     - name: Retag docker image
       run: task docker-tag-featurebyte-version
     - name: Run notebook tests
@@ -140,13 +132,9 @@ jobs:
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
     - name: Run task install
-      run: |
-        task install
-        ls -l featurebyte/sql/spark
+      run: task install
     - name: Build docker image
       run: task docker-build
-    - name: Install published featurebyte version
-      run: task install-published-featurebyte
     - name: Retag docker image
       run: task docker-tag-featurebyte-version
     - name: Run notebook tests
