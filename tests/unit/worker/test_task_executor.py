@@ -44,7 +44,7 @@ def test_extend_base_task_payload():
         "output_document_id": document_id,
         "output_collection_name": "random_collection",
         "task_type": TaskType.IO_TASK,
-        "priority": 0,
+        "priority": 2,
         "is_scheduled_task": False,
         "is_revocable": False,
     }
