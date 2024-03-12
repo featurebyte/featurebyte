@@ -20,3 +20,4 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
     command = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
     task_type = TaskType.CPU_TASK
     observation_set_storage_path: Optional[str]
+    is_revocable = True
