@@ -16,3 +16,4 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
 
     output_collection_name = BatchFeatureTableModel.collection_name()
     command = WorkerCommand.BATCH_FEATURE_TABLE_CREATE
+    priority: int = 0  # highest priority for production workload

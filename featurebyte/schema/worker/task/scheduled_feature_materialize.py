@@ -12,6 +12,8 @@ class ScheduledFeatureMaterializeTaskPayload(BaseTaskPayload):
     """
 
     command = WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE
+    priority: int = 0  # highest priority for production workload
+
     offline_store_feature_table_name: str
     offline_store_feature_table_id: PydanticObjectId
     task_type = TaskType.CPU_TASK

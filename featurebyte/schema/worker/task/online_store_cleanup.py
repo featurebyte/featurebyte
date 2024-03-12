@@ -12,5 +12,7 @@ class OnlineStoreCleanupTaskPayload(BaseTaskPayload):
     """
 
     command = WorkerCommand.ONLINE_STORE_TABLE_CLEANUP
+    priority: int = 0  # highest priority for production workload
+
     feature_store_id: PydanticObjectId
     online_store_table_name: str

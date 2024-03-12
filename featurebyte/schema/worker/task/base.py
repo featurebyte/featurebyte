@@ -35,7 +35,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     output_collection_name: ClassVar[Optional[str]] = None
     command: ClassVar[Optional[Enum]] = None
     task_type: TaskType = Field(default=TaskType.IO_TASK)
-    priority: int = Field(default=0, ge=0, le=3)  # 0 is the highest priority
+    priority: int = Field(default=2, ge=0, le=3)  # 0 is the highest priority
     is_scheduled_task: Optional[bool] = Field(default=False)
     is_revocable: ClassVar[Optional[bool]] = False
 
