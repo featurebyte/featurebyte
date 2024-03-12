@@ -3,7 +3,7 @@ SQLiteSession class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, OrderedDict
+from typing import Optional, OrderedDict
 
 import collections
 import os
@@ -29,9 +29,8 @@ class SQLiteSession(BaseSession):
     def initializer(self) -> Optional[BaseSchemaInitializer]:
         return None
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
-        filename = data["filename"]
+    def _initialize_connection(self) -> None:
+        filename = self.filename
         if not os.path.exists(filename):
             raise FileNotFoundError(f"SQLite file '{filename}' not found!")
 
