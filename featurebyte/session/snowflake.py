@@ -65,8 +65,7 @@ class SnowflakeSession(BaseSession):
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    def _initialize_connection(self) -> None:
         try:
             self._connection = connector.connect(
                 user=self.database_credential.username,
@@ -77,6 +76,7 @@ class SnowflakeSession(BaseSession):
                 schema=self.schema_name,
                 role_name=self.role_name,
                 application=APPLICATION_NAME,
+                client_session_keep_alive=True,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc

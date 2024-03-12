@@ -3,6 +3,7 @@ Unit test for snowflake session
 """
 import os
 import time
+from io import BytesIO
 from unittest.mock import Mock, call, patch
 
 import numpy as np
@@ -635,10 +636,12 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
     session = SnowflakeSession(**snowflake_session_dict)
 
     bytestream = session.get_async_query_stream("SELECT * FROM T")
-    data = b""
+    buffer = BytesIO()
     async for chunk in bytestream:
-        data += chunk
-    df = dataframe_from_arrow_stream(data)
+        buffer.write(chunk)
+    buffer.flush()
+    buffer.seek(0)
+    df = dataframe_from_arrow_stream(buffer)
 
     assert_frame_equal(df, result_data)
 
