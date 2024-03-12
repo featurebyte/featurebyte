@@ -552,10 +552,10 @@ def get_training_events_and_expected_result():
 @pytest.mark.parametrize(
     "in_out_formats",
     [
-        # ("dataframe", "dataframe"),
-        # ("dataframe", "table"),
+        ("dataframe", "dataframe"),
+        ("dataframe", "table"),
         ("table", "table"),  # input is observation table
-        # ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
     ],
 )
 @pytest.mark.usefixtures("patched_num_features_per_query")
