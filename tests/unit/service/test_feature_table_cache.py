@@ -3,7 +3,6 @@ Test FeatureTableCacheService
 """
 import json
 import os
-import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -18,6 +17,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
+from tests.util.helper import assert_sql_equal
 
 
 @pytest.fixture(name="auto_mocks", autouse=True)
@@ -360,16 +360,14 @@ async def test_update_feature_table_cache(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert (
-        sqls[0]
-        == textwrap.dedent(
-            f"""
+    assert_sql_equal(
+        sqls[0],
+        f"""
         SELECT
           COUNT(*)
         FROM "{feature_table_cache.table_name}"
         LIMIT 1
-        """
-        ).strip()
+        """,
     )
     assert sqls[1] == (
         "ALTER TABLE "
@@ -449,16 +447,14 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert (
-        sqls[0]
-        == textwrap.dedent(
-            f"""
+    assert_sql_equal(
+        sqls[0],
+        f"""
         SELECT
           COUNT(*)
         FROM "{feature_table_cache.table_name}"
         LIMIT 1
-        """
-        ).strip()
+        """,
     )
     assert sqls[1] == (
         "ALTER TABLE "
@@ -515,16 +511,14 @@ async def test_create_view_from_cache__create_cache(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert (
-        sqls[0]
-        == textwrap.dedent(
-            f"""
+    assert_sql_equal(
+        sqls[0],
+        f"""
         SELECT
           COUNT(*)
         FROM "{feature_table_cache.table_name}"
         LIMIT 1
-        """
-        ).strip()
+        """,
     )
     assert sqls[1] == (
         "CREATE TABLE "
@@ -604,16 +598,14 @@ async def test_create_view_from_cache__update_cache(
     sqls = [arg[0][0] for arg in call_args]
     assert len(sqls) == 4
 
-    assert (
-        sqls[0]
-        == textwrap.dedent(
-            f"""
+    assert_sql_equal(
+        sqls[0],
+        f"""
         SELECT
           COUNT(*)
         FROM "{feature_table_cache.table_name}"
         LIMIT 1
-        """
-        ).strip()
+        """,
     )
     assert sqls[1] == (
         "ALTER TABLE "
