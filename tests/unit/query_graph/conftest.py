@@ -10,10 +10,16 @@ from bson import ObjectId
 from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
-from featurebyte.models import DimensionTableModel
-from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models import DimensionTableModel, EntityModel
+from featurebyte.models.parent_serving import (
+    EntityLookupStepCreator,
+    FeatureNodeRelationshipsInfo,
+    ParentServingPreparation,
+)
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
@@ -52,8 +58,9 @@ def input_details_fixture(request):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -71,12 +78,31 @@ def input_details_fixture(request):
                 "details": {
                     "host": "databricks-hostname",
                     "http_path": "databricks-http-path",
-                    "featurebyte_schema": "public",
-                    "featurebyte_catalog": "hive_metastore",
+                    "schema_name": "public",
+                    "catalog_name": "hive_metastore",
                 },
             },
         }
     return input_details
+
+
+@pytest.fixture(name="snowflake_feature_store_details")
+def snowflake_feature_store_details_fixture():
+    """
+    Fixture for a FeatureStoreDetails object
+    """
+    return FeatureStoreDetails(
+        **{
+            "type": "snowflake",
+            "details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
+                "account": "account",
+                "warehouse": "warehouse",
+            },
+        }
+    )
 
 
 @pytest.fixture(name="database_details")
@@ -265,8 +291,22 @@ def query_graph_and_assign_node_fixture(global_graph, input_node):
     return global_graph, assign_node
 
 
+@pytest.fixture(name="customer_entity_id")
+def customer_entity_id_fixture():
+    return ObjectId("637516ebc9c18f5a277a78db")
+
+
+@pytest.fixture(name="customer_entity")
+def customer_entity_fixture(customer_entity_id):
+    return EntityModel(
+        _id=customer_entity_id,
+        name="customer",
+        serving_names=["CUSTOMER_ID"],
+    )
+
+
 @pytest.fixture(name="groupby_node_params")
-def groupby_node_params_fixture():
+def groupby_node_params_fixture(customer_entity_id):
     """Fixture groupby node parameters"""
     node_params = {
         "keys": ["cust_id"],
@@ -280,7 +320,7 @@ def groupby_node_params_fixture():
         "timestamp": "ts",
         "names": ["a_2h_average", "a_48h_average"],
         "windows": ["2h", "48h"],
-        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "entity_ids": [customer_entity_id],
     }
     return node_params
 
@@ -495,8 +535,22 @@ def query_graph_with_different_groupby_nodes_fixture(
     return [node1, node2], graph
 
 
+@pytest.fixture(name="business_entity_id")
+def business_entity_id_fixture():
+    return ObjectId("6375171ac9c18f5a277a78dc")
+
+
+@pytest.fixture(name="business_entity")
+def business_entity(business_entity_id):
+    return EntityModel(
+        _id=business_entity_id,
+        name="business",
+        serving_names=["BUSINESS_ID"],
+    )
+
+
 @pytest.fixture(name="complex_feature_query_graph")
-def complex_feature_query_graph_fixture(query_graph_with_groupby):
+def complex_feature_query_graph_fixture(query_graph_with_groupby, business_entity_id):
     """Fixture of a query graph with two independent groupby operations"""
     graph = query_graph_with_groupby
     node_params = {
@@ -511,7 +565,7 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "names": ["a_7d_sum_by_business"],
         "windows": ["7d"],
         "serving_names": ["BUSINESS_ID"],
-        "entity_ids": [ObjectId("6375171ac9c18f5a277a78dc")],
+        "entity_ids": [business_entity_id],
     }
     assign_node = graph.get_node_by_name("assign_1")
     groupby_1 = graph.get_node_by_name("groupby_1")
@@ -541,6 +595,77 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         input_nodes=[complex_feature_node],
     )
     return complex_feature_node_alias, graph
+
+
+@pytest.fixture(name="relation_table_id")
+def relation_table_id_fixture():
+    return ObjectId("00000000000000000000000a")
+
+
+@pytest.fixture(name="relation_table")
+def relation_table_fixture(
+    relation_table_id, snowflake_feature_store, customer_entity_id, business_entity_id
+):
+    return DimensionTableModel(
+        _id=relation_table_id,
+        dimension_id_column="relation_cust_id",
+        columns_info=[
+            {"name": "relation_cust_id", "dtype": DBVarType.INT, "entity_id": customer_entity_id},
+            {"name": "relation_biz_id", "dtype": DBVarType.INT, "entity_id": business_entity_id},
+        ],
+        tabular_source=TabularSource(
+            **{
+                "feature_store_id": snowflake_feature_store.id,
+                "table_details": {
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "table_name": "some_table_name",
+                },
+            }
+        ),
+    )
+
+
+@pytest.fixture(name="feature_node_relationships_info_business_is_parent_of_user")
+def feature_node_relationships_info_business_is_parent_of_user_fixture(
+    complex_feature_query_graph, customer_entity_id, business_entity_id, relation_table_id
+):
+    """
+    Fixture for a FeatureNodeRelationshipsInfo that defines parent child relationship between
+    business and user entities. To be used together with complex_feature_query_graph.
+    """
+    feature_node, _ = complex_feature_query_graph
+    return FeatureNodeRelationshipsInfo(
+        node_name=feature_node.name,
+        relationships_info=[
+            EntityRelationshipInfo(
+                _id=ObjectId("100000000000000000000000"),
+                relationship_type="child_parent",
+                entity_id=customer_entity_id,
+                related_entity_id=business_entity_id,
+                relation_table_id=relation_table_id,
+            )
+        ],
+        primary_entity_ids=[customer_entity_id],
+    )
+
+
+@pytest.fixture(name="entity_lookup_step_creator")
+def entity_lookup_step_creator_fixture(
+    feature_node_relationships_info_business_is_parent_of_user,
+    customer_entity,
+    business_entity,
+    relation_table,
+):
+    """
+    Fixture for an EntityLookupStepCreator object
+    """
+    relationships = feature_node_relationships_info_business_is_parent_of_user.relationships_info[:]
+    return EntityLookupStepCreator(
+        entity_relationships_info=relationships,
+        entities_by_id={customer_entity.id: customer_entity, business_entity.id: business_entity},
+        tables_by_id={relation_table.id: relation_table},
+    )
 
 
 @pytest.fixture(name="join_node_params")
@@ -1081,6 +1206,35 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_table_input_node):
     return feature_node
 
 
+@pytest.fixture(name="aggregate_asat_with_offset_feature_node")
+def aggregate_asat_with_offset_feature_node_fixture(global_graph, scd_table_input_node):
+    node_params = {
+        "keys": ["membership_status"],
+        "serving_names": ["MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "name": "asat_feature_offset_7d",
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "effective_timestamp_column": "effective_ts",
+        "natural_key_column": "cust_id",
+        "offset": "7d",
+    }
+    aggregate_asat_node = global_graph.add_operation(
+        node_type=NodeType.AGGREGATE_AS_AT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["asat_feature_offset_7d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_asat_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="time_since_last_event_feature_node")
 def time_since_last_event_feature_node_fixture(global_graph, input_node):
     node_params = {
@@ -1323,8 +1477,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -1421,11 +1576,18 @@ def parent_serving_preparation_fixture():
     parent_serving_preparation = ParentServingPreparation(
         join_steps=[
             {
+                "id": ObjectId(),
                 "table": data_model,
-                "parent_key": "col_int",
-                "parent_serving_name": "COL_INT",
-                "child_key": "col_text",
-                "child_serving_name": "COL_TEXT",
+                "parent": {
+                    "key": "col_int",
+                    "serving_name": "COL_INT",
+                    "entity_id": ObjectId(),
+                },
+                "child": {
+                    "key": "col_text",
+                    "serving_name": "COL_TEXT",
+                    "entity_id": ObjectId(),
+                },
             }
         ],
         feature_store_details=feature_store_details,
@@ -1466,8 +1628,9 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",
@@ -1552,8 +1715,9 @@ def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",

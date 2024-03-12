@@ -104,7 +104,8 @@ async def test_create_new_feature_version(
         "blind_spot": 600,
         "time_modulo_frequency": 300,
         "frequency": 1800,
-        "tile_id": "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+        "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
+        "tile_id_version": 2,
         "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
     }
 
@@ -114,7 +115,8 @@ async def test_create_new_feature_version(
         "blind_spot": 86400,
         "time_modulo_frequency": 3600,
         "frequency": 86400,
-        "tile_id": "TILE_F86400_M3600_B86400_E818A8D3076EA6B3E4906A50D571DC587673F937",
+        "tile_id": "TILE_SUM_4955D583DA1636F4125D56D20D80CD6DD0A73DEC",
+        "tile_id_version": 2,
         "aggregation_id": "sum_4955d583da1636f4125d56d20d80cd6dd0a73dec",
     }
 
@@ -251,10 +253,15 @@ async def feature_list_fixture(test_dir, feature, feature_sum_2h, feature_list_s
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_multi.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(
-            data=FeatureListServiceCreate(**payload)
-        )
-        return feature_list
+        feature_list = None
+        try:
+            feature_list = await feature_list_service.create_document(
+                data=FeatureListServiceCreate(**payload)
+            )
+            yield feature_list
+        finally:
+            if feature_list:
+                await feature_list_service.delete_document(document_id=feature_list.id)
 
 
 @pytest.mark.asyncio

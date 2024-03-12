@@ -3,7 +3,18 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Dict, Iterable, Literal, Optional, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    cast,
+)
 
 import copy
 from abc import ABC, abstractmethod
@@ -31,6 +42,9 @@ class DuplicateDocumentError(Exception):
     """
     Duplicate document found during insert / update
     """
+
+
+SortDir = Literal["asc", "desc"]
 
 
 class Persistent(ABC):
@@ -111,8 +125,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
-    ) -> Optional[Document]:  # pylint: disable=unused-argument
+    ) -> Optional[Document]:
         """
         Find one record from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -125,8 +138,6 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------
@@ -142,11 +153,9 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> tuple[Iterable[Document], int]:
         """
         Find all records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -160,16 +169,12 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
         page: int
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
-        user_id: Optional[ObjectId]
-            ID of user who performed this operation
 
         Returns
         -------
@@ -181,9 +186,46 @@ class Persistent(ABC):
             query_filter=query_filter,
             projection=projection,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
+        )
+
+    async def get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
+        """
+        Find all records from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        pipeline: Optional[list[dict[str, Any]]]
+            Pipeline to execute
+        projection: Optional[dict[str, Any]]
+            Fields to project
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
+
+        Returns
+        -------
+        AsyncIterator[Dict[str, Any]]
+            Retrieved documents
+        """
+        return await self._get_iterator(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            pipeline=pipeline,
+            projection=projection,
+            sort_by=sort_by,
         )
 
     @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.UPDATE)
@@ -410,8 +452,7 @@ class Persistent(ABC):
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = "_id",
-        sort_dir: Optional[Literal["asc", "desc"]] = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -428,10 +469,8 @@ class Persistent(ABC):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
         page: int
             Page number for pagination
         page_size: int
@@ -441,6 +480,7 @@ class Persistent(ABC):
         -------
         list[Document]
         """
+        sort_by = sort_by or [("_id", "desc")]
         _query_filter = copy.deepcopy(query_filter) if query_filter else {}
         _query_filter["document_id"] = document_id
         return await self._find(
@@ -448,7 +488,6 @@ class Persistent(ABC):
             query_filter=_query_filter,
             projection=projection,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
         )
@@ -645,11 +684,21 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
+        pass
+
+    @abstractmethod
+    async def _get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
         pass
 
     @abstractmethod
@@ -695,6 +744,40 @@ class Persistent(ABC):
         Returns
         -------
         list[str]
+        """
+
+    @abstractmethod
+    async def aggregate_find(
+        self,
+        collection_name: str,
+        pipeline: List[Dict[str, Any]],
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        page: int = 1,
+        page_size: int = 0,
+        **kwargs: Any,
+    ) -> Tuple[Iterable[Document], int]:
+        """
+        Execute aggregation pipeline
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        pipeline: List[Dict[str, Any]],
+            Pipeline to execute
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and directions to sort by
+        page: int
+            Page number for pagination
+        page_size: int
+            Page size (0 to return all records)
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Tuple[Iterable[Document], int]
+            Retrieved documents and total count
         """
 
     async def rename_collection(self, collection_name: str, new_collection_name: str) -> None:

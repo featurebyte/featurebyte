@@ -316,8 +316,9 @@ def test_query_graph__representation():
                 "details": {
                     "account": "sf_account",
                     "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "TESTING",
                 },
             },
         },
@@ -350,8 +351,9 @@ def test_query_graph__representation():
                             "details": {
                                 "account": "sf_account",
                                 "warehouse": "sf_warehouse",
-                                "database": "db",
-                                "sf_schema": "public"
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "TESTING"
                             }
                         },
                         "type": "event_table",
@@ -578,3 +580,38 @@ def test_input_node_hash_calculation_ignores_feature_store_details(
     }
     second_input_node = insert_input_node(graph, input_node_params)
     assert input_node == second_input_node
+
+
+def test_global_query_graph__clear(input_node):
+    """Test global query graph clear method"""
+    graph = GlobalQueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    insert_project_node(graph, node_input, "a")
+
+    # check serialized attributes
+    assert len(graph.nodes) == 2
+    assert len(graph.edges) == 1
+
+    # check non-serialized attributes
+    assert len(graph.nodes_map) == 2
+    assert len(graph.edges_map) == 1
+    assert len(graph.backward_edges_map) == 1
+    assert len(graph.node_type_counter) == 2
+    assert len(graph.node_name_to_ref) == 2
+    assert len(graph.ref_to_node_name) == 2
+
+    # clear the global query graph
+    graph.clear()
+    global_graph = GlobalQueryGraph()
+
+    # check serialized attributes
+    assert len(global_graph.nodes) == 0
+    assert len(global_graph.edges) == 0
+
+    # check non-serialized attributes
+    assert len(global_graph.nodes_map) == 0
+    assert len(global_graph.edges_map) == 0
+    assert len(global_graph.backward_edges_map) == 0
+    assert len(global_graph.node_type_counter) == 0
+    assert len(global_graph.node_name_to_ref) == 0
+    assert len(global_graph.ref_to_node_name) == 0

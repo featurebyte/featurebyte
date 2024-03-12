@@ -22,7 +22,11 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    NodeOutputCategory,
+    OperationStructure,
+    OperationStructureInfo,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
@@ -53,6 +57,17 @@ def get_operation_structure_cache_key(obj: QueryObjectT) -> Any:
     return hashkey(graph_identity, obj.node_name)
 
 
+def _create_operation_structure_cache() -> Any:
+    """
+    Create the operation structure cache
+
+    Returns
+    -------
+    LRUCache
+    """
+    return LRUCache(maxsize=1024)
+
+
 class QueryObject(FeatureByteBaseModel):
     """
     QueryObject class contains query graph, node, row index lineage & session.
@@ -63,7 +78,7 @@ class QueryObject(FeatureByteBaseModel):
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
-    _operation_structure_cache: Any = LRUCache(maxsize=1024)
+    _operation_structure_cache: Any = _create_operation_structure_cache()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
@@ -87,6 +102,17 @@ class QueryObject(FeatureByteBaseModel):
         cache=operator.attrgetter("_operation_structure_cache"),
         key=get_operation_structure_cache_key,
     )
+    def operation_structure_info(self) -> OperationStructureInfo:
+        """
+        Returns the operation structure info of the current node
+
+        Returns
+        -------
+        OperationStructureInfo
+        """
+        return self.graph.extract_operation_structure_info(self.node, keep_all_source_columns=True)
+
+    @property
     def operation_structure(self) -> OperationStructure:
         """
         Returns the operation structure of the current node
@@ -95,7 +121,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         OperationStructure
         """
-        return self.graph.extract_operation_structure(self.node, keep_all_source_columns=True)
+        return self.operation_structure_info.operation_structure_map[self.node_name]
 
     @property
     def row_index_lineage(self) -> Tuple[str, ...]:
@@ -279,6 +305,14 @@ class QueryObject(FeatureByteBaseModel):
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
         return json_object
+
+    @classmethod
+    def clear_operation_structure_cache(cls) -> None:
+        """
+        Clear the operation structure cache
+        """
+        del cls._operation_structure_cache
+        cls._operation_structure_cache = _create_operation_structure_cache()
 
 
 class ProtectedColumnsQueryObject(QueryObject):

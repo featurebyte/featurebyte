@@ -12,11 +12,13 @@ from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.enum import SourceType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
@@ -58,7 +60,7 @@ class FeatureManagerService:
         is_recreating_schema: bool = False,
     ) -> None:
         """
-        Schedule both online and offline tile jobs
+        Task to update data warehouse when the feature is online enabled (e.g. schedule tile jobs)
 
         Parameters
         ----------
@@ -72,6 +74,20 @@ class FeatureManagerService:
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
         """
+        if (
+            FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+            and session.source_type == SourceType.DATABRICKS_UNITY
+        ):
+            # Register Databricks UDF for on-demand feature
+            await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
+
+        if not feature_spec.is_online_store_eligible:
+            logger.info(
+                "Skipping scheduling both online and offline tile jobs",
+                extra={"feature_name": feature_spec.feature.name},
+            )
+            return
+
         if schedule_time is None:
             schedule_time = datetime.utcnow()
 
@@ -279,6 +295,18 @@ class FeatureManagerService:
         feature_spec: OnlineFeatureSpec
             input feature instance
         """
+        if (
+            FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+            and session
+            and session.source_type == SourceType.DATABRICKS_UNITY
+        ):
+            # Remove Databricks UDF for on-demand feature
+            await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
+
+        if not feature_spec.is_online_store_eligible:
+            return
+
+        # cleaning online store compute queries
         await self.remove_online_store_compute_queries(feature_spec)
 
         # disable tile scheduled jobs
@@ -377,3 +405,56 @@ class FeatureManagerService:
         )
         result = await session.execute_query(sql)
         return result
+
+    @staticmethod
+    async def may_register_databricks_udf_for_on_demand_feature(
+        session: BaseSession, feature_spec: OnlineFeatureSpec
+    ) -> None:
+        """
+        Register Databricks UDF for on-demand feature.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
+        """
+        offline_store_info = feature_spec.feature.offline_store_info
+        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+            udf_info = offline_store_info.udf_info
+            logger.debug(
+                "Registering Databricks UDF for on-demand feature",
+                extra={
+                    "feature_name": feature_spec.feature.name,
+                    "function_name": udf_info.sql_function_name,
+                },
+            )
+            await session.execute_query(f"DROP FUNCTION IF EXISTS {udf_info.sql_function_name}")
+            await session.execute_query(udf_info.codes)
+
+    @staticmethod
+    async def remove_databricks_udf_for_on_demand_feature_if_exists(
+        session: BaseSession, feature_spec: OnlineFeatureSpec
+    ) -> None:
+        """
+        Remove Databricks UDF for on-demand feature.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
+        """
+        offline_store_info = feature_spec.feature.offline_store_info
+        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+            udf_info = offline_store_info.udf_info
+            logger.debug(
+                "Removing Databricks UDF for on-demand feature",
+                extra={
+                    "feature_name": feature_spec.feature.name,
+                    "function_name": udf_info.sql_function_name,
+                },
+            )
+            await session.execute_query(f"DROP FUNCTION IF EXISTS {udf_info.sql_function_name}")

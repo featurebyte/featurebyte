@@ -3,6 +3,8 @@ HistoricalFeatureTableModel
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import pymongo
 
 from featurebyte.models.base import PydanticObjectId
@@ -15,7 +17,9 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
     HistoricalFeatureTable is the result of asynchronous historical features requests
     """
 
-    feature_list_id: PydanticObjectId
+    # Id of the feature list used to compute the historical feature table. None if the feature list
+    # was not saved.
+    feature_list_id: Optional[PydanticObjectId]
 
     class Settings(MaterializedTableModel.Settings):
         """

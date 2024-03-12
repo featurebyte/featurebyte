@@ -12,6 +12,7 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
@@ -288,6 +289,22 @@ class FeatureStoreController(
         """
         return await self.preview_service.shape(preview=preview)
 
+    async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
+        """
+        Retrieve shape for tabular source
+
+        Parameters
+        ----------
+        location: TabularSource
+            TabularSource object
+
+        Returns
+        -------
+        FeatureStoreShape
+            FeatureStoreShape object
+        """
+        return await self.feature_store_warehouse_service.table_shape(location=location)
+
     async def preview(self, preview: FeatureStorePreview, limit: int) -> dict[str, Any]:
         """
         Retrieve data preview for query graph node
@@ -305,6 +322,26 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.preview(preview=preview, limit=limit)
+
+    async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
+        """
+        Retrieve data preview for tabular source
+
+        Parameters
+        ----------
+        location: TabularSource
+            TabularSource object
+        limit: int
+            Row limit on preview results
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        return await self.feature_store_warehouse_service.table_preview(
+            location=location, limit=limit
+        )
 
     async def sample(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """

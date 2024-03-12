@@ -215,6 +215,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "tile_id_version": 1,
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -299,6 +300,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "tile_id_version": 1,
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -375,6 +377,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226",
+        "tile_id_version": 1,
         "aggregation_id": f"avg_{aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -415,6 +418,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "tile_id_version": 1,
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
@@ -486,6 +490,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
+        "tile_id_version": 1,
         "aggregation_id": f"sum_{aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",

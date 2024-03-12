@@ -11,7 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, get_node
+from tests.util.helper import check_sdk_code_generation, deploy_features_through_api, get_node
 
 
 class TestDimensionView(BaseViewTestSuite):
@@ -145,11 +145,17 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view, mock_api_
 
 
 def test_as_features__with_primary_key_column(
-    snowflake_dimension_view_with_entity, snowflake_dimension_table, cust_id_entity
+    snowflake_dimension_view_with_entity,
+    snowflake_dimension_table,
+    cust_id_entity,
+    enable_feast_integration,
+    mock_deployment_flow,
 ):
     """
     Test calling as_features() when including primary column works correctly
     """
+    _ = enable_feast_integration, mock_deployment_flow
+
     # Set entity
     view = snowflake_dimension_view_with_entity
     entity_column = "col_int"
@@ -211,6 +217,17 @@ def test_as_features__with_primary_key_column(
                 }
             },
         )
+
+    # check offline store info
+    feature = feature_group["IntFeature"]
+    feature.save()
+    deploy_features_through_api([feature])
+
+    # check offline store table name (should not have any feature job setting)
+    offline_store_info = feature.cached_model.offline_store_info
+    ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_graphs) == 1
+    assert ingest_graphs[0].offline_store_table_name == "cat1_cust_id"
 
 
 def test_as_features__offset_provided_but_ignored(
@@ -378,18 +395,18 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             """
         WITH _FB_AGGREGATED AS (
           SELECT
-            "T0"."_fb_internal_lookup_col_float_project_1" AS "_fb_internal_lookup_col_float_project_1",
-            "T0"."_fb_internal_lookup_col_char_project_1" AS "_fb_internal_lookup_col_char_project_1",
-            "T0"."_fb_internal_lookup_col_binary_project_1" AS "_fb_internal_lookup_col_binary_project_1",
-            "T0"."_fb_internal_lookup_col_boolean_project_1" AS "_fb_internal_lookup_col_boolean_project_1"
+            "T0"."_fb_internal_cust_id_lookup_col_float_project_1" AS "_fb_internal_cust_id_lookup_col_float_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_char_project_1" AS "_fb_internal_cust_id_lookup_col_char_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_binary_project_1" AS "_fb_internal_cust_id_lookup_col_binary_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
           FROM REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "col_int" AS "cust_id",
-              "col_float" AS "_fb_internal_lookup_col_float_project_1",
-              "col_char" AS "_fb_internal_lookup_col_char_project_1",
-              "col_binary" AS "_fb_internal_lookup_col_binary_project_1",
-              "col_boolean" AS "_fb_internal_lookup_col_boolean_project_1"
+              "col_float" AS "_fb_internal_cust_id_lookup_col_float_project_1",
+              "col_char" AS "_fb_internal_cust_id_lookup_col_char_project_1",
+              "col_binary" AS "_fb_internal_cust_id_lookup_col_binary_project_1",
+              "col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
             FROM (
               SELECT
                 "col_int" AS "col_int",
@@ -406,10 +423,10 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
-          "_fb_internal_lookup_col_float_project_1" AS "FloatFeature",
-          "_fb_internal_lookup_col_char_project_1" AS "CharFeature",
-          "_fb_internal_lookup_col_binary_project_1" AS "BinaryFeature",
-          "_fb_internal_lookup_col_boolean_project_1" AS "BoolFeature"
+          "_fb_internal_cust_id_lookup_col_float_project_1" AS "FloatFeature",
+          "_fb_internal_cust_id_lookup_col_char_project_1" AS "CharFeature",
+          "_fb_internal_cust_id_lookup_col_binary_project_1" AS "BinaryFeature",
+          "_fb_internal_cust_id_lookup_col_boolean_project_1" AS "BoolFeature"
         FROM _FB_AGGREGATED AS AGG
         """
         ).strip()

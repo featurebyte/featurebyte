@@ -1,8 +1,6 @@
 """
 Test preview service module
 """
-from unittest.mock import patch
-
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -23,15 +21,6 @@ def empty_graph_fixture():
         "nodes": [],
         "edges": [],
     }
-
-
-@pytest.fixture(name="mock_get_feature_store_session")
-def mock_get_feature_store_session_fixture():
-    """Mock get_feature_store_session method"""
-    with patch(
-        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        yield mock_get_feature_store_session
 
 
 @pytest.fixture(name="feature_store_preview")
@@ -151,6 +140,7 @@ async def test_preview_feature__missing_entity(feature_preview_service, producti
         ],
         graph=production_ready_feature.graph,
         node_name=production_ready_feature.node_name,
+        feature_store_id=production_ready_feature.tabular_source.feature_store_id,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await feature_preview_service.preview_target_or_feature(feature_preview)

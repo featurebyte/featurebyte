@@ -297,6 +297,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         Test upload route
         """
         test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
 
         # Prepare upload request
         upload_request = ObservationTableUpload(
@@ -307,7 +308,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         df = pd.DataFrame(
             {
                 "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "CUST_ID": ["C1"],
+                "cust_id": ["C1"],
             }
         )
         with tempfile.NamedTemporaryFile(mode="wb", suffix=f".{file_type}") as write_file_obj:
@@ -386,3 +387,37 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             response.json()["detail"]
             == "Target is referenced by ObservationTable: observation_table_from_target_input"
         )
+
+    def test_upload_observation_validates_columns(self, test_api_client_persistent):
+        """
+        Test upload route
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # Prepare upload request
+        upload_request = ObservationTableUpload(
+            name="uploaded_observation_table",
+            purpose="other",
+            primary_entity_ids=["63f94ed6ea1f050131379214"],
+        )
+        df = pd.DataFrame(
+            {
+                "timestamp": ["2023-01-15 10:00:00"],
+                "CUST_ID": ["C1"],
+            }
+        )
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv") as write_file_obj:
+            df.to_csv(write_file_obj, index=False)
+            write_file_obj.flush()
+            with open(write_file_obj.name, "rb") as file_obj:
+                files = {"observation_set": file_obj}
+                data = {"payload": upload_request.json()}
+
+                # Call upload route
+                response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
+                assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+                assert (
+                    response.json()["detail"]
+                    == "Required columns not found: POINT_IN_TIME, cust_id"
+                )

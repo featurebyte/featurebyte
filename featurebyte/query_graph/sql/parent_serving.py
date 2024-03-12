@@ -11,7 +11,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
 from featurebyte.enum import SpecialColumnName, TableDataType
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
@@ -46,7 +46,7 @@ class ParentEntityLookupResult:
 def construct_request_table_with_parent_entities(
     request_table_name: str,
     request_table_columns: list[str],
-    join_steps: list[JoinStep],
+    join_steps: list[EntityLookupStep],
     feature_store_details: FeatureStoreDetails,
 ) -> ParentEntityLookupResult:
     """
@@ -58,7 +58,7 @@ def construct_request_table_with_parent_entities(
         Request table name
     request_table_columns: list[str]
         Column names in the request table
-    join_steps: list[JoinStep]
+    join_steps: list[EntityLookupStep]
         The list of join steps to be applied. Each step joins a parent entity into the request
         table. Subsequent joins can use the newly joined columns as the join key.
     feature_store_details: FeatureStoreDetails
@@ -81,8 +81,8 @@ def construct_request_table_with_parent_entities(
             feature_store_details=feature_store_details,
             current_columns=current_columns,
         )
-        current_columns.append(join_step.parent_serving_name)
-        new_columns.append(join_step.parent_serving_name)
+        current_columns.append(join_step.parent.serving_name)
+        new_columns.append(join_step.parent.serving_name)
 
     return ParentEntityLookupResult(
         table_expr=table_expr,
@@ -94,7 +94,7 @@ def construct_request_table_with_parent_entities(
 
 def _apply_join_step(
     table_expr: Select,
-    join_step: JoinStep,
+    join_step: EntityLookupStep,
     feature_store_details: FeatureStoreDetails,
     current_columns: list[str],
 ) -> Select:
@@ -118,7 +118,7 @@ def _apply_join_step(
 
 
 def _get_lookup_spec_from_join_step(
-    join_step: JoinStep,
+    join_step: EntityLookupStep,
     feature_store_details: FeatureStoreDetails,
 ) -> LookupSpec:
     # Set up data specific parameters
@@ -152,14 +152,16 @@ def _get_lookup_spec_from_join_step(
     )
 
     return LookupSpec(
-        input_column_name=join_step.parent_key,
-        feature_name=join_step.parent_serving_name,
-        entity_column=join_step.child_key,
-        serving_names=[join_step.child_serving_name],
+        node_name="dummy",
+        input_column_name=join_step.parent.key,
+        feature_name=join_step.parent.serving_name,
+        entity_column=join_step.child.key,
+        serving_names=[join_step.child.serving_name],
         aggregation_source=aggregation_source,
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
+        agg_result_name_include_serving_names=True,
     )

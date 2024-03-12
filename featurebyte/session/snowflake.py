@@ -29,9 +29,14 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
-from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
+from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
@@ -54,8 +59,9 @@ class SnowflakeSession(BaseSession):
 
     account: str
     warehouse: str
-    database: str
-    sf_schema: str
+    database_name: str
+    schema_name: str
+    role_name: str
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
@@ -65,10 +71,12 @@ class SnowflakeSession(BaseSession):
             self._connection = connector.connect(
                 user=self.database_credential.username,
                 password=self.database_credential.password,
-                account=data["account"],
-                warehouse=data["warehouse"],
-                database=data["database"],
-                schema=data["sf_schema"],
+                account=self.account,
+                warehouse=self.warehouse,
+                database=self.database_name,
+                schema=self.schema_name,
+                role_name=self.role_name,
+                application=APPLICATION_NAME,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
@@ -77,6 +85,7 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
+        await self.execute_query(f'USE ROLE "{self.role_name}"')
         await super().initialize()
         # set timezone to UTC
         await self.execute_query(
@@ -85,14 +94,6 @@ class SnowflakeSession(BaseSession):
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.sf_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.database
 
     @classmethod
     def is_threadsafe(cls) -> bool:
@@ -106,10 +107,12 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query_interactive("SHOW DATABASES")
+        databases = await self.execute_query_interactive(
+            "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES"
+        )
         output = []
         if databases is not None:
-            output.extend(databases["name"])
+            output.extend(databases["DATABASE_NAME"].tolist())
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
@@ -126,11 +129,11 @@ class SnowflakeSession(BaseSession):
         list[str]
         """
         schemas = await self.execute_query_interactive(
-            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
+            f'SELECT SCHEMA_NAME FROM "{database_name}".INFORMATION_SCHEMA.SCHEMATA'
         )
         output = []
         if schemas is not None:
-            output.extend(schemas["name"])
+            output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
     async def list_tables(
@@ -139,20 +142,12 @@ class SnowflakeSession(BaseSession):
         schema_name: str | None = None,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
+            f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
+            f"WHERE TABLE_SCHEMA = '{schema_name}'"
         )
-        views = await self.execute_query_interactive(
-            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-        )
-
         output = []
-
         if tables is not None:
-            for _, (name, comment) in tables[["name", "comment"]].iterrows():
-                output.append(TableSpec(name=name, description=comment or None))
-
-        if views is not None:
-            for _, (name, comment) in views[["name", "comment"]].iterrows():
+            for _, (name, comment) in tables[["TABLE_NAME", "COMMENT"]].iterrows():
                 output.append(TableSpec(name=name, description=comment or None))
 
         return output
@@ -301,6 +296,30 @@ class SnowflakeSession(BaseSession):
 
         return column_name_type_map
 
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        query = (
+            f'SELECT * FROM "{database_name}"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            f"\"TABLE_SCHEMA\"='{schema_name}' AND \"TABLE_NAME\"='{table_name}'"
+        )
+        details = await self.execute_query_interactive(query)
+        if details is None or details.shape[0] == 0:
+            raise self.no_schema_error(f"Table {table_name} not found.")
+
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
+        return TableDetails(
+            details=details.iloc[0].to_dict(),
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
+        )
+
     @staticmethod
     def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
@@ -365,6 +384,20 @@ class SnowflakeSession(BaseSession):
                 )
         return dataframe
 
+    def _format_comment(self, comment: str) -> str:
+        return self.sql_to_string(make_literal_value(comment))
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        formatted_column = self.format_quoted_identifier(column_name)
+        query = f"COMMENT ON COLUMN {formatted_table}.{formatted_column} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
 
 class SnowflakeSchemaInitializer(BaseSchemaInitializer):
     """Snowflake schema initializer class"""
@@ -375,7 +408,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 31
+        return 32
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'

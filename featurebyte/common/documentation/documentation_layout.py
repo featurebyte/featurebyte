@@ -42,6 +42,8 @@ from featurebyte.common.documentation.constants import (
     LIST,
     MANAGE,
     OBSERVATION_TABLE,
+    ONLINE_STORE,
+    ONLINE_STORE_DETAILS,
     RELATIONSHIP,
     REQUEST_COLUMN,
     SAVE,
@@ -446,6 +448,30 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_online_store_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the OnlineStore class.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the OnlineStore class.
+    """
+    return [
+        DocLayoutItem([ONLINE_STORE]),
+        DocLayoutItem([ONLINE_STORE, CLASS_METHODS, "OnlineStore.get"]),
+        DocLayoutItem([ONLINE_STORE, CLASS_METHODS, "OnlineStore.get_by_id"]),
+        DocLayoutItem([ONLINE_STORE, CLASS_METHODS, "OnlineStore.list"]),
+        DocLayoutItem([ONLINE_STORE, CLASS_METHODS, "OnlineStore.create"]),
+        DocLayoutItem([ONLINE_STORE, INFO, "OnlineStore.created_at"]),
+        DocLayoutItem([ONLINE_STORE, INFO, "OnlineStore.details"]),
+        DocLayoutItem([ONLINE_STORE, INFO, "OnlineStore.info"]),
+        DocLayoutItem([ONLINE_STORE, INFO, "OnlineStore.name"]),
+        DocLayoutItem([ONLINE_STORE, INFO, "OnlineStore.updated_at"]),
+        DocLayoutItem([ONLINE_STORE, LINEAGE, "OnlineStore.id"]),
+    ]
+
+
 def _get_data_source_layout() -> List[DocLayoutItem]:
     """
     The layout for the DataSource class.
@@ -818,6 +844,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksUnityDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),
@@ -828,6 +855,8 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
+        DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "MySQLOnlineStoreDetails"]),
     ]
 
 
@@ -1143,6 +1172,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_feature_group_layout(),
         *_get_feature_list_layout(),
         *_get_feature_store_layout(),
+        *_get_online_store_layout(),
         *_get_data_source_layout(),
         *_get_relationship_layout(),
         *_get_view_layout(),

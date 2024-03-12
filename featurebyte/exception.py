@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from asyncio.exceptions import CancelledError
+
 from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
@@ -153,24 +155,14 @@ class RequiredEntityNotProvidedError(BaseUnprocessableEntityError):
     Raised when one or more required entities are not provided
     """
 
+    def __init__(self, *args: Any, repackaged: bool = False, **kwargs: Any) -> None:
+        self.missing_entity_ids = kwargs.pop("missing_entity_ids", None)
+        super().__init__(*args, repackaged=repackaged, **kwargs)
+
 
 class UnexpectedServingNamesMappingError(BaseUnprocessableEntityError):
     """
     Raised when unexpected keys are provided in serving names mapping
-    """
-
-
-class EntityJoinPathNotFoundError(FeatureByteException):
-    """
-    Raised when it is not possible to identify a join path to an entity using the provided entities
-    as children entities
-    """
-
-
-class AmbiguousEntityRelationshipError(FeatureByteException):
-    """
-    Raised when the relationship between entities is ambiguous and automatic serving of parent
-    features is not possible
     """
 
 
@@ -472,4 +464,32 @@ class EntityTaggingIsNotAllowedError(BaseUnprocessableEntityError):
     """ "
     Raise when entity tagging is not allowed for a specific columns,
     for example scd surrogate key
+    """
+
+
+class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table is missing required columns
+    """
+
+
+class TaskNotRevocableError(BaseUnprocessableEntityError):
+    """
+    Raise when task is not revocable
+    """
+
+
+class TaskNotFound(DocumentNotFoundError):
+    """
+    Raise when task is not found
+    """
+
+
+# Exceptions to catch to handle task revoke
+TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError, CancelledError)
+
+
+class TaskCanceledError(FeatureByteException):
+    """
+    Raise when task is canceled
     """

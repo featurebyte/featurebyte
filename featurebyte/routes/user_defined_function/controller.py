@@ -3,7 +3,7 @@ UserDefinedFunction API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Tuple, cast
+from typing import Any, Dict, List, Tuple, cast
 
 from bson import ObjectId
 
@@ -12,14 +12,17 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
+    UserDefinedFunctionServiceCreate,
     UserDefinedFunctionServiceUpdate,
     UserDefinedFunctionUpdate,
 )
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -44,11 +47,17 @@ class UserDefinedFunctionController(
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        catalog_service: CatalogService,
     ):
         super().__init__(service=user_defined_function_service)
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.catalog_service = catalog_service
+
+        # retrieve active catalog id and feature store id
+        assert user_defined_function_service.catalog_id is not None
+        self.active_catalog_id: ObjectId = user_defined_function_service.catalog_id
 
     async def _validate_user_defined_function(
         self,
@@ -67,6 +76,17 @@ class UserDefinedFunctionController(
             if to_delete:
                 await self.service.delete_document(document_id=user_defined_function.id)
             raise exception_class(f"{exc}") from exc
+
+    async def _get_feature_store_id(self) -> PydanticObjectId:
+        """
+        Get feature store id from active catalog
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        active_catalog = await self.catalog_service.get_document(document_id=self.active_catalog_id)
+        return active_catalog.default_feature_store_ids[0]
 
     async def create_user_defined_function(
         self,
@@ -87,11 +107,17 @@ class UserDefinedFunctionController(
         """
         # validate feature store id exists
         feature_store = await self.feature_store_service.get_document(
-            document_id=data.feature_store_id
+            document_id=(await self._get_feature_store_id())
         )
 
         # create user defined function & validate
-        user_defined_function = await self.service.create_document(data)
+        catalog_id = None if data.is_global else self.active_catalog_id
+        service_data = UserDefinedFunctionServiceCreate(
+            **data.dict(by_alias=True),
+            catalog_id=catalog_id,
+            feature_store_id=feature_store.id,
+        )
+        user_defined_function = await self.service.create_document(service_data)
         await self._validate_user_defined_function(
             user_defined_function=user_defined_function,
             feature_store=feature_store,
@@ -142,7 +168,7 @@ class UserDefinedFunctionController(
 
         # retrieve feature store
         feature_store = await self.feature_store_service.get_document(
-            document_id=document.feature_store_id
+            document_id=(await self._get_feature_store_id())
         )
 
         # validate user defined function
@@ -172,8 +198,7 @@ class UserDefinedFunctionController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
         feature_store_id: PydanticObjectId | None = None,
@@ -187,10 +212,8 @@ class UserDefinedFunctionController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -203,6 +226,7 @@ class UserDefinedFunctionController(
         UserDefinedFunctionList
             Paginated list of UserDefinedFunction
         """
+        sort_by = sort_by or [("created_at", "desc")]
         params: Dict[str, Any] = {"search": search, "name": name}
         if feature_store_id:
             params["query_filter"] = {"feature_store_id": feature_store_id}
@@ -210,7 +234,6 @@ class UserDefinedFunctionController(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             **params,
         )
 
@@ -233,7 +256,7 @@ class UserDefinedFunctionController(
 
         document = await self.service.get_document(document_id=document_id)
         feature_store = await self.feature_store_service.get_document(
-            document_id=document.feature_store_id
+            document_id=(await self._get_feature_store_id())
         )
         features_info: List[UserDefinedFunctionFeatureInfo] = []
         features = await self.feature_service.list_documents_as_dict(

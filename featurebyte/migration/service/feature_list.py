@@ -70,18 +70,15 @@ class FeatureListMigrationServiceV5(BaseFeatureListMigrationService):
             all_feature_ids.update(document["feature_ids"])
 
         # get all feature first to reduce the number of queries
-        feature_id_to_primary_entity_ids: Dict[ObjectId, List[ObjectId]] = {
-            feature_doc["_id"]: feature_doc["primary_entity_ids"]
-            async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+        features: List[FeatureModel] = [
+            feature_model
+            async for feature_model in self.feature_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(all_feature_ids)}}
             )
-        }
+        ]
         for document in documents:
             derived_data = await self.feature_list_service.extract_entity_relationship_data(
-                feature_primary_entity_ids=[
-                    feature_id_to_primary_entity_ids[feature_id]
-                    for feature_id in document["feature_ids"]
-                ]
+                features=features,
             )
             document["primary_entity_ids"] = derived_data.primary_entity_ids
             document["relationships_info"] = derived_data.relationships_info
@@ -98,7 +95,7 @@ class FeatureListMigrationServiceV5(BaseFeatureListMigrationService):
 
         # use the normal query filter (contains catalog ID filter)
         query_filter = self.delegate_service.construct_list_query_filter()
-        total_before = await self.get_total_record(query_filter=query_filter)  # type: ignore
+        total_before = await self.get_total_record(query_filter=query_filter)
 
         # migrate all records and audit records
         await self.migrate_all_records(
@@ -187,7 +184,7 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
 
         # use the normal query filter (contains catalog ID filter)
         query_filter = self.delegate_service.construct_list_query_filter()
-        total_before = await self.get_total_record(query_filter=query_filter)  # type: ignore
+        total_before = await self.get_total_record(query_filter=query_filter)
 
         # migrate all records and audit records
         await self.migrate_all_records(

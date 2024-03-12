@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.0.1 (2024-03-12)
+
+### 💡 Enhancements
+
++ `api` Support description specification during table creation.
++ `api` Create api to manage online stores
++ `session` Specify role and group in Snowflake and Databricks details to enforce permissions for accessing source and output tables
++ `service` Simplify user defined function route creation schema
++ `online_serving` Implement FEAST offline stores for Spark Thrift and DataBricks for online serving support
++ `service` Compute data description in batches of columns
++ `service` Support offset parameter for aggregate_asat
++ `profile` Create a profile from databricks secrets to simplify access from a Databricks workspace.
++ `service` Improve efficiency of feature table cache checks for saved feature lists
+
+### 🐛 Bug Fixes
+
++ `service` Updates output variable type of count aggregation to be integer instead of float
++ `service` Fix FeatureList online_enabled_feature_ids attribute not updated correctly in some cases
++ `session` Fix snowflake session using wrong role if the user's default role does not match role in feature store details
++ `session` Fix count dictionary entropy UDF behavior for edge cases
++ `deployment` Fix getting sample entity serving names for deployment fails when entity has null values
++ `service` Fix ambiguous column name error when using SCD lookup features with different offsets
+
+
 ## v1.0.0 (2023-12-21)
 
 ### 💡 Enhancements

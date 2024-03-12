@@ -104,7 +104,7 @@ def update_aggregator(aggregator, specs):
 
 
 def test_lookup_aggregator__offline_dimension_only(
-    offline_lookup_aggregator, dimension_lookup_specs, entity_id
+    offline_lookup_aggregator, dimension_lookup_specs, lookup_node, entity_id
 ):
     """
     Test lookup aggregator with only dimension lookup
@@ -119,6 +119,7 @@ def test_lookup_aggregator__offline_dimension_only(
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": lookup_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "serving_names_mapping": None,
             "input_column_name": "cust_value_1",
@@ -128,8 +129,10 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         },
         {
+            "node_name": lookup_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "serving_names_mapping": None,
             "input_column_name": "cust_value_2",
@@ -139,6 +142,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         },
     ]
 
@@ -148,7 +152,7 @@ def test_lookup_aggregator__offline_dimension_only(
 
 @pytest.mark.parametrize("is_online_serving", [False])
 def test_lookup_aggregator__offline_scd_only(
-    offline_lookup_aggregator, scd_lookup_specs_with_current_flag, entity_id
+    offline_lookup_aggregator, scd_lookup_specs_with_current_flag, entity_id, scd_lookup_node
 ):
     """
     Test lookup aggregator with only scd lookups
@@ -166,6 +170,7 @@ def test_lookup_aggregator__offline_scd_only(
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": scd_lookup_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "entity_ids": [entity_id],
             "serving_names_mapping": None,
@@ -181,6 +186,7 @@ def test_lookup_aggregator__offline_scd_only(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -190,6 +196,7 @@ def test_lookup_aggregator__online_with_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_with_current_flag,
     entity_id,
+    scd_lookup_node,
 ):
     """
     Test lookup aggregator with only scd lookups
@@ -205,6 +212,7 @@ def test_lookup_aggregator__online_with_current_flag(
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": scd_lookup_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "entity_ids": [entity_id],
             "serving_names_mapping": None,
@@ -220,18 +228,21 @@ def test_lookup_aggregator__online_with_current_flag(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
     direct_lookups = aggregator.get_direct_lookups()
     assert len(direct_lookups) == 1
-    assert direct_lookups[0].column_names == ["_fb_internal_lookup_membership_status_input_1"]
+    assert direct_lookups[0].column_names == [
+        "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+    ]
     assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
     expected_sql = textwrap.dedent(
         """
         SELECT
           "cust_id" AS "CUSTOMER_ID",
-          "membership_status" AS "_fb_internal_lookup_membership_status_input_1"
+          "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
         FROM (
           SELECT
             "effective_ts" AS "effective_ts",
@@ -254,6 +265,7 @@ def test_lookup_aggregator__online_without_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_without_current_flag,
     entity_id,
+    scd_lookup_without_current_flag_node,
 ):
     """
     Test lookup aggregator with only scd lookups without a current flag column
@@ -272,6 +284,7 @@ def test_lookup_aggregator__online_without_current_flag(
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": scd_lookup_without_current_flag_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "entity_ids": [entity_id],
             "serving_names_mapping": None,
@@ -287,6 +300,7 @@ def test_lookup_aggregator__online_without_current_flag(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
@@ -296,6 +310,7 @@ def test_lookup_aggregator__online_with_offset(
     online_lookup_aggregator,
     scd_lookup_specs_with_offset,
     entity_id,
+    scd_offset_lookup_node,
 ):
     """
     Test lookup aggregator with only scd lookups with offset
@@ -314,6 +329,7 @@ def test_lookup_aggregator__online_with_offset(
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": scd_offset_lookup_node.name,
             "serving_names": ["CUSTOMER_ID"],
             "entity_ids": [entity_id],
             "serving_names_mapping": None,
@@ -329,11 +345,14 @@ def test_lookup_aggregator__online_with_offset(
             ),
             "event_parameters": None,
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 
 
-def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_specs, entity_id):
+def test_lookup_aggregator__event_table(
+    offline_lookup_aggregator, event_lookup_specs, entity_id, event_lookup_node
+):
     """
     Test lookup features from EventTable
     """
@@ -347,6 +366,7 @@ def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_
         spec.pop("aggregation_source")
     assert specs == [
         {
+            "node_name": event_lookup_node.name,
             "entity_ids": [entity_id],
             "serving_names": ["ORDER_ID"],
             "serving_names_mapping": None,
@@ -356,6 +376,7 @@ def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
             "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
         }
     ]
 

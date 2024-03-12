@@ -1,14 +1,17 @@
 """
 Session class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict, Type
+from typing import Any, AsyncGenerator, ClassVar, Dict, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
+import ctypes
 import functools
 import os
+import threading
 import time
 from abc import ABC, abstractmethod
 from asyncio import events
@@ -19,6 +22,7 @@ import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -31,7 +35,8 @@ from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -39,10 +44,12 @@ from featurebyte.query_graph.sql.common import (
 )
 
 INTERACTIVE_SESSION_TIMEOUT_SECONDS = 30
+NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 120
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
+APPLICATION_NAME = "FeatureByte"
 
 
 logger = get_logger(__name__)
@@ -64,14 +71,40 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     **kwargs : Any
         Keyword arguments to `func`.
 
+    Raises
+    ------
+    asyncio.exceptions.TimeoutError
+        Function execution timed out.
+
     Returns
     -------
     Any
     """
     loop = events.get_running_loop()
     ctx = contextvars.copy_context()
-    func_call = functools.partial(ctx.run, func, *args, **kwargs)
-    return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+
+    def _func_wrapper(func: Any, thread_info: Dict[str, Any], *args: Any, **kwargs: Any) -> Any:
+        thread_info["tid"] = threading.get_ident()
+        return func(*args, **kwargs)
+
+    def _raise_timeout_exception_in_thread(thread_id: int) -> None:
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_ulong(thread_id), ctypes.py_object(TimeoutError)
+        )
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            raise ValueError("Exception raise failure")
+        if res:
+            logger.debug("Raised exception in thread")
+
+    thread_info: Dict[str, int] = {}
+    func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
+
+    try:
+        return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+    except asyncio.exceptions.TimeoutError:
+        _raise_timeout_exception_in_thread(thread_info["tid"])
+        raise
 
 
 class BaseSession(BaseModel):
@@ -82,6 +115,8 @@ class BaseSession(BaseModel):
     # pylint: disable=too-many-public-methods
 
     source_type: SourceType
+    database_name: str = ""
+    schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
@@ -100,6 +135,17 @@ class BaseSession(BaseModel):
         Type[Exception]
         """
         return self._no_schema_error
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """
+        Returns an adapter instance for the session's source type
+
+        Returns
+        -------
+        BaseAdapter
+        """
+        return get_sql_adapter(source_type=self.source_type)
 
     async def initialize(self) -> None:
         """
@@ -204,6 +250,88 @@ class BaseSession(BaseModel):
         -------
         OrderedDict[str, ColumnSpecWithDescription]
         """
+
+    @abstractmethod
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        """
+        Add comment to a table
+
+        Parameters
+        ----------
+        table_name: str
+            Name of the table to be commented
+        comment: str
+            Comment to add
+        """
+
+    @abstractmethod
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        """
+        Add comment to a column in a table
+
+        Parameters
+        ----------
+        table_name: str
+            Table name of the column
+        column_name: str
+            Name of the colum to be commented
+        comment: str
+            Comment to add
+        """
+
+    @abstractmethod
+    async def register_table(
+        self,
+        table_name: str,
+        dataframe: pd.DataFrame,
+        temporary: bool = True,
+    ) -> None:
+        """
+        Register a table
+
+        Parameters
+        ----------
+        table_name : str
+            Temp table name
+        dataframe : pd.DataFrame
+            DataFrame to register
+        temporary : bool
+            If True, register a temporary table
+        """
+
+    @classmethod
+    @abstractmethod
+    def is_threadsafe(cls) -> bool:
+        """
+        Whether the session object can be shared across threads. If True, SessionManager will cache
+        the session object once it is created.
+        """
+
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        """
+        Get table details
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+        database_name: str | None
+            Database name
+        schema_name: str | None
+            Schema name
+
+        Returns
+        -------
+        TableDetails
+        """
+        _ = database_name, schema_name, table_name
+        # return empty details as fallback
+        return TableDetails(fully_qualified_name=table_name)
 
     async def check_user_defined_function(
         self,
@@ -450,26 +578,6 @@ class BaseSession(BaseModel):
             return pd.DataFrame(all_rows, columns=columns)
         return None
 
-    @abstractmethod
-    async def register_table(
-        self,
-        table_name: str,
-        dataframe: pd.DataFrame,
-        temporary: bool = True,
-    ) -> None:
-        """
-        Register a table
-
-        Parameters
-        ----------
-        table_name : str
-            Temp table name
-        dataframe : pd.DataFrame
-            DataFrame to register
-        temporary : bool
-            If True, register a temporary table
-        """
-
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True
     ) -> None:
@@ -497,6 +605,7 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
+        is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -511,6 +620,8 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+        is_view : bool
+            If True - it is view not table.
         """
         fully_qualified_table_name = get_fully_qualified_table_name(
             {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
@@ -518,42 +629,42 @@ class BaseSession(BaseModel):
         query = sql_to_string(
             expressions.Drop(
                 this=expressions.Table(this=fully_qualified_table_name),
-                kind="TABLE",
+                kind="VIEW" if is_view else "TABLE",
                 exists=if_exists,
             ),
             source_type=self.source_type,
         )
         await self.execute_query(query)
 
-    @property
-    @abstractmethod
-    def schema_name(self) -> str:
+    def format_quoted_identifier(self, identifier_name: str) -> str:
         """
-        Returns the name of the working schema that stores featurebyte assets
+        Quote an identifier using the session's convention and return the result as a string
+
+        Parameters
+        ----------
+        identifier_name: str
+            Identifier name
 
         Returns
         -------
         str
         """
+        return self.sql_to_string(quoted_identifier(identifier_name))
 
-    @property
-    @abstractmethod
-    def database_name(self) -> str:
+    def sql_to_string(self, expr: Expression) -> str:
         """
-        Returns the name of the working database that stores featurebyte assets
+        Helper function to convert an Expression to string for the session's source type
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to convert to string
 
         Returns
         -------
         str
         """
-
-    @classmethod
-    @abstractmethod
-    def is_threadsafe(cls) -> bool:
-        """
-        Whether the session object can be shared across threads. If True, SessionManager will cache
-        the session object once it is created.
-        """
+        return sql_to_string(expr, source_type=self.source_type)
 
 
 class SqlObjectType(StrEnum):

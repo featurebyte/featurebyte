@@ -12,6 +12,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, get_api_object_cache_key
 from featurebyte.api.api_object_util import delete_api_object_by_id
+from featurebyte.common.utils import is_server_mode
 from featurebyte.config import Configurations
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import (
@@ -87,12 +88,19 @@ class SavableApiObject(ApiObject):
         >>> entity.save()  # doctest: +SKIP
         Entity (id: <entity.id>) has been saved before.
         """
-        self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
+        if not is_server_mode():
+            # skip the check when running the SDK in the server mode (avoid making an API call)
+            self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
+
         client = Configurations().get_client()
         payload = self._get_create_payload()
         if _id is not None:
             payload["_id"] = str(_id)
         response = client.post(url=self._route, json=payload)
+        if is_server_mode():
+            # this is used only when running the SDK in the batch feature creation task (server mode)
+            return
+
         retrieve_object = False
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:

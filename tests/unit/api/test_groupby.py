@@ -197,7 +197,8 @@ def test_groupby__default_feature_job_setting(
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_BD58D4576AFD2D63F8CC9AFAD84840FA58035DBA",
+        "tile_id": "TILE_SUM_EC2E4C42C6A794E585BDC236D863F949196637B1",
+        "tile_id_version": 2,
         "aggregation_id": "sum_ec2e4c42c6a794e585bdc236d863f949196637b1",
         "timestamp": "event_timestamp",
         "value_by": None,
@@ -235,7 +236,8 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_6AE5A3B2EB0A1E954FB19A474CB740E70F636239",
+        "tile_id": "TILE_SUM_C55AFDFDCA81F4387BA39197C13ACC7AB649BE1F",
+        "tile_id_version": 2,
         "aggregation_id": "sum_c55afdfdca81f4387ba39197c13acc7ab649be1f",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
@@ -269,7 +271,7 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     if category is None:
         # node type changes to ALIAS because of fillna
         assert feature_dict["node_name"] == "alias_1"
-        assert feature_dict["dtype"] == DBVarType.FLOAT
+        assert feature_dict["dtype"] == DBVarType.INT
     else:
         assert feature_dict["node_name"] == "project_1"
         # count with category has dict like output type

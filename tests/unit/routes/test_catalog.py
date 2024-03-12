@@ -55,6 +55,18 @@ class TestCatalogApi(BaseApiTestSuite):
         )
     ]
 
+    def setup_creation_route(self, api_client):
+        """
+        Setup for post route
+        """
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
     @pytest.fixture(name="create_multiple_entries")
     def create_multiple_entries_fixture(self, test_api_client_persistent):
         """
@@ -151,6 +163,90 @@ class TestCatalogApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["name"] for doc in results] == ["french grocery", "grocery"]
+
+    def test_update_online_store_200(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update (success) (to be deprecated)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] == str(mysql_online_store.id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store", json={"online_store_id": None}
+        )
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] is None
+
+    def test_update_online_store_202(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] == str(mysql_online_store.id)
+
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async", json={"online_store_id": None}
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] is None
+
+    def test_update_online_store_no_op(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+
+        # Update online store
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] == str(mysql_online_store.id)
+
+        # Update again with the same online store, should be no op.
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert task_response.status_code == HTTPStatus.OK
+        assert task_response.json() is None
 
     def test_update_404(self, test_api_client_persistent):
         """

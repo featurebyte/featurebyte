@@ -1,18 +1,26 @@
 """
 Test feature list service class
 """
+import os
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
+from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     DocumentError,
     DocumentInconsistencyError,
     DocumentModificationBlockedError,
+    DocumentNotFoundError,
 )
 from featurebyte.models.base import ReferenceInfo
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_list import FeatureReadinessDistribution
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
@@ -23,7 +31,7 @@ from featurebyte.schema.feature_list import (
 
 
 @pytest.mark.asyncio
-async def test_update_document__duplicated_feature_error(feature_list_service, feature_list):
+async def test_create_document__duplicated_feature_error(feature_list_service, feature_list):
     """Test feature creation - document inconsistency error"""
     data_dict = feature_list.dict(by_alias=True)
     data_dict["_id"] = ObjectId()
@@ -34,6 +42,133 @@ async def test_update_document__duplicated_feature_error(feature_list_service, f
         )
     expected_msg = "Two Feature objects must not share the same name in a FeatureList object."
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_document__clean_up_remote_attributes_on_error(
+    feature, feature_list_service, storage
+):
+    """Test clean up remote attributes on feature list creation error"""
+    feature_list_id = ObjectId()
+    catalog_id = feature.catalog_id
+    expected_full_path = os.path.join(
+        storage.base_path,
+        f"catalog/{catalog_id}/feature_list/{feature_list_id}/feature_clusters.json",
+    )
+
+    def _create_feature_list(feature_list, features):
+        _ = features
+        assert feature_list.id == feature_list_id
+
+        # check that the remote path exists
+        full_path = os.path.join(storage.base_path, feature_list.feature_clusters_path)
+        assert full_path == expected_full_path
+        assert os.path.exists(full_path)
+
+        # raise an error to simulate an error during feature list creation
+        raise DocumentError("Some random error")
+
+    with patch(
+        "featurebyte.service.feature_list.FeatureListService._create_document"
+    ) as mock_feature_list:
+        mock_feature_list.side_effect = _create_feature_list
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(
+                data=FeatureListServiceCreate(
+                    _id=feature_list_id,
+                    name="some_name",
+                    feature_ids=[feature.id],
+                )
+            )
+            assert "Some random error" in str(exc.value)
+
+    # check that the remote path has been removed
+    assert not os.path.exists(expected_full_path)
+
+
+@pytest.mark.asyncio
+async def test_create_document__clean_up_mongo(
+    feature, feature_list_service, feature_list_namespace_service
+):
+    """Test clean up mongo on feature list creation error"""
+    feature_list_id = ObjectId()
+    namespace_id = ObjectId()
+    create_data = FeatureListServiceCreate(
+        _id=feature_list_id,
+        name="some_name",
+        feature_ids=[feature.id],
+        feature_list_namespace_id=namespace_id,
+    )
+
+    # test error during feature list creation (namespace not found)
+    with patch.object(
+        feature_list_service.feature_list_namespace_service, "create_document"
+    ) as mock_namespace_create:
+        mock_namespace_create.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with patch.object(
+        feature_list_service.feature_service, "update_documents"
+    ) as mock_features_update:
+        mock_features_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed & namespace not created
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_namespace_service.get_document(document_id=namespace_id)
+
+    # create a new namespace
+    default_feature_list_id = ObjectId()
+    await feature_list_namespace_service.create_document(
+        data=FeatureListNamespaceModel(
+            _id=namespace_id,
+            name=create_data.name,
+            feature_namespace_ids=[feature.feature_namespace_id],
+            feature_list_ids=[default_feature_list_id],
+            default_feature_list_id=default_feature_list_id,
+            catalog_id=feature_list_service.catalog_id,
+            user_id=feature_list_service.user.id,
+        )
+    )
+
+    # test error during feature list creation (namespace found)
+    with patch.object(
+        feature_list_service.feature_list_namespace_service, "update_document"
+    ) as mock_namespace_update:
+        mock_namespace_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    with patch.object(
+        feature_list_service.feature_service, "update_documents"
+    ) as mock_features_update:
+        mock_features_update.side_effect = DocumentError("Some random error")
+        with pytest.raises(DocumentError) as exc:
+            await feature_list_service.create_document(data=create_data)
+        assert "Some random error" in str(exc.value)
+
+    # check that the feature list has been removed & namespace not updated
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list_id)
+
+    namespace = await feature_list_namespace_service.get_document(document_id=namespace_id)
+    assert namespace.feature_list_ids == [default_feature_list_id]
 
 
 @pytest.mark.asyncio
@@ -76,7 +211,7 @@ async def test_update_document__inconsistency_error(
     assert expected_msg in str(exc.value)
 
 
-async def create_entity_family(
+async def create_entity_family(  # pylint: disable=too-many-locals
     entity_service,
     table_columns_info_service,
     entity_relationship_service,
@@ -115,11 +250,24 @@ async def create_entity_family(
         (sibling_entity.id, parent_entity.id, dimension_table),
         (unrelated_entity.id, unrelated_parent_entity.id, dimension_table),
     ]
+    all_entity_ids = set()
+    for parent_entity_id, child_entity_id, _ in parent_child_table_triples:
+        all_entity_ids.add(parent_entity_id)
+        all_entity_ids.add(child_entity_id)
+    mock_columns_info = [
+        ColumnInfo(
+            name=f"col_{entity_id}",
+            dtype=DBVarType.VARCHAR,
+            entity_id=entity_id,
+        )
+        for entity_id in all_entity_ids
+    ]
     for child_id, parent_id, table in parent_child_table_triples:
         await table_columns_info_service._add_new_child_parent_relationships(
             entity_id=child_id,
             table_id=table.id,
             parent_entity_ids_to_add=[parent_id],
+            updated_columns_info=mock_columns_info,
         )
         await entity_relationship_service.add_relationship(
             parent=ParentEntity(id=parent_id, table_id=table.id, table_type=table.type),
@@ -205,6 +353,9 @@ async def test_feature_list__contains_relationships_info(
     # and grand_child_entity is not included in the feature list
     assert new_feature_list.relationships_info == []
 
+    # should contain only features that require additional entity lookups
+    assert new_feature_list.features_entity_lookup_info == []
+
 
 @pytest.mark.asyncio
 async def test_update_readiness_distribution(feature_list_service, feature_list):
@@ -221,3 +372,61 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
             document_id=feature_list.id,
             readiness_distribution=FeatureReadinessDistribution(__root__=[]),
         )
+
+    # remove block modification by so that the feature list can be removed later
+    await feature_list_service.remove_block_modification_by(
+        query_filter={"_id": feature_list.id}, reference_info=reference_info
+    )
+    updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert updated_feature_list.block_modification_by == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "situation",
+    [
+        "missing_feature_clusters_path",
+        "feature_list_namespace_id_not_found",
+        "feature_does_not_reference_feature_list",
+    ],
+)
+async def test_delete_feature_list(
+    feature_list_service,
+    feature_list_namespace_service,
+    feature_service,
+    feature,
+    storage,
+    situation,
+):
+    """Test delete feature list method"""
+    feature_list = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(name="my_feature_list", feature_ids=[feature.id])
+    )
+
+    if situation == "missing_feature_clusters_path":
+        await storage.delete(Path(feature_list.feature_clusters_path))
+        with pytest.raises(FileNotFoundError):
+            await storage.get_text(Path(feature_list.feature_clusters_path))
+
+    if situation == "feature_list_namespace_id_not_found":
+        await feature_list_namespace_service.delete_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        with pytest.raises(DocumentNotFoundError):
+            await feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+
+    if situation == "feature_does_not_reference_feature_list":
+        await feature_service.update_documents(
+            query_filter={"_id": feature.id},
+            update={"$pull": {"feature_list_ids": feature_list.id}},
+        )
+        feature = await feature_service.get_document(document_id=feature.id)
+        assert feature.feature_list_ids == []
+
+    await feature_list_service.delete_document(document_id=feature_list.id)
+
+    # check that the feature list has been removed
+    with pytest.raises(DocumentNotFoundError):
+        await feature_list_service.get_document(document_id=feature_list.id)

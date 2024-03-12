@@ -2,6 +2,8 @@
 This module contains session to EventView integration tests
 """
 import json
+import os
+import time
 from unittest import mock
 from unittest.mock import patch
 
@@ -9,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import parse_one
 
 from featurebyte import (
     AggFunc,
@@ -18,14 +21,19 @@ from featurebyte import (
     SourceType,
     to_timedelta,
 )
+from featurebyte.enum import InternalName
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
+    create_observation_table_from_dataframe,
     fb_assert_frame_equal,
+    get_dataframe_from_materialized_table,
     get_lagged_series_pandas,
     iet_entropy,
+    tz_localize_if_needed,
 )
 
 
@@ -105,73 +113,6 @@ def get_mocked_session_manager(session):
         yield
 
 
-@pytest.fixture(name="event_view")
-def event_view_fixture(event_table):
-    # create event view
-    event_view = event_table.get_view()
-    assert event_view.columns == [
-        "ËVENT_TIMESTAMP",
-        "CREATED_AT",
-        "CUST_ID",
-        "ÜSER ID",
-        "PRODUCT_ACTION",
-        "SESSION_ID",
-        "ÀMOUNT",
-        "TZ_OFFSET",
-        "TRANSACTION_ID",
-        "EMBEDDING_ARRAY",
-        "ARRAY",
-        "FLAT_DICT",
-        "NESTED_DICT",
-    ]
-    return event_view
-
-
-@pytest.fixture(name="feature_group")
-def feature_group_fixture(event_view):
-    """
-    Fixture for a simple FeatureGroup with count features
-    """
-    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
-    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
-        method="count",
-        windows=["2h", "24h"],
-        feature_names=["COUNT_2h", "COUNT_24h"],
-    )
-    return feature_group
-
-
-@pytest.fixture(name="feature_group_per_category")
-def feature_group_per_category_fixture(event_view):
-    """
-    Fixture for a FeatureGroup with dictionary features
-    """
-
-    feature_group_per_category = event_view.groupby(
-        "ÜSER ID", category="PRODUCT_ACTION"
-    ).aggregate_over(
-        method="count",
-        windows=["2h", "24h"],
-        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
-    )
-    # add features based on transformations on count per category
-    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
-    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
-    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
-    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
-    feature_group_per_category[
-        "NUM_UNIQUE_ACTION_24h_exclude_missing"
-    ] = feature_counts_24h.cd.unique_count(include_missing=False)
-
-    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category[
-        "ACTION_SIMILARITY_2h_to_24h"
-    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
-
-    return feature_group_per_category
-
-
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     """
     Test operations that can be performed on an EventView before creating features
@@ -216,7 +157,6 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__feature_group_preview(feature_group):
     """
     Test operations on Feature objects
@@ -262,7 +202,6 @@ def test_feature_operations__feature_group_preview(feature_group):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
     """
     Test previewing features when the same entity has multiple point in times in the request data
@@ -285,7 +224,6 @@ def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
     fb_assert_frame_equal(df_feature_preview, df_expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_isnull_compare_with_bool(event_view):
     """
     Test a special case of using isnull with bool literal
@@ -295,7 +233,6 @@ def test_isnull_compare_with_bool(event_view):
     assert df["ÀMOUNT"].notnull().all()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__conditional_assign(feature_group):
     """
     Test operations on Feature objects - conditional assignment
@@ -303,7 +240,6 @@ def test_feature_operations__conditional_assign(feature_group):
     run_test_conditional_assign_feature(feature_group)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__complex_feature_preview(
     event_view, feature_group, feature_group_per_category
 ):
@@ -362,7 +298,6 @@ def test_feature_operations__complex_feature_preview(
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
     """
     Test operations on Feature objects
@@ -426,7 +361,6 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_feature_operations__check_day_of_week_counts(event_view):
     """
     Test operations on Feature objects - check day of week counts
@@ -521,7 +455,7 @@ def patched_num_features_per_query():
     Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
     """
     with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
-        with patch("featurebyte.service.historical_features.NUM_FEATURES_PER_QUERY", 4):
+        with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 4):
             yield
 
 
@@ -535,53 +469,13 @@ def new_user_id_entity_fixture():
     return entity
 
 
-@pytest.mark.parametrize(
-    "in_out_formats",
-    [
-        ("dataframe", "dataframe"),
-        ("dataframe", "table"),
-        ("table", "table"),
-    ],
-)
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
-@pytest.mark.usefixtures("patched_num_features_per_query")
-@pytest.mark.asyncio
-async def test_get_historical_features(
-    session,
-    data_source,
-    feature_group,
-    feature_group_per_category,
-    in_out_formats,
-    user_entity,
-    new_user_id_entity,
-):
-    """
-    Test getting historical features from FeatureList
-    """
-    _ = user_entity, new_user_id_entity
-    input_format, output_format = in_out_formats
-    assert input_format in {"dataframe", "table"}
-    assert output_format in {"dataframe", "table"}
-
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+def get_training_events_and_expected_result():
+    """Returns training events and expected historical result"""
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
             "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
-    )
-    feature_list = FeatureList(
-        [
-            feature_group["COUNT_2h"],
-            feature_group["COUNT_24h"],
-            feature_group_per_category["COUNT_BY_ACTION_24h"],
-            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
-            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
-            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h / COUNT_24h"],
-            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
-        ],
-        name="My FeatureList",
     )
     df_historical_expected = pd.DataFrame(
         {
@@ -652,6 +546,56 @@ async def test_get_historical_features(
             ],
         }
     )
+    return df_training_events, df_historical_expected
+
+
+@pytest.mark.parametrize(
+    "in_out_formats",
+    [
+        ("dataframe", "dataframe"),
+        ("dataframe", "table"),
+        ("table", "table"),  # input is observation table
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
+    ],
+)
+@pytest.mark.usefixtures("patched_num_features_per_query")
+@pytest.mark.asyncio
+async def test_get_historical_features(
+    session,
+    data_source,
+    feature_group,
+    feature_group_per_category,
+    in_out_formats,
+    user_entity,
+    new_user_id_entity,
+):
+    """
+    Test getting historical features from FeatureList
+    """
+    _ = user_entity, new_user_id_entity
+    input_format, output_format = in_out_formats
+    assert input_format in {"dataframe", "table", "uploaded_table"}
+    assert output_format in {"dataframe", "table"}
+
+    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_list = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+        ],
+        name="My FeatureList",
+    )
+
+    df_training_events, df_historical_expected = get_training_events_and_expected_result()
+
+    if "table" in input_format:
+        df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
     if output_format == "table":
         df_historical_features = await compute_historical_feature_table_dataframe_helper(
@@ -800,7 +744,183 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@pytest.mark.asyncio
+async def test_get_historical_features__feature_table_cache(
+    session,
+    data_source,
+    feature_group,
+    feature_group_per_category,
+    user_entity,
+    new_user_id_entity,
+    feature_table_cache_metadata_service,
+):
+    """Test feature table cache create/update"""
+    _ = user_entity, new_user_id_entity
+
+    feature_list_1 = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+        ],
+        name="My FeatureList 1",
+    )
+
+    feature_list_2 = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+        ],
+        name="My FeatureList 2",
+    )
+
+    df_training_events, df_historical_expected = get_training_events_and_expected_result()
+    df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
+
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_training_events,
+        data_source,
+    )
+
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list_1.compute_historical_feature_table(
+        observation_table,
+        historical_feature_table_name,
+    )
+    df_historical_features_1 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
+    df = historical_feature_table.to_pandas()
+    assert df.shape[1] == df_historical_features_1.shape[1] - 1  # no row index
+    cols = [
+        col
+        for col in df_historical_features_1.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
+    assert df.columns.tolist() == cols
+
+    expected_cols = [
+        "__FB_TABLE_ROW_INDEX",
+        "POINT_IN_TIME",
+        "üser id",
+    ] + feature_list_1.feature_names
+    _df_historical_expected = df_historical_expected[
+        [col for col in df_historical_expected.columns if col in expected_cols]
+    ]
+    fb_assert_frame_equal(
+        df_historical_features_1,
+        _df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )
+
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list_2.compute_historical_feature_table(
+        observation_table,
+        historical_feature_table_name,
+    )
+    df_historical_features_2 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
+    df = historical_feature_table.to_pandas()
+    assert df.shape[1] == df_historical_features_2.shape[1] - 1  # no row index
+    cols = [
+        col
+        for col in df_historical_features_2.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
+    assert df.columns.tolist() == cols
+
+    expected_cols = [
+        "__FB_TABLE_ROW_INDEX",
+        "POINT_IN_TIME",
+        "üser id",
+    ] + feature_list_2.feature_names
+    _df_historical_expected = df_historical_expected[
+        [col for col in df_historical_expected.columns if col in expected_cols]
+    ]
+    fb_assert_frame_equal(
+        df_historical_features_2,
+        _df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )
+
+    cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
+    )
+    assert len(cache.feature_definitions) == len(
+        set(feature_list_1.feature_names + feature_list_2.feature_names)
+    )
+    df = await session.execute_query(
+        sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cache.table_name}"
+                """
+            ),
+            source_type=session.source_type,
+        )
+    )
+    assert df.shape[0] == df_historical_expected.shape[0]
+
+
+@pytest.mark.asyncio
+async def test_get_target__feature_table_cache(
+    session,
+    data_source,
+    event_view,
+    user_entity,
+    new_user_id_entity,
+    transaction_data_upper_case,
+    feature_table_cache_metadata_service,
+):
+    """Test feature table cache create/update for target"""
+    _ = user_entity, new_user_id_entity
+
+    target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="avg_24h_target",
+    )
+
+    df_training_events, _ = get_training_events_and_expected_result()
+
+    expected_targets = pd.Series(
+        [
+            59.69888889,
+            44.19846154,
+            62.31333333,
+            44.30076923,
+            51.52,
+            54.336,
+            51.28,
+            34.06888889,
+            53.68,
+            np.nan,
+        ]
+    )
+    df_expected = pd.concat([df_training_events, expected_targets], axis=1)
+    df_expected.columns = ["POINT_IN_TIME", "üser id", "avg_24h_target"]
+
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_training_events,
+        data_source,
+    )
+    target_table = target.compute_target_table(observation_table, f"new_table_{time.time()}")
+    df = target_table.to_pandas()
+    assert df.columns.tolist() == ["POINT_IN_TIME", "üser id", "avg_24h_target"]
+    pd.testing.assert_frame_equal(df, df_expected, check_dtype=False)
+
+
 def test_datetime_operations(event_view, source_type):
     """Test datetime operations"""
     event_view = event_view.copy()
@@ -932,7 +1052,7 @@ def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
         timestamp_series = df[timestamp_column].apply(
             lambda x: x.tz_convert("UTC").tz_localize(None)
@@ -956,7 +1076,7 @@ def test_datetime_comparison__fixed_timestamp_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         fixed_timestamp = fixed_timestamp_with_tz
     else:
         # Spark returns timestamp converted to UTC and without timezone. To allow comparison,
@@ -1101,7 +1221,6 @@ def get_non_time_based_feature_fixture(item_table):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_add_feature(event_view, non_time_based_feature, scd_table, source_type):
     """
     Test add feature
@@ -1157,8 +1276,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
 
     def _check_first_row_matches(df, expected_dict):
         # databricks return POINT_IN_TIME with "Etc/UTC" timezone
-        if source_type == "databricks":
-            df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+        tz_localize_if_needed(df, source_type)
         assert df.iloc[0].to_dict() == expected_dict
 
     _check_first_row_matches(
@@ -1184,7 +1302,6 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_feature):
     """
     Test add feature when the input EventView involves a join
@@ -1231,7 +1348,6 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_latest_per_category_aggregation(event_view):
     """
     Test latest per category aggregation with value column of string type
@@ -1249,7 +1365,7 @@ def test_latest_per_category_aggregation(event_view):
     assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@mock.patch.dict(os.environ, {"FEATUREBYTE_TILE_ID_VERSION": "1"})
 def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues

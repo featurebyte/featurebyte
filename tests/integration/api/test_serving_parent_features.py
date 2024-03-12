@@ -5,14 +5,25 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import Entity, FeatureList, Table
+from featurebyte import Entity, FeatureList, Relationship, Table
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from tests.util.helper import tz_localize_if_needed
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
 
+@pytest.fixture(name="customer_entity", scope="session")
+def customer_entity_fixture(customer_entity):
+    """
+    Fixture for customer entity
+    """
+    customer_entity = Entity(name=f"{table_prefix}_customer", serving_names=["serving_cust_id"])
+    customer_entity.save()
+    return customer_entity
+
+
 @pytest_asyncio.fixture(name="tables", scope="session")
-async def tables_fixture(session, data_source):
+async def tables_fixture(session, data_source, customer_entity):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -59,8 +70,6 @@ async def tables_fixture(session, data_source):
 
     event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
     event_entity.save()
-    customer_entity = Entity(name=f"{table_prefix}_customer", serving_names=["serving_cust_id"])
-    customer_entity.save()
     city_entity = Entity(name=f"{table_prefix}_city", serving_names=["serving_city_id"])
     city_entity.save()
     state_entity = Entity(name=f"{table_prefix}_state", serving_names=["serving_state_id"])
@@ -121,19 +130,54 @@ async def tables_fixture(session, data_source):
     dimension_table_1["country"].as_entity(country_entity.name)
 
 
+@pytest.fixture(name="customer_table", scope="session")
+def customer_table_fixture(tables):
+    """
+    Fixture for the customer table
+    """
+    _ = tables
+    return Table.get(f"{table_prefix}_scd_table_1")
+
+
+@pytest.fixture(name="customer_feature", scope="session")
+def customer_feature_fixture(tables):
+    """
+    Feature of event entity (event's customer id)
+    """
+    _ = tables
+    view = Table.get(f"{table_prefix}_event_table").get_view()
+    feature = view["cust_id"].as_feature("Event Customer ID")
+    return feature
+
+
+@pytest.fixture(name="city_feature", scope="session")
+def city_feature_fixture(customer_table):
+    """
+    Feature of customer entity (customer's city)
+    """
+    view = customer_table.get_view()
+    feature = view["scd_city"].as_feature("Customer City")
+    return feature
+
+
 @pytest.fixture(name="country_feature", scope="session")
 def country_feature_fixture(tables):
+    """
+    Feature of city entity (city's state's country)
+    """
     _ = tables
     view = Table.get(f"{table_prefix}_dimension_table_1").get_view()
     feature = view["country"].as_feature("Country Name")
     return feature
 
 
-@pytest.fixture(name="city_feature", scope="session")
-def city_feature_fixture(tables):
-    _ = tables
-    view = Table.get(f"{table_prefix}_scd_table_1").get_view()
-    feature = view["scd_city"].as_feature("Customer City")
+@pytest.fixture(name="combined_user_city_country_feature", scope="session")
+def combined_user_city_country_feature_fixture(customer_feature, city_feature, country_feature):
+    """
+    Feature of event entity
+    """
+    feature = customer_feature.astype(str) + "_" + city_feature + "_" + country_feature
+    feature.name = "Complex Feature"
     return feature
 
 
@@ -189,8 +233,38 @@ def feature_list_with_parent_child_features_fixture(
             deployment.disable()
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.fixture(name="feature_list_with_complex_features", scope="module")
+def feature_list_with_complex_features_fixture(
+    customer_feature,
+    country_feature,
+    city_feature,
+    combined_user_city_country_feature,
+    mock_task_manager,
+):
+    _ = mock_task_manager
+
+    feature_list = FeatureList(
+        [
+            customer_feature,
+            country_feature,
+            city_feature,
+            combined_user_city_country_feature,
+        ],
+        name=f"{table_prefix}_complex_list",
+    )
+    feature_list.save(conflict_resolution="retrieve")
+    deployment = None
+    try:
+        deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
+        time.sleep(1)  # sleep 1s to invalidate cache
+        assert deployment.enabled is True
+        yield feature_list
+    finally:
+        if deployment:
+            deployment.disable()
+
+
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -203,7 +277,11 @@ def feature_list_with_parent_child_features_fixture(
     ],
 )
 def test_preview(
-    feature_list_deployment_with_child_entities, point_in_time, provided_entity, expected
+    feature_list_deployment_with_child_entities,
+    point_in_time,
+    provided_entity,
+    expected,
+    source_type,
 ):
     """
     Test serving parent features requiring multiple joins with different types of table
@@ -221,10 +299,12 @@ def test_preview(
     feature_list, deployment = feature_list_deployment_with_child_entities
     feature = feature_list["Country Name"]
     df = feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(df, source_type)
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
     # Preview feature list
     df = feature_list.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(df, source_type)
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
@@ -232,16 +312,29 @@ def test_preview(
 def observations_set_with_expected_features_fixture():
     observations_set_with_expected_features = pd.DataFrame(
         [
-            {"POINT_IN_TIME": "2022-01-01 10:00:00", "serving_event_id": 1, "Country Name": np.nan},
+            {
+                "POINT_IN_TIME": "2022-01-01 10:00:00",
+                "serving_event_id": 1,
+                "Event Customer ID": np.nan,
+                "Customer City": np.nan,
+                "Country Name": np.nan,
+                "Complex Feature": np.nan,
+            },
             {
                 "POINT_IN_TIME": "2022-04-16 10:00:00",
                 "serving_event_id": 1,
+                "Event Customer ID": 1000,
+                "Customer City": "paris",
                 "Country Name": "france",
+                "Complex Feature": "1000_paris_france",
             },
             {
                 "POINT_IN_TIME": "2022-05-01 10:00:00",
                 "serving_event_id": 1,
+                "Event Customer ID": 1000,
+                "Customer City": "tokyo",
                 "Country Name": "japan",
+                "Complex Feature": "1000_tokyo_japan",
             },
         ]
     )
@@ -254,7 +347,6 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -268,10 +360,12 @@ def test_historical_features(
     feature_list, deployment = feature_list_deployment_with_child_entities
     df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
+    assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -291,10 +385,66 @@ def test_historical_features_with_serving_names_mapping(
         serving_names_mapping={"serving_event_id": "new_serving_event_id"},
     )
     df = df.sort_values(["POINT_IN_TIME", "new_serving_event_id"])
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
+    assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_historical_features_with_complex_features(
+    feature_list_with_complex_features,
+    observations_set_with_expected_features,
+):
+    """
+    Test get historical features (feature list with both parent and child features)
+    """
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "serving_event_id"]
+    ]
+    feature_list = feature_list_with_complex_features
+    df = feature_list.compute_historical_features(observations_set)
+    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
+    assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
+
+
+@pytest.fixture(name="removed_user_city_relationship")
+def removed_user_city_relationship_fixture(customer_table, customer_entity):
+    """
+    Remove a relationship used by combined_user_city_country_feature (user -> city)
+    """
+    # Check relationship used by combined_user_city_country_feature exists (user -> city)
+    relationships_before = Relationship.list()
+    assert customer_table.name in relationships_before["relation_table"].to_list()
+
+    # Remove that relationship
+    customer_table["scd_cust_id"].as_entity(None)
+    relationships_after = Relationship.list()
+    assert customer_table.name not in relationships_after["relation_table"].to_list()
+
+    yield
+
+    # Add relationship back
+    customer_table["scd_cust_id"].as_entity(customer_entity.name)
+
+
+@pytest.mark.usefixtures("removed_user_city_relationship")
+def test_historical_features_with_complex_features__relationships_removed(
+    feature_list_with_complex_features,
+    observations_set_with_expected_features,
+    customer_table,
+):
+    """
+    Test get historical features still work even if parent child relationships are removed
+    """
+    test_historical_features_with_complex_features(
+        feature_list_with_complex_features,
+        observations_set_with_expected_features,
+    )
+
+
 def test_online_features(config, feature_list_deployment_with_child_entities):
     """
     Test requesting online features

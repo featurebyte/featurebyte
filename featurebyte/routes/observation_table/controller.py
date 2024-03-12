@@ -27,9 +27,9 @@ from featurebyte.schema.observation_table import (
 from featurebyte.schema.task import Task
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.use_case import UseCaseService
@@ -51,7 +51,7 @@ class ObservationTableController(
     def __init__(
         self,
         observation_table_service: ObservationTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
         historical_feature_table_service: HistoricalFeatureTableService,
@@ -60,7 +60,10 @@ class ObservationTableController(
         task_manager: TaskManager,
         use_case_service: UseCaseService,
     ):
-        super().__init__(service=observation_table_service, preview_service=preview_service)
+        super().__init__(
+            service=observation_table_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
+        )
         self.observation_table_service = observation_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
@@ -136,9 +139,10 @@ class ObservationTableController(
                 pd.read_csv, observation_set_file.file
             )
             # Convert point_in_time column to datetime
-            observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-                observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
-            )
+            if SpecialColumnName.POINT_IN_TIME in observation_set_dataframe.columns:
+                observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+                    observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
+                )
         else:
             file_format = UploadFileFormat.PARQUET
             observation_set_dataframe = try_read_as_dataframe(

@@ -26,7 +26,6 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     """
 
     input_column_name: str
-    feature_name: str
     entity_column: str
     serving_names: list[str]
     scd_parameters: Optional[SCDLookupParameters]
@@ -37,7 +36,14 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     def agg_result_name(self) -> str:
         if self.is_parent_lookup:
             return self.feature_name
-        return self.construct_agg_result_name(self.input_column_name)
+        args = self._get_additional_agg_result_name_params()
+        return self.construct_agg_result_name(self.input_column_name, *args)
+
+    def _get_additional_agg_result_name_params(self) -> list[Any]:
+        args = []
+        if self.scd_parameters is not None and self.scd_parameters.offset is not None:
+            args.append(self.scd_parameters.offset)
+        return args
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
         params: dict[str, Any] = {

@@ -85,6 +85,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             batch_feature_table_service=self.batch_feature_table_service,
             document_id=payload.document_id,
         )
+        await self._delete_table_at_data_warehouse(document)
         await self.batch_request_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
@@ -94,6 +95,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         document = await self.batch_feature_table_service.get_document(
             document_id=payload.document_id
         )
+        await self._delete_table_at_data_warehouse(document)
         await self.batch_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
@@ -104,6 +106,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         document = await validator.check_delete_observation_table(
             observation_table_id=payload.document_id,
         )
+        await self._delete_table_at_data_warehouse(document)
         await self.observation_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
@@ -113,6 +116,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         document = await self.historical_feature_table_service.get_document(
             document_id=payload.document_id
         )
+        await self._delete_table_at_data_warehouse(document)
         await self.historical_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
@@ -120,6 +124,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         self, payload: MaterializedTableDeleteTaskPayload
     ) -> MaterializedTableModel:
         document = await self.target_table_service.get_document(document_id=payload.document_id)
+        await self._delete_table_at_data_warehouse(document)
         await self.target_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
@@ -131,8 +136,23 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             table_service=self.table_service,
             document_id=payload.document_id,
         )
+        await self._delete_table_at_data_warehouse(document)
         await self.static_source_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
+
+    async def _delete_table_at_data_warehouse(self, document: MaterializedTableModel) -> None:
+        # delete table stored at data warehouse
+        feature_store = await self.feature_store_service.get_document(
+            document_id=document.location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+
+        await db_session.drop_table(
+            table_name=document.location.table_details.table_name,
+            schema_name=document.location.table_details.schema_name,  # type: ignore
+            database_name=document.location.table_details.database_name,  # type: ignore
+            is_view=document.is_view,
+        )
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
         # table to delete action mapping
@@ -146,16 +166,4 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         }
 
         # delete document stored at mongo
-        deleted_document = await table_to_delete_action[payload.collection_name](payload)
-
-        # delete table stored at data warehouse
-        feature_store = await self.feature_store_service.get_document(
-            document_id=deleted_document.location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
-        await db_session.drop_table(
-            table_name=deleted_document.location.table_details.table_name,
-            schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
-            database_name=deleted_document.location.table_details.database_name,  # type: ignore
-        )
-        return
+        await table_to_delete_action[payload.collection_name](payload)

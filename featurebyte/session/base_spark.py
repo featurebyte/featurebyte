@@ -17,7 +17,9 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -30,26 +32,19 @@ class BaseSparkSession(BaseSession, ABC):
 
     host: str
     http_path: str
-    featurebyte_catalog: str
-    featurebyte_schema: str
-    storage_spark_url: str
+    storage_path: str
+    catalog_name: str
+    schema_name: str
 
     region_name: Optional[str]
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
+        self.database_name = self.catalog_name
         self._initialize_storage()
 
     def initializer(self) -> BaseSchemaInitializer:
         return BaseSparkSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.featurebyte_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.featurebyte_catalog
 
     @abstractmethod
     def _initialize_storage(self) -> None:
@@ -172,17 +167,19 @@ class BaseSparkSession(BaseSession, ABC):
                 # create cached temp view
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
                 # cache table so we can remove the temp file
-                await self.execute_query(f"CACHE TABLE `{table_name}`")
+                await self.execute_query(
+                    f"CACHE TABLE `{table_name}` OPTIONS ('storageLevel' 'DISK_ONLY')"
+                )
             else:
                 # register a permanent table from uncached temp view
                 request_id = self.generate_session_unique_id()
                 temp_view_name = f"__TEMP_TABLE_{request_id}"
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
 
                 await self.execute_query(
@@ -265,6 +262,53 @@ class BaseSparkSession(BaseSession, ABC):
 
         return column_name_type_map
 
+    async def get_table_details(
+        self,
+        table_name: str,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> TableDetails:
+        schema = await self.execute_query_interactive(
+            f"DESCRIBE EXTENDED `{database_name}`.`{schema_name}`.`{table_name}`"
+        )
+        table_details_found = False
+        details = {}
+        if schema is not None:
+            for _, (column_name, var_info, _) in schema[
+                ["col_name", "data_type", "comment"]
+            ].iterrows():
+                # Only collect details after the table details section (# Detailed Table Information)
+                if column_name.startswith("# Detailed Table Information"):
+                    table_details_found = True
+                elif table_details_found:
+                    if column_name == "" or column_name.startswith("# "):
+                        break
+                    details[column_name] = var_info
+
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
+        return TableDetails(
+            details=details,
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
+        )
+
+    def _format_comment(self, comment: str) -> str:
+        return self.sql_to_string(make_literal_value(comment))
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
+        await self.execute_query(query)
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        formatted_table = self.format_quoted_identifier(table_name)
+        formatted_column = self.format_quoted_identifier(column_name)
+        query = f"ALTER TABLE {formatted_table} ALTER COLUMN {formatted_column} COMMENT {self._format_comment(comment)}"
+        await self.execute_query(query)
+
 
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
     """BaseSpark metadata initializer class"""
@@ -331,7 +375,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 11
+        return 13
 
     @property
     def sql_directory_name(self) -> str:
@@ -377,10 +421,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         str
         """
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        return f"{self.session.storage_spark_url}/{udf_jar_file_name}"  # type: ignore[attr-defined]
+        return f"{self.session.storage_path}/{udf_jar_file_name}"  # type: ignore[attr-defined]
 
     async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        create_schema_query = f"CREATE SCHEMA `{self.session.schema_name}`"
         await self.session.execute_query(create_schema_query)
 
     async def drop_object(self, object_type: str, name: str) -> None:
@@ -446,7 +490,6 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
                 "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
                 "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
             ),
-            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregateV1"),
             ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDeleteV1"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndexV1"),
             ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),
@@ -454,7 +497,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
                 "F_COUNT_DICT_COSINE_SIMILARITY",
                 "com.featurebyte.hive.udf.CountDictCosineSimilarityV1",
             ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV1"),
+            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV2"),
             ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",

@@ -24,11 +24,13 @@ def user():
 
 
 @pytest.fixture(name="schema_metadata_service")
-def schema_metadata_service_fixture(user, persistent):
+def schema_metadata_service_fixture(user, persistent, storage):
     """Schema metadata service fixture"""
     return SchemaMetadataService(
         user=user,
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
+        redis=Mock(),
     )

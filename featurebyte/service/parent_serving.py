@@ -3,17 +3,16 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import List, Optional
 
 from collections import OrderedDict
 
-from bson import ObjectId
-
-from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
-from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.parent_serving import EntityLookupStep, EntityLookupStepCreator
+from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
+from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.table import TableService
 
 
@@ -27,11 +26,13 @@ class ParentEntityLookupService:
         self,
         entity_service: EntityService,
         table_service: TableService,
+        relationship_info_service: RelationshipInfoService,
     ):
         self.entity_service = entity_service
         self.table_service = table_service
+        self.relationship_info_service = relationship_info_service
 
-    async def get_required_join_steps(self, entity_info: EntityInfo) -> list[JoinStep]:
+    async def get_required_join_steps(self, entity_info: EntityInfo) -> list[EntityLookupStep]:
         """
         Get the list of required JoinStep to lookup the missing entities in the request
 
@@ -42,146 +43,117 @@ class ParentEntityLookupService:
 
         Returns
         -------
-        list[JoinStep]
+        list[EntityLookupStep]
         """
 
         if entity_info.are_all_required_entities_provided():
             return []
 
+        # Use currently available relationships. Later to be updated to use frozen relationships
+        # stored in the feature list.
+        relationships_info = []
+        async for info in self.relationship_info_service.list_documents_iterator(
+            query_filter={},
+        ):
+            relationships_info.append(EntityRelationshipInfo(**info.dict(by_alias=True)))
+
+        lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+            available_entity_ids=list(entity_info.provided_entity_ids),
+            required_entity_ids=list(entity_info.required_entity_ids),
+            relationships_info=relationships_info,
+        )
+
         # all_join_steps is a mapping from parent serving name to JoinStep. Each parent serving name
         # should be looked up exactly once and then reused.
-        all_join_steps: dict[str, JoinStep] = OrderedDict()
-        current_available_entities = entity_info.provided_entity_ids
+        all_join_steps: dict[str, EntityLookupStep] = OrderedDict()
 
-        for entity in entity_info.missing_entities:
-            join_path = await self._get_entity_join_path(entity, current_available_entities)
-
-            # Extract list of JoinStep
-            join_steps = await self._get_join_steps_from_join_path(entity_info, join_path)
-            for join_step in join_steps:
-                if join_step.parent_serving_name not in all_join_steps:
-                    all_join_steps[join_step.parent_serving_name] = join_step
-
-            # All the entities in the path are now available
-            current_available_entities.update([entity.id for entity in join_path])
+        for join_step in await self.get_entity_lookup_steps(lookup_steps, entity_info):
+            if join_step.parent.serving_name not in all_join_steps:
+                all_join_steps[join_step.parent.serving_name] = join_step
 
         return list(all_join_steps.values())
 
-    async def _get_join_steps_from_join_path(
-        self, entity_info: EntityInfo, join_path: list[EntityModel]
-    ) -> list[JoinStep]:
+    async def get_entity_lookup_step_creator(
+        self, entity_relationships_info: List[EntityRelationshipInfo]
+    ) -> EntityLookupStepCreator:
         """
-        Convert a list of join path (list of EntityModel) into a list of JoinStep
+        Creates an instance of EntityLookupStepCreator
 
         Parameters
-        ----------
-        entity_info: EntityInfo
-            Entity information
-        join_path: list[EntityModel]
-            A list of related entities from a given entity to a target entity
+        ---------
+        entity_relationships_info: List[EntityRelationshipInfo]
+            List of EntityRelationshipInfo objects
 
         Returns
         -------
-        list[JoinStep]
+        EntityLookupStepCreator
         """
+        # Retrieve all required models in batch
+        all_entity_ids = set()
+        all_table_ids = set()
+        for info in entity_relationships_info:
+            all_entity_ids.update([info.entity_id, info.related_entity_id])
+            all_table_ids.add(info.relation_table_id)
+
+        entities_by_id = {
+            entity.id: entity
+            async for entity in self.entity_service.list_documents_iterator(
+                query_filter={"_id": {"$in": list(all_entity_ids)}}
+            )
+        }
+        tables_by_id = {
+            table.id: table
+            async for table in self.table_service.list_documents_iterator(
+                query_filter={"_id": {"$in": list(all_table_ids)}}
+            )
+        }
+
+        return EntityLookupStepCreator(
+            entity_relationships_info=entity_relationships_info,
+            entities_by_id=entities_by_id,
+            tables_by_id=tables_by_id,
+        )
+
+    async def get_entity_lookup_steps(
+        self,
+        entity_relationships_info: List[EntityRelationshipInfo],
+        entity_info: Optional[EntityInfo] = None,
+    ) -> list[EntityLookupStep]:
+        """
+        Convert a list of join path (list of EntityRelationshipInfo) into a list of EntityLookupStep
+
+        Parameters
+        ---------
+        entity_relationships_info: List[EntityRelationshipInfo]
+            List of EntityRelationshipInfo objects
+        entity_info: EntityInfo
+            Entity information
+
+        Returns
+        -------
+        list[EntityLookupStep]
+        """
+        entity_lookup_step_creator = await self.get_entity_lookup_step_creator(
+            entity_relationships_info
+        )
 
         join_steps = []
-
-        # Retrieve all entities in batch
-        all_entities = await self.entity_service.get_entities({entity.id for entity in join_path})
-        entities_by_id = {entity.id: entity for entity in all_entities}
-
-        for child_entity, parent_entity in zip(join_path, join_path[1:]):
-            child_entity_id = child_entity.id
-            parent_entity_id = parent_entity.id
-
-            # Retrieve the relationship for the table id defined in the relationship
-            parents = entities_by_id[child_entity_id].parents
-            relationship = next(parent for parent in parents if parent.id == parent_entity_id)
-
-            # Retrieve the join keys from the table
-            data = await self.table_service.get_document(relationship.table_id)
-            child_key, parent_key = None, None
-            for column_info in data.columns_info:
-                name = column_info.name
-                if column_info.entity_id == child_entity_id:
-                    child_key = name
-                if column_info.entity_id == parent_entity_id:
-                    parent_key = name
-
-            assert child_key is not None
-            assert parent_key is not None
-
-            # Converting table to dict by_alias to preserve the correct id when constructing JoinStep
-            join_step = JoinStep(
-                table=data.dict(by_alias=True),
-                parent_key=parent_key,
-                parent_serving_name=entity_info.get_effective_serving_name(parent_entity),
-                child_key=child_key,
-                child_serving_name=entity_info.get_effective_serving_name(child_entity),
+        for info in entity_relationships_info:
+            parent_entity = entity_lookup_step_creator.entities_by_id[info.related_entity_id]
+            child_entity = entity_lookup_step_creator.entities_by_id[info.entity_id]
+            join_step = entity_lookup_step_creator.get_entity_lookup_step(
+                info.id,
+                child_serving_name_override=(
+                    entity_info.get_effective_serving_name(child_entity)
+                    if entity_info is not None
+                    else None
+                ),
+                parent_serving_name_override=(
+                    entity_info.get_effective_serving_name(parent_entity)
+                    if entity_info is not None
+                    else None
+                ),
             )
             join_steps.append(join_step)
 
         return join_steps
-
-    async def _get_entity_join_path(
-        self,
-        required_entity: EntityModel,
-        available_entity_ids: set[ObjectId],
-    ) -> list[EntityModel]:
-        """
-        Get a join path given a required entity (missing but required for feature generation) and
-        a list of provided entities.
-
-        The result is a list of entities where each pair of adjacent entities are related to each
-        other. A child appears before its parent in this list.
-
-        Parameters
-        ----------
-        required_entity: EntityModel
-            Required entity
-        available_entity_ids: set[ObjectId]
-            List of currently available entities
-
-        Returns
-        -------
-        list[EntityModel]
-
-        Raises
-        ------
-        EntityJoinPathNotFoundError
-            If a join path cannot be identified
-        AmbiguousEntityRelationshipError
-            If no unique join path can be identified due to ambiguous relationships
-        """
-        pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
-        queued = set()
-        result = None
-
-        while pending:
-            (current_entity, current_path), pending = pending[0], pending[1:]
-            updated_path = [current_entity] + current_path
-
-            if current_entity.id in available_entity_ids and result is None:
-                # Do not exit early, continue to see if there are multiple join paths (can be
-                # detected when an entity is queued more than once)
-                result = updated_path
-
-            children_entities = await self.entity_service.get_children_entities(current_entity.id)
-            for child_entity in children_entities:
-                if child_entity.name not in queued:
-                    queued.add(child_entity.name)
-                    pending.append((child_entity, updated_path))
-                else:
-                    # There should be only one way to obtain the parent entity. Raise an error
-                    # otherwise.
-                    raise AmbiguousEntityRelationshipError(
-                        f"Cannot find an unambiguous join path for entity {required_entity.name}"
-                    )
-
-        if result is not None:
-            return result
-
-        raise EntityJoinPathNotFoundError(
-            f"Cannot find a join path for entity {required_entity.name}"
-        )

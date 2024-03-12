@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
+from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
@@ -13,8 +14,9 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
 )
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
     check_sdk_code_generation,
+    deploy_features_through_api,
 )
 
 
@@ -34,12 +36,12 @@ def test_point_in_time_request_column():
 
 
 def test_point_in_time_minus_timestamp_feature(
-    latest_event_timestamp_feature, update_fixtures, enable_feast_integration
+    latest_event_timestamp_feature, update_fixtures, enable_feast_integration, mock_deployment_flow
 ):
     """
     Test an on-demand feature involving point in time
     """
-    _ = enable_feast_integration
+    _ = enable_feast_integration, mock_deployment_flow
     new_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     new_feature.name = "Time Since Last Event (days)"
     assert isinstance(new_feature, Feature)
@@ -49,6 +51,8 @@ def test_point_in_time_minus_timestamp_feature(
     assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
 
     new_feature.save()
+    deploy_features_through_api([new_feature])
+
     loaded_feature = Feature.get(new_feature.name)
     check_sdk_code_generation(
         loaded_feature,
@@ -65,8 +69,8 @@ def test_point_in_time_minus_timestamp_feature(
     output = transformer.transform(
         target_node=new_feature_model.node,
         relationships_info=new_feature_model.relationships_info,
-        entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
+        feature_version=new_feature_model.version.to_str(),
     )
 
     # check decomposed graph structure
@@ -78,14 +82,17 @@ def test_point_in_time_minus_timestamp_feature(
     }
     graph_node_param = output.graph.nodes_map["graph_1"].parameters
     assert graph_node_param.type == GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-    assert graph_node_param.output_column_name == "__Time Since Last Event (days)__part0"
+    assert (
+        graph_node_param.output_column_name
+        == f"__Time Since Last Event (days)_{get_version()}__part0"
+    )
 
     # check output node hash
     check_decomposed_graph_output_node_hash(
         feature_model=new_feature_model,
         output=output,
     )
-    check_on_demand_feature_view_code_generation(feature_model=new_feature_model)
+    check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
 def test_request_column_non_point_in_time_blocked():
@@ -114,8 +121,8 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     output = transformer.transform(
         target_node=new_feature_model.node,
         relationships_info=new_feature_model.relationships_info,
-        entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
+        feature_version=new_feature_model.version.to_str(),
     )
 
     # check decomposed graph structure

@@ -98,6 +98,9 @@ async def test_get_document_by_name_and_version(
             entity_serving_names_service=app_container.entity_serving_names_service,
             entity_relationship_extractor_service=app_container.entity_relationship_extractor_service,
             derive_primary_entity_helper=app_container.derive_primary_entity_helper,
+            offline_store_info_initialization_service=app_container.offline_store_info_initialization_service,
+            storage=app_container.storage,
+            redis=app_container.redis,
         )
         await another_feat_service.get_document_by_name_and_version(
             name=feature.name, version=feature.version
@@ -137,7 +140,8 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
+            "tile_id_version": 2,
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,
@@ -149,10 +153,8 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
     expected_raw_groupby_params = expected_groupby_node["parameters"].copy()
     expected_raw_groupby_params["names"] = ["sum_30m", "sum_2h", "sum_1d"]
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
-    expected_raw_groupby_params["aggregation_id"] = "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
-    expected_raw_groupby_params[
-        "tile_id"
-    ] = "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
+    expected_raw_groupby_params["aggregation_id"] = "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+    expected_raw_groupby_params["tile_id"] = "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
     async for doc in feature_service.list_documents_as_dict_iterator(
         query_filter={"_id": feature.id}

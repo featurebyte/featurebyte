@@ -3,10 +3,14 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, List, Optional, Union
+from typing import Any, Generator, Iterator, List, Optional, Union
 
 import ast
 import functools
+import logging
+import os
+import time
+from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
@@ -400,11 +404,11 @@ def enforce_observation_set_row_order(function: Any) -> Any:
     def wrapper(self: Any, observation_set: Any, **kwargs: Any) -> pd.DataFrame:
         if isinstance(observation_set, pd.DataFrame):
             observation_set = observation_set.copy()
-            observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
+            observation_set[InternalName.DATAFRAME_ROW_INDEX] = range(observation_set.shape[0])
             result_dataframe = (
                 function(self, observation_set, **kwargs)
-                .sort_values(InternalName.ROW_INDEX)
-                .drop(InternalName.ROW_INDEX, axis=1)
+                .sort_values(InternalName.DATAFRAME_ROW_INDEX)
+                .drop(InternalName.DATAFRAME_ROW_INDEX, axis=1)
             )
             result_dataframe.index = observation_set.index
         else:
@@ -456,3 +460,47 @@ def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[s
     if isinstance(value, list):
         output = value
     return output
+
+
+def is_server_mode() -> bool:
+    """
+    Check if the code is running in server mode. Server mode is used when running the SDK code inside
+    featurebyte worker.
+
+    Returns
+    -------
+    bool
+        True if the code is running in server mode
+    """
+    sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
+    return sdk_execution_mode == "SERVER"
+
+
+@contextmanager
+def timer(
+    message: str, logger: logging.Logger, **logger_kwargs: Any
+) -> Generator[None, None, None]:
+    """
+    Timer context manager to measure execution time.
+
+    Parameters
+    ----------
+    message: str
+        Message to log before and after the execution time measurement.
+    logger: logging.Logger
+        Logger object to log the execution time message.
+    logger_kwargs: Any
+        Additional keyword arguments to pass to the logger.
+
+    Yields
+    ------
+    Generator[None, None, None]
+        A context manager that logs the execution time with the given message and logger.
+    """
+    start_time = time.time()
+    try:
+        yield
+    finally:
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(f"{message}: {duration} seconds", **logger_kwargs)

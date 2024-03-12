@@ -11,7 +11,6 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -20,7 +19,11 @@ from featurebyte.query_graph.node.base import (
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -228,7 +231,7 @@ class FilterNode(BaseNode):
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
                     name=col.name,
-                    columns=[col],
+                    columns=[col] + mask_operation_info.aggregations,
                     transform=self.transform_info,
                     node_name=self.name,
                     other_node_names=mask_operation_info.all_node_names,
@@ -244,6 +247,31 @@ class FilterNode(BaseNode):
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
 
+    def _derive_python_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        node_output_type: NodeOutputType,
+        node_output_category: NodeOutputCategory,
+        to_reindex: bool,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expr = var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=node_output_type,
+            node_output_category=node_output_category,
+            to_associate_with_node_name=False,
+        )
+        mask_name = var_name_expressions[1].as_input()
+        expr = filter_series_or_frame_expr(
+            series_or_frame_name=var_name, filter_expression=mask_name
+        )
+        if to_reindex:
+            expr = f"{expr}.reindex(index={var_name}.index)"
+        return statements, ExpressionStr(expr)
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -252,20 +280,46 @@ class FilterNode(BaseNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_python_code(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            to_reindex=False,  # no need to reindex for SDK code
+        )
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        output = self._derive_python_code(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_reindex=True,  # reindex for on-demand view code which is based on pandas
+        )
+        return output
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
             var_name_generator=var_name_generator,
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
             to_associate_with_node_name=False,
         )
         mask_name = var_name_expressions[1].as_input()
-        expr = filter_series_or_frame_expr(
-            series_or_frame_name=var_name, filter_expression=mask_name
-        )
-        return statements, ExpressionStr(expr)
+        return statements, ExpressionStr(f"{var_name} if {mask_name} else np.nan")
 
 
 class AssignColumnMixin:
@@ -634,6 +688,7 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     tile_id: Optional[str]
     aggregation_id: Optional[str]
+    tile_id_version: int = Field(default=1)
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):
@@ -785,13 +840,6 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         remapped_node.parameters.tile_id = None
         remapped_node.parameters.aggregation_id = None
         return remapped_node, column_name_remap
-
-    def extract_feature_job_setting(self) -> Optional[FeatureJobSetting]:
-        return FeatureJobSetting(
-            blind_spot=f"{self.parameters.blind_spot}s",
-            frequency=f"{self.parameters.frequency}s",
-            time_modulo_frequency=f"{self.parameters.time_modulo_frequency}s",
-        )
 
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
@@ -1879,6 +1927,15 @@ class AliasNode(BaseNode):
         # this is a no-op node for on-demand view, it should appear on the last node of the graph
         return [], node_inputs[0]
 
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # this is a no-op node for on-demand function, it should appear on the last node of the graph
+        return [], node_inputs[0]
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
@@ -1906,6 +1963,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         node_output_category: NodeOutputCategory,
+        mask_var_name_prefix: str = "mask",
     ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
@@ -1921,7 +1979,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             node_output_type=NodeOutputType.SERIES,
             node_output_category=node_output_category,
             to_associate_with_node_name=False,
-            variable_name_prefix="mask",
+            variable_name_prefix=mask_var_name_prefix,
         )
         statements.extend(mask_statements)
         return statements, var_name, mask_var_name
@@ -1999,4 +2057,31 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             series_or_frame_name=var_name, filter_expression=mask_var_name
         )
         statements.append((VariableNameStr(var_expr), value))
+        return statements, var_name
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, var_name, flag_var_name = self._prepare_var_name_and_mask_var_name(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_category=NodeOutputCategory.VIEW,
+            mask_var_name_prefix="flag",
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(node_inputs) == 3:
+            assert not isinstance(node_inputs[2], InfoDict)
+            value = node_inputs[2]
+
+        expr_statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=ExpressionStr(f"{value} if {flag_var_name} else {var_name}"),
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_associate_with_node_name=True,
+        )
+        statements.extend(expr_statements)
         return statements, var_name

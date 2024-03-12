@@ -20,6 +20,7 @@ from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
+    sql_to_string,
 )
 
 
@@ -163,7 +164,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return re.sub("(?<!')'(?!')", "''", query)
 
     @classmethod
-    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
+    def create_table_as(
+        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+    ) -> Expression:
         """
         Construct query to create a table using a select statement
 
@@ -173,6 +176,8 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             TableDetails of the table to be created
         select_expr: Select
             Select expression
+        replace: bool
+            Whether to replace the table if exists
 
         Returns
         -------
@@ -183,6 +188,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             this=expressions.Table(this=destination_expr),
             kind="TABLE",
             expression=select_expr,
+            replace=replace,
         )
 
     @classmethod
@@ -483,3 +489,19 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             this="HAVERSINE",
             expressions=[lat_expr_1, lon_expr_1, lat_expr_2, lon_expr_2],
         )
+
+    @classmethod
+    def alter_table_add_columns(
+        cls,
+        table: expressions.Table,
+        columns: List[expressions.ColumnDef],
+    ) -> str:
+        alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}"
+        first = sql_to_string(columns[0], source_type=cls.source_type)
+        rest = ",\n".join(
+            [sql_to_string(col, source_type=cls.source_type) for col in columns[1:]]
+        ).strip()
+        alter_table_sql += f" ADD COLUMN {first}"
+        if rest:
+            alter_table_sql += f",\n{rest}"
+        return alter_table_sql

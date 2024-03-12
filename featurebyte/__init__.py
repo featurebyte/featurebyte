@@ -31,6 +31,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.request_column import RequestColumn
@@ -65,10 +66,11 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
+from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -83,7 +85,12 @@ from featurebyte.query_graph.node.cleaning_operation import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
+from featurebyte.query_graph.node.schema import (
+    DatabricksDetails,
+    DatabricksUnityDetails,
+    SnowflakeDetails,
+    SparkDetails,
+)
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -124,6 +131,28 @@ def get_active_profile() -> Profile:
         If no profile is found in configuration file
     """
     conf = Configurations()
+
+    # check if we are in DataBricks environment and valid secrets are present create a profile automatically
+    db_utils = globals().get("dbutils")
+    if db_utils:
+        if len(conf.profiles) == 1 and conf.profiles[0].name == "local":
+            api_url = None
+            api_token = None
+            try:
+                api_url = db_utils.secrets.get(scope="featurebyte", key="api-url")
+                api_token = db_utils.secrets.get(scope="featurebyte", key="api-token")
+            except Exception:  # pylint: disable=broad-except
+                logger.info(
+                    "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation."
+                )
+            if api_url and api_token:
+                register_profile(
+                    profile_name="databricks-auto-profile",
+                    api_url=api_url,
+                    api_token=api_token,
+                    make_default=True,
+                )
+
     if not conf.profile:
         logger.error(
             "No profile found. Please update your configuration file at {conf.config_file_path}"
@@ -168,7 +197,9 @@ def use_profile(profile: str) -> None:
             pass
 
 
-def register_profile(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
+def register_profile(
+    profile_name: str, api_url: str, api_token: Optional[str] = None, make_default: bool = False
+) -> None:
     """
     Register a profile for connecting to a FeatureByte service in the configuration file.
     If the profile already exists, it will be updated.
@@ -181,6 +212,8 @@ def register_profile(profile_name: str, api_url: str, api_token: Optional[str] =
         Featurebye API Service URL
     api_token: str
         Tutorial api token
+    make_default: bool
+        Whether to make the profile default
 
     Examples
     --------
@@ -215,6 +248,12 @@ def register_profile(profile_name: str, api_url: str, api_token: Optional[str] =
         )
         loaded_config["profile"] = profiles
         updated_profile = True
+
+    if make_default:
+        default_profile = loaded_config.get("default_profile")
+        if default_profile != profile_name:
+            loaded_config["default_profile"] = profile_name
+            updated_profile = True
 
     # Write to config file if profile was updated
     if updated_profile:
@@ -273,9 +312,9 @@ def list_credentials(
 
     Examples
     --------
-    >>> fb.list_credentials()[["feature_store", "database_credential_type", "storage_credential_type"]]
-      feature_store database_credential_type storage_credential_type
-    0    playground                     None                    None
+    >>> fb.list_credentials()[["feature_store", "database_credential", "storage_credential"]]
+      feature_store database_credential storage_credential
+    0    playground                None               None
     """
     return Credential.list(include_id=include_id)
 
@@ -431,6 +470,7 @@ __all__ = [
     "Catalog",
     "ChangeView",
     "DatabricksDetails",
+    "DatabricksUnityDetails",
     "DataSource",
     "Deployment",
     "DimensionTable",
@@ -448,6 +488,7 @@ __all__ = [
     "ItemTable",
     "ItemView",
     "ObservationTable",
+    "OnlineStore",
     "Relationship",
     "RequestColumn",
     "SCDTable",
@@ -500,6 +541,9 @@ __all__ = [
     "list_deployments",
     "list_unsaved_features",
     "UDF",
+    # online store config
+    "RedisOnlineStoreDetails",
+    "MySQLOnlineStoreDetails",
 ]
 
 

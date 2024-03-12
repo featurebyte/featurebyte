@@ -2,7 +2,7 @@ FROM python:3.8-slim AS builder
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential curl libsasl2-dev libkrb5-dev git && \
+    apt-get install -y build-essential curl libsasl2-dev libkrb5-dev git pkg-config libmariadb-dev && \
     apt-get clean
 
 WORKDIR /app

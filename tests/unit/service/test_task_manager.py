@@ -28,7 +28,7 @@ def celery_fixture():
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id, persistent, celery, catalog):
+def task_manager_fixture(user_id, persistent, celery, catalog, storage):
     """Task manager fixture"""
     user = User(id=user_id)
     task_manager = TaskManager(
@@ -36,6 +36,8 @@ def task_manager_fixture(user_id, persistent, celery, catalog):
         persistent=persistent,
         celery=celery,
         catalog_id=catalog.id,
+        storage=storage,
+        redis=Mock(),
     )
     yield task_manager
 
@@ -62,6 +64,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "task_type": "io_task",
                 "priority": 0,
                 "is_scheduled_task": False,
+                "is_revocable": True,
             },
         )
 
@@ -192,3 +195,35 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     await task_manager.delete_periodic_task(periodic_task_id)
     with pytest.raises(DocumentNotFoundError):
         await task_manager.get_periodic_task(periodic_task_id)
+
+
+@pytest.mark.asyncio
+@pytest.mark.disable_task_manager_mock
+async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persistent, catalog):
+    """Test task manager service"""
+    payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
+    task_id = await task_manager.submit(payload=payload)
+
+    # insert task into db manually since we are mocking celery
+    task = Task(
+        _id=task_id,
+        status=TaskStatus.STARTED,
+        result="",
+        children=[],
+        date_done=datetime.datetime.utcnow(),
+        name=LongRunningPayload.command,
+        args=[],
+        kwargs=celery.send_task.call_args.kwargs["kwargs"],
+        worker="worker",
+        retries=0,
+        queue="default",
+    )
+    document = task.dict(by_alias=True)
+    document["_id"] = str(document["_id"])
+    await persistent._db[Task.collection_name()].insert_one(document)
+
+    # revoke task
+    await task_manager.revoke_task(task_id)
+
+    # check celery task revoke
+    celery.control.revoke.assert_called_with(task_id, reply=True, terminate=True, signal="SIGTERM")

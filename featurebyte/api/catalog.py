@@ -28,6 +28,7 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.savable_api_object import SavableApiObject
@@ -43,7 +44,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate, CatalogUpdate
 
 logger = get_logger(__name__)
 
@@ -79,6 +80,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     internal_default_feature_store_ids: List[PydanticObjectId] = Field(
         alias="default_feature_store_ids"
     )
+    internal_online_store_id: Optional[PydanticObjectId] = Field(
+        default=None, alias="online_store_id"
+    )
 
     @property
     def default_feature_store_ids(self) -> List[PydanticObjectId]:
@@ -95,6 +99,38 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             return self.cached_model.default_feature_store_ids
         except RecordRetrievalException:
             return self.internal_default_feature_store_ids
+
+    @property
+    def online_store_id(self) -> Optional[PydanticObjectId]:
+        """
+        Returns the online store ID associated with the catalog.
+
+        Returns
+        -------
+        Optional[PydanticObjectId]
+        """
+        try:
+            return self.cached_model.online_store_id  # pylint: disable=no-member
+        except RecordRetrievalException:
+            return self.internal_online_store_id
+
+    @property
+    def online_store(self) -> OnlineStore:
+        """
+        Returns the online store associated with the catalog.
+
+        Returns
+        -------
+        OnlineStore
+
+        Raises
+        ------
+        ValueError
+            If the catalog does not have an associated online store.
+        """
+        if not self.online_store_id:
+            raise ValueError("Catalog does not have an associated online store.")
+        return OnlineStore.get_by_id(self.online_store_id)  # pylint: disable=no-member
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.dict(by_alias=True))
@@ -168,6 +204,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         cls,
         name: str,
         feature_store_name: str,
+        online_store_name: Optional[str] = None,
     ) -> Catalog:
         """
         Creates a Catalog object that allows team members to easily add, search, retrieve, and reuse tables,
@@ -184,6 +221,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             Name of catalog to create.
         feature_store_name: str
             Name of feature store to associate with the catalog that we are creating.
+        online_store_name: Optional[str]
+            Name of online store to associate with the catalog that we are creating.
 
         Returns
         -------
@@ -193,10 +232,16 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name", "mysql_online_store")  # doctest: +SKIP
         """
         feature_store = FeatureStore.get(feature_store_name)
-        catalog = cls(name=name, default_feature_store_ids=[feature_store.id])
+        if online_store_name:
+            online_store_id = OnlineStore.get(online_store_name).id
+        else:
+            online_store_id = None
+        catalog = cls(
+            name=name, default_feature_store_ids=[feature_store.id], online_store_id=online_store_id
+        )
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
@@ -206,6 +251,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         cls,
         name: str,
         feature_store_name: str,
+        online_store_name: Optional[str] = None,
     ) -> Catalog:
         """
         Create and return an instance of a catalog. If a catalog with the same name already exists,
@@ -217,6 +263,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             Name of catalog to get or create.
         feature_store_name: str
             Name of feature store to associate with the catalog that we are creating.
+        online_store_name: Optional[str]
+            Name of online store to associate with the catalog that we are creating.
 
         Returns
         -------
@@ -240,7 +288,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             activate_catalog(catalog.id)
             return catalog
         except RecordRetrievalException:
-            return Catalog.create(name=name, feature_store_name=feature_store_name)
+            return Catalog.create(
+                name=name,
+                feature_store_name=feature_store_name,
+                online_store_name=online_store_name,
+            )
 
     @classmethod
     def get_active(cls) -> Optional[Catalog]:
@@ -293,6 +345,36 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         'grocery'
         """
         self.update(update_payload={"name": name}, allow_update_local=True)
+
+    @typechecked
+    def update_online_store(self, online_store_name: Optional[str]) -> None:
+        """
+        Updates online store for the catalog.
+
+        Parameters
+        ----------
+        online_store_name: Optional[str]
+            Name of online store to use, or None to disable online serving for the catalog.
+
+        Examples
+        --------
+        >>> catalog = fb.Catalog.get_active()
+        >>> catalog.update_online_store("mysql_online_store")
+        >>> catalog.online_store.name
+        'mysql_online_store'
+        """
+        assert self.saved, "Catalog must be saved before updating online store"
+        if not online_store_name:
+            online_store_id = None
+        else:
+            online_store = OnlineStore.get(online_store_name)
+            online_store_id = str(online_store.id)
+        self.patch_async_task(
+            route=f"{self._route}/{self.id}/online_store_async",
+            payload=CatalogOnlineStoreUpdate(online_store_id=online_store_id).json_dict(),
+        )
+        # call get to update the object cache
+        self._get_by_id(self.id, use_cache=False)
 
     @property
     def name_history(self) -> List[Dict[str, Any]]:
@@ -693,6 +775,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> feature_stores = catalog.list_feature_stores()
         """
         return FeatureStore.list(include_id=include_id)
+
+    @update_and_reset_catalog
+    def list_online_stores(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved online stores.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of online stores
+
+        Examples
+        --------
+        List saved online stores.
+
+        >>> online_stores = catalog.list_online_stores()
+        """
+        return OnlineStore.list(include_id=include_id)
 
     @update_and_reset_catalog
     def list_entities(self, include_id: Optional[bool] = True) -> pd.DataFrame:
@@ -1186,6 +1291,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> feature_store = catalog.get_feature_store("playground")
         """
         return FeatureStore.get(name=name)
+
+    @update_and_reset_catalog
+    def get_online_store(self, name: str) -> OnlineStore:
+        """
+        Get online store by name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the online store to retrieve.
+
+        Returns
+        -------
+        OnlineStore
+            Online store object.
+
+        Examples
+        --------
+        Get a saved online store.
+
+        >>> online_store = catalog.get_online_store("mysql_online_store")
+        """
+        return OnlineStore.get(name=name)
 
     @update_and_reset_catalog
     def get_entity(self, name: str) -> Entity:

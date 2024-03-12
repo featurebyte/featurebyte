@@ -9,7 +9,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
@@ -115,7 +115,7 @@ class SessionValidatorService:
             )
         session_manager = SessionManager(credentials={feature_store_name: credential})
         return await session_manager.get_session_with_params(
-            feature_store_name, session_type, details
+            feature_store_name, session_type, details, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
 
     async def validate_feature_store_exists(

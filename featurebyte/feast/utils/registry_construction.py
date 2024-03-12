@@ -2,11 +2,14 @@
 This module contains classes for constructing feast registry
 """
 # pylint: disable=no-name-in-module
-from typing import Dict, List, Optional, Tuple, cast
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import tempfile
 from collections import defaultdict
 from datetime import timedelta
+from unittest.mock import patch
 
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
@@ -17,25 +20,92 @@ from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
-from feast.inference import update_feature_views_with_inferred_features_and_entities
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
+from feast.repo_contents import RepoContents
+from feast.repo_operations import apply_total_with_repo_instance
 
-from featurebyte.common.env_util import add_sys_path
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.feast.model.feature_store import (
     FeastDatabaseDetails,
     FeatureStoreDetailsWithFeastConfiguration,
 )
+from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
+from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_feature_tables
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreEntityInfo,
+    OfflineStoreIngestQueryGraph,
+    get_time_aggregate_ttl_in_secs,
+)
+from featurebyte.models.online_store import OnlineStoreModel
+from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.sql.entity import get_combined_serving_names
+
+
+class EntityFeatureChecker:
+    """
+    Class for checking the consistency and completeness of entities and features.
+    """
+
+    @staticmethod
+    def check_missing_entities(entities: List[EntityModel], features: List[FeatureModel]) -> None:
+        """
+        Checks if all entities have been provided
+
+        Parameters
+        ----------
+        entities: List[EntityModel]
+            List of featurebyte entity models
+        features: List[FeatureModel]
+            List of featurebyte feature models
+
+        Raises
+        ------
+        ValueError
+            If missing entities
+        """
+        primary_entity_ids = set()
+        for feature in features:
+            primary_entity_ids.update(feature.primary_entity_ids)
+
+        provided_entity_ids = set(entity.id for entity in entities)
+        if not primary_entity_ids.issubset(provided_entity_ids):
+            raise ValueError(f"Missing entities: {primary_entity_ids - provided_entity_ids}")
+
+    @staticmethod
+    def check_missing_features(
+        features: List[FeatureModel], feature_lists: List[FeatureListModel]
+    ) -> None:
+        """
+        Checks if all features have been provided
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of featurebyte feature models
+        feature_lists: List[FeatureListModel]
+            List of featurebyte feature list models
+
+        Raises
+        ------
+        ValueError
+            If missing features
+        """
+        feature_ids = set()
+        for feature_list in feature_lists:
+            feature_ids.update(feature_list.feature_ids)
+
+        provided_feature_ids = set(feature.id for feature in features)
+        if not feature_ids.issubset(provided_feature_ids):
+            raise ValueError(f"Missing features: {feature_ids - provided_feature_ids}")
 
 
 class OfflineStoreTable(FeatureByteBaseModel):
@@ -47,11 +117,64 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    primary_entity_ids: List[PydanticObjectId]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
-    ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
-    primary_entity_serving_names: List[str]
+    output_column_names: List[str]
+    output_dtypes: List[DBVarType]
+    primary_entity_info: List[OfflineStoreEntityInfo]
+
+    @property
+    def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
+        """
+        Get primary entity ids
+
+        Returns
+        -------
+        Tuple[PydanticObjectId, ...]
+            Primary entity ids
+        """
+        return tuple(entity_info.id for entity_info in self.primary_entity_info)
+
+    @classmethod
+    def create(
+        cls,
+        table_name: str,
+        ingest_query_graphs: List[OfflineStoreIngestQueryGraph],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+    ) -> OfflineStoreTable:
+        """
+        Create offline store table
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+        ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
+            List of offline store ingest query graphs
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Mapping from entity id to serving name
+
+        Returns
+        -------
+        OfflineStoreTable
+            Offline store table
+        """
+        assert len(ingest_query_graphs) > 0
+        first_ingest_query_graph = ingest_query_graphs[0]
+        return cls(
+            table_name=table_name,
+            feature_job_setting=first_ingest_query_graph.feature_job_setting,
+            has_ttl=first_ingest_query_graph.has_ttl,
+            output_column_names=[
+                ingest_query_graph.output_column_name for ingest_query_graph in ingest_query_graphs
+            ],
+            output_dtypes=[
+                ingest_query_graph.output_dtype for ingest_query_graph in ingest_query_graphs
+            ],
+            primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
+                entity_id_to_serving_name=entity_id_to_serving_name
+            ),
+        )
 
     def create_feast_entity(self) -> FeastEntity:
         """
@@ -64,10 +187,16 @@ class OfflineStoreTable(FeatureByteBaseModel):
         """
         # FIXME: We likely need to set the value type based on the dtype of the primary entity
         value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
-        assert len(self.primary_entity_serving_names) > 0
+        assert len(self.primary_entity_info) > 0
+        serving_names = [entity_info.name for entity_info in self.primary_entity_info]
+        if len(serving_names) == 1:
+            join_keys = serving_names
+        else:
+            # For now, an entity may only have a single join key in feast
+            join_keys = [get_combined_serving_names(serving_names)]
         entity = FeastEntity(
-            name=" x ".join(self.primary_entity_serving_names),
-            join_keys=self.primary_entity_serving_names,
+            name=" x ".join(serving_names),
+            join_keys=join_keys,
             value_type=value_type,
         )
         return entity  # type: ignore[no-any-return]
@@ -121,16 +250,24 @@ class OfflineStoreTable(FeatureByteBaseModel):
         FeastFeatureView
         """
         time_to_live = None
+        schema = []
         if self.has_ttl:
             assert self.feature_job_setting is not None
-            time_to_live = timedelta(seconds=2 * self.feature_job_setting.frequency_seconds)
-
-        schema = []
-        for ingest_query_graph in self.ingest_query_graphs:
+            time_to_live = timedelta(
+                seconds=get_time_aggregate_ttl_in_secs(self.feature_job_setting)
+            )
             schema.append(
                 FeastField(
-                    name=ingest_query_graph.output_column_name,
-                    dtype=to_feast_primitive_type(DBVarType(ingest_query_graph.output_dtype)),
+                    name=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                    dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                )
+            )
+
+        for output_column_name, output_dtype in zip(self.output_column_names, self.output_dtypes):
+            schema.append(
+                FeastField(
+                    name=output_column_name,
+                    dtype=to_feast_primitive_type(DBVarType(output_dtype)),
                 )
             )
 
@@ -145,64 +282,18 @@ class OfflineStoreTable(FeatureByteBaseModel):
         return feature_view  # type: ignore[no-any-return]
 
 
-class FeastRegistryConstructor:
-    """Generates a feast RegistryProto from featurebyte asset models"""
-
-    @staticmethod
-    def _check_missing_entities(entities: List[EntityModel], features: List[FeatureModel]) -> None:
-        """
-        Checks if all entities have been provided
-
-        Parameters
-        ----------
-        entities: List[EntityModel]
-            List of featurebyte entity models
-        features: List[FeatureModel]
-            List of featurebyte feature models
-
-        Raises
-        ------
-        ValueError
-            If missing entities
-        """
-        primary_entity_ids = set()
-        for feature in features:
-            primary_entity_ids.update(feature.primary_entity_ids)
-
-        provided_entity_ids = set(entity.id for entity in entities)
-        if not primary_entity_ids.issubset(provided_entity_ids):
-            raise ValueError(f"Missing entities: {primary_entity_ids - provided_entity_ids}")
-
-    @staticmethod
-    def _check_missing_features(
-        features: List[FeatureModel], feature_lists: List[FeatureListModel]
-    ) -> None:
-        """
-        Checks if all features have been provided
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of featurebyte feature models
-        feature_lists: List[FeatureListModel]
-            List of featurebyte feature list models
-
-        Raises
-        ------
-        ValueError
-            If missing features
-        """
-        feature_ids = set()
-        for feature_list in feature_lists:
-            feature_ids.update(feature_list.feature_ids)
-
-        provided_feature_ids = set(feature.id for feature in features)
-        if not feature_ids.issubset(provided_feature_ids):
-            raise ValueError(f"Missing features: {feature_ids - provided_feature_ids}")
+class OfflineStoreTableBuilder:
+    """
+    Class for building Offline Store Tables.
+    """
 
     @staticmethod
     def create_offline_store_tables(
-        features: List[FeatureModel], entity_id_to_serving_name: Dict[PydanticObjectId, str]
+        features: List[FeatureModel],
+        feature_lists: List[FeatureListModel],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        feature_store: FeatureStoreModel,
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
     ) -> List[OfflineStoreTable]:
         """
         Group each offline store ingest query graphs of features into list of offline store tables
@@ -211,8 +302,14 @@ class FeastRegistryConstructor:
         ----------
         features: List[FeatureModel]
             List of featurebyte feature models
+        feature_lists: List[FeatureListModel]
+            List of feature lists
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Mapping from entity id to serving name
+        feature_store: FeatureStoreModel
+            Feature store model
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Entity lookup steps mapping derived from feature lists
 
         Returns
         -------
@@ -230,26 +327,86 @@ class FeastRegistryConstructor:
 
         offline_store_tables = []
         for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
-            assert len(ingest_query_graphs) > 0
-            primary_entity_ids = ingest_query_graphs[0].primary_entity_ids
-            feature_job_setting = ingest_query_graphs[0].feature_job_setting
-            has_ttl = ingest_query_graphs[0].has_ttl
-            offline_store_table = OfflineStoreTable(
+            offline_store_table = OfflineStoreTable.create(
                 table_name=table_name,
-                primary_entity_ids=primary_entity_ids,
-                feature_job_setting=feature_job_setting,
                 ingest_query_graphs=ingest_query_graphs,
-                has_ttl=has_ttl,
-                primary_entity_serving_names=[
-                    entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids
-                ],
+                entity_id_to_serving_name=entity_id_to_serving_name,
             )
             offline_store_tables.append(offline_store_table)
-        return offline_store_tables
 
-    @classmethod
+        offline_store_tables_for_entity_lookup = (
+            OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
+                feature_lists=feature_lists,
+                feature_store=feature_store,
+                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            )
+        )
+
+        return offline_store_tables + offline_store_tables_for_entity_lookup
+
+    @staticmethod
+    def create_offline_store_tables_for_entity_lookup(
+        feature_lists: List[FeatureListModel],
+        feature_store: FeatureStoreModel,
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+    ) -> List[OfflineStoreTable]:
+        """
+        Create offline store tables for entity lookup purpose
+
+        Parameters
+        ----------
+        feature_lists: List[FeatureListModel]
+            List of feature lists
+        feature_store: FeatureStoreModel
+            Feature store model
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Entity lookup steps mapping derived from feature lists
+
+        Returns
+        -------
+        List[OfflineStoreTable]
+        """
+
+        lookup_tables = get_entity_lookup_feature_tables(
+            feature_lists=feature_lists,
+            feature_store=feature_store,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+        )
+        if lookup_tables is None:
+            return []
+
+        entity_lookup_feature_tables = []
+        for lookup_table in lookup_tables:
+            entity_lookup_feature_tables.append(
+                OfflineStoreTable(
+                    table_name=lookup_table.name,
+                    feature_job_setting=lookup_table.feature_job_setting,
+                    has_ttl=lookup_table.has_ttl,
+                    output_column_names=lookup_table.output_column_names,
+                    output_dtypes=lookup_table.output_dtypes,
+                    primary_entity_info=[
+                        OfflineStoreEntityInfo(
+                            id=entity_id,
+                            name=serving_name,
+                            dtype=DBVarType.VARCHAR,
+                        )
+                        for (entity_id, serving_name) in zip(
+                            lookup_table.primary_entity_ids, lookup_table.serving_names
+                        )
+                    ],
+                )
+            )
+        return entity_lookup_feature_tables
+
+
+class FeastAssetCreator:
+    """
+    Class for creating various Feast assets like Data Source, Feature View, etc.
+    """
+
+    @staticmethod
     def create_feast_name_to_request_source(
-        cls, features: List[FeatureModel]
+        features: List[FeatureModel],
     ) -> Dict[str, FeastRequestSource]:
         """
         Create feast request source based on the features
@@ -280,15 +437,27 @@ class FeastRegistryConstructor:
                             )
                         ],
                     )
+
+            if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
+                name_to_feast_request_source[
+                    SpecialColumnName.POINT_IN_TIME.value
+                ] = FeastRequestSource(
+                    name=SpecialColumnName.POINT_IN_TIME.value,
+                    schema=[
+                        FeastField(
+                            name=SpecialColumnName.POINT_IN_TIME.value,
+                            dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                        )
+                    ],
+                )
+
         return name_to_feast_request_source
 
-    @classmethod
+    @staticmethod
     def create_feast_on_demand_feature_views(
-        cls,
         features: List[FeatureModel],
         name_to_feast_feature_view: Dict[str, FeastFeatureView],
         name_to_feast_request_source: Dict[str, FeastRequestSource],
-        on_demand_feature_view_dir: str,
     ) -> List[FeastOnDemandFeatureView]:
         """
         Create feast on demand feature views based on the features
@@ -301,8 +470,6 @@ class FeastRegistryConstructor:
             Mapping from feast feature view name to feast feature view
         name_to_feast_request_source: Dict[str, FeastRequestSource]
             Mapping from feast request source name to feast request source
-        on_demand_feature_view_dir: str
-            Directory to store the on demand feature view
 
         Returns
         -------
@@ -311,21 +478,21 @@ class FeastRegistryConstructor:
         """
         on_demand_feature_views: List[FeastOnDemandFeatureView] = []
         for feature in features:
-            if feature.offline_store_info is None or not feature.offline_store_info.is_decomposed:
-                continue
+            if not feature.offline_store_info.is_decomposed:
+                assert feature.offline_store_info.metadata is not None
+                if not feature.offline_store_info.metadata.has_ttl:
+                    continue
 
             on_demand_feature_view = OnDemandFeatureViewConstructor.create(
                 feature_model=feature,
                 name_to_feast_feature_view=name_to_feast_feature_view,
                 name_to_feast_request_source=name_to_feast_request_source,
-                on_demand_feature_view_dir=on_demand_feature_view_dir,
             )
             on_demand_feature_views.append(on_demand_feature_view)
         return on_demand_feature_views
 
-    @classmethod
+    @staticmethod
     def create_feast_feature_services(
-        cls,
         feature_lists: List[FeatureListModel],
         features: List[FeatureModel],
         feast_feature_views: List[FeastFeatureView],
@@ -349,49 +516,71 @@ class FeastRegistryConstructor:
         -------
         List[FeastFeatureService]
             List of feast feature services
-
-        Raises
-        ------
-        ValueError
-            If missing features
         """
-        feature_id_to_name = {feature.id: feature.name for feature in features}
+        feature_id_to_name_version = {feature.id: feature.versioned_name for feature in features}
         feature_services = []
         for feature_list in feature_lists:
-            feature_names = set(
-                feature_id_to_name[feature_id] for feature_id in feature_list.feature_ids
+            feature_name_versions = set(
+                feature_id_to_name_version[feature_id] for feature_id in feature_list.feature_ids
             )
 
             # construct input for feature service
             input_feature_views = []
-            found_feature_names = set()
-            for feature_view in feast_feature_views + feast_on_demand_feature_views:
+            found_feature_name_versions = set()
+            for feature_view in feast_on_demand_feature_views + feast_feature_views:
                 feast_feat_names = [
-                    feat.name for feat in feature_view.features if feat.name in feature_names
+                    feat.name
+                    for feat in feature_view.features
+                    if feat.name in feature_name_versions
+                    and feat.name not in found_feature_name_versions
                 ]
                 if feast_feat_names:
                     input_feature_views.append(feature_view[feast_feat_names])
-                    found_feature_names.update(feast_feat_names)
-
-            # check if all feature names are found
-            if found_feature_names != feature_names:
-                # If the feature list contains features that require post-processing or request column,
-                # the feature name will not be found in the feature view. This will be fixed once we support
-                # ondemand feature view.
-                raise ValueError(f"Missing features: {feature_names - found_feature_names}")
+                    found_feature_name_versions.update(feast_feat_names)
 
             # construct feature service
             feature_service = FeastFeatureService(
-                name=feature_list.name,
+                name=feature_list.versioned_name,
                 features=input_feature_views,
             )
             feature_services.append(feature_service)
         return feature_services
 
+
+class FeastRegistryBuilder:
+    """
+    Class for constructing the Feast Registry.
+    """
+
+    @staticmethod
+    def _create_repo_config(
+        project_name: str, online_store: Optional[OnlineStoreModel], registry_file_path: str
+    ) -> RepoConfig:
+        online_store_config: Optional[Dict[str, Any]] = None
+        if online_store:
+            online_store_config = (
+                get_feast_online_store_details(
+                    online_store_details=online_store.details,
+                )
+                .to_feast_online_store_config()
+                .dict(by_alias=True)
+            )
+        return RepoConfig(
+            project=project_name,
+            provider="local",
+            registry=RegistryConfig(
+                registry_type="file",
+                path=registry_file_path,
+                cache_ttl_seconds=0,
+            ),
+            online_store=online_store_config,
+        )
+
     @classmethod
     def _create_feast_registry_proto(
         cls,
         project_name: Optional[str],
+        online_store: Optional[OnlineStoreModel],
         feast_data_sources: List[FeastDataSource],
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
         feast_request_sources: List[FeastRequestSource],
@@ -401,44 +590,57 @@ class FeastRegistryConstructor:
     ) -> RegistryProto:
         project_name = project_name or "featurebyte_project"
         with tempfile.NamedTemporaryFile() as temp_file:
-            repo_config = RepoConfig(
-                project=project_name,
-                provider="local",
-                registry=RegistryConfig(
-                    registry_type="file",
-                    path=temp_file.name,
-                    cache_ttl_seconds=0,
-                ),
-            )
-
-            # FIXME: Temporarily calling this inference function here to populate the entity_columns
-            #  field in feature views which is needed by feast materialize. This can be removed once
-            #  we call feast apply code path directly.
-            update_feature_views_with_inferred_features_and_entities(
-                feast_feature_views, list(primary_entity_ids_to_feast_entity.values()), repo_config
+            repo_config = cls._create_repo_config(
+                project_name=project_name,
+                online_store=online_store,
+                registry_file_path=temp_file.name,
             )
             feature_store = FeastFeatureStore(config=repo_config)
             registry = feature_store.registry
+
+            # prepare repo content by adding all feast assets
+            repo_content = RepoContents(
+                data_sources=[],
+                entities=[],
+                feature_views=[],
+                feature_services=[],
+                on_demand_feature_views=[],
+                stream_feature_views=[],
+                request_feature_views=[],
+            )
             for data_source in feast_data_sources + feast_request_sources:
-                registry.apply_data_source(data_source=data_source, project=project_name)
+                repo_content.data_sources.append(data_source)
             for entity in primary_entity_ids_to_feast_entity.values():
-                registry.apply_entity(entity=entity, project=project_name)
-            for feature_view in feast_feature_views + feast_on_demand_feature_views:
-                registry.apply_feature_view(feature_view=feature_view, project=project_name)
+                repo_content.entities.append(entity)
+            for feature_view in feast_feature_views:
+                repo_content.feature_views.append(feature_view)
+            for on_demand_feature_view in feast_on_demand_feature_views:
+                repo_content.on_demand_feature_views.append(on_demand_feature_view)
             for feature_service in feast_feature_services:
-                registry.apply_feature_service(
-                    feature_service=feature_service, project=project_name
+                repo_content.feature_services.append(feature_service)
+
+            with patch("feast.on_demand_feature_view.OnDemandFeatureView.infer_features"):
+                # FIXME: (DEV-2946) patch to avoid calling infer_features() which may cause error
+                #  when the input to the on-demand feature view contains types requiring json decoding
+                #  (COUNT_DICT or ARRAY types) this simulates feast apply command
+                apply_total_with_repo_instance(
+                    store=feature_store,
+                    project=project_name,
+                    registry=registry,
+                    repo=repo_content,
+                    skip_source_validation=True,
                 )
-            registry_proto = registry.proto()
-            return cast(RegistryProto, registry_proto)
+                return cast(RegistryProto, registry.proto())
 
     @classmethod
-    def create(
+    def create(  # pylint: disable=too-many-locals
         cls,
         feature_store: FeatureStoreModel,
+        online_store: Optional[OnlineStoreModel],
         entities: List[EntityModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
         project_name: Optional[str] = None,
     ) -> RegistryProto:
         """
@@ -448,12 +650,16 @@ class FeastRegistryConstructor:
         ----------
         feature_store: FeatureStoreModel
             Feature store model
+        online_store: Optional[OnlineStoreModel]
+            Online store model
         entities: List[EntityModel]
             List of featurebyte entity models
         features: List[FeatureModel]
             List of featurebyte feature models
         feature_lists: List[FeatureListModel]
             List of featurebyte feature list models
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
+            Mapping from relationships info id to EntityLookupStep objects
         project_name: Optional[str]
             Project name
 
@@ -461,12 +667,14 @@ class FeastRegistryConstructor:
         -------
         RegistryProto
         """
-        cls._check_missing_entities(entities, features)
-        cls._check_missing_features(features, feature_lists)
-
-        offline_store_tables = cls.create_offline_store_tables(
+        EntityFeatureChecker.check_missing_entities(entities, features)
+        EntityFeatureChecker.check_missing_features(features, feature_lists)
+        offline_store_tables = OfflineStoreTableBuilder.create_offline_store_tables(
             features=features,
+            feature_lists=feature_lists,
             entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
+            feature_store=feature_store,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
@@ -475,7 +683,7 @@ class FeastRegistryConstructor:
             **feature_store.get_feature_store_details().dict()
         )
         for offline_store_table in offline_store_tables:
-            entity_key = tuple(offline_store_table.primary_entity_ids)
+            entity_key = offline_store_table.primary_entity_ids
             if len(entity_key) > 0:
                 feast_entity = primary_entity_ids_to_feast_entity.get(
                     entity_key,
@@ -499,29 +707,28 @@ class FeastRegistryConstructor:
             )
             name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
 
-        name_to_feast_request_source = cls.create_feast_name_to_request_source(features)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with add_sys_path(temp_dir):
-                on_demand_feature_views = cls.create_feast_on_demand_feature_views(
-                    features=features,
-                    name_to_feast_feature_view=name_to_feast_feature_view,
-                    name_to_feast_request_source=name_to_feast_request_source,
-                    on_demand_feature_view_dir=temp_dir,
-                )
-                feast_feature_services = cls.create_feast_feature_services(
-                    feature_lists=feature_lists,
-                    features=features,
-                    feast_feature_views=list(name_to_feast_feature_view.values()),
-                    feast_on_demand_feature_views=on_demand_feature_views,
-                )
+        name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(
+            features
+        )
+        on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
+            features=features,
+            name_to_feast_feature_view=name_to_feast_feature_view,
+            name_to_feast_request_source=name_to_feast_request_source,
+        )
+        feast_feature_services = FeastAssetCreator.create_feast_feature_services(
+            feature_lists=feature_lists,
+            features=features,
+            feast_feature_views=list(name_to_feast_feature_view.values()),
+            feast_on_demand_feature_views=on_demand_feature_views,
+        )
 
-                # construct feast registry by constructing a feast feature store and extracting the registry
-                return cls._create_feast_registry_proto(
-                    project_name=project_name,
-                    feast_data_sources=feast_data_sources,
-                    primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
-                    feast_request_sources=list(name_to_feast_request_source.values()),
-                    feast_feature_views=list(name_to_feast_feature_view.values()),
-                    feast_on_demand_feature_views=on_demand_feature_views,
-                    feast_feature_services=feast_feature_services,
-                )
+        return cls._create_feast_registry_proto(
+            project_name=project_name,
+            online_store=online_store,
+            feast_data_sources=feast_data_sources,
+            primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
+            feast_request_sources=list(name_to_feast_request_source.values()),
+            feast_feature_views=list(name_to_feast_feature_view.values()),
+            feast_on_demand_feature_views=on_demand_feature_views,
+            feast_feature_services=feast_feature_services,
+        )

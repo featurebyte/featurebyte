@@ -8,66 +8,84 @@
     "columns_info": [
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "INT",
             "entity_id": null,
             "name": "col_int"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "FLOAT",
             "entity_id": null,
             "name": "col_float"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "BOOL",
             "entity_id": null,
             "name": "is_active"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "VARCHAR",
             "entity_id": null,
             "name": "col_text"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "BINARY",
             "entity_id": null,
             "name": "col_binary"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "BOOL",
             "entity_id": null,
             "name": "col_boolean"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "effective_timestamp"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "end_timestamp"
         },
         {
             "critical_data_info": null,
+            "description": null,
+            "dtype": "TIMESTAMP",
+            "entity_id": null,
+            "name": "date_of_birth"
+        },
+        {
+            "critical_data_info": null,
+            "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "created_at"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "INT",
             "entity_id": null,
             "name": "cust_id"
         }
     ],
     "current_flag_column": "is_active",
+    "description": "test scd table",
     "effective_timestamp_column": "effective_timestamp",
     "end_timestamp_column": "end_timestamp",
     "name": "sf_scd_table",

@@ -14,9 +14,8 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -49,6 +48,7 @@ class TileGenSql:
 
     # pylint: disable=too-many-instance-attributes
     tile_table_id: str
+    tile_id_version: int
     aggregation_id: str
     sql_template: SqlExpressionTemplate
     columns: list[str]
@@ -195,6 +195,7 @@ class TileSQLGenerator:
         sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
         info = TileGenSql(
             tile_table_id=tile_table_id,
+            tile_id_version=groupby_node.parameters.tile_id_version,
             aggregation_id=aggregation_id,
             sql_template=sql_template,
             columns=groupby_sql_node.columns,

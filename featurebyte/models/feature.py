@@ -23,7 +23,7 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.mixin import QueryGraphMixin
-from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo, OfflineStoreInfoMetadata
+from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -49,11 +49,7 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-from featurebyte.query_graph.transform.offline_store_ingest import (
-    OfflineStoreIngestQueryGraphTransformer,
-    extract_dtype_from_graph,
-    get_offline_store_table_name,
-)
+from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
@@ -96,6 +92,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    entity_dtypes: List[DBVarType] = Field(allow_mutation=False, default_factory=list)
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -159,9 +156,18 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 graph_dict = graph_dict.dict(by_alias=True)
             graph = QueryGraph(**graph_dict)
             node_name = values["node_name"]
+            decompose_state = graph.get_decompose_state(
+                node_name=node_name, relationships_info=None
+            )
+            entity_ids = decompose_state.primary_entity_ids
+
+            values["entity_ids"] = entity_ids
+            values["entity_dtypes"] = [
+                decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
+                for entity_id in entity_ids
+            ]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
             values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
                 node_name=node_name
             )
@@ -221,6 +227,17 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
+
+    @property
+    def versioned_name(self) -> str:
+        """
+        Retrieve feature name with version info
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.name}_{self.version.to_str()}"
 
     @property
     def offline_store_info(self) -> OfflineStoreInfo:
@@ -419,7 +436,14 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
 
-    def _extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+    def extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+        """
+        Extract aggregation nodes info from the feature or target graph
+
+        Returns
+        -------
+        List[AggregationNodeInfo]
+        """
         operation_structure = self.graph.extract_operation_structure(self.node)
         output = []
         for agg in operation_structure.iterate_aggregations():
@@ -434,70 +458,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 )
             )
         return output
-
-    def initialize_offline_store_info(
-        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    ) -> None:
-        """
-        Initialize offline store info
-
-        Parameters
-        ----------
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping
-        """
-        transformer = OfflineStoreIngestQueryGraphTransformer(graph=self.graph)
-        assert self.name is not None
-        result = transformer.transform(
-            target_node=self.node,
-            entity_id_to_serving_name=entity_id_to_serving_name,
-            relationships_info=self.relationships_info or [],
-            feature_name=self.name,
-        )
-
-        if result.is_decomposed:
-            decomposed_graph = result.graph
-            output_node_name = result.node_name_map[self.node.name]
-            metadata = None
-        else:
-            decomposed_graph = self.graph
-            output_node_name = self.node.name
-            feature_job_setting = None
-            if self.table_id_feature_job_settings:
-                feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
-
-            has_ttl = bool(
-                next(
-                    self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY),
-                    None,
-                )
-            )
-            table_name = get_offline_store_table_name(
-                primary_entity_serving_names=[
-                    entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
-                ],
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-            )
-
-            metadata = OfflineStoreInfoMetadata(
-                aggregation_nodes_info=self._extract_aggregation_nodes_info(),
-                feature_job_setting=feature_job_setting,
-                has_ttl=has_ttl,
-                offline_store_table_name=table_name,
-                output_column_name=self.name,
-                output_dtype=self.dtype,
-                primary_entity_ids=self.primary_entity_ids,
-            )
-
-        # populate offline store info
-        self.internal_offline_store_info = OfflineStoreInfo(
-            graph=decomposed_graph,
-            node_name=output_node_name,
-            node_name_map=result.node_name_map,
-            is_decomposed=result.is_decomposed,
-            metadata=metadata,
-        ).dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -591,6 +551,7 @@ class FeatureModel(BaseFeatureModel):
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
     online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
+    agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
     last_updated_by_scheduled_task_at: Optional[datetime] = Field(
         allow_mutation=False, default=None
     )
@@ -630,7 +591,10 @@ class FeatureModel(BaseFeatureModel):
         values["aggregation_result_names"] = []
         online_store_table_names = set()
         for query in get_online_store_precompute_queries(
-            graph, graph.get_node_by_name(node_name), feature_store_type
+            graph,
+            graph.get_node_by_name(node_name),
+            feature_store_type,
+            values["agg_result_name_include_serving_names"],
         ):
             values["aggregation_result_names"].append(query.result_name)
             online_store_table_names.add(query.table_name)
@@ -653,4 +617,5 @@ class FeatureModel(BaseFeatureModel):
             pymongo.operations.IndexModel("aggregation_ids"),
             pymongo.operations.IndexModel("aggregation_result_names"),
             pymongo.operations.IndexModel("online_store_table_names"),
+            pymongo.operations.IndexModel("definition_hash"),
         ]

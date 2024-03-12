@@ -3,7 +3,7 @@ Target API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from http import HTTPStatus
 
@@ -12,6 +12,7 @@ from fastapi import APIRouter, Query, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target import TargetModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -22,10 +23,11 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.target.controller import TargetController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import TargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 
 router = APIRouter(prefix="/target")
 
@@ -55,7 +57,7 @@ async def list_target(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = SearchQuery,
 ) -> TargetList:
@@ -64,7 +66,11 @@ async def list_target(
     """
     controller = request.state.app_container.target_controller
     target_list: TargetList = await controller.list_target(
-        page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, search=search, name=name
+        page=page,
+        page_size=page_size,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
+        search=search,
+        name=name,
     )
     return target_list
 
@@ -74,25 +80,8 @@ async def get_target(request: Request, target_id: PydanticObjectId) -> TargetMod
     """
     Retrieve Target
     """
-    controller = request.state.app_container.target_controller
-    target: TargetModel = await controller.get(
-        document_id=target_id,
-    )
-    return target
-
-
-@router.patch("/{target_id}")
-async def update_target(
-    request: Request,
-    target_id: PydanticObjectId,
-    data: TargetUpdate,
-) -> TargetModel:
-    """
-    Update Target
-    """
-    controller = request.state.app_container.target_controller
-    target = await controller.target_service.update_document(target_id, data)
-    return cast(TargetModel, target)
+    controller: TargetController = request.state.app_container.target_controller
+    return await controller.get(document_id=target_id)
 
 
 @router.get("/{target_id}/info", response_model=TargetInfo)
@@ -104,12 +93,11 @@ async def get_target_info(
     """
     Retrieve target info
     """
-    controller = request.state.app_container.target_controller
-    info = await controller.get_info(
+    controller: TargetController = request.state.app_container.target_controller
+    return await controller.get_info(
         document_id=target_id,
         verbose=verbose,
     )
-    return cast(TargetInfo, info)
 
 
 @router.get("/audit/{target_id}", response_model=AuditDocumentList)
@@ -119,7 +107,7 @@ async def list_target_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -130,8 +118,7 @@ async def list_target_audit_logs(
         document_id=target_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list
@@ -145,11 +132,8 @@ async def get_target_preview(
     """
     Retrieve Target preview
     """
-    controller = request.state.app_container.target_controller
-    return cast(
-        Dict[str, Any],
-        await controller.preview(target_preview=target_preview),
-    )
+    controller: TargetController = request.state.app_container.target_controller
+    return await controller.preview(target_preview=target_preview)
 
 
 @router.patch("/{target_id}/description", response_model=TargetModel)
@@ -161,12 +145,11 @@ async def update_target_description(
     """
     Update target description
     """
-    controller = request.state.app_container.target_controller
-    target: TargetModel = await controller.update_description(
+    controller: TargetController = request.state.app_container.target_controller
+    return await controller.update_description(
         document_id=target_id,
         description=data.description,
     )
-    return target
 
 
 @router.get(
@@ -181,11 +164,8 @@ async def get_feature_sample_entity_serving_names(
     """
     Get Feature Sample Entity Serving Names
     """
-    controller = request.state.app_container.target_controller
-    sample_entity_serving_names: SampleEntityServingNames = (
-        await controller.get_sample_entity_serving_names(target_id=target_id, count=count)
-    )
-    return sample_entity_serving_names
+    controller: TargetController = request.state.app_container.target_controller
+    return await controller.get_sample_entity_serving_names(target_id=target_id, count=count)
 
 
 @router.delete("/{target_id}")

@@ -5,7 +5,7 @@ from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple,
 
 from collections import defaultdict
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, PrivateAttr, root_validator, validator
 
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -45,31 +45,34 @@ class QueryGraphModel(FeatureByteBaseModel):
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
 
+    # private attributes used for caching and internal computation
+    _total_node_num: Optional[int] = PrivateAttr(default=None)
+    _sorted_node_names_by_ref: List[str] = PrivateAttr(default_factory=list)
+    _sorted_edges_map_by_ref: Dict[str, List[str]] = PrivateAttr(default=defaultdict(list))
+    _sorted_node_names: List[str] = PrivateAttr(default_factory=list)
+    _node_topological_order_map: Dict[str, Any] = PrivateAttr(default_factory=dict)
+
     def __repr__(self) -> str:
         return self.json(by_alias=True, indent=4)
 
     def __str__(self) -> str:
         return repr(self)
 
-    @property
-    def sorted_node_names_by_ref(self) -> List[str]:
+    def _is_cache_invalid(self) -> bool:
         """
-        Sorted node names by reference
+        Check if the cache is invalid
 
         Returns
         -------
-        List[str]
+        bool
         """
-        return sorted(self.nodes_map, key=lambda x: self.node_name_to_ref[x])
+        # as the graph only supports insertion, the total node number will only increase
+        # use the total node number to check if the cache is invalid
+        return self._total_node_num != len(self.nodes)
 
-    @property
-    def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
+    def _update_cache(self) -> None:
         """
-        Sorted edges map by reference
-
-        Returns
-        -------
-        Dict[str, List[str]]
+        Update cache
         """
         # To make the order insensitive to the node names, we first sort the backward edges map by node hash.
         # Backward edges map is used due to the fact that input node order are important to the node operation.
@@ -82,7 +85,62 @@ class QueryGraphModel(FeatureByteBaseModel):
         for target_node_name in sorted_backward_edges_keys:
             for source_node_name in self.backward_edges_map[target_node_name]:
                 edges_map[source_node_name].append(target_node_name)
-        return edges_map
+        self._sorted_edges_map_by_ref = edges_map
+
+        # Update sorted node names by reference
+        self._sorted_node_names_by_ref = sorted(
+            self.nodes_map, key=lambda x: self.node_name_to_ref[x]
+        )
+
+        # Update node topological order map
+        self._sorted_node_names = topological_sort(
+            self._sorted_node_names_by_ref, self._sorted_edges_map_by_ref
+        )
+        self._node_topological_order_map = {
+            value: idx for idx, value in enumerate(self._sorted_node_names)
+        }
+
+        # Update total node number to validate the cache
+        self._total_node_num = len(self.nodes)
+
+    @property
+    def sorted_node_names_by_ref(self) -> List[str]:
+        """
+        Sorted node names by reference
+
+        Returns
+        -------
+        List[str]
+        """
+        if self._is_cache_invalid():
+            self._update_cache()
+        return self._sorted_node_names_by_ref
+
+    @property
+    def sorted_node_names(self) -> List[str]:
+        """
+        Topologically sorted node names
+
+        Returns
+        -------
+        List[str]
+        """
+        if self._is_cache_invalid():
+            self._update_cache()
+        return self._sorted_node_names
+
+    @property
+    def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
+        """
+        Sorted edges map by reference
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
+        if self._is_cache_invalid():
+            self._update_cache()
+        return self._sorted_edges_map_by_ref
 
     @property
     def node_topological_order_map(self) -> Dict[str, int]:
@@ -91,12 +149,11 @@ class QueryGraphModel(FeatureByteBaseModel):
 
         Returns
         -------
-        Dict[int, str]
+        Dict[str, int]
         """
-        sorted_node_names = topological_sort(
-            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
-        )
-        return {value: idx for idx, value in enumerate(sorted_node_names)}
+        if self._is_cache_invalid():
+            self._update_cache()
+        return self._node_topological_order_map
 
     @staticmethod
     def _derive_nodes_map(
@@ -165,6 +222,8 @@ class QueryGraphModel(FeatureByteBaseModel):
         if node.type == NodeType.INPUT:
             # exclude feature_store_details.details from input node hash if it exists
             node_parameters["feature_store_details"].pop("details", None)
+        if node.type == NodeType.GROUPBY:
+            node_parameters.pop("tile_id_version", None)
         return node_parameters
 
     @classmethod
@@ -460,10 +519,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Topologically sorted query graph nodes
         """
-        sorted_node_names = topological_sort(
-            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
-        )
-        for node_name in sorted_node_names:
+        for node_name in self.sorted_node_names:
             yield self.nodes_map[node_name]
 
     def _add_edge(self, parent: Node, child: Node) -> None:

@@ -37,14 +37,6 @@ class SQLiteSession(BaseSession):
 
         self._connection = sqlite3.connect(filename)
 
-    @property
-    def database_name(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def schema_name(self) -> str:
-        raise NotImplementedError()
-
     @classmethod
     def is_threadsafe(cls) -> bool:
         return False
@@ -113,3 +105,9 @@ class SQLiteSession(BaseSession):
         # sqlite session cannot be used in across threads
         _ = timeout
         return super().execute_query_blocking(query=query)
+
+    async def comment_table(self, table_name: str, comment: str) -> None:
+        pass
+
+    async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+        pass

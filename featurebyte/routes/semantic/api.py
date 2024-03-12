@@ -13,6 +13,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -95,11 +96,17 @@ class SemanticRouter(
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
-            request, semantic_id, page, page_size, sort_by, sort_dir, search
+            request,
+            semantic_id,
+            page,
+            page_size,
+            sort_by,
+            sort_dir,
+            search,
         )
 
     async def update_description(

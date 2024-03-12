@@ -3,19 +3,19 @@ This module contains Feature list related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import functools
 from collections import defaultdict
+from pathlib import Path
 
 import pymongo
 from bson.objectid import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
+from pydantic import Field, PrivateAttr, StrictStr, parse_obj_as, root_validator, validator
 from typeguard import typechecked
 
-from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator, version_validator
-from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -25,23 +25,23 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list_store_info import (
+    DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
+    SnowflakeStoreInfo,
+    SparkStoreInfo,
+    StoreInfo,
+)
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityRelationshipInfo,
+    FeatureEntityLookupInfo,
+)
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
-
-
-class FeatureListStatus(OrderedStrEnum):
-    """FeatureList status"""
-
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureListStatus")
-
-    DEPRECATED = "DEPRECATED"
-    DRAFT = "DRAFT"
-    PUBLIC_DRAFT = "PUBLIC_DRAFT"
-    TEMPLATE = "TEMPLATE"
-    DEPLOYED = "DEPLOYED"
 
 
 class FeatureTypeFeatureCount(FeatureByteBaseModel):
@@ -218,6 +218,15 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
+class FeatureNodeDefinitionHash(FeatureByteBaseModel):
+    """
+    Feature definition hash for each node in the FeatureCluster
+    """
+
+    node_name: str
+    definition_hash: Optional[str]
+
+
 class FeatureCluster(FeatureByteBaseModel):
     """
     Schema for a group of features from the same feature store
@@ -226,6 +235,20 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]]
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "combined_relationships_info" in values:
+            return values
+        combined_relationships_info: Set[EntityRelationshipInfo] = set()
+        for info in values.get("feature_node_relationships_infos", []):
+            combined_relationships_info.update(info.relationships_info or [])
+        values["combined_relationships_info"] = list(combined_relationships_info)
+        return values
 
     @property
     def nodes(self) -> List[Node]:
@@ -259,80 +282,6 @@ class FeatureCluster(FeatureByteBaseModel):
         return selected_nodes
 
 
-class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
-    """
-    Feature list set with the same feature list name
-
-    id: PydanticObjectId
-        Feature namespace id
-    name: str
-        Feature name
-    feature_list_ids: List[PydanticObjectId]
-        List of feature list ids
-    deployed_feature_list_ids: List[PydanticObjectId]
-        List of deployed feature list ids
-    feature_namespace_ids: List[PydanticObjectId]
-        List of feature namespace ids
-    default_feature_list_id: PydanticObjectId
-        Default feature list id
-    status: FeatureListStatus
-        Feature list status
-    """
-
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
-
-    # pydantic validators
-    _sort_feature_list_ids_validator = validator(
-        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
-    )(construct_sort_validator())
-
-    @root_validator(pre=True)
-    @classmethod
-    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # "features" is not an attribute to the FeatureList model, when it appears in the input to
-        # constructor, it is intended to be used to derive other feature-related attributes
-        if "features" in values:
-            features = values["features"]
-            values["feature_namespace_ids"] = [feature.feature_namespace_id for feature in features]
-        return values
-
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "feature_list_namespace"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=None,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.RENAME,
-            ),
-        ]
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("feature_list_ids"),
-            pymongo.operations.IndexModel("feature_namespace_ids"),
-            pymongo.operations.IndexModel("deployed_feature_list_ids"),
-            pymongo.operations.IndexModel("default_feature_list_id"),
-            pymongo.operations.IndexModel("status"),
-            [
-                ("name", pymongo.TEXT),
-                ("description", pymongo.TEXT),
-            ],
-        ]
-
-
 ServingEntity = List[PydanticObjectId]
 
 
@@ -356,6 +305,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         List of entity relationship info for the feature list
     supported_serving_entity_ids: List[ServingEntity]
         List of supported serving entity ids, serving entity id is a list of entity ids for serving
+    enabled_serving_entity_ids: List[ServingEntity]
+        Subset of supported_serving_entity_ids. List of serving entity ids that are used by
+        currently enabled deployments
     deployed: bool
         Whether to deploy this feature list version
     feature_list_namespace_id: PydanticObjectId
@@ -364,13 +316,21 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Datetime when the FeatureList was first saved or published
     internal_feature_clusters: Optional[List[Any]]
         List of combined graphs for features from the same feature store
+    internal_store_info: Optional[dict[str, Any]]
+        Store specific info for the feature list
     """
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None  # DEV-556
     )
+    features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
+        allow_mutation=False, default=None
+    )
     supported_serving_entity_ids: List[ServingEntity] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    enabled_serving_entity_ids: List[ServingEntity] = Field(
         allow_mutation=False, default_factory=list
     )
     readiness_distribution: FeatureReadinessDistribution = Field(
@@ -383,9 +343,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters"
-    )
+    feature_clusters_path: Optional[str] = Field(default=None)
+    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters")
     _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
@@ -403,6 +362,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default_factory=list
     )
 
+    # store info contains the warehouse specific info for the feature list
+    internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
+
     # pydantic validators
     _sort_ids_validator = validator(
         "online_enabled_feature_ids",
@@ -414,7 +376,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
-    @validator("supported_serving_entity_ids")
+    @validator("supported_serving_entity_ids", "enabled_serving_entity_ids")
     @classmethod
     def _validate_supported_serving_entity_ids(
         cls, value: List[ServingEntity]
@@ -535,14 +497,43 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             pruned_graph, mapped_nodes = get_combined_graph_and_nodes(
                 feature_objects=group_features
             )
+            feature_node_relationships_info = []
+            feature_node_definition_hashes = []
+            for feature, mapped_node in zip(group_features, mapped_nodes):
+                feature_node_relationships_info.append(
+                    FeatureNodeRelationshipsInfo(
+                        node_name=mapped_node.name,
+                        relationships_info=feature.relationships_info or [],
+                        primary_entity_ids=feature.primary_entity_ids,
+                    )
+                )
+                feature_node_definition_hashes.append(
+                    FeatureNodeDefinitionHash(
+                        node_name=mapped_node.name,
+                        definition_hash=feature.definition_hash,
+                    )
+                )
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_id=feature_store_id,
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
+                    feature_node_relationships_infos=feature_node_relationships_info,
+                    feature_node_definition_hashes=feature_node_definition_hashes,
                 )
             )
         return feature_clusters
+
+    @property
+    def versioned_name(self) -> str:
+        """
+        Retrieve feature name with version info
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.name}_{self.version.to_str()}"
 
     @property
     def feature_clusters(self) -> Optional[List[FeatureCluster]]:
@@ -561,6 +552,48 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
             ]
         return self._feature_clusters
+
+    @property
+    def remote_attribute_paths(self) -> List[Path]:
+        paths = []
+        if self.feature_clusters_path:
+            paths.append(Path(self.feature_clusters_path))
+        return paths
+
+    @property
+    def store_info(self) -> StoreInfo:
+        """
+        Store info for a feature list
+
+        Returns
+        -------
+        StoreInfo
+        """
+        return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
+
+    def initialize_store_info(
+        self, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> None:
+        """
+        Initialize store info for a feature list
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+        feature_store: FeatureStoreModel
+            Feature store model
+        """
+        store_type_to_store_info_class = {
+            SourceType.SNOWFLAKE: SnowflakeStoreInfo,
+            SourceType.DATABRICKS: DataBricksStoreInfo,
+            SourceType.DATABRICKS_UNITY: DataBricksUnityStoreInfo,
+            SourceType.SPARK: SparkStoreInfo,
+        }
+        if feature_store.type in store_type_to_store_info_class:
+            store_info_class = store_type_to_store_info_class[feature_store.type]
+            store_info = store_info_class.create(features=features, feature_store=feature_store)
+            self.internal_store_info = store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

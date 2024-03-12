@@ -10,16 +10,19 @@ from uuid import UUID
 
 from bson.objectid import ObjectId
 from celery import Celery
+from redis import Redis
 
+from featurebyte.exception import TaskNotFound, TaskNotRevocableError
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.schema.task import Task
+from featurebyte.schema.task import Task, TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
 
@@ -35,11 +38,33 @@ class TaskManager:
         persistent: Persistent,
         celery: Celery,
         catalog_id: Optional[ObjectId],
+        storage: Storage,
+        redis: Redis[Any],
     ) -> None:
         self.user = user
         self.persistent = persistent
         self.celery = celery
         self.catalog_id = catalog_id
+        self.storage = storage
+        self.redis = redis
+
+    @property
+    def periodic_task_service(self) -> PeriodicTaskService:
+        """
+        Get PeriodicTaskService instance
+
+        Returns
+        -------
+        PeriodicTaskService
+        """
+        return PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
+            storage=self.storage,
+            redis=self.redis,
+        )
 
     async def submit(self, payload: BaseTaskPayload) -> str:
         """
@@ -75,41 +100,70 @@ class TaskManager:
         Task
             Task object
         """
-        task_id = str(task_id)
-        task_result = self.celery.AsyncResult(task_id)
-        payload = {}
-        output_path = None
-        traceback = None
-
-        # try to find in persistent first
+        # try to find record in persistent first
         document = await self.persistent.find_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
         )
 
-        start_time = None
-        date_done = None
-        progress = None
-        if document:
-            output_path = document.get("kwargs", {}).get("task_output_path")
-            payload = document.get("kwargs", {})
-            traceback = document.get("traceback")
-            start_time = document.get("start_time")
-            date_done = document.get("date_done")
-            progress = document.get("progress")
-        elif not task_result:
-            return None
+        if not document:
+            # no persistent record, fallback to celery result
+            task_result = self.celery.AsyncResult(task_id)
+            if not task_result:
+                # no celery or persistent result
+                return None
+
+            # get only status from celery result
+            document = {"status": task_result.status}
 
         return Task(
             id=UUID(task_id),
-            status=task_result.status,
-            output_path=output_path,
-            payload=payload,
-            traceback=traceback,
-            start_time=start_time,
-            date_done=date_done,
-            progress=progress,
+            status=document.get("status"),
+            output_path=document.get("kwargs", {}).get("task_output_path"),
+            payload=document.get("kwargs", {}),
+            traceback=document.get("traceback"),
+            start_time=document.get("start_time"),
+            date_done=document.get("date_done"),
+            progress=document.get("progress"),
         )
+
+    async def update_task_result(self, task_id: str, result: Any) -> None:
+        """
+        Update task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+        result: Any
+            Task result
+        """
+        await self.persistent.update_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+            update={"$set": {"task_result": result}},
+            user_id=self.user.id,
+        )
+
+    async def get_task_result(self, task_id: str) -> Any:
+        """
+        Get task result
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Returns
+        -------
+        Any
+            Task result
+        """
+        document = await self.persistent.find_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+        )
+        return (document or {}).get("task_result")
 
     async def list_tasks(
         self,
@@ -139,8 +193,7 @@ class TaskManager:
             query_filter={},
             page=page,
             page_size=page_size,
-            sort_by="date_done",
-            sort_dir="asc" if ascending else "desc",
+            sort_by=[("date_done", "asc" if ascending else "desc")],
         )
 
         tasks = [
@@ -229,13 +282,7 @@ class TaskManager:
             queue=payload.queue,
             soft_time_limit=time_limit,
         )
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.create_document(data=periodic_task)
+        await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
 
     async def schedule_cron_task(
@@ -277,13 +324,7 @@ class TaskManager:
             start_after=start_after,
             soft_time_limit=time_limit,
         )
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.create_document(data=periodic_task)
+        await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
 
     async def get_periodic_task(self, periodic_task_id: ObjectId) -> PeriodicTask:
@@ -299,13 +340,7 @@ class TaskManager:
         -------
         PeriodicTask
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        return await periodic_task_service.get_document(document_id=periodic_task_id)
+        return await self.periodic_task_service.get_document(document_id=periodic_task_id)
 
     async def get_periodic_task_by_name(self, name: str) -> Optional[PeriodicTask]:
         """
@@ -320,13 +355,7 @@ class TaskManager:
         -------
         PeriodicTask
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        result = await periodic_task_service.list_documents_as_dict(
+        result = await self.periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -347,13 +376,7 @@ class TaskManager:
         periodic_task_id: ObjectId
             PeriodicTask ID
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        await periodic_task_service.delete_document(document_id=periodic_task_id)
+        await self.periodic_task_service.delete_document(document_id=periodic_task_id)
 
     async def delete_periodic_task_by_name(self, name: str) -> None:
         """
@@ -364,13 +387,7 @@ class TaskManager:
         name: str
             Document Name
         """
-        periodic_task_service = PeriodicTaskService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            block_modification_handler=BlockModificationHandler(),
-        )
-        result = await periodic_task_service.list_documents_as_dict(
+        result = await self.periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -380,4 +397,28 @@ class TaskManager:
         if not data:
             logger.error(f"Document with name {name} not found")
         else:
-            await periodic_task_service.delete_document(document_id=data[0]["_id"])
+            await self.periodic_task_service.delete_document(document_id=data[0]["_id"])
+
+    async def revoke_task(self, task_id: str) -> None:
+        """
+        Revoke task
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Raises
+        ------
+        TaskNotFound
+            Task not found.
+        TaskNotRevocableError
+            Task does not support revoke.
+        """
+        task = await self.get_task(task_id)
+        if not task:
+            raise TaskNotFound(f'Task (id: "{task_id}") not found.')
+        if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable"):
+            raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
+        if task.status in TaskStatus.non_terminal():
+            self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")

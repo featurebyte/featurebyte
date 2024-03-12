@@ -11,7 +11,7 @@ PageSizeQuery = Query(default=10, gt=0, le=500)
 SortByQuery = Query(
     default="created_at", min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
 )
-SortDirQuery = Query(default="desc", regex="^(asc|desc)$")
+SortDirQuery = Query(default="desc")
 SearchQuery = Query(
     default=None, min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
 )

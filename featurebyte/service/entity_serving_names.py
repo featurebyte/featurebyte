@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from bson import ObjectId
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -151,8 +150,8 @@ class EntityServingNamesService:
         ]
 
     async def get_entity_id_to_serving_name_for_offline_store(
-        self, entity_ids: List[PydanticObjectId]
-    ) -> Dict[PydanticObjectId, str]:
+        self, entity_ids: Sequence[ObjectId]
+    ) -> Dict[ObjectId, str]:
         """
         Get entity id to serving name mapping for offline store
 

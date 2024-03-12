@@ -9,11 +9,13 @@ from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, 
 import copy
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
 from pymongo.errors import OperationFailure
+from redis import Redis
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.dict_util import get_field_path_value
@@ -38,7 +40,7 @@ from featurebyte.models.persistent import (
     FieldValueHistory,
     QueryFilter,
 )
-from featurebyte.persistent.base import Persistent
+from featurebyte.persistent.base import Persistent, SortDir
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import (
@@ -46,8 +48,8 @@ from featurebyte.service.mixin import (
     Document,
     DocumentCreateSchema,
     OpsServiceMixin,
-    SortDir,
 )
+from featurebyte.storage import Storage
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
@@ -112,12 +114,16 @@ class BaseDocumentService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
+        redis: Redis[Any],
     ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
         self.block_modification_handler = block_modification_handler
+        self.storage = storage
+        self.redis = redis
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"
@@ -187,6 +193,23 @@ class BaseDocumentService(
         bool
         """
         return not self.document_class.Settings.auditable
+
+    def get_full_remote_file_path(self, path: str) -> Path:
+        """
+        Get full remote file path (add catalog_id prefix if catalog specific)
+
+        Parameters
+        ----------
+        path: str
+            File path
+
+        Returns
+        -------
+        Path
+        """
+        if self.is_catalog_specific:
+            return Path(f"catalog/{self.catalog_id}/{path}")
+        return Path(path)
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
@@ -319,20 +342,24 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if document_dict is None:
             exception_detail = exception_detail or (
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
             )
             raise DocumentNotFoundError(exception_detail)
-        return document_dict  # type: ignore
+        return document_dict
+
+    async def _populate_remote_attributes(self, document: Document) -> Document:
+        _ = self
+        return document
 
     async def get_document(
         self,
         document_id: ObjectId,
         exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
+        populate_remote_attributes: bool = True,
         **kwargs: Any,
     ) -> Document:
         """
@@ -346,6 +373,8 @@ class BaseDocumentService(
             Exception detail message
         use_raw_query_filter: bool
             Use only provided query filter
+        populate_remote_attributes: bool
+            Populate attributes that are stored remotely (e.g. file paths)
         kwargs: Any
             Additional keyword arguments
 
@@ -359,7 +388,10 @@ class BaseDocumentService(
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,
         )
-        return self.document_class(**document_dict)
+        document = self.document_class(**document_dict)
+        if populate_remote_attributes:
+            return await self._populate_remote_attributes(document=document)
+        return document
 
     async def delete_document(
         self,
@@ -392,6 +424,7 @@ class BaseDocumentService(
             exception_detail=exception_detail,
             use_raw_query_filter=use_raw_query_filter,
             disable_audit=self.should_disable_audit,
+            populate_remote_attributes=False,
             **kwargs,
         )
 
@@ -407,6 +440,10 @@ class BaseDocumentService(
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
+
+        # remove remote attributes
+        for remote_path in document.remote_attribute_paths:
+            await self.storage.try_delete_if_exists(remote_path)
         return int(num_of_records_deleted)
 
     def construct_list_query_filter(
@@ -466,8 +503,7 @@ class BaseDocumentService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
         projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -481,10 +517,8 @@ class BaseDocumentService(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: SortDir
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         use_raw_query_filter: bool
             Use only provided query filter
         projection: Optional[Dict[str, Any]]
@@ -502,6 +536,7 @@ class BaseDocumentService(
         QueryNotSupportedError
             If the persistent query is not supported
         """
+        sort_by = sort_by or [("created_at", "desc")]
         query_filter = self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
@@ -511,10 +546,8 @@ class BaseDocumentService(
                 query_filter=query_filter,
                 projection=projection,
                 sort_by=sort_by,
-                sort_dir=sort_dir,
                 page=page,
                 page_size=page_size,
-                user_id=self.user.id,
             )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc
@@ -522,10 +555,9 @@ class BaseDocumentService(
 
     async def list_documents_as_dict_iterator(
         self,
-        query_filter: QueryFilter,
-        projection: Optional[Dict[str, Any]] = None,
-        page_size: int = DEFAULT_PAGE_SIZE,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         use_raw_query_filter: bool = False,
+        projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
@@ -533,44 +565,48 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: QueryFilter
-            Query filter
-        projection: Optional[Dict[str, Any]]
-            Project fields to return from the query
-        page_size: int
-            Page size
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         use_raw_query_filter: bool
             Use only provided query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         kwargs: Any
-            Additional keyword arguments passed to the list_documents_as_dict
+            Additional keyword arguments
 
         Yields
         ------
         AsyncIterator[Dict[str, Any]]
             List query output
+
+        Raises
+        ------
+        QueryNotSupportedError
+            If the persistent query is not supported
         """
-        to_iterate, page = True, 1
-
-        while to_iterate:
-            list_results = await self.list_documents_as_dict(
-                page=page,
-                page_size=page_size,
+        sort_by = sort_by or [("created_at", "desc")]
+        query_filter = self.construct_list_query_filter(
+            use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        try:
+            docs = await self.persistent.get_iterator(
+                collection_name=self.collection_name,
                 query_filter=query_filter,
+                pipeline=kwargs.get("pipeline"),
                 projection=projection,
-                use_raw_query_filter=use_raw_query_filter,
-                **kwargs,
+                sort_by=sort_by,
             )
-            for doc in list_results["data"]:
-                yield doc
+        except NotImplementedError as exc:
+            raise QueryNotSupportedError from exc
 
-            to_iterate = bool(list_results["total"] > (page * page_size))
-            page += 1
+        async for doc in docs:
+            yield doc
 
     async def list_documents_iterator(
         self,
         query_filter: QueryFilter,
-        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> AsyncIterator[Document]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
@@ -579,23 +615,24 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter
-        page_size: int
-            Page size per query
         use_raw_query_filter: bool
             Use only provided query filter (without any further processing)
+        populate_remote_attributes: bool
+            Populate attributes that are stored remotely (e.g. file paths)
 
         Yields
         -------
         AsyncIterator[Document]
             List query output
         """
-        assert page_size > 0, "page_size must be greater than 0"
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
-            page_size=page_size,
             use_raw_query_filter=use_raw_query_filter,
         ):
-            yield self.document_class(**doc)
+            document = self.document_class(**doc)
+            if populate_remote_attributes:
+                document = await self._populate_remote_attributes(document=document)
+            yield document
 
     def _construct_list_audit_query_filter(
         self, query_filter: Optional[QueryFilter], **kwargs: Any
@@ -626,8 +663,7 @@ class BaseDocumentService(
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: SortDir = "desc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -643,10 +679,8 @@ class BaseDocumentService(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: SortDir
-            Sorting the returning documents in ascending order or descending order
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Keys and directions used to sort the returning documents
         kwargs: Any
             Additional keyword arguments
 
@@ -661,7 +695,6 @@ class BaseDocumentService(
             document_id=document_id,
             query_filter=query_filter,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             page=page,
             page_size=page_size,
         )
@@ -739,8 +772,7 @@ class BaseDocumentService(
         audit_data = await self.list_document_audits(
             document_id=document_id,
             query_filter={},
-            sort_by="action_at",
-            sort_dir="asc",
+            sort_by=[("action_at", "asc")],
             page=1,
             page_size=0,
         )
@@ -824,7 +856,6 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             projection=projection,
-            user_id=self.user.id,
         )
         if conflict_doc:
             exception_detail = self._get_conflict_message(

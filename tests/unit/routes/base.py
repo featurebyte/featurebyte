@@ -101,9 +101,9 @@ class BaseApiTestSuite:
             [
                 {
                     "loc": ["query", "sort_dir"],
-                    "msg": 'string does not match regex "^(asc|desc)$"',
-                    "type": "value_error.str.regex",
-                    "ctx": {"pattern": "^(asc|desc)$"},
+                    "msg": "unexpected value; permitted: 'asc', 'desc'",
+                    "type": "value_error.const",
+                    "ctx": {"given": "abcd", "permitted": ["asc", "desc"]},
                 }
             ],
         ),
@@ -910,7 +910,39 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        assert create_success_response.json()["status"] == "PUBLIC_DRAFT"
+        # description is stored during creation
+        response_dict = create_success_response.json()
+        assert response_dict["description"] == self.payload["description"]
+        assert response_dict["status"] == "PUBLIC_DRAFT"
+
+    def test_create_422_invalid_special_columns(self, test_api_client_persistent):
+        """Test creation (unprocessable) when special columns are invalid"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+
+        # set special columns to invalid values
+        special_columns = [
+            field_name
+            for field_name in self.data_create_schema_class.__fields__
+            if field_name.endswith("column")
+        ]
+        for special_column in special_columns:
+            payload[special_column] = ""
+
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response_dict == {
+            "detail": [
+                {
+                    "loc": ["body", special_column],
+                    "msg": "Column not found in table: ",
+                    "type": "value_error",
+                }
+                for special_column in special_columns
+            ]
+        }
 
     def test_update_fails_table_not_found(self, test_api_client_persistent, data_update_dict):
         """
@@ -1310,15 +1342,15 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
 
         mock_session = mock_get_session.return_value
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
-        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [300 * 10000000]})
+        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [301 * 10000000]})
         mock_session.list_table_schema.return_value = {
             "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
         }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         response = test_api_client.get(f"{self.base_route}/pyarrow_table/{doc_id}")
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Table size (3000000000, 1) exceeds download limit."}
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json() == {"detail": "Table size (3010000000, 1) exceeds download limit."}
 
     def test_download(self, test_api_client_persistent, create_success_response, mock_get_session):
         """Test download (success)"""
@@ -1357,7 +1389,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
             == textwrap.dedent(
                 f"""
                 SELECT
-                  *
+                  "colA"
                 FROM "sf_database"."sf_schema"."{table_name}"
                 """
             ).strip()

@@ -20,14 +20,14 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
   FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    "T0"."_fb_internal_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa" AS "_fb_internal_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa",
-    "T1"."_fb_internal_item_count_None_event_id_col_None_join_1" AS "_fb_internal_item_count_None_event_id_col_None_join_1"
+    "T0"."_fb_internal_cust_id_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa" AS "_fb_internal_cust_id_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa",
+    "T1"."_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1" AS "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_32c30411c654d6ad110110ed16543be7a7cefaaa) AS "_fb_internal_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa"
+      SUM(value_sum_32c30411c654d6ad110110ed16543be7a7cefaaa) AS "_fb_internal_cust_id_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -35,7 +35,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
         TILE.INDEX,
         TILE.value_sum_32c30411c654d6ad110110ed16543be7a7cefaaa
       FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
-      INNER JOIN TILE_F360_M180_B90_BD58D4576AFD2D63F8CC9AFAD84840FA58035DBA AS TILE
+      INNER JOIN TILE_SUM_32C30411C654D6AD110110ED16543BE7A7CEFAAA AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) = FLOOR(TILE.INDEX / 1680)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
@@ -47,7 +47,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
         TILE.INDEX,
         TILE.value_sum_32c30411c654d6ad110110ed16543be7a7cefaaa
       FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
-      INNER JOIN TILE_F360_M180_B90_BD58D4576AFD2D63F8CC9AFAD84840FA58035DBA AS TILE
+      INNER JOIN TILE_SUM_32C30411C654D6AD110110ED16543BE7A7CEFAAA AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) - 1 = FLOOR(TILE.INDEX / 1680)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
@@ -61,7 +61,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
   LEFT JOIN (
     SELECT
       REQ."transaction_id" AS "transaction_id",
-      COUNT(*) AS "_fb_internal_item_count_None_event_id_col_None_join_1"
+      COUNT(*) AS "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
     FROM "REQUEST_TABLE_transaction_id" AS REQ
     INNER JOIN (
       SELECT
@@ -105,12 +105,12 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
 )
 SELECT
   (
-    "_fb_internal_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa" + CASE
+    "_fb_internal_cust_id_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa" + CASE
       WHEN (
-        "_fb_internal_item_count_None_event_id_col_None_join_1" IS NULL
+        "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1" IS NULL
       )
       THEN 0
-      ELSE "_fb_internal_item_count_None_event_id_col_None_join_1"
+      ELSE "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
     END
   ) AS "combined_feature"
 FROM _FB_AGGREGATED AS AGG

@@ -1,7 +1,7 @@
 """
 TaskStatus API payload schema
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import datetime
 from uuid import UUID
@@ -30,6 +30,28 @@ class TaskStatus(StrEnum):
     RETRY = "RETRY"
     IGNORED = "IGNORED"
 
+    @classmethod
+    def non_terminal(cls) -> Set[StrEnum]:
+        """
+        Non terminal status values
+
+        Returns
+        -------
+        Set[StrEnum]
+        """
+        return {cls.PENDING, cls.RECEIVED, cls.STARTED, cls.RETRY}
+
+    @classmethod
+    def terminal(cls) -> Set[StrEnum]:
+        """
+        Terminal status values
+
+        Returns
+        -------
+        Set[StrEnum]
+        """
+        return {cls.SUCCESS, cls.FAILURE, cls.REVOKED, cls.REJECTED, cls.IGNORED}
+
 
 class Task(FeatureByteBaseModel):
     """
@@ -52,3 +74,11 @@ class TaskList(PaginationMixin):
     """
 
     data: List[Task]
+
+
+class TaskUpdate(FeatureByteBaseModel):
+    """
+    Update Task
+    """
+
+    revoke: Optional[bool]

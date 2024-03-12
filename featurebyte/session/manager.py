@@ -3,14 +3,14 @@ SessionManager class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Hashable
 
 import json
 import time
 from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
 
 from asyncache import cached
-from cachetools import TTLCache
+from cachetools import TTLCache, keys
 from pydantic import BaseModel
 
 from featurebyte.enum import SourceType
@@ -19,7 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession, to_thread
+from featurebyte.session.base import NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession, to_thread
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.databricks_unity import DatabricksUnitySession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -40,7 +40,7 @@ session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 logger = get_logger(__name__)
 
 
-async def get_new_session(item: str, credential_params: str) -> BaseSession:
+async def get_new_session(item: str, credential_params: str, timeout: float) -> BaseSession:
     """
     Create a new session for the given database source key
 
@@ -50,6 +50,8 @@ async def get_new_session(item: str, credential_params: str) -> BaseSession:
         JSON dumps of feature store type & details
     credential_params: str
         JSON dumps of credential parameters used to initiate a new session
+    timeout: float
+        timeout for session creation
 
     Returns
     -------
@@ -79,7 +81,7 @@ async def get_new_session(item: str, credential_params: str) -> BaseSession:
         )
 
     try:
-        session: BaseSession = await to_thread(_create_session, INTERACTIVE_SESSION_TIMEOUT_SECONDS)
+        session: BaseSession = await to_thread(_create_session, timeout)
         await session.initialize()
         logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
     except AsyncioTimeoutError as exc:
@@ -89,8 +91,27 @@ async def get_new_session(item: str, credential_params: str) -> BaseSession:
     return session
 
 
-@cached(cache=session_cache)
-async def get_session(item: str, credential_params: str) -> BaseSession:
+def _session_hash_key(*args: Any, **kwargs: Any) -> tuple[Hashable, ...]:
+    """
+    Return a cache key for the specified hashable arguments.
+
+    Parameters
+    ----------
+    *args: Any
+        Positional arguments
+    **kwargs: Any
+        Keyword arguments
+
+    Returns
+    -------
+    tuple[Hashable, ...]
+    """
+    # exclude timeout from hash
+    return keys.hashkey(*args, **{key: value for key, value in kwargs.items() if key != "timeout"})
+
+
+@cached(cache=session_cache, key=_session_hash_key)
+async def get_session(item: str, credential_params: str, timeout: float) -> BaseSession:
     """
     Retrieve or create a new session for the given database source key. If a new session is created,
     it will be cached.
@@ -101,13 +122,15 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
         JSON dumps of feature store type & details
     credential_params: str
         JSON dumps of credential parameters used to initiate a new session
+    timeout: float
+        timeout for session creation
 
     Returns
     -------
     BaseSession
         Retrieved or created session object
     """
-    return await get_new_session(item, credential_params)
+    return await get_new_session(item, credential_params, timeout=timeout)
 
 
 class SessionManager(BaseModel):
@@ -118,7 +141,11 @@ class SessionManager(BaseModel):
     credentials: Dict[str, CredentialModel]
 
     async def get_session_with_params(
-        self, feature_store_name: str, session_type: SourceType, details: DatabaseDetails
+        self,
+        feature_store_name: str,
+        session_type: SourceType,
+        details: DatabaseDetails,
+        timeout: float,
     ) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
@@ -131,6 +158,8 @@ class SessionManager(BaseModel):
             session type
         details: DatabaseDetails
             database details
+        timeout: float
+            timeout for session creation
 
         Returns
         -------
@@ -175,11 +204,14 @@ class SessionManager(BaseModel):
         session = await get_session_func(
             item=json_str,
             credential_params=json.dumps(credential_params, sort_keys=True),
+            timeout=timeout,
         )
         assert isinstance(session, BaseSession)
         return session
 
-    async def get_session(self, item: FeatureStoreModel) -> BaseSession:
+    async def get_session(
+        self, item: FeatureStoreModel, timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS
+    ) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
 
@@ -187,10 +219,14 @@ class SessionManager(BaseModel):
         ----------
         item: FeatureStoreModel
             Database source object
+        timeout: float
+            timeout for session creation
 
         Returns
         -------
         BaseSession
             Session that can be used to connect to the specified database
         """
-        return await self.get_session_with_params(item.name, item.type, item.details)
+        return await self.get_session_with_params(
+            item.name, item.type, item.details, timeout=timeout
+        )

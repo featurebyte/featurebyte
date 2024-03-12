@@ -15,7 +15,6 @@ from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature import FeatureListHandler
-from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -43,7 +42,7 @@ from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import ScalarSequence
-from featurebyte.common.utils import enforce_observation_set_row_order
+from featurebyte.common.utils import enforce_observation_set_row_order, is_server_mode
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
@@ -404,7 +403,7 @@ class Feature(
         >>> Feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
                                        name  version      dtype         readiness  online_enabled                                          tables    primary_tables           entities   primary_entities  created_at  is_default
         0    CustomerLatestInvoiceTimestamp      ...  TIMESTAMP  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
-        1                      InvoiceCount      ...      FLOAT             DRAFT           False                  [GROCERYINVOICE, INVOICEITEMS]    [INVOICEITEMS]   [groceryinvoice]   [groceryinvoice]         ...        True
+        1                      InvoiceCount      ...        INT             DRAFT           False                  [GROCERYINVOICE, INVOICEITEMS]    [INVOICEITEMS]   [groceryinvoice]   [groceryinvoice]         ...        True
         2                ProductGroupLookup      ...    VARCHAR             DRAFT           False                                [GROCERYPRODUCT]  [GROCERYPRODUCT]   [groceryproduct]   [groceryproduct]         ...        True
         3  CustomerProductGroupTotalCost_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True
         4    CustomerProductGroupCounts_90d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True

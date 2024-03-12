@@ -163,6 +163,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             "parent": "a",
             "serving_names": ["CUSTOMER_ID"],
             "tile_id": None,
+            "tile_id_version": 1,
             "time_modulo_frequency": 1800,
             "timestamp": "ts",
             "value_by": None,

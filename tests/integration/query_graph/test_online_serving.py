@@ -10,13 +10,14 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.enum import InternalName
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
@@ -88,7 +89,6 @@ def features_fixture(event_table, source_type):
     return features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_serving_sql(
     features,
@@ -142,6 +142,8 @@ async def test_online_serving_sql(
 
         # Check online_features route
         check_online_features_route(deployment, config, df_historical, columns)
+        with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", 4):
+            check_online_features_route(deployment, config, df_historical, columns)
 
         # check get batch features
         batch_request_table = await create_batch_request_table_from_dataframe(
@@ -155,6 +157,13 @@ async def test_online_serving_sql(
             df_historical,
             columns,
         )
+        with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", 4):
+            check_get_batch_features(
+                deployment,
+                batch_request_table,
+                df_historical,
+                columns,
+            )
 
         # clear batch request table
         batch_request_table.delete()
@@ -220,7 +229,7 @@ def check_online_features_route(deployment, config, df_historical, columns):
         f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
-    assert res.status_code == 200
+    assert res.status_code == 200, res.json()
 
     df = pd.DataFrame(res.json()["features"])
     elapsed = time.time() - tic
@@ -245,7 +254,7 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
     """
     batch_feature_table = deployment.compute_batch_feature_table(
         batch_request_table=batch_request_table,
-        batch_feature_table_name="batch_feature_table",
+        batch_feature_table_name=f"batch_feature_table_{ObjectId()}",
     )
     preview_df = batch_feature_table.preview(limit=df_historical.shape[0])
     fb_assert_frame_equal(

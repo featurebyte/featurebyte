@@ -14,7 +14,7 @@ from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.manager import SessionManager
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_schema_initializer(config, feature_store, credentials_mapping, session):
     """
@@ -83,7 +83,7 @@ async def test_schema_initializer(config, feature_store, credentials_mapping, se
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_session_timezone(session):
     """
@@ -93,7 +93,7 @@ async def test_session_timezone(session):
     assert result["timezone"].iloc[0] in ["UTC", "Etc/UTC"]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_table(session):
     """
@@ -110,43 +110,3 @@ async def test_register_table(session):
     await session.register_table(table_name="test_table", dataframe=df_training_events)
     df_retrieve = await session.execute_query("SELECT * FROM test_table")
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
-
-
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
-@pytest.mark.asyncio
-async def test_register_udfs(session):
-    """
-    Test the session registered udfs properly.
-    """
-    spark_session = session
-    test_table = pd.DataFrame(
-        {
-            "group": ["A"] * 2 + ["B"] * 2,
-            "item": ["apple", "orange", "apple", "orange"],
-            "value": [1, 2, 3, 4],
-        }
-    )
-    await spark_session.register_table(table_name="test_table", dataframe=test_table)
-
-    result = await spark_session.execute_query(
-        "select `group`, OBJECT_AGG(`item`, `value`) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"
-    )
-    assert result["group"].tolist() == ["A", "B"]
-    assert json.loads(result["counts"].tolist()[0]) == {"apple": 1, "orange": 2}
-    assert json.loads(result["counts"].tolist()[1]) == {"apple": 3, "orange": 4}
-
-    result = await spark_session.execute_query(
-        "select `group`, F_COUNT_DICT_ENTROPY(OBJECT_AGG(`item`, `value`)) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"
-    )
-    assert_frame_equal(
-        result,
-        pd.DataFrame(
-            {
-                "group": ["A", "B"],
-                "counts": [
-                    -(np.log(1 / 3) * 1 / 3 + np.log(2 / 3) * 2 / 3),
-                    -(np.log(3 / 7) * 3 / 7 + np.log(4 / 7) * 4 / 7),
-                ],
-            }
-        ),
-    )

@@ -98,8 +98,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         mock_get_session.return_value = SnowflakeSession(
             account="test_account",
             warehouse="test_warehouse",
-            database="test_database",
-            sf_schema="test_schema",
+            database_name="test_database",
+            schema_name="test_schema",
+            role_name="TESTING",
             database_credential={
                 "type": "USERNAME_PASSWORD",
                 "username": "test_username",
@@ -636,6 +637,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                     "POINT_IN_TIME": "2022-04-03",
                 },
             ],
+            "feature_store_id": self.payload["tabular_source"]["feature_store_id"],
         }
 
     def test_preview_200(
@@ -764,7 +766,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
+            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
         )
 
     @freeze_time("2022-01-02 10:00:00")
@@ -832,7 +834,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
     @pytest.mark.asyncio
     async def test_batch_feature_create__success(
-        self, test_api_client_persistent, mock_snowflake_session, user_id
+        self, test_api_client_persistent, mock_snowflake_session, user_id, app_container
     ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
@@ -858,7 +860,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
 
         # check user id
-        assert task_response.json()["payload"]["user_id"] == str(user_id)
+        task_dict = task_response.json()
+        assert task_dict["payload"]["user_id"] == str(user_id)
 
         # retrieve task results
         response = self.wait_for_results(test_api_client, task_response)
@@ -873,6 +876,11 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             response_dict = response.json()
             assert response_dict["name"] == feat_create.name
             assert response.status_code == HTTPStatus.OK
+
+        # check task result
+        task_manager = app_container.task_manager
+        task_result = await task_manager.get_task_result(task_dict["id"])
+        assert set(task_result) == {feature_create_1.id, feature_create_2.id}
 
     @pytest.mark.asyncio
     @patch(
@@ -929,7 +937,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         multiple items in aggregation_result_names which is wrong for this feature.
         """
         assert create_success_response.json()["aggregation_result_names"] == [
-            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+            "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
         ]
 
     def test_request_sample_entity_serving_names(

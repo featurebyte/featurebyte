@@ -32,6 +32,7 @@ from featurebyte.routes.historical_feature_table.api import HistoricalFeatureTab
 from featurebyte.routes.item_table.api import ItemTableRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.observation_table.api import ObservationTableRouter
+from featurebyte.routes.online_store.api import OnlineStoreRouter
 from featurebyte.routes.periodic_tasks.api import PeriodicTaskRouter
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
@@ -50,8 +51,8 @@ from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_temp_storage
-from featurebyte.worker import get_celery
+from featurebyte.utils.storage import get_storage, get_temp_storage
+from featurebyte.worker import get_celery, get_redis
 
 logger = get_logger(__name__)
 
@@ -73,7 +74,9 @@ def _dep_injection_func(
     request.state.app_container = LazyAppContainer(
         user=request.state.user,
         persistent=MongoDBImpl(),
+        storage=get_storage(),
         temp_storage=get_temp_storage(),
+        redis=get_redis(),
         celery=get_celery(),
         catalog_id=active_catalog_id,
         app_container_config=app_container_config,
@@ -136,6 +139,7 @@ def get_app() -> FastAPI:
         SemanticRouter(),
         TaskRouter(),
         TempDataRouter(),
+        OnlineStoreRouter(),
     ]
     dependencies = _get_api_deps()
     for resource_api in non_catalog_specific_routers:

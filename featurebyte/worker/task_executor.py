@@ -20,6 +20,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
+from featurebyte.exception import TaskCanceledError, TaskRevokeExceptions
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task as TaskModel
@@ -115,6 +116,7 @@ class TaskExecutor:
         self.user = User(id=payload.get("user_id"))
         self.task = app_container.get(TASK_REGISTRY_MAP[command])
         self.task_progress_updater = app_container.get(TaskProgressUpdater)
+        self.task_manager = app_container.task_manager
         self.setup_worker_config()
         self.payload_dict = payload
 
@@ -166,17 +168,30 @@ class TaskExecutor:
     async def execute(self) -> Any:
         """
         Execute the task
+
+        Raises
+        ------
+        TaskCanceledError
+            Task revoked.
         """
         # Send initial progress to indicate task is started
         await self.task_progress_updater.update_progress(percent=0)
-
-        # Execute the task
         payload_obj = self.task.get_payload_obj(self.payload_dict)
-        await self._update_task_start_time_and_description(payload_obj)
-        await self.task.execute(payload_obj)
 
-        # Send final progress to indicate task is completed
-        await self.task_progress_updater.update_progress(percent=100)
+        try:
+            # Execute the task
+            await self._update_task_start_time_and_description(payload_obj)
+            task_result = await self.task.execute(payload_obj)
+            if task_result is not None:
+                await self.task_manager.update_task_result(
+                    task_id=str(self.task_id), result=task_result
+                )
+
+            # Send final progress to indicate task is completed
+            await self.task_progress_updater.update_progress(percent=100)
+        except TaskRevokeExceptions as exc:
+            await self.task.handle_task_revoke(payload_obj)
+            raise TaskCanceledError("Task canceled.") from exc
 
 
 class BaseCeleryTask(Task):

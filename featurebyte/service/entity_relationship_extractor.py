@@ -1,7 +1,7 @@
 """
 Entity Relationship Extractor Service
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import itertools
 from collections import defaultdict
@@ -57,7 +57,7 @@ class ServingEntityEnumeration:
             )
         )
 
-    def reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
+    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> List[ObjectId]:
         """
         Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
 
@@ -120,14 +120,14 @@ class EntityRelationshipExtractorService:
         self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def _extract_ancestors_or_descendants(
-        self, entity_ids: List[ObjectId], is_ancestor: bool
+        self, entity_ids: Sequence[ObjectId], is_ancestor: bool
     ) -> List[ObjectId]:
         """
         Extract ancestors or descendants of the given entity IDs
 
         Parameters
         ----------
-        entity_ids: List[ObjectId]
+        entity_ids: Sequence[ObjectId]
             List of entity IDs
         is_ancestor: bool
             If True, extract ancestors. Otherwise, extract descendants
@@ -295,7 +295,7 @@ class EntityRelationshipExtractorService:
 
     async def extract_primary_entity_descendant_relationship(
         self,
-        primary_entity_ids: List[ObjectId],
+        primary_entity_ids: Sequence[ObjectId],
     ) -> List[EntityRelationshipInfo]:
         """
         Extract relationships between primary entity ids and their descendants. This method is used
@@ -303,7 +303,7 @@ class EntityRelationshipExtractorService:
 
         Parameters
         ----------
-        primary_entity_ids: List[ObjectId]
+        primary_entity_ids: Sequence[ObjectId]
             List of primary entity ids
 
         Returns

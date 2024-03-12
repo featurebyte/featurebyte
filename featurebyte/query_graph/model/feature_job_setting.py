@@ -130,6 +130,20 @@ class FeatureJobSetting(FeatureByteBaseModel):
             "blind_spot": self.blind_spot_seconds,
         }
 
+    def normalize(self) -> "FeatureJobSetting":
+        """Normalize feature job setting
+
+        Returns
+        -------
+        FeatureJobSetting
+        """
+        fjs = self.to_seconds()
+        return FeatureJobSetting(
+            frequency=f"{fjs['frequency']}s",
+            time_modulo_frequency=f"{fjs['time_modulo_frequency']}s",
+            blind_spot=f"{fjs['blind_spot']}s",
+        )
+
     def __hash__(self) -> int:
         return hash(
             f"{self.frequency_seconds}_{self.time_modulo_frequency_seconds}_{self.blind_spot_seconds}"

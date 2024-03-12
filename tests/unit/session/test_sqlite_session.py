@@ -8,6 +8,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableDetails
 from featurebyte.session.sqlite import SQLiteSession
 
 
@@ -103,6 +104,9 @@ async def test_sqlite_session(sqlite_db_filename):
         "date": ColumnSpecWithDescription(name="date", dtype=DBVarType.DATE),
         "datetime": ColumnSpecWithDescription(name="datetime", dtype=DBVarType.TIMESTAMP),
     }
+    assert await session.get_table_details(table_name="type_table") == TableDetails(
+        fully_qualified_name="type_table"
+    )
 
 
 @pytest.mark.asyncio

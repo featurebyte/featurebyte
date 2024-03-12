@@ -89,7 +89,7 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     Parameters
     ----------
     transformations_hash : str
-        A hash that uniquely identifies the applied EventView transformations
+        A hash that uniquely identifies the applied view transformations
     parameters : dict[str, Any]
         Node parameters
 
@@ -134,7 +134,7 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     return aggregation_identifier
 
 
-def get_tile_table_identifier(row_index_lineage_hash: str, parameters: dict[str, Any]) -> str:
+def get_tile_table_identifier_v1(row_index_lineage_hash: str, parameters: dict[str, Any]) -> str:
     """Get tile table identifier that can be used as tile table name
 
     Tile table identifier is determined by the combination of:
@@ -193,6 +193,29 @@ def get_tile_table_identifier(row_index_lineage_hash: str, parameters: dict[str,
     # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
     tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])  # pylint: disable=E1121
     return tile_table_identifier.upper()
+
+
+def get_tile_table_identifier_v2(transformations_hash: str, parameters: dict[str, Any]) -> str:
+    """
+    Get tile table identifier that can be used as tile table name
+
+    In v2, different aggregations do not share the same tile table.
+
+    Parameters
+    ----------
+    transformations_hash : str
+        A hash that uniquely identifies the applied view transformations
+    parameters : dict[str, Any]
+        Node parameters
+
+    Returns
+    -------
+    str
+    """
+    aggregation_id = get_aggregation_identifier(
+        transformations_hash=transformations_hash, parameters=parameters
+    )
+    return f"TILE_{aggregation_id}".upper()
 
 
 def append_to_lineage(lineage: tuple[str, ...], node_name: str) -> tuple[str, ...]:

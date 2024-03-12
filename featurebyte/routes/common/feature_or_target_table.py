@@ -15,6 +15,7 @@ from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
@@ -36,9 +37,9 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 )
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.target_table import TargetTableService
 
 InfoTypeT = TypeVar("InfoTypeT", HistoricalFeatureTableInfo, TargetTableInfo)
@@ -73,6 +74,7 @@ class ValidationParameters:
     graph: QueryGraph
     nodes: List[Node]
     feature_store: FeatureStoreModel
+    feature_list_model: Optional[FeatureListModel] = None
     serving_names_mapping: Optional[dict[str, str]] = None
 
 
@@ -98,12 +100,14 @@ class FeatureOrTargetTableController(
     def __init__(
         self,
         service: Any,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(
+            service=service, feature_store_warehouse_service=feature_store_warehouse_service
+        )
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
@@ -203,8 +207,8 @@ class FeatureOrTargetTableController(
 
         validation_parameters = await self.get_validation_parameters(data)
         await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-            graph=validation_parameters.graph,
-            nodes=validation_parameters.nodes,
+            graph_nodes=(validation_parameters.graph, validation_parameters.nodes),
+            feature_list_model=validation_parameters.feature_list_model,
             request_column_names=request_column_names,
             feature_store=validation_parameters.feature_store,
             serving_names_mapping=validation_parameters.serving_names_mapping,

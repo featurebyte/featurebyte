@@ -1,14 +1,13 @@
 """
 Feature List Facade Service which is responsible for handling high level feature list operations
 """
+from typing import Any, Callable, Coroutine, Optional
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError, DocumentNotFoundError
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-)
+from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.feature_list import FeatureListService
@@ -38,7 +37,11 @@ class FeatureListFacadeService:
         self.feature_readiness_service = feature_readiness_service
         self.version_service = version_service
 
-    async def create_feature_list(self, data: FeatureListServiceCreate) -> FeatureListModel:
+    async def create_feature_list(
+        self,
+        data: FeatureListServiceCreate,
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ) -> FeatureListModel:
         """
         Create a new feature list
 
@@ -46,12 +49,16 @@ class FeatureListFacadeService:
         ----------
         data: FeatureListServiceCreate
             Feature list service create payload
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback
 
         Returns
         -------
         FeatureListModel
         """
-        document = await self.feature_list_service.create_document(data=data)
+        document = await self.feature_list_service.create_document(
+            data=data, progress_callback=progress_callback
+        )
         await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
         )
@@ -139,19 +146,23 @@ class FeatureListFacadeService:
         DocumentDeletionError
             If feature list is not in DRAFT status
         """
-        feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
-        feature_list_namespace = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list.feature_list_namespace_id
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=feature_list_id
         )
-        if feature_list_namespace.status != FeatureListStatus.DRAFT:
-            raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
-
-        await self.feature_list_service.delete_document(document_id=feature_list_id)
         try:
+            feature_list_namespace_id = feature_list_doc["feature_list_namespace_id"]
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list_namespace_id
+            )
+            if feature_list_namespace.status != FeatureListStatus.DRAFT:
+                raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
+
             await self.feature_readiness_service.update_feature_list_namespace(
-                feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                feature_list_namespace_id=feature_list_namespace_id,
                 deleted_feature_list_ids=[feature_list_id],
             )
         except DocumentNotFoundError:
             # if feature list namespace is deleted, do nothing
             pass
+
+        await self.feature_list_service.delete_document(document_id=feature_list_id)

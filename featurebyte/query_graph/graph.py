@@ -24,6 +24,7 @@ from pydantic import Field
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -41,11 +42,15 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     OperationStructure,
+    OperationStructureInfo,
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.node.nested import BaseGraphNode, BaseViewGraphNodeParameters
-from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
+from featurebyte.query_graph.transform.decompose_point import (
+    DecomposePointExtractor,
+    DecomposePointState,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -129,6 +134,36 @@ class QueryGraph(QueryGraphModel):
         primary_input_nodes = self.get_primary_input_nodes(node_name=node_name)
         return sorted(set(node.parameters.id for node in primary_input_nodes if node.parameters.id))
 
+    def get_decompose_state(
+        self,
+        node_name: str,
+        relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        extract_primary_entity_ids_only: bool = False,
+    ) -> DecomposePointState:
+        """
+        Get decompose state of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get decompose state for
+        relationships_info: Optional[List[EntityRelationshipInfo]]
+            Entity relationship info
+        extract_primary_entity_ids_only: bool
+            Whether to extract primary entity IDs only to speed up the extraction process
+
+        Returns
+        -------
+        DecomposePointState
+            Decompose state of the query graph
+        """
+        decompose_state = DecomposePointExtractor(graph=self).extract(
+            node=self.get_node_by_name(node_name=node_name),
+            relationships_info=relationships_info,
+            extract_primary_entity_ids_only=extract_primary_entity_ids_only,
+        )
+        return decompose_state
+
     def get_entity_ids(self, node_name: str) -> List[ObjectId]:
         """
         Get entity IDs of the query graph given the target node name
@@ -143,10 +178,11 @@ class QueryGraph(QueryGraphModel):
         List[ObjectId]
             List of entity IDs in the query graph
         """
-        entity_state = EntityExtractor(graph=self).extract(
-            node=self.get_node_by_name(node_name=node_name)
+        # not passing entity relationship to the extractor, primary entity will be the same as entity
+        decompose_state = self.get_decompose_state(
+            node_name=node_name, relationships_info=None, extract_primary_entity_ids_only=True
         )
-        return sorted(entity_state.entity_ids)
+        return sorted(decompose_state.primary_entity_ids)
 
     def get_user_defined_function_ids(self, node_name: str) -> List[ObjectId]:
         """
@@ -382,6 +418,33 @@ class QueryGraph(QueryGraphModel):
             node_name_map[node.name] = node_global.name
         return self, node_name_map
 
+    def extract_operation_structure_info(
+        self,
+        node: Node,
+        keep_all_source_columns: bool = True,
+        **kwargs: Any,
+    ) -> OperationStructureInfo:
+        """
+        Extract operation structure info from the graph given target node
+
+        Parameters
+        ----------
+        node: Node
+            Target node used to construct the operation structure
+        keep_all_source_columns: bool
+            Whether to keep all source columns in the operation structure
+        kwargs: Any
+            Additional arguments to be passed to the OperationStructureExtractor.extract() method
+
+        Returns
+        -------
+        OperationStructureInfo
+        """
+        op_struct_info = OperationStructureExtractor(graph=self).extract(
+            node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
+        )
+        return op_struct_info
+
     def extract_operation_structure(
         self,
         node: Node,
@@ -404,7 +467,7 @@ class QueryGraph(QueryGraphModel):
         -------
         OperationStructure
         """
-        op_struct_info = OperationStructureExtractor(graph=self).extract(
+        op_struct_info = self.extract_operation_structure_info(
             node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
         )
         return op_struct_info.operation_structure_map[node.name]
@@ -566,12 +629,8 @@ StateField = Literal[
 ]
 
 
-class GlobalGraphState(metaclass=SingletonMeta):
-    """
-    Global singleton to store query graph related attributes
-    """
-
-    _state: GraphState = {
+def _create_global_graph_state() -> GraphState:
+    return {
         "edges": [],
         "nodes": [],
         "nodes_map": {},
@@ -582,19 +641,21 @@ class GlobalGraphState(metaclass=SingletonMeta):
         "ref_to_node_name": {},
     }
 
+
+class GlobalGraphState(metaclass=SingletonMeta):
+    """
+    Global singleton to store query graph related attributes
+    """
+
+    _state: GraphState = _create_global_graph_state()
+
     @classmethod
     def reset(cls) -> None:
         """
         Reset the global query graph state to clean state
         """
-        cls._state["edges"] = []
-        cls._state["nodes"] = []
-        cls._state["nodes_map"] = {}
-        cls._state["edges_map"] = defaultdict(list)
-        cls._state["backward_edges_map"] = defaultdict(list)
-        cls._state["node_type_counter"] = defaultdict(int)
-        cls._state["node_name_to_ref"] = {}
-        cls._state["ref_to_node_name"] = {}
+        del cls._state
+        cls._state = _create_global_graph_state()
 
     @classmethod
     def construct_getter_func(cls, field: StateField) -> Callable[[], Any]:
@@ -670,3 +731,14 @@ class GlobalQueryGraph(QueryGraph):
         # under no circumstances we should allow making copy of GlobalQueryGraph
         _ = args, kwargs
         return GlobalQueryGraph()
+
+    def clear(self) -> None:
+        """
+        Clear the global query graph
+        """
+        del self.nodes[:]
+        del self.edges[:]
+        self.nodes = []
+        self.edges = []
+        GlobalGraphState.reset()
+        self._update_cache()

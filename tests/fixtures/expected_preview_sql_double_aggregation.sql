@@ -54,7 +54,7 @@ WITH REQUEST_TABLE AS (
             "order_id" AS "order_id",
             "order_method" AS "order_method",
             (
-              "_fb_internal_item_count_None_order_id_None_input_2" + 123
+              "_fb_internal_order_id_item_count_None_order_id_None_input_2" + 123
             ) AS "ord_size"
           FROM (
             SELECT
@@ -62,7 +62,7 @@ WITH REQUEST_TABLE AS (
               REQ."cust_id",
               REQ."order_id",
               REQ."order_method",
-              "T0"."_fb_internal_item_count_None_order_id_None_input_2" AS "_fb_internal_item_count_None_order_id_None_input_2"
+              "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
             FROM (
               SELECT
                 "ts" AS "ts",
@@ -74,7 +74,7 @@ WITH REQUEST_TABLE AS (
             LEFT JOIN (
               SELECT
                 ITEM."order_id" AS "order_id",
-                COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_2"
+                COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
               FROM (
                 SELECT
                   "order_id" AS "order_id",
@@ -118,13 +118,13 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS "_fb_internal_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS "_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      SUM(sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec) / SUM(count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec) AS "_fb_internal_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec"
+      SUM(sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec) / SUM(count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec) AS "_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -161,5 +161,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS "order_size_30d_avg"
+  "_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS "order_size_30d_avg"
 FROM _FB_AGGREGATED AS AGG

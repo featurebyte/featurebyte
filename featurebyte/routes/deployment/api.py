@@ -11,6 +11,7 @@ from fastapi.responses import ORJSONResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -87,21 +88,25 @@ async def list_deployments(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_id: Optional[PydanticObjectId] = None,
 ) -> DeploymentList:
     """
     List Deployments
     """
     controller = request.state.app_container.deployment_controller
+    query_filter = None
+    if feature_list_id:
+        query_filter = {"feature_list_id": feature_list_id}
     deployment_list: DeploymentList = await controller.list(
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
+        query_filter=query_filter,
     )
     return deployment_list
 
@@ -122,7 +127,7 @@ async def list_deployment_audit_logs(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
@@ -133,8 +138,7 @@ async def list_deployment_audit_logs(
         document_id=deployment_id,
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
     )
     return audit_doc_list
@@ -183,7 +187,7 @@ async def list_all_deployments(
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
     enabled: Optional[bool] = Query(default=None),
 ) -> AllDeploymentList:
     """
@@ -193,8 +197,7 @@ async def list_all_deployments(
     deployment_list: AllDeploymentList = await controller.list_all_deployments(
         page=page,
         page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         enabled=enabled,
     )
     return deployment_list

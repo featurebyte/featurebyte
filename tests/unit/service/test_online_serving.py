@@ -16,6 +16,44 @@ from featurebyte.exception import FeatureListNotOnlineEnabledError, RequiredEnti
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.session.base import BaseSession
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    deploy_feature_ids,
+    extract_session_executed_queries,
+)
+
+
+@pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
+def mocked_unique_identifier_generator_fixture():
+    """
+    Patch ObjectId to return a fixed value so that queries are deterministic
+    """
+    with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id:
+        patched_object_id.return_value = ObjectId("000000000000000000000000")
+        yield patched_object_id
+
+
+@pytest_asyncio.fixture
+async def deployed_feature_list_multiple_features(
+    app_container,
+    float_feature,
+    feature_without_entity,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed features
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+
+    float_feature.save()
+    feature_without_entity.save()
+    feature_list_model = await deploy_feature_ids(
+        app_container, "my_list", [float_feature.id, feature_without_entity.id]
+    )
+    return feature_list_model
 
 
 @pytest.fixture
@@ -65,14 +103,32 @@ def mock_session_for_online_serving_fixture():
 
     async def mock_execute_query(query):
         _ = query
-        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_ROW_INDEX": [0]})
+        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]})
 
-    return Mock(
-        name="mock_session_for_online_serving",
-        execute_query=Mock(side_effect=mock_execute_query),
-        execute_query_long_running=Mock(side_effect=mock_execute_query),
-        source_type=SourceType.SNOWFLAKE,
-    )
+    with patch(
+        "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        mock_session = Mock(
+            name="mock_session_for_online_serving",
+            execute_query=Mock(side_effect=mock_execute_query),
+            execute_query_long_running=Mock(side_effect=mock_execute_query),
+            database_name="my_db",
+            schema_name="my_schema",
+            generate_session_unique_id=Mock(return_value="1"),
+            source_type=SourceType.SNOWFLAKE,
+            spec=BaseSession,
+        )
+        mock_get_feature_store_session.return_value = mock_session
+        yield mock_session
+
+
+@pytest.fixture
+def patched_num_features_per_query():
+    """
+    Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
+    """
+    with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", 1):
+        yield
 
 
 @pytest.fixture(name="expected_online_feature_query")
@@ -83,29 +139,29 @@ def expected_online_feature_query_fixture():
         '''
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
+            REQ."__FB_TABLE_ROW_INDEX",
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
             SYSDATE() AS POINT_IN_TIME
           FROM (
             SELECT
               1 AS "cust_id",
-              0 AS "__FB_ROW_INDEX"
+              0 AS "__FB_TABLE_ROW_INDEX"
           ) AS REQ
         ), _FB_AGGREGATED AS (
           SELECT
+            REQ."__FB_TABLE_ROW_INDEX",
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+            "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+                "'_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -119,23 +175,23 @@ def expected_online_feature_query_fixture():
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
+          AGG."__FB_TABLE_ROW_INDEX",
           AGG."cust_id",
-          AGG."__FB_ROW_INDEX",
-          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
+          "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
@@ -152,21 +208,17 @@ async def test_feature_list_deployed(
     """
     Test getting online features request for a valid feature list
     """
-    with patch(
-        "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        mock_get_feature_store_session.return_value = mock_session_for_online_serving
-        result = await online_serving_service.get_online_features_from_feature_list(
-            feature_list=deployed_feature_list,
-            request_data=entity_serving_names,
-        )
+    result = await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list,
+        request_data=entity_serving_names,
+    )
 
     # Check result
     assert result.dict() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
 
     # Check query used
-    assert len(mock_session_for_online_serving.execute_query.call_args_list) == 1
-    args, _ = mock_session_for_online_serving.execute_query.call_args
+    assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
+    args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
     assert args[0] == expected_online_feature_query
 
 
@@ -181,19 +233,15 @@ async def test_feature_list_deployed_with_output_table(
     """
     Test getting online features request with output table
     """
-    with patch(
-        "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        mock_get_feature_store_session.return_value = mock_session_for_online_serving
-        await online_serving_service.get_online_features_from_feature_list(
-            feature_list=deployed_feature_list,
-            request_data=entity_serving_names,
-            output_table_details=TableDetails(
-                database_name="output_db_name",
-                schema_name="output_schema_name",
-                table_name="output_table_name",
-            ),
-        )
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list,
+        request_data=entity_serving_names,
+        output_table_details=TableDetails(
+            database_name="output_db_name",
+            schema_name="output_schema_name",
+            table_name="output_table_name",
+        ),
+    )
 
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
@@ -238,17 +286,13 @@ async def test_feature_list_deployed_with_batch_request_table(
     """
     Test getting online features request with batch request table
     """
-    with patch(
-        "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        mock_get_feature_store_session.return_value = mock_session_for_online_serving
-        await online_serving_service.get_online_features_from_feature_list(
-            feature_list=deployed_feature_list,
-            request_data=batch_request_table,
-            output_table_details=TableDetails(
-                database_name="some_database", schema_name="some_schema", table_name="some_table"
-            ),
-        )
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list,
+        request_data=batch_request_table,
+        output_table_details=TableDetails(
+            database_name="some_database", schema_name="some_schema", table_name="some_table"
+        ),
+    )
 
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
@@ -261,25 +305,21 @@ async def test_feature_list_deployed_with_batch_request_table(
           SELECT
             REQ."cust_id",
             SYSDATE() AS POINT_IN_TIME
-          FROM (
-            SELECT
-              *
-            FROM "req_db_name"."req_schema_name"."req_table_name"
-          ) AS REQ
+          FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
         ), _FB_AGGREGATED AS (
           SELECT
             REQ."cust_id",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+            "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+                "'_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -293,23 +333,78 @@ async def test_feature_list_deployed_with_batch_request_table(
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
           AGG."cust_id",
-          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
+          "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
     assert args[0] == expected
+
+
+@pytest.mark.usefixtures("patched_num_features_per_query")
+@pytest.mark.asyncio
+async def test_get_online_features_multiple_queries__dataframe(
+    online_serving_service,
+    deployed_feature_list_multiple_features,
+    entity_serving_names,
+    mock_session_for_online_serving,
+    update_fixtures,
+):
+    """
+    Test getting online features with multiple queries (dataframe input)
+    """
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list_multiple_features,
+        request_data=entity_serving_names,
+    )
+
+    # Check queries used
+    queries = extract_session_executed_queries(mock_session_for_online_serving)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_get_online_features_multiple_queries_dataframe.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.usefixtures("patched_num_features_per_query")
+@pytest.mark.asyncio
+async def test_get_online_features_multiple_queries__batch_request_table(
+    online_serving_service,
+    deployed_feature_list_multiple_features,
+    mock_session_for_online_serving,
+    batch_request_table,
+    update_fixtures,
+):
+    """
+    Test getting online features request with batch request table (batch request table input)
+    """
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list_multiple_features,
+        request_data=batch_request_table,
+        output_table_details=TableDetails(
+            database_name="some_database", schema_name="some_schema", table_name="some_table"
+        ),
+    )
+
+    # Check queries used
+    queries = extract_session_executed_queries(mock_session_for_online_serving)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_get_online_features_multiple_queries_batch_request_table.sql",
+        update_fixture=update_fixtures,
+    )

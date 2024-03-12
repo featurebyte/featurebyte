@@ -223,29 +223,35 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
             SELECT
               INNER_."serving_name",
               INNER_."POINT_IN_TIME",
-              MAP_FROM_ENTRIES(
-                COLLECT_LIST(
-                  STRUCT(
-                    CASE
-                      WHEN INNER_."value_by" IS NULL
-                      THEN '__MISSING__'
-                      ELSE CAST(INNER_."value_by" AS TEXT)
-                    END,
-                    {result_0}
+              MAP_FILTER(
+                MAP_FROM_ENTRIES(
+                  COLLECT_LIST(
+                    STRUCT(
+                      CASE
+                        WHEN INNER_."value_by" IS NULL
+                        THEN '__MISSING__'
+                        ELSE CAST(INNER_."value_by" AS TEXT)
+                      END,
+                      {result_0}
+                    )
                   )
-                )
+                ),
+                (k, v) -> NOT v IS NULL
               ) AS "result_0",
-              MAP_FROM_ENTRIES(
-                COLLECT_LIST(
-                  STRUCT(
-                    CASE
-                      WHEN INNER_."value_by" IS NULL
-                      THEN '__MISSING__'
-                      ELSE CAST(INNER_."value_by" AS TEXT)
-                    END,
-                    {result_1}
+              MAP_FILTER(
+                MAP_FROM_ENTRIES(
+                  COLLECT_LIST(
+                    STRUCT(
+                      CASE
+                        WHEN INNER_."value_by" IS NULL
+                        THEN '__MISSING__'
+                        ELSE CAST(INNER_."value_by" AS TEXT)
+                      END,
+                      {result_1}
+                    )
                   )
-                )
+                ),
+                (k, v) -> NOT v IS NULL
               ) AS "result_1"
             FROM (
               SELECT
@@ -360,17 +366,20 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         SELECT
           INNER_."serving_name",
           INNER_."POINT_IN_TIME",
-          MAP_FROM_ENTRIES(
-            COLLECT_LIST(
-              STRUCT(
-                CASE
-                  WHEN INNER_."value_by" IS NULL
-                  THEN '__MISSING__'
-                  ELSE CAST(INNER_."value_by" AS TEXT)
-                END,
-                INNER_."result_inner"
+          MAP_FILTER(
+            MAP_FROM_ENTRIES(
+              COLLECT_LIST(
+                STRUCT(
+                  CASE
+                    WHEN INNER_."value_by" IS NULL
+                    THEN '__MISSING__'
+                    ELSE CAST(INNER_."value_by" AS TEXT)
+                  END,
+                  INNER_."result_inner"
+                )
               )
-            )
+            ),
+            (k, v) -> NOT v IS NULL
           ) AS "result"
         FROM (
           SELECT

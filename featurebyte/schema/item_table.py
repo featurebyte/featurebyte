@@ -3,7 +3,7 @@ ItemTable API payload schema
 """
 from typing import List, Literal
 
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -21,6 +21,11 @@ class ItemTableCreate(TableCreate):
     event_id_column: StrictStr
     item_id_column: StrictStr
     event_table_id: PydanticObjectId
+
+    # pydantic validators
+    _special_columns_validator = validator(
+        "record_creation_timestamp_column", "event_id_column", "item_id_column", allow_reuse=True
+    )(TableCreate._special_column_validator)
 
 
 class ItemTableList(PaginationMixin):

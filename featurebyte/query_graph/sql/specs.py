@@ -29,8 +29,10 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
-from featurebyte.query_graph.sql.common import apply_serving_names_mapping
+from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
+    apply_serving_names_mapping,
+)
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -64,12 +66,16 @@ class AggregationSpec(ABC):
     Base class of all aggregation specifications
     """
 
+    node_name: str
+    feature_name: str
     entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
+    agg_result_name_include_serving_names: bool
 
     def __post_init__(self) -> None:
         self.original_serving_names = self.serving_names[:]
+        self.original_agg_result_name: str = self.agg_result_name
         if self.serving_names_mapping is not None:
             self.serving_names = apply_serving_names_mapping(
                 self.serving_names, self.serving_names_mapping
@@ -112,7 +118,10 @@ class AggregationSpec(ABC):
         str
             Aggregation result name
         """
-        parts = [FB_INTERNAL_COLUMN_PREFIX, self.aggregation_type]
+        parts = [FB_INTERNAL_COLUMN_PREFIX]
+        if self.agg_result_name_include_serving_names:
+            parts.extend(self.serving_names)
+        parts.append(self.aggregation_type)
         parts.extend([f"{arg}" for arg in args])
         return "_".join(parts)
 
@@ -169,6 +178,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         graph: QueryGraphModel,
         groupby_node: Node,
         adapter: BaseAdapter,
+        agg_result_name_include_serving_names: bool,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
@@ -183,6 +193,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Instance of BaseAdapter
         serving_names_mapping : dict[str, str]
             Mapping from original serving name to new serving name
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
 
         Returns
         -------
@@ -218,6 +230,8 @@ class TileBasedAggregationSpec(AggregationSpec):
                 feature_name=feature_name,
             )
             agg_spec = cls(
+                node_name=groupby_node.name,
+                feature_name=feature_name,
                 window=window_secs,
                 frequency=groupby_node_params.frequency,
                 time_modulo_frequency=groupby_node_params.time_modulo_frequency,
@@ -229,7 +243,6 @@ class TileBasedAggregationSpec(AggregationSpec):
                 serving_names_mapping=serving_names_mapping,
                 value_by=groupby_node_params.value_by,
                 merge_expr=aggregator.merge(aggregation_id),
-                feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
                 entity_ids=groupby_node_params.entity_ids,  # type: ignore[arg-type]
@@ -237,6 +250,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,
                 agg_func=groupby_node_params.agg_func,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             aggregation_specs.append(agg_spec)
 
@@ -355,7 +369,11 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def construct_agg_result_name(self, *args: Any) -> str:
         return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
 
-    def get_agg_result_name_from_groupby_parameters(self, parameters: BaseGroupbyParameters) -> str:
+    def get_agg_result_name_from_groupby_parameters(
+        self,
+        parameters: BaseGroupbyParameters,
+        *args: Any,
+    ) -> str:
         """
         Get the name of the aggregation result column from groupby parameters. The name should
         include the parameters that can affect the result of the groupby operation: aggregation
@@ -365,18 +383,20 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         ----------
         parameters: BaseGroupbyParameters
             Groupby parameters
+        *args: Any
+            Any additional parameters to include in the result name
 
         Returns
         -------
         str
         """
-        args = [
+        groupby_args = [
             parameters.agg_func,
             parameters.parent,
             *(parameters.keys or [None]),  # type: ignore
             parameters.value_by or None,
         ]
-        return self.construct_agg_result_name(*args)
+        return self.construct_agg_result_name(*groupby_args, *args)
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
@@ -443,6 +463,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[NonTileBasedAggregationSpecT]:
         """
         Construct the list of specifications
@@ -457,6 +478,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Serving names mapping
         graph: Optional[QueryGraphModel]
             Query graph
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         """
 
     @classmethod
@@ -489,6 +512,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
         graph: QueryGraphModel,
+        agg_result_name_include_serving_names: bool = True,
         aggregation_source: Optional[AggregationSource] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
@@ -503,6 +527,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         graph: QueryGraphModel
             Query graph. Mandatory if aggregation_source is not provided
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
         source_type: Optional[SourceType]
@@ -538,6 +564,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             aggregation_source=aggregation_source,
             serving_names_mapping=serving_names_mapping,
             graph=graph,
+            agg_result_name_include_serving_names=agg_result_name_include_serving_names,
         )
 
 
@@ -582,16 +609,20 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
             ItemAggregationSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 
@@ -614,7 +645,14 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
+        args = self._get_additional_agg_result_name_params()
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters, *args)
+
+    def _get_additional_agg_result_name_params(self) -> list[Any]:
+        args = []
+        if self.parameters is not None and self.parameters.offset is not None:
+            args.append(self.parameters.offset)
+        return args
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -641,16 +679,20 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         return [
             AggregateAsAtSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 parameters=node.parameters,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 
@@ -689,16 +731,20 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [
             ForwardAggregateSpec(
+                node_name=node.name,
+                feature_name=node.parameters.name,
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
         ]
 

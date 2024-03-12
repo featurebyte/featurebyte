@@ -4,7 +4,7 @@ Test functions in migration/run.py
 import glob
 import json
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -29,6 +29,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.utils.storage import get_storage
 
 
 @pytest.fixture(name="schema_metadata_service")
@@ -154,8 +155,9 @@ async def test_post_migration_sanity_check(app_container):
                 details=SnowflakeDetails(
                     account=f"<account>_{i}",
                     warehouse="snowflake",
-                    database="<database_name>",
-                    sf_schema="<schema_name>",
+                    database_name="<database_name>",
+                    schema_name="<schema_name>",
+                    role_name="TESTING",
                 ),
             ),
         )
@@ -196,6 +198,8 @@ async def test_run_migration(
         get_credential=get_credential,
         celery=get_celery(),
         include_data_warehouse_migrations=False,
+        storage=get_storage(),
+        redis=Mock(),
     )
 
     # check that all migrated collections contains some examples for testing

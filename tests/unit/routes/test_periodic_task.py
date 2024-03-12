@@ -3,6 +3,7 @@ Tests for PeriodicTask route
 """
 import json
 from http import HTTPStatus
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -71,7 +72,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
 
     @pytest_asyncio.fixture()
     async def create_success_response(
-        self, test_api_client_persistent, user_id, default_catalog_id
+        self, test_api_client_persistent, user_id, default_catalog_id, storage
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
         _, persistent = test_api_client_persistent
@@ -80,6 +81,8 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
             persistent=persistent,
             catalog_id=ObjectId(default_catalog_id),
             block_modification_handler=BlockModificationHandler(),
+            storage=storage,
+            redis=Mock(),
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
         return MockResponse(
@@ -88,7 +91,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
 
     @pytest_asyncio.fixture()
     async def create_multiple_success_responses(
-        self, test_api_client_persistent, user_id, default_catalog_id
+        self, test_api_client_persistent, user_id, default_catalog_id, storage
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
         _, persistent = test_api_client_persistent
@@ -98,6 +101,8 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
             persistent=persistent,
             catalog_id=ObjectId(default_catalog_id),
             block_modification_handler=BlockModificationHandler(),
+            storage=storage,
+            redis=Mock(),
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))

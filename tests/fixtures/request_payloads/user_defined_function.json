@@ -1,7 +1,6 @@
 {
     "_id": "64928868668f720c5bebbbd4",
-    "catalog_id": null,
-    "feature_store_id": "646f6c190ed28a5271fb02a1",
+    "description": null,
     "function_parameters": [
         {
             "default_value": null,
@@ -10,6 +9,7 @@
             "test_value": null
         }
     ],
+    "is_global": false,
     "name": "udf_test",
     "output_dtype": "FLOAT",
     "sql_function_name": "cos"

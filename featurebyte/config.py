@@ -21,7 +21,7 @@ from urllib3.util.retry import Retry
 from websocket import WebSocketConnectionClosedException
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.utils import get_version
+from featurebyte.common.utils import get_version, is_server_mode
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import get_active_catalog_id
@@ -351,6 +351,7 @@ class Configurations:
                 else get_home_path().joinpath("config.yaml")
             )
             self.storage: LocalStorageSettings = LocalStorageSettings()
+            self.default_profile_name: Optional[str] = None
             self._profile: Optional[Profile] = None
             self.profiles: List[Profile] = []
             self.logging: LoggingSettings = LoggingSettings()
@@ -435,8 +436,9 @@ class Configurations:
 
             # Set default _profile if specified
             profile_map = {profile.name: profile for profile in self.profiles}
-            default_profile = settings.pop("default_profile", None)
-            self._profile = profile_map.get(default_profile)
+            self.default_profile_name = settings.pop("default_profile", None)
+            if self.default_profile_name:
+                self._profile = profile_map.get(self.default_profile_name)
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
@@ -522,11 +524,13 @@ class Configurations:
         APIClient
             API client
         """
-        # pylint: disable=import-outside-toplevel,cyclic-import
-        from featurebyte.logging import reconfigure_loggers
+        if not is_server_mode():
+            # pylint: disable=import-outside-toplevel,cyclic-import
+            from featurebyte.logging import reconfigure_loggers
 
-        # configure logger
-        reconfigure_loggers(self)
+            # configure logger
+            reconfigure_loggers(self)
+
         return APIClient(
             api_url=self.profile.api_url,
             api_token=self.profile.api_token,

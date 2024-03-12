@@ -8,59 +8,69 @@
     "columns_info": [
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "INT",
             "entity_id": null,
             "name": "col_int"
         },
         {
             "critical_data_info": null,
+            "description": "Float column",
             "dtype": "FLOAT",
             "entity_id": null,
             "name": "col_float"
         },
         {
             "critical_data_info": null,
+            "description": "Char column",
             "dtype": "CHAR",
             "entity_id": null,
             "name": "col_char"
         },
         {
             "critical_data_info": null,
+            "description": "Text column",
             "dtype": "VARCHAR",
             "entity_id": null,
             "name": "col_text"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "BINARY",
             "entity_id": null,
             "name": "col_binary"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "BOOL",
             "entity_id": null,
             "name": "col_boolean"
         },
         {
             "critical_data_info": null,
+            "description": "Timestamp column",
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "event_timestamp"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "created_at"
         },
         {
             "critical_data_info": null,
+            "description": null,
             "dtype": "INT",
             "entity_id": null,
             "name": "cust_id"
         }
     ],
+    "description": "test dimension table",
     "dimension_id_column": "col_int",
     "name": "sf_dimension_table",
     "record_creation_timestamp_column": "created_at",

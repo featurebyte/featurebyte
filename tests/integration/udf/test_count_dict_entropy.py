@@ -4,15 +4,14 @@ Tests for count dict entropy UDF
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_AND_UNITY
 
-
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_AND_UNITY, indirect=True)
 @pytest.mark.parametrize(
     "dictionary, expected",
     [
         (None, np.nan),
+        ({}, 0),
         ({"a": 1}, 0),
+        ({"a": 1, "b": 0}, 0),
         ({"a": 1, "b": 1, "c": 1}, 1.098612),
         ({"a": 1, "b": 2, "c": 3}, 1.011404),
     ],

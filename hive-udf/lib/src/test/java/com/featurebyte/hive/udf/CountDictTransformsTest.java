@@ -48,16 +48,27 @@ public class CountDictTransformsTest {
     countDictOther.put("orange", new DoubleWritable(110));
     countDictOther.put("watermelon", new DoubleWritable(Double.NaN));
     countDictOther.put("kiwi", null);
+    countDictOther.put("pineapple", new DoubleWritable(0));
   }
 
   @Test
   public void testCountDictEntropy() throws HiveException {
-    CountDictEntropyV1 udf = new CountDictEntropyV1();
+    CountDictEntropyV2 udf = new CountDictEntropyV2();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(output.get(), 2.0753058086690364);
+  }
+
+  @Test
+  public void testCountDictEntropyZeroCounts() throws HiveException {
+    CountDictEntropyV2 udf = new CountDictEntropyV2();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDictOther)};
+    DoubleWritable output = (DoubleWritable) udf.evaluate(args);
+    assertEquals(output.get(), 0.6920129648318738);
   }
 
   @Test

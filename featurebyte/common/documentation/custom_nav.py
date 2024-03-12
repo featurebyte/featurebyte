@@ -42,6 +42,8 @@ from featurebyte.common.documentation.constants import (
     LIST,
     MANAGE,
     OBSERVATION_TABLE,
+    ONLINE_STORE,
+    ONLINE_STORE_DETAILS,
     RELATIONSHIP,
     REQUEST_COLUMN,
     SAVE,
@@ -73,6 +75,7 @@ class BetaWave3Nav(Nav):
 
     _custom_root_level_order = [
         FEATURE_STORE,
+        ONLINE_STORE,
         CATALOG,
         DATA_SOURCE,
         SOURCE_TABLE,
@@ -99,6 +102,8 @@ class BetaWave3Nav(Nav):
     ]
 
     _custom_second_level_order = [
+        WAREHOUSE,
+        ONLINE_STORE_DETAILS,
         CREDENTIAL,
         CLASS_METHODS,
         TYPE,
@@ -128,7 +133,6 @@ class BetaWave3Nav(Nav):
         LINEAGE,
         ENUMS,
         CLEANING_OPERATION,
-        WAREHOUSE,
         REQUEST_COLUMN,
         USER_DEFINED_FUNCTION,
     ]

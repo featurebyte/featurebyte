@@ -1,7 +1,7 @@
 """
 This module contains entity relationship info related classes.
 """
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Sequence, Set
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -27,6 +27,50 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
+    entity_column_name: Optional[str]
+    related_entity_column_name: Optional[str]
+
+    def __hash__(self) -> int:
+        key = (
+            self.relationship_type,
+            self.entity_id,
+            self.related_entity_id,
+            self.relation_table_id,
+            self.entity_column_name,
+            self.related_entity_column_name,
+        )
+        return hash(key)
+
+
+class FeatureEntityLookupInfo(FeatureByteBaseModel):
+    """
+    FeatureLookupEntityInfo describes how parent entities should be looked up for a feature
+    """
+
+    feature_id: PydanticObjectId
+
+    # Lookup steps to retrieve feature's primary entity based on feature list's primary entity.
+    # Based on relationships defined in feature_list.relationships.info
+    feature_list_to_feature_primary_entity_join_steps: List[EntityRelationshipInfo]
+
+    # Lookup steps to retrieve feature's internally required entity (based on ingest graphs' primary
+    # entity ids). Based on relationships defined in feature.relationships_info
+    feature_internal_entity_join_steps: List[EntityRelationshipInfo]
+
+    @property
+    def join_steps(self) -> List[EntityRelationshipInfo]:
+        """
+        Return the join steps required to convert feature list's primary entity to feature's
+        internally required entity
+
+        Returns
+        -------
+        List[EntityRelationshipInfo]
+        """
+        return (
+            self.feature_list_to_feature_primary_entity_join_steps
+            + self.feature_internal_entity_join_steps
+        )
 
 
 @dataclass
@@ -184,7 +228,7 @@ class EntityAncestorDescendantMapper:
             entity_id_to_descendant_ids=cls.get_entity_id_to_descendant_ids(relationships_info),
         )
 
-    def reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
+    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> List[ObjectId]:
         """
         Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
 

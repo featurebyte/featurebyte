@@ -108,13 +108,13 @@ class TestCredentialApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
         result = response.json()
 
-        # credentials should not exposed in response
-        assert "database_credential" not in result
-        assert "storage_credential" not in result
-
-        # credential types will be exposed instead
-        assert result["database_credential_type"] == "ACCESS_TOKEN"
-        assert result["storage_credential_type"] == "S3"
+        # credentials have values hidden
+        assert result["database_credential"] == {"access_token": "********", "type": "ACCESS_TOKEN"}
+        assert result["storage_credential"] == {
+            "s3_access_key_id": "********",
+            "s3_secret_access_key": "********",
+            "type": "S3",
+        }
 
         # test get audit records
         response = test_api_client.get(f"{self.base_route}/audit/{credential_id}")
@@ -202,8 +202,9 @@ class TestCredentialApi(BaseApiTestSuite):
             "database_details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "sf_database",
-                "sf_schema": "sf_schema",
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "role_name": "TESTING",
             },
         }
         assert response_dict["feature_store_info"].items() > expected_feature_store_info.items()

@@ -7,11 +7,12 @@ from typing import List, Optional
 
 from http import HTTPStatus
 
-from fastapi import Query, Request
+from fastapi import Query, Request, Response
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.catalog import CatalogModel, CatalogNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.schema import (
@@ -22,9 +23,15 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.catalog import CatalogCreate, CatalogList, CatalogUpdate
+from featurebyte.schema.catalog import (
+    CatalogCreate,
+    CatalogList,
+    CatalogOnlineStoreUpdate,
+    CatalogUpdate,
+)
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import CatalogInfo
+from featurebyte.schema.task import Task
 
 
 class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, CatalogController]):
@@ -50,6 +57,23 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             methods=["PATCH"],
             response_model=CatalogModel,
             status_code=HTTPStatus.OK,
+        )
+
+        # update online store route (for backward compatibility; to be deprecated)
+        self.router.add_api_route(
+            "/{catalog_id}/online_store",
+            self.update_catalog_online_store,
+            methods=["PATCH"],
+            response_model=CatalogModel,
+            status_code=HTTPStatus.OK,
+        )
+
+        # update online store route
+        self.router.add_api_route(
+            "/{catalog_id}/online_store_async",
+            self.update_catalog_online_store_async,
+            methods=["PATCH"],
+            response_model=Optional[Task],
         )
 
         # delete route
@@ -86,7 +110,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
@@ -134,11 +158,48 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         Update catalog
         """
         controller = self.get_controller_for_request(request)
-        catalog: CatalogModel = await controller.update_catalog(
+        catalog = await controller.update_catalog(
             catalog_id=catalog_id,
             data=data,
         )
         return catalog
+
+    async def update_catalog_online_store(
+        self,
+        request: Request,
+        catalog_id: PydanticObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> CatalogModel:
+        """
+        Update catalog online store
+        """
+        controller = self.get_controller_for_request(request)
+        catalog = await controller.update_catalog_online_store(
+            catalog_id=catalog_id,
+            data=data,
+        )
+        return catalog
+
+    async def update_catalog_online_store_async(
+        self,
+        request: Request,
+        catalog_id: PydanticObjectId,
+        data: CatalogOnlineStoreUpdate,
+        response: Response,
+    ) -> Optional[Task]:
+        """
+        Update catalog online store
+        """
+        controller = self.get_controller_for_request(request)
+        maybe_task = await controller.update_catalog_online_store_async(
+            catalog_id=catalog_id,
+            data=data,
+        )
+        if maybe_task is None:
+            response.status_code = HTTPStatus.OK
+        else:
+            response.status_code = HTTPStatus.ACCEPTED
+        return maybe_task
 
     async def delete_catalog(
         self,

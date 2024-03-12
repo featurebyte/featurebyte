@@ -3,18 +3,22 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, cast
+from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
 
 import asyncio
+import copy
+from asyncio import iscoroutine
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 
 import pymongo
 from bson.objectid import ObjectId
+from motor.core import AgnosticCursor
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
 from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
-from featurebyte.persistent.base import DuplicateDocumentError, Persistent
+from featurebyte.persistent.base import DuplicateDocumentError, Persistent, SortDir
 
 MONGODB_CLIENT = None
 
@@ -150,8 +154,7 @@ class MongoDB(Persistent):
         collection_name: str,
         query_filter: QueryFilter,
         projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -166,10 +169,8 @@ class MongoDB(Persistent):
             Conditions to filter on
         projection: Optional[dict[str, Any]]
             Fields to project
-        sort_by: Optional[str]
-            Column to sort by
-        sort_dir: Optional[Literal["asc", "desc"]]
-            Direction to sort
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and direction to sort by
         page: int
             Page number for pagination
         page_size: int
@@ -180,18 +181,11 @@ class MongoDB(Persistent):
         tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor = self._db[collection_name].find(
-            filter=query_filter, projection=projection, session=self._session
+        cursor: AgnosticCursor = cast(
+            AgnosticCursor,
+            await self._get_iterator(collection_name, query_filter, None, projection, sort_by),
         )
         total = await self._db[collection_name].count_documents(query_filter, session=self._session)
-
-        if sort_by:
-            cursor = cursor.sort(
-                [
-                    (str(sort_by), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING),
-                    ("_id", pymongo.DESCENDING),  # break ties using _id
-                ]
-            )
 
         if page_size > 0:
             skips = page_size * (page - 1)
@@ -199,6 +193,63 @@ class MongoDB(Persistent):
 
         result: list[Document] = await cursor.to_list(total)
         return result, total
+
+    async def _get_iterator(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        pipeline: Optional[list[dict[str, Any]]] = None,
+        projection: Optional[dict[str, Any]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+    ) -> AsyncIterator[Document]:
+        """
+        Get iterator on records from collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        pipeline: Optional[list[dict[str, Any]]]
+            Pipeline to execute
+        projection: Optional[dict[str, Any]]
+            Fields to project
+        sort_by: Optional[list[tuple[str, SortDir]]]
+            Columns and direction to sort by
+
+        Returns
+        -------
+        AsyncIterator[Document]
+            Retrieved documents
+        """
+        if sort_by:
+            sort = OrderedDict(
+                [
+                    (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
+                    for sort_key, sort_dir in sort_by
+                ]
+            )
+            if "_id" not in sort:
+                sort["_id"] = pymongo.DESCENDING  # break ties using _id
+        else:
+            sort = None
+
+        if pipeline:
+            pipeline = copy.deepcopy(pipeline)
+            if query_filter:
+                pipeline.insert(0, {"$match": query_filter})
+            if sort:
+                pipeline.append({"$sort": sort})
+            cursor = self._db[collection_name].aggregate(pipeline, session=self._session)
+        else:
+            cursor = self._db[collection_name].find(
+                filter=query_filter, projection=projection, session=self._session
+            )
+            if sort:
+                cursor = cursor.sort(sort.items())
+
+        return cast(AsyncIterator[Document], cursor)
 
     async def _update_one(
         self,
@@ -360,3 +411,36 @@ class MongoDB(Persistent):
         finally:
             if self._session:
                 self._session = None
+
+    async def aggregate_find(
+        self,
+        collection_name: str,
+        pipeline: List[Dict[str, Any]],
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        page: int = 1,
+        page_size: int = 0,
+        **kwargs: Any,
+    ) -> Tuple[Iterable[Document], int]:
+        output_pipeline: List[Dict[str, Any]] = []
+
+        if sort_by:
+            sort = {
+                str(sort_key): pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING
+                for sort_key, sort_dir in sort_by
+            }
+            sort["_id"] = pymongo.DESCENDING  # break ties using _id
+            output_pipeline.append({"$sort": sort})
+
+        if page_size > 0:
+            output_pipeline.extend([{"$skip": page_size * (page - 1)}, {"$limit": page_size}])
+
+        pipeline = pipeline + [
+            {"$facet": {"result": output_pipeline, "total": [{"$count": "count"}]}}
+        ]
+        result = self._db[collection_name].aggregate(pipeline, session=self._session).next()
+        if iscoroutine(result):
+            output = await result
+        else:
+            output = result
+        total = 0 if not output["total"] else output["total"][0]["count"]
+        return output["result"], total

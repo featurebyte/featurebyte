@@ -119,9 +119,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         port=10000,
         ...         storage_type="file",
         ...         storage_url="/data/staging/featurebyte",
-        ...         storage_spark_url="file:///opt/spark/data/staging/featurebyte",
-        ...         featurebyte_catalog="spark_catalog",
-        ...         featurebyte_schema="playground",
+        ...         storage_path="file:///opt/spark/data/staging/featurebyte",
+        ...         catalog_name="spark_catalog",
+        ...         schema_name="playground",
         ...     )
         ... )
         """
@@ -182,9 +182,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         port=10000,
         ...         storage_type="file",
         ...         storage_url="/data/staging/featurebyte",
-        ...         storage_spark_url="file:///opt/spark/data/staging/featurebyte",
-        ...         featurebyte_catalog="spark_catalog",
-        ...         featurebyte_schema="playground",
+        ...         storage_path="file:///opt/spark/data/staging/featurebyte",
+        ...         catalog_name="spark_catalog",
+        ...         schema_name="playground",
         ...     )
         ... )
         >>> FeatureStore.list()[["name", "type"]]

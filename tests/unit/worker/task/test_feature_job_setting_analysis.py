@@ -77,7 +77,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         document = await persistent.find_one(
             collection_name=FeatureJobSettingAnalysisModel.collection_name(),
             query_filter={"_id": ObjectId(output_document_id)},
-            user_id=None,
         )
         assert document
         result = FeatureJobSettingAnalysisModel(
@@ -280,9 +279,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             feature_store.details = DatabricksDetails(
                 host="hostname",
                 http_path="http_path",
-                featurebyte_catalog="spark_catalog",
-                featurebyte_schema="featurebyte",
-                storage_spark_url="dbfs:/FileStore/featurebyte",
+                catalog_name="spark_catalog",
+                schema_name="featurebyte",
+                storage_path="dbfs:/FileStore/featurebyte",
             )
             feature_store.type = SourceType.DATABRICKS
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Type, cast
 
+import os
+
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
@@ -103,6 +105,7 @@ class WindowAggregator(BaseAggregator):
             node_cls=GroupByNode,
             node_params=node_params,
             input_node=self.view.node,
+            operation_structure_info=self.view.operation_structure_info,
         )
         assert isinstance(feature_names, list)
         assert method is not None
@@ -200,6 +203,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[FeatureJobSetting] = None,
     ) -> dict[str, Any]:
         parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
+        tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))
         return {
             "keys": self.keys,
             "parent": value_column,
@@ -213,4 +217,5 @@ class WindowAggregator(BaseAggregator):
             "names": feature_names,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
+            "tile_id_version": tile_id_version,
         }

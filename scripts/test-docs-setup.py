@@ -2,7 +2,7 @@
 Setup for running doctests.
 """
 import featurebyte as fb
-from featurebyte import FeatureList, FunctionParameter, UserDefinedFunction
+from featurebyte import FeatureList, FunctionParameter, MySQLOnlineStoreDetails, UserDefinedFunction
 from featurebyte.enum import DBVarType
 
 
@@ -12,6 +12,18 @@ def setup() -> None:
     """
     # start playground
     fb.playground(datasets=["doctest_grocery"])
+
+    # create online store
+    fb.OnlineStore.get_or_create(
+        name="mysql_online_store",
+        details=MySQLOnlineStoreDetails(
+            host="mysql_host",
+            database="mysql_database",
+            user="mysql_user",
+            password="mysql_password",
+            port=3306,
+        ),
+    )
 
     # create catalog
     feature_store = fb.FeatureStore.get("playground")

@@ -11,9 +11,11 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
+from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.deployment import (
@@ -62,6 +64,7 @@ class DeploymentController(
         task_controller: TaskController,
         use_case_service: UseCaseService,
         batch_feature_table_service: BatchFeatureTableService,
+        feast_feature_store_service: FeastFeatureStoreService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -71,6 +74,7 @@ class DeploymentController(
         self.task_controller = task_controller
         self.use_case_service = use_case_service
         self.batch_feature_table_service = batch_feature_table_service
+        self.feast_feature_store_service = feast_feature_store_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -218,11 +222,29 @@ class DeploymentController(
         document = await self.service.get_document(deployment_id)
 
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
+        catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
-            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+            if (
+                FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+                and catalog.online_store_id is not None
+            ):
+                feast_store = (
+                    await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
+                )
+            else:
+                feast_store = None
+
+            feast_feature_services = set()
+            if feast_store is not None:
+                feast_feature_services.update(
+                    [fs.name for fs in feast_store.list_feature_services()]
+                )
+
+            if feast_store and feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
+                    feast_store=feast_store,
                     request_data=data.entity_serving_names,
                 )
             else:
@@ -360,8 +382,7 @@ class AllDeploymentController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         enabled: bool | None = None,
     ) -> AllDeploymentList:
         """
@@ -373,10 +394,8 @@ class AllDeploymentController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         enabled: bool | None
             Whether to return only enabled deployments
 
@@ -389,7 +408,6 @@ class AllDeploymentController(
                 page=page,
                 page_size=page_size,
                 sort_by=sort_by,
-                sort_dir=sort_dir,
                 query_filter={"enabled": enabled} if enabled is not None else {},
                 use_raw_query_filter=True,
             )

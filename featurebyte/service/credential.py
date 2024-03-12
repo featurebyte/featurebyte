@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from cryptography.fernet import InvalidToken
+from redis import Redis
 
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
@@ -17,6 +18,7 @@ from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpd
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
 
@@ -38,12 +40,16 @@ class CredentialService(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
+        redis: Redis[Any],
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
         )
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.feature_store_service = feature_store_service
@@ -125,7 +131,7 @@ class CredentialService(
         """
         credential = self.document_class(**data.dict(by_alias=True))
         await self._validate_credential(credential=credential)
-        credential.encrypt()
+        credential.encrypt_credentials()
         return await super().create_document(
             data=CredentialCreate(**credential.dict(by_alias=True))
         )
@@ -166,7 +172,7 @@ class CredentialService(
 
         # ensure document is decrypted
         try:
-            document.decrypt()
+            document.decrypt_credentials()
         except InvalidToken:
             logger.warning("Credential is already decrypted")
 

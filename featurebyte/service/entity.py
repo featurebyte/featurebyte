@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent import Persistent
@@ -14,6 +15,7 @@ from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.storage import Storage
 
 
 class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityServiceUpdate]):
@@ -30,8 +32,17 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         catalog_id: Optional[ObjectId],
         catalog_name_injector: CatalogNameInjector,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.catalog_name_injector = catalog_name_injector
 
     @staticmethod
@@ -56,23 +67,6 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         docs = self.list_documents_iterator(
             query_filter={"serving_names": {"$in": list(serving_names_set)}}
         )
-        return [doc async for doc in docs]
-
-    async def get_children_entities(self, entity_id: ObjectId) -> list[EntityModel]:
-        """
-        Retrieve the children of an entity
-
-        Parameters
-        ----------
-        entity_id: ObjectId
-            Entity identifier
-
-        Returns
-        -------
-        list[EntityModel]
-        """
-        query_filter = {"parents": {"$elemMatch": {"id": ObjectId(entity_id)}}}
-        docs = self.list_documents_iterator(query_filter=query_filter)
         return [doc async for doc in docs]
 
     async def get_entities(self, entity_ids: set[ObjectId]) -> list[EntityModel]:

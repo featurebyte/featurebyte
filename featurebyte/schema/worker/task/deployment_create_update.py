@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
 class DeploymentPayloadType(StrEnum):
@@ -49,4 +49,5 @@ class DeploymentCreateUpdateTaskPayload(BaseTaskPayload):
 
     command = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
     output_collection_name = DeploymentModel.collection_name()
+    task_type = TaskType.CPU_TASK
     deployment_payload: DeploymentPayload

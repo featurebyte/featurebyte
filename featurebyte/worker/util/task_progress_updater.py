@@ -20,7 +20,9 @@ class TaskProgressUpdater:
         self.user = user
         self.progress = progress
 
-    async def update_progress(self, percent: int, message: Optional[str] = None) -> None:
+    async def update_progress(
+        self, percent: int, message: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """
         Update progress
 
@@ -30,8 +32,10 @@ class TaskProgressUpdater:
             Completed progress percentage
         message: str | None
             Optional message
+        **kwargs: Any
+            Optional parameters
         """
-        progress = ProgressModel(percent=percent, message=message)
+        progress = ProgressModel(percent=percent, message=message, **kwargs)
         progress_dict = progress.dict(exclude_none=True)
 
         # write to persistent

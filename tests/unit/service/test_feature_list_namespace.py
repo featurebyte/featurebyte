@@ -4,7 +4,7 @@ Test FeatureListNamespaceService
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -41,6 +41,9 @@ async def test_update_document(
     )
     assert namespace.feature_list_ids == sorted([feature_list.id, new_flist.id])
 
+    # delete feature list to clear remote file
+    await feature_list_service.delete_document(document_id=new_flist.id)
+
     # add a new feature with different feature namespace ID
     feat_dict = feature.dict(by_alias=True)
     feat_dict["_id"] = ObjectId()
@@ -65,6 +68,9 @@ async def test_update_document(
         document_id=new_flist.feature_list_namespace_id
     )
     assert namespace.feature_list_ids == [new_flist.id]
+
+    # delete feature list to clear remote file
+    await feature_list_service.delete_document(document_id=new_flist.id)
 
 
 @pytest.mark.asyncio

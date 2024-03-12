@@ -6,14 +6,21 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
+from redis import Redis
+from sqlglot import expressions
 
+from featurebyte.enum import InternalName
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import sql_to_string
-from featurebyte.query_graph.sql.materialisation import get_source_count_expr
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.materialisation import (
+    get_row_index_column_expr,
+    get_source_count_expr,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.worker.task.materialized_table_delete import (
@@ -25,6 +32,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+from featurebyte.storage import Storage
 
 
 class BaseMaterializedTableService(
@@ -45,8 +53,17 @@ class BaseMaterializedTableService(
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
+        redis: Redis[Any],
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_handler)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+            storage=storage,
+            redis=redis,
+        )
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service
@@ -177,5 +194,36 @@ class BaseMaterializedTableService(
                 entity_id=col_name_to_entity_ids.get(name, None),
             )
             for name, schema in table_schema.items()
+            if name != InternalName.TABLE_ROW_INDEX
         ]
         return columns_info, num_rows
+
+    @staticmethod
+    async def add_row_index_column(
+        session: BaseSession,
+        table_details: TableDetails,
+    ) -> None:
+        """
+        Add a row index column of running integers to a materialized table
+
+        Parameters
+        ----------
+        session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        """
+        row_number_expr = get_row_index_column_expr()
+        adapter = get_sql_adapter(session.source_type)
+        query = sql_to_string(
+            adapter.create_table_as(
+                table_details,
+                expressions.select(
+                    row_number_expr,
+                    expressions.Star(),
+                ).from_(quoted_identifier(table_details.table_name)),
+                replace=True,
+            ),
+            source_type=session.source_type,
+        )
+        await session.execute_query(query)

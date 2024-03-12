@@ -53,6 +53,20 @@ class Storage(ABC):
         FileNotFoundError
         """
 
+    async def try_delete_if_exists(self, remote_path: Path) -> None:
+        """
+        Try to delete file in storage
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be deleted
+        """
+        try:
+            await self.delete(remote_path)
+        except FileNotFoundError:
+            pass
+
     @abstractmethod
     async def get(self, remote_path: Path, local_path: Path) -> None:
         """
@@ -156,6 +170,42 @@ class Storage(ABC):
             async with aiofiles.open(tmp_file.name, encoding="utf8") as file_obj:
                 text = await file_obj.read()
             return text
+
+    async def put_bytes(self, content: bytes, remote_path: Path) -> None:
+        """
+        Upload bytes content to storage as bytes file
+
+        Parameters
+        ----------
+        content: bytes
+            Bytes value to be stored
+        remote_path: Path
+            Path of remote file to upload to
+        """
+        async with aiofiles.tempfile.NamedTemporaryFile(mode="w+b") as file_obj:
+            await file_obj.write(content)
+            await file_obj.flush()
+            await self.put(Path(str(file_obj.name)), remote_path)
+
+    async def get_bytes(self, remote_path: Path) -> bytes:
+        """
+        Download bytes content from storage bytes file
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be downloaded
+
+        Returns
+        -------
+        bytes
+            Bytes data
+        """
+        async with aiofiles.tempfile.NamedTemporaryFile(mode="r+b") as tmp_file:
+            await self.get(remote_path, Path(str(tmp_file.name)))
+            async with aiofiles.open(tmp_file.name, mode="r+b") as file_obj:
+                content = await file_obj.read()
+            return content
 
     async def put_dataframe(self, dataframe: DataFrame, remote_path: Path) -> None:
         """

@@ -347,7 +347,7 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
         "name": "a_2h_average",
         "node_names": {"input_1", "eq_1", "filter_1", "project_3", "groupby_1"},
         "node_name": "filter_1",
-        "transforms": ["filter"],
+        "transforms": ["eq(value=1)", "filter"],
         "type": "post_aggregation",
         "dtype": "FLOAT",
     }
@@ -389,7 +389,7 @@ def test_extract_operation__item_groupby(
     assert to_dict(op_struct.aggregations) == [
         {
             "name": "order_size",
-            "dtype": "FLOAT",
+            "dtype": "INT",
             "category": None,
             "column": None,
             "keys": ["order_id"],
@@ -519,7 +519,7 @@ def test_extract_operation__join_double_aggregations(
         "type": "derived",
         "node_names": {"project_1", "item_groupby_1", "join_feature_1", "add_1", "input_1"},
         "node_name": "join_feature_1",
-        "dtype": "FLOAT",
+        "dtype": "INT",
     }
     assert to_dict(op_struct.columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
@@ -776,7 +776,7 @@ def test_extract_operation__aggregate_asat_feature(
     expected_aggregations = [
         {
             "name": "asat_feature",
-            "dtype": "FLOAT",
+            "dtype": "INT",
             "filter": False,
             "node_names": {"input_1", "project_1", "aggregate_as_at_1"},
             "node_name": "aggregate_as_at_1",

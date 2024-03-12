@@ -67,24 +67,28 @@ class NonAuditableDocumentService(BaseDocumentService):
 
 
 @pytest.fixture(name="document_service")
-def document_service_fixture(user, persistent):
+def document_service_fixture(user, persistent, storage):
     """Fixture for DocumentService"""
     return DocumentService(
         user=user,
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
+        redis=Mock(),
     )
 
 
 @pytest.fixture(name="non_auditable_document_service")
-def non_auditable_document_service_fixture(user, persistent):
+def non_auditable_document_service_fixture(user, persistent, storage):
     """Fixture for NonAuditableDocumentService"""
     return NonAuditableDocumentService(
         user=user,
         persistent=persistent,
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
+        redis=Mock(),
     )
 
 
@@ -122,7 +126,7 @@ def non_auditable_document_service_fixture(user, persistent):
     ],
 )
 async def test_check_document_creation_conflict(
-    query_filter, conflict_signature, resolution_signature, expected_msg
+    query_filter, conflict_signature, resolution_signature, expected_msg, storage
 ):
     """
     Test check_document_creation_conflict error message
@@ -136,6 +140,8 @@ async def test_check_document_creation_conflict(
             persistent=persistent,
             catalog_id=None,
             block_modification_handler=BlockModificationHandler(),
+            storage=storage,
+            redis=Mock(),
         )._check_document_unique_constraint(
             query_filter=query_filter,
             projection={"_id": 1, "name": 1},  # not used
@@ -389,18 +395,35 @@ async def test_list_documents_iterator(document_service):
     assert list_results["total"] == total
 
     # retrieve list iterator & check results
-    for page_size in [1, 10, 15, 20]:
-        doc_ids = [
-            doc["_id"]
-            async for doc in document_service.list_documents_as_dict_iterator(
-                query_filter={}, page_size=page_size
-            )
-        ]
-        assert set(doc_ids) == expected_doc_ids
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(query_filter={})
+    ]
+    assert set(doc_ids) == expected_doc_ids
 
     # check list_documents_iterator output type
-    async for doc in document_service.list_documents_iterator(query_filter={}, page_size=1):
+    async for doc in document_service.list_documents_iterator(query_filter={}):
         assert isinstance(doc, Document)
+
+    # check list_documents_iterator with pipeline
+    doc_id = doc_ids[0]
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(
+            query_filter={}, pipeline=[{"$match": {"_id": doc_id}}]
+        )
+    ]
+    assert set(doc_ids) == {doc_id}
+
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(
+            query_filter={},
+            pipeline=[{"$match": {"_id": {"$exists": 1}}}],
+            sort_by=[("_id", "desc")],
+        )
+    ]
+    assert doc_ids == sorted(list(doc_ids), reverse=True)
 
 
 @pytest.mark.asyncio
@@ -578,7 +601,7 @@ async def test_document_disable_block_modification_check(
         assert document.name == "new_name"
 
 
-def test_catalog_specific_service_requires_catalog_id(user, persistent):
+def test_catalog_specific_service_requires_catalog_id(user, persistent, storage):
     """
     Test catalog specific service initialization without catalog_id
     """
@@ -592,6 +615,8 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
                 persistent=persistent,
                 catalog_id=None,
                 block_modification_handler=BlockModificationHandler(),
+                storage=storage,
+                redis=Mock(),
             )
         assert str(exc.value) == "Catalog not specified. Please specify a catalog."
 

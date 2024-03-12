@@ -1,19 +1,24 @@
 SELECT
-  *
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl"
-LIMIT 1;
+  COUNT(*)
+FROM "cat1_cust_id_30m";
 
-ALTER TABLE "fb_entity_cust_id_fjs_1800_300_600_ttl"   ADD COLUMN "sum_30m" FLOAT;
+ALTER TABLE "cat1_cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
+
+CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
+SELECT
+  ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+  *
+FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
 
 SELECT
   MAX("__feature_timestamp") AS RESULT
-FROM "fb_entity_cust_id_fjs_1800_300_600_ttl";
+FROM "cat1_cust_id_30m";
 
-MERGE INTO "fb_entity_cust_id_fjs_1800_300_600_ttl" AS offline_store_table USING (
+MERGE INTO "cat1_cust_id_30m" AS offline_store_table USING (
   SELECT
     "cust_id",
-    "sum_30m"
+    "sum_30m_V220101"
   FROM "TEMP_FEATURE_TABLE_000000000000000000000000"
 ) AS materialized_features ON offline_store_table."cust_id" = materialized_features."cust_id"
-AND "__feature_timestamp" = TO_TIMESTAMP('2022-10-15 10:00:00')   WHEN MATCHED THEN UPDATE SET offline_store_table."sum_30m" = materialized_features."sum_30m"
-  WHEN NOT MATCHED THEN INSERT ("__feature_timestamp", "cust_id", "sum_30m") VALUES (TO_TIMESTAMP('2022-10-15 10:00:00'), materialized_features."cust_id", materialized_features."sum_30m");
+AND "__feature_timestamp" = TO_TIMESTAMP('2022-10-15 10:00:00')   WHEN MATCHED THEN UPDATE SET offline_store_table."sum_30m_V220101" = materialized_features."sum_30m_V220101"
+  WHEN NOT MATCHED THEN INSERT ("__feature_timestamp", "cust_id", "sum_30m_V220101") VALUES (TO_TIMESTAMP('2022-10-15 10:00:00'), materialized_features."cust_id", materialized_features."sum_30m_V220101");

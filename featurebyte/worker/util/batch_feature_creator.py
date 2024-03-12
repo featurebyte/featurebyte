@@ -1,24 +1,32 @@
 """
 Batch feature creator
 """
-from typing import Any, Dict, Iterator, List, Sequence, Set, Union
+from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
 
 import asyncio
 import concurrent
 import os
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
+from functools import wraps
+from unittest.mock import patch
 
 from bson import ObjectId
+from cachetools import TTLCache
+from requests import Session
 
+from featurebyte.api.api_object import ApiObject
 from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.common.utils import timer
+from featurebyte.core.generic import QueryObject
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.routes.feature.controller import FeatureController
-from featurebyte.schema.feature import BatchFeatureItem, FeatureServiceCreate
+from featurebyte.schema.feature import BatchFeatureItem, FeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
@@ -29,6 +37,43 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
+
+
+def patch_api_object_cache(ttl: int = 7200) -> Any:
+    """
+    A decorator to patch the api object cache settings, specifically for asyncio functions.
+
+    Parameters
+    ----------
+    ttl: int
+        The time to live for the cache
+
+    Returns
+    -------
+    A decorator function that can be used to wrap async test functions.
+    """
+
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, Any]]
+    ) -> Callable[..., Coroutine[Any, Any, Any]]:
+        # pylint: disable=protected-access
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Save the original cache settings
+            original_cache = ApiObject._cache
+
+            # Patch the cache settings
+            ApiObject._cache = TTLCache(maxsize=original_cache.maxsize, ttl=ttl)
+            try:
+                # Call the async test function
+                return await func(*args, **kwargs)
+            finally:
+                # Restore the original cache settings
+                ApiObject._cache = original_cache
+
+        return wrapper
+
+    return decorator
 
 
 @contextmanager
@@ -60,7 +105,38 @@ def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
             del os.environ[variable]
 
 
-async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
+@contextmanager
+def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
+    """
+    Set multiple environment variables within the context
+
+    Parameters
+    ----------
+    variables: Dict[str, Any]
+        Key value mapping of environment variables to set
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    ctx_managers: List[Any] = []
+
+    for key, value in variables.items():
+        ctx_managers.append(set_environment_variable(key, value))
+
+    if ctx_managers:
+        with ExitStack() as stack:
+            for mgr in ctx_managers:
+                stack.enter_context(mgr)
+            yield
+    else:
+        yield
+
+
+async def execute_sdk_code(
+    catalog_id: ObjectId, code: str, feature_controller: FeatureController
+) -> None:
     """
     Activate the catalog and execute the code in server mode
 
@@ -70,6 +146,8 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
         The catalog id
     code: str
         The SDK code to execute
+    feature_controller: FeatureController
+        The feature controller
     """
     # activate the correct catalog before executing the code
     activate_catalog(catalog_id=catalog_id)
@@ -77,7 +155,19 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     # execute the code
     with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+            # patch the session.post method to capture the call & pass the payload to the feature controller
+            with patch.object(Session, "post") as mock_post:
+                await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+
+            # some assertions to ensure that the post method was called with the correct arguments
+            assert len(mock_post.call_args.args) == 0, mock_post.call_args.args
+            post_kwargs = mock_post.call_args.kwargs
+            assert list(post_kwargs.keys()) == ["url", "json"], post_kwargs.keys()
+            asset_name = feature_controller.service.collection_name
+            assert post_kwargs["url"] == f"/{asset_name}", post_kwargs["url"]
+
+            # call the feature controller to create the feature without using the API
+            await feature_controller.create_feature(data=FeatureCreate(**post_kwargs["json"]))
 
 
 class BatchFeatureCreator:
@@ -98,6 +188,18 @@ class BatchFeatureCreator:
         self.namespace_handler = namespace_handler
         self.feature_controller = feature_controller
         self.task_progress_updater = task_progress_updater
+
+    @property
+    def graph_clear_frequency(self) -> int:
+        """
+        Graph clear frequency
+
+        Returns
+        -------
+        int
+            Graph clear frequency
+        """
+        return int(os.getenv("FEATUREBYTE_GRAPH_CLEAR_PERIOD", "1"))
 
     async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> Set[ObjectId]:
         """
@@ -212,29 +314,45 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
-        # prepare the feature create payload
-        pruned_graph, node_name_map = graph.quick_prune(target_node_names=[feature_item.node_name])
-        feature_create = FeatureServiceCreate(
-            _id=feature_item.id,
-            name=feature_item.name,
-            graph=pruned_graph,
-            node_name=node_name_map[feature_item.node_name],
-            tabular_source=feature_item.tabular_source,
-        )
+        with timer("prune graph & prepare feature definition", logger):
+            # prepare the feature create payload
+            pruned_graph, node_name_map = graph.quick_prune(
+                target_node_names=[feature_item.node_name]
+            )
+            feature_create = FeatureServiceCreate(
+                _id=feature_item.id,
+                name=feature_item.name,
+                graph=pruned_graph,
+                node_name=node_name_map[feature_item.node_name],
+                tabular_source=feature_item.tabular_source,
+            )
 
-        # prepare the feature document & definition
-        feature_service: FeatureService = self.feature_service
-        document = await feature_service.prepare_feature_model(
-            data=feature_create,
-            sanitize_for_definition=True,
-        )
-        definition = await self.namespace_handler.prepare_definition(document=document)
+            # prepare the feature document & definition
+            feature_service: FeatureService = self.feature_service
+            document = await feature_service.prepare_feature_model(
+                data=feature_create,
+                sanitize_for_definition=True,
+            )
+            definition = await self.namespace_handler.prepare_definition(document=document)
 
-        # execute the code to save the feature
-        await execute_sdk_code(catalog_id=catalog_id, code=definition)
+        with timer("execute feature definition", logger, extra={"feature_name": document.name}):
+            # execute the code to save the feature
+            environment_overrides = {}
+            groupby_node = document.graph.nodes_map.get("groupby_1", None)
+            if groupby_node:
+                assert isinstance(groupby_node, GroupByNode)
+                if groupby_node.parameters.tile_id_version == 1:
+                    environment_overrides["FEATUREBYTE_TILE_ID_VERSION"] = "1"
+            with set_environment_variables(environment_overrides):
+                await execute_sdk_code(
+                    catalog_id=catalog_id,
+                    code=definition,
+                    feature_controller=self.feature_controller,
+                )
 
-        # retrieve the saved feature & check if it is the same as the expected feature
-        is_consistent = await self.is_generated_feature_consistent(document=document)
+        with timer("validate feature consistency", logger):
+            # retrieve the saved feature & check if it is the same as the expected feature
+            is_consistent = await self.is_generated_feature_consistent(document=document)
 
         if not is_consistent:
             # delete the generated feature & raise an error
@@ -272,6 +390,7 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
+        # pylint: disable=too-many-locals
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
@@ -291,9 +410,21 @@ class BatchFeatureCreator:
         )
         await ranged_progress_update(0, "Started saving features")
 
-        output_feature_ids = []
+        output_feature_ids: List[PydanticObjectId] = []
         inconsistent_feature_names = []
+        created_feat_count = 0
         for i, feature_item in enumerate(payload.features):
+            if (created_feat_count + 1) % self.graph_clear_frequency == 0:
+                # clear the global query graph & operation structure cache to avoid bloating global query graph
+                global_graph = GlobalQueryGraph()
+                logger.info(
+                    "Clearing global query graph: %s nodes, %s edges",
+                    len(global_graph.nodes),
+                    len(global_graph.edges),
+                )
+                global_graph.clear()
+                QueryObject.clear_operation_structure_cache()
+
             if feature_item.id in saved_feature_ids:
                 # skip if the feature is already saved
                 output_feature_ids.append(feature_item.id)
@@ -315,13 +446,14 @@ class BatchFeatureCreator:
                         catalog_id=payload.catalog_id,
                     )
                     output_feature_ids.append(document.id)
+                    created_feat_count += 1
                 except DocumentInconsistencyError:
                     inconsistent_feature_names.append(feature_item.name)
 
             # update the progress
             percent = int(100 * (i + 1) / total_features)
             message = f"Completed {i+1}/{total_features} features"
-            await ranged_progress_update(percent, message)
+            await ranged_progress_update(percent, message, metadata={"processed_features": i + 1})
 
         if inconsistent_feature_names:
             combined_names = ", ".join(inconsistent_feature_names)

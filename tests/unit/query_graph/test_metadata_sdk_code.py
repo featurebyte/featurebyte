@@ -13,6 +13,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerator,
     ExpressionStr,
+    StatementStr,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
@@ -121,6 +122,37 @@ def test_variable_name_generator():
     assert var_gen.convert_to_variable_name("feat", node_name=None) == "feat_2"
 
 
+@pytest.mark.parametrize(
+    "one_based,inputs,expected_var_name,expected_count",
+    [
+        (False, [], None, None),
+        (True, [], None, None),
+        (False, ["col"], "col", 1),
+        (True, ["col"], "col_1", 1),
+        (False, ["col", "col", "col", "foo", "bar"], "col_2", 3),
+        (True, ["col", "col", "col", "foo", "bar"], "col_3", 3),
+    ],
+)
+def test_variable_name_generator__get_latest_variable_name(
+    one_based, inputs, expected_var_name, expected_count
+):
+    """Test VariableNameGenerator.get_latest_variable_name()"""
+    var_gen = VariableNameGenerator(one_based=one_based)
+    for var_name_prefix in inputs:
+        _ = var_gen.convert_to_variable_name(
+            variable_name_prefix=var_name_prefix,
+            node_name=None,
+        )
+
+    if expected_var_name:
+        latest_var_name = var_gen.get_latest_variable_name(variable_name_prefix="col")
+        assert latest_var_name == expected_var_name
+        assert var_gen.var_name_counter["col"] == expected_count
+    else:
+        with pytest.raises(ValueError, match="Variable name prefix col does not exist"):
+            var_gen.get_latest_variable_name(variable_name_prefix="col")
+
+
 def test_code_generator():
     """Test CodeGenerator"""
     code_gen = CodeGenerator()
@@ -161,6 +193,7 @@ def test_code_generator__on_demand_view():
         codes.strip()
         == textwrap.dedent(
             """
+        import datetime
         import json
         import numpy as np
         import pandas as pd
@@ -173,5 +206,78 @@ def test_code_generator__on_demand_view():
             output_df["feat"] = feat1
             return output_df
         """
+        ).strip()
+    )
+
+
+def test_code_generator__on_demand_function():
+    """Test CodeGenerator for on-demand function template"""
+    code_gen = CodeGenerator(template="on_demand_function.tpl")
+    code_gen.add_statements(
+        statements=[
+            (VariableNameStr("feat"), ExpressionStr("input1 + 1")),
+            (StatementStr("return feat")),
+        ],
+    )
+    py_codes = code_gen.generate(
+        py_function_name="on_demand_feature_func",
+        py_function_params="input1: float",
+        py_return_type="float",
+        py_comment="# This is a comment",
+        output_var_name="output",
+    ).strip()
+    assert (
+        py_codes.strip()
+        == textwrap.dedent(
+            """
+        import datetime
+        import json
+        import numpy as np
+        import pandas as pd
+        import scipy as sp
+
+
+        def on_demand_feature_func(input1: float) -> float:
+            # This is a comment
+            feat = input1 + 1
+            return feat
+        """
+        ).strip()
+    )
+
+    code_gen = CodeGenerator(template="on_demand_function_sql.tpl")
+    sql_codes = code_gen.generate(
+        sql_function_name="ml.feature_engineering.on_demand_func",
+        sql_function_params="x1 FLOAT",
+        sql_return_type="FLOAT",
+        sql_comment="On demand function used for feature engineering",
+        py_function_name="on_demand_feature_func",
+        input_arguments="x1",
+        py_function_body=py_codes,
+    )
+    assert (
+        sql_codes.strip()
+        == textwrap.dedent(
+            """
+            CREATE FUNCTION ml.feature_engineering.on_demand_func(x1 FLOAT)
+            RETURNS FLOAT
+            LANGUAGE PYTHON
+            COMMENT 'On demand function used for feature engineering'
+            AS $$
+            import datetime
+            import json
+            import numpy as np
+            import pandas as pd
+            import scipy as sp
+
+
+            def on_demand_feature_func(input1: float) -> float:
+                # This is a comment
+                feat = input1 + 1
+                return feat
+
+            return on_demand_feature_func(x1)
+            $$
+            """
         ).strip()
     )

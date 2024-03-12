@@ -1,7 +1,7 @@
 """
 This module contains graph quick pruning related classes.
 """
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 from pydantic import BaseModel, Field
 
@@ -26,18 +26,17 @@ class QuickGraphStructurePruningTransformer(
     """QuickGraphStructurePruningTransformer class"""
 
     def _compute(self, global_state: QuickGraphPruningGlobalState, node: Node) -> None:
-        if node.name in global_state.node_names_to_keep:
-            input_nodes = [
-                global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
-                for input_node_name in self.graph.get_input_node_names(node=node)
-            ]
-            inserted_node = global_state.graph.add_operation(
-                node_type=node.type,
-                node_params=node.parameters.dict(),
-                node_output_type=node.output_type,
-                input_nodes=input_nodes,
-            )
-            global_state.node_name_map[node.name] = inserted_node.name
+        input_nodes = [
+            global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
+            for input_node_name in self.graph.get_input_node_names(node=node)
+        ]
+        inserted_node = global_state.graph.add_operation(
+            node_type=node.type,
+            node_params=node.parameters.dict(),
+            node_output_type=node.output_type,
+            input_nodes=input_nodes,
+        )
+        global_state.node_name_map[node.name] = inserted_node.name
 
     @classmethod
     def _extract_node_names_to_keep(
@@ -50,6 +49,13 @@ class QuickGraphStructurePruningTransformer(
             ):
                 node_names_to_keep.add(node.name)
         return node_names_to_keep
+
+    def _transform(self, global_state: QuickGraphPruningGlobalState) -> Any:
+        for node_name in self.graph.sorted_node_names:
+            if node_name in global_state.node_names_to_keep:
+                self._compute(
+                    global_state=global_state, node=self.graph.get_node_by_name(node_name)
+                )
 
     def transform(self, target_node_names: List[str]) -> GraphNodeNameMap:
         """

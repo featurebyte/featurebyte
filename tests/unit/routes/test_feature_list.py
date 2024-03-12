@@ -2,6 +2,7 @@
 Tests for FeatureList route
 """
 # pylint: disable=too-many-lines
+import os
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -81,8 +82,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_get_session.return_value = SnowflakeSession(
             account="test_account",
             warehouse="test_warehouse",
-            database="test_database",
-            sf_schema="test_schema",
+            database_name="test_database",
+            schema_name="test_schema",
+            role_name="TESTING",
             database_credential={
                 "type": "USERNAME_PASSWORD",
                 "username": "test_username",
@@ -665,6 +667,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 "feature_store_id": feature_store_id,
                 "graph": feature["graph"],
                 "node_names": [feature["node_name"]],
+                "feature_node_relationships_infos": [
+                    {
+                        "node_name": "project_1",
+                        "relationships_info": [],
+                        "primary_entity_ids": feature["primary_entity_ids"],
+                    }
+                ],
+                "combined_relationships_info": [],
+                "feature_node_definition_hashes": [
+                    {
+                        "node_name": "project_1",
+                        "definition_hash": "e08e2ffd6a5817b174d075895b17ee3a3bb9df38",
+                    }
+                ],
             }
         ]
 
@@ -759,6 +775,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
+    def test_feature_list_preview__exceed_max_feature_limit(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+    ):
+        """Test feature list preview with too many features"""
+        with patch.dict(os.environ, {"FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM": "0"}):
+            test_api_client, _ = test_api_client_persistent
+            response = test_api_client.post(
+                f"{self.base_route}/preview", json=featurelist_preview_payload
+            )
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+            assert response.json()["detail"] == "Feature list preview must have 0 features or less"
+
     @pytest.fixture(name="featurelist_get_historical_features_payload")
     def featurelist_get_historical_features_payload_fixture(self, featurelist_feature_clusters):
         """
@@ -775,7 +805,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
+            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -892,7 +922,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS"
-        assert response_dict["output_path"] is None
+        assert response_dict["output_path"] == f"/feature_list/{feature_list_id}"
         assert response_dict["traceback"] is None
 
         # check feature_list & feature is created
@@ -966,6 +996,186 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"feature/{feature_create2.id}")
         assert response.status_code == HTTPStatus.OK
 
+    def test_feature_list_batch_feature_create__success_when_skip_batch_feature_creation(
+        self, test_api_client_persistent
+    ):
+        """Test batch feature create async task (success)"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        feature_list_id = str(ObjectId())
+
+        payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [
+                {
+                    "id": str(ObjectId()),
+                    "name": "sum_30m",
+                    "node_name": "non_exist_node",
+                    "tabular_source": {
+                        "feature_store_id": str(ObjectId()),
+                        "table_details": {
+                            "database_name": "db",
+                            "schema_name": "schema",
+                            "table_name": "table",
+                        },
+                    },
+                },
+            ],
+            "graph": {"nodes": [], "edges": []},
+            "conflict_resolution": "retrieve",
+            "skip_batch_feature_creation": True,
+        }
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=payload)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        # retrieve feature list
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "test_feature_list"
+
+    def test_feature_list_batch_feature_create__failure_when_skip_batch_feature_creation(
+        self,
+        test_api_client_persistent,
+    ):
+        """Test batch feature create async task (failure)"""
+        test_api_client, _ = test_api_client_persistent
+
+        unsaved_feature_id = str(ObjectId())
+        payload = {
+            "name": "test_feature_list",
+            "features": [
+                {
+                    "id": unsaved_feature_id,
+                    "name": "non_exist_feature",
+                    "node_name": "non_exist_node",
+                    "tabular_source": {
+                        "feature_store_id": str(ObjectId()),
+                        "table_details": {
+                            "database_name": "db",
+                            "schema_name": "schema",
+                            "table_name": "table",
+                        },
+                    },
+                },
+            ],
+            "graph": {"nodes": [], "edges": []},
+            "conflict_resolution": "raise",
+            "skip_batch_feature_creation": True,
+        }
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=payload)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "FAILURE"
+        traceback = task_response.json()["traceback"]
+        expected_message = (
+            f'Feature (id: "{unsaved_feature_id}") not found. Please save the Feature object first.'
+        )
+        assert expected_message in traceback
+
+    def test_feature_list_creation_job(self, test_api_client_persistent):
+        """Test feature list creation job"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create feature list
+        feature_list_id = str(ObjectId())
+        feat_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_list_create_payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [{"name": feat_payload["name"], "id": feat_payload["_id"]}],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        self.wait_for_results(test_api_client, task_response)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        feature_list_response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+        # check when the feature is not found
+        unknown_feature_id = str(ObjectId())
+        feature_list_create_payload["features"][0]["id"] = unknown_feature_id
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        expected_error = (
+            f'Feature (id: "{unknown_feature_id}") not found. Please save the Feature object first.'
+        )
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "FAILURE"
+        assert expected_error in task_response.json()["traceback"]
+
+        # check resolve conflict
+        another_test_feature_list_id = str(ObjectId())
+        feature_list_create_payload["name"] = "another_test_feature_list"
+        feature_list_create_payload["_id"] = another_test_feature_list_id
+        feature_list_create_payload["features_conflict_resolution"] = "retrieve"
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        # check newly created feature list
+        feature_list_response = test_api_client.get(
+            f"{self.base_route}/{another_test_feature_list_id}"
+        )
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "another_test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+    def test_feature_list_creation_job__using_feature_ids_only(self, test_api_client_persistent):
+        """Test feature list creation job using feature ids only"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create feature list
+        feature_list_id = str(ObjectId())
+        feat_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_list_create_payload = {
+            "_id": feature_list_id,
+            "name": "test_feature_list",
+            "features": [feat_payload["_id"]],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        self.wait_for_results(test_api_client, task_response)
+        assert task_response.status_code == HTTPStatus.CREATED
+        assert task_response.json()["status"] == "SUCCESS"
+
+        feature_list_response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["name"] == "test_feature_list"
+        assert feature_list_dict["feature_ids"] == [feat_payload["_id"]]
+
+    def test_feature_list_creation_job__without_features(self, test_api_client_persistent):
+        """Test feature list creation job using feature ids only"""
+        test_api_client, _ = test_api_client_persistent
+
+        feature_list_create_payload = {
+            "_id": str(ObjectId()),
+            "name": "test_feature_list",
+            "features": [],
+            "features_conflict_resolution": "raise",
+        }
+        task_response = test_api_client.post(
+            f"{self.base_route}/job", json=feature_list_create_payload
+        )
+        assert task_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert task_response.json()["detail"][0]["msg"] == "ensure this value has at least 1 items"
+
     def test_request_sample_entity_serving_names(
         self,
         test_api_client_persistent,
@@ -1017,3 +1227,25 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 {"cust_id": "1"},
             ],
         }
+
+    @pytest.mark.asyncio
+    async def test_delete_feature_list_with_missing_remote_path(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        storage,
+    ):
+        """Test delete feature list with missing remote path"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+        feature_list_id = feature_list_doc["_id"]
+        await storage.delete(feature_list_doc["feature_clusters_path"])
+        with pytest.raises(FileNotFoundError):
+            await storage.get_text(feature_list_doc["feature_clusters_path"])
+
+        response = test_api_client.delete(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        # check that feature list is deleted
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

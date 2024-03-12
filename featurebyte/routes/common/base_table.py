@@ -145,22 +145,22 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         -------
         TableDocumentT
         """
+        # only update description if it is not already set
+        if document.description:
+            return document
+
         feature_store = await self.feature_store_service.get_document(
             document_id=document.tabular_source.feature_store_id,
         )
-        tables = await self.feature_store_warehouse_service.list_tables(
+        table_details = await self.feature_store_warehouse_service.get_table_details(
             feature_store,
             cast(str, document.tabular_source.table_details.database_name),
             cast(str, document.tabular_source.table_details.schema_name),
+            document.tabular_source.table_details.table_name,
         )
-        tables = [
-            table
-            for table in tables
-            if table.name == document.tabular_source.table_details.table_name
-        ]
-        if tables and tables[0].description:
+        if table_details.description:
             document = await self.update_description(
-                document_id=document.id, description=tables[0].description
+                document_id=document.id, description=table_details.description
             )
         return document
 

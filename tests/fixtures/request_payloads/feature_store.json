@@ -8,8 +8,9 @@
     "database_credential": null,
     "details": {
         "account": "sf_account",
-        "database": "sf_database",
-        "sf_schema": "sf_schema",
+        "database_name": "sf_database",
+        "role_name": "TESTING",
+        "schema_name": "sf_schema",
         "warehouse": "sf_warehouse"
     },
     "name": "sf_featurestore",

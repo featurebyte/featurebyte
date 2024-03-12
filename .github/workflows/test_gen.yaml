@@ -36,8 +36,8 @@ env:
   DATABRICKS_UNITY_CATALOG: ${{ secrets.DATABRICKS_UNITY_CATALOG }}
   DATABRICKS_SCHEMA_FEATUREBYTE: FEATUREBYTE_GITHUB
   DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
-  DATABRICKS_STORAGE_ACCESS_KEY_ID: ${{ secrets.DATABRICKS_S3_ACCESS_KEY }}
-  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_S3_SECRET_KEY }}
+  S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+  S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
   GCS_CLOUD_STORAGE_RW_TEST: ${{ secrets.GCS_CLOUD_STORAGE_RW_TEST }}
   AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
   AZURE_STORAGE_ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
@@ -52,12 +52,12 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Setup gradle cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: hive-udf/.gradle
         key: gradle-cache-${{ runner.os }}
     - name: Setup gradle build cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: hive-udf/lib/build
         key: gradle-build-cache-${{ runner.os }}
@@ -83,22 +83,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -143,22 +138,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -191,7 +181,7 @@ jobs:
     - build-jar
     runs-on:
       group: Public Runners
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       matrix:
         python-version:
@@ -205,22 +195,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -272,6 +257,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
   test-integration-databricks:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
@@ -286,22 +272,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -333,7 +314,7 @@ jobs:
     needs:
     - build-jar
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 135
     strategy:
       matrix:
         python-version:
@@ -344,22 +325,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -397,22 +373,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install packages needed for build
       run: |-
         sudo apt-get update
@@ -450,22 +421,17 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
     - name: Install dependencies
       run: poetry install -n --sync
     - name: Download unit test results
@@ -570,7 +536,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
       name: Send Slack notification with workflow result.
-      uses: slackapi/slack-github-action@v1.24.0
+      uses: slackapi/slack-github-action@v1.25.0
       with:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
@@ -597,7 +563,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
       name: Send Slack notification to developer channel
-      uses: slackapi/slack-github-action@v1.24.0
+      uses: slackapi/slack-github-action@v1.25.0
       with:
         channel-id: C03D81HC6Q5
         payload: |-

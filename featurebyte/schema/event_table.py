@@ -28,6 +28,15 @@ class EventTableCreate(TableCreate):
     event_timestamp_timezone_offset: Optional[StrictStr]
     event_timestamp_timezone_offset_column: Optional[StrictStr]
 
+    # pydantic validators
+    _special_columns_validator = validator(
+        "record_creation_timestamp_column",
+        "event_id_column",
+        "event_timestamp_column",
+        "event_timestamp_timezone_offset_column",
+        allow_reuse=True,
+    )(TableCreate._special_column_validator)
+
     @validator("event_timestamp_timezone_offset")
     @classmethod
     def _validate_event_timestamp_timezone_offset(cls, value: Optional[str]) -> Optional[str]:

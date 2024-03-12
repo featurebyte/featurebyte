@@ -102,7 +102,7 @@ class SparkSession(BaseSparkSession):
             return HiveConnection(
                 host=self.host,
                 http_path=self.http_path,
-                catalog=self.database_name,
+                catalog=self.catalog_name,
                 database=self.schema_name,
                 port=self.port,
                 access_token=access_token,
@@ -158,7 +158,7 @@ class SparkSession(BaseSparkSession):
     def _initialize_storage(self) -> None:
         # add prefix to compartmentalize assets
         self.storage_url = self.storage_url.rstrip("/")
-        self.storage_spark_url = self.storage_spark_url.rstrip("/")
+        self.storage_path = self.storage_path.rstrip("/")
 
         if self.storage_type == StorageType.FILE:
             self._storage = FileSimpleStorage(storage_url=self.storage_url)
@@ -233,7 +233,7 @@ class SparkSession(BaseSparkSession):
 
     def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
         with self._storage.open(path=remote_path, mode="wb") as out_file_obj:
-            dataframe.to_parquet(out_file_obj)
+            dataframe.to_parquet(out_file_obj, version="2.4")
             out_file_obj.flush()
 
     def delete_path_from_storage(self, remote_path: str) -> None:

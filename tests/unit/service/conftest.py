@@ -17,29 +17,28 @@ from bson.objectid import ObjectId
 
 from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
-from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.entity import ParentEntity
-from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
-from featurebyte.schema.catalog import CatalogCreate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
-from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
+from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
-from featurebyte.storage import LocalTempStorage
 from featurebyte.utils.messaging import REDIS_URI
+from tests.util.helper import manage_document
 
 
 @pytest.fixture(name="get_credential")
@@ -56,15 +55,15 @@ def get_credential_fixture(credentials):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     instance_map = {
         "user": user,
         "persistent": persistent,
-        "temp_storage": LocalTempStorage(),
-        "storage": LocalTempStorage(),
+        "temp_storage": temp_storage,
+        "storage": storage,
         "catalog_id": catalog.id,
         "user_id": user.id,
         "task_id": uuid4(),
@@ -77,6 +76,17 @@ def app_container_fixture(persistent, user, catalog):
 def feature_store_service_fixture(app_container):
     """FeatureStore service"""
     return app_container.feature_store_service
+
+
+@pytest.fixture(name="feature_store_warehouse_service")
+def feature_store_warehouse_service_fixture(
+    app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session
+):
+    """FeatureStore Warehouse service"""
+    with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
+        mocked.return_value = feature_store, mock_snowflake_session
+        mock_get_feature_store_session.return_value = mock_snowflake_session
+        yield app_container.feature_store_warehouse_service
 
 
 @pytest.fixture(name="entity_service")
@@ -171,6 +181,18 @@ def feature_list_service_fixture(app_container):
     return app_container.feature_list_service
 
 
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
 @pytest.fixture(name="table_columns_info_service")
 def table_columns_info_service_fixture(app_container):
     """TableColumnsInfoService fixture"""
@@ -207,11 +229,23 @@ def online_enable_service_fixture(app_container):
     return app_container.online_enable_service
 
 
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture():
+    """Mock get_feature_store_session fixture"""
+    with patch(
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        yield mock_get_feature_store_session
+
+
 @pytest.fixture(name="preview_service")
-def preview_service_fixture(app_container, feature_store, mock_snowflake_session):
+def preview_service_fixture(
+    app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session
+):
     """PreviewService fixture"""
     with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
         mocked.return_value = feature_store, mock_snowflake_session
+        mock_get_feature_store_session.return_value = mock_snowflake_session
         yield app_container.preview_service
 
 
@@ -363,7 +397,7 @@ async def feature_store_fixture(test_dir, feature_store_service):
 
 
 @pytest_asyncio.fixture(name="catalog")
-async def catalog_fixture(test_dir, user, persistent):
+async def catalog_fixture(test_dir, user, persistent, storage):
     """Catalog model"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/catalog.json")
     # Cannot inject catalog service here because the app_container fixture depends on catalog, which creates a cycle.
@@ -372,6 +406,8 @@ async def catalog_fixture(test_dir, user, persistent):
         persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
+        redis=Mock(),
     )
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -575,16 +611,33 @@ async def feature_namespace_fixture(feature_namespace_service, feature):
 
 
 @pytest_asyncio.fixture(name="feature_list")
-async def feature_list_fixture(test_dir, feature, feature_list_service):
+async def feature_list_fixture(test_dir, feature, feature_list_service, storage):
     """Feature list model"""
     _ = feature
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(
-            data=FeatureListServiceCreate(**payload)
-        )
-        return feature_list
+        async with manage_document(
+            feature_list_service,
+            FeatureListServiceCreate(**payload),
+            storage,
+        ) as feature_list:
+            yield feature_list
+
+
+@pytest_asyncio.fixture(name="feature_list_repeated")
+async def feature_list_repeated_fixture(test_dir, feature, feature_list_service, storage):
+    """Feature list model that has the same underlying features as feature_list"""
+    _ = feature
+    fixture_path = os.path.join(
+        test_dir, "fixtures/request_payloads/feature_list_single_repeated.json"
+    )
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        async with manage_document(
+            feature_list_service, FeatureListServiceCreate(**payload), storage
+        ) as feature_list:
+            yield feature_list
 
 
 @pytest_asyncio.fixture(name="feature_list_namespace")
@@ -596,14 +649,16 @@ async def feature_list_namespace_fixture(feature_list_namespace_service, feature
 
 
 @pytest_asyncio.fixture(name="production_ready_feature_list")
-async def production_ready_feature_list_fixture(production_ready_feature, feature_list_service):
+async def production_ready_feature_list_fixture(
+    production_ready_feature, feature_list_service, storage
+):
     """Fixture for a production ready feature list"""
     data = FeatureListServiceCreate(
         name="Production Ready Feature List",
         feature_ids=[production_ready_feature.id],
     )
-    result = await feature_list_service.create_document(data)
-    return result
+    async with manage_document(feature_list_service, data, storage) as feature_list:
+        yield feature_list
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list")
@@ -660,9 +715,9 @@ async def insert_feature_into_persistent(
 
 
 @pytest_asyncio.fixture(name="target")
-async def target_fixture(test_dir, target_service, event_table, item_table):
+async def target_fixture(test_dir, target_service, event_table, item_table, entity):
     """Target model"""
-    _ = event_table, item_table
+    _ = event_table, item_table, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/target.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -679,6 +734,7 @@ async def setup_for_feature_readiness_fixture(
     feature_list,
     user,
     persistent,
+    storage,
 ):
     """Setup for feature readiness test fixture"""
     namespace = await feature_namespace_service.get_document(
@@ -696,6 +752,7 @@ async def setup_for_feature_readiness_fixture(
         readiness="DEPRECATED",
         namespace_id=feature.feature_namespace_id,
         catalog_id=feature.catalog_id,
+        version="V0",
     )
     feat_namespace = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
@@ -708,22 +765,21 @@ async def setup_for_feature_readiness_fixture(
     assert feat_namespace.readiness == "DRAFT"
 
     # create another feature list version
-    new_flist = await feature_list_service.create_document(
-        data=FeatureListServiceCreate(
-            feature_ids=[new_feature_id],
-            feature_list_namespace_id=feature_list.feature_list_namespace_id,
-            name="sf_feature_list",
-            version={"name": "V220914"},
+    feature_list_data = FeatureListServiceCreate(
+        feature_ids=[new_feature_id],
+        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+        name="sf_feature_list",
+        version={"name": "V220914"},
+    )
+    async with manage_document(feature_list_service, feature_list_data, storage) as new_flist:
+        flist_namespace = await feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
         )
-    )
-    flist_namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
-    assert len(flist_namespace.feature_list_ids) == 2
-    assert new_flist.id in flist_namespace.feature_list_ids
-    assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
-    assert flist_namespace.default_feature_list_id == feature_list.id
-    yield new_feature_id, new_flist.id
+        assert len(flist_namespace.feature_list_ids) == 2
+        assert new_flist.id in flist_namespace.feature_list_ids
+        assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
+        assert flist_namespace.default_feature_list_id == feature_list.id
+        yield new_feature_id, new_flist.id
 
 
 async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns):
@@ -801,7 +857,7 @@ async def entity_e_fixture(entity_service):
 async def create_table_and_add_parent(
     test_dir,
     event_table_service,
-    entity_service,
+    relationship_info_service,
     child_entity,
     parent_entity,
     child_column,
@@ -816,18 +872,24 @@ async def create_table_and_add_parent(
         event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
     )
-    parents = (await entity_service.get_document(child_entity.id)).parents
-    parents += [ParentEntity(id=parent_entity.id, table_type=table.type, table_id=table.id)]
-    update_parents = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(child_entity.id, update_parents)
-    return table
+    relationship_info = await relationship_info_service.create_document(
+        data=RelationshipInfoCreate(
+            name=f"{child_entity.id}_{parent_entity.id}",
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=child_entity.id,
+            related_entity_id=parent_entity.id,
+            relation_table_id=table.id,
+            enabled=True,
+        )
+    )
+    return table, relationship_info
 
 
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
 async def b_is_parent_of_a_fixture(
     entity_a,
     entity_b,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -839,7 +901,7 @@ async def b_is_parent_of_a_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_a,
         parent_entity=entity_b,
         child_column="a",
@@ -851,7 +913,7 @@ async def b_is_parent_of_a_fixture(
 async def c_is_parent_of_b_fixture(
     entity_b,
     entity_c,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -863,7 +925,7 @@ async def c_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_c,
         child_column="b",
@@ -875,7 +937,7 @@ async def c_is_parent_of_b_fixture(
 async def d_is_parent_of_b_fixture(
     entity_b,
     entity_d,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -887,7 +949,7 @@ async def d_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_d,
         child_column="b",
@@ -899,7 +961,7 @@ async def d_is_parent_of_b_fixture(
 async def d_is_parent_of_c_fixture(
     entity_c,
     entity_d,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
@@ -911,7 +973,7 @@ async def d_is_parent_of_c_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_d,
         child_column="c",
@@ -919,93 +981,38 @@ async def d_is_parent_of_c_fixture(
     )
 
 
-@pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
-async def e_is_parent_of_c_and_d_fixture(
+@pytest_asyncio.fixture(name="a_is_parent_of_c_and_d")
+async def a_is_parent_of_c_and_d_fixture(
+    entity_a,
     entity_c,
     entity_d,
-    entity_e,
-    entity_service,
+    relationship_info_service,
     event_table_service,
     test_dir,
     feature_store,
 ):
     """
-    Fixture to make E a parent of C and D
+    Fixture to make A a parent of C and D
     """
     _ = feature_store
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_c,
-        parent_entity=entity_e,
+        parent_entity=entity_a,
         child_column="c",
-        parent_column="e",
+        parent_column="a",
     )
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
-        entity_service,
+        relationship_info_service,
         child_entity=entity_d,
-        parent_entity=entity_e,
+        parent_entity=entity_a,
         child_column="d",
-        parent_column="e",
+        parent_column="a",
     )
-
-
-@pytest.fixture
-def entity_info_with_ambiguous_relationships(
-    entity_a,
-    entity_e,
-    b_is_parent_of_a,
-    c_is_parent_of_b,
-    d_is_parent_of_b,
-    e_is_parent_of_c_and_d,
-) -> EntityInfo:
-    """
-    EntityInfo the arises from ambiguous relationships
-
-    a (provided) --> b --> c ---> e (required)
-                      `--> d --´
-    """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    _ = d_is_parent_of_b
-    _ = e_is_parent_of_c_and_d
-    entity_info = EntityInfo(
-        required_entities=[entity_e],
-        provided_entities=[entity_a],
-        serving_names_mapping={"A": "new_A"},
-    )
-    return entity_info
-
-
-@pytest.fixture
-def relationships(b_is_parent_of_a, c_is_parent_of_b):
-    """
-    Fixture to register all relationships
-    """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    yield
-
-
-@pytest.fixture(name="mock_update_data_warehouse")
-def mock_update_data_warehouse(app_container):
-    """Mock update data warehouse method"""
-
-    async def mock_func(updated_feature, online_enabled_before_update):
-        _ = online_enabled_before_update
-        extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
-        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-        for query in online_feature_spec.precompute_queries:
-            await app_container.online_store_compute_query_service.create_document(query)
-
-    with patch(
-        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",
-        side_effect=mock_func,
-    ) as mock_update_data_warehouse:
-        yield mock_update_data_warehouse
 
 
 @pytest.fixture(name="feature_materialize_service")
@@ -1016,18 +1023,29 @@ def feature_materialize_service_fixture(app_container):
     return app_container.feature_materialize_service
 
 
-@pytest.fixture(name="mock_feature_materialize_service")
-def mock_feature_materialize_service_fixture():
+@pytest_asyncio.fixture(name="online_store")
+async def online_store_fixture(app_container):
     """
-    Fixture to mock FeatureMaterializeService's methods where the actual queries are executed
+    Fixture to return an online store model
     """
-    patched = {}
-    service_name = (
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService"
+    online_store_model = await app_container.online_store_service.create_document(
+        OnlineStoreModel(
+            name="redis_online_store",
+            details=RedisOnlineStoreDetails(
+                redis_type="redis",
+            ),
+        )
     )
-    for method_name in ["initialize_new_columns", "drop_columns", "drop_table"]:
-        patcher = patch(f"{service_name}.{method_name}")
-        patched[method_name] = patcher.start()
-    yield patched
-    for patcher in patched.values():
-        patcher.stop()
+    return online_store_model
+
+
+@pytest_asyncio.fixture(name="catalog_with_online_store")
+async def catalog_with_online_store_fixture(app_container, catalog, online_store):
+    """
+    Fixture for a catalog with an online store
+    """
+    catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+    catalog = await app_container.catalog_service.update_document(
+        document_id=catalog.id, data=catalog_update
+    )
+    return catalog

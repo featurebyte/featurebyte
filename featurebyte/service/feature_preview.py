@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
+import os
+
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
@@ -34,6 +36,7 @@ from featurebyte.service.session_manager import SessionManagerService
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
 from featurebyte.service.target import TargetService
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS
 
 ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
 
@@ -62,6 +65,17 @@ class FeaturePreviewService(PreviewService):
         self.observation_table_service = observation_table_service
         self.feature_service = feature_service
         self.target_service = target_service
+
+    @property
+    def feature_list_preview_max_features_number(self) -> int:
+        """
+        Feature list preview max features number
+
+        Returns
+        -------
+        int
+        """
+        return int(os.getenv("FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM", "30"))
 
     async def _update_point_in_time_if_needed(
         self,
@@ -104,11 +118,14 @@ class FeaturePreviewService(PreviewService):
                     f"Observation table must have {FEATURE_PREVIEW_ROW_LIMIT} rows or less"
                 )
 
+            # TODO: Ideally, we shouldn't have to download the observation table and then
+            #  re-register it as a request table. Instead we should use the materialized observation
+            #  table as the request table directly.
             feature_store = await self.feature_store_service.get_document(
                 document_id=observation_table.location.feature_store_id
             )
             db_session = await self.session_manager_service.get_feature_store_session(
-                feature_store=feature_store,
+                feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
             )
             sql_expr = get_source_expr(source=observation_table.location.table_details)
             sql = sql_to_string(
@@ -117,6 +134,8 @@ class FeaturePreviewService(PreviewService):
             )
             observation_set_dataframe = await db_session.execute_query(sql)
             assert observation_set_dataframe is not None
+            if InternalName.TABLE_ROW_INDEX in observation_set_dataframe:
+                observation_set_dataframe.drop(InternalName.TABLE_ROW_INDEX, axis=1, inplace=True)
             point_in_time_and_serving_name_list = observation_set_dataframe.to_dict(
                 orient="records"
             )
@@ -192,8 +211,8 @@ class FeaturePreviewService(PreviewService):
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=graph,
-                nodes=[feature_node],
+                graph_nodes=(graph, [feature_node]),
+                feature_list_model=None,
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )
@@ -270,14 +289,30 @@ class FeaturePreviewService(PreviewService):
         -------
         dict[str, Any]
             Dataframe converted to json string
+
+        Raises
+        ------
+        LimitExceededError
+            raised if the feature list preview has more than 30 features
         """
         if featurelist_preview.feature_list_id is not None:
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
+            feature_list_model = await self.feature_list_service.get_document(
                 featurelist_preview.feature_list_id
             )
+            feature_clusters = feature_list_model.feature_clusters
         else:
             assert featurelist_preview.feature_clusters is not None
+            feature_list_model = None
             feature_clusters = featurelist_preview.feature_clusters
+
+        assert feature_clusters is not None
+
+        # Check if the total number of features is within the limit
+        total_features = sum(len(feature_cluster.nodes) for feature_cluster in feature_clusters)
+        if total_features > self.feature_list_preview_max_features_number:
+            raise LimitExceededError(
+                f"Feature list preview must have {self.feature_list_preview_max_features_number} features or less"
+            )
 
         # Check if any of the features are time based
         has_time_based_feature = False
@@ -309,8 +344,8 @@ class FeaturePreviewService(PreviewService):
                 feature_cluster.feature_store_id
             )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_cluster.graph,
-                nodes=feature_cluster.nodes,
+                graph_nodes=(feature_cluster.graph, feature_cluster.nodes),
+                feature_list_model=feature_list_model,
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )
@@ -417,13 +452,17 @@ class FeaturePreviewService(PreviewService):
             SQL statements
         """
         # multiple feature stores not supported
-        feature_clusters = featurelist_get_historical_features.feature_clusters
-        if not feature_clusters:
-            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
-                featurelist_get_historical_features.feature_list_id  # type: ignore[arg-type]
-            )
+        if featurelist_get_historical_features.feature_list_id is not None:
+            feature_clusters = (
+                await self.feature_list_service.get_document(
+                    featurelist_get_historical_features.feature_list_id
+                )
+            ).feature_clusters
+        else:
+            assert featurelist_get_historical_features.feature_clusters is not None
+            feature_clusters = featurelist_get_historical_features.feature_clusters
 
+        assert feature_clusters is not None
         assert len(feature_clusters) == 1
         feature_cluster = feature_clusters[0]
 

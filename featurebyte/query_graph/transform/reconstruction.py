@@ -1,7 +1,7 @@
 """
 This module contains graph reconstruction (by replacing certain nodes) related classes.
 """
-from typing import Any, Dict, Type, TypeVar, cast
+from typing import Any, Dict, Optional, Type, TypeVar, cast
 
 from abc import abstractmethod
 
@@ -13,11 +13,16 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.generic import GroupByNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
+from featurebyte.query_graph.node.metadata.operation import OperationStructureInfo
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+from featurebyte.query_graph.util import (
+    get_aggregation_identifier,
+    get_tile_table_identifier_v1,
+    get_tile_table_identifier_v2,
+)
 
 PRUNING_SENSITIVE_NODE_MAP: Dict[NodeType, Type[BaseNode]] = {}
 
@@ -93,13 +98,21 @@ class GroupByNode(BaseGroupbyNode, BasePruningSensitiveNode):
         row_index_lineage_hash = cls._get_row_index_lineage_hash(
             pruned_graph=pruned_graph, pruned_input_node_name=pruned_input_node_name
         )
-        tile_id = get_tile_table_identifier(
-            row_index_lineage_hash=row_index_lineage_hash,
-            parameters=temp_node.parameters.dict(),
-        )
+        parameters_dict = temp_node.parameters.dict()
+        tile_id_version = parameters_dict.pop("tile_id_version")
+        if tile_id_version == 1:
+            tile_id = get_tile_table_identifier_v1(
+                row_index_lineage_hash=row_index_lineage_hash,
+                parameters=parameters_dict,
+            )
+        else:
+            tile_id = get_tile_table_identifier_v2(
+                transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
+                parameters=parameters_dict,
+            )
         aggregation_id = get_aggregation_identifier(
             transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
-            parameters=temp_node.parameters.dict(),
+            parameters=parameters_dict,
         )
         return {
             "tile_id": tile_id,
@@ -131,6 +144,7 @@ def add_pruning_sensitive_operation(
     node_cls: Type[PruningSensitiveNodeT],
     node_params: Dict[str, Any],
     input_node: NodeT,
+    operation_structure_info: Optional[OperationStructureInfo] = None,
 ) -> PruningSensitiveNodeT:
     """
     Insert a pruning sensitive operation whose parameters can change after the graph is pruned
@@ -149,13 +163,17 @@ def add_pruning_sensitive_operation(
         Node parameters
     input_node: NodeT
         Input node to the aggregation node
+    operation_structure_info: Optional[OperationStructureInfo]
+        Operation structure information
 
     Returns
     -------
     PruningSensitiveNodeT
     """
+    if operation_structure_info is None:
+        operation_structure_info = OperationStructureExtractor(graph=graph).extract(node=input_node)
+
     # prepare input operation structure to extract available column names
-    operation_structure_info = OperationStructureExtractor(graph=graph).extract(node=input_node)
     input_operation_structure = operation_structure_info.operation_structure_map[input_node.name]
 
     # create a temporary node & prune the graph before deriving additional parameters based on

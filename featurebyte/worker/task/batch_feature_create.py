@@ -8,7 +8,10 @@ from typing import Any
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.worker.task.base import BaseTask
-from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
+from featurebyte.worker.util.batch_feature_creator import (
+    BatchFeatureCreator,
+    patch_api_object_cache,
+)
 
 logger = get_logger(__name__)
 
@@ -30,7 +33,9 @@ class BatchFeatureCreateTask(BaseTask[BatchFeatureCreateTaskPayload]):
     async def get_task_description(self, payload: BatchFeatureCreateTaskPayload) -> str:
         return f"Save {len(payload.features)} features"
 
+    @patch_api_object_cache()
     async def execute(self, payload: BatchFeatureCreateTaskPayload) -> Any:
-        await self.batch_feature_creator.batch_feature_create(
+        feature_ids = await self.batch_feature_creator.batch_feature_create(
             payload=payload, start_percentage=0, end_percentage=100
         )
+        return feature_ids

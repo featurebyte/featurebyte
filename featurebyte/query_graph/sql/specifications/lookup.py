@@ -31,12 +31,14 @@ class LookupSpec(BaseLookupSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
+        agg_result_name_include_serving_names: bool,
     ) -> list[LookupSpec]:
         assert isinstance(node, LookupNode)
         params = node.parameters
         specs = []
         for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):
             spec = LookupSpec(
+                node_name=node.name,
                 input_column_name=input_column_name,
                 feature_name=feature_name,
                 entity_column=params.entity_column,
@@ -46,6 +48,7 @@ class LookupSpec(BaseLookupSpec):
                 aggregation_source=aggregation_source,
                 scd_parameters=params.scd_parameters,
                 event_parameters=params.event_parameters,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             specs.append(spec)
         return specs

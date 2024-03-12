@@ -26,7 +26,9 @@ def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, source_type)
 
-    sql_code = interpreter.construct_describe_sql(node.name, num_rows=10, seed=1234)[0]
+    sql_code = (
+        interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].sql
+    )
     expected_filename = f"tests/fixtures/query_graph/expected_describe_{source_type.lower()}.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
@@ -36,13 +38,19 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code, _, rows, columns = interpreter.construct_describe_sql(
+    describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=["min", "max"]
-    )
-    assert rows == ["dtype", "min", "max"]
-    assert [column.name for column in columns] == ["ts", "cust_id", "a", "b", "a_copy"]
+    ).queries[0]
+    assert describe_query.row_names == ["dtype", "min", "max"]
+    assert [column.name for column in describe_query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+        "b",
+        "a_copy",
+    ]
     expected_filename = f"tests/fixtures/query_graph/expected_describe_stats_names.sql"
-    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
 def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
@@ -52,13 +60,19 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code, _, rows, columns = interpreter.construct_describe_sql(
+    describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=["entropy"]
-    )
-    assert rows == ["dtype", "entropy"]
-    assert [column.name for column in columns] == ["ts", "cust_id", "a", "b", "a_copy"]
+    ).queries[0]
+    assert describe_query.row_names == ["dtype", "entropy"]
+    assert [column.name for column in describe_query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+        "b",
+        "a_copy",
+    ]
     expected_filename = f"tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
-    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
 def test_describe_specify_empty_stats(simple_graph, update_fixtures):
@@ -68,13 +82,79 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code, _, rows, columns = interpreter.construct_describe_sql(
+    describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=[]
-    )
-    assert rows == ["dtype"]
-    assert [column.name for column in columns] == ["ts", "cust_id", "a", "b", "a_copy"]
+    ).queries[0]
+    assert describe_query.row_names == ["dtype"]
+    assert [column.name for column in describe_query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+        "b",
+        "a_copy",
+    ]
     expected_filename = f"tests/fixtures/query_graph/expected_describe_empty_stats.sql"
-    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+
+
+def test_describe_in_batches(simple_graph, update_fixtures):
+    """Test describe sql in batches"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    describe_queries = interpreter.construct_describe_queries(
+        node.name,
+        num_rows=10,
+        seed=1234,
+        stats_names=["min", "max"],
+        columns_batch_size=3,
+    )
+    assert len(describe_queries.queries) == 2
+
+    query = describe_queries.queries[0]
+    assert query.row_names == ["dtype", "min", "max"]
+    assert [column.name for column in query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+    ]
+    expected_filename = f"tests/fixtures/query_graph/expected_describe_batches_0.sql"
+    assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
+
+    query = describe_queries.queries[1]
+    assert query.row_names == ["dtype", "min", "max"]
+    assert [column.name for column in query.columns] == [
+        "b",
+        "a_copy",
+    ]
+    expected_filename = f"tests/fixtures/query_graph/expected_describe_batches_1.sql"
+    assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
+
+
+def test_describe_no_batches(simple_graph, update_fixtures):
+    """Test describe sql and disable batching by setting batch size to 0"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    describe_queries = interpreter.construct_describe_queries(
+        node.name,
+        num_rows=10,
+        seed=1234,
+        stats_names=["dtype", "entropy"],
+        columns_batch_size=0,
+    )
+    assert len(describe_queries.queries) == 1
+    describe_query = describe_queries.queries[0]
+    assert describe_query.row_names == ["dtype", "entropy"]
+    assert [column.name for column in describe_query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+        "b",
+        "a_copy",
+    ]
+    expected_filename = f"tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
+    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
 def test_value_counts_sql(project_from_simple_graph, update_fixtures):

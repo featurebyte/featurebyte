@@ -32,6 +32,7 @@ from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
+    deploy_features_through_api,
     get_node,
 )
 
@@ -560,8 +561,9 @@ def get_generic_input_node_params_fixture():
             "details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     }
@@ -847,7 +849,7 @@ def test_create_observation_table_from_event_view__no_sample(
     assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args[0][0]
+    query = snowflake_execute_query.call_args_list[-2][0][0]
     check_observation_table_creation_query(
         query,
         """
@@ -867,6 +869,17 @@ def test_create_observation_table_from_event_view__no_sample(
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
         )
+        """,
+    )
+    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    check_observation_table_creation_query(
+        row_index_query,
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+          *
+        FROM "OBSERVATION_TABLE"
         """,
     )
 
@@ -896,7 +909,7 @@ def test_create_observation_table_from_event_view__with_sample(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args[0][0]
+    query = snowflake_execute_query.call_args_list[-2][0][0]
     check_observation_table_creation_query(
         query,
         """
@@ -925,43 +938,74 @@ def test_create_observation_table_from_event_view__with_sample(
         LIMIT 100
         """,
     )
+    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    check_observation_table_creation_query(
+        row_index_query,
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+          *
+        FROM "OBSERVATION_TABLE"
+        """,
+    )
 
 
-def test_shape(snowflake_event_table):
+def test_shape(snowflake_event_table, snowflake_query_map):
     """
     Test creating ObservationTable from an EventView
     """
     view = snowflake_event_table.get_view()
+    expected_call_view = textwrap.dedent(
+        """
+        WITH data AS (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
+        SELECT
+          COUNT(*) AS "count"
+        FROM data
+        """
+    ).strip()
+    expected_call_view_column = textwrap.dedent(
+        """
+        WITH data AS (
+          SELECT
+            "col_int" AS "col_int"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
+        SELECT
+          COUNT(*) AS "count"
+        FROM data
+        """
+    ).strip()
+
+    def side_effect(query, timeout=None):
+        _ = timeout
+        res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return pd.DataFrame({"count": [1000]})
+
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
-        mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
+        mock_execute_query.side_effect = side_effect
         assert view.shape() == (1000, 8)
         # Check that the correct query was executed
-        assert (
-            mock_execute_query.call_args[0][0]
-            == textwrap.dedent(
-                """
-                WITH data AS (
-                  SELECT
-                    "col_int" AS "col_int",
-                    "col_float" AS "col_float",
-                    "col_char" AS "col_char",
-                    "col_text" AS "col_text",
-                    "col_binary" AS "col_binary",
-                    "col_boolean" AS "col_boolean",
-                    "event_timestamp" AS "event_timestamp",
-                    "cust_id" AS "cust_id"
-                  FROM "sf_database"."sf_schema"."sf_table"
-                )
-                SELECT
-                  COUNT(*) AS "count"
-                FROM data
-                """
-            ).strip()
-        )
+        assert mock_execute_query.call_args[0][0] == expected_call_view
         # test view colum shape
         assert view["col_int"].shape() == (1000, 1)
+        # Check that the correct query was executed
+        assert mock_execute_query.call_args[0][0] == expected_call_view_column
 
 
 @pytest.mark.flaky(reruns=3)
@@ -1018,3 +1062,29 @@ def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
     elapsed = datetime.now() - start
     elapsed_ratio = elapsed.total_seconds() / single_op_elapsed_time.total_seconds()
     assert elapsed_ratio < 2500
+
+
+def test_event_view_as_feature(
+    snowflake_event_table_with_entity,
+    feature_group_feature_job_setting,
+    enable_feast_integration,
+    mock_deployment_flow,
+):
+    """Test offline store table name for event view lookup features"""
+    _ = enable_feast_integration, mock_deployment_flow
+
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting,
+    )
+    event_view = snowflake_event_table_with_entity.get_view()
+    feature = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])[
+        "col_float"
+    ]
+    feature.save()
+    deploy_features_through_api([feature])
+
+    # check offline store table name (should have feature job setting)
+    offline_store_info = feature.cached_model.offline_store_info
+    ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_graphs) == 1
+    assert ingest_graphs[0].offline_store_table_name == "cat1_transaction_id_1d"

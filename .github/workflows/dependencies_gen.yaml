@@ -47,7 +47,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: abatilo/actions-poetry@v3
       with:
         poetry-version: 1.5.1
     - name: Check pyproject.toml and poetry.lock are consistent

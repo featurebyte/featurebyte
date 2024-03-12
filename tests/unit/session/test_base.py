@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Any, OrderedDict
 
 import collections
+import time
+from asyncio.exceptions import TimeoutError as AsyncIOTimeoutError
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -13,10 +15,15 @@ import pytest
 from pydantic import Field
 from snowflake.connector.errors import ProgrammingError
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.base import (
+    BaseSchemaInitializer,
+    BaseSession,
+    MetadataSchemaInitializer,
+    to_thread,
+)
 
 CURRENT_WORKING_SCHEMA_VERSION_TEST = 1
 
@@ -70,6 +77,12 @@ def base_session_test_fixture():
             self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
         ) -> None:
             return None
+
+        async def comment_table(self, table_name: str, comment: str) -> None:
+            pass
+
+        async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
+            pass
 
     return BaseSessionTestFixture
 
@@ -235,3 +248,25 @@ async def test_should_update_schema__no_results_found(base_schema_initializer):
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
+
+
+@pytest.mark.asyncio
+async def test_to_thread():
+    """
+    Check thread execution is interrupted by timeout
+    """
+
+    def _blocking_sync_function(values):
+        try:
+            for i in range(10):
+                time.sleep(0.1)
+        except TimeoutError:
+            values[0] = 2
+
+    values = [0]
+    with pytest.raises(AsyncIOTimeoutError):
+        await to_thread(_blocking_sync_function, 0.1, values)
+
+    # expect exception to be raised inside thread on timeout
+    time.sleep(0.5)
+    assert values[0] == 2

@@ -49,6 +49,7 @@ from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
+from featurebyte.routes.online_store.controller import OnlineStoreController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
@@ -67,10 +68,16 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
-from featurebyte.service.deploy import DeployService
+from featurebyte.service.deploy import (
+    DeployFeatureListManagementService,
+    DeployFeatureManagementService,
+    DeployService,
+    FeastIntegrationService,
+)
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -86,24 +93,35 @@ from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.feature_table_cache import FeatureTableCacheService
+from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
     HistoricalFeaturesService,
+    HistoricalFeaturesValidationParametersService,
 )
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_comment import (
+    OfflineStoreFeatureTableCommentService,
+)
+from featurebyte.service.offline_store_feature_table_construction import (
+    OfflineStoreFeatureTableConstructionService,
+)
 from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -154,6 +172,7 @@ from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -162,6 +181,7 @@ from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,
 )
+from featurebyte.worker.task.feature_list_create import FeatureListCreateTask
 from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
@@ -195,6 +215,7 @@ app_container_config.register_class(
     CatalogController, dependency_override={"service": "catalog_service"}
 )
 app_container_config.register_class(CatalogNameInjector)
+app_container_config.register_class(CatalogOnlineStoreUpdateTask)
 app_container_config.register_class(CatalogService)
 app_container_config.register_class(
     ContextController, dependency_override={"service": "context_service"}
@@ -204,6 +225,9 @@ app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
+app_container_config.register_class(DeployFeatureManagementService)
+app_container_config.register_class(DeployFeatureListManagementService)
+app_container_config.register_class(FeastIntegrationService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
@@ -216,6 +240,7 @@ app_container_config.register_class(EntityService)
 app_container_config.register_class(EntityServingNamesService)
 app_container_config.register_class(EntityValidationService)
 app_container_config.register_class(EntityRelationshipExtractorService)
+app_container_config.register_class(EntityLookupFeatureTableService)
 app_container_config.register_class(EventTableController)
 app_container_config.register_class(EventTableService)
 app_container_config.register_class(FeatureController)
@@ -242,12 +267,15 @@ app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
+app_container_config.register_class(FeatureTableCacheService)
+app_container_config.register_class(FeatureTableCacheMetadataService)
 app_container_config.register_class(HistoricalFeatureExecutor)
 app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(HistoricalFeatureTableService)
 app_container_config.register_class(
     HistoricalFeaturesService, dependency_override={"query_executor": "historical_feature_executor"}
 )
+app_container_config.register_class(HistoricalFeaturesValidationParametersService)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(MongoBackedCredentialProvider)
@@ -256,10 +284,15 @@ app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
+app_container_config.register_class(OfflineStoreFeatureTableConstructionService)
 app_container_config.register_class(OfflineStoreFeatureTableService)
+app_container_config.register_class(OfflineStoreFeatureTableCommentService)
 app_container_config.register_class(OfflineStoreFeatureTableManagerService)
+app_container_config.register_class(OfflineStoreInfoInitializationService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)
+app_container_config.register_class(OnlineStoreService)
+app_container_config.register_class(OnlineStoreController)
 app_container_config.register_class(OnlineStoreCleanupService)
 app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)
@@ -344,6 +377,7 @@ app_container_config.register_class(BatchRequestTableTask)
 app_container_config.register_class(BatchFeatureTableTask)
 app_container_config.register_class(MaterializedTableDeleteTask)
 app_container_config.register_class(BatchFeatureCreateTask)
+app_container_config.register_class(FeatureListCreateTask)
 app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTask)
 app_container_config.register_class(StaticSourceTableTask)
 app_container_config.register_class(TileTask)

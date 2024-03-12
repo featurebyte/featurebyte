@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -33,7 +34,7 @@ class HistoricalFeatureTableService(
     HistoricalFeatureTableService class
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -43,6 +44,8 @@ class HistoricalFeatureTableService(
         entity_service: EntityService,
         temp_storage: Storage,
         block_modification_handler: BlockModificationHandler,
+        storage: Storage,
+        redis: Redis[Any],
     ):
         super().__init__(
             user,
@@ -52,6 +55,8 @@ class HistoricalFeatureTableService(
             feature_store_service,
             entity_service,
             block_modification_handler,
+            storage,
+            redis,
         )
         self.temp_storage = temp_storage
 

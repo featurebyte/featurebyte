@@ -42,8 +42,16 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     assert new_credential.id is not None
     assert new_credential.feature_store_id == snowflake_feature_store.id
     assert new_credential.name == snowflake_feature_store.name
-    assert new_credential.database_credential_type == "USERNAME_PASSWORD"
-    assert new_credential.storage_credential_type == "S3"
+    assert new_credential.database_credential == {
+        "type": "USERNAME_PASSWORD",
+        "username": "********",
+        "password": "********",
+    }
+    assert new_credential.storage_credential == {
+        "type": "S3",
+        "s3_access_key_id": "********",
+        "s3_secret_access_key": "********",
+    }
 
 
 def test_credential_creation__conflict(snowflake_feature_store):
@@ -228,8 +236,9 @@ def test_info(credential):
         "database_details": {
             "account": "sf_account",
             "warehouse": "sf_warehouse",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "role_name": "TESTING",
         },
     }
     assert info_dict["feature_store_info"].items() > expected_feature_store_info.items()
@@ -244,10 +253,14 @@ def test_list_credentials(credential):
         {
             "id": str(credential.id),
             "created_at": credential.created_at.isoformat(),
-            "database_credential_type": "USERNAME_PASSWORD",
-            "feature_store": "sf_featurestore",
-            "storage_credential_type": None,
             "updated_at": None,
+            "feature_store": "sf_featurestore",
+            "database_credential": {
+                "type": "USERNAME_PASSWORD",
+                "username": "********",
+                "password": "********",
+            },
+            "storage_credential": None,
         },
     ]
 

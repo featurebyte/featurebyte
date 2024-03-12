@@ -360,7 +360,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "entity": None,
                 "semantic": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Float column",
             },
             {
                 "name": "col_char",
@@ -368,7 +368,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "entity": None,
                 "semantic": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Char column",
             },
             {
                 "name": "col_text",
@@ -376,7 +376,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "entity": None,
                 "semantic": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Text column",
             },
             {
                 "name": "col_binary",
@@ -400,7 +400,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "entity": None,
                 "semantic": "event_timestamp",
                 "critical_data_info": None,
-                "description": None,
+                "description": "Timestamp column",
             },
             {
                 "name": "created_at",

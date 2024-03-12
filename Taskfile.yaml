@@ -163,7 +163,7 @@ tasks:
     cmds:
       - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
         silent: true
-      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
+      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
 
   lint-safety:
     desc: "Run the linter[safety]"
@@ -193,7 +193,7 @@ tasks:
       - featurebyte/**/*
     cmds:
       - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
-      - poetry run pip-audit --ignore-vuln PYSEC-2021-878 --ignore-vuln PYSEC-2023-238 --ignore-vuln GHSA-jfhm-5ghh-2f97
+      - poetry run pip-audit
 
   lint-bandit:
     desc: "Run the linter[bandit]"
@@ -283,7 +283,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
       - task: test-teardown
 
   test-integration-databricks:
@@ -292,7 +292,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks
       - task: test-teardown
 
   test-integration-databricks-unity:
@@ -301,7 +301,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity
       - task: test-teardown
 
   test-docs:

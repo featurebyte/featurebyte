@@ -3,11 +3,12 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Set, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Union
 
 import copy
 from http import HTTPStatus
 
+from bson import json_util
 from bson.objectid import ObjectId
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
@@ -21,11 +22,13 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateJob,
     FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListModelResponse,
@@ -48,6 +51,10 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
+from featurebyte.schema.worker.task.feature_list_create import (
+    FeatureListCreateTaskPayload,
+    FeaturesParameters,
+)
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
 )
@@ -61,6 +68,7 @@ from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_job_log import TileJobLogService
+from featurebyte.storage import Storage
 
 
 # pylint: disable=too-many-instance-attributes
@@ -87,6 +95,7 @@ class FeatureListController(
         tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
         task_manager: TaskManager,
+        storage: Storage,
     ):
         super().__init__(feature_list_service)
         self.feature_list_facade_service = feature_list_facade_service
@@ -99,6 +108,7 @@ class FeatureListController(
         self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
         self.task_manager = task_manager
+        self.storage = storage
 
     async def submit_feature_list_create_with_batch_feature_create_task(
         self, data: FeatureListCreateWithBatchFeatureCreation
@@ -121,13 +131,52 @@ class FeatureListController(
                 **data.dict(by_alias=True),
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
+            }
+        )
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_manager.get_task(task_id=str(task_id))
+
+    async def submit_feature_list_create_job(self, data: FeatureListCreateJob) -> Optional[Task]:
+        """
+        Submit feature list creation task
+
+        Parameters
+        ----------
+        data: FeatureListCreateJob
+            Feature list creation job payload
+
+        Returns
+        -------
+        Optional[Task]
+            Task object
+        """
+
+        features_parameters_path = self.service.get_full_remote_file_path(
+            f"feature_list/{data.id}/features_parameters_{ObjectId()}.json"
+        )
+        feature_parameters = FeaturesParameters(features=data.features)
+        await self.storage.put_text(
+            json_util.dumps(feature_parameters.dict(by_alias=True)), features_parameters_path
+        )
+        payload = FeatureListCreateTaskPayload(
+            **{
+                "feature_list_id": data.id,
+                "feature_list_name": data.name,
+                "features_parameters_path": str(features_parameters_path),
+                "features_conflict_resolution": data.features_conflict_resolution,
+                "user_id": self.service.user.id,
+                "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
             }
         )
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature_list(
-        self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
+        self,
+        data: Union[FeatureListCreate, FeatureListNewVersionCreate],
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModelResponse:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
@@ -136,6 +185,8 @@ class FeatureListController(
         ----------
         data: FeatureListCreate | FeatureListNewVersionCreate
             Feature list creation payload
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback
 
         Returns
         -------
@@ -144,7 +195,9 @@ class FeatureListController(
         """
         if isinstance(data, FeatureListCreate):
             create_data = FeatureListServiceCreate(**data.dict(by_alias=True))
-            document = await self.feature_list_facade_service.create_feature_list(data=create_data)
+            document = await self.feature_list_facade_service.create_feature_list(
+                data=create_data, progress_callback=progress_callback
+            )
         else:
             document = await self.feature_list_facade_service.create_new_version(data=data)
         return await self.get(document_id=document.id)
@@ -213,8 +266,7 @@ class FeatureListController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
         version: str | None = None,
@@ -229,10 +281,8 @@ class FeatureListController(
             Page number
         page_size: int
             Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
+        sort_by: list[tuple[str, SortDir]] | None
+            Keys and directions used to sort the returning documents
         search: str | None
             Search token to be used in filtering
         name: str | None
@@ -262,7 +312,6 @@ class FeatureListController(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
             projection={"feature_clusters": 0},  # exclude feature_clusters
             **params,
         )

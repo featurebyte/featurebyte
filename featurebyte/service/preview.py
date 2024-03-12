@@ -3,22 +3,16 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, Tuple
-
-import os
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
-from featurebyte.exception import LimitExceededError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -26,11 +20,9 @@ from featurebyte.schema.feature_store import (
 )
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 
-MAX_TABLE_CELLS = int(
-    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
-)  # 10 million rows, 300 columns
+DEFAULT_COLUMNS_BATCH_SIZE = 50
 
 
 logger = get_logger(__name__)
@@ -88,7 +80,7 @@ class PreviewService:
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
         return feature_store, session
 
@@ -185,7 +177,13 @@ class PreviewService:
         result = await session.execute_query(sample_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def describe(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
+    async def describe(
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        columns_batch_size: Optional[int] = None,
+    ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -197,21 +195,28 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
+        columns_batch_size: Optional[int]
+            Maximum number of columns to describe in a single query. More columns in the data will
+            be described in multiple queries. If None, a default value will be used. If 0, batching
+            will be disabled.
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
+        if columns_batch_size is None:
+            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
+
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_id=sample.feature_store_id,
         )
 
-        describe_sql, type_conversions, row_names, columns = GraphInterpreter(
+        describe_queries = GraphInterpreter(
             sample.graph, source_type=feature_store.type
-        ).construct_describe_sql(
+        ).construct_describe_queries(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
@@ -219,16 +224,22 @@ class PreviewService:
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
             stats_names=sample.stats_names,
+            columns_batch_size=columns_batch_size,
         )
-        logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
-        result = await session.execute_query(describe_sql)
-        assert result is not None
-        results = pd.DataFrame(
-            result.values.reshape(len(columns), -1).T,
-            index=row_names,
-            columns=[str(column.name) for column in columns],
-        ).dropna(axis=0, how="all")
-        return dataframe_to_json(results, type_conversions, skip_prepare=True)
+        df_queries = []
+        for describe_query in describe_queries.queries:
+            logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
+            result = await session.execute_query_long_running(describe_query.sql)
+            columns = describe_query.columns
+            assert result is not None
+            df_query = pd.DataFrame(
+                result.values.reshape(len(columns), -1).T,
+                index=describe_query.row_names,
+                columns=[str(column.name) for column in columns],
+            )
+            df_queries.append(df_query)
+        results = pd.concat(df_queries, axis=1).dropna(axis=0, how="all")
+        return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
 
     async def value_counts(
         self,
@@ -272,61 +283,3 @@ class PreviewService:
         df_result = await session.execute_query(value_counts_sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         return df_result.set_index("key")["count"].to_dict()  # type: ignore
-
-    async def download_table(
-        self,
-        location: TabularSource,
-    ) -> Optional[AsyncGenerator[bytes, None]]:
-        """
-        Download table from location.
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to download from
-
-        Returns
-        -------
-        AsyncGenerator[bytes, None]
-            Asynchronous bytes generator
-
-        Raises
-        ------
-        LimitExceededError
-            Table size exceeds the limit.
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
-        )
-
-        # check size of the table
-        sql_expr = get_source_count_expr(source=location.table_details)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        result = await db_session.execute_query(sql)
-        assert result is not None
-        columns = await db_session.list_table_schema(**location.table_details.json_dict())
-        shape = (result["row_count"].iloc[0], len(columns))
-
-        logger.debug(
-            "Downloading table from feature store",
-            extra={
-                "location": location.json_dict(),
-                "shape": shape,
-            },
-        )
-
-        if shape[0] * shape[0] > MAX_TABLE_CELLS:
-            raise LimitExceededError(f"Table size {shape} exceeds download limit.")
-
-        sql_expr = get_source_expr(source=location.table_details)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        return db_session.get_async_query_stream(sql)

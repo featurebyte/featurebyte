@@ -11,7 +11,7 @@ from featurebyte.exception import DocumentConflictError
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.schema.user_defined_function import (
-    UserDefinedFunctionCreate,
+    UserDefinedFunctionServiceCreate,
     UserDefinedFunctionServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService
@@ -19,7 +19,7 @@ from featurebyte.service.base_document import BaseDocumentService
 
 class UserDefinedFunctionService(
     BaseDocumentService[
-        UserDefinedFunctionModel, UserDefinedFunctionCreate, UserDefinedFunctionServiceUpdate
+        UserDefinedFunctionModel, UserDefinedFunctionServiceCreate, UserDefinedFunctionServiceUpdate
     ]
 ):
     """
@@ -51,12 +51,13 @@ class UserDefinedFunctionService(
         output["catalog_id"] = {"$in": [None, self.catalog_id]}
         return output
 
-    async def create_document(self, data: UserDefinedFunctionCreate) -> UserDefinedFunctionModel:
+    async def create_document(
+        self, data: UserDefinedFunctionServiceCreate
+    ) -> UserDefinedFunctionModel:
         # check if user defined function with same name already exists
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter={"name": data.name, "catalog_id": data.catalog_id},
-            user_id=self.user.id,
         )
         if document_dict:
             if data.catalog_id:

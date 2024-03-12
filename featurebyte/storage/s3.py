@@ -102,11 +102,15 @@ class S3Storage(Storage):
             Remote file does not exist
         """
         async with self.get_client() as client:
+            remote_path = self.prefix.joinpath(remote_path)
+
+            # check if key exists
             try:
-                remote_path = self.prefix.joinpath(remote_path)
-                await client.delete_object(Bucket=self.bucket_name, Key=str(remote_path))
-            except client.exceptions.NoSuchKey as exc:
+                await client.head_object(Bucket=self.bucket_name, Key=str(remote_path))
+            except ClientError as exc:
                 raise FileNotFoundError("Remote file does not exist") from exc
+
+            await client.delete_object(Bucket=self.bucket_name, Key=str(remote_path))
 
     async def get(self, remote_path: Path, local_path: Path) -> None:
         """

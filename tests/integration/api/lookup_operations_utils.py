@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import pytz
 
+from tests.util.helper import tz_localize_if_needed
+
 
 def check_lookup_feature_or_target_is_time_aware(
     feature_or_target,
@@ -15,6 +17,7 @@ def check_lookup_feature_or_target_is_time_aware(
     primary_key_serving_name,
     lookup_column_name,
     event_timestamp_column,
+    source_type,
 ):
     """
     Check that lookup feature is time based (value is NA is point in time is prior to event time)
@@ -41,6 +44,7 @@ def check_lookup_feature_or_target_is_time_aware(
             ]
         )
     )
+    tz_localize_if_needed(df, source_type)
     expected = pd.Series(
         {
             "POINT_IN_TIME": ts_after_event,
@@ -61,6 +65,7 @@ def check_lookup_feature_or_target_is_time_aware(
             ]
         )
     )
+    tz_localize_if_needed(df, source_type)
     expected = pd.Series(
         {
             "POINT_IN_TIME": ts_before_event,

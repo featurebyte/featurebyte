@@ -3,7 +3,7 @@ FeatureList API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
@@ -17,11 +17,18 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureReadinessDistribution,
+    ServingEntity,
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.feature_or_target import ComputeRequest
-from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureCreatePayload
+from featurebyte.schema.feature import (
+    MAX_BATCH_FEATURE_ITEM_COUNT,
+    BatchFeatureCreate,
+    BatchFeatureCreatePayload,
+    BatchFeatureItem,
+)
+from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -32,6 +39,17 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
+
+
+class FeatureListCreateJob(FeatureByteBaseModel):
+    """
+    Feature List Job Creation schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
+    features_conflict_resolution: ConflictResolution
 
 
 class FeatureListServiceCreate(FeatureListCreate):
@@ -48,6 +66,21 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     conflict_resolution: ConflictResolution
+    features: List[BatchFeatureItem]
+    skip_batch_feature_creation: bool = Field(default=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if (
+            not values.get("skip_batch_feature_creation", False)
+            and len(values.get("features", [])) > MAX_BATCH_FEATURE_ITEM_COUNT
+        ):
+            raise ValueError(
+                f"features count must be less than or equal to {MAX_BATCH_FEATURE_ITEM_COUNT} "
+                "if skip_batch_feature_creation is not set to True."
+            )
+        return values
 
 
 class FeatureListCreateWithBatchFeatureCreationPayload(
@@ -57,6 +90,8 @@ class FeatureListCreateWithBatchFeatureCreationPayload(
     Feature List Creation with Batch Feature Creation schema (used by the client to prepare the payload)
     """
 
+    features: List[BatchFeatureItem]
+
 
 class FeatureListCreateWithBatchFeatureCreation(
     BatchFeatureCreate, FeatureListCreateWithBatchFeatureCreationMixin
@@ -64,6 +99,8 @@ class FeatureListCreateWithBatchFeatureCreation(
     """
     Feature List Creation with Batch Feature Creation schema (used by the featurebyte server side)
     """
+
+    features: List[BatchFeatureItem]
 
 
 class FeatureVersionInfo(FeatureByteBaseModel):
@@ -145,6 +182,7 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     deployed: Optional[bool]
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
+    enabled_serving_entity_ids: Optional[List[ServingEntity]]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

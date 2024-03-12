@@ -372,7 +372,8 @@ class InternalName(StrEnum):
     POINT_IN_TIME_SQL_PLACEHOLDER = "__FB_POINT_IN_TIME_SQL_PLACEHOLDER"
 
     MIGRATION_VERSION = "MIGRATION_VERSION"
-    ROW_INDEX = "__FB_ROW_INDEX"
+    DATAFRAME_ROW_INDEX = "__FB_DATAFRAME_ROW_INDEX"
+    TABLE_ROW_INDEX = "__FB_TABLE_ROW_INDEX"
 
     ONLINE_STORE_RESULT_NAME_COLUMN = "AGGREGATION_RESULT_NAME"
     ONLINE_STORE_VALUE_COLUMN = "VALUE"
@@ -397,14 +398,18 @@ class WorkerCommand(StrEnum):
     BATCH_FEATURE_TABLE_CREATE = "BATCH_FEATURE_TABLE_CREATE"
     MATERIALIZED_TABLE_DELETE = "MATERIALIZED_TABLE_DELETE"
     BATCH_FEATURE_CREATE = "BATCH_FEATURE_CREATE"
-    FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE = "FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE"
+    FEATURE_LIST_CREATE = "FEATURE_LIST_CREATE"
     FEATURE_LIST_MAKE_PRODUCTION_READY = "FEATURE_LIST_MAKE_PRODUCTION_READY"
     STATIC_SOURCE_TABLE_CREATE = "STATIC_SOURCE_TABLE_CREATE"
     TARGET_TABLE_CREATE = "TARGET_TABLE_CREATE"
     TEST = "TEST"
     TILE_COMPUTE = "TILE_COMPUTE"
     ONLINE_STORE_TABLE_CLEANUP = "ONLINE_STORE_TABLE_CLEANUP"
+    CATALOG_ONLINE_STORE_UPDATE = "CATALOG_ONLINE_STORE_UPDATE"
     SCHEDULED_FEATURE_MATERIALIZE = "SCHEDULED_FEATURE_MATERIALIZE"
+
+    # Tasks to be deprecated
+    FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE = "FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE"
 
 
 class TableDataType(StrEnum):
@@ -456,6 +461,7 @@ class MaterializedTableNamePrefix(StrEnum):
     BATCH_REQUEST_TABLE = "BATCH_REQUEST_TABLE"
     BATCH_FEATURE_TABLE = "BATCH_FEATURE_TABLE"
     TARGET_TABLE = "TARGET_TABLE"
+    FEATURE_TABLE_CACHE = "FEATURE_TABLE_CACHE"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -467,6 +473,17 @@ class MaterializedTableNamePrefix(StrEnum):
         list[str]
         """
         return [c.value for c in cls]
+
+    @classmethod
+    def visible(cls) -> list[str]:
+        """
+        List all prefixes for visible tables
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls if c.value != cls.FEATURE_TABLE_CACHE]
 
 
 class FunctionParameterInputForm(StrEnum):
@@ -483,6 +500,24 @@ class UploadFileFormat(StrEnum):
 
     CSV = "csv"
     PARQUET = "parquet"
+
+
+class OnlineStoreType(StrEnum):
+    """
+    Online store type
+    """
+
+    REDIS = "redis"
+    MYSQL = "mysql"
+
+
+class RedisType(str, Enum):
+    """
+    Redis type
+    """
+
+    REDIS = "redis"
+    REDIS_CLUSTER = "redis_cluster"
 
 
 # enum used for handle conflict when saving object to persistent storage

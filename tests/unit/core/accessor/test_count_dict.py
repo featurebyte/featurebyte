@@ -93,8 +93,8 @@ def test_cosine_similarity(
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "groupby_1", "target": "project_2"},
-        {"source": "project_1", "target": "cosine_similarity_1"},
         {"source": "project_2", "target": "cosine_similarity_1"},
+        {"source": "project_1", "target": "cosine_similarity_1"},
     ]
     cos_sim_node = get_node(result_dict["graph"], "cosine_similarity_1")
     assert cos_sim_node == {
@@ -172,7 +172,11 @@ def test_get_value_from_dictionary__success(
 
         result = per_cat_feat.cd.get_value("key")
         result_dict = result.dict()
-        assert result.dtype == "FLOAT"
+        if per_cat_feat.name == count_per_category_feature.name:
+            expected_dtype = "INT"
+        else:
+            expected_dtype = "FLOAT"
+        assert result.dtype == expected_dtype
         assert result_dict["graph"]["edges"] == [
             {"source": "input_1", "target": "graph_1"},
             {"source": "graph_1", "target": "groupby_1"},

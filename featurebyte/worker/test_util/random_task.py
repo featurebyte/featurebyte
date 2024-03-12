@@ -43,7 +43,7 @@ class RandomTask(BaseTask[RandomTaskPayload]):
     async def get_task_description(self, payload: RandomTaskPayload) -> str:
         return "Execute random task"
 
-    async def execute(self, payload: RandomTaskPayload) -> None:
+    async def execute(self, payload: RandomTaskPayload) -> int:
         """
         Run some arbitrary task.
 
@@ -51,6 +51,10 @@ class RandomTask(BaseTask[RandomTaskPayload]):
         ----------
         payload : RandomTaskPayload
             Payload
+
+        Returns
+        -------
+        int
         """
         await self.persistent.insert_one(
             collection_name="random_collection",
@@ -61,6 +65,7 @@ class RandomTask(BaseTask[RandomTaskPayload]):
             },
             user_id=self.user.id,
         )
+        return 1234
 
 
 class Command(StrEnum):
@@ -76,6 +81,7 @@ class LongRunningPayload(BaseTaskPayload):
 
     output_collection_name = "long_running_result_collection"
     command = Command.LONG_RUNNING_COMMAND
+    is_revocable = True
 
 
 class LongRunningTask(BaseTask[LongRunningPayload]):

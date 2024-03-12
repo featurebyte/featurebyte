@@ -10,6 +10,7 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -21,6 +22,8 @@ from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperati
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
+
+MAX_BATCH_FEATURE_ITEM_COUNT = 500
 
 
 class FeatureCreate(FeatureByteBaseModel):
@@ -63,7 +66,8 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # since their serialization output is the same, QueryGraphModel is used here to avoid
     # additional serialization/deserialization
     graph: QueryGraphModel
-    features: List[BatchFeatureItem]
+    features: List[BatchFeatureItem] = Field(max_items=MAX_BATCH_FEATURE_ITEM_COUNT)
+    conflict_resolution: ConflictResolution = Field(default="raise")
 
 
 class BatchFeatureCreate(BatchFeatureCreatePayload):

@@ -3,7 +3,7 @@ HistoricalTable API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -26,9 +26,10 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.historical_features import HistoricalFeaturesValidationParametersService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 
 
 class HistoricalFeatureTableController(
@@ -51,22 +52,26 @@ class HistoricalFeatureTableController(
     def __init__(
         self,
         historical_feature_table_service: HistoricalFeatureTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
         feature_list_service: FeatureListService,
+        historical_features_validation_parameters_service: HistoricalFeaturesValidationParametersService,
     ):
         super().__init__(
             service=historical_feature_table_service,
-            preview_service=preview_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
             observation_table_service=observation_table_service,
             entity_validation_service=entity_validation_service,
             task_controller=task_controller,
         )
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
+        self.historical_features_validation_parameters_service = (
+            historical_features_validation_parameters_service
+        )
 
     async def get_payload(
         self,
@@ -80,31 +85,17 @@ class HistoricalFeatureTableController(
     async def get_validation_parameters(
         self, table_create: HistoricalFeatureTableCreate
     ) -> ValidationParameters:
-        # feature cluster group feature graph by feature store ID, only single feature store is supported
-
-        feature_clusters = table_create.featurelist_get_historical_features.feature_clusters
-        if not feature_clusters:
-            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
-            feature_clusters = await self.feature_list_service.get_feature_clusters(
-                table_create.featurelist_get_historical_features.feature_list_id  # type: ignore[arg-type]
+        return (
+            await self.historical_features_validation_parameters_service.get_validation_parameters(
+                table_create.featurelist_get_historical_features
             )
-
-        # length of feature_clusters will always be more than 0
-        assert len(feature_clusters) > 0
-        feature_cluster = feature_clusters[0]
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_cluster.feature_store_id
-        )
-        return ValidationParameters(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            feature_store=feature_store,
-            serving_names_mapping=table_create.featurelist_get_historical_features.serving_names_mapping,
         )
 
     async def get_additional_info_params(
         self, document: HistoricalFeatureTableModel
     ) -> dict[str, Any]:
+        if document.feature_list_id is None:
+            return {}
         feature_list = await self.feature_list_service.get_document(
             document_id=document.feature_list_id
         )
@@ -115,7 +106,7 @@ class HistoricalFeatureTableController(
 
     async def update_historical_feature_table(
         self, historical_feature_table_id: ObjectId, data: HistoricalFeatureTableUpdate
-    ) -> Optional[HistoricalFeatureTableModel]:
+    ) -> HistoricalFeatureTableModel:
         """
         Update HistoricalFeatureTable
 
@@ -130,4 +121,9 @@ class HistoricalFeatureTableController(
         -------
         Optional[HistoricalFeatureTableModel]
         """
-        return await self.service.update_document(historical_feature_table_id, data)
+        return cast(
+            HistoricalFeatureTableModel,
+            await self.service.update_document(
+                historical_feature_table_id, data, return_document=True
+            ),
+        )

@@ -7,7 +7,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 
@@ -150,7 +150,7 @@ async def test_feature_list_status__deployed_feature_namespace_transit_to_public
     ):
         await deploy_service.update_deployment(
             deployment_id=deployment["_id"],
-            enabled=False,
+            to_enable_deployment=False,
         )
 
     namespace = await feature_list_namespace_service.get_document(

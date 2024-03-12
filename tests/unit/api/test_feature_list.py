@@ -23,7 +23,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -107,7 +107,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
 
     # Check compute_historical_feature_table() is called correctly
     expected_dataframe = dataframe.copy()
-    expected_dataframe[InternalName.ROW_INDEX] = [0, 1]
+    expected_dataframe[InternalName.DATAFRAME_ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
     assert expected_dataframe.equals(kwargs["observation_set"])
     assert (
@@ -493,6 +493,10 @@ def test_get_feature_list(
 
     # check audit log
     audit_history = saved_feature_list.audit()
+
+    def _get_new_value_from_audit_history(field_name):
+        return audit_history[audit_history["field_name"] == field_name].iloc[0]["new_value"]
+
     expected_audit_history = pd.DataFrame(
         [
             ("block_modification_by", []),
@@ -501,16 +505,23 @@ def test_get_feature_list(
             ("deployed", False),
             ("description", None),
             ("dtype_distribution", [{"dtype": "FLOAT", "count": 1}]),
+            ("enabled_serving_entity_ids", []),
             ("entity_ids", [str(cust_id_entity.id)]),
-            ("feature_clusters", audit_history.new_value.iloc[7]),
+            ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
+            ("feature_clusters_path", _get_new_value_from_audit_history("feature_clusters_path")),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
+            (
+                "features_entity_lookup_info",
+                _get_new_value_from_audit_history("features_entity_lookup_info"),
+            ),
             ("features_primary_entity_ids", [[str(cust_id_entity.id)]]),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
-            ("relationships_info", audit_history.new_value.iloc[15]),
+            ("relationships_info", _get_new_value_from_audit_history("relationships_info")),
+            ("store_info", None),
             (
                 "supported_serving_entity_ids",
                 sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),
@@ -912,16 +923,16 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+            "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
           ) AS "production_ready_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
@@ -1399,7 +1410,6 @@ def test_feature_list_entity_relationship_validation(
     snowflake_event_table_with_entity,
     cust_id_entity,
     transaction_entity,
-    arbitrary_default_feature_job_setting,
 ):
     """Test feature list entity relationship validation"""
     event_view = snowflake_event_table_with_entity.get_view()

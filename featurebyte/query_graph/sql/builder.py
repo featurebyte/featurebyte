@@ -12,18 +12,14 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.ast.base import (
-    EventTableTimestampFilter,
-    SQLNode,
-    SQLNodeContext,
-    TableNode,
-)
+from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import (
     handle_filter_node,
     make_assign_node,
     make_project_node,
 )
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
+from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
 class NodeRegistry:
@@ -117,6 +113,7 @@ class SQLOperationGraph:
         source_type: SourceType,
         to_filter_scd_by_current_flag: bool = False,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
+        aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
@@ -124,6 +121,7 @@ class SQLOperationGraph:
         self.source_type = source_type
         self.to_filter_scd_by_current_flag = to_filter_scd_by_current_flag
         self.event_table_timestamp_filter = event_table_timestamp_filter
+        self.aggregation_specs = aggregation_specs
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -187,6 +185,7 @@ class SQLOperationGraph:
             input_sql_nodes=input_sql_nodes,
             to_filter_scd_by_current_flag=self.to_filter_scd_by_current_flag,
             event_table_timestamp_filter=self.event_table_timestamp_filter,
+            aggregation_specs=self.aggregation_specs,
         )
 
         # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry

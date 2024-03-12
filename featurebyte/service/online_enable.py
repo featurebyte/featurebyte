@@ -12,7 +12,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
@@ -156,9 +156,6 @@ class OnlineEnableService(OpsServiceMixin):
         extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
 
-        if not online_feature_spec.is_online_store_eligible:
-            return
-
         if feature.online_enabled:
             assert session is not None
             await feature_manager_service.online_enable(
@@ -232,27 +229,24 @@ class OnlineEnableService(OpsServiceMixin):
         FeatureModel
         """
         document = await self.feature_service.get_document(document_id=feature_id)
-        if document.online_enabled != online_enabled:
-            async with self.persistent.start_transaction():
-                feature = await self.feature_service.update_document(
-                    document_id=feature_id,
-                    data=FeatureServiceUpdate(online_enabled=online_enabled),
-                    document=document,
-                    return_document=True,
-                )
-                assert isinstance(feature, FeatureModel)
-                await self._update_feature_namespace(
-                    feature_namespace_id=feature.feature_namespace_id,
+        async with self.persistent.start_transaction():
+            feature = await self.feature_service.update_document(
+                document_id=feature_id,
+                data=FeatureServiceUpdate(online_enabled=online_enabled),
+                document=document,
+                return_document=True,
+            )
+            assert isinstance(feature, FeatureModel)
+            await self._update_feature_namespace(
+                feature_namespace_id=feature.feature_namespace_id,
+                feature=feature,
+                return_document=False,
+            )
+            for feature_list_id in feature.feature_list_ids:
+                await self._update_feature_list(
+                    feature_list_id=feature_list_id,
                     feature=feature,
                     return_document=False,
                 )
-                for feature_list_id in feature.feature_list_ids:
-                    await self._update_feature_list(
-                        feature_list_id=feature_list_id,
-                        feature=feature,
-                        return_document=False,
-                    )
 
-                return await self.feature_service.get_document(document_id=feature_id)
-
-        return document
+            return await self.feature_service.get_document(document_id=feature_id)

@@ -5,15 +5,12 @@ from typing import Any, Dict, List, Optional, Set
 
 from dataclasses import dataclass
 
-from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.mixin import AggregationOpStructMixin
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
@@ -22,49 +19,11 @@ from featurebyte.query_graph.transform.base import BaseGraphTransformer
 from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
     DecomposePointExtractor,
-    DecomposePointGlobalState,
+    DecomposePointState,
+    FeatureJobSettingExtractor,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
-
-
-def get_offline_store_table_name(
-    primary_entity_serving_names: List[str],
-    feature_job_setting: Optional[FeatureJobSetting],
-    has_ttl: bool,
-) -> str:
-    """
-    Get offline store table name
-
-    Parameters
-    ----------
-    primary_entity_serving_names: List[str]
-        Primary entity serving names
-    feature_job_setting: Optional[FeatureJobSetting]
-        Feature job setting
-    has_ttl: bool
-        Whether the offline store table has time-to-live property or not
-
-    Returns
-    -------
-    str
-        Offline store table name
-    """
-    if primary_entity_serving_names:
-        entity_part = "_".join(primary_entity_serving_names)
-        table_name = sanitize_identifier(f"fb_entity_{entity_part}")
-    else:
-        table_name = "fb_entity_overall"
-
-    if feature_job_setting:
-        fjs = feature_job_setting.to_seconds()
-        frequency = fjs["frequency"]
-        time_modulo_frequency = fjs["time_modulo_frequency"]
-        blind_spot = fjs["blind_spot"]
-        table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
-    if has_ttl:
-        table_name = f"{table_name}_ttl"
-    return table_name
 
 
 def extract_dtype_from_graph(
@@ -114,20 +73,20 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
 
     # variables used to decompose the graph
     target_node_name: str
-    decompose_point_info: DecomposePointGlobalState
+    decompose_point_info: DecomposePointState
 
     # variables used to construct offline store table name
     feature_name: str
-    entity_id_to_serving_name: Dict[PydanticObjectId, str]
+    feature_version: str
     ingest_graph_node_counter: int
 
     @classmethod
     def create(
         cls,
         feature_name: str,
+        feature_version: str,
         target_node_name: str,
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
-        decompose_point_info: DecomposePointGlobalState,
+        decompose_point_info: DecomposePointState,
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
@@ -136,11 +95,11 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         ----------
         feature_name: str
             Feature name
+        feature_version: str
+            Feature version
         target_node_name: str
             Target node name
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping
-        decompose_point_info: DecomposePointGlobalState
+        decompose_point_info: DecomposePointState
             Decompose point info
 
         Returns
@@ -149,11 +108,11 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         """
         return OfflineStoreIngestQueryGraphGlobalState(
             feature_name=feature_name,
+            feature_version=feature_version,
             graph=QueryGraphModel(),
             node_name_map={},
             target_node_name=target_node_name,
             ingest_graph_node_counter=0,
-            entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
         )
 
@@ -238,12 +197,13 @@ class OfflineStoreIngestQueryGraphTransformer(
         node_name_to_subgraph_node_name: Dict[str, str],
         aggregation_node_names: Set[str],
         aggregation_info: AggregationInfo,
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        operation_structure: OperationStructure,
     ) -> Dict[str, Any]:
         agg_nodes_info = []
         feature_job_settings = []
+        agg_node_names = [agg.node_name for agg in operation_structure.iterate_aggregations()]
         for node_name in aggregation_node_names:
-            if node_name in node_name_to_subgraph_node_name:
+            if node_name in agg_node_names:
                 # if the aggregation node is in the subgraph, that means the aggregation node
                 # is used to create the offline store ingest query
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
@@ -260,28 +220,20 @@ class OfflineStoreIngestQueryGraphTransformer(
                     )
                 )
 
-                if isinstance(subgraph_agg_node, AggregationOpStructMixin):
-                    feature_job_setting = subgraph_agg_node.extract_feature_job_setting()
-                    if feature_job_setting:
-                        feature_job_settings.append(feature_job_setting)
+                feature_job_setting = FeatureJobSettingExtractor(
+                    graph=subgraph
+                ).extract_from_agg_node(node=subgraph_agg_node)
+                if feature_job_setting:
+                    feature_job_settings.append(feature_job_setting)
 
         assert len(set(feature_job_settings)) <= 1, "Only 1 feature job setting is allowed"
-        primary_entity_serving_names = [
-            entity_id_to_serving_name.get(entity_id, str(entity_id))
-            for entity_id in aggregation_info.primary_entity_ids
-        ]
         feature_job_setting = feature_job_settings[0] if feature_job_settings else None
-        offline_store_table_name = get_offline_store_table_name(
-            primary_entity_serving_names=primary_entity_serving_names,
-            feature_job_setting=feature_job_setting,
-            has_ttl=aggregation_info.has_ttl_agg_type,
-        )
         output_dtype = extract_dtype_from_graph(graph=subgraph, output_node=subgraph_output_node)
         parameters = {
             "aggregation_nodes_info": agg_nodes_info,
             "feature_job_setting": feature_job_setting,
             "has_ttl": aggregation_info.has_ttl_agg_type,
-            "offline_store_table_name": offline_store_table_name,
+            "offline_store_table_name": "",  # will be set later
             "output_dtype": output_dtype,
         }
         return parameters
@@ -301,10 +253,14 @@ class OfflineStoreIngestQueryGraphTransformer(
             node_name_to_subgraph_node_name=node_name_map,
             aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
-            entity_id_to_serving_name=global_state.entity_id_to_serving_name,
+            operation_structure=global_state.decompose_point_info.operation_structure_map[
+                node_name
+            ],
         )
         part_num = global_state.ingest_graph_node_counter
-        column_name = f"__{global_state.feature_name}__part{part_num}"
+        column_name = (
+            f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
+        )
         graph_node = GraphNode(
             name="graph",
             output_type=subgraph_output_node.output_type,
@@ -313,6 +269,7 @@ class OfflineStoreIngestQueryGraphTransformer(
                 output_node_name=subgraph_output_node.name,
                 output_column_name=column_name,
                 primary_entity_ids=aggregation_info.primary_entity_ids,
+                primary_entity_dtypes=aggregation_info.primary_entity_dtypes,
                 **other_params,
             ),
         )
@@ -380,9 +337,9 @@ class OfflineStoreIngestQueryGraphTransformer(
     def transform(
         self,
         target_node: Node,
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
+        feature_version: str,
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -391,12 +348,12 @@ class OfflineStoreIngestQueryGraphTransformer(
         ----------
         target_node: Node
             Output node of the graph
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping (used to create the offline store table name)
         relationships_info: List[EntityRelationshipInfo]
             Relationships info (used to get the primary entity ids & create the offline store table name)
         feature_name: str
-            Feature name (used to create the offline store table name)
+            Feature name (used to create the offline store table column name)
+        feature_version: str
+            Feature version (used to create the offline store table column name)
 
         Returns
         -------
@@ -410,8 +367,8 @@ class OfflineStoreIngestQueryGraphTransformer(
         # create global state
         global_state = OfflineStoreIngestQueryGraphGlobalState.create(
             feature_name=feature_name,
+            feature_version=feature_version,
             target_node_name=target_node.name,
-            entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
         )
         if decompose_point_info.should_decompose:

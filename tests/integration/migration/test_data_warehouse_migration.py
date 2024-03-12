@@ -70,7 +70,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     # FeatureStore without credentials configured
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_no_creds"
-    feature_store["details"]["sf_schema"] += "_1"
+    feature_store["details"]["schema_name"] += "_1"
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
@@ -79,7 +79,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     # FeatureStore with wrong credentials
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_wrong_creds"
-    feature_store["details"]["sf_schema"] += "_2"
+    feature_store["details"]["schema_name"] += "_2"
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
@@ -89,13 +89,13 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     # collision (they used to be allowed and might still exist as old documents)
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_a"
-    feature_store["details"]["sf_schema"] += "_3"
+    feature_store["details"]["schema_name"] += "_3"
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_b"
-    feature_store["details"]["sf_schema"] += "_3"
+    feature_store["details"]["schema_name"] += "_3"
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
@@ -105,7 +105,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_unreachable"
     feature_store["details"]["account"] = "this.snowflake.account.does.not.exist.gcp"
-    feature_store["details"]["sf_schema"] += "_4"
+    feature_store["details"]["schema_name"] += "_4"
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
@@ -113,7 +113,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     yield
 
     for doc in bad_feature_store_docs:
-        drop_schema_query = f'DROP SCHEMA IF EXISTS {doc["details"]["sf_schema"]}'
+        drop_schema_query = f'DROP SCHEMA IF EXISTS {doc["details"]["schema_name"]}'
         await session.execute_query(drop_schema_query)
 
 

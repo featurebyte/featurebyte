@@ -1,13 +1,12 @@
 """
 Common test fixtures used across files in integration directory
 """
+# pylint: disable=too-many-lines
 from typing import Dict, List, cast
 
 import asyncio
 import json
 import os
-
-# pylint: disable=too-many-lines
 import shutil
 import sqlite3
 import tempfile
@@ -26,6 +25,7 @@ import pandas as pd
 import pymongo
 import pytest
 import pytest_asyncio
+import redis
 import yaml
 from bson.objectid import ObjectId
 from databricks import sql as databricks_sql
@@ -37,6 +37,8 @@ from featurebyte import (
     Configurations,
     DatabricksDetails,
     FeatureJobSetting,
+    OnlineStore,
+    RedisOnlineStoreDetails,
     SnowflakeDetails,
 )
 from featurebyte.api.entity import Entity
@@ -44,7 +46,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -53,7 +55,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails
+from featurebyte.query_graph.node.schema import DatabricksUnityDetails, SparkDetails, SQLiteDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
@@ -62,11 +64,14 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
-from featurebyte.storage import LocalStorage, LocalTempStorage
+from featurebyte.storage import LocalStorage
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
 
 
@@ -111,7 +116,7 @@ def pytest_collection_modifyitems(config, items):
             extra_ordering_key = source_type
 
         # include index as the sorting key to preserve the original ordering
-        return extra_ordering_key, index
+        return extra_ordering_key, item.path, index
 
     def filter_items_by_source_types(all_items):
         if not filtered_source_types:
@@ -186,8 +191,17 @@ def credentials_mapping_fixture():
     }
 
 
+@pytest.fixture(name="storage", scope="session")
+def storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory(suffix=str(ObjectId())) as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
+
+
 @pytest.fixture(name="config", scope="session")
-def config_fixture():
+def config_fixture(storage):
     """
     Config object for integration testing
     """
@@ -211,16 +225,18 @@ def config_fixture():
             file_handle.write(yaml.dump(config_dict))
             file_handle.flush()
             with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-                with TestClient(app) as client:
+                with mock.patch("featurebyte.app.get_storage") as mock_get_storage:
+                    mock_get_storage.return_value = storage
+                    with TestClient(app) as client:
 
-                    def wrapped_test_client_request_func(*args, stream=None, **kwargs):
-                        _ = stream
-                        response = client.request(*args, **kwargs)
-                        response.iter_content = response.iter_bytes
-                        return response
+                        def wrapped_test_client_request_func(*args, stream=None, **kwargs):
+                            _ = stream
+                            response = client.request(*args, **kwargs)
+                            response.iter_content = response.iter_bytes
+                            return response
 
-                    mock_request.side_effect = wrapped_test_client_request_func
-                    yield Configurations(config_file_path=config_file_path)
+                        mock_request.side_effect = wrapped_test_client_request_func
+                        yield Configurations(config_file_path=config_file_path)
 
 
 @pytest.fixture(scope="session")
@@ -312,7 +328,7 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
+@pytest.fixture(name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type_fixture(request):
     """
     Fixture for the source_type parameter used to create all the other fixtures
@@ -353,8 +369,9 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return SnowflakeDetails(
             account=os.getenv("SNOWFLAKE_ACCOUNT"),
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            sf_schema=temp_schema_name,
-            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema_name=temp_schema_name,
+            database_name=os.getenv("SNOWFLAKE_DATABASE"),
+            role_name="TESTING",
         )
 
     if source_type == "databricks":
@@ -363,20 +380,20 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_CATALOG"),
+            schema_name=temp_schema_name,
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-        return DatabricksDetails(
+        return DatabricksUnityDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
+            schema_name=temp_schema_name,
+            group_name="developers",
         )
 
     if source_type == "spark":
@@ -385,13 +402,11 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return SparkDetails(
             host="localhost",
             port=10009,
-            http_path="cliservice",
-            use_http_transport=False,
             storage_type=StorageType.FILE,
             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
-            storage_spark_url=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema=temp_schema_name,
+            storage_path=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
+            catalog_name="spark_catalog",
+            schema_name=temp_schema_name,
         )
 
     if source_type == "sqlite":
@@ -425,15 +440,15 @@ def data_warehouse_initialization_fixture(
     """
     Data warehouse initialization fixture
     """
-    if source_type == "databricks":
+    if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
         # wait for databricks compute cluster to be ready
         databricks_details = cast(DatabricksDetails, feature_store_details)
         databricks_sql.connect(
             server_hostname=databricks_details.host,
             http_path=databricks_details.http_path,
             access_token=feature_store_credential.database_credential.access_token,
-            catalog=databricks_details.featurebyte_catalog,
-            schema=databricks_details.featurebyte_schema,
+            catalog=databricks_details.catalog_name,
+            schema=databricks_details.schema_name,
         )
 
 
@@ -470,11 +485,15 @@ def data_source_fixture(catalog):
 
 
 @pytest.fixture(name="catalog", scope="session")
-def catalog_fixture(feature_store):
+def catalog_fixture(feature_store, online_store):
     """
     Catalog fixture
     """
-    return Catalog.create(name="default", feature_store_name=feature_store.name)
+    return Catalog.create(
+        name="default",
+        feature_store_name=feature_store.name,
+        online_store_name=online_store.name,
+    )
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -482,7 +501,10 @@ def mock_config_path_env_fixture(config):
     """Override default config path for all API tests"""
     with mock.patch.dict(
         os.environ,
-        {"FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path))},
+        {
+            "FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path)),
+            "FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000",
+        },
     ):
         yield
 
@@ -667,12 +689,6 @@ def scd_dataframe_fixture(transaction_data):
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
-    index = data.index
-    current_flag = data.groupby("User ID", as_index=False).agg({"Effective Timestamp": "max"})
-    current_flag["Current Flag"] = True
-    data = pd.merge(data, current_flag, on=["User ID", "Effective Timestamp"], how="left")
-    data["Current Flag"] = data["Current Flag"].fillna(False)
-    data.index = index
     yield data
 
 
@@ -1042,7 +1058,9 @@ def user_entity_fixture(catalog):
     Fixture for an Entity "User"
     """
     _ = catalog
-    entity = Entity(name="User", serving_names=["üser id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a1"), name="User", serving_names=["üser id"]
+    )
     entity.save()
     return entity
 
@@ -1053,7 +1071,11 @@ def product_action_entity_fixture(catalog):
     Fixture for an Entity "ProductAction"
     """
     _ = catalog
-    entity = Entity(name="ProductAction", serving_names=["PRODUCT_ACTION"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a2"),
+        name="ProductAction",
+        serving_names=["PRODUCT_ACTION"],
+    )
     entity.save()
     return entity
 
@@ -1064,7 +1086,9 @@ def customer_entity_fixture(catalog):
     Fixture for an Entity "Customer"
     """
     _ = catalog
-    entity = Entity(name="Customer", serving_names=["cust_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a3"), name="Customer", serving_names=["cust_id"]
+    )
     entity.save()
     return entity
 
@@ -1075,7 +1099,9 @@ def order_entity_fixture(catalog):
     Fixture for an Entity "Order"
     """
     _ = catalog
-    entity = Entity(name="Order", serving_names=["order_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a4"), name="Order", serving_names=["order_id"]
+    )
     entity.save()
     return entity
 
@@ -1086,7 +1112,9 @@ def item_entity_fixture(catalog):
     Fixture for an Entity "Item"
     """
     _ = catalog
-    entity = Entity(name="Item", serving_names=["item_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a5"), name="Item", serving_names=["item_id"]
+    )
     entity.save()
     return entity
 
@@ -1097,7 +1125,9 @@ def status_entity_fixture(catalog):
     Fixture for an Entity "UserStatus"
     """
     _ = catalog
-    entity = Entity(name="UserStatus", serving_names=["user_status"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a6"), name="UserStatus", serving_names=["user_status"]
+    )
     entity.save()
     return entity
 
@@ -1108,13 +1138,6 @@ def create_transactions_event_table_from_data_source(
     """
     Helper function to create an EventTable with the given feature store
     """
-    available_tables = data_source.list_source_tables(
-        database_name=database_name,
-        schema_name=schema_name,
-    )
-    # check table exists (case-insensitive since some data warehouses change the casing)
-    available_tables = [x.upper() for x in available_tables]
-    assert table_name.upper() in available_tables
 
     database_table = data_source.get_source_table(
         database_name=database_name,
@@ -1194,6 +1217,28 @@ def event_table_fixture(
         event_table_name=event_table_name,
     )
     return event_table
+
+
+@pytest.fixture(name="event_view")
+def event_view_fixture(event_table):
+    """Event view fixture"""
+    event_view = event_table.get_view()
+    assert event_view.columns == [
+        "ËVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "ÜSER ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+        "ÀMOUNT",
+        "TZ_OFFSET",
+        "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "FLAT_DICT",
+        "NESTED_DICT",
+    ]
+    return event_view
 
 
 @pytest.fixture(name="item_table_name", scope="session")
@@ -1309,7 +1354,6 @@ def scd_table_fixture(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
-        current_flag_column="Current Flag",
         surrogate_key_column="ID",
     )
     scd_table["User ID"].as_entity(user_entity.name)
@@ -1338,15 +1382,6 @@ def get_get_cred(credentials_mapping):
     return get_credential
 
 
-@pytest.fixture(name="storage", scope="session")
-def storage_fixture():
-    """
-    Storage object fixture
-    """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
-
-
 @pytest.fixture(autouse=True, scope="module")
 def mock_task_manager(request, persistent, storage):
     """
@@ -1367,7 +1402,7 @@ def mock_task_manager(request, persistent, storage):
                     "user": user,
                     "persistent": persistent,
                     "celery": Mock(),
-                    "redis": Mock(),
+                    "redis": redis.from_url(REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
@@ -1460,7 +1495,7 @@ def online_store_table_version_service_factory(mongo_database_name, app_containe
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(persistent, user, catalog):
+def task_manager_fixture(persistent, user, catalog, storage):
     """
     Return a task manager used in tests.
     """
@@ -1469,12 +1504,14 @@ def task_manager_fixture(persistent, user, catalog):
         persistent=persistent,
         celery=get_celery(),
         catalog_id=catalog.id,
+        storage=storage,
+        redis=redis.from_url(REDIS_URI),
     )
     return task_manager
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1482,8 +1519,25 @@ def app_container_fixture(persistent, user, catalog):
         "user": user,
         "persistent": persistent,
         "celery": get_celery(),
-        "storage": LocalTempStorage(),
+        "storage": storage,
         "catalog_id": catalog.id,
+        "redis": redis.from_url(REDIS_URI),
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
+
+
+@pytest.fixture(name="app_container_no_catalog")
+def app_container_no_catalog_fixture(persistent, user, storage):
+    """
+    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+    """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "celery": get_celery(),
+        "storage": storage,
+        "catalog_id": DEFAULT_CATALOG_ID,
+        "redis": redis.from_url(REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1518,3 +1572,108 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     Online store compute query service fixture
     """
     return app_container.online_store_compute_query_service
+
+
+@pytest.fixture(name="feature_store_service")
+def feature_store_service_fixture(app_container):
+    """FeatureStore service"""
+    return app_container.feature_store_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
+@pytest.fixture(name="observation_table_service")
+def observation_table_service_fixture(app_container):
+    """ObservationTableService fixture"""
+    return app_container.observation_table_service
+
+
+@pytest.fixture(name="feature_list_service")
+def feature_list_service_fixture(app_container):
+    """FeatureListService fixture"""
+    return app_container.feature_list_service
+
+
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_service")
+def feature_service_fixture(app_container):
+    """FeatureService fixture"""
+    return app_container.feature_service
+
+
+@pytest.fixture(name="online_store", scope="session")
+def online_store_fixture():
+    """
+    Fixture for an OnlineStore
+    """
+    return OnlineStore.create(
+        name="My Online Store",
+        details=RedisOnlineStoreDetails(
+            redis_type="redis",
+            connection_string=REDIS_URI.replace("redis://", ""),
+        ),
+    )
+
+
+@pytest.fixture(name="feature_group")
+def feature_group_fixture(event_view):
+    """
+    Fixture for a simple FeatureGroup with count features
+    """
+    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+    return feature_group
+
+
+@pytest.fixture(name="feature_group_per_category")
+def feature_group_per_category_fixture(event_view):
+    """
+    Fixture for a FeatureGroup with dictionary features
+    """
+
+    feature_group_per_category = event_view.groupby(
+        "ÜSER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
+    )
+    # add features based on transformations on count per category
+    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
+    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
+    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
+    feature_group_per_category[
+        "NUM_UNIQUE_ACTION_24h_exclude_missing"
+    ] = feature_counts_24h.cd.unique_count(include_missing=False)
+
+    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
+    feature_group_per_category[
+        "ACTION_SIMILARITY_2h_to_24h"
+    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+
+    return feature_group_per_category
+
+
+@pytest.fixture(name="mock_graph_clear_period", autouse=True)
+def mock_graph_clear_period_fixture():
+    """
+    Mock graph clear period
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000"}):
+        # mock graph clear period to high value to clearing graph in tests
+        # clearing graph in tests will cause test failures as the task & client sharing the same process space
+        yield

@@ -16,7 +16,7 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
@@ -29,8 +29,9 @@ def snowflake_session_dict_without_credentials_fixture():
     return {
         "account": "some_account",
         "warehouse": "some_warehouse",
-        "database": "sf_database",
-        "sf_schema": "FEATUREBYTE",
+        "database_name": "sf_database",
+        "schema_name": "FEATUREBYTE",
+        "role_name": "TESTING",
     }
 
 
@@ -49,11 +50,21 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
 
 @pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
 @pytest.mark.asyncio
-async def test_snowflake_session__credential_from_config(snowflake_session_dict):
+async def test_snowflake_session__credential_from_config(
+    snowflake_session_dict, snowflake_execute_query
+):
     """
     Test snowflake session
     """
     session = SnowflakeSession(**snowflake_session_dict)
+    await session.initialize()
+
+    # check session initialization includes timezone and role specification
+    assert snowflake_execute_query.call_args_list[0][0] == ('USE ROLE "TESTING"',)
+    assert snowflake_execute_query.call_args_list[-1][0] == (
+        "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'",
+    )
+
     assert session.database_credential.username == "username"
     assert session.database_credential.password == "password"
     assert await session.list_databases() == ["sf_database"]
@@ -119,6 +130,20 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
     ) == {
         "variant": ColumnSpecWithDescription(name="variant", dtype="UNKNOWN"),
     }
+    table_details = await session.get_table_details(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
+    )
+    assert table_details == TableDetails(
+        details={
+            "TABLE_CATALOG": "sf_database",
+            "TABLE_SCHEMA": "sf_schema",
+            "TABLE_NAME": "sf_table",
+            "TABLE_TYPE": "VIEW",
+            "COMMENT": None,
+        },
+        fully_qualified_name='"sf_database"."sf_schema"."sf_table"',
+    )
+    assert table_details.description == None
 
 
 @pytest.fixture(name="mock_snowflake_cursor")
@@ -279,8 +304,8 @@ def patched_snowflake_session_cls_fixture(
         mock_session_obj.list_schemas.side_effect = mock_list_schemas
         mock_session_obj.list_tables.side_effect = mock_list_tables
         mock_session_obj.get_working_schema_metadata.side_effect = mock_get_working_schema_metadata
-        mock_session_obj.database_name = snowflake_session_dict_without_credentials["database"]
-        mock_session_obj.schema_name = snowflake_session_dict_without_credentials["sf_schema"]
+        mock_session_obj.database_name = snowflake_session_dict_without_credentials["database_name"]
+        mock_session_obj.schema_name = snowflake_session_dict_without_credentials["schema_name"]
         yield patched_class
 
 

@@ -10,6 +10,7 @@ import importlib
 import inspect
 
 from celery import Celery
+from redis import Redis
 
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logging import get_logger
@@ -29,8 +30,10 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.service.catalog import AllCatalogService
+from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.worker import get_celery
+from featurebyte.utils.storage import get_storage
+from featurebyte.worker import get_celery, get_redis
 
 logger = get_logger(__name__)
 
@@ -293,6 +296,8 @@ async def run_migration(
     persistent: Persistent,
     get_credential: Any,
     celery: Celery,
+    storage: Storage,
+    redis: Redis[Any],
     include_data_warehouse_migrations: bool = True,
 ) -> None:
     """
@@ -308,6 +313,10 @@ async def run_migration(
         Callback to retrieve credential
     celery: Celery
         Celery object
+    storage: Storage
+        Storage object
+    redis: Redis[Any]
+        Redis object
     include_data_warehouse_migrations: bool
         Whether to include data warehouse migrations
     """
@@ -316,6 +325,8 @@ async def run_migration(
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         block_modification_handler=BlockModificationHandler(),
+        storage=storage,
+        redis=redis,
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA
@@ -359,5 +370,7 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
         persistent,
         credential_provider.get_credential,
         celery=get_celery(),
+        storage=get_storage(),
+        redis=get_redis(),
         include_data_warehouse_migrations=False,
     )

@@ -5,9 +5,11 @@ Common test fixtures used across unit test directories
 import copy
 import json
 import logging
+import os
 import tempfile
 import traceback
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID, uuid4
@@ -36,23 +38,27 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.online_store import MySQLOnlineStoreDetails
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
@@ -122,8 +128,8 @@ def storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
+    with tempfile.TemporaryDirectory(suffix=f"_{ObjectId()}") as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
 
 
 @pytest.fixture(name="temp_storage")
@@ -131,8 +137,8 @@ def temp_storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
+    with tempfile.TemporaryDirectory(suffix=f"_{ObjectId()}") as tempdir:
+        yield LocalStorage(base_path=Path(tempdir))
 
 
 @pytest.fixture(name="mock_get_persistent")
@@ -172,21 +178,26 @@ def mock_snowflake_connector():
 def snowflake_query_map_fixture():
     """snowflake query map fixture"""
     query_map = {
-        "SHOW DATABASES": [{"name": "sf_database"}],
-        'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_table", "comment": ""},
-            {"name": "sf_table_no_tz", "comment": None},
-            {"name": "items_table", "comment": "Item table"},
-            {"name": "items_table_same_event_id", "comment": None},
-            {"name": "fixed_table", "comment": None},
-            {"name": "non_scalar_table", "comment": None},
-            {"name": "scd_table", "comment": "SCD table"},
-            {"name": "scd_table_state_map", "comment": None},
-            {"name": "dimension_table", "comment": "Dimension table"},
+        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [
+            {"DATABASE_NAME": "sf_database"}
         ],
-        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_view", "comment": "this is view"}
+        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [
+            {"SCHEMA_NAME": "sf_schema"}
+        ],
+        (
+            'SELECT TABLE_NAME, COMMENT FROM "sf_database".INFORMATION_SCHEMA.TABLES WHERE '
+            "TABLE_SCHEMA = 'sf_schema'"
+        ): [
+            {"TABLE_NAME": "sf_table", "COMMENT": ""},
+            {"TABLE_NAME": "sf_table_no_tz", "COMMENT": None},
+            {"TABLE_NAME": "items_table", "COMMENT": "Item table"},
+            {"TABLE_NAME": "items_table_same_event_id", "COMMENT": None},
+            {"TABLE_NAME": "fixed_table", "COMMENT": None},
+            {"TABLE_NAME": "non_scalar_table", "COMMENT": None},
+            {"TABLE_NAME": "scd_table", "COMMENT": "SCD table"},
+            {"TABLE_NAME": "scd_table_state_map", "COMMENT": None},
+            {"TABLE_NAME": "dimension_table", "COMMENT": "Dimension table"},
+            {"TABLE_NAME": "sf_view", "COMMENT": "this is view"},
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {
@@ -451,6 +462,139 @@ def snowflake_query_map_fixture():
         "SHOW SCHEMAS": [
             {"name": "PUBLIC"},
         ],
+        (
+            'SELECT * FROM "database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='schema' AND \"TABLE_NAME\"='table'"
+        ): [
+            {
+                "TABLE_NAME": "table",
+                "TABLE_SCHEMA": "schema",
+                "TABLE_CATALOG": "database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='sf_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='sf_table_no_tz'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table_no_tz",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='items_table_same_event_id'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table_no_tz",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "SCD table",
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table_state_map'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='scd_table_v2'"
+        ): [
+            {
+                "TABLE_NAME": "sf_scd_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": None,
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='items_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "Item table",
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='dimension_table'"
+        ): [
+            {
+                "TABLE_NAME": "sf_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "Dimension table",
+            }
+        ],
+        "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
+        'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
+            {"row_count": 100}
+        ],
+        'SELECT\n  *\nFROM "sf_database"."sf_schema"."sf_table"\nLIMIT 3': [
+            {
+                "col_int": [1, 2, 3],
+                "col_float": [1.0, 2.0, 3.0],
+                "col_char": ["a", "b", "c"],
+                "col_text": ["abc", "def", "ghi"],
+                "col_binary": [1, 0, 1],
+                "col_boolean": [True, False, True],
+                "event_timestamp": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "created_at": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "cust_id": [1, 2, 3],
+            }
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
@@ -507,8 +651,9 @@ def snowflake_feature_store_params_fixture():
         "details": SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            sf_schema="sf_schema",
-            database="sf_database",
+            schema_name="sf_schema",
+            database_name="sf_database",
+            role_name="TESTING",
         ),
         "database_credential": UsernamePasswordCredential(
             username="sf_user",
@@ -718,6 +863,7 @@ def snowflake_event_table_fixture(
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
+        description="test event table",
         _id=snowflake_event_table_id,
     )
     assert event_table.frame.node.parameters.id == event_table.id
@@ -785,6 +931,7 @@ def snowflake_dimension_table_fixture(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
+        description="test dimension table",
         _id=snowflake_dimension_table_id,
     )
     assert dimension_table.frame.node.parameters.id == dimension_table.id
@@ -801,6 +948,7 @@ def snowflake_scd_table_fixture(snowflake_database_table_scd_table, snowflake_sc
         effective_timestamp_column="effective_timestamp",
         end_timestamp_column="end_timestamp",
         current_flag_column="is_active",
+        description="test scd table",
         _id=snowflake_scd_table_id,
     )
     assert scd_table.frame.node.parameters.id == scd_table.id
@@ -851,6 +999,7 @@ def snowflake_item_table_fixture(
         event_id_column="event_id_col",
         item_id_column="item_id_col",
         event_table_name=snowflake_event_table.name,
+        description="test item table",
         _id=snowflake_item_table_id,
     )
     assert item_table.frame.node.parameters.id == item_table.id
@@ -925,6 +1074,30 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
     yield entity
 
 
+@pytest.fixture(name="gender_entity")
+def gender_entity_fixture(catalog):
+    """
+    Gender entity fixture
+    """
+    _ = catalog
+    entity = Entity(name="gender", serving_names=["gender"])
+    entity.save()
+    yield entity
+
+
+@pytest.fixture(name="another_entity")
+def another_entity_fixture(catalog):
+    """
+    Another entity fixture
+    """
+    _ = catalog
+    entity = Entity(
+        name="another", serving_names=["another_key"], _id=ObjectId("65b123107011cad326ada330")
+    )
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
     snowflake_event_table,
@@ -971,9 +1144,10 @@ def snowflake_feature_store_details_dict_fixture():
         "type": "snowflake",
         "details": {
             "account": "sf_account",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
             "warehouse": "sf_warehouse",
+            "role_name": "TESTING",
         },
     }
 
@@ -1235,7 +1409,7 @@ def historical_feature_table_fixture(
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
     with patch(
-        "featurebyte.service.historical_features.compute_tiles_on_demand",
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
     ):
         historical_feature_table = feature_list.compute_historical_feature_table(
             observation_table_from_source, "my_historical_feature_table"
@@ -1400,6 +1574,24 @@ def get_non_time_based_feature_fixture(non_time_based_features):
     return non_time_based_features[0]
 
 
+@pytest.fixture(name="filtered_non_time_based_feature")
+def filtered_non_time_based_feature_fixture(snowflake_item_table, transaction_entity):
+    """
+    Get a non-time-based feature that is from a filtered ItemView
+    """
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
+    item_view = item_table.get_view(event_suffix="_event_table")
+    item_view = item_view[item_view["item_amount"] > 10]
+    feature = item_view.groupby("event_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature_gt10",
+    )
+    feature.save()
+    return feature
+
+
 @pytest.fixture(name="float_feature")
 def float_feature_fixture(feature_group):
     """
@@ -1429,6 +1621,27 @@ def float_feature_different_job_setting_fixture(snowflake_event_view_with_entity
         ),
         feature_names=["sum_24h_every_3h"],
     )["sum_24h_every_3h"]
+
+
+@pytest.fixture(name="float_feature_composite_entity")
+def float_feature_composite_entity_fixture(
+    snowflake_event_table_with_entity,
+    another_entity,
+    feature_group_feature_job_setting,
+):
+    """
+    Feature with composite entity
+    """
+    snowflake_event_table_with_entity.col_text.as_entity(another_entity.name)
+    event_view = snowflake_event_table_with_entity.get_view()
+    feature = event_view.groupby(["cust_id", "col_text"]).aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["composite_entity_feature_1d"],
+    )["composite_entity_feature_1d"]
+    yield feature
 
 
 @pytest.fixture(name="bool_feature")
@@ -1574,6 +1787,45 @@ def feature_without_entity_fixture(snowflake_event_table):
     yield feature_group["count_1d"]
 
 
+@pytest.fixture(name="scd_lookup_feature")
+def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get a lookup feature from SCD table
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view["col_boolean"].as_feature("some_lookup_feature")
+    return feature
+
+
+@pytest.fixture(name="aggregate_asat_feature")
+def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+    """
+    Fixture to get an aggregate asat feature from SCD table
+    """
+    snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby("col_boolean").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count",
+    )
+    return feature
+
+
+@pytest.fixture(name="aggregate_asat_no_entity_feature")
+def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get an aggregate asat feature from SCD table without entity
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby([]).aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_overall_count",
+    )
+    return feature
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(credentials, snowflake_connector):
     """
@@ -1663,7 +1915,7 @@ def online_store_table_version_service_fixture(app_container):
 def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.service.historical_features.compute_tiles_on_demand"
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand"
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand
 
@@ -1743,6 +1995,30 @@ def user(user_id):
     return user
 
 
+@pytest.fixture(name="catalog_id", scope="session")
+def catalog_id_fixture():
+    """
+    User ID fixture
+    """
+    return ObjectId("63f9506dd478b94127123480")
+
+
+@pytest.fixture(name="patched_catalog_get_create_payload")
+def patched_catalog_get_create_payload_fixture(catalog_id, snowflake_feature_store):
+    """
+    Patch catalog get create payload
+    """
+    with mock.patch(
+        "featurebyte.api.catalog.Catalog._get_create_payload"
+    ) as mock_get_create_payload:
+        mock_get_create_payload.return_value = CatalogCreate(
+            _id=catalog_id,
+            name="catalog",
+            default_feature_store_ids=[snowflake_feature_store.id],
+        ).json_dict()
+        yield
+
+
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """
@@ -1752,7 +2028,7 @@ def catalog_fixture(snowflake_feature_store):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
 
@@ -1766,9 +2042,9 @@ def app_container_fixture(persistent, user, catalog):
         instance_map={
             "user": user,
             "persistent": persistent,
-            "temp_storage": LocalTempStorage(),
+            "temp_storage": temp_storage,
             "celery": get_celery(),
-            "storage": LocalTempStorage(),
+            "storage": storage,
             "catalog_id": catalog.id,
             "task_id": uuid4(),
             "progress": Mock(),
@@ -1790,7 +2066,7 @@ async def insert_credential_fixture(persistent, user, snowflake_feature_store_id
         ),
         user_id=user.id,
     )
-    credential_model.encrypt()
+    credential_model.encrypt_credentials()
     await persistent.insert_one(
         collection_name=CredentialModel.collection_name(),
         document=credential_model.dict(by_alias=True),
@@ -1848,9 +2124,10 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 app_container.override_instance_for_test("progress", Mock())
                 task = app_container.get(TEST_TASK_REGISTRY_MAP[payload.command])
 
+                task_result = None
                 try:
                     task_payload = task.get_payload_obj(kwargs)
-                    await task.execute(task_payload)
+                    task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
                 except Exception:  # pylint: disable=broad-except
@@ -1877,6 +2154,15 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 document = task.dict(by_alias=True)
                 document["_id"] = str(document["_id"])
                 await persistent._db[TaskModel.collection_name()].insert_one(document)
+
+                if task_result is not None:
+                    updated = await persistent.update_one(
+                        collection_name=TaskModel.collection_name(),
+                        query_filter={"_id": str(task_id)},
+                        update={"$set": {"task_result": task_result}},
+                        user_id=user.id,
+                    )
+                    assert updated == 1, "Task result not updated in persistent storage"
                 return task_id
 
             mock_submit.side_effect = submit
@@ -1924,4 +2210,132 @@ def mock_detect_and_update_column_dtypes_fixture():
     with patch(
         "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"
     ):
+        yield
+
+
+@pytest.fixture(name="mysql_online_store_config")
+def mysql_online_store_config_fixture():
+    """
+    MySQL online store config fixture
+    """
+    return {
+        "name": "mysql_online_store",
+        "details": MySQLOnlineStoreDetails(
+            host="mysql_host",
+            database="mysql_database",
+            port=3306,
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
+        ).dict(),
+    }
+
+
+@pytest.fixture(name="mysql_online_store_id")
+def mysql_online_store_id_fixture():
+    """MySQL online store id"""
+    return ObjectId("646f6c190ed28a5271fb02b9")
+
+
+@pytest.fixture(name="mysql_online_store")
+def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id):
+    """
+    Snowflake database source fixture
+    """
+    try:
+        mysql_online_store_config["_id"] = mysql_online_store_id
+        online_store = OnlineStore(**mysql_online_store_config)
+        online_store.save()
+        return online_store
+    except (DuplicatedRecordException, ObjectHasBeenSavedError):
+        return OnlineStore.get(mysql_online_store_config["name"])
+
+
+@pytest.fixture(name="mock_update_data_warehouse")
+def mock_update_data_warehouse(app_container):
+    """Mock update data warehouse method"""
+
+    async def mock_func(updated_feature, online_enabled_before_update):
+        _ = online_enabled_before_update
+        extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
+        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
+        for query in online_feature_spec.precompute_queries:
+            await app_container.online_store_compute_query_service.create_document(query)
+
+    with patch(
+        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",
+        side_effect=mock_func,
+    ) as mock_update_data_warehouse:
+        yield mock_update_data_warehouse
+
+
+@pytest.fixture(name="mock_offline_store_feature_manager_dependencies")
+def mock_offline_store_feature_manager_dependencies_fixture():
+    """
+    Fixture to mock dependencies of offline_store_feature_table_manager where database session is
+    required and the actual queries will be executed
+    """
+    patched = {}
+    patch_targets = {
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService": [
+            "initialize_new_columns",
+            "drop_columns",
+            "drop_table",
+        ],
+        "featurebyte.service.offline_store_feature_table_manager.OfflineStoreFeatureTableCommentService": [
+            "apply_comments",
+        ],
+    }
+    started_patchers = []
+    for service_name, method_names in patch_targets.items():
+        for method_name in method_names:
+            patcher = patch(f"{service_name}.{method_name}")
+            patched[method_name] = patcher.start()
+            started_patchers.append(patcher)
+    yield patched
+    for patcher in started_patchers:
+        patcher.stop()
+
+
+@pytest.fixture(name="mock_deployment_flow")
+def mock_deployment_flow_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    mock_api_object_cache,
+):
+    """Mock deployment flow"""
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    _ = mock_api_object_cache
+    yield
+
+
+@pytest.fixture(name="mock_graph_clear_period", autouse=True)
+def mock_graph_clear_period_fixture():
+    """
+    Mock graph clear period
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000"}):
+        # mock graph clear period to high value to clearing graph in tests
+        # clearing graph in tests will cause test failures as the task & client sharing the same process space
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patch_app_get_storage(storage, temp_storage):
+    """Patch app get storage"""
+    with patch("featurebyte.app.get_storage") as mock_get_storage:
+        with patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
+            mock_get_storage.return_value = storage
+            mock_get_temp_storage.return_value = temp_storage
+            yield
+
+
+@pytest.fixture(name="mock_is_featurebyte_schema")
+def patch_is_featurebyte_schema():
+    """Patch is_featurebyte_schema"""
+    with patch(
+        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._is_featurebyte_schema"
+    ) as mock_is_featurebyte_schema:
+        mock_is_featurebyte_schema.return_value = False
         yield

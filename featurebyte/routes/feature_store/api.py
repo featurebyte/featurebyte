@@ -3,14 +3,17 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from fastapi import Query, Request
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.persistent.base import SortDir
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -85,8 +88,20 @@ class FeatureStoreRouter(
             response_model=FeatureStoreShape,
         )
         self.router.add_api_route(
+            "/table_shape",
+            self.get_table_shape,
+            methods=["POST"],
+            response_model=FeatureStoreShape,
+        )
+        self.router.add_api_route(
             "/preview",
             self.get_data_preview,
+            methods=["POST"],
+            response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/table_preview",
+            self.get_table_preview,
             methods=["POST"],
             response_model=Dict[str, Any],
         )
@@ -111,9 +126,8 @@ class FeatureStoreRouter(
         """
         Create Feature Store
         """
-        controller = request.state.app_container.feature_store_controller
-        feature_store: FeatureStoreModel = await controller.create_feature_store(data=data)
-        return feature_store
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.create_feature_store(data=data)
 
     async def get_object(
         self, request: Request, feature_store_id: PydanticObjectId
@@ -127,11 +141,17 @@ class FeatureStoreRouter(
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[str] = SortDirQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
-            request, feature_store_id, page, page_size, sort_by, sort_dir, search
+            request,
+            feature_store_id,
+            page,
+            page_size,
+            sort_by,
+            sort_dir,
+            search,
         )
 
     async def update_description(
@@ -148,12 +168,23 @@ class FeatureStoreRouter(
         """
         Retrieve FeatureStore info
         """
-        controller = request.state.app_container.feature_store_controller
-        info = await controller.get_info(
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.get_info(
             document_id=feature_store_id,
             verbose=verbose,
         )
-        return cast(FeatureStoreInfo, info)
+
+    @staticmethod
+    async def try_retrieve_feature_store(
+        controller: FeatureStoreController, feature_store: FeatureStoreModel
+    ) -> FeatureStoreModel:
+        """
+        Try to retrieve FeatureStore from database
+        """
+        try:
+            return await controller.get(document_id=feature_store.id)
+        except DocumentNotFoundError:
+            return feature_store
 
     @staticmethod
     async def list_databases_in_feature_store(
@@ -163,7 +194,10 @@ class FeatureStoreRouter(
         """
         List databases
         """
-        controller = request.state.app_container.feature_store_controller
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_databases(
             feature_store=feature_store,
         )
@@ -178,7 +212,10 @@ class FeatureStoreRouter(
         """
         List schemas
         """
-        controller = request.state.app_container.feature_store_controller
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
@@ -195,7 +232,10 @@ class FeatureStoreRouter(
         """
         List schemas
         """
-        controller = request.state.app_container.feature_store_controller
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_tables(
             feature_store=feature_store,
             database_name=database_name,
@@ -214,7 +254,10 @@ class FeatureStoreRouter(
         """
         List columns
         """
-        controller = request.state.app_container.feature_store_controller
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[ColumnSpecWithDescription] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,
@@ -231,11 +274,19 @@ class FeatureStoreRouter(
         """
         Retrieve shape for query graph node
         """
-        controller = request.state.app_container.feature_store_controller
-        return cast(
-            FeatureStoreShape,
-            await controller.shape(preview=preview),
-        )
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.shape(preview=preview)
+
+    @staticmethod
+    async def get_table_shape(
+        request: Request,
+        location: TabularSource,
+    ) -> FeatureStoreShape:
+        """
+        Retrieve shape for a tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_shape(location=location)
 
     @staticmethod
     async def get_data_preview(
@@ -246,11 +297,20 @@ class FeatureStoreRouter(
         """
         Retrieve data preview for query graph node
         """
-        controller = request.state.app_container.feature_store_controller
-        return cast(
-            Dict[str, Any],
-            await controller.preview(preview=preview, limit=limit),
-        )
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.preview(preview=preview, limit=limit)
+
+    @staticmethod
+    async def get_table_preview(
+        request: Request,
+        location: TabularSource,
+        limit: int = Query(default=10, gt=0, le=10000),
+    ) -> Dict[str, Any]:
+        """
+        Retrieve data preview for tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_preview(location=location, limit=limit)
 
     @staticmethod
     async def get_data_sample(
@@ -262,11 +322,8 @@ class FeatureStoreRouter(
         """
         Retrieve data sample for query graph node
         """
-        controller = request.state.app_container.feature_store_controller
-        return cast(
-            Dict[str, Any],
-            await controller.sample(sample=sample, size=size, seed=seed),
-        )
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.sample(sample=sample, size=size, seed=seed)
 
     @staticmethod
     async def get_data_description(
@@ -278,15 +335,12 @@ class FeatureStoreRouter(
         """
         Retrieve data description for query graph node
         """
-        controller = request.state.app_container.feature_store_controller
-        return cast(
-            Dict[str, Any],
-            await controller.describe(sample=sample, size=size, seed=seed),
-        )
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.describe(sample=sample, size=size, seed=seed)
 
     async def delete_object(
         self, request: Request, feature_store_id: PydanticObjectId
     ) -> DeleteResponse:
-        controller = self.get_controller_for_request(request)
+        controller: FeatureStoreController = self.get_controller_for_request(request)
         await controller.delete(document_id=feature_store_id)
         return DeleteResponse()

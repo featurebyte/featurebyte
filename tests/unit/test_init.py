@@ -119,6 +119,7 @@ def test_register_profile(noop_check_sdk_versions, noop_log_env_summary, config)
             api_url="https://tutorials.featurebyte.com/api/v1",
             api_token="test",
         )
+        assert config.default_profile_name == "local"
 
         # Re-register with different details
         fb.register_profile(
@@ -129,16 +130,19 @@ def test_register_profile(noop_check_sdk_versions, noop_log_env_summary, config)
             profile_name="test2",
             api_url="https://test.featurebyte.com/api/v1",
         )
+        assert config.default_profile_name == "local"
 
         # Update existing profile with different details
         fb.register_profile(
             profile_name="test2",
             api_url="https://test2.featurebyte.com/api/v1",
+            make_default=True,
         )
         _assert_profile_with_details(
             profile_name="test2",
             api_url="https://test2.featurebyte.com/api/v1",
         )
+        assert config.default_profile_name == "test2"
 
     finally:
         # Reset back to original profile

@@ -55,8 +55,9 @@ async def test_get_feature_store_info(feature_store_service, feature_store):
         database_details=SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            database="sf_database",
-            sf_schema="sf_schema",
+            database_name="sf_database",
+            schema_name="sf_schema",
+            role_name="TESTING",
         ),
         created_at=info.created_at,
         updated_at=None,
@@ -95,6 +96,7 @@ async def test_get_event_table_info(app_container, event_table, entity):
     )
     expected_info = EventTableInfo(
         name="sf_event_table",
+        description="test event table",
         status="PUBLIC_DRAFT",
         event_timestamp_column="event_timestamp",
         event_id_column="col_int",
@@ -127,13 +129,16 @@ async def test_get_event_table_info(app_container, event_table, entity):
             **expected_info.dict(),
             "columns_info": [
                 TableColumnInfo(name="col_int", dtype="INT"),
-                TableColumnInfo(name="col_float", dtype="FLOAT"),
-                TableColumnInfo(name="col_char", dtype="CHAR"),
-                TableColumnInfo(name="col_text", dtype="VARCHAR"),
+                TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
+                TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
+                TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
                 TableColumnInfo(name="col_binary", dtype="BINARY"),
                 TableColumnInfo(name="col_boolean", dtype="BOOL"),
                 TableColumnInfo(
-                    name="event_timestamp", dtype="TIMESTAMP_TZ", semantic="event_timestamp"
+                    name="event_timestamp",
+                    dtype="TIMESTAMP_TZ",
+                    semantic="event_timestamp",
+                    description="Timestamp column",
                 ),
                 TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 TableColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
@@ -151,6 +156,7 @@ async def test_get_item_table_info(app_container, item_table, event_table):
     )
     expected_info = ItemTableInfo(
         name="sf_item_table",
+        description="test item table",
         status="PUBLIC_DRAFT",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -197,6 +203,7 @@ async def test_get_dimension_table_info(app_container, dimension_table):
     )
     expected_info = DimensionTableInfo(
         name="sf_dimension_table",
+        description="test dimension table",
         status="PUBLIC_DRAFT",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -223,12 +230,14 @@ async def test_get_dimension_table_info(app_container, dimension_table):
             **expected_info.dict(),
             "columns_info": [
                 TableColumnInfo(name="col_int", dtype="INT"),
-                TableColumnInfo(name="col_float", dtype="FLOAT"),
-                TableColumnInfo(name="col_char", dtype="CHAR"),
-                TableColumnInfo(name="col_text", dtype="VARCHAR"),
+                TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
+                TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
+                TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
                 TableColumnInfo(name="col_binary", dtype="BINARY"),
                 TableColumnInfo(name="col_boolean", dtype="BOOL"),
-                TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(
+                    name="event_timestamp", dtype="TIMESTAMP_TZ", description="Timestamp column"
+                ),
                 TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 TableColumnInfo(name="cust_id", dtype="INT"),
             ],
@@ -244,6 +253,7 @@ async def test_get_scd_table_info(app_container, scd_table):
     )
     expected_info = SCDTableInfo(
         name="sf_scd_table",
+        description="test scd table",
         status="PUBLIC_DRAFT",
         record_creation_timestamp_column=None,
         current_flag_column="is_active",
@@ -258,7 +268,7 @@ async def test_get_scd_table_info(app_container, scd_table):
         ),
         entities=[],
         semantics=[],
-        column_count=10,
+        column_count=11,
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
@@ -279,6 +289,7 @@ async def test_get_scd_table_info(app_container, scd_table):
                 TableColumnInfo(name="col_boolean", dtype="BOOL"),
                 TableColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
                 TableColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="date_of_birth", dtype="TIMESTAMP"),
                 TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 TableColumnInfo(name="cust_id", dtype="INT"),
             ],

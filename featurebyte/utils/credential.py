@@ -63,6 +63,6 @@ class MongoBackedCredentialProvider(CredentialProvider):
         )
         if document:
             credential = CredentialModel(**document)
-            credential.decrypt()
+            credential.decrypt_credentials()
             return credential
         return None

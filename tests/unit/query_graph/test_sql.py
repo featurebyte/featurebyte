@@ -59,6 +59,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         source_type=SourceType.SNOWFLAKE,
         to_filter_scd_by_current_flag=False,
         event_table_timestamp_filter=None,
+        aggregation_specs=None,
     )
     return context
 
@@ -89,8 +90,9 @@ def input_node_fixture():
         feature_store={
             "type": "snowflake",
             "details": {
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     )
@@ -242,8 +244,9 @@ def test_make_input_node_escape_special_characters():
         "feature_store_details": {
             "type": "snowflake",
             "details": {
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     }
