@@ -473,7 +473,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> List[str]:
+    ) -> Tuple[List[str], BaseSession]:
         """
         Create or update feature table cache
 
@@ -499,8 +499,8 @@ class FeatureTableCacheService:
 
         Returns
         -------
-        List[str]
-            List of feature definitions corresponding to nodes
+        Tuple[List[str], BaseSession]
+            Tuple of feature definitions corresponding to nodes, session object
         """
         if progress_callback:
             await progress_callback(1, "Checking feature table cache status")
@@ -578,7 +578,7 @@ class FeatureTableCacheService:
                 feature_definitions=[definition for _, definition in non_cached_nodes],
             )
 
-        return hashes
+        return hashes, db_session
 
     async def read_from_cache(
         self,
@@ -687,7 +687,7 @@ class FeatureTableCacheService:
             logger,
             extra={"catalog_id": str(observation_table.catalog_id)},
         ):
-            hashes = await self.create_or_update_feature_table_cache(
+            hashes, db_session = await self.create_or_update_feature_table_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 graph=graph,
@@ -706,10 +706,6 @@ class FeatureTableCacheService:
             feature.definition_hash: feature.feature_name
             for feature in cache_metadata.feature_definitions
         }
-
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
 
         request_column_names = [col.name for col in observation_table.columns_info]
         request_columns = [quoted_identifier(col) for col in request_column_names]
