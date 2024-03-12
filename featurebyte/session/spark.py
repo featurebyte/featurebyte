@@ -74,13 +74,11 @@ class SparkSession(BaseSparkSession):
     database_credential: Optional[SparkDatabaseCredential]
     storage_credential: Optional[StorageCredential]
 
-    def __init__(self, **data: Any) -> None:
+    def _initialize_connection(self) -> None:
         auth = None
         scheme = None
         access_token = None
         kerberos_service_name = None
-
-        super().__init__(**data)
 
         if self.database_credential:
             if isinstance(self.database_credential, KerberosKeytabCredential):

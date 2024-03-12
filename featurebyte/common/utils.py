@@ -14,7 +14,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
-from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -134,12 +133,7 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
     pd.DataFrame
         Pandas Dataframe object
     """
-    if isinstance(buffer, bytes):
-        input_buffer = BytesIO(buffer)
-    else:
-        input_buffer = buffer
-
-    reader = pa.ipc.open_stream(input_buffer)
+    reader = pa.ipc.open_stream(buffer)
     return reader.read_all().to_pandas()
 
 
