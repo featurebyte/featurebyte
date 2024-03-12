@@ -20,6 +20,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
+from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
@@ -1848,6 +1849,7 @@ def mock_snowflake_session_fixture():
         source_type=SourceType.SNOWFLAKE,
         database_name="sf_db",
         schema_name="sf_schema",
+        _no_schema_error=ProgrammingError,
     )
 
 

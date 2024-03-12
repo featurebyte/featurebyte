@@ -458,7 +458,7 @@ class FeatureTableCacheService:
             )
             _ = await session.execute_query(query)
             return True
-        except session._no_schema_error:
+        except session._no_schema_error:  # pylint: disable=protected-access
             return False
 
     async def create_or_update_feature_table_cache(
