@@ -44,6 +44,9 @@ class ParentEntityLookupService:
         ----------
         entity_info: EntityInfo
             Entity information
+        relationships_info: Optional[list[EntityRelationshipInfo]]
+            Relationships that can be used to derive the join steps. If not provided, the currently
+            available relationships will be queried from persistent and used instead.
 
         Returns
         -------
