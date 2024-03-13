@@ -9,7 +9,7 @@ from pydantic import Field, PrivateAttr
 
 from featurebyte import SourceType
 from featurebyte.query_graph.model.table import TableSpec
-from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSchemaInitializer
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -105,11 +105,15 @@ class DatabricksUnitySession(DatabricksSession):
         return output
 
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f"SELECT TABLE_NAME FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
-            f"WHERE TABLE_SCHEMA = '{schema_name}'"
+            f"WHERE TABLE_SCHEMA = '{schema_name}'",
+            timeout=timeout,
         )
         output = []
         if tables is not None:
