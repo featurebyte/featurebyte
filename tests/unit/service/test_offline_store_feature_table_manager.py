@@ -1,6 +1,7 @@
 """
 Tests for OfflineStoreFeatureTableManagerService
 """
+# pylint: disable=too-many-lines
 from typing import Dict
 
 import os
@@ -1003,7 +1004,6 @@ async def test_feature_with_internal_parent_child_relationships(
     app_container,
     document_service,
     deployed_feature_with_internal_parent_child_relationships,
-    storage,
     update_fixtures,
 ):
     """

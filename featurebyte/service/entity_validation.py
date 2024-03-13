@@ -57,8 +57,13 @@ class EntityRelationshipsContextParameters:
     Can be created from FeatureListModel or OfflineFeatureStoreTableModel objects.
     """
 
+    # Graph and nodes representing a list of features
     feature_cluster: FeatureCluster
+
+    # Primary entity ids of the features represented by the feature cluster
     primary_entity_ids: Sequence[ObjectId]
+
+    # Relationships available to lookup primary entity from serving entity
     relationships_info: Optional[List[EntityRelationshipInfo]]
 
     @classmethod
@@ -108,6 +113,9 @@ class EntityRelationshipsContextParameters:
         if offline_store_feature_table_model.feature_cluster is not None:
             feature_cluster = offline_store_feature_table_model.feature_cluster
             if feature_cluster.feature_node_relationships_infos is not None:
+                # Set relationships_info to None because when computing features for offline store
+                # feature tables, the serving entity is always the primary entity of the feature
+                # table, so no lookup is required there.
                 return EntityRelationshipsContextParameters(
                     feature_cluster=feature_cluster,
                     primary_entity_ids=offline_store_feature_table_model.primary_entity_ids,

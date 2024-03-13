@@ -189,7 +189,7 @@ async def offline_store_feature_table_no_entity_fixture(
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_table_internal_relationships")
-async def offline_store_feature_table_no_entity_fixture(
+async def offline_store_feature_table_internal_relationships_fixture(
     app_container, deployed_feature_list_internal_relationships
 ):
     """
