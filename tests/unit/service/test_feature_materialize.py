@@ -18,6 +18,7 @@ from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
     extract_session_executed_queries,
+    get_relationship_info,
 )
 
 
@@ -794,11 +795,14 @@ async def test_update_online_store__materialized_before(
 
 @pytest.mark.asyncio
 async def test_materialize_features_internal_relationships(
+    app_container,
     offline_store_feature_table_internal_relationships,
     feature_materialize_service,
     mock_get_feature_store_session,
     mock_snowflake_session,
     update_fixtures,
+    cust_id_entity,
+    gender_entity,
 ):
     """
     Test materialize_features for a feature table with internal relationships. The sql query should
@@ -813,6 +817,18 @@ async def test_materialize_features_internal_relationships(
 
     # Check that executed queries are correct
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (relationship info id appears in the generated sql due to the use of
+    # frozen relationships)
+    relationship_info_id = (
+        await get_relationship_info(
+            app_container,
+            child_entity_id=cust_id_entity.id,
+            parent_entity_id=gender_entity.id,
+        )
+    ).id
+    executed_queries = executed_queries.replace(str(relationship_info_id), "0" * 24)
+
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/materialize_features_queries_internal_relationships.sql",
