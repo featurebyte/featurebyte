@@ -1,6 +1,7 @@
 """
 Tests for OfflineStoreFeatureTableManagerService
 """
+# pylint: disable=too-many-lines
 from typing import Dict
 
 import os
@@ -199,6 +200,21 @@ async def deployed_complex_feature(
     new_feature = f1 + f2 + f1
     new_feature.name = "Complex Feature"
     return await deploy_feature(app_container, new_feature)
+
+
+@pytest_asyncio.fixture
+async def deployed_feature_with_internal_parent_child_relationships(
+    app_container,
+    feature_with_internal_parent_child_relationships,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a complex feature with internal parent child relationships
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    return await deploy_feature(app_container, feature_with_internal_parent_child_relationships)
 
 
 @pytest_asyncio.fixture
@@ -981,3 +997,66 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
         f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
         "cat1_cust_id_30m",
     }
+
+
+@pytest.mark.asyncio
+async def test_feature_with_internal_parent_child_relationships(
+    app_container,
+    document_service,
+    deployed_feature_with_internal_parent_child_relationships,
+    update_fixtures,
+):
+    """
+    Test feature with internal parent child relationships. That information should be reflected in
+    the feature cluster of the offline store feature table.
+    """
+    catalog_id = app_container.catalog_id
+    feature_tables = await get_all_feature_tables(document_service)
+    assert set(feature_tables.keys()) == {
+        "cat1_cust_id_1d",
+    }
+    feature_table = feature_tables["cat1_cust_id_1d"]
+
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    feature_cluster = feature_table_dict.pop("feature_cluster")
+
+    # Remove dynamic fields before comparison
+    for node_info in feature_cluster["feature_node_relationships_infos"]:
+        for info in node_info["relationships_info"]:
+            info.pop("_id")
+    for info in feature_cluster["combined_relationships_info"]:
+        info.pop("_id")
+
+    _ = feature_table_dict.pop("entity_universe")  # covered in service/test_feature_materialize.py
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": catalog_id,
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "feature_ids": [deployed_feature_with_internal_parent_child_relationships.id],
+        "feature_job_setting": {
+            "blind_spot": "0s",
+            "frequency": "86400s",
+            "time_modulo_frequency": "0s",
+        },
+        "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+        "has_ttl": False,
+        "last_materialized_at": None,
+        "name": "cat1_cust_id_1d",
+        "name_prefix": "cat1",
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": ["complex_parent_child_feature_V231227"],
+        "output_dtypes": ["VARCHAR"],
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert_equal_json_fixture(
+        feature_cluster,
+        "tests/fixtures/offline_store_feature_table/feature_cluster_with_internal_relationships.json",
+        update_fixtures,
+    )

@@ -18,6 +18,7 @@ from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
     extract_session_executed_queries,
+    get_relationship_info,
 )
 
 
@@ -125,6 +126,24 @@ async def deployed_feature_list_no_entity(
     return feature_list_model
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_list_internal_relationships(
+    app_container,
+    feature_with_internal_parent_child_relationships,
+    mock_deployment_flow,
+):
+    """
+    Fixture for a feature list with internal relationships
+    """
+    _ = mock_deployment_flow
+
+    feature_with_internal_parent_child_relationships.save()
+    feature_list_model = await deploy_feature_ids(
+        app_container, "my_list", [feature_with_internal_parent_child_relationships.id]
+    )
+    return feature_list_model
+
+
 @pytest_asyncio.fixture(name="deployed_feature")
 async def deployed_feature_fixture(feature_service, deployed_feature_list):
     """
@@ -166,6 +185,19 @@ async def offline_store_feature_table_no_entity_fixture(
     """
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"feature_ids": deployed_feature_list_no_entity.feature_ids}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_internal_relationships")
+async def offline_store_feature_table_internal_relationships_fixture(
+    app_container, deployed_feature_list_internal_relationships
+):
+    """
+    Fixture for offline store feature table with no entity
+    """
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"feature_ids": deployed_feature_list_internal_relationships.feature_ids}
     ):
         return model
 
@@ -759,3 +791,46 @@ async def test_update_online_store__materialized_before(
             value=offline_last_materialized_at,
         )
     ]
+
+
+@pytest.mark.asyncio
+async def test_materialize_features_internal_relationships(
+    app_container,
+    offline_store_feature_table_internal_relationships,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test materialize_features for a feature table with internal relationships. The sql query should
+    be doing feature specific parent entity lookup.
+    """
+    _ = mock_get_feature_store_session
+
+    async with feature_materialize_service.materialize_features(
+        feature_table_model=offline_store_feature_table_internal_relationships,
+    ):
+        pass
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (relationship info id appears in the generated sql due to the use of
+    # frozen relationships)
+    relationship_info_id = (
+        await get_relationship_info(
+            app_container,
+            child_entity_id=cust_id_entity.id,
+            parent_entity_id=gender_entity.id,
+        )
+    ).id
+    executed_queries = executed_queries.replace(str(relationship_info_id), "0" * 24)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/materialize_features_queries_internal_relationships.sql",
+        update_fixtures,
+    )
