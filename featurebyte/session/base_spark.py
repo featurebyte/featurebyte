@@ -20,7 +20,12 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+    MetadataSchemaInitializer,
+)
 
 logger = get_logger(__name__)
 
@@ -223,10 +228,13 @@ class BaseSparkSession(BaseSession, ABC):
         return output
 
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f"SHOW TABLES IN `{database_name}`.`{schema_name}`"
+            f"SHOW TABLES IN `{database_name}`.`{schema_name}`", timeout=timeout
         )
         output = []
         if tables is not None:

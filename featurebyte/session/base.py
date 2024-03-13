@@ -216,7 +216,10 @@ class BaseSession(BaseModel):
 
     @abstractmethod
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
@@ -227,6 +230,8 @@ class BaseSession(BaseModel):
             Database name
         schema_name: str | None
             Schema name
+        timeout: float
+            Timeout in seconds
 
         Returns
         -------

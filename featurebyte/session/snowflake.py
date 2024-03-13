@@ -36,7 +36,12 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import (
+    APPLICATION_NAME,
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+)
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
@@ -140,10 +145,12 @@ class SnowflakeSession(BaseSession):
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
-            f"WHERE TABLE_SCHEMA = '{schema_name}'"
+            f"WHERE TABLE_SCHEMA = '{schema_name}'",
+            timeout=timeout,
         )
         output = []
         if tables is not None:
