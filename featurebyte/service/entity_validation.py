@@ -266,6 +266,11 @@ class EntityValidationService:
             serving_names_mapping=serving_names_mapping,
             offline_store_feature_table_model=offline_store_feature_table_model,
         )
+        entity_relationships_context = await self._get_entity_relationships_context(
+            entity_info,
+            feature_list_model,
+            offline_store_feature_table_model=offline_store_feature_table_model,
+        )
 
         if serving_names_mapping is not None:
             provided_serving_names = {
@@ -286,7 +291,10 @@ class EntityValidationService:
             # Try to see if missing entities can be obtained using the provided entities as children
             try:
                 join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
-                    entity_info
+                    entity_info,
+                    entity_relationships_context.feature_list_relationships_info
+                    if entity_relationships_context is not None
+                    else None,
                 )
             except RequiredEntityNotProvidedError:
                 raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
@@ -296,11 +304,6 @@ class EntityValidationService:
                 )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())
-        entity_relationships_context = await self._get_entity_relationships_context(
-            entity_info,
-            feature_list_model,
-            offline_store_feature_table_model=offline_store_feature_table_model,
-        )
         return ParentServingPreparation(
             join_steps=join_steps,
             feature_store_details=feature_store_details,

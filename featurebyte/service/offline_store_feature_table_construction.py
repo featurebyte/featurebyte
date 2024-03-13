@@ -229,7 +229,7 @@ class OfflineStoreFeatureTableConstructionService:
                         )
                         join_steps = (
                             await self.parent_entity_lookup_service.get_required_join_steps(
-                                entity_info
+                                entity_info, None
                             )
                         )
                     else:

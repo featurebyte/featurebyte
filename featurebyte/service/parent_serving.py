@@ -32,7 +32,11 @@ class ParentEntityLookupService:
         self.table_service = table_service
         self.relationship_info_service = relationship_info_service
 
-    async def get_required_join_steps(self, entity_info: EntityInfo) -> list[EntityLookupStep]:
+    async def get_required_join_steps(
+        self,
+        entity_info: EntityInfo,
+        relationships_info: Optional[list[EntityRelationshipInfo]] = None,
+    ) -> list[EntityLookupStep]:
         """
         Get the list of required JoinStep to lookup the missing entities in the request
 
@@ -49,13 +53,13 @@ class ParentEntityLookupService:
         if entity_info.are_all_required_entities_provided():
             return []
 
-        # Use currently available relationships. Later to be updated to use frozen relationships
-        # stored in the feature list.
-        relationships_info = []
-        async for info in self.relationship_info_service.list_documents_iterator(
-            query_filter={},
-        ):
-            relationships_info.append(EntityRelationshipInfo(**info.dict(by_alias=True)))
+        if relationships_info is None:
+            # Use currently available relationships if frozen relationships are not available
+            relationships_info = []
+            async for info in self.relationship_info_service.list_documents_iterator(
+                query_filter={},
+            ):
+                relationships_info.append(EntityRelationshipInfo(**info.dict(by_alias=True)))
 
         lookup_steps = EntityLookupPlanner.generate_lookup_steps(
             available_entity_ids=list(entity_info.provided_entity_ids),
