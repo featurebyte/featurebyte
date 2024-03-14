@@ -455,6 +455,17 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
     return expected
 
 
+@pytest.fixture(name="expected_feature_service_names")
+def expected_feature_service_names_fixture():
+    """
+    Fixture for expected feature service names
+    """
+    return {
+        f"EXTERNAL_FS_FEATURE_LIST_{get_version()}",
+        f"EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES_{get_version()}",
+    }
+
+
 @pytest.mark.order(1)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_feature_tables_expected(
@@ -545,7 +556,9 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
-async def test_feast_registry(app_container, expected_feature_table_names, source_type):
+async def test_feast_registry(
+    app_container, expected_feature_table_names, expected_feature_service_names, source_type
+):
     """
     Check feast registry is populated correctly
     """
@@ -558,7 +571,9 @@ async def test_feast_registry(app_container, expected_feature_table_names, sourc
     # Check feature views and feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
-    assert {fs.name for fs in feature_store.list_feature_services()} == {feature_service_name}
+    assert {
+        fs.name for fs in feature_store.list_feature_services()
+    } == expected_feature_service_names
 
     # Check feast materialize and get_online_features
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
