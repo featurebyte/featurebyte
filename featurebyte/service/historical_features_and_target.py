@@ -18,11 +18,7 @@ from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.batch_helper import (
-    NUM_FEATURES_PER_QUERY,
-    get_feature_names,
-    split_nodes,
-)
+from featurebyte.query_graph.sql.batch_helper import NUM_FEATURES_PER_QUERY, get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
@@ -189,31 +185,21 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
             else None
         )
         tic = time.time()
-        # Process nodes in batches
-        tile_cache_node_groups = split_nodes(
-            graph, nodes, NUM_FEATURES_PER_QUERY, is_tile_cache=True
+        await compute_tiles_on_demand(
+            session=session,
+            tile_cache_service=tile_cache_service,
+            graph=graph,
+            nodes=nodes,
+            request_id=request_id,
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            feature_store_id=feature_store.id,
+            serving_names_mapping=serving_names_mapping,
+            parent_serving_preparation=parent_serving_preparation,
+            progress_callback=tile_cache_progress_callback
+            if tile_cache_progress_callback
+            else None,
         )
-        for i, _nodes in enumerate(tile_cache_node_groups):
-            logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
-            await compute_tiles_on_demand(
-                session=session,
-                tile_cache_service=tile_cache_service,
-                graph=graph,
-                nodes=_nodes,
-                request_id=request_id,
-                request_table_name=request_table_name,
-                request_table_columns=request_table_columns,
-                feature_store_id=feature_store.id,
-                serving_names_mapping=serving_names_mapping,
-                parent_serving_preparation=parent_serving_preparation,
-                progress_callback=get_ranged_progress_callback(
-                    tile_cache_progress_callback,
-                    100 * i / len(tile_cache_node_groups),
-                    100 * (i + 1) / len(tile_cache_node_groups),
-                )
-                if tile_cache_progress_callback
-                else None,
-            )
 
         elapsed = time.time() - tic
         logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})

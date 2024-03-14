@@ -456,7 +456,8 @@ def patched_num_features_per_query():
     """
     with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
         with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 4):
-            yield
+            with patch("featurebyte.service.tile_cache.NUM_FEATURES_PER_QUERY", 4):
+                yield
 
 
 @pytest.fixture(name="new_user_id_entity", scope="session")

@@ -133,11 +133,20 @@ class OnDemandTileComputeRequest:
             aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,
             feature_store_id=feature_store_id,
-            entity_tracker_table_name=TileInfoKey.from_tile_info(
-                self.tile_gen_info
-            ).get_entity_tracker_table_name(),
+            entity_tracker_table_name=self.tile_info_key.get_entity_tracker_table_name(),
         )
         return tile_spec, self.tracker_sql
+
+    @property
+    def tile_info_key(self) -> TileInfoKey:
+        """
+        Returns a TileInfoKey object to uniquely identify a unit of tile compute work
+
+        Returns
+        -------
+        TileInfoKey
+        """
+        return TileInfoKey.from_tile_info(self.tile_gen_info)
 
 
 class TileCache:
@@ -181,59 +190,6 @@ class TileCache:
         SourceType
         """
         return self.session.source_type
-
-    async def compute_tiles_on_demand(
-        self,
-        graph: QueryGraph,
-        nodes: list[Node],
-        request_id: str,
-        request_table_name: str,
-        serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
-        """Check tile status for the provided features and compute missing tiles if required
-
-        Parameters
-        ----------
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        request_id : str
-            Request ID
-        request_table_name: str
-            Request table name to use
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
-        """
-        tic = time.time()
-
-        if progress_callback is not None:
-            await progress_callback(0, "Checking tile status")
-
-        required_requests = await self.get_required_computation(
-            request_id=request_id,
-            graph=graph,
-            nodes=nodes,
-            request_table_name=request_table_name,
-            serving_names_mapping=serving_names_mapping,
-        )
-        elapsed = time.time() - tic
-        logger.debug(
-            f"Getting required tiles computation took {elapsed:.2f}s ({len(required_requests)})"
-        )
-
-        if required_requests:
-            tic = time.time()
-            await self.invoke_tile_manager(required_requests, progress_callback=progress_callback)
-            elapsed = time.time() - tic
-            logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
-        else:
-            logger.debug("All required tiles can be reused")
-
-        await self.cleanup_temp_tables()
 
     async def invoke_tile_manager(
         self,
