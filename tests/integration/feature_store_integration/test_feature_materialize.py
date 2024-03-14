@@ -30,6 +30,11 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
+from tests.integration.conftest import (
+    tag_entities_for_event_table,
+    tag_entities_for_item_table,
+    tag_entities_for_scd_table,
+)
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_dict_approx_equal
 
@@ -223,20 +228,85 @@ def features_fixture(
     return features
 
 
-@pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
-async def deployed_features_list_fixture(session, features, app_container):
+@pytest_asyncio.fixture(name="saved_feature_list", scope="module")
+def saved_feature_list_fixture(features):
     """
-    Fixture for deployed feature list
+    Fixture for a saved feature list
     """
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST")
     feature_list.save()
+    yield feature_list
+
+
+@pytest_asyncio.fixture(name="saved_feature_list_composite_entities", scope="module")
+async def saved_feature_list_composite_entities_fixture(features):
+    """
+    Fixture for saved feature list with composite entities feature
+    """
+    features = [
+        feature
+        for feature in features
+        if feature.name == "Amount Sum by Customer x Product Action 24d"
+    ]
+    feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES")
+    feature_list.save()
+    yield feature_list
+
+
+@pytest.fixture(name="removed_relationships", scope="module")
+def removed_relationships_fixture(
+    saved_feature_list,
+    saved_feature_list_composite_entities,
+    event_table,
+    item_table,
+    scd_table,
+):
+    """
+    Remove relationships by untagged entities after saving feature list. Everything should still
+    work because of frozen relationships.
+
+    Relationships to be removed:
+
+    - item_id -> order_id (item table)
+    - order_id -> cust_id (event table)
+    - order_id -> PRODUCT_ACTION (event table)
+    - order_id -> üser id (event table)
+    - üser id -> user_status  (scd table)
+    """
+    _ = saved_feature_list
+    _ = saved_feature_list_composite_entities
+
+    def untag_entities(table):
+        for column_info in table.columns_info:
+            if column_info.entity_id is not None:
+                table[column_info.name].as_entity(None)
+
+    untag_entities(event_table)
+    untag_entities(item_table)
+    untag_entities(scd_table)
+    yield
+
+    # Retag entities to restore the relationships for other tests
+    tag_entities_for_event_table(event_table)
+    tag_entities_for_item_table(item_table)
+    tag_entities_for_scd_table(scd_table)
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
+async def deployed_features_list_fixture(
+    session, saved_feature_list, removed_relationships, app_container
+):
+    """
+    Fixture for deployed feature list
+    """
+    _ = removed_relationships
 
     deploy_service = app_container.deploy_service
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
-        deployment = feature_list.deploy()
+        deployment = saved_feature_list.deploy()
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
@@ -248,7 +318,7 @@ async def deployed_features_list_fixture(session, features, app_container):
 
     # check that the feature list's feast_enabled attribute is set to True
     feature_list_model = await app_container.feature_list_service.get_document(
-        feature_list.id, populate_remote_attributes=False
+        saved_feature_list.id, populate_remote_attributes=False
     )
     assert feature_list_model.store_info.feast_enabled
 
@@ -269,17 +339,13 @@ async def deployed_features_list_fixture(session, features, app_container):
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
-async def deployed_features_list_composite_entities_fixture(features, app_container):
+async def deployed_features_list_composite_entities_fixture(
+    saved_feature_list_composite_entities, app_container
+):
     """
     Fixture for deployed feature list
     """
-    features = [
-        feature
-        for feature in features
-        if feature.name == "Amount Sum by Customer x Product Action 24d"
-    ]
-    feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES")
-    feature_list.save()
+    feature_list = saved_feature_list_composite_entities
 
     deploy_service = app_container.deploy_service
     with patch(

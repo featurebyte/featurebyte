@@ -1132,6 +1132,16 @@ def status_entity_fixture(catalog):
     return entity
 
 
+def tag_entities_for_event_table(event_table):
+    """
+    Helper function to tag entities for the event table fixture
+    """
+    event_table["TRANSACTION_ID"].as_entity("Order")
+    event_table["ÜSER ID"].as_entity("User")
+    event_table["PRODUCT_ACTION"].as_entity("ProductAction")
+    event_table["CUST_ID"].as_entity("Customer")
+
+
 def create_transactions_event_table_from_data_source(
     data_source, database_name, schema_name, table_name, event_table_name
 ):
@@ -1175,10 +1185,7 @@ def create_transactions_event_table_from_data_source(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_table["TRANSACTION_ID"].as_entity("Order")
-    event_table["ÜSER ID"].as_entity("User")
-    event_table["PRODUCT_ACTION"].as_entity("ProductAction")
-    event_table["CUST_ID"].as_entity("Customer")
+    tag_entities_for_event_table(event_table)
     return event_table
 
 
@@ -1249,6 +1256,14 @@ def item_table_name_fixture(source_type):
     return f"{source_type}_item_table"
 
 
+def tag_entities_for_item_table(item_table):
+    """
+    Tag entities for the item table fixture
+    """
+    item_table["order_id"].as_entity("Order")
+    item_table["item_id"].as_entity("Item")
+
+
 @pytest.fixture(name="item_table", scope="session")
 def item_table_fixture(
     session,
@@ -1263,6 +1278,8 @@ def item_table_fixture(
     Fixture for an ItemTable in integration tests
     """
     _ = catalog
+    _ = order_entity
+    _ = item_entity
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1274,8 +1291,7 @@ def item_table_fixture(
         item_id_column="item_id",
         event_table_name=event_table.name,
     )
-    item_table["order_id"].as_entity(order_entity.name)
-    item_table["item_id"].as_entity(item_entity.name)
+    tag_entities_for_item_table(item_table)
     return item_table
 
 
@@ -1338,6 +1354,14 @@ def scd_table_name_fixture(source_type):
     return f"{source_type}_scd_table"
 
 
+def tag_entities_for_scd_table(scd_table):
+    """
+    Tag entities for scd table fixture
+    """
+    scd_table["User ID"].as_entity("User")
+    scd_table["User Status"].as_entity("UserStatus")
+
+
 @pytest.fixture(name="scd_table", scope="session")
 def scd_table_fixture(
     scd_data_tabular_source,
@@ -1350,14 +1374,15 @@ def scd_table_fixture(
     Fixture for a SCDTable in integration tests
     """
     _ = catalog
+    _ = user_entity
+    _ = status_entity
     scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
-    scd_table["User ID"].as_entity(user_entity.name)
-    scd_table["User Status"].as_entity(status_entity.name)
+    tag_entities_for_scd_table(scd_table)
     return scd_table
 
 
