@@ -324,6 +324,49 @@ async def test_get_join_steps__multiple_provided(
 
 
 @pytest.mark.asyncio
+async def test_get_join_steps__use_provided_relationships(
+    entity_a,
+    entity_b,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    parent_entity_lookup_service,
+):
+    """
+    Test looking up parent entity using provided relationships
+    """
+    data, relationship_info_1 = b_is_parent_of_a
+    _, relationship_info_2 = c_is_parent_of_b
+    entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
+
+    # Use [b_is_parent_of_a] as the relationships
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info=[relationship_info_1]
+    )
+    assert join_steps == [
+        EntityLookupStep(
+            id=relationship_info_1.id,
+            table=data.dict(by_alias=True),
+            parent=EntityLookupInfo(
+                key="b",
+                serving_name="B",
+                entity_id=entity_b.id,
+            ),
+            child=EntityLookupInfo(
+                key="a",
+                serving_name="A",
+                entity_id=entity_a.id,
+            ),
+        )
+    ]
+
+    # Use [c_is_parent_of_b] as the relationships
+    with pytest.raises(RequiredEntityNotProvidedError):
+        await parent_entity_lookup_service.get_required_join_steps(
+            entity_info, relationships_info=[relationship_info_2]
+        )
+
+
+@pytest.mark.asyncio
 async def test_required_entity__complex_and_should_not_error(
     entity_a,
     entity_b,
