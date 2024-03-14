@@ -3,7 +3,7 @@ OfflineStoreFeatureTableConstructionService class
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
@@ -26,6 +26,7 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
@@ -177,7 +178,9 @@ class OfflineStoreFeatureTableConstructionService:
         self,
         serving_names: List[str],
         aggregate_result_table_names: List[str],
-        offline_ingest_graphs: List[OfflineStoreIngestQueryGraph],
+        offline_ingest_graphs: List[
+            Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
+        ],
         source_type: SourceType,
     ) -> EntityUniverseModel:
         """
@@ -205,7 +208,7 @@ class OfflineStoreFeatureTableConstructionService:
             )
         else:
             params = []
-            for offline_ingest_graph in offline_ingest_graphs:
+            for offline_ingest_graph, relationships_info in offline_ingest_graphs:
                 primary_entities = [
                     (await self.entity_service.get_document(entity_id))
                     for entity_id in offline_ingest_graph.primary_entity_ids
@@ -229,7 +232,7 @@ class OfflineStoreFeatureTableConstructionService:
                         )
                         join_steps = (
                             await self.parent_entity_lookup_service.get_required_join_steps(
-                                entity_info
+                                entity_info, relationships_info
                             )
                         )
                     else:

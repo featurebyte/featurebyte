@@ -3,7 +3,7 @@ OfflineStoreFeatureTableModel class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -284,7 +284,7 @@ class OfflineIngestGraphMetadata:
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
+    offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]]
 
 
 def get_combined_ingest_graph(
@@ -348,7 +348,9 @@ def get_combined_ingest_graph(
             )
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
-            all_offline_ingest_graphs.append(offline_ingest_graph)
+            all_offline_ingest_graphs.append(
+                (offline_ingest_graph, feature.relationships_info or [])
+            )
 
     feature_cluster = FeatureCluster(
         feature_store_id=features[0].tabular_source.feature_store_id,

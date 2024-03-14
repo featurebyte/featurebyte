@@ -69,7 +69,9 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @root_validator(pre=True)
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        entity_relationships_info = values["entity_relationships_info"]
+        entity_relationships_info: List[EntityRelationshipInfo] = values[
+            "entity_relationships_info"
+        ]
         entities_by_id = values["entities_by_id"]
         tables_by_id = values["tables_by_id"]
         default_entity_lookup_steps = {}
@@ -80,8 +82,6 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             child_entity = entities_by_id[info.entity_id]
 
             if info.entity_column_name is None or info.related_entity_column_name is None:
-                # Backward compatibility for relationships without the column names; these are not
-                # truly frozen since the table columns_info is dynamic.
                 child_column_name = None
                 parent_column_name = None
                 for column_info in relation_table.columns_info:
