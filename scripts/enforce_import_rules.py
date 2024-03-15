@@ -144,6 +144,8 @@ if __name__ == "__main__":
         "typeguard",
         "yaml",
         "IPython",
+        "databricks",
+        "pyspark",
     }
 
     # Common libraries that can be imported from both backend and client
