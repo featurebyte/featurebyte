@@ -92,21 +92,24 @@ class MaterializedTableMixin(MaterializedTableModel):
             When spark is not available in the current environment.
         """
 
-        spark = globals().get("spark")
-        if spark is None:
-            raise NotImplementedError("Spark is not available in the current environment.")
+        try:
+            from pyspark.sql import SparkSession  # pylint: disable=import-outside-toplevel
 
-        fully_qualified_table_name = sql_to_string(
-            get_fully_qualified_table_name(
-                {
-                    "table_name": self.location.table_details.table_name,
-                    "schema_name": self.location.table_details.schema_name,
-                    "database_name": self.location.table_details.database_name,
-                }
-            ),
-            source_type=SourceType.SPARK,
-        )
-        return spark.table(fully_qualified_table_name)
+            spark = SparkSession.builder.getOrCreate()
+
+            fully_qualified_table_name = sql_to_string(
+                get_fully_qualified_table_name(
+                    {
+                        "table_name": self.location.table_details.table_name,
+                        "schema_name": self.location.table_details.schema_name,
+                        "database_name": self.location.table_details.database_name,
+                    }
+                ),
+                source_type=SourceType.SPARK,
+            )
+            return spark.table(fully_qualified_table_name)
+        except (ModuleNotFoundError, ImportError, ValueError) as exc:
+            raise NotImplementedError("Spark is not available in the current environment.") from exc
 
     def delete(self) -> None:
         """
