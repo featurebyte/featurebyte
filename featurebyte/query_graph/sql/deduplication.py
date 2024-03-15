@@ -3,8 +3,7 @@ Helpers to handle duplicated rows in a table
 """
 from __future__ import annotations
 
-from sqlglot import select
-from sqlglot.expressions import Select, alias_
+from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier

@@ -179,6 +179,7 @@ def get_scd_join_expr(
         )
     right_subquery = right_table.as_subquery(alias="R")
 
+    assert isinstance(right_table.timestamp_column, str)
     join_conditions = [
         expressions.EQ(
             this=get_qualified_column_identifier(LAST_TS, "L"),
