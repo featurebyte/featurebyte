@@ -133,17 +133,24 @@ def get_active_profile() -> Profile:
     conf = Configurations()
 
     # check if we are in DataBricks environment and valid secrets are present create a profile automatically
-    db_utils = globals().get("dbutils")
-    if db_utils:
+    try:
+        from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
+        from pyspark.errors.exceptions.captured import (  # pylint: disable=import-outside-toplevel
+            IllegalArgumentException,
+        )
+
         if len(conf.profiles) == 1 and conf.profiles[0].name == "local":
             api_url = None
             api_token = None
             try:
-                api_url = db_utils.secrets.get(scope="featurebyte", key="api-url")
-                api_token = db_utils.secrets.get(scope="featurebyte", key="api-token")
-            except Exception:  # pylint: disable=broad-except
+                api_url = dbutils.secrets.get(scope="featurebyte", key="api-url")
+                api_token = dbutils.secrets.get(scope="featurebyte", key="api-token")
+            except IllegalArgumentException:
                 logger.info(
-                    "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation."
+                    "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation:\n"
+                    "databricks secrets create-scope --scope featurebyte\n"
+                    "databricks secrets put --scope featurebyte --key api-url --string-value <api-url>\n"
+                    "databricks secrets put --scope featurebyte --key api-token --string-value <api-token>"
                 )
             if api_url and api_token:
                 register_profile(
@@ -152,6 +159,8 @@ def get_active_profile() -> Profile:
                     api_token=api_token,
                     make_default=True,
                 )
+    except (ModuleNotFoundError, ImportError, ValueError):
+        pass
 
     if not conf.profile:
         logger.error(
