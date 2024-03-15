@@ -30,6 +30,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.mixin import SampleMixin
 from featurebyte.api.obs_table.utils import get_definition_for_obs_table_creation_from_view
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.static_source_table import StaticSourceTable
@@ -47,7 +48,6 @@ from featurebyte.common.join_utils import (
 from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
-from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
@@ -691,7 +691,7 @@ class RawMixin(QueryObject, ABC):
         )
 
 
-class View(ProtectedColumnsQueryObject, Frame, ABC):
+class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     """
     Views are cleaned versions of Catalog tables and offer a flexible and efficient way to work with Catalog tables.
     They allow operations like creating new columns, filtering records, conditionally editing columns, extracting lags,
