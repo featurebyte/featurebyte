@@ -15,21 +15,28 @@ WITH REQUEST_TABLE AS (
     FROM REQUEST_TABLE AS REQ
     LEFT JOIN (
       SELECT
-        "col_text" AS "COL_TEXT",
-        "col_int" AS "COL_INT"
+        "COL_TEXT",
+        ANY_VALUE("COL_INT") AS "COL_INT"
       FROM (
         SELECT
-          "col_int" AS "col_int",
-          "col_float" AS "col_float",
-          "col_char" AS "col_char",
-          "col_text" AS "col_text",
-          "col_binary" AS "col_binary",
-          "col_boolean" AS "col_boolean",
-          "event_timestamp" AS "event_timestamp",
-          "created_at" AS "created_at",
-          "cust_id" AS "cust_id"
-        FROM "sf_database"."sf_schema"."dimension_table"
+          "col_text" AS "COL_TEXT",
+          "col_int" AS "COL_INT"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."dimension_table"
+        )
       )
+      GROUP BY
+        "COL_TEXT"
     ) AS T0
       ON REQ."COL_TEXT" = T0."COL_TEXT"
   ) AS REQ

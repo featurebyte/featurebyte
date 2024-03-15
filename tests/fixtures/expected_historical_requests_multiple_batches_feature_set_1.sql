@@ -72,16 +72,24 @@ WITH _FB_AGGREGATED AS (
   ) AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
-      "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      "CUSTOMER_ID",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
     FROM (
       SELECT
-        "cust_id" AS "cust_id",
-        "cust_value_1" AS "cust_value_1",
-        "cust_value_2" AS "cust_value_2"
-      FROM "db"."public"."dimension_table"
+        "cust_id" AS "CUSTOMER_ID",
+        "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+        "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      FROM (
+        SELECT
+          "cust_id" AS "cust_id",
+          "cust_value_1" AS "cust_value_1",
+          "cust_value_2" AS "cust_value_2"
+        FROM "db"."public"."dimension_table"
+      )
     )
+    GROUP BY
+      "CUSTOMER_ID"
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 )

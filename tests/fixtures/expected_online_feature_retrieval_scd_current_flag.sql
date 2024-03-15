@@ -20,17 +20,24 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "CUSTOMER_ID",
-      "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+      "CUSTOMER_ID",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1") AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
     FROM (
       SELECT
-        "effective_ts" AS "effective_ts",
-        "cust_id" AS "cust_id",
-        "membership_status" AS "membership_status"
-      FROM "db"."public"."customer_profile_table"
-      WHERE
-        "is_record_current" = TRUE
+        "cust_id" AS "CUSTOMER_ID",
+        "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+      FROM (
+        SELECT
+          "effective_ts" AS "effective_ts",
+          "cust_id" AS "cust_id",
+          "membership_status" AS "membership_status"
+        FROM "db"."public"."customer_profile_table"
+        WHERE
+          "is_record_current" = TRUE
+      )
     )
+    GROUP BY
+      "CUSTOMER_ID"
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 )

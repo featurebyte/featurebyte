@@ -118,18 +118,35 @@ WITH ONLINE_REQUEST_TABLE AS (
     ) AS L
     LEFT JOIN (
       SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "is_active" AS "is_active",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "effective_timestamp" AS "effective_timestamp",
-        "end_timestamp" AS "end_timestamp",
-        "date_of_birth" AS "date_of_birth",
-        "created_at" AS "created_at",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."scd_table"
+        ANY_VALUE("col_int") AS "col_int",
+        ANY_VALUE("col_float") AS "col_float",
+        ANY_VALUE("is_active") AS "is_active",
+        "col_text",
+        ANY_VALUE("col_binary") AS "col_binary",
+        ANY_VALUE("col_boolean") AS "col_boolean",
+        "effective_timestamp",
+        ANY_VALUE("end_timestamp") AS "end_timestamp",
+        ANY_VALUE("date_of_birth") AS "date_of_birth",
+        ANY_VALUE("created_at") AS "created_at",
+        ANY_VALUE("cust_id") AS "cust_id"
+      FROM (
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "is_active" AS "is_active",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "effective_timestamp" AS "effective_timestamp",
+          "end_timestamp" AS "end_timestamp",
+          "date_of_birth" AS "date_of_birth",
+          "created_at" AS "created_at",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."scd_table"
+      )
+      GROUP BY
+        "effective_timestamp",
+        "col_text"
     ) AS R
       ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
   ) AS REQ
@@ -148,24 +165,31 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM JOINED_PARENTS_ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "col_text" AS "cust_id",
-      "col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+      "cust_id",
+      ANY_VALUE("_fb_internal_cust_id_lookup_col_boolean_project_1") AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
     FROM (
       SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "effective_timestamp" AS "effective_timestamp",
-        "end_timestamp" AS "end_timestamp",
-        "date_of_birth" AS "date_of_birth",
-        "created_at" AS "created_at",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."scd_table"
-      WHERE
-        "is_active" = TRUE
+        "col_text" AS "cust_id",
+        "col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+      FROM (
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "effective_timestamp" AS "effective_timestamp",
+          "end_timestamp" AS "end_timestamp",
+          "date_of_birth" AS "date_of_birth",
+          "created_at" AS "created_at",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."scd_table"
+        WHERE
+          "is_active" = TRUE
+      )
     )
+    GROUP BY
+      "cust_id"
   ) AS T0
     ON REQ."cust_id" = T0."cust_id"
   LEFT JOIN (
