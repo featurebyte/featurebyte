@@ -387,25 +387,42 @@ WITH REQUEST_TABLE AS (
     ) AS L
     LEFT JOIN (
       SELECT
-        "effective_ts" AS "effective_ts",
-        "cust_id" AS "cust_id",
-        "membership_status" AS "membership_status"
-      FROM "db"."public"."customer_profile_table"
+        ANY_VALUE("effective_ts") AS "effective_ts",
+        "cust_id",
+        ANY_VALUE("membership_status") AS "membership_status"
+      FROM (
+        SELECT
+          "effective_ts" AS "effective_ts",
+          "cust_id" AS "cust_id",
+          "membership_status" AS "membership_status"
+        FROM "db"."public"."customer_profile_table"
+      )
+      GROUP BY
+        "event_timestamp",
+        "cust_id"
     ) AS R
       ON L."__FB_LAST_TS" = R."event_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
   ) AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
-      "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      "CUSTOMER_ID",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
     FROM (
       SELECT
-        "cust_id" AS "cust_id",
-        "cust_value_1" AS "cust_value_1",
-        "cust_value_2" AS "cust_value_2"
-      FROM "db"."public"."dimension_table"
+        "cust_id" AS "CUSTOMER_ID",
+        "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+        "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      FROM (
+        SELECT
+          "cust_id" AS "cust_id",
+          "cust_value_1" AS "cust_value_1",
+          "cust_value_2" AS "cust_value_2"
+        FROM "db"."public"."dimension_table"
+      )
     )
+    GROUP BY
+      "CUSTOMER_ID"
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
   LEFT JOIN (

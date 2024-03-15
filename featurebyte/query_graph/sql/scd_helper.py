@@ -15,6 +15,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 # Internally used identifiers when constructing SQL
+from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
 
 TS_COL = "__FB_TS_COL"
@@ -158,7 +159,26 @@ def get_scd_join_expr(
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
+
+    # Ensure right table (scd side) is unique in the join columns so that the join preserve the
+    # number of rows in the left table
+    assert isinstance(right_table.timestamp_column, str)
+    if isinstance(right_table.expr, Select):
+        # right_table.expr is a Select instance if it is a user provided SCD table.
+        deduplicated_expr = get_deduplicated_expr(
+            adapter=adapter,
+            table_expr=right_table.expr,
+            expected_primary_keys=[right_table.timestamp_column] + right_table.join_keys,
+        )
+        right_table = Table(
+            expr=deduplicated_expr,
+            timestamp_column=right_table.timestamp_column,
+            join_keys=right_table.join_keys,
+            input_columns=right_table.input_columns,
+            output_columns=right_table.output_columns,
+        )
     right_subquery = right_table.as_subquery(alias="R")
+
     assert isinstance(right_table.timestamp_column, str)
     join_conditions = [
         expressions.EQ(

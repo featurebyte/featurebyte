@@ -91,6 +91,8 @@ async def test_scd_join_small(session, data_source, source_type):
             "scd_value": [1, 2],
         }
     )
+    # Insert duplicate rows to ensure it can be handled (only one row should be joined)
+    df_scd = pd.concat([df_scd, df_scd], ignore_index=True)
     df_expected = pd.DataFrame(
         {
             "ts": pd.to_datetime(
