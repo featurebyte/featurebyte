@@ -26,7 +26,6 @@ from sqlglot import expressions
 import featurebyte as fb
 from featurebyte import FeatureList, get_version
 from featurebyte.api.deployment import Deployment
-from featurebyte.api.mixin import SampleMixin
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc, DBVarType, SourceType
@@ -520,7 +519,7 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
     """
     Helper function to get the preview SQL for a series
     """
-    return SampleMixin.preview_sql(series_obj, *args, **kwargs)
+    return series_obj.preview_sql(*args, **kwargs)
 
 
 def check_decomposed_graph_output_node_hash(feature_model, output=None):

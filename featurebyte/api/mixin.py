@@ -27,7 +27,6 @@ from featurebyte.exception import (
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -492,24 +491,3 @@ class SampleMixin(AsyncMixin):
             payload=payload.json_dict(),
         )
         return dataframe_from_json(data_description)
-
-    @typechecked
-    def preview_sql(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> str:
-        """
-        Generate SQL query to preview the transformation output
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-        **kwargs: Any
-            Additional keyword parameters
-
-        Returns
-        -------
-        str
-        """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
-        return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
-        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
