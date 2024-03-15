@@ -93,7 +93,9 @@ class MaterializedTableMixin(MaterializedTableModel):
         """
 
         try:
-            from databricks.sdk.runtime import spark  # pylint: disable=import-outside-toplevel
+            from pyspark.sql import SparkSession  # pylint: disable=import-outside-toplevel
+
+            spark = SparkSession.builder.getOrCreate()
 
             fully_qualified_table_name = sql_to_string(
                 get_fully_qualified_table_name(
