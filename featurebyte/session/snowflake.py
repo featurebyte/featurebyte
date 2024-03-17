@@ -17,6 +17,7 @@ from snowflake import connector
 from snowflake.connector.cursor import ResultMetadata
 from snowflake.connector.errors import (
     DatabaseError,
+    Error,
     NotSupportedError,
     OperationalError,
     ProgrammingError,
@@ -61,6 +62,7 @@ class SnowflakeSession(BaseSession):
     """
 
     _no_schema_error = ProgrammingError
+    _database_error = Error
 
     account: str
     warehouse: str

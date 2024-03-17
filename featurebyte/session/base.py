@@ -120,6 +120,7 @@ class BaseSession(BaseModel):
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
+    _database_error: ClassVar[Type[Exception]] = Exception
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -499,16 +500,25 @@ class BaseSession(BaseModel):
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
+
+        Raises
+        ------
+        self._database_error
+            Error executing query
         """
-        bytestream = self.get_async_query_stream(query=query, timeout=timeout)
-        buffer = BytesIO()
-        async for chunk in bytestream:
-            buffer.write(chunk)
-        buffer.flush()
-        if buffer.tell() == 0:
-            return None
-        buffer.seek(0)
-        return dataframe_from_arrow_stream(buffer)
+        try:
+            bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+            buffer = BytesIO()
+            async for chunk in bytestream:
+                buffer.write(chunk)
+            buffer.flush()
+            if buffer.tell() == 0:
+                return None
+            buffer.seek(0)
+            return dataframe_from_arrow_stream(buffer)
+        except self._database_error:
+            logger.error("Error executing query", extra={"query": query})
+            raise
 
     async def execute_query_interactive(
         self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
