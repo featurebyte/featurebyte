@@ -1,8 +1,6 @@
 """
 Tests for cosine similarity UDF
 """
-import json
-
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -44,4 +42,4 @@ async def test_object_agg_udf(source_type, session, setup_test_data):
     ).from_(quoted_identifier("test_table"))
     df = await session.execute_query(sql_to_string(select_expr, source_type))
     actual = df.iloc[0]["OUT"]
-    assert json.loads(actual) == {"2": -1.5}
+    assert actual == {"2": -1.5}

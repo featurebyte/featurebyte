@@ -10,6 +10,7 @@ import os
 from abc import ABC, abstractmethod
 
 import pandas as pd
+import pyarrow as pa
 from bson import ObjectId
 from pyhive.exc import OperationalError
 
@@ -28,6 +29,45 @@ from featurebyte.session.base import (
 )
 
 logger = get_logger(__name__)
+
+db_vartype_mapping = {
+    "INT": DBVarType.INT,
+    "BINARY": DBVarType.BINARY,
+    "BOOLEAN": DBVarType.BOOL,
+    "DATE": DBVarType.DATE,
+    "DECIMAL": DBVarType.FLOAT,
+    "DOUBLE": DBVarType.FLOAT,
+    "FLOAT": DBVarType.FLOAT,
+    "INTERVAL": DBVarType.TIMEDELTA,
+    "VOID": DBVarType.VOID,
+    "TIMESTAMP": DBVarType.TIMESTAMP,
+    "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
+    "MAP": DBVarType.DICT,
+    "STRUCT": DBVarType.DICT,
+    "STRING": DBVarType.VARCHAR,
+}
+
+
+pa_type_mapping = {
+    "STRING": pa.string(),
+    "TINYINT": pa.int8(),
+    "SMALLINT": pa.int16(),
+    "INT": pa.int32(),
+    "BIGINT": pa.int64(),
+    "BINARY": pa.large_binary(),
+    "BOOLEAN": pa.bool_(),
+    "DATE": pa.string(),
+    "TIME": pa.time32("ms"),
+    "DOUBLE": pa.float64(),
+    "FLOAT": pa.float32(),
+    "DECIMAL": pa.float64(),
+    "INTERVAL": pa.duration("ns"),
+    "NULL": pa.null(),
+    "TIMESTAMP": pa.timestamp("ns", tz=None),
+    "ARRAY": pa.string(),
+    "MAP": pa.string(),
+    "STRUCT": pa.string(),
+}
 
 
 class BaseSparkSession(BaseSession, ABC):
@@ -110,6 +150,43 @@ class BaseSparkSession(BaseSession, ABC):
         """
 
     @staticmethod
+    def _get_pyarrow_type(datatype: str) -> pa.DataType:
+        """
+        Get pyarrow type from Spark data type
+
+        Parameters
+        ----------
+        datatype: str
+            Spark data type
+
+        Returns
+        -------
+        pa.DataType
+        """
+        if datatype.startswith("INTERVAL"):
+            pyarrow_type = pa.int64()
+        elif datatype.startswith("DECIMAL"):
+            # e.g. DECIMAL(10, 2)
+            params = datatype[8:-1].split(",")
+            if len(params) == 2:
+                precision, scale = int(params[0]), int(params[1])
+            else:
+                # https://spark.apache.org/docs/3.5.0/api/python/reference/pyspark.sql/api/pyspark.sql.types.DecimalType.html
+                precision, scale = 38, 18
+            if scale > 0:
+                pyarrow_type = pa.decimal128(precision, scale)
+            else:
+                pyarrow_type = pa.int64()
+        else:
+            pyarrow_type = pa_type_mapping.get(datatype)
+
+        if not pyarrow_type:
+            # warn and fallback to string for unrecognized types
+            logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
+            pyarrow_type = pa.string()
+        return pyarrow_type
+
+    @staticmethod
     def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
         if spark_type.endswith("INT"):
             # BIGINT, INT, SMALLINT, TINYINT
@@ -121,26 +198,11 @@ class BaseSparkSession(BaseSession, ABC):
             # ARRAY<BIGINT>
             return DBVarType.ARRAY
         if spark_type.startswith("STRUCT"):
-            return DBVarType.STRUCT
-
-        mapping = {
-            "BINARY": DBVarType.BINARY,
-            "BOOLEAN": DBVarType.BOOL,
-            "DATE": DBVarType.DATE,
-            "DECIMAL": DBVarType.FLOAT,
-            "DOUBLE": DBVarType.FLOAT,
-            "FLOAT": DBVarType.FLOAT,
-            "INTERVAL": DBVarType.TIMEDELTA,
-            "VOID": DBVarType.VOID,
-            "TIMESTAMP": DBVarType.TIMESTAMP,
-            "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
-            "MAP": DBVarType.MAP,
-            "STRUCT": DBVarType.STRUCT,
-            "STRING": DBVarType.VARCHAR,
-        }
-        if spark_type not in mapping:
+            return DBVarType.DICT
+        db_vartype = db_vartype_mapping.get(spark_type, DBVarType.UNKNOWN)
+        if db_vartype == DBVarType.UNKNOWN:
             logger.warning(f"Spark: Not supported data type '{spark_type}'")
-        return mapping.get(spark_type, DBVarType.UNKNOWN)
+        return db_vartype
 
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True

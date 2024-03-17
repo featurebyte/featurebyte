@@ -2,9 +2,8 @@
 DatabricksSession class
 """
 # pylint: disable=duplicate-code
-from typing import Any, AsyncGenerator, BinaryIO, Dict, Optional
+from typing import Any, AsyncGenerator, BinaryIO, Optional
 
-import json
 import os
 from io import BytesIO
 
@@ -14,7 +13,7 @@ from bson import ObjectId
 from pydantic import Field, PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
-from featurebyte.common.utils import pa_table_to_record_batches
+from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType
 from featurebyte.session.base import APPLICATION_NAME
 from featurebyte.session.base_spark import BaseSparkSession
@@ -30,42 +29,6 @@ except ImportError:
 
 
 logger = logging.get_logger(__name__)
-
-
-class ArrowTablePostProcessor:
-    """
-    Post processor for Arrow table to fix databricks return format
-    """
-
-    def __init__(self, schema: Dict[str, str]):
-        self._map_columns = []
-        for col_name, var_type in schema.items():
-            if var_type.upper() == "MAP":
-                self._map_columns.append(col_name)
-
-    def to_dataframe(self, arrow_table: pa.Table) -> pd.DataFrame:
-        """
-        Convert Arrow table to Pandas dataframe
-
-        Parameters
-        ----------
-        arrow_table: pa.Table
-            Arrow table to convert
-
-        Returns
-        -------
-        pd.DataFrame:
-            Pandas dataframe
-        """
-        # handle map type. Databricks returns map as list of tuples
-        # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
-        # which is not supported by pyarrow. Below converts the tuple list to json string
-        dataframe = arrow_table.to_pandas()
-        for col_name in self._map_columns:
-            dataframe[col_name] = dataframe[col_name].apply(
-                lambda x: json.dumps(dict(x)) if x is not None else None
-            )
-        return dataframe
 
 
 class DatabricksSession(BaseSparkSession):
@@ -91,6 +54,7 @@ class DatabricksSession(BaseSparkSession):
             catalog=self.catalog_name,
             schema=self.schema_name,
             _user_agent_entry=APPLICATION_NAME,
+            _use_arrow_native_complex_types=False,
         )
 
     @property
@@ -146,35 +110,55 @@ class DatabricksSession(BaseSparkSession):
     def is_threadsafe(cls) -> bool:
         return True
 
+    def _get_schema_from_cursor(self, cursor: Any) -> pa.Schema:
+        """
+        Get schema from a cursor
+
+        Parameters
+        ----------
+        cursor: Any
+            Cursor to fetch data from
+
+        Returns
+        -------
+        pa.Schema
+        """
+        fields = []
+        for row in cursor.description:
+            field_name = row[0]
+            field_type = row[1].upper()
+            db_var_type = self._convert_to_internal_variable_type(field_type)
+            fields.append(
+                pa.field(
+                    field_name,
+                    self._get_pyarrow_type(field_type),
+                    metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type},
+                )
+            )
+        return pa.schema(fields)
+
     def fetch_query_result_impl(self, cursor: Any) -> Optional[pd.DataFrame]:
         schema = None
         if cursor.description:
-            schema = {row[0]: row[1] for row in cursor.description}
+            schema = self._get_schema_from_cursor(cursor)
 
         if schema:
-            post_processor = ArrowTablePostProcessor(schema=schema)
-            arrow_table = cursor.fetchall_arrow()
-            return post_processor.to_dataframe(arrow_table)
+            return cursor.fetchall_arrow().cast(schema).to_pandas()
 
         return None
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         schema = None
         if cursor.description:
-            schema = {row[0]: row[1] for row in cursor.description}
+            schema = self._get_schema_from_cursor(cursor)
 
         if schema:
-            post_processor = ArrowTablePostProcessor(schema=schema)
             # fetch results in batches
-            counter = 0
             while True:
-                dataframe = post_processor.to_dataframe(cursor.fetchmany_arrow(size=1000))
-                arrow_table = pa.Table.from_pandas(dataframe)
-                if arrow_table.num_rows == 0:
-                    if counter == 0:
-                        # return empty dataframe with correct schema
-                        yield pa_table_to_record_batches(arrow_table)[0]
+                table = cursor.fetchmany_arrow(size=1000)
+                if table.shape[0] == 0:
+                    # return empty table to ensure correct schema is returned
+                    yield pa.record_batch([[]] * len(schema), schema=schema)
                     break
-                for record_batch in arrow_table.to_batches():
-                    counter += 1
-                    yield record_batch
+                for batch in table.cast(schema).to_batches():
+                    yield batch
