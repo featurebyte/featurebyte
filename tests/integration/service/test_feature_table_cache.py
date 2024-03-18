@@ -172,7 +172,7 @@ async def test_create_feature_table_cache(
         source_type=source_type,
     )
     df = await session.execute_query(query)
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
     assert set(df.columns.tolist()) == set(
         [InternalName.TABLE_ROW_INDEX] + observation_table_cols + cached_column_names
@@ -262,7 +262,7 @@ async def test_update_feature_table_cache(
         source_type=source_type,
     )
     df = await session.execute_query(query)
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
     assert set(df.columns.tolist()) == set(
         [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
@@ -327,7 +327,10 @@ async def test_create_view_from_cache(
             source_type=source_type,
         )
         df = await session.execute_query(query)
-        assert df.shape == (50, len(set(feature_names + observation_table_cols)) + 1)
+        assert df.shape == (
+            observation_table.num_rows,
+            len(set(feature_names + observation_table_cols)) + 1,
+        )
         assert df.columns.tolist() == (
             [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names
         )
@@ -352,7 +355,10 @@ async def test_create_view_from_cache(
         )
         df = await session.execute_query(query)
         assert len(feature_list.feature_names) == 9
-        assert df.shape == (50, len(set(feature_list.feature_names + observation_table_cols)) + 1)
+        assert df.shape == (
+            observation_table.num_rows,
+            len(set(feature_list.feature_names + observation_table_cols)) + 1,
+        )
         assert df.columns.tolist() == (
             [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_list.feature_names
         )
@@ -414,5 +420,5 @@ async def test_read_from_cache(
         graph=feature_cluster.graph,
         nodes=feature_cluster.nodes,
     )
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
