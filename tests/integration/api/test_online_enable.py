@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 import time
 from textwrap import dedent
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
