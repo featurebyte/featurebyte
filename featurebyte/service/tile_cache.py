@@ -12,12 +12,15 @@ from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.batch_helper import NUM_FEATURES_PER_QUERY, split_nodes
+from featurebyte.query_graph.sql.batch_helper import split_nodes
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
 
 logger = get_logger(__name__)
+
+
+NUM_NODES_PER_QUERY = 25
 
 
 class TileCacheService:
@@ -78,9 +81,7 @@ class TileCacheService:
             tile_check_progress_callback, tile_compute_progress_callback = None, None
 
         # Process nodes in batches for checking tile cache availability
-        tile_cache_node_groups = split_nodes(
-            graph, nodes, NUM_FEATURES_PER_QUERY, is_tile_cache=True
-        )
+        tile_cache_node_groups = split_nodes(graph, nodes, NUM_NODES_PER_QUERY, is_tile_cache=True)
         required_tile_computations = {}
         for i, _nodes in enumerate(tile_cache_node_groups):
             logger.info("Checking and computing tiles on demand for %d nodes", len(_nodes))
