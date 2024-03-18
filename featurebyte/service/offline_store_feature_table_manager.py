@@ -167,6 +167,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
+        feature_list_to_online_enable: FeatureListModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -177,11 +178,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: List[FeatureModel]
             Features to be enabled for online serving
+        feature_list_to_online_enable: FeatureListModel
+            Feature list model to deploy (may not be enabled yet)
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
-        feature_lists = await self._get_online_enabled_feature_lists()
+        feature_lists = await self._get_online_enabled_feature_lists(
+            feature_list_to_online_enable=feature_list_to_online_enable
+        )
         # Refresh feast registry since it's needed for when materializing the features from offline
         # store feature tables to online store
         await self._create_or_update_feast_registry(feature_lists)
@@ -251,6 +256,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     async def handle_online_disabled_features(
         self,
         features: List[FeatureModel],
+        feature_list_to_online_disable: FeatureListModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -261,6 +267,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ----------
         features: FeatureModel
             Model of the feature to be disabled for online serving
+        feature_list_to_online_disable: FeatureListModel
+            Feature list model to not deploy (may not be disabled yet)
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
@@ -268,7 +276,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
-        feature_lists = await self._get_online_enabled_feature_lists()
+        feature_lists = await self._get_online_enabled_feature_lists(
+            feature_list_to_online_disable=feature_list_to_online_disable
+        )
         offline_table_count = len(feature_table_data["data"])
 
         for idx, feature_table_dict in enumerate(feature_table_data["data"]):
@@ -419,12 +429,33 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         return sorted(set(filtered_table_names))
 
-    async def _get_online_enabled_feature_lists(self) -> List[FeatureListModel]:
+    async def _get_online_enabled_feature_lists(
+        self,
+        feature_list_to_online_enable: Optional[FeatureListModel] = None,
+        feature_list_to_online_disable: Optional[FeatureListModel] = None,
+    ) -> List[FeatureListModel]:
         feature_lists = []
+        fl_has_been_enabled = False
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_list = FeatureListModel(**feature_list_dict)
+            if (
+                feature_list_to_online_disable
+                and feature_list.id == feature_list_to_online_disable.id
+            ):
+                # skip the feature list to be disabled
+                continue
+
             if feature_list.store_info.feast_enabled:
                 feature_lists.append(feature_list)
+                if (
+                    feature_list_to_online_enable
+                    and feature_list.id == feature_list_to_online_enable.id
+                ):
+                    fl_has_been_enabled = True
+
+        if feature_list_to_online_enable and not fl_has_been_enabled:
+            # add the feature list to be enabled
+            feature_lists.append(feature_list_to_online_enable)
         return feature_lists
 
     async def _create_or_update_feast_registry(
