@@ -26,6 +26,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
 
@@ -197,6 +198,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             else:
                 event_timestamp_column = None
 
+            agg_expr = get_deduplicated_expr(self.adapter, agg_expr, [serving_name])
             result = SubqueryWithPointInTimeCutoff(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],

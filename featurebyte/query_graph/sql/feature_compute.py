@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence, Type, Union
+from typing import Iterable, Optional, Sequence, Set, Type, Union
 
 import sys
 from collections import defaultdict
@@ -145,11 +145,11 @@ class FeatureExecutionPlan:
         -------
         list[str]
         """
-        out = set()
+        out: Set[str] = set()
         for aggregator in self.iter_aggregators():
             if isinstance(aggregator, TileBasedAggregator):
-                for result_names in aggregator.agg_result_names_by_online_store_table.values():
-                    out.update(result_names)
+                for info in aggregator.online_join_info.values():
+                    out.update(info.get_original_agg_result_names())
         return list(out)
 
     def iter_aggregators(self) -> Iterable[AggregatorType]:
@@ -555,6 +555,7 @@ class FeatureExecutionPlanner:
         self,
         graph: QueryGraphModel,
         is_online_serving: bool,
+        agg_result_name_include_serving_names: bool = True,
         serving_names_mapping: dict[str, str] | None = None,
         source_type: SourceType | None = None,
         parent_serving_preparation: ParentServingPreparation | None = None,
@@ -569,6 +570,7 @@ class FeatureExecutionPlanner:
         )
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
+        self.agg_result_name_include_serving_names = agg_result_name_include_serving_names
         self.is_online_serving = is_online_serving
         self.adapter = get_sql_adapter(source_type)
 
@@ -680,7 +682,11 @@ class FeatureExecutionPlanner:
         list[AggregationSpec]
         """
         return TileBasedAggregationSpec.from_groupby_query_node(
-            self.graph, groupby_node, self.adapter, serving_names_mapping=self.serving_names_mapping
+            self.graph,
+            groupby_node,
+            self.adapter,
+            agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
+            serving_names_mapping=self.serving_names_mapping,
         )
 
     def get_non_tiling_specs(
@@ -706,6 +712,7 @@ class FeatureExecutionPlanner:
             source_type=self.source_type,
             serving_names_mapping=self.serving_names_mapping,
             is_online_serving=self.is_online_serving,
+            agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
         )
 
     def update_feature_specs(

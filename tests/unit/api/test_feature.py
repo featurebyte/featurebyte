@@ -546,6 +546,7 @@ def test_get_feature(saved_feature):
         "block_modification_by",
         "aggregation_ids",
         "aggregation_result_names",
+        "agg_result_name_include_serving_names",
         "description",
         "online_store_table_names",
         "last_updated_by_scheduled_task_at",

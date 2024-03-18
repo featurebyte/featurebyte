@@ -69,7 +69,9 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @root_validator(pre=True)
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        entity_relationships_info = values["entity_relationships_info"]
+        entity_relationships_info: List[EntityRelationshipInfo] = values[
+            "entity_relationships_info"
+        ]
         entities_by_id = values["entities_by_id"]
         tables_by_id = values["tables_by_id"]
         default_entity_lookup_steps = {}
@@ -79,15 +81,19 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             parent_entity = entities_by_id[info.related_entity_id]
             child_entity = entities_by_id[info.entity_id]
 
-            child_column_name = None
-            parent_column_name = None
-            for column_info in relation_table.columns_info:
-                if column_info.entity_id == child_entity.id:
-                    child_column_name = column_info.name
-                elif column_info.entity_id == parent_entity.id:
-                    parent_column_name = column_info.name
-            assert child_column_name is not None
-            assert parent_column_name is not None
+            if info.entity_column_name is None or info.related_entity_column_name is None:
+                child_column_name = None
+                parent_column_name = None
+                for column_info in relation_table.columns_info:
+                    if column_info.entity_id == child_entity.id:
+                        child_column_name = column_info.name
+                    elif column_info.entity_id == parent_entity.id:
+                        parent_column_name = column_info.name
+                assert child_column_name is not None
+                assert parent_column_name is not None
+            else:
+                child_column_name = info.entity_column_name
+                parent_column_name = info.related_entity_column_name
 
             default_entity_lookup_steps[info.id] = EntityLookupStep(
                 id=info.id,

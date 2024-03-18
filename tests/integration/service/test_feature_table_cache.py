@@ -88,6 +88,31 @@ def observation_table_fixture(event_view):
 
 
 @pytest.mark.asyncio
+async def test_definition_hashes_for_nodes_consistent(
+    feature_table_cache_service,
+    feature_service,
+    feature_list,
+):
+    """
+    Test definition_hashes_for_nodes computes definition hashes that match with saved features
+    """
+    # Compute definition hashes from scratch in feature table cache service
+    computed_hashes = await feature_table_cache_service.definition_hashes_for_nodes(
+        feature_list.cached_model.feature_clusters[0].graph,
+        feature_list.cached_model.feature_clusters[0].nodes,
+    )
+
+    # Compare with saved features
+    saved_hashes = {
+        doc.definition_hash
+        async for doc in feature_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(feature_list.feature_ids)}}
+        )
+    }
+    assert set(computed_hashes) == saved_hashes
+
+
+@pytest.mark.asyncio
 async def test_create_feature_table_cache(
     feature_store,
     session,

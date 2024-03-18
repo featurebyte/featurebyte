@@ -8,6 +8,8 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from bson import ObjectId
+from snowflake.connector import ProgrammingError
+from sqlglot import parse_one
 
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
@@ -15,6 +17,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
+from tests.util.helper import assert_sql_equal
 
 
 @pytest.fixture(name="auto_mocks", autouse=True)
@@ -98,7 +101,14 @@ async def features_fixture(event_table, entity, feature_service, test_dir):
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads", file_name)
         with open(fixture_path, encoding="utf") as fhandle:
             payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
+        # Simulate the actual feature saving process
+        sanitized_document = await feature_service.prepare_feature_model(
+            data=FeatureServiceCreate(**payload),
+            sanitize_for_definition=True,
+        )
+        feature = await feature_service.create_document(
+            data=FeatureServiceCreate(**sanitized_document.dict(by_alias=True))
+        )
         features.append(feature)
     return features
 
@@ -153,9 +163,68 @@ def feature_list_fixture(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(name="feature_list_with_duplicates")
-def feature_list_with_duplicates_fixture():
-    """Feature list with duplicate definition hashes"""
+@pytest.fixture(name="intercepted_definition_hashes_for_nodes")
+def intercepted_definition_hashes_for_nodes_fixture(feature_table_cache_service):
+    """
+    Fixture for intercepted definition_hashes_for_nodes method
+    """
+    original_method = feature_table_cache_service.definition_hashes_for_nodes
+
+    async def intercepted_method(*args, **kwargs):
+        return await original_method(*args, **kwargs)
+
+    with patch.object(
+        feature_table_cache_service,
+        "definition_hashes_for_nodes",
+        side_effect=intercepted_method,
+    ) as mocked_method:
+        yield mocked_method
+
+
+@pytest.fixture(name="mock_snowflake_session")
+def mock_snowflake_session_fixture(mock_snowflake_session, feature_table_cache_metadata_service):
+    """
+    Patch session query results
+    """
+
+    async def mock_execute_query(query):
+        if "LIMIT 1" in query:
+            table_name = parse_one(query).args["from"].expressions[0].name
+            async for doc in feature_table_cache_metadata_service.list_documents_iterator(
+                query_filter={"table_name": table_name}
+            ):
+                if len(doc.feature_definitions) > 0:
+                    return
+            raise ProgrammingError("table not found")
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+
+    yield mock_snowflake_session
+
+
+@pytest.mark.parametrize("feature_list_id_provided", [True, False])
+@pytest.mark.asyncio
+async def test_get_feature_definition_hashes(
+    feature_list_id_provided,
+    feature_table_cache_service,
+    regular_feature_list,
+    intercepted_definition_hashes_for_nodes,
+):
+    """Test get_feature_definition_hashes"""
+    hashes = await feature_table_cache_service.get_feature_definition_hashes(
+        graph=regular_feature_list.feature_clusters[0].graph,
+        nodes=regular_feature_list.feature_clusters[0].nodes,
+        **{"feature_list_id": regular_feature_list.id if feature_list_id_provided else None},
+    )
+    if feature_list_id_provided:
+        assert intercepted_definition_hashes_for_nodes.call_count == 0
+    else:
+        assert intercepted_definition_hashes_for_nodes.call_count == 1
+    expected = {
+        "1032f6901100176e575f87c44398a81f0d5db5c5",
+        "ada88371db4be31a4e9c0538fb675d8e573aed24",
+    }
+    assert set(hashes) == expected
 
 
 @pytest.mark.asyncio
@@ -167,6 +236,7 @@ async def test_create_feature_table_cache(
     feature_list,
     mock_get_historical_features,
     mock_snowflake_session,
+    intercepted_definition_hashes_for_nodes,
 ):
     """Test create feature table cache from scratch"""
     await feature_table_cache_service.create_or_update_feature_table_cache(
@@ -176,6 +246,7 @@ async def test_create_feature_table_cache(
         nodes=feature_list.feature_clusters[0].nodes,
         feature_list_id=feature_list.id,
     )
+    assert intercepted_definition_hashes_for_nodes.call_count == 0
     assert mock_get_historical_features.await_count == 1
 
     params = mock_get_historical_features.await_args.kwargs
@@ -186,7 +257,7 @@ async def test_create_feature_table_cache(
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
     assert params["is_feature_list_deployed"] == feature_list.deployed
 
-    assert mock_snowflake_session.execute_query.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 2
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -195,7 +266,10 @@ async def test_create_feature_table_cache(
     )
     assert len(feature_table_cache.feature_definitions) == 2
 
-    sql = mock_snowflake_session.execute_query.await_args.args[0]
+    sql = mock_snowflake_session.execute_query.await_args_list[0].args[0]
+    assert "COUNT(*)" in sql
+
+    sql = mock_snowflake_session.execute_query.await_args_list[1].args[0]
     assert sql == (
         "CREATE TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
@@ -233,7 +307,7 @@ async def test_update_feature_table_cache(
     params = mock_get_historical_features.await_args.kwargs
     assert params["graph"] == feature_list.feature_clusters[0].graph
     assert params["nodes"] == feature_list.feature_clusters[0].nodes[:1]
-    assert mock_snowflake_session.execute_query.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 2
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -241,6 +315,9 @@ async def test_update_feature_table_cache(
         )
     )
     assert len(feature_table_cache.feature_definitions) == 1
+
+    sql = mock_snowflake_session.execute_query.await_args_list[0].args[0]
+    assert "COUNT(*)" in sql
 
     # check first create sql
     sql = mock_snowflake_session.execute_query.await_args.args[0]
@@ -276,7 +353,7 @@ async def test_update_feature_table_cache(
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
     assert params["is_feature_list_deployed"] == feature_list.deployed
 
-    assert mock_snowflake_session.execute_query.await_count == 2
+    assert mock_snowflake_session.execute_query.await_count == 3
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -288,12 +365,21 @@ async def test_update_feature_table_cache(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert sqls[0] == (
+    assert_sql_equal(
+        sqls[0],
+        f"""
+        SELECT
+          COUNT(*)
+        FROM "{feature_table_cache.table_name}"
+        LIMIT 1
+        """,
+    )
+    assert sqls[1] == (
         "ALTER TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[1] == (
+    assert sqls[2] == (
         "MERGE INTO "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
         "feature_table_cache USING "
@@ -354,7 +440,7 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
     assert params["is_feature_list_deployed"] == feature_list.deployed
 
-    assert mock_snowflake_session.execute_query.await_count == 2
+    assert mock_snowflake_session.execute_query.await_count == 3
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -366,12 +452,21 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert sqls[0] == (
+    assert_sql_equal(
+        sqls[0],
+        f"""
+        SELECT
+          COUNT(*)
+        FROM "{feature_table_cache.table_name}"
+        LIMIT 1
+        """,
+    )
+    assert sqls[1] == (
         "ALTER TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[1] == (
+    assert sqls[2] == (
         "MERGE INTO "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
         "feature_table_cache USING "
@@ -410,7 +505,7 @@ async def test_create_view_from_cache__create_cache(
     )
 
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query.await_count == 2
+    assert mock_snowflake_session.execute_query.await_count == 3
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -421,7 +516,16 @@ async def test_create_view_from_cache__create_cache(
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
 
-    assert sqls[0] == (
+    assert_sql_equal(
+        sqls[0],
+        f"""
+        SELECT
+          COUNT(*)
+        FROM "{feature_table_cache.table_name}"
+        LIMIT 1
+        """,
+    )
+    assert sqls[1] == (
         "CREATE TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
         "SELECT\n"
@@ -432,7 +536,7 @@ async def test_create_view_from_cache__create_cache(
         '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )
-    assert sqls[1] == (
+    assert sqls[2] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
@@ -471,7 +575,7 @@ async def test_create_view_from_cache__update_cache(
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query.await_count == 2
+    assert mock_snowflake_session.execute_query.await_count == 3
 
     mock_get_historical_features.reset_mock()
     mock_snowflake_session.reset_mock()
@@ -487,7 +591,7 @@ async def test_create_view_from_cache__update_cache(
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query.await_count == 3
+    assert mock_snowflake_session.execute_query.await_count == 4
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -497,14 +601,23 @@ async def test_create_view_from_cache__update_cache(
 
     call_args = mock_snowflake_session.execute_query.await_args_list
     sqls = [arg[0][0] for arg in call_args]
-    assert len(sqls) == 3
+    assert len(sqls) == 4
 
-    assert sqls[0] == (
+    assert_sql_equal(
+        sqls[0],
+        f"""
+        SELECT
+          COUNT(*)
+        FROM "{feature_table_cache.table_name}"
+        LIMIT 1
+        """,
+    )
+    assert sqls[1] == (
         "ALTER TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[1] == (
+    assert sqls[2] == (
         "MERGE INTO "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
         "feature_table_cache USING "
@@ -514,7 +627,7 @@ async def test_create_view_from_cache__update_cache(
         'feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = '
         'partial_features."sum_2h"'
     )
-    assert sqls[2] == (
+    assert sqls[3] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
@@ -553,7 +666,7 @@ async def test_create_feature_table_cache__with_target(
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
 
-    assert mock_snowflake_session.execute_query.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 2
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -594,7 +707,7 @@ async def test_read_from_cache(
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 2
 
     mock_snowflake_session.reset_mock()
 

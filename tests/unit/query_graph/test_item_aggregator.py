@@ -38,6 +38,7 @@ def aggregation_spec_order_size(item_aggregation_source):
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 
@@ -59,6 +60,7 @@ def aggregation_spec_max_item_price(item_aggregation_source):
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 
@@ -81,6 +83,7 @@ def aggregation_spec_with_category(item_aggregation_source):
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 

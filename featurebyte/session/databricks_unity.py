@@ -1,12 +1,15 @@
 """
 Databricks unity
 """
+from __future__ import annotations
+
 from typing import Any, BinaryIO
 
 from pydantic import Field, PrivateAttr
 
 from featurebyte import SourceType
-from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSchemaInitializer
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -91,3 +94,29 @@ class DatabricksUnitySession(DatabricksSession):
 
     def _delete_file_from_storage(self, path: str) -> None:
         self._files_client.delete(file_path=path)
+
+    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+        schemas = await self.execute_query_interactive(
+            f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
+        )
+        output = []
+        if schemas is not None:
+            output.extend(schemas["SCHEMA_NAME"].tolist())
+        return output
+
+    async def list_tables(
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    ) -> list[TableSpec]:
+        tables = await self.execute_query_interactive(
+            f"SELECT TABLE_NAME FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
+            f"WHERE TABLE_SCHEMA = '{schema_name}'",
+            timeout=timeout,
+        )
+        output = []
+        if tables is not None:
+            for _, (name,) in tables[["TABLE_NAME"]].iterrows():
+                output.append(TableSpec(name=name))
+        return output

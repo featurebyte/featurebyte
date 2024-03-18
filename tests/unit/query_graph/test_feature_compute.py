@@ -52,6 +52,7 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
         entity_ids=[ObjectId()],
         dtype=DBVarType.FLOAT,
         agg_func=AggFunc.SUM,
+        agg_result_name_include_serving_names=True,
         **expected_pruned_graph_and_node_1,
     )
     return agg_spec
@@ -103,6 +104,7 @@ def item_agg_spec_fixture():
         ),
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
     return agg_spec
 
@@ -277,6 +279,7 @@ def test_feature_execution_planner(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_1,
             )
         ],
@@ -306,6 +309,7 @@ def test_feature_execution_planner(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_2,
             )
         ],
@@ -373,6 +377,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_1,
             )
         ],
@@ -402,6 +407,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_2,
             )
         ],

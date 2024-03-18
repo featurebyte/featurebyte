@@ -20,6 +20,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
+from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
@@ -178,21 +179,26 @@ def mock_snowflake_connector():
 def snowflake_query_map_fixture():
     """snowflake query map fixture"""
     query_map = {
-        "SHOW DATABASES": [{"name": "sf_database"}],
-        'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_table", "comment": ""},
-            {"name": "sf_table_no_tz", "comment": None},
-            {"name": "items_table", "comment": "Item table"},
-            {"name": "items_table_same_event_id", "comment": None},
-            {"name": "fixed_table", "comment": None},
-            {"name": "non_scalar_table", "comment": None},
-            {"name": "scd_table", "comment": "SCD table"},
-            {"name": "scd_table_state_map", "comment": None},
-            {"name": "dimension_table", "comment": "Dimension table"},
+        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [
+            {"DATABASE_NAME": "sf_database"}
         ],
-        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_view", "comment": "this is view"}
+        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [
+            {"SCHEMA_NAME": "sf_schema"}
+        ],
+        (
+            'SELECT TABLE_NAME, COMMENT FROM "sf_database".INFORMATION_SCHEMA.TABLES WHERE '
+            "TABLE_SCHEMA = 'sf_schema'"
+        ): [
+            {"TABLE_NAME": "sf_table", "COMMENT": ""},
+            {"TABLE_NAME": "sf_table_no_tz", "COMMENT": None},
+            {"TABLE_NAME": "items_table", "COMMENT": "Item table"},
+            {"TABLE_NAME": "items_table_same_event_id", "COMMENT": None},
+            {"TABLE_NAME": "fixed_table", "COMMENT": None},
+            {"TABLE_NAME": "non_scalar_table", "COMMENT": None},
+            {"TABLE_NAME": "scd_table", "COMMENT": "SCD table"},
+            {"TABLE_NAME": "scd_table_state_map", "COMMENT": None},
+            {"TABLE_NAME": "dimension_table", "COMMENT": "Dimension table"},
+            {"TABLE_NAME": "sf_view", "COMMENT": "this is view"},
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {
@@ -844,6 +850,12 @@ def transaction_entity_id_fixture():
     return ObjectId("63f94ed6ea1f050131379204")
 
 
+@pytest.fixture(name="gender_entity_id")
+def gender_entity_id_fixture():
+    """Gender entity ID"""
+    return ObjectId("65f11f1d8a03610e41399306")
+
+
 @pytest.fixture(name="snowflake_event_table")
 def snowflake_event_table_fixture(
     snowflake_database_table,
@@ -1070,12 +1082,12 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
 
 
 @pytest.fixture(name="gender_entity")
-def gender_entity_fixture(catalog):
+def gender_entity_fixture(gender_entity_id, catalog):
     """
     Gender entity fixture
     """
     _ = catalog
-    entity = Entity(name="gender", serving_names=["gender"])
+    entity = Entity(name="gender", serving_names=["gender"], _id=gender_entity_id)
     entity.save()
     yield entity
 
@@ -1821,6 +1833,22 @@ def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
     return feature
 
 
+@pytest.fixture(name="feature_with_internal_parent_child_relationships")
+def feature_with_internal_parent_child_relationships_fixture(
+    scd_lookup_feature, aggregate_asat_feature
+):
+    """
+    Feature with internal parent child relationships, for example:
+
+    C = A + B
+
+    where B is a parent of A
+    """
+    feature = scd_lookup_feature.astype(str) + "_" + aggregate_asat_feature.astype(str)
+    feature.name = "complex_parent_child_feature"
+    return feature
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(credentials, snowflake_connector):
     """
@@ -1843,6 +1871,7 @@ def mock_snowflake_session_fixture():
         source_type=SourceType.SNOWFLAKE,
         database_name="sf_db",
         schema_name="sf_schema",
+        _no_schema_error=ProgrammingError,
     )
 
 

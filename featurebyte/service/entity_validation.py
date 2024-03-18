@@ -3,19 +3,125 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
+
+from dataclasses import dataclass
+
+from bson import ObjectId
 
 from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.parent_serving import EntityRelationshipsContext, ParentServingPreparation
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.service.entity import EntityService
 from featurebyte.service.parent_serving import ParentEntityLookupService
+
+
+def to_use_frozen_relationships(
+    feature_cluster_like: Optional[List[FeatureCluster]] | Optional[FeatureCluster],
+) -> bool:
+    """
+    Whether the feature cluster has the field feature_node_relationships_infos populated. If so, sql
+    generation should use it to compute features based on frozen relationships.
+
+    Parameters
+    ----------
+    feature_cluster_like: Optional[List[FeatureCluster]] | Optional[FeatureCluster]
+        The feature cluster like object from FeatureListModel or OfflineStoreFeatureTableModel
+
+    Returns
+    -------
+    bool
+    """
+    if feature_cluster_like is None:
+        return False
+    if isinstance(feature_cluster_like, list):
+        feature_cluster = feature_cluster_like[0]
+    else:
+        feature_cluster = feature_cluster_like
+    return feature_cluster.feature_node_relationships_infos is not None
+
+
+@dataclass
+class EntityRelationshipsContextParameters:
+    """
+    Parameters required to construct a EntityRelationshipsContext object
+
+    Can be created from FeatureListModel or OfflineFeatureStoreTableModel objects.
+    """
+
+    # Graph and nodes representing a list of features
+    feature_cluster: FeatureCluster
+
+    # Primary entity ids of the features represented by the feature cluster
+    primary_entity_ids: Sequence[ObjectId]
+
+    # Relationships available to lookup primary entity from serving entity
+    relationships_info: Optional[List[EntityRelationshipInfo]]
+
+    @classmethod
+    def from_feature_list(
+        cls, feature_list_model: FeatureListModel
+    ) -> Optional[EntityRelationshipsContextParameters]:
+        """
+        Create EntityRelationshipsContextParameters from a FeatureListModel
+
+        Parameters
+        ----------
+        feature_list_model: FeatureListModel
+            Feature list model
+
+        Returns
+        -------
+        Optional[EntityRelationshipsContextParameters]
+            None for legacy documents without the required information
+        """
+        if feature_list_model.feature_clusters is not None:
+            feature_cluster = feature_list_model.feature_clusters[0]
+            if feature_cluster.feature_node_relationships_infos is not None:
+                return EntityRelationshipsContextParameters(
+                    feature_cluster=feature_cluster,
+                    primary_entity_ids=feature_list_model.primary_entity_ids,
+                    relationships_info=feature_list_model.relationships_info,
+                )
+        return None
+
+    @classmethod
+    def from_offline_store_feature_table(
+        cls, offline_store_feature_table_model: OfflineStoreFeatureTableModel
+    ) -> Optional[EntityRelationshipsContextParameters]:
+        """
+        Create EntityRelationshipsContextParameters from a OfflineStoreFeatureTableModel
+
+        Parameters
+        ----------
+        offline_store_feature_table_model: OfflineStoreFeatureTableModel
+            Offline store feature table model
+
+        Returns
+        -------
+        Optional[EntityRelationshipsContextParameters]
+            None for legacy documents without the required information
+        """
+        if offline_store_feature_table_model.feature_cluster is not None:
+            feature_cluster = offline_store_feature_table_model.feature_cluster
+            if feature_cluster.feature_node_relationships_infos is not None:
+                # Set relationships_info to None because when computing features for offline store
+                # feature tables, the serving entity is always the primary entity of the feature
+                # table, so no lookup is required there.
+                return EntityRelationshipsContextParameters(
+                    feature_cluster=feature_cluster,
+                    primary_entity_ids=offline_store_feature_table_model.primary_entity_ids,
+                    relationships_info=None,
+                )
+        return None
 
 
 class EntityValidationService:
@@ -38,6 +144,7 @@ class EntityValidationService:
         feature_list_model: Optional[FeatureListModel],
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
+        offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel] = None,
     ) -> EntityInfo:
         """
         Create an EntityInfo instance given graph and request
@@ -53,6 +160,9 @@ class EntityValidationService:
         serving_names_mapping : dict[str, str] | None
             Optional serving names mapping if the entities are provided under different serving
             names in the request
+        offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
+            Offline store feature table model when the request is initiated by feature materialize
+            service
 
         Returns
         -------
@@ -77,12 +187,18 @@ class EntityValidationService:
             candidate_serving_names
         )
 
-        # Extract required entities from feature list (faster) or graph
+        # Extract required entities from feature cluster (faster) or graph
+        required_entity_ids: Optional[Sequence[ObjectId]] = None
         if feature_list_model is not None:
-            required_entities = await self.entity_service.get_entities(
-                set(feature_list_model.entity_ids)
-            )
-        else:
+            if to_use_frozen_relationships(feature_list_model.feature_clusters):
+                required_entity_ids = feature_list_model.primary_entity_ids
+            else:
+                required_entity_ids = feature_list_model.entity_ids
+        elif offline_store_feature_table_model is not None:
+            if to_use_frozen_relationships(offline_store_feature_table_model.feature_cluster):
+                required_entity_ids = offline_store_feature_table_model.primary_entity_ids
+
+        if required_entity_ids is None:
             assert graph_nodes is not None
             graph, nodes = graph_nodes
             planner = FeatureExecutionPlanner(
@@ -90,8 +206,9 @@ class EntityValidationService:
                 is_online_serving=False,
                 serving_names_mapping=serving_names_mapping,
             )
-            plan = planner.generate_plan(nodes)
-            required_entities = await self.entity_service.get_entities(plan.required_entity_ids)
+            required_entity_ids = list(planner.generate_plan(nodes).required_entity_ids)
+
+        required_entities = await self.entity_service.get_entities(set(required_entity_ids))
 
         return EntityInfo(
             provided_entities=provided_entities,
@@ -106,7 +223,8 @@ class EntityValidationService:
         graph_nodes: Optional[Tuple[QueryGraphModel, list[Node]]] = None,
         feature_list_model: Optional[FeatureListModel] = None,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> Optional[ParentServingPreparation]:
+        offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel] = None,
+    ) -> ParentServingPreparation:
         """
         Validate that entities are provided correctly in feature requests
 
@@ -123,10 +241,13 @@ class EntityValidationService:
         serving_names_mapping : dict[str, str] | None
             Optional serving names mapping if the entities are provided under different serving
             names in the request
+        offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
+            Offline store feature table model when the request is initiated by feature materialize
+            service
 
         Returns
         -------
-        Optional[ParentServingPreparation]
+        ParentServingPreparation
 
         Raises
         ------
@@ -143,6 +264,12 @@ class EntityValidationService:
             feature_list_model=feature_list_model,
             request_column_names=request_column_names,
             serving_names_mapping=serving_names_mapping,
+            offline_store_feature_table_model=offline_store_feature_table_model,
+        )
+        entity_relationships_context = await self._get_entity_relationships_context(
+            entity_info,
+            feature_list_model,
+            offline_store_feature_table_model=offline_store_feature_table_model,
         )
 
         if serving_names_mapping is not None:
@@ -159,21 +286,70 @@ class EntityValidationService:
                 )
 
         if entity_info.are_all_required_entities_provided():
-            return None
-
-        # Try to see if missing entities can be obtained using the provided entities as children
-        try:
-            join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
-                entity_info
-            )
-        except RequiredEntityNotProvidedError:
-            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                entity_info.format_missing_entities_error(
-                    [entity.id for entity in entity_info.missing_entities]
+            join_steps = []
+        else:
+            # Try to see if missing entities can be obtained using the provided entities as children
+            try:
+                join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                    entity_info,
+                    entity_relationships_context.feature_list_relationships_info
+                    if entity_relationships_context is not None
+                    else None,
                 )
-            )
+            except RequiredEntityNotProvidedError:
+                raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
+                    entity_info.format_missing_entities_error(
+                        [entity.id for entity in entity_info.missing_entities]
+                    )
+                )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())
         return ParentServingPreparation(
-            join_steps=join_steps, feature_store_details=feature_store_details
+            join_steps=join_steps,
+            feature_store_details=feature_store_details,
+            entity_relationships_context=entity_relationships_context,
+        )
+
+    async def _get_entity_relationships_context(
+        self,
+        entity_info: EntityInfo,
+        feature_list_model: Optional[FeatureListModel],
+        offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel],
+    ) -> Optional[EntityRelationshipsContext]:
+        if feature_list_model is not None:
+            parameters = EntityRelationshipsContextParameters.from_feature_list(feature_list_model)
+        elif offline_store_feature_table_model is not None:
+            parameters = EntityRelationshipsContextParameters.from_offline_store_feature_table(
+                offline_store_feature_table_model
+            )
+        else:
+            parameters = None
+        if parameters is None:
+            return None
+        return await self._get_entity_relationships_context_from_parameters(
+            entity_info=entity_info,
+            parameters=parameters,
+        )
+
+    async def _get_entity_relationships_context_from_parameters(
+        self,
+        entity_info: EntityInfo,
+        parameters: EntityRelationshipsContextParameters,
+    ) -> EntityRelationshipsContext:
+        all_relationships = set(parameters.relationships_info or [])
+        all_relationships.update(parameters.feature_cluster.combined_relationships_info)
+        entity_lookup_step_creator = (
+            await self.parent_entity_lookup_service.get_entity_lookup_step_creator(
+                list(all_relationships)
+            )
+        )
+        return EntityRelationshipsContext(
+            feature_list_primary_entity_ids=parameters.primary_entity_ids,
+            feature_list_serving_names=[
+                entity_info.get_effective_serving_name(entity_info.get_entity(entity_id))
+                for entity_id in parameters.primary_entity_ids
+            ],
+            feature_list_relationships_info=parameters.relationships_info or [],
+            feature_node_relationships_infos=parameters.feature_cluster.feature_node_relationships_infos,
+            entity_lookup_step_creator=entity_lookup_step_creator,
         )

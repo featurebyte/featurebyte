@@ -75,7 +75,7 @@ def mocked_unique_identifier_generator_fixture():
 
 def get_aggregation_specs(graph, groupby_node) -> List[TileBasedAggregationSpec]:
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        graph, groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
+        graph, groupby_node, get_sql_adapter(SourceType.SNOWFLAKE), True
     )
     return agg_specs
 
@@ -86,7 +86,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
     """
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
     plan = OnlineStorePrecomputePlan(
-        query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
+        query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE), True
     )
     agg_specs = get_aggregation_specs(query_graph_with_groupby, node)
 
@@ -144,7 +144,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     """
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
-    plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
+    plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE), True)
     agg_specs = get_aggregation_specs(graph, node)
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
@@ -179,6 +179,7 @@ def test_construct_universe_sql__unbounded_latest(
         global_graph,
         latest_value_without_window_feature_node,
         get_sql_adapter(SourceType.SNOWFLAKE),
+        True,
     )
     agg_specs = get_aggregation_specs(global_graph, global_graph.get_node_by_name("groupby_1"))
     universe = plan._construct_online_store_universe(agg_specs[0])
@@ -222,7 +223,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     """
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE, True)
     assert len(queries) == 2
     tile_id = "8502F6BC497F17F84385ABE4346FD392F2F56725"
     aggregation_id = "f37862722c21105449ad882409cf62a1ff7f5b35"
@@ -273,7 +274,9 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures)
     pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
 
     # Check precompute sqls
-    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(
+        pruned_graph, pruned_node, SourceType.SNOWFLAKE, True
+    )
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",

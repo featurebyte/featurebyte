@@ -80,15 +80,13 @@ class DatabricksSession(BaseSparkSession):
     source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
     database_credential: AccessTokenCredential
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
-
+    def _initialize_connection(self) -> None:
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
 
         self._connection = databricks_sql.connect(
-            server_hostname=data["host"],
-            http_path=data["http_path"],
+            server_hostname=self.host,
+            http_path=self.http_path,
             access_token=self.database_credential.access_token,
             catalog=self.catalog_name,
             schema=self.schema_name,

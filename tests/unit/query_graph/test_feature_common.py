@@ -20,7 +20,10 @@ def test_aggregation_spec__from_groupby_query_node(
     """
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        query_graph_with_groupby, groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
+        query_graph_with_groupby,
+        groupby_node,
+        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        agg_result_name_include_serving_names=True,
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
@@ -48,6 +51,7 @@ def test_aggregation_spec__from_groupby_query_node(
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
+            agg_result_name_include_serving_names=True,
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
@@ -75,6 +79,7 @@ def test_aggregation_spec__from_groupby_query_node(
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
+            agg_result_name_include_serving_names=True,
             **expected_pruned_graph_and_node_2,
         ),
     ]
@@ -99,6 +104,7 @@ def test_aggregation_spec__override_serving_names(
         groupby_node,
         adapter=get_sql_adapter(SourceType.SNOWFLAKE),
         serving_names_mapping=serving_names_mapping,
+        agg_result_name_include_serving_names=True,
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
@@ -126,6 +132,7 @@ def test_aggregation_spec__override_serving_names(
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
+            agg_result_name_include_serving_names=True,
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
@@ -153,6 +160,7 @@ def test_aggregation_spec__override_serving_names(
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
+            agg_result_name_include_serving_names=True,
             **expected_pruned_graph_and_node_2,
         ),
     ]

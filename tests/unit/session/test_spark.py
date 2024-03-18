@@ -169,6 +169,7 @@ async def test_get_table_details(config, spark_session_params):
                 "OutputFormat": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
                 "Storage Properties": "[serialization.format=1]",
                 "Partition Provider": "Catalog",
-            }
+            },
+            fully_qualified_name="`spark_catalog`.`featurebyte_20240110112131_971440`.`test`",
         )
         assert table_details.description == "some desc"

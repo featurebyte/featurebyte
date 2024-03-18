@@ -121,6 +121,13 @@ class BaseSession(BaseModel):
     _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
 
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+        self._initialize_connection()
+
+    def _initialize_connection(self) -> None:
+        """Initialize connection"""
+
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         # close connection
         self._connection.close()
@@ -209,7 +216,10 @@ class BaseSession(BaseModel):
 
     @abstractmethod
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
@@ -220,6 +230,8 @@ class BaseSession(BaseModel):
             Database name
         schema_name: str | None
             Schema name
+        timeout: float
+            Timeout in seconds
 
         Returns
         -------
@@ -331,7 +343,7 @@ class BaseSession(BaseModel):
         """
         _ = database_name, schema_name, table_name
         # return empty details as fallback
-        return TableDetails()
+        return TableDetails(fully_qualified_name=table_name)
 
     async def check_user_defined_function(
         self,
@@ -489,12 +501,14 @@ class BaseSession(BaseModel):
             Query result as a pandas DataFrame if the query expects result
         """
         bytestream = self.get_async_query_stream(query=query, timeout=timeout)
-        data = b""
+        buffer = BytesIO()
         async for chunk in bytestream:
-            data += chunk
-        if not data:
+            buffer.write(chunk)
+        buffer.flush()
+        if buffer.tell() == 0:
             return None
-        return dataframe_from_arrow_stream(data)
+        buffer.seek(0)
+        return dataframe_from_arrow_stream(buffer)
 
     async def execute_query_interactive(
         self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS

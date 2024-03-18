@@ -31,8 +31,17 @@ from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
+from featurebyte.session.base import (
+    APPLICATION_NAME,
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+)
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
@@ -61,8 +70,7 @@ class SnowflakeSession(BaseSession):
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    def _initialize_connection(self) -> None:
         try:
             self._connection = connector.connect(
                 user=self.database_credential.username,
@@ -73,6 +81,7 @@ class SnowflakeSession(BaseSession):
                 schema=self.schema_name,
                 role_name=self.role_name,
                 application=APPLICATION_NAME,
+                client_session_keep_alive=True,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
@@ -103,10 +112,12 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query_interactive("SHOW DATABASES")
+        databases = await self.execute_query_interactive(
+            "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES"
+        )
         output = []
         if databases is not None:
-            output.extend(databases["name"])
+            output.extend(databases["DATABASE_NAME"].tolist())
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
@@ -123,33 +134,27 @@ class SnowflakeSession(BaseSession):
         list[str]
         """
         schemas = await self.execute_query_interactive(
-            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
+            f'SELECT SCHEMA_NAME FROM "{database_name}".INFORMATION_SCHEMA.SCHEMATA'
         )
         output = []
         if schemas is not None:
-            output.extend(schemas["name"])
+            output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
     async def list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
+            f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
+            f"WHERE TABLE_SCHEMA = '{schema_name}'",
+            timeout=timeout,
         )
-        views = await self.execute_query_interactive(
-            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-        )
-
         output = []
-
         if tables is not None:
-            for _, (name, comment) in tables[["name", "comment"]].iterrows():
-                output.append(TableSpec(name=name, description=comment or None))
-
-        if views is not None:
-            for _, (name, comment) in views[["name", "comment"]].iterrows():
+            for _, (name, comment) in tables[["TABLE_NAME", "COMMENT"]].iterrows():
                 output.append(TableSpec(name=name, description=comment or None))
 
         return output
@@ -312,8 +317,14 @@ class SnowflakeSession(BaseSession):
         if details is None or details.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
         return TableDetails(
             details=details.iloc[0].to_dict(),
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
         )
 
     @staticmethod

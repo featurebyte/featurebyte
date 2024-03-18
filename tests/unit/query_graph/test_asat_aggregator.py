@@ -56,6 +56,7 @@ def aggregation_spec_without_end_timestamp(
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 
@@ -72,6 +73,7 @@ def aggregation_spec_with_end_timestamp(
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 
@@ -88,6 +90,7 @@ def aggregation_spec_with_serving_names_mapping(
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 
@@ -117,6 +120,7 @@ def aggregation_specs_same_source_different_agg_funcs(
                 aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
                 parent_dtype=DBVarType.FLOAT,
+                agg_result_name_include_serving_names=True,
             )
         )
 
@@ -149,6 +153,7 @@ def aggregation_specs_same_source_different_keys(
                 aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
                 parent_dtype=DBVarType.FLOAT,
+                agg_result_name_include_serving_names=True,
             )
         )
 
@@ -170,6 +175,7 @@ def aggregation_spec_with_category(
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
 
 

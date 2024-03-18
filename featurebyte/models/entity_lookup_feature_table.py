@@ -31,6 +31,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @dataclass
@@ -154,13 +155,6 @@ def _get_entity_lookup_graph(
         node=relation_table.construct_input_node(feature_store_details=feature_store),
         input_nodes=[],
     )
-
-    feature_dtype = None
-    for column_info in relation_table.columns_info:
-        if column_info.entity_id == lookup_step.parent.entity_id:
-            feature_dtype = column_info.dtype
-    assert feature_dtype is not None
-
     additional_params: Dict[str, Any]
     if relation_table.type == TableDataType.SCD_TABLE:
         assert isinstance(relation_table, SCDTableModel)
@@ -201,11 +195,18 @@ def _get_entity_lookup_graph(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[lookup_node],
     )
+    op_struct = (
+        OperationStructureExtractor(graph=graph)
+        .extract(node=feature_node)
+        .operation_structure_map[feature_node.name]
+    )
+    aggregations = op_struct.aggregations
+    assert len(aggregations) == 1
     return EntityLookupGraphResult(
         graph=graph,
         lookup_node=lookup_node,
         feature_node_name=feature_node.name,
-        feature_dtype=feature_dtype,
+        feature_dtype=aggregations[0].dtype,
         feature_job_setting=FeatureJobSettingExtractor(graph=graph).extract_from_agg_node(
             node=lookup_node
         ),

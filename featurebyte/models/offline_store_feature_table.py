@@ -3,7 +3,7 @@ OfflineStoreFeatureTableModel class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,6 +26,7 @@ from featurebyte.models.entity_universe import EntityUniverseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -283,7 +284,7 @@ class OfflineIngestGraphMetadata:
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
+    offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]]
 
 
 def get_combined_ingest_graph(
@@ -318,6 +319,7 @@ def get_combined_ingest_graph(
     all_offline_ingest_graphs = []
 
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
+    feature_node_relationships_info = []
     for feature in features:
         offline_ingest_graphs = (
             feature.offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -335,15 +337,26 @@ def get_combined_ingest_graph(
 
             graph, node = offline_ingest_graph.ingest_graph_and_node()
             local_query_graph, local_name_map = local_query_graph.load(graph)
-            output_nodes.append(local_query_graph.get_node_by_name(local_name_map[node.name]))
+            mapped_node = local_query_graph.get_node_by_name(local_name_map[node.name])
+            output_nodes.append(mapped_node)
+            feature_node_relationships_info.append(
+                FeatureNodeRelationshipsInfo(
+                    node_name=mapped_node.name,
+                    relationships_info=feature.relationships_info or [],
+                    primary_entity_ids=offline_ingest_graph.primary_entity_ids,
+                )
+            )
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
-            all_offline_ingest_graphs.append(offline_ingest_graph)
+            all_offline_ingest_graphs.append(
+                (offline_ingest_graph, feature.relationships_info or [])
+            )
 
     feature_cluster = FeatureCluster(
         feature_store_id=features[0].tabular_source.feature_store_id,
         graph=local_query_graph,
         node_names=[node.name for node in output_nodes],
+        feature_node_relationships_infos=feature_node_relationships_info,
     )
 
     return OfflineIngestGraphMetadata(

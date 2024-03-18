@@ -137,6 +137,7 @@ class JoinFeature(TableNode):
                 source_type=source_type,
                 serving_names_mapping=serving_names_mapping,
                 event_table_timestamp_filter=event_table_timestamp_filter,
+                agg_result_name_include_serving_names=True,
             )
             for agg_spec in agg_specs:
                 item_aggregator.update(agg_spec)

@@ -61,10 +61,19 @@ WITH REQUEST_TABLE AS (
     ) AS L
     LEFT JOIN (
       SELECT
-        "effective_ts" AS "effective_ts",
-        "cust_id" AS "cust_id",
-        "membership_status" AS "membership_status"
-      FROM "db"."public"."customer_profile_table"
+        ANY_VALUE("effective_ts") AS "effective_ts",
+        "cust_id",
+        ANY_VALUE("membership_status") AS "membership_status"
+      FROM (
+        SELECT
+          "effective_ts" AS "effective_ts",
+          "cust_id" AS "cust_id",
+          "membership_status" AS "membership_status"
+        FROM "db"."public"."customer_profile_table"
+      )
+      GROUP BY
+        "event_timestamp",
+        "cust_id"
     ) AS R
       ON L."__FB_LAST_TS" = R."event_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
   ) AS REQ

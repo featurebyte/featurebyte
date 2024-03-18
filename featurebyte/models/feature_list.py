@@ -3,7 +3,7 @@ This module contains Feature list related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import functools
 from collections import defaultdict
@@ -34,6 +34,7 @@ from featurebyte.models.feature_list_store_info import (
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
@@ -217,6 +218,15 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
+class FeatureNodeDefinitionHash(FeatureByteBaseModel):
+    """
+    Feature definition hash for each node in the FeatureCluster
+    """
+
+    node_name: str
+    definition_hash: Optional[str]
+
+
 class FeatureCluster(FeatureByteBaseModel):
     """
     Schema for a group of features from the same feature store
@@ -225,6 +235,20 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]]
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "combined_relationships_info" in values:
+            return values
+        combined_relationships_info: Set[EntityRelationshipInfo] = set()
+        for info in values.get("feature_node_relationships_infos", []):
+            combined_relationships_info.update(info.relationships_info or [])
+        values["combined_relationships_info"] = list(combined_relationships_info)
+        return values
 
     @property
     def nodes(self) -> List[Node]:
@@ -473,11 +497,29 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             pruned_graph, mapped_nodes = get_combined_graph_and_nodes(
                 feature_objects=group_features
             )
+            feature_node_relationships_info = []
+            feature_node_definition_hashes = []
+            for feature, mapped_node in zip(group_features, mapped_nodes):
+                feature_node_relationships_info.append(
+                    FeatureNodeRelationshipsInfo(
+                        node_name=mapped_node.name,
+                        relationships_info=feature.relationships_info or [],
+                        primary_entity_ids=feature.primary_entity_ids,
+                    )
+                )
+                feature_node_definition_hashes.append(
+                    FeatureNodeDefinitionHash(
+                        node_name=mapped_node.name,
+                        definition_hash=feature.definition_hash,
+                    )
+                )
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_id=feature_store_id,
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
+                    feature_node_relationships_infos=feature_node_relationships_info,
+                    feature_node_definition_hashes=feature_node_definition_hashes,
                 )
             )
         return feature_clusters

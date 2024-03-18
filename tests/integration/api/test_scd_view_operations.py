@@ -91,6 +91,8 @@ async def test_scd_join_small(session, data_source, source_type):
             "scd_value": [1, 2],
         }
     )
+    # Insert duplicate rows to ensure it can be handled (only one row should be joined)
+    df_scd = pd.concat([df_scd, df_scd], ignore_index=True)
     df_expected = pd.DataFrame(
         {
             "ts": pd.to_datetime(
@@ -286,10 +288,15 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd_dataframe):
+def test_scd_lookup_feature(
+    config, event_table, dimension_table, scd_table, item_table, scd_dataframe
+):
     """
     Test creating lookup feature from a SCDView
     """
+    # This fixture makes user id a parent of item id
+    _ = item_table
+
     # SCD lookup feature
     scd_view = scd_table.get_view()
     scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status")
@@ -349,12 +356,15 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
-        online_result = make_online_request(config.get_client(), deployment, [params])
-        assert online_result.json()["features"] == [
+        online_params = [{"item_id": item_id}]
+        online_result = make_online_request(config.get_client(), deployment, online_params)
+        online_result_dict = online_result.json()
+        if online_result.status_code != 200:
+            raise AssertionError(f"Online request failed: {online_result_dict}")
+        assert online_result_dict["features"] == [
             {
-                "üser id": 1,
                 "item_id": "item_42",
-                "Current User Status": "STÀTUS_CODE_39",
+                "Current User Status": "STÀTUS_CODE_26",
                 "Item Name Feature": "name_42",
                 "count_7d": None,
             }
