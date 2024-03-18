@@ -26,7 +26,7 @@ from featurebyte.exception import (
     ResponseException,
 )
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, get_active_catalog_id
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -486,8 +486,9 @@ class SampleMixin(AsyncMixin):
             timestamp_column=self.timestamp_column,
             feature_store_id=self.feature_store.id,
         )
+        catalog_id = get_active_catalog_id()
         data_description = AsyncMixin.post_async_task(
-            route=f"/feature_store/data_description?size={size}&seed={seed}",
+            route=f"/feature_store/data_description?size={size}&seed={seed}&catalog_id={catalog_id}",
             payload=payload.json_dict(),
         )
         return dataframe_from_json(data_description)
