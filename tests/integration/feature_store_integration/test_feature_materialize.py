@@ -555,7 +555,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
 @pytest.mark.order(4)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("deployed_feature_list")
+@pytest.mark.usefixtures("deployed_feature_list", "deployed_feature_list_composite_entities")
 async def test_feast_registry(
     app_container, expected_feature_table_names, expected_feature_service_names, source_type
 ):
