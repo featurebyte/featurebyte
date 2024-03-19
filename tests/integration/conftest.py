@@ -655,7 +655,6 @@ def dimension_dataframe_fixture(item_ids):
             "item_type": item_types,
         }
     )
-    data = pd.concat([data, data], ignore_index=True)
     yield data
 
 
