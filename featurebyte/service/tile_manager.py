@@ -110,6 +110,8 @@ class TileManagerService:
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         tic = time.time()
+        if not session.is_threadsafe():
+            session = await session.clone()
         await self.generate_tiles(
             session=session,
             tile_spec=tile_spec,

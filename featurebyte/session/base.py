@@ -132,6 +132,18 @@ class BaseSession(BaseModel):
         # close connection
         self._connection.close()
 
+    async def clone(self) -> BaseSession:
+        """
+        Create a new session object from the current session
+
+        Returns
+        -------
+        BaseSession
+        """
+        new_session = self.copy()
+        new_session._initialize_connection()  # pylint: disable=protected-access
+        return new_session
+
     @property
     def no_schema_error(self) -> Type[Exception]:
         """
