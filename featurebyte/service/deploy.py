@@ -398,7 +398,6 @@ class DeployFeatureListManagementService:
             ),
             document=feature_list,
         )
-
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list_id=feature_list.id,
@@ -437,7 +436,6 @@ class DeployFeatureListManagementService:
             ),
             document=feature_list,
         )
-
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list_id=feature_list.id,
