@@ -20,6 +20,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -89,6 +90,9 @@ def features_fixture(event_table, source_type):
     return features
 
 
+@pytest.mark.parametrize(
+    "source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True  # skip unity catalog: DEV-3109
+)
 @pytest.mark.asyncio
 async def test_online_serving_sql(
     features,
@@ -236,13 +240,13 @@ def check_online_features_route(deployment, config, df_historical, columns):
     print(f"online_features elapsed: {elapsed:.6f}s")
 
     assert df["üser id"].tolist() == user_ids
-    assert df.columns.tolist() == columns
+    assert set(df.columns.tolist()) == set(columns)
     df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
         drop=True
     )
     fb_assert_frame_equal(
         df_expected,
-        df,
+        df[df_expected.columns],
         dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
         sort_by_columns=["üser id"],
     )

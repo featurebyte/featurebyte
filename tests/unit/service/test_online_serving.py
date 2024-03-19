@@ -25,10 +25,14 @@ from tests.util.helper import (
 
 
 @pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
-def mocked_unique_identifier_generator_fixture():
+def mocked_unique_identifier_generator_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
     with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id:
         patched_object_id.return_value = ObjectId("000000000000000000000000")
         yield patched_object_id

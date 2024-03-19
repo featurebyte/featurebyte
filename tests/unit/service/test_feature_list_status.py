@@ -11,6 +11,18 @@ from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
+
+
 @pytest_asyncio.fixture(name="feature_list_namespace_deployed")
 async def feature_list_namespace_deployed_fixture(
     feature_list,

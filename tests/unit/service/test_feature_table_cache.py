@@ -21,10 +21,15 @@ from tests.util.helper import assert_sql_equal
 
 
 @pytest.fixture(name="auto_mocks", autouse=True)
-def auto_mocks_fixture(mock_snowflake_session):
+def auto_mocks_fixture(
+    mock_snowflake_session,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
     """
     Patch get_feature_store_session to return a mock session
     """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
 
     with patch(
         "featurebyte.service.feature_table_cache.SessionManagerService.get_feature_store_session"

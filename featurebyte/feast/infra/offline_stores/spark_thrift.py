@@ -277,6 +277,10 @@ class SparkThriftRetrievalJob(RetrievalJob):
         result = self.db_session.execute_query_blocking(self.query)
         assert isinstance(result, pd.DataFrame)
 
+        # skip if result is empty
+        if result.shape[0] == 0:
+            return result
+
         # convert arrays to string
         for column in result.columns:
             if result[column].dtype == "object":

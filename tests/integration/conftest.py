@@ -200,6 +200,15 @@ def storage_fixture():
         yield LocalStorage(base_path=Path(tempdir))
 
 
+@pytest.fixture(name="always_patch_app_get_storage", scope="session", autouse=True)
+def always_patch_app_get_storage_fixture(storage):
+    """
+    Patch app.get_storage for all tests in this module
+    """
+    with patch("featurebyte.app.get_storage", return_value=storage):
+        yield
+
+
 @pytest.fixture(name="config", scope="session")
 def config_fixture(storage):
     """

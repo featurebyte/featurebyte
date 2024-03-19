@@ -667,9 +667,15 @@ async def deployed_feature_list_fixture(
     deploy_service,
     feature_list_service,
     production_ready_feature_list,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """Fixture for a deployed feature list"""
-    _ = online_enable_service_data_warehouse_mocks
+    _ = (
+        online_enable_service_data_warehouse_mocks,
+        mock_update_data_warehouse,
+        mock_offline_store_feature_manager_dependencies,
+    )
     await deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
         deployment_id=ObjectId(),

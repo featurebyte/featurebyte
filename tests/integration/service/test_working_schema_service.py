@@ -6,6 +6,7 @@ from bson import ObjectId
 
 from featurebyte import FeatureList
 from featurebyte.app import get_celery
+from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.service.working_schema import drop_all_objects
 from tests.util.helper import (
     create_batch_request_table_from_dataframe,
@@ -169,16 +170,23 @@ async def test_drop_all_and_recreate(
 
     # Check online requests can no longer be made
     res = make_online_request(client, deployment, entity_serving_names)
-    assert res.status_code == 500
-    error_message = res.json()["detail"]
-    if source_type == "snowflake":
-        expected_error_message = "SQL compilation error"
-        assert expected_error_message in error_message
+    if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+        assert res.status_code == 200
+        assert res.json() == {
+            "features": [{"üser id": 1, "AMOUNT_MIN_24h": 0.0, "AMOUNT_MIN_2h": 41.08}]
+        }
     else:
-        # error message is different for different spark versions
-        assert (
-            "Table or view not found" in error_message or "TABLE_OR_VIEW_NOT_FOUND" in error_message
-        )
+        assert res.status_code == 500
+        error_message = res.json()["detail"]
+        if source_type == "snowflake":
+            expected_error_message = "SQL compilation error"
+            assert expected_error_message in error_message
+        else:
+            # error message is different for different spark versions
+            assert (
+                "Table or view not found" in error_message
+                or "TABLE_OR_VIEW_NOT_FOUND" in error_message
+            )
 
     # Recreate schema
     await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
