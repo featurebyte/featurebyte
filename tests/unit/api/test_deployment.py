@@ -10,9 +10,20 @@ from freezegun import freeze_time
 
 import featurebyte as fb
 from featurebyte.api.deployment import Deployment
-from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
+
+
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
 
 
 def test_get(deployment):

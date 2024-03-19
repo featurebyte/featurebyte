@@ -58,4 +58,4 @@ class FeastIntegrationSettings(BaseSettings):
     Feast integration settings
     """
 
-    FEATUREBYTE_FEAST_INTEGRATION_ENABLED: bool = False
+    FEATUREBYTE_FEAST_INTEGRATION_ENABLED: bool = True

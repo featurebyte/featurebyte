@@ -1,7 +1,9 @@
 """
 Tests for DeployService
 """
+import os
 import traceback
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -10,6 +12,18 @@ from bson import ObjectId
 from featurebyte.exception import DocumentError, DocumentNotFoundError, DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.feature_list import FeatureListCreate
+
+
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
 
 
 @pytest.fixture(name="deploy_service")
@@ -292,7 +306,7 @@ async def test_deploy_service__check_asset_status_update(
         data=FeatureListCreate(name="feature_list1", feature_ids=[features[0].id])
     )
     feature_list2 = await feature_list_controller.create_feature_list(
-        data=FeatureListCreate(name="feature_list3", feature_ids=[feat.id for feat in features])
+        data=FeatureListCreate(name="feature_list2", feature_ids=[feat.id for feat in features])
     )
 
     # create deployments
@@ -415,3 +429,117 @@ async def test_deploy_service__check_asset_status_update(
         False,  # feature list is still deployed
         [False, False],  # feature1 is still enabled
     )
+
+
+@pytest.mark.asyncio
+async def test_deployment_enable__feast_enable_backward_compatibility(
+    production_ready_features,
+    app_container,
+    mock_update_data_warehouse,
+):
+    """
+    Test deploy service handle feast enable backward compatibility.
+
+    When the feature list is deployed without feast integration enabled,
+    all the deployments created using the feature list do not have Feast integration enabled.
+
+    When the feature list is deployed with feast integration enabled,
+    all the deployments created using the feature list have Feast integration enabled.
+    """
+    _ = mock_update_data_warehouse
+
+    # create feature lists
+    features = production_ready_features
+    feature_list_controller = app_container.feature_list_controller
+    feature_list1 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list1", feature_ids=[features[0].id])
+    )
+    feature_list2 = await feature_list_controller.create_feature_list(
+        data=FeatureListCreate(name="feature_list2", feature_ids=[feat.id for feat in features])
+    )
+
+    # create deployments
+    deployment_id1, deployment_id2, deployment_id3 = ObjectId(), ObjectId(), ObjectId()
+
+    # disable feast integration to simulate old behavior
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
+        await app_container.deploy_service.create_deployment(
+            feature_list_id=feature_list1.id,
+            deployment_id=deployment_id1,
+            deployment_name="deployment1",
+            to_enable_deployment=True,
+        )
+
+    # check deployment is enabled & feature list store info
+    deployment1 = await app_container.deployment_service.get_document(document_id=deployment_id1)
+    assert deployment1.enabled
+    feature_list1 = await app_container.feature_list_service.get_document(
+        document_id=feature_list1.id
+    )
+    assert not feature_list1.store_info.feast_enabled
+
+    # create another deployment using the same feature list when feast integration is enabled
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
+        await app_container.deploy_service.create_deployment(
+            feature_list_id=feature_list1.id,
+            deployment_id=deployment_id2,
+            deployment_name="deployment2",
+            to_enable_deployment=True,
+        )
+
+    # check deployment is enabled & feature list store info again
+    deployment2 = await app_container.deployment_service.get_document(document_id=deployment_id2)
+    assert deployment2.enabled
+    feature_list1 = await app_container.feature_list_service.get_document(
+        document_id=feature_list1.id
+    )
+    assert not feature_list1.store_info.feast_enabled
+
+    # create another deployment using a new feature list when feast integration is enabled
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+        await app_container.deploy_service.create_deployment(
+            feature_list_id=feature_list2.id,
+            deployment_id=deployment_id3,
+            deployment_name="deployment3",
+            to_enable_deployment=True,
+        )
+
+    # check deployment is enabled & feature list store info
+    deployment3 = await app_container.deployment_service.get_document(document_id=deployment_id3)
+    assert deployment3.enabled
+    feature_list2 = await app_container.feature_list_service.get_document(
+        document_id=feature_list2.id
+    )
+    assert feature_list2.store_info.feast_enabled
+
+    # disable deployment1 & deployment2, check feature list store info
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+        for deployment_id in [deployment_id1, deployment_id2]:
+            await app_container.deploy_service.update_deployment(
+                deployment_id=deployment_id,
+                to_enable_deployment=False,
+            )
+            deployment = await app_container.deployment_service.get_document(
+                document_id=deployment_id
+            )
+            assert not deployment.enabled
+
+    feature_list = await app_container.feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
+    assert not feature_list.store_info.feast_enabled
+
+    # enable deployment1 again & check feature list store info
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+        await app_container.deploy_service.update_deployment(
+            deployment_id=deployment_id1,
+            to_enable_deployment=True,
+        )
+
+    deployment = await app_container.deployment_service.get_document(document_id=deployment_id1)
+    assert deployment.enabled
+
+    feature_list = await app_container.feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
+    assert feature_list.store_info.feast_enabled

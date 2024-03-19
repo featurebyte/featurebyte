@@ -370,7 +370,7 @@ class DeployFeatureListManagementService:
 
     async def deploy_feature_list(
         self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> None:
+    ) -> FeatureListModel:
         """
         Deploy feature list
 
@@ -380,34 +380,36 @@ class DeployFeatureListManagementService:
             Target feature list
         deployment_id: ObjectId
             Deployment ID
+
+        Returns
+        -------
+        FeatureListModel
         """
         enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
             feature_list_model=feature_list,
             deployment_id=deployment_id,
             to_enable_deployment=True,
         )
-        await self.feature_list_service.update_document(
+        updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=True,
                 enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
-            return_document=False,
         )
-
-        if feature_list.deployed:
-            return
 
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list_id=feature_list.id,
             feature_list_to_deploy=True,
         )
+        assert updated_feature_list is not None
+        return updated_feature_list
 
     async def undeploy_feature_list(
         self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> None:
+    ) -> FeatureListModel:
         """
         Undeploy feature list
 
@@ -417,26 +419,32 @@ class DeployFeatureListManagementService:
             Target feature list
         deployment_id: ObjectId
             Deployment ID
+
+        Returns
+        -------
+        FeatureListModel
         """
         enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
             feature_list_model=feature_list,
             deployment_id=deployment_id,
             to_enable_deployment=False,
         )
-        await self.feature_list_service.update_document(
+        updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=False,
                 enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
-            return_document=False,
         )
+
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list_id=feature_list.id,
             feature_list_to_deploy=False,
         )
+        assert updated_feature_list is not None
+        return updated_feature_list
 
 
 class FeastIntegrationService:
@@ -489,6 +497,7 @@ class FeastIntegrationService:
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
+        feature_list_to_online_enable: FeatureListModel,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
     ) -> None:
         """
@@ -498,16 +507,21 @@ class FeastIntegrationService:
         ----------
         features: List[FeatureModel]
             List of features to be enabled online
+        feature_list_to_online_enable: FeatureListModel
+            Target feature list (online enable)
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
-            features=features, update_progress=update_progress
+            features=features,
+            feature_list_to_online_enable=feature_list_to_online_enable,
+            update_progress=update_progress,
         )
 
     async def handle_online_disabled_features(
         self,
         features: List[FeatureModel],
+        feature_list_to_online_disable: FeatureListModel,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
     ) -> None:
         """
@@ -517,11 +531,15 @@ class FeastIntegrationService:
         ----------
         features: List[FeatureModel]
             List of features to be disabled online
+        feature_list_to_online_disable: FeatureListModel
+            Target feature list not to deploy (online disable)
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
-            features=features, update_progress=update_progress
+            features=features,
+            feature_list_to_online_disable=feature_list_to_online_disable,
+            update_progress=update_progress,
         )
 
     async def handle_deployed_feature_list(
@@ -612,13 +630,14 @@ class DeployService:
 
         # deploy feature list
         await self._update_progress(71, f"Deploying feature list ({feature_list.name}) ...")
-        await self.feature_list_management_service.deploy_feature_list(
+        feature_list = await self.feature_list_management_service.deploy_feature_list(
             feature_list=feature_list, deployment_id=deployment.id
         )
 
         if feast_registry:
             await self.feast_integration_service.handle_online_enabled_features(
                 features=features_offline_feature_table_to_update,
+                feature_list_to_online_enable=feature_list,
                 update_progress=get_ranged_progress_callback(
                     self.task_progress_updater.update_progress, 72, 98
                 ),
@@ -725,7 +744,7 @@ class DeployService:
 
             # undeploy feature list if not used in other deployment
             await self._update_progress(71, f"Undeploying feature list ({feature_list.name}) ...")
-            await self.feature_list_management_service.undeploy_feature_list(
+            feature_list = await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list, deployment_id=deployment.id
             )
 
@@ -735,6 +754,7 @@ class DeployService:
                 if feast_registry and features_offline_feature_table_to_update:
                     await self.feast_integration_service.handle_online_disabled_features(
                         features=features_offline_feature_table_to_update,
+                        feature_list_to_online_disable=feature_list,
                         update_progress=get_ranged_progress_callback(
                             self.task_progress_updater.update_progress, 72, 99
                         ),

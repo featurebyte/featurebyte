@@ -12,6 +12,7 @@ from abc import abstractmethod
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
 from pydantic import Field, root_validator
+from typeguard import typechecked
 
 from featurebyte.common.utils import get_version
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -27,6 +28,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureInfo,
 )
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
@@ -313,6 +315,27 @@ class QueryObject(FeatureByteBaseModel):
         """
         del cls._operation_structure_cache
         cls._operation_structure_cache = _create_operation_structure_cache()
+
+    @typechecked
+    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
+        """
+        Generate SQL query to preview the transformation output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
 class ProtectedColumnsQueryObject(QueryObject):
