@@ -16,6 +16,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.mixin import SampleMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -58,7 +59,7 @@ else:
 logger = get_logger(__name__)
 
 
-class TableDataFrame(BaseFrame):
+class TableDataFrame(BaseFrame, SampleMixin):
     """
     TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
     This class is used to construct the query graph for previewing/sampling underlying table stored at the

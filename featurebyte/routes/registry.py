@@ -173,6 +173,7 @@ from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
+from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -384,6 +385,7 @@ app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestTask)
+app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
 app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
