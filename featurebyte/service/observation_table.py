@@ -3,7 +3,7 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, cast
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -75,6 +75,58 @@ class PointInTimeStats:
 
     least_recent: str
     most_recent: str
+    percentage_missing: float
+
+
+@dataclass
+class EntityColumnStats:
+    """
+    Entity column stats
+    """
+
+    column_name: str
+    count: int
+    percentage_missing: float
+
+
+@dataclass
+class ObservationTableStats:
+    """
+    Statistics of special columns in observation table
+    """
+
+    point_in_time_stats: PointInTimeStats
+    entity_columns_stats: List[EntityColumnStats]
+
+    @property
+    def column_name_to_count(self) -> dict[str, int]:
+        """
+        Returns a mapping from entity column name to count
+
+        Returns
+        -------
+        dict[str, int]
+        """
+        return {
+            entity_stat.column_name: entity_stat.count for entity_stat in self.entity_columns_stats
+        }
+
+    @property
+    def columns_with_missing_values(self) -> list[str]:
+        """
+        Return list of column names with missing values
+
+        Returns
+        -------
+        list[str]
+        """
+        out = []
+        if self.point_in_time_stats.percentage_missing > 0:
+            out.append(SpecialColumnName.POINT_IN_TIME.value)
+        for entity_stats in self.entity_columns_stats:
+            if entity_stats.percentage_missing > 0:
+                out.append(entity_stats.column_name)
+        return out
 
 
 def _convert_ts_to_str(timestamp_str: str) -> str:
@@ -398,14 +450,17 @@ class ObservationTableService(
             return None
         return float(value)
 
-    async def _get_column_name_to_entity_count(
+    async def _get_observation_table_stats(
         self,
         feature_store: FeatureStoreModel,
         table_details: TableDetails,
         columns_info: List[ColumnSpecWithEntityId],
-    ) -> Tuple[Dict[str, int], PointInTimeStats]:
+    ) -> ObservationTableStats:
         """
-        Get the entity column name to unique entity count mapping.
+        Get statistics of point in time and entity columns
+
+        Extract information such as entity column name to unique entity count mapping, point in time
+        stats, and missing value percentage for validation.
 
         Parameters
         ----------
@@ -418,8 +473,10 @@ class ObservationTableService(
 
         Returns
         -------
-        Tuple[Dict[str, int], PointInTimeStats]
+        ObservationTableStats
         """
+        # pylint: disable=no-member
+
         # Get describe statistics
         source_table = SourceTable(
             feature_store=feature_store,
@@ -437,30 +494,36 @@ class ObservationTableService(
         sample = FeatureStoreSample(
             graph=graph,
             node_name=node.name,
-            stats_names=["unique", "max", "min"],
+            stats_names=["unique", "max", "min", "%missing"],
             feature_store_id=feature_store.id,
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)
         entity_cols = [col for col in columns_info if col.entity_id is not None]
-        column_name_to_count = {}
+        entity_columns_stats = []
         for col in entity_cols:
-            col_name = col.name
-            column_name_to_count[
-                col_name
-            ] = describe_stats_dataframe.loc[  # pylint: disable=no-member
-                "unique", col_name
-            ]
-        least_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
-            "min", SpecialColumnName.POINT_IN_TIME
-        ]
+            entity_columns_stats.append(
+                EntityColumnStats(
+                    column_name=col.name,
+                    count=describe_stats_dataframe.loc["unique", col.name],
+                    percentage_missing=describe_stats_dataframe.loc["%missing", col.name],
+                )
+            )
+        least_recent_time_str = describe_stats_dataframe.loc["min", SpecialColumnName.POINT_IN_TIME]
         least_recent_time_str = _convert_ts_to_str(least_recent_time_str)
-        most_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
-            "max", SpecialColumnName.POINT_IN_TIME
-        ]
+        most_recent_time_str = describe_stats_dataframe.loc["max", SpecialColumnName.POINT_IN_TIME]
         most_recent_time_str = _convert_ts_to_str(most_recent_time_str)
-        return column_name_to_count, PointInTimeStats(
-            least_recent=least_recent_time_str, most_recent=most_recent_time_str
+        percentage_missing = describe_stats_dataframe.loc[
+            "%missing", SpecialColumnName.POINT_IN_TIME
+        ]
+        point_in_time_stats = PointInTimeStats(
+            least_recent=least_recent_time_str,
+            most_recent=most_recent_time_str,
+            percentage_missing=percentage_missing,
+        )
+        return ObservationTableStats(
+            point_in_time_stats=point_in_time_stats,
+            entity_columns_stats=entity_columns_stats,
         )
 
     async def validate_materialized_table_and_get_metadata(
@@ -517,16 +580,23 @@ class ObservationTableService(
             db_session, columns_info, table_details
         )
         # Get entity statistics metadata
-        column_name_to_count, point_in_time_stats = await self._get_column_name_to_entity_count(
+        observation_table_stats = await self._get_observation_table_stats(
             feature_store, table_details, columns_info
         )
+        point_in_time_stats = observation_table_stats.point_in_time_stats
+        columns_with_missing_values = observation_table_stats.columns_with_missing_values
+        if columns_with_missing_values:
+            raise ValueError(
+                "These columns in the observation table must not contain any missing values: "
+                f'{", ".join(columns_with_missing_values)}'
+            )
 
         return {
             "columns_info": columns_info,
             "num_rows": num_rows,
             "most_recent_point_in_time": point_in_time_stats.most_recent,
             "least_recent_point_in_time": point_in_time_stats.least_recent,
-            "entity_column_name_to_count": column_name_to_count,
+            "entity_column_name_to_count": observation_table_stats.column_name_to_count,
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
 

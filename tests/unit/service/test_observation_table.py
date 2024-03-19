@@ -67,8 +67,16 @@ def table_details_fixture():
     )
 
 
+@pytest.fixture(name="point_in_time_has_missing_values")
+def point_in_time_has_missing_values_fixture():
+    """
+    Fixture to determine whether point in time has missing values
+    """
+    return False
+
+
 @pytest.fixture(name="db_session")
-def db_session_fixture():
+def db_session_fixture(point_in_time_has_missing_values):
     """
     Fixture for a db session
     """
@@ -98,6 +106,7 @@ def db_session_fixture():
                 {
                     "dtype": ["timestamp", "int"],
                     "unique": [5, 2],
+                    "%missing": [1 if point_in_time_has_missing_values else 0, 0],
                     "min": ["2023-01-01T10:00:00+08:00", 1],
                     "max": ["2023-01-15T10:00:00+08:00", 10],
                 },
@@ -199,9 +208,15 @@ async def test_validate__most_recent_point_in_time(
             ), stats AS (
               SELECT
                 COUNT(DISTINCT "POINT_IN_TIME") AS "unique__0",
+                (
+                  1.0 - COUNT("POINT_IN_TIME") / NULLIF(COUNT(*), 0)
+                ) * 100 AS "%missing__0",
                 MIN("POINT_IN_TIME") AS "min__0",
                 MAX("POINT_IN_TIME") AS "max__0",
                 COUNT(DISTINCT "cust_id") AS "unique__1",
+                (
+                  1.0 - COUNT("cust_id") / NULLIF(COUNT(*), 0)
+                ) * 100 AS "%missing__1",
                 NULL AS "min__1",
                 NULL AS "max__1"
               FROM data
@@ -213,10 +228,12 @@ async def test_validate__most_recent_point_in_time(
             SELECT
               'TIMESTAMP' AS "dtype__0",
               "unique__0",
+              "%missing__0",
               "min__0",
               "max__0",
               'VARCHAR' AS "dtype__1",
               "unique__1",
+              "%missing__1",
               "min__1",
               "max__1"
             FROM joined_tables_0
@@ -268,6 +285,34 @@ async def test_validate__supported_type_point_in_time(
         )
 
     assert str(exc.value) == "Point in time column should have timestamp type; got VARCHAR"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("point_in_time_has_missing_values", [True])
+async def test_validate__point_in_time_no_missing_values(
+    observation_table_service,
+    db_session,
+    table_details,
+    cust_id_entity,
+    snowflake_feature_store,
+    insert_credential,
+):
+    """
+    Test validate point in time has no missing values
+    """
+    _ = insert_credential, cust_id_entity
+
+    with mock.patch(
+        "featurebyte.service.preview.PreviewService._get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        mock_get_feature_store_session.return_value = (snowflake_feature_store, db_session)
+        with pytest.raises(ValueError) as exc_info:
+            await observation_table_service.validate_materialized_table_and_get_metadata(
+                db_session, table_details, snowflake_feature_store
+            )
+    assert str(exc_info.value) == (
+        "These columns in the observation table must not contain any missing values: POINT_IN_TIME"
+    )
 
 
 @pytest.mark.asyncio
