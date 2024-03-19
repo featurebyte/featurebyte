@@ -556,6 +556,11 @@ class ObservationTableService(
         Returns
         -------
         dict[str, Any]
+
+        Raises
+        ------
+        ValueError
+            If the observation table fails any of the validation
         """
         # Get column info and number of row metadata
         columns_info, num_rows = await self.get_columns_info_and_num_rows(
