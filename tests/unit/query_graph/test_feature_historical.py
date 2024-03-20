@@ -1,7 +1,7 @@
 """
 Tests for featurebyte.query_graph.feature_historical.py
 """
-from unittest.mock import AsyncMock, Mock, call, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest

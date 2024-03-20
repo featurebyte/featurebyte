@@ -368,6 +368,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
             output_query=output_query,
             output_table_name=output_table_details.table_name,
             progress_message=progress_message,
+            validate_output_row_index=output_include_row_index,
         )
 
     feature_queries = []
@@ -417,5 +418,5 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
         output_query=output_query,
         output_table_name=output_table_details.table_name,
         progress_message=progress_message,
-        validate_output_row_index=True,
+        validate_output_row_index=output_include_row_index,
     )

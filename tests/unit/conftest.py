@@ -1334,6 +1334,8 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "comment": None,
                 }
             ]
+        elif "max_row_index_count" in query:
+            return pd.DataFrame({"max_row_index_count": [1]})
         elif "COUNT(*)" in query:
             res = [
                 {
