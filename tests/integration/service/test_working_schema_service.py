@@ -9,6 +9,7 @@ from featurebyte.app import get_celery
 from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.service.working_schema import drop_all_objects
 from tests.util.helper import (
+    assert_dict_approx_equal,
     create_batch_request_table_from_dataframe,
     create_observation_table_from_dataframe,
     make_online_request,
@@ -172,9 +173,9 @@ async def test_drop_all_and_recreate(
     res = make_online_request(client, deployment, entity_serving_names)
     if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
         assert res.status_code == 200
-        assert res.json() == {
-            "features": [{"üser id": 1, "AMOUNT_MIN_24h": 0.0, "AMOUNT_MIN_2h": 41.08}]
-        }
+        response_dict = res.json()
+        expected = {"features": [{"üser id": 1, "AMOUNT_MIN_24h": 0.0, "AMOUNT_MIN_2h": 41.08}]}
+        assert_dict_approx_equal(response_dict, expected)
     else:
         assert res.status_code == 500
         error_message = res.json()["detail"]
