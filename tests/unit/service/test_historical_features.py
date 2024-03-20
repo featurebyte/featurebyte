@@ -1,6 +1,7 @@
 """
 Test cases for the HistoricalFeaturesService
 """
+from unittest import mock
 from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
@@ -301,6 +302,17 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
     mocked_compute_tiles_on_demand.assert_not_called()
 
 
+@pytest.fixture(name="mocked_tile_cache")
+def mocked_tile_cache():
+    """Fixture for a mocked SnowflakeTileCache object"""
+    patched = {}
+    with mock.patch(
+        "featurebyte.tile.tile_cache.TileCache.get_required_computation"
+    ) as mocked_get_required_computation:
+        patched["get_required_computation"] = mocked_get_required_computation
+        yield patched
+
+
 @pytest.mark.asyncio
 async def test_get_historical_features__tile_cache_multiple_batches(
     float_feature,
@@ -308,7 +320,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     tile_cache_service,
     output_table_details,
     mocked_session,
-    mocked_compute_tiles_on_demand,
+    mocked_tile_cache,
     snowflake_feature_store,
 ):
     """
@@ -326,7 +338,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     graph, node = complex_feature.extract_pruned_graph_and_node()
     nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
 
-    with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 1):
+    with patch("featurebyte.service.tile_cache.NUM_NODES_PER_QUERY", 1):
         _ = await get_historical_features(
             session=mocked_session,
             tile_cache_service=tile_cache_service,
@@ -337,10 +349,10 @@ async def test_get_historical_features__tile_cache_multiple_batches(
             output_table_details=output_table_details,
         )
 
-    assert len(mocked_compute_tiles_on_demand.call_args_list) == 2
+    assert len(mocked_tile_cache["get_required_computation"].call_args_list) == 2
 
     nodes = []
-    for call_args in mocked_compute_tiles_on_demand.call_args_list:
+    for call_args in mocked_tile_cache["get_required_computation"].call_args_list:
         _, kwargs = call_args
         current_nodes = kwargs["nodes"]
         nodes.extend([node.name for node in current_nodes])

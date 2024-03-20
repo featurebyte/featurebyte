@@ -17,6 +17,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -133,11 +134,20 @@ class OnDemandTileComputeRequest:
             aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,
             feature_store_id=feature_store_id,
-            entity_tracker_table_name=TileInfoKey.from_tile_info(
-                self.tile_gen_info
-            ).get_entity_tracker_table_name(),
+            entity_tracker_table_name=self.tile_info_key.get_entity_tracker_table_name(),
         )
         return tile_spec, self.tracker_sql
+
+    @property
+    def tile_info_key(self) -> TileInfoKey:
+        """
+        Returns a TileInfoKey object to uniquely identify a unit of tile compute work
+
+        Returns
+        -------
+        TileInfoKey
+        """
+        return TileInfoKey.from_tile_info(self.tile_gen_info)
 
 
 class TileCache:
@@ -182,59 +192,6 @@ class TileCache:
         """
         return self.session.source_type
 
-    async def compute_tiles_on_demand(
-        self,
-        graph: QueryGraph,
-        nodes: list[Node],
-        request_id: str,
-        request_table_name: str,
-        serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
-        """Check tile status for the provided features and compute missing tiles if required
-
-        Parameters
-        ----------
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        request_id : str
-            Request ID
-        request_table_name: str
-            Request table name to use
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
-        """
-        tic = time.time()
-
-        if progress_callback is not None:
-            await progress_callback(0, "Checking tile status")
-
-        required_requests = await self.get_required_computation(
-            request_id=request_id,
-            graph=graph,
-            nodes=nodes,
-            request_table_name=request_table_name,
-            serving_names_mapping=serving_names_mapping,
-        )
-        elapsed = time.time() - tic
-        logger.debug(
-            f"Getting required tiles computation took {elapsed:.2f}s ({len(required_requests)})"
-        )
-
-        if required_requests:
-            tic = time.time()
-            await self.invoke_tile_manager(required_requests, progress_callback=progress_callback)
-            elapsed = time.time() - tic
-            logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
-        else:
-            logger.debug("All required tiles can be reused")
-
-        await self.cleanup_temp_tables()
-
     async def invoke_tile_manager(
         self,
         required_requests: list[OnDemandTileComputeRequest],
@@ -260,7 +217,12 @@ class TileCache:
     async def cleanup_temp_tables(self) -> None:
         """Drops all the temp tables that was created by TileCache"""
         for temp_table_name in self._materialized_temp_table_names:
-            await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
+            await self.session.drop_table(
+                table_name=temp_table_name,
+                schema_name=self.session.schema_name,
+                database_name=self.session.database_name,
+                if_exists=True,
+            )
         self._materialized_temp_table_names = set()
 
     async def get_required_computation(  # pylint: disable=too-many-locals
@@ -478,12 +440,22 @@ class TileCache:
             columns.append(f"CAST(null AS TIMESTAMP) AS {key.get_working_table_column_name()}")
 
         table_expr = table_expr.select("REQ.*", *columns)
-        table_sql = sql_to_string(table_expr, source_type=self.source_type)
 
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        await self.session.register_table_with_query(tile_cache_working_table_name, table_sql)
+        table_create_query = sql_to_string(
+            self.adapter.create_table_as(
+                TableDetails(
+                    database_name=self.session.database_name,
+                    schema_name=self.session.schema_name,
+                    table_name=tile_cache_working_table_name,
+                ),
+                table_expr,
+            ),
+            source_type=self.source_type,
+        )
+        await self.session.execute_query_long_running(table_create_query)
         self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(
@@ -559,9 +531,10 @@ class TileCache:
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        tile_cache_validity_sql = (
-            select(*validity_exprs).from_(tile_cache_working_table_name)
-        ).sql(pretty=True)
+        tile_cache_validity_sql = sql_to_string(
+            select(*validity_exprs).from_(quoted_identifier(tile_cache_working_table_name)),
+            source_type=self.session.source_type,
+        )
         df_validity = await self.session.execute_query_long_running(tile_cache_validity_sql)
 
         # Result should only have one row
