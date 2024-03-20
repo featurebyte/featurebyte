@@ -388,6 +388,12 @@ class ColumnNotFoundError(FeatureByteException):
     """
 
 
+class FeatureMaterializationError(FeatureByteException):
+    """
+    Raised when there is an error with feature materialization
+    """
+
+
 class DockerError(FeatureByteException):
     """
     Raised when there is an error with Docker
