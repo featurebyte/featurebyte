@@ -20,7 +20,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -90,9 +89,6 @@ def features_fixture(event_table, source_type):
     return features
 
 
-@pytest.mark.parametrize(
-    "source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True  # skip unity catalog: DEV-3109
-)
 @pytest.mark.asyncio
 async def test_online_serving_sql(
     features,
