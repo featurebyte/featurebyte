@@ -109,10 +109,7 @@ def mock_session_for_online_serving_fixture():
         _ = query
         if "max_row_index_count" in query:
             return pd.DataFrame({"max_row_index_count": [1]})
-        else:
-            return pd.DataFrame(
-                {"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]}
-            )
+        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]})
 
     with patch(
         "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
