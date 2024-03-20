@@ -137,7 +137,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictCosineSimilarity() throws HiveException {
-    CountDictCosineSimilarityV1 udf = new CountDictCosineSimilarityV1();
+    CountDictCosineSimilarityV2 udf = new CountDictCosineSimilarityV2();
     ObjectInspector[] arguments = {mapValueOI, mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {

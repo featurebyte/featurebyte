@@ -34,7 +34,10 @@ $$
     var v = counts_other[k] || 0;
     norm_other += v * v;
   }
-  var cosine_sim = dot_product / (Math.sqrt(norm) * Math.sqrt(norm_other));
-  return cosine_sim;
+  var norm_product = Math.sqrt(norm) * Math.sqrt(norm_other);
+  if (norm_product == 0) {
+    return 0;
+  }
+  return dot_product / norm_product;
 $$
 ;
