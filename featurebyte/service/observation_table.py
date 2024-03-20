@@ -84,6 +84,7 @@ class EntityColumnStats:
     Entity column stats
     """
 
+    entity_id: ObjectId
     column_name: str
     count: int
     percentage_missing: float
@@ -111,10 +112,16 @@ class ObservationTableStats:
             entity_stat.column_name: entity_stat.count for entity_stat in self.entity_columns_stats
         }
 
-    @property
-    def columns_with_missing_values(self) -> list[str]:
+    def get_columns_with_missing_values(
+        self, entity_ids_to_check: Optional[list[PydanticObjectId]]
+    ) -> list[str]:
         """
         Return list of column names with missing values
+
+        Parameters
+        ----------
+        entity_ids_to_check: Optional[list[PydanticObjectId]]
+            If provided, only check for missing values in these entities
 
         Returns
         -------
@@ -124,6 +131,11 @@ class ObservationTableStats:
         if self.point_in_time_stats.percentage_missing > 0:
             out.append(SpecialColumnName.POINT_IN_TIME.value)
         for entity_stats in self.entity_columns_stats:
+            if (
+                entity_ids_to_check is not None
+                and entity_stats.entity_id not in entity_ids_to_check
+            ):
+                continue
             if entity_stats.percentage_missing > 0:
                 out.append(entity_stats.column_name)
         return out
@@ -499,11 +511,13 @@ class ObservationTableService(
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)
-        entity_cols = [col for col in columns_info if col.entity_id is not None]
         entity_columns_stats = []
-        for col in entity_cols:
+        for col in columns_info:
+            if col.entity_id is None:
+                continue
             entity_columns_stats.append(
                 EntityColumnStats(
+                    entity_id=col.entity_id,
                     column_name=col.name,
                     count=describe_stats_dataframe.loc["unique", col.name],
                     percentage_missing=describe_stats_dataframe.loc["%missing", col.name],
@@ -589,7 +603,9 @@ class ObservationTableService(
             feature_store, table_details, columns_info
         )
         point_in_time_stats = observation_table_stats.point_in_time_stats
-        columns_with_missing_values = observation_table_stats.columns_with_missing_values
+        columns_with_missing_values = observation_table_stats.get_columns_with_missing_values(
+            primary_entity_ids
+        )
         if columns_with_missing_values:
             raise ValueError(
                 "These columns in the observation table must not contain any missing values: "
