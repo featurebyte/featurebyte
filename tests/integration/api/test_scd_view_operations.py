@@ -9,6 +9,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     assert_preview_result_equal,
@@ -78,17 +79,24 @@ async def test_scd_join_small(session, data_source, source_type):
                     "2022-04-10 10:00:00",
                     "2022-04-15 10:00:00",
                     "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
                 ]
             ),
-            "cust_id": [1000, 1000, 1000],
-            "event_id": [1, 2, 3],
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [1, 2, 3, 4],
         }
     )
     df_scd = pd.DataFrame(
         {
-            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
-            "scd_cust_id": [1000, 1000],
-            "scd_value": [1, 2],
+            "effective_ts": pd.to_datetime(
+                [
+                    "2022-04-12 10:00:00",
+                    "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
+                ]
+            ),
+            "scd_cust_id": [1000, 1000, 1000],
+            "scd_value": [1, 2, 3],
         }
     )
     # Insert duplicate rows to ensure it can be handled (only one row should be joined)
@@ -97,20 +105,37 @@ async def test_scd_join_small(session, data_source, source_type):
         {
             "ts": pd.to_datetime(
                 [
+                    pd.NaT,
                     "2022-04-10 10:00:00",
                     "2022-04-15 10:00:00",
                     "2022-04-20 10:00:00",
                 ]
             ),
-            "cust_id": [1000, 1000, 1000],
-            "event_id": [1, 2, 3],
-            "scd_value_latest": [np.nan, 1, 2],
-            "scd_value_latest_v2": [np.nan, 1, 2],
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [4, 1, 2, 3],
+            "scd_value_latest": [np.nan, np.nan, 1, 2],
+            "scd_value_latest_v2": [np.nan, np.nan, 1, 2],
         }
     )
     table_prefix = "TEST_SCD_JOIN_SMALL"
-    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+
+    def _quote(col_name) -> str:
+        return sql_to_string(quoted_identifier(col_name), source_type=session.source_type)
+
+    # Register event table
+    table_name = f"{table_prefix}_EVENT"
+    await session.register_table(table_name, df_events, temporary=False)
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
+    )
+
+    # Register scd table
+    table_name = f"{table_prefix}_SCD"
+    await session.register_table(table_name, df_scd, temporary=False)
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("effective_ts")} = NULL WHERE {_quote("scd_value")} = 3'
+    )
+
     event_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_EVENT",
         database_name=session.database_name,

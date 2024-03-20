@@ -57,7 +57,11 @@ class Table:
             return quoted_identifier(self.timestamp_column)
         return self.timestamp_column
 
-    def as_subquery(self, alias: Optional[str] = None) -> Expression:
+    def as_subquery(
+        self,
+        alias: Optional[str] = None,
+        remove_missing_timestamp_values: bool = False,
+    ) -> Expression:
         """
         Returns an expression that can be selected from (converted to subquery if required)
 
@@ -65,15 +69,42 @@ class Table:
         ----------
         alias: Optional[str]
             Table alias, if specified.
+        remove_missing_timestamp_values: bool
+            Whether to filter out missing values in timestamp column in the returned subquery
 
         Returns
         -------
         Expression
         """
         if isinstance(self.expr, str):
+            # This is when joining with tile tables. We can assume that tile index (the timestamp
+            # column) will not have any missing values, so remove_missing_timestamp_values is
+            # ignored.
             return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
         assert isinstance(self.expr, Select)
-        return cast(Expression, self.expr.subquery(alias=alias))
+        if remove_missing_timestamp_values:
+            expr = self.expr_with_non_missing_timestamp_values
+        else:
+            expr = self.expr
+        return cast(Expression, expr.subquery(alias=alias))
+
+    @property
+    def expr_with_non_missing_timestamp_values(self) -> Select:
+        """
+        Get an expression for the table with missing timestamp values removed
+
+        Returns
+        -------
+        Select
+        """
+        assert isinstance(self.expr, Select)
+        assert isinstance(self.timestamp_column, str)
+        return self.expr.where(
+            expressions.Is(
+                this=quoted_identifier(self.timestamp_column),
+                expression=expressions.Not(this=expressions.Null()),
+            )
+        )
 
 
 def get_scd_join_expr(
@@ -167,7 +198,7 @@ def get_scd_join_expr(
         # right_table.expr is a Select instance if it is a user provided SCD table.
         deduplicated_expr = get_deduplicated_expr(
             adapter=adapter,
-            table_expr=right_table.expr,
+            table_expr=right_table.expr_with_non_missing_timestamp_values,
             expected_primary_keys=[right_table.timestamp_column] + right_table.join_keys,
         )
         right_table = Table(
@@ -338,7 +369,7 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
             alias=TS_TIE_BREAKER_COL,
             quoted=True,
         ),
-    ).from_(right_table.as_subquery())
+    ).from_(right_table.as_subquery(remove_missing_timestamp_values=True))
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
@@ -361,7 +392,9 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     # date, instead of a previous effective date. Vice versa for allow_exact_match=False.
     order = expressions.Order(
         expressions=[
-            expressions.Ordered(this=quoted_identifier(TS_COL)),
+            expressions.Ordered(
+                this=expressions.Column(this=quoted_identifier(TS_COL)), nulls_first=True
+            ),
             expressions.Ordered(this=quoted_identifier(TS_TIE_BREAKER_COL)),
         ]
     )
