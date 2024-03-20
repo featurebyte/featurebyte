@@ -109,6 +109,12 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default=None
     )
 
+    # entity join steps contains the steps required to join the entities used by the feature or target
+    # when it is None, it means that the attribute is not initialized (for backward compatibility)
+    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
+    )
+
     # offline store info contains the information used to construct the offline store table(s) required
     # by the feature or target.
     internal_offline_store_info: Optional[Dict[str, Any]] = Field(
