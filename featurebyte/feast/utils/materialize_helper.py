@@ -65,6 +65,11 @@ async def materialize_partial(
         Start date of materialization
     with_feature_timestamp : bool
         Whether to include the feature timestamp in the materialization
+
+    Raises
+    ------
+    FeatureMaterializationError
+        If materialization fails for any reason
     """
     if start_date is None:
         start_date = DEFAULT_MATERIALIZE_START_DATE
