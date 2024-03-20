@@ -34,20 +34,20 @@ def get_historical_features_sql(**kwargs):
     return sql_to_string(expr, source_type=source_type)
 
 
-@pytest.fixture(name="mocked_session")
-def mocked_session_fixture():
-    """Fixture for a mocked session object"""
-    with patch("featurebyte.service.session_manager.SessionManager") as session_manager_cls:
-        session_manager = AsyncMock(name="MockedSessionManager")
-        mocked_session = Mock(
-            name="MockedSession",
-            spec=BaseSession,
-            database_name="sf_database",
-            schema_name="sf_schema",
-            source_type=SourceType.SNOWFLAKE,
-        )
-        session_manager_cls.return_value = session_manager
-        yield mocked_session
+# @pytest.fixture(name="mocked_session")
+# def mocked_session_fixture():
+#     """Fixture for a mocked session object"""
+#     with patch("featurebyte.service.session_manager.SessionManager") as session_manager_cls:
+#         session_manager = AsyncMock(name="MockedSessionManager")
+#         mocked_session = Mock(
+#             name="MockedSession",
+#             spec=BaseSession,
+#             database_name="sf_database",
+#             schema_name="sf_schema",
+#             source_type=SourceType.SNOWFLAKE,
+#         )
+#         session_manager_cls.return_value = session_manager
+#         yield mocked_session
 
 
 @pytest.fixture(name="output_table_details")
@@ -231,46 +231,3 @@ def test_get_historical_feature_query_set__output_include_row_index(
         "tests/fixtures/expected_historical_requests_output_row_index.sql",
         update_fixture=update_fixtures,
     )
-
-
-@pytest.mark.parametrize(
-    "progress_message", [PROGRESS_MESSAGE_COMPUTING_FEATURES, PROGRESS_MESSAGE_COMPUTING_TARGET]
-)
-@pytest.mark.asyncio
-async def test_historical_feature_query_set_execute(mocked_session, progress_message):
-    """
-    Test HistoricalFeatureQuerySet execution
-    """
-    progress_callback = AsyncMock(name="mock_progress_callback")
-    feature_queries = [
-        FeatureQuery(
-            sql="some_feature_query_1",
-            table_name="A",
-            feature_names=["F1"],
-        ),
-        FeatureQuery(
-            sql="some_feature_query_2",
-            table_name="B",
-            feature_names=["F2"],
-        ),
-    ]
-    historical_feature_query_set = FeatureQuerySet(
-        feature_queries=feature_queries,
-        output_query="some_final_join_query",
-        progress_message=progress_message,
-    )
-    await execute_feature_query_set(mocked_session, historical_feature_query_set, progress_callback)
-    assert mocked_session.execute_query_long_running.call_args_list == [
-        call("some_feature_query_1"),
-        call("some_feature_query_2"),
-        call("some_final_join_query"),
-    ]
-    assert mocked_session.drop_table.call_args_list == [
-        call(database_name="sf_database", schema_name="sf_schema", table_name="A", if_exists=True),
-        call(database_name="sf_database", schema_name="sf_schema", table_name="B", if_exists=True),
-    ]
-    assert progress_callback.call_args_list == [
-        call(33, progress_message),
-        call(66, progress_message),
-        call(100, progress_message),
-    ]

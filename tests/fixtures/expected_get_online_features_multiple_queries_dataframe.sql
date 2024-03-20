@@ -59,6 +59,16 @@ SELECT
   END AS "count_1d"
 FROM _FB_AGGREGATED AS AGG;
 
+SELECT
+  MAX("row_index_count") AS "max_row_index_count"
+FROM (
+  SELECT
+    COUNT(*) AS "row_index_count"
+  FROM "__TEMP_000000000000000000000000_0"
+  GROUP BY
+    __FB_TABLE_ROW_INDEX
+);
+
 CREATE TABLE "__TEMP_000000000000000000000000_1" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
@@ -116,6 +126,16 @@ SELECT
   AGG."cust_id",
   "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_1d"
 FROM _FB_AGGREGATED AS AGG;
+
+SELECT
+  MAX("row_index_count") AS "max_row_index_count"
+FROM (
+  SELECT
+    COUNT(*) AS "row_index_count"
+  FROM "__TEMP_000000000000000000000000_1"
+  GROUP BY
+    __FB_TABLE_ROW_INDEX
+);
 
 SELECT
   REQ."__FB_TABLE_ROW_INDEX",

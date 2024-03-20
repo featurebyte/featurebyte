@@ -8,11 +8,10 @@ import pandas as pd
 import pytest
 from freezegun import freeze_time
 
-from featurebyte import Feature, FeatureList, SourceType, exception
+from featurebyte import Feature, FeatureList, exception
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.historical_features import get_historical_features
-from featurebyte.session.base import BaseSession
 
 
 @pytest.fixture
@@ -40,22 +39,6 @@ def mock_get_historical_features():
 def output_table_details_fixture():
     """Fixture for a TableDetails for the output location"""
     return TableDetails(table_name="SOME_HISTORICAL_FEATURE_TABLE")
-
-
-@pytest.fixture(name="mocked_session")
-def mocked_session_fixture():
-    """Fixture for a mocked session object"""
-    with patch("featurebyte.service.session_manager.SessionManager") as session_manager_cls:
-        session_manager = AsyncMock(name="MockedSessionManager")
-        mocked_session = Mock(
-            name="MockedSession",
-            spec=BaseSession,
-            database_name="sf_database",
-            schema_name="sf_schema",
-            source_type=SourceType.SNOWFLAKE,
-        )
-        session_manager_cls.return_value = session_manager
-        yield mocked_session
 
 
 @pytest.mark.asyncio
@@ -167,7 +150,7 @@ async def test_get_historical_features__feature_clusters_not_set(
 @pytest.mark.asyncio
 async def test_get_historical_features__missing_point_in_time(
     mock_snowflake_feature,
-    mocked_session,
+    mock_snowflake_session,
     output_table_details,
     tile_cache_service,
     snowflake_feature_store,
@@ -180,7 +163,7 @@ async def test_get_historical_features__missing_point_in_time(
     )
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
         await get_historical_features(
-            session=mocked_session,
+            session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
@@ -196,7 +179,7 @@ async def test_get_historical_features__missing_point_in_time(
 @pytest.mark.asyncio
 async def test_get_historical_features__too_recent_point_in_time(
     mock_snowflake_feature,
-    mocked_session,
+    mock_snowflake_session,
     point_in_time_is_datetime_dtype,
     output_table_details,
     tile_cache_service,
@@ -214,7 +197,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     )
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
         await get_historical_features(
-            session=mocked_session,
+            session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
@@ -231,7 +214,7 @@ async def test_get_historical_features__too_recent_point_in_time(
 @pytest.mark.asyncio
 async def test_get_historical_features__point_in_time_dtype_conversion(
     float_feature,
-    mocked_session,
+    mock_snowflake_session,
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
@@ -250,9 +233,9 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
-    mocked_session.generate_session_unique_id.return_value = "1"
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
     await get_historical_features(
-        session=mocked_session,
+        session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
@@ -262,8 +245,8 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     )
 
     # Check POINT_IN_TIME is converted to datetime
-    mocked_session.register_table.assert_awaited_once()
-    args, _ = mocked_session.register_table.await_args_list[0]
+    mock_snowflake_session.register_table.assert_awaited_once()
+    args, _ = mock_snowflake_session.register_table.await_args_list[0]
     df_observation_set_registered = args[1]
     assert df_observation_set_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
 
@@ -273,7 +256,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
 @pytest.mark.asyncio
 async def test_get_historical_features__skip_tile_cache_if_deployed(
     float_feature,
-    mocked_session,
+    mock_snowflake_session,
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
@@ -288,9 +271,9 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
             "cust_id": ["C1", "C2"],
         }
     )
-    mocked_session.generate_session_unique_id.return_value = "1"
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
     await get_historical_features(
-        session=mocked_session,
+        session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
@@ -319,7 +302,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     agg_per_category_feature,
     tile_cache_service,
     output_table_details,
-    mocked_session,
+    mock_snowflake_session,
     mocked_tile_cache,
     snowflake_feature_store,
 ):
@@ -332,7 +315,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
             "cust_id": ["C1", "C2"],
         }
     )
-    mocked_session.generate_session_unique_id.return_value = "1"
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
 
     complex_feature = float_feature * agg_per_category_feature.cd.entropy()
     graph, node = complex_feature.extract_pruned_graph_and_node()
@@ -340,7 +323,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
 
     with patch("featurebyte.service.tile_cache.NUM_NODES_PER_QUERY", 1):
         _ = await get_historical_features(
-            session=mocked_session,
+            session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             graph=graph,
             nodes=nodes,

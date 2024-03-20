@@ -2,6 +2,7 @@
 Tests for featurebyte/session/session_helper.py
 """
 import textwrap
+from unittest.mock import AsyncMock, call
 
 import pandas as pd
 import pytest
@@ -74,6 +75,7 @@ async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures
     """
     Test execute_feature_query_set
     """
+    progress_message = "My custom progress message"
     feature_query_set = FeatureQuerySet(
         feature_queries=[
             FeatureQuery(
@@ -84,13 +86,33 @@ async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures
         ],
         output_query="CREATE TABLE output_table AS SELECT * FROM my_table",
         output_table_name="output_table",
-        progress_message="Creating features",
+        progress_message=progress_message,
         validate_output_row_index=True,
     )
-    await execute_feature_query_set(mock_snowflake_session, feature_query_set)
+    progress_callback = AsyncMock(name="mock_progress_callback")
+
+    await execute_feature_query_set(
+        mock_snowflake_session,
+        feature_query_set,
+        progress_callback=progress_callback,
+    )
+
     queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Check executed queries
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/expected_feature_query_set.sql",
         update_fixture=update_fixtures,
     )
+
+    # Check intermediate tables are dropped
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(database_name="sf_db", schema_name="sf_schema", table_name="my_table", if_exists=True),
+    ]
+
+    # Check progress update calls
+    assert progress_callback.call_args_list == [
+        call(50, progress_message),
+        call(100, progress_message),
+    ]
