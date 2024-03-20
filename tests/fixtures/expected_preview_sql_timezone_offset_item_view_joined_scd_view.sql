@@ -55,7 +55,7 @@ FROM (
   FROM (
     SELECT
       "__FB_KEY_COL_0",
-      LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+      LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
       "event_id_col",
       "item_id_col",
       "item_type",
@@ -140,6 +140,8 @@ FROM (
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."scd_table"
+        WHERE
+          "effective_timestamp" IS NOT NULL
       )
     )
   )
@@ -171,6 +173,8 @@ LEFT JOIN (
       "created_at" AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
+    WHERE
+      "effective_timestamp" IS NOT NULL
   )
   GROUP BY
     "effective_timestamp",

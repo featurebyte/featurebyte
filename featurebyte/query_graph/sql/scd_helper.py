@@ -69,6 +69,8 @@ class Table:
         ----------
         alias: Optional[str]
             Table alias, if specified.
+        remove_missing_timestamp_values: bool
+            Whether to filter out missing values in timestamp column in the returned subquery
 
         Returns
         -------
@@ -90,6 +92,10 @@ class Table:
     def expr_with_non_missing_timestamp_values(self) -> Select:
         """
         Get an expression for the table with missing timestamp values removed
+
+        Returns
+        -------
+        Select
         """
         assert isinstance(self.expr, Select)
         assert isinstance(self.timestamp_column, str)

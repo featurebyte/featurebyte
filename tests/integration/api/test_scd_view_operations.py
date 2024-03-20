@@ -9,6 +9,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     assert_preview_result_equal,
@@ -118,16 +119,21 @@ async def test_scd_join_small(session, data_source, source_type):
     )
     table_prefix = "TEST_SCD_JOIN_SMALL"
 
+    def _quote(col_name) -> str:
+        return sql_to_string(quoted_identifier(col_name), source_type=session.source_type)
+
     # Register event table
     table_name = f"{table_prefix}_EVENT"
     await session.register_table(table_name, df_events, temporary=False)
-    await session.execute_query(f'UPDATE {table_name} SET "ts" = NULL WHERE "event_id" = 4')
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
+    )
 
     # Register scd table
     table_name = f"{table_prefix}_SCD"
     await session.register_table(table_name, df_scd, temporary=False)
     await session.execute_query(
-        f'UPDATE {table_name} SET "effective_ts" = NULL WHERE "scd_value" = 3'
+        f'UPDATE {table_name} SET {_quote("effective_ts")} = NULL WHERE {_quote("scd_value")} = 3'
     )
 
     event_source_table = data_source.get_source_table(

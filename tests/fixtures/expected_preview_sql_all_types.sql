@@ -287,7 +287,7 @@ WITH REQUEST_TABLE AS (
       FROM (
         SELECT
           "__FB_KEY_COL_0",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
           "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e",
@@ -322,7 +322,7 @@ WITH REQUEST_TABLE AS (
                   SELECT
                     "__FB_KEY_COL_0",
                     "__FB_KEY_COL_1",
-                    LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+                    LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
                     "POINT_IN_TIME",
                     "CUSTOMER_ID",
                     "__FB_EFFECTIVE_TS_COL"
@@ -379,6 +379,8 @@ WITH REQUEST_TABLE AS (
               "cust_id" AS "cust_id",
               "membership_status" AS "membership_status"
             FROM "db"."public"."customer_profile_table"
+            WHERE
+              "event_timestamp" IS NOT NULL
           )
         )
       )
@@ -396,6 +398,8 @@ WITH REQUEST_TABLE AS (
           "cust_id" AS "cust_id",
           "membership_status" AS "membership_status"
         FROM "db"."public"."customer_profile_table"
+        WHERE
+          "event_timestamp" IS NOT NULL
       )
       GROUP BY
         "event_timestamp",
