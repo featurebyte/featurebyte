@@ -16,7 +16,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(
     name = "F_COUNT_COSINE_SIMILARITY",
     value = "_FUNC_(counts) - compute cosine similarity between two count dictionaries")
-public class CountDictCosineSimilarityV1 extends CountDictUDFV1 {
+public class CountDictCosineSimilarityV2 extends CountDictUDFV1 {
   private final DoubleWritable output = new DoubleWritable();
 
   private transient MapObjectInspector otherInputMapOI;
@@ -103,7 +103,9 @@ public class CountDictCosineSimilarityV1 extends CountDictUDFV1 {
       normOther += value * value;
     }
 
-    output.set(dotProduct / (Math.sqrt(norm) * Math.sqrt(normOther)));
+    double normProduct = Math.sqrt(norm) * Math.sqrt(normOther);
+    if (normProduct == 0) output.set(0.0);
+    else output.set(dotProduct / normProduct);
     return output;
   }
 
