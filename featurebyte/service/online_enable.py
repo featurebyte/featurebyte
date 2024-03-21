@@ -180,7 +180,7 @@ class OnlineEnableService(OpsServiceMixin):
 
         Raises
         ------
-        CredentialsError
+        DataWarehouseConnectionError
             If data warehouse session cannot be created
         """
         if updated_feature.online_enabled == online_enabled_before_update:
