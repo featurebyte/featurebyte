@@ -1334,6 +1334,8 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "comment": None,
                 }
             ]
+        elif "is_row_index_valid" in query:
+            return pd.DataFrame({"is_row_index_valid": [True]})
         elif "COUNT(*)" in query:
             res = [
                 {
