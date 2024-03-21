@@ -1178,8 +1178,8 @@ def create_transactions_event_table_from_data_source(
             "TRANSACTION_ID": "VARCHAR",
             "EMBEDDING_ARRAY": "ARRAY",
             "ARRAY": "ARRAY",
-            "FLAT_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
-            "NESTED_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
+            "FLAT_DICT": "DICT",
+            "NESTED_DICT": "DICT",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)

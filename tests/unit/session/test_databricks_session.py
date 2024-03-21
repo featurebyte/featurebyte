@@ -193,10 +193,10 @@ async def test_databricks_session(databricks_session_dict):
             name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
         ),
         "col_map": ColumnSpecWithDescription(
-            name="col_map", dtype=DBVarType.MAP, description="Map Column"
+            name="col_map", dtype=DBVarType.DICT, description="Map Column"
         ),
         "col_struct": ColumnSpecWithDescription(
-            name="col_struct", dtype=DBVarType.STRUCT, description="Struct Column"
+            name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
         ),
         "col_string": ColumnSpecWithDescription(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
@@ -206,7 +206,7 @@ async def test_databricks_session(databricks_session_dict):
         ),
     }
     df_result = await session.execute_query("SELECT * FROM table")
-    df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})
+    df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]}, dtype="int32")
     pd.testing.assert_frame_equal(df_result, df_expected)
 
 

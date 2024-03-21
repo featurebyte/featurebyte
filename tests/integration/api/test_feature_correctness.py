@@ -274,7 +274,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
 
 
 @pytest.fixture(name="feature_parameters")
-def feature_parameters_fixture(source_type):
+def feature_parameters_fixture():
     """
     Parameters for feature tests using aggregate_over
     """
@@ -314,8 +314,6 @@ def feature_parameters_fixture(source_type):
             None,
         ),
     ]
-    if source_type == "spark":
-        parameters = [param for param in parameters if param[1] in ["max", "std", "latest"]]
     return parameters
 
 

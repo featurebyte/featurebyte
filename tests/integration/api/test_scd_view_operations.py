@@ -369,7 +369,7 @@ def test_scd_lookup_feature(
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert json.loads(preview_output["count_7d"]) == json.loads(
+    assert preview_output["count_7d"] == json.loads(
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 

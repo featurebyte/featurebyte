@@ -310,10 +310,10 @@ async def test_online_enabled_feature_spec(
     assert len(result) == 100
     expected_df = pd.DataFrame(
         {
-            "INDEX": np.array([5514911, 5514910, 5514909], dtype=np.int32),
+            "INDEX": np.array([5514911, 5514910, 5514909]),
             "PRODUCT_ACTION": ["view", "view", "view"],
-            "CUST_ID": np.array([1, 1, 1], dtype=np.int8),
-            "VALUE": np.array([5, 2, 2], dtype=np.int8),
+            "CUST_ID": np.array([1, 1, 1]),
+            "VALUE": np.array([5, 2, 2]),
         }
     )
     result = result[:3].drop(columns=["CREATED_AT"])

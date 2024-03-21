@@ -19,10 +19,11 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.api.utils import parquet_from_arrow_stream
 from featurebyte.common.utils import (
+    ResponseStream,
     create_new_arrow_stream_writer,
     dataframe_to_arrow_bytes,
-    parquet_from_arrow_stream,
 )
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -1389,7 +1390,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
             response.iter_content = response.iter_bytes
             with tempfile.TemporaryDirectory() as temp_dir:
                 output_path = Path(os.path.join(temp_dir, "test.parquet"))
-                parquet_from_arrow_stream(response=response, output_path=output_path, num_rows=3)
+                parquet_from_arrow_stream(
+                    ResponseStream(response.iter_content(1024)), output_path=output_path, num_rows=3
+                )
                 downloaded_df = pd.read_parquet(output_path)
         pd.testing.assert_frame_equal(downloaded_df, expected_df)
 
