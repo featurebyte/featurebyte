@@ -127,14 +127,16 @@ class BaseSession(BaseModel):
         # close connection
         self._connection.close()
 
-    async def clone(self) -> BaseSession:
+    async def clone_if_not_threadsafe(self) -> BaseSession:
         """
-        Create a new session object from the current session
+        Create a new session object from a session that is not threadsafe
 
         Returns
         -------
         BaseSession
         """
+        if self.is_threadsafe():
+            return self
         new_session = self.copy()
         new_session._initialize_connection()  # pylint: disable=protected-access
         return new_session
