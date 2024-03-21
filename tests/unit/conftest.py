@@ -11,7 +11,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from unittest import mock
-from unittest.mock import MagicMock, Mock, PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID, uuid4
 
 import pandas as pd
