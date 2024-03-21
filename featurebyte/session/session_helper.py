@@ -148,13 +148,13 @@ async def execute_feature_query_set(
         processed += 1
         if progress_callback:
             await progress_callback(
-                int(100 * (i + 1) / total_num_queries),
+                int(100 * processed / total_num_queries),
                 feature_query_set.progress_message,
             )
 
     try:
         coroutines = []
-        for i, feature_query in enumerate(feature_query_set.feature_queries):
+        for feature_query in feature_query_set.feature_queries:
             coroutines.append(
                 execute_feature_query(
                     session=session,
