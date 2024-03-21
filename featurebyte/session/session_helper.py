@@ -45,31 +45,25 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
     query = sql_to_string(
         expressions.select(
             expressions.alias_(
-                expressions.Max(this=quoted_identifier("row_index_count")),
-                alias="max_row_index_count",
+                expressions.EQ(
+                    this=expressions.Count(
+                        this=expressions.Distinct(
+                            expressions=[quoted_identifier(InternalName.TABLE_ROW_INDEX.value)]
+                        ),
+                    ),
+                    expression=expressions.Count(this=expressions.Star()),
+                ),
+                alias="is_row_index_valid",
                 quoted=True,
             )
-        ).from_(
-            expressions.select(
-                expressions.alias_(
-                    expressions.Count(this=expressions.Star()),
-                    alias="row_index_count",
-                    quoted=True,
-                ),
-            )
-            .from_(quoted_identifier(output_table_name))
-            .group_by(InternalName.TABLE_ROW_INDEX)
-            .subquery()
-        ),
+        ).from_(quoted_identifier(output_table_name)),
         source_type=session.source_type,
     )
     with timer("Validate output row index", logger=logger):
         df_result = await session.execute_query_long_running(query)
-    max_row_index_count = df_result["max_row_index_count"].iloc[0]  # type: ignore[index]
-    if max_row_index_count != 1:
-        raise ValueError(
-            f"Unexpected row index column in the output table. Max row index count: {max_row_index_count}"
-        )
+    is_row_index_valid = df_result["is_row_index_valid"].iloc[0]  # type: ignore[index]
+    if not is_row_index_valid:
+        raise ValueError("Row index column is invalid in the output table")
 
 
 async def execute_feature_query_set(

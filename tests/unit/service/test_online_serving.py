@@ -107,8 +107,8 @@ def mock_session_for_online_serving_fixture():
 
     async def mock_execute_query(query):
         _ = query
-        if "max_row_index_count" in query:
-            return pd.DataFrame({"max_row_index_count": [1]})
+        if "is_row_index_valid" in query:
+            return pd.DataFrame({"is_row_index_valid": [True]})
         return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]})
 
     with patch(

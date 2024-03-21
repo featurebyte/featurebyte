@@ -26,7 +26,7 @@ def mock_snowflake_session_fixture(mock_snowflake_session, is_output_row_index_v
     Mock query result
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
-        {"max_row_index_count": [1 if is_output_row_index_valid else 2]}
+        {"is_row_index_valid": [is_output_row_index_valid]}
     )
     yield mock_snowflake_session
 
@@ -41,14 +41,8 @@ async def test_validate_row_index__valid(mock_snowflake_session):
     expected = textwrap.dedent(
         """
         SELECT
-          MAX("row_index_count") AS "max_row_index_count"
-        FROM (
-          SELECT
-            COUNT(*) AS "row_index_count"
-          FROM "my_table"
-          GROUP BY
-            __FB_TABLE_ROW_INDEX
-        )
+          COUNT(DISTINCT "__FB_TABLE_ROW_INDEX") = COUNT(*) AS "is_row_index_valid"
+        FROM "my_table"
         """
     ).strip()
     assert query == expected
@@ -64,10 +58,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
         await validate_output_row_index(
             session=mock_snowflake_session, output_table_name="my_table"
         )
-    assert (
-        str(exc_info.value)
-        == "Unexpected row index column in the output table. Max row index count: 2"
-    )
+    assert str(exc_info.value) == "Row index column is invalid in the output table"
 
 
 @pytest.mark.asyncio
