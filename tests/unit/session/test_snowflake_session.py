@@ -675,16 +675,12 @@ async def test_timeout(mock_fetch_query_stream_impl, snowflake_connector, snowfl
 
 
 @pytest.mark.asyncio
-async def test_exception_handling_in_thread(snowflake_connector, snowflake_session_dict):
+async def test_exception_handling_in_thread(snowflake_connector_cursor, snowflake_session_dict):
     """
     Test execute_query time out
     """
-
-    connection = snowflake_connector.connect.return_value
-    cursor = connection.cursor.return_value
-    cursor.execute.side_effect = ValueError("error occurred")
     session = SnowflakeSession(**snowflake_session_dict)
-
+    snowflake_connector_cursor.execute.side_effect = ValueError("error occurred")
     with pytest.raises(ValueError) as exc:
         await session.execute_query("SELECT * FROM T")
     assert "error occurred" in str(exc.value)

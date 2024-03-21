@@ -11,7 +11,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from unittest import mock
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 from uuid import UUID, uuid4
 
 import pandas as pd
@@ -160,19 +160,8 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
-@pytest.fixture(name="snowflake_connector_cursor")
-def snowflake_connector_cursor_fixture():
-    """
-    Mock snowflake connector cursor
-    """
-    cursor = Mock(name="mock-snowflake-connector-cursor")
-    cursor.sfqid = "some-query-id"
-    cursor.fetch_arrow_batches.return_value = []
-    return cursor
-
-
-@pytest.fixture(name="snowflake_connector")
-def mock_snowflake_connector(snowflake_connector_cursor):
+@pytest.fixture(name="snowflake_connector_patches")
+def snowflake_connector_patches():
     """
     Mock snowflake connector in featurebyte.session.snowflake module
     """
@@ -180,8 +169,29 @@ def mock_snowflake_connector(snowflake_connector_cursor):
         connection = mock_connector.connect.return_value
         connection.get_query_status_throw_if_error.return_value = QueryStatus.SUCCESS
         connection.is_still_running.return_value = False
-        connection.cursor.return_value = snowflake_connector_cursor
-        yield mock_connector
+        cursor = connection.cursor.return_value
+        cursor.sfqid = "some-query-id"
+        cursor.fetch_arrow_batches.return_value = []
+        yield {
+            "connector": mock_connector,
+            "cursor": cursor,
+        }
+
+
+@pytest.fixture(name="snowflake_connector")
+def snowflake_connector_fixture(snowflake_connector_patches):
+    """
+    Mock snowflake connector cursor
+    """
+    yield snowflake_connector_patches["connector"]
+
+
+@pytest.fixture(name="snowflake_connector_cursor")
+def snowflake_connector_cursor_fixture(snowflake_connector_patches):
+    """
+    Mock snowflake connector cursor
+    """
+    yield snowflake_connector_patches["cursor"]
 
 
 @pytest.fixture(name="snowflake_query_map")
