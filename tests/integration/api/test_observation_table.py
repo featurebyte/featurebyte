@@ -5,7 +5,6 @@ import os
 
 import pandas as pd
 import pytest
-from bson import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
