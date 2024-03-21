@@ -7,7 +7,7 @@ from typing import Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -195,7 +195,7 @@ class OnlineEnableService(OpsServiceMixin):
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store_model
             )
-        except CredentialsError as exc:
+        except DataWarehouseConnectionError as exc:
             if updated_feature.online_enabled:
                 raise exc
             # This could happen if the data warehouse is defunct and no session can be established.

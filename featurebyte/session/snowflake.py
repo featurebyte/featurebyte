@@ -15,17 +15,13 @@ import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.cursor import ResultMetadata
-from snowflake.connector.errors import (
-    DatabaseError,
-    NotSupportedError,
-    OperationalError,
-    ProgrammingError,
-)
+from snowflake.connector.errors import Error as SnowflakeError
+from snowflake.connector.errors import NotSupportedError, ProgrammingError
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -83,8 +79,8 @@ class SnowflakeSession(BaseSession):
                 application=APPLICATION_NAME,
                 client_session_keep_alive=True,
             )
-        except (OperationalError, DatabaseError) as exc:
-            raise CredentialsError("Invalid credentials provided.") from exc
+        except SnowflakeError as exc:
+            raise DataWarehouseConnectionError(exc.msg) from exc
 
         cursor = self._connection.cursor()
         cursor.execute(f'USE ROLE "{self.role_name}"')

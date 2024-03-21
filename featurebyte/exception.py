@@ -208,6 +208,12 @@ class CredentialsError(BaseUnprocessableEntityError):
     """
 
 
+class DataWarehouseConnectionError(BaseUnprocessableEntityError):
+    """
+    Raise when connection to data warehouse cannot be established
+    """
+
+
 class DocumentError(BaseUnprocessableEntityError):
     """
     General exception raised when there are some issue at persistent layer operations

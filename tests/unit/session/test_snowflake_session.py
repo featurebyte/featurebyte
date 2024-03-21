@@ -15,7 +15,7 @@ from snowflake.connector.errors import DatabaseError, NotSupportedError, Operati
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
-from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
+from featurebyte.exception import DataWarehouseConnectionError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
@@ -608,10 +608,10 @@ def test_constructor__credentials_error(snowflake_connector, error_type, snowfla
     """
     Check snowflake connection exception handling
     """
-    snowflake_connector.connect.side_effect = error_type
-    with pytest.raises(CredentialsError) as exc:
+    snowflake_connector.connect.side_effect = error_type(msg="Something went wrong.")
+    with pytest.raises(DataWarehouseConnectionError) as exc:
         SnowflakeSession(**snowflake_session_dict)
-    assert "Invalid credentials provided." in str(exc.value)
+    assert "Something went wrong." in str(exc.value)
 
 
 @pytest.mark.asyncio
