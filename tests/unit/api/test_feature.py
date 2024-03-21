@@ -521,6 +521,7 @@ def test_get_feature(saved_feature):
         "created_at",
         "entity_dtypes",
         "entity_ids",
+        "entity_join_steps",
         "version.name",
         "feature_list_ids",
         "raw_graph.nodes",

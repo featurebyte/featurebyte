@@ -278,6 +278,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 entity_ids=list(set().union(*[feature.entity_ids for feature in features]))
             )
         )
+        store_info_service = self.offline_store_info_initialization_service
         for idx, feature in enumerate(features):
             feature_list_to_feature_primary_entity_join_steps = (
                 EntityLookupPlanner.generate_lookup_steps(
@@ -286,21 +287,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                     relationships_info=relationships_info,
                 )
             )
-            feature_internal_entity_join_steps = []
-            feature_tables_entity_ids = await self.offline_store_info_initialization_service.get_offline_store_feature_tables_entity_ids(
-                feature, entity_id_to_serving_name
-            )
-            for entity_ids in feature_tables_entity_ids:
-                if feature.relationships_info is None:
-                    continue
-                internal_steps = EntityLookupPlanner.generate_lookup_steps(
-                    available_entity_ids=feature.primary_entity_ids,
-                    required_entity_ids=entity_ids,
-                    relationships_info=feature.relationships_info,
+            feature_internal_entity_join_steps = (
+                await store_info_service.get_entity_join_steps_for_feature_table(
+                    feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
                 )
-                for step in internal_steps:
-                    if step not in feature_internal_entity_join_steps:
-                        feature_internal_entity_join_steps.append(step)
+            )
             feature_entity_lookup_info = FeatureEntityLookupInfo(
                 feature_id=feature.id,
                 feature_list_to_feature_primary_entity_join_steps=feature_list_to_feature_primary_entity_join_steps,
