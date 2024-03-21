@@ -160,8 +160,19 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
+@pytest.fixture(name="snowflake_connector_cursor")
+def snowflake_connector_cursor_fixture():
+    """
+    Mock snowflake connector cursor
+    """
+    cursor = Mock(name="mock-snowflake-connector-cursor")
+    cursor.sfqid = "some-query-id"
+    cursor.fetch_arrow_batches.return_value = []
+    return cursor
+
+
 @pytest.fixture(name="snowflake_connector")
-def mock_snowflake_connector():
+def mock_snowflake_connector(snowflake_connector_cursor):
     """
     Mock snowflake connector in featurebyte.session.snowflake module
     """
@@ -169,9 +180,7 @@ def mock_snowflake_connector():
         connection = mock_connector.connect.return_value
         connection.get_query_status_throw_if_error.return_value = QueryStatus.SUCCESS
         connection.is_still_running.return_value = False
-        cursor = connection.cursor.return_value
-        cursor.sfqid = "some-query-id"
-        cursor.fetch_arrow_batches.return_value = []
+        connection.cursor.return_value = snowflake_connector_cursor
         yield mock_connector
 
 
