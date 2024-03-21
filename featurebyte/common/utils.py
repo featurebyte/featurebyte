@@ -1,5 +1,5 @@
 """
-Utility functions for API Objects
+Common utility functions
 """
 from __future__ import annotations
 
@@ -15,16 +15,12 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
-from alive_progress import alive_bar
 from dateutil import parser
 
-from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.enum import DBVarType, InternalName
 
 ARROW_METADATA_DB_VAR_TYPE = b"db_var_type"
@@ -120,43 +116,20 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     return data
 
 
-def dataframe_from_arrow_stream(buffer: Any, num_rows: int = 0) -> pd.DataFrame:
+def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
     """
-    Read data from arrow byte stream to pandas dataframe
+    Convert arrow table to pandas dataframe, handling list and map types
 
     Parameters
     ----------
-    buffer: Any
-        buffer-like
-    num_rows: int
-        Number of rows to read
+    arrow_table: pa.Table
+        Arrow table object
 
     Returns
     -------
     pd.DataFrame
         Pandas Dataframe object
     """
-    reader = pa.ipc.open_stream(buffer)
-    if num_rows == 0:
-        arrow_table = reader.read_all()
-    else:
-        batches = []
-        batches.append(reader.read_next_batch())
-        try:
-            with alive_bar(
-                total=num_rows,
-                title="Downloading table",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                while True:
-                    if batches[-1].num_rows == 0:
-                        break
-                    progress_bar(batches[-1].num_rows)  # pylint: disable=not-callable
-                    batches.append(reader.read_next_batch())
-        except StopIteration:
-            pass
-        arrow_table = pa.Table.from_batches(batches)
-
     # handle conversion of list and map types
     dataframe = arrow_table.to_pandas()
     encoded_types = DBVarType.dictionary_types().union(DBVarType.array_types())
@@ -168,6 +141,25 @@ def dataframe_from_arrow_stream(buffer: Any, num_rows: int = 0) -> pd.DataFrame:
                     lambda x: json.loads(x) if x else None
                 )
     return dataframe
+
+
+def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
+    """
+    Read data from arrow byte stream to pandas dataframe
+
+    Parameters
+    ----------
+    buffer: Any
+        buffer-like
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas Dataframe object
+    """
+    reader = pa.ipc.open_stream(buffer)
+    arrow_table = reader.read_all()
+    return dataframe_from_arrow_table(arrow_table)
 
 
 def literal_eval(value: Any) -> Any:
@@ -298,39 +290,6 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
             else:
                 raise NotImplementedError()
     return dataframe
-
-
-def parquet_from_arrow_stream(buffer: Any, output_path: Path, num_rows: int) -> None:
-    """
-    Write parquet file from arrow byte stream
-
-    Parameters
-    ----------
-    buffer: Any
-        buffer-like
-    output_path: Path
-        Output path
-    num_rows: int
-        Number of rows to write
-    """
-    reader = pa.ipc.open_stream(buffer)
-    batch = reader.read_next_batch()
-    with pq.ParquetWriter(output_path, batch.schema) as writer:
-        try:
-            with alive_bar(
-                total=num_rows,
-                title="Downloading table",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                while True:
-                    table = pa.Table.from_batches([batch])
-                    if table.num_rows == 0:
-                        break
-                    writer.write_table(table)
-                    progress_bar(table.num_rows)  # pylint: disable=not-callable
-                    batch = reader.read_next_batch()
-        except StopIteration:
-            pass
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

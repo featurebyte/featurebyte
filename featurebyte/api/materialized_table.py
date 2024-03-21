@@ -11,11 +11,11 @@ from typeguard import typechecked
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.source_table import SourceTable
-from featurebyte.common.utils import (
-    ResponseStream,
-    dataframe_from_arrow_stream,
+from featurebyte.api.utils import (
+    dataframe_from_arrow_stream_with_progress,
     parquet_from_arrow_stream,
 )
+from featurebyte.common.utils import ResponseStream
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordDeletionException, RecordRetrievalException
@@ -85,7 +85,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         response = client.get(f"{self._route}/pyarrow_table/{self.id}", stream=True)
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return dataframe_from_arrow_stream(
+        return dataframe_from_arrow_stream_with_progress(
             ResponseStream(response.iter_content(1024)), num_rows=self.num_rows
         )
 

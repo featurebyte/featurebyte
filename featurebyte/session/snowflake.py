@@ -25,7 +25,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import CredentialsError, CursorSchemaError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -182,9 +182,16 @@ class SnowflakeSession(BaseSession):
         Returns
         -------
         pa.Schema
+
+        Raises
+        ------
+        CursorSchemaError
+            When the cursor description is not as expected
         """
         fields = []
         for field in cursor.description:
+            if not hasattr(field, "type_code"):
+                raise CursorSchemaError()
             field_type = FIELD_TYPES[field.type_code]
             if field_type.name == "FIXED" and field.scale and field.scale > 0:
                 # DECIMAL type
@@ -242,7 +249,7 @@ class SnowflakeSession(BaseSession):
             yield pa.record_batch(
                 pd.DataFrame(columns=[field.name for field in schema]), schema=schema
             )
-        except (NotSupportedError, AttributeError):
+        except (NotSupportedError, CursorSchemaError):
             batches = super().fetch_query_stream_impl(cursor)
             async for batch in batches:
                 if schema is None:

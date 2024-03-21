@@ -31,6 +31,9 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
+DATABRICKS_BATCH_FETCH_SIZE = 1000
+
+
 class DatabricksSession(BaseSparkSession):
     """
     Databricks session class
@@ -155,7 +158,7 @@ class DatabricksSession(BaseSparkSession):
         if schema:
             # fetch results in batches
             while True:
-                table = cursor.fetchmany_arrow(size=1000)
+                table = cursor.fetchmany_arrow(size=DATABRICKS_BATCH_FETCH_SIZE)
                 if table.shape[0] == 0:
                     # return empty table to ensure correct schema is returned
                     yield pa.record_batch([[]] * len(schema), schema=schema)

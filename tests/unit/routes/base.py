@@ -19,11 +19,11 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.api.utils import parquet_from_arrow_stream
 from featurebyte.common.utils import (
     ResponseStream,
     create_new_arrow_stream_writer,
     dataframe_to_arrow_bytes,
-    parquet_from_arrow_stream,
 )
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
