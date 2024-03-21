@@ -17,7 +17,7 @@ import pyarrow as pa
 from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
 from pyarrow import Schema
 from pydantic import Field, PrivateAttr
-from pyhive.exc import OperationalError
+from pyhive.exc import Error, OperationalError
 from pyhive.hive import Cursor
 from thrift.transport.TTransport import TTransportException
 
@@ -62,6 +62,7 @@ class SparkSession(BaseSparkSession):
     """
 
     _no_schema_error = OperationalError
+    _database_error = Error
     _connection: Optional[HiveConnection] = PrivateAttr(None)
     _storage: SimpleStorage = PrivateAttr()
 

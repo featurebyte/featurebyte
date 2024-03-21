@@ -22,7 +22,7 @@ from featurebyte.session.base_spark import BaseSparkSession
 try:
     from databricks import sql as databricks_sql
     from databricks.sdk import DbfsExt, WorkspaceClient
-    from databricks.sql.exc import ServerOperationError
+    from databricks.sql.exc import Error, ServerOperationError
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
@@ -74,6 +74,7 @@ class DatabricksSession(BaseSparkSession):
     """
 
     _no_schema_error = ServerOperationError
+    _database_error = Error
     _storage_base_path: str = PrivateAttr()
     _dbfs_client: DbfsExt = PrivateAttr()
 
