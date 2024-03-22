@@ -140,9 +140,9 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[expressions.Select, dict[Optional[str], DBVarType]]
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
-        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
+        flat_node = self.get_flattened_node(node_name)
         sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
 

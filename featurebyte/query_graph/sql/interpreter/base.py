@@ -9,7 +9,7 @@ from sqlglot import expressions
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
@@ -30,26 +30,25 @@ class BaseGraphInterpreter:
     """
 
     def __init__(self, query_graph: QueryGraphModel, source_type: SourceType):
-        self.query_graph = query_graph
+        self.query_graph, self.node_name_map = GraphFlatteningTransformer(
+            graph=query_graph
+        ).transform()
         self.source_type = source_type
         self.adapter = get_sql_adapter(source_type)
 
-    def flatten_graph(self, node_name: str) -> Tuple[QueryGraphModel, Node]:
-        """
-        Flatten the query graph (replace those graph node with flattened nodes)
+    def get_flattened_node(self, node_name: str) -> Node:
+        """Get node in the flattened graph
 
         Parameters
         ----------
-        node_name: str
-            Target node name
+        node_name : str
+            Query graph node name (before flattening)
 
         Returns
         -------
-        Tuple[QueryGraphModel, str]
+        Node
         """
-        graph, node_name_map = GraphFlatteningTransformer(graph=self.query_graph).transform()
-        node = graph.get_node_by_name(node_name_map[node_name])
-        return graph, node
+        return self.query_graph.get_node_by_name(self.node_name_map[node_name])
 
     def construct_shape_sql(self, node_name: str) -> Tuple[str, int]:
         """Construct SQL to get row count from a given node
@@ -64,12 +63,12 @@ class BaseGraphInterpreter:
         Tuple[str, int]
             SQL code to execute, and column count
         """
-        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
-        operation_structure = QueryGraph(**flat_graph.dict()).extract_operation_structure(
+        flat_node = self.get_flattened_node(node_name)
+        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             flat_node, keep_all_source_columns=True
         )
         sql_node = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         ).build(flat_node)
         assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
@@ -100,9 +99,9 @@ class BaseGraphInterpreter:
         -------
         Select
         """
-        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
+        flat_node = self.get_flattened_node(node_name)
         sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
         assert isinstance(sql_node, TableNode)
