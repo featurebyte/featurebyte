@@ -49,15 +49,14 @@ class FeatureStorePreview(FeatureByteBaseModel):
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
 
 
-class FeatureStoreSample(FeatureStorePreview):
+class TimeRangeSampleMixin(FeatureByteBaseModel):
     """
-    Generic sample schema
+    TimeRangeSampleMixin schema
     """
 
     from_timestamp: Optional[datetime] = Field(default=None)
     to_timestamp: Optional[datetime] = Field(default=None)
     timestamp_column: Optional[str] = Field(default=None)
-    stats_names: Optional[List[str]] = Field(default=None)
 
     @root_validator()
     @classmethod
@@ -108,6 +107,14 @@ class FeatureStoreSample(FeatureStorePreview):
             ), "from_timestamp must be smaller than to_timestamp."
 
         return values
+
+
+class FeatureStoreSample(TimeRangeSampleMixin, FeatureStorePreview):
+    """
+    Generic sample schema
+    """
+
+    stats_names: Optional[List[str]] = Field(default=None)
 
 
 class FeatureStoreShape(FeatureByteBaseModel):
