@@ -37,7 +37,6 @@ from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
-    sql_to_string,
 )
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.entity import (
@@ -479,7 +478,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
     table_details: TableDetails
 
 
-async def get_online_features(  # pylint: disable=too-many-locals
+async def get_online_features(  # pylint: disable=too-many-locals,too-many-branches
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
@@ -544,43 +543,46 @@ async def get_online_features(  # pylint: disable=too-many-locals
     if len(node_groups) > 1:
         # If using multiple queries, FeatureQuerySet requires request table to be registered as a
         # table beforehand.
-        request_table_name = f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}"
         if isinstance(request_data, pd.DataFrame):
-            await session.register_table(request_table_name, request_data)
+            request_table_name = f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}"
+            await session.register_table(request_table_name, request_data, temporary=False)
         else:
             assert request_table_details is not None
-            query = sql_to_string(
-                expressions.select(expressions.Star()).from_(
-                    get_fully_qualified_table_name(request_table_details.dict())
-                ),
-                source_type=session.source_type,
-            )
-            await session.register_table_with_query(request_table_name, query)
+            request_table_name = request_table_details.table_name
     else:
         request_table_name = None
 
-    aggregation_result_names = get_aggregation_result_names(graph, nodes, source_type)
-    versions = await online_store_table_version_service.get_versions(aggregation_result_names)
-    query_set = get_online_features_query_set(
-        graph,
-        node_groups,
-        source_type=source_type,
-        request_table_columns=request_table_columns,
-        output_feature_names=get_feature_names(graph, nodes),
-        request_table_name=request_table_name,
-        request_table_expr=request_table_expr,
-        request_table_details=request_table_details,
-        parent_serving_preparation=parent_serving_preparation,
-        request_timestamp=request_timestamp,
-        output_table_details=output_table_details,
-        output_include_row_index=request_table_details is None,
-        concatenate_serving_names=concatenate_serving_names,
-    )
-    fill_version_placeholders_for_query_set(query_set, versions)
-    logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
+    try:
+        aggregation_result_names = get_aggregation_result_names(graph, nodes, source_type)
+        versions = await online_store_table_version_service.get_versions(aggregation_result_names)
+        query_set = get_online_features_query_set(
+            graph,
+            node_groups,
+            source_type=source_type,
+            request_table_columns=request_table_columns,
+            output_feature_names=get_feature_names(graph, nodes),
+            request_table_name=request_table_name,
+            request_table_expr=request_table_expr,
+            request_table_details=request_table_details,
+            parent_serving_preparation=parent_serving_preparation,
+            request_timestamp=request_timestamp,
+            output_table_details=output_table_details,
+            output_include_row_index=request_table_details is None,
+            concatenate_serving_names=concatenate_serving_names,
+        )
+        fill_version_placeholders_for_query_set(query_set, versions)
+        logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
-    tic = time.time()
-    df_features = await execute_feature_query_set(session, query_set)
+        tic = time.time()
+        df_features = await execute_feature_query_set(session, query_set)
+    finally:
+        if request_table_name is not None and request_table_details is None:
+            await session.drop_table(
+                table_name=request_table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+            )
+
     if output_table_details is None:
         assert df_features is not None
         assert isinstance(request_data, pd.DataFrame)

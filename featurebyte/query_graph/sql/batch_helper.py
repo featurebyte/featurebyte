@@ -112,7 +112,7 @@ def construct_join_feature_sets_query(
             get_qualified_column_identifier(col, "REQ")
             for col in maybe_add_row_index_column(request_table_columns, output_include_row_index)
         )
-    ).from_(f"{request_table_name} AS REQ")
+    ).from_(expressions.Table(this=quoted_identifier(request_table_name), alias="REQ"))
 
     table_alias_by_feature = {}
     for i, feature_set in enumerate(feature_queries):

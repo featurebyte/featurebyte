@@ -232,7 +232,7 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
             if temporary:
                 expected = "CREATE OR REPLACE TEMPORARY VIEW"
             else:
-                expected = "CREATE TABLE"
+                expected = "CREATE OR REPLACE TABLE"
             await session.register_table("my_view", df, temporary)
 
             if temporary:

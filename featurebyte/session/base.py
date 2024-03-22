@@ -20,6 +20,7 @@ from io import BytesIO
 import aiofiles
 import pandas as pd
 import pyarrow as pa
+from bson import ObjectId
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -113,7 +114,6 @@ class BaseSession(BaseModel):
     database_name: str = ""
     schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
-    _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
 
     def __init__(self, **data: Any) -> None:
@@ -188,15 +188,15 @@ class BaseSession(BaseModel):
         """
         return self._connection
 
-    def generate_session_unique_id(self) -> str:
+    @classmethod
+    def generate_session_unique_id(cls) -> str:
         """Generate unique id within the session
 
         Returns
         -------
         str
         """
-        self._unique_id += 1
-        return str(self._unique_id)
+        return str(ObjectId()).upper()
 
     @abstractmethod
     async def list_databases(self) -> list[str]:

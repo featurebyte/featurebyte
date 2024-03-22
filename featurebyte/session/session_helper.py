@@ -112,7 +112,7 @@ async def execute_feature_query(
     done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]]
         To be called when task is completed to update progress
     """
-    await session.clone_if_not_threadsafe()
+    session = await session.clone_if_not_threadsafe()
     await session.execute_query_long_running(_to_query_str(feature_query.sql, session.source_type))
     await validate_output_row_index(session, feature_query.table_name)
     await done_callback()
