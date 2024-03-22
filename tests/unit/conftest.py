@@ -1001,11 +1001,12 @@ def snowflake_scd_table_state_map_fixture(snowflake_data_source):
 
 
 @pytest.fixture(name="snowflake_scd_table_with_entity")
-def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity):
+def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity, gender_entity):
     """
     Fixture for an SCD table with entity
     """
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    snowflake_scd_table["col_boolean"].as_entity(gender_entity.name)
     return snowflake_scd_table
 
 
@@ -1826,11 +1827,10 @@ def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
 
 
 @pytest.fixture(name="aggregate_asat_feature")
-def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity):
     """
     Fixture to get an aggregate asat feature from SCD table
     """
-    snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
     scd_view = snowflake_scd_table_with_entity.get_view()
     feature = scd_view.groupby("col_boolean").aggregate_asat(
         value_column=None,

@@ -1,5 +1,5 @@
 """
-This module contains as at aggregator related class
+This module contains forward as at aggregator related class
 """
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from typing import List, Optional, Type, cast
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
-from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
@@ -17,9 +17,9 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 
 
-class AsAtAggregator(BaseAsAtAggregator):
+class ForwardAsAtAggregator(BaseAsAtAggregator):
     """
-    AsAtAggregator implements the aggregate_asat method for GroupBy
+    AsAtAggregator implements the forward_aggregate_asat method for GroupBy
     """
 
     @property
@@ -28,25 +28,24 @@ class AsAtAggregator(BaseAsAtAggregator):
 
     @property
     def aggregation_method_name(self) -> str:
-        return "aggregate_asat"
+        return "forward_aggregate_asat"
 
     @property
     def output_name_parameter(self) -> str:
-        return "feature_name"
+        return "target_name"
 
     @typechecked
-    def aggregate_asat(
+    def forward_aggregate_asat(
         self,
         value_column: Optional[str] = None,
         method: Optional[str] = None,
-        feature_name: Optional[str] = None,
+        target_name: Optional[str] = None,
         offset: Optional[str] = None,
-        backward: bool = True,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
-    ) -> Feature:
+    ) -> Target:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time
+        Aggregate a column in SlowlyChangingView as at a point in time to produce a Target
 
         Parameters
         ----------
@@ -54,8 +53,8 @@ class AsAtAggregator(BaseAsAtAggregator):
             Column to be aggregated
         method: str
             Aggregation method
-        feature_name: str
-            Output feature name
+        target_name: str
+            Output target name
         offset: Optional[str]
             Optional offset to apply to the point in time column in the feature request. The
             aggregation result will be as at the point in time adjusted by this offset. Format of
@@ -70,9 +69,6 @@ class AsAtAggregator(BaseAsAtAggregator):
             "h": hour
             "d": day
             "w": week
-
-        backward: bool
-            Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
@@ -85,7 +81,7 @@ class AsAtAggregator(BaseAsAtAggregator):
         self._validate_parameters(
             method=method,
             value_column=value_column,
-            output_name=feature_name,
+            output_name=target_name,
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
@@ -97,30 +93,24 @@ class AsAtAggregator(BaseAsAtAggregator):
             "parent": value_column,
             "agg_func": method,
             "value_by": self.category,
-            "name": feature_name,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
+            "name": target_name,
             "offset": offset,
-            "backward": backward,
             **view.get_common_scd_parameters().dict(),
         }
-        groupby_node = self.view.graph.add_operation(
-            node_type=NodeType.AGGREGATE_AS_AT,
+        node = self.view.graph.add_operation(
+            node_type=NodeType.FORWARD_AGGREGATE_AS_AT,
             node_params=node_params,
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.view.node],
         )
 
         assert method is not None
-        assert feature_name is not None
+        assert target_name is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
-
-        return self._project_feature_from_groupby_node(
-            agg_method=agg_method,
-            feature_name=feature_name,
-            groupby_node=groupby_node,
-            method=method,
-            value_column=value_column,
-            fill_value=fill_value,
-            skip_fill_na=skip_fill_na,
-        )
+        output_var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
+        target = self.view.project_target_from_node(node, target_name, output_var_type)
+        if not skip_fill_na:
+            return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
+        return target

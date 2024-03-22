@@ -38,6 +38,7 @@ class Aggregate(TableNode):
         NodeType.AGGREGATE_AS_AT,
         NodeType.ITEM_GROUPBY,
         NodeType.FORWARD_AGGREGATE,
+        NodeType.FORWARD_AGGREGATE_AS_AT,
     ]
 
     @property

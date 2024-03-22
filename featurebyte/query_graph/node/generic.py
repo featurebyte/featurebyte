@@ -1733,21 +1733,18 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
 
     name: OutColumnStr
     offset: Optional[str]
+    # Note: This is kept for backward compatibility and not used by SQL generation
     backward: Optional[bool]
 
 
-class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
-    """AggregateAsAt class"""
+class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
+    """BaseAggregateAsAtNode class"""
 
-    type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
 
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
-
-    # feature definition hash generation configuration
-    _normalized_output_prefix = "feat_"
 
     @property
     def max_input_count(self) -> int:
@@ -1781,12 +1778,21 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 category=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
-                aggregation_type=self.type,
+                aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 dtype=output_var_type,
             )
         ]
+
+
+class AggregateAsAtNode(BaseAggregateAsAtNode):
+    """AggregateAsAtNode class"""
+
+    type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "feat_"
 
     def _derive_sdk_code(
         self,
@@ -1822,6 +1828,53 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             f"feature_name={feature_name}, "
             f"offset={offset}, "
             f"backward={backward}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
+
+
+class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
+    """ForwardAggregateAsAtNode class"""
+
+    type: Literal[NodeType.FORWARD_AGGREGATE_AS_AT] = Field(
+        NodeType.FORWARD_AGGREGATE_AS_AT, const=True
+    )
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "target_"
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `scd_view.groupby(...).forward_aggregate_asat()` will generate
+        # ForwardAggregateAsAtNode + ProjectNode. Output of ForwardAggregateAsAtNode is just an
+        # expression, the actual variable assignment will be done at the ProjectNode.
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        target_name = ValueStr.create(self.parameters.name)
+        offset = ValueStr.create(self.parameters.offset)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"forward_aggregate_asat(value_column={value_column}, "
+            f"method={method}, "
+            f"target_name={target_name}, "
+            f"offset={offset}, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
