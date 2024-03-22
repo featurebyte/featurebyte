@@ -289,6 +289,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
 async def test_get_historical_features__intermediate_tables_dropped(
     float_feature,
     mock_snowflake_session,
+    mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
     snowflake_feature_store,
@@ -296,6 +297,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     """
     Test intermediate tables are dropped after get historical features
     """
+    _ = mocked_compute_tiles_on_demand
     df_request = pd.DataFrame(
         {
             "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
