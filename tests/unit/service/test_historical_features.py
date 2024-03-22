@@ -2,7 +2,7 @@
 Test cases for the HistoricalFeaturesService
 """
 from unittest import mock
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pandas as pd
 import pytest
@@ -283,6 +283,43 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
         output_table_details=output_table_details,
     )
     mocked_compute_tiles_on_demand.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_historical_features__intermediate_tables_dropped(
+    float_feature,
+    mock_snowflake_session,
+    output_table_details,
+    tile_cache_service,
+    snowflake_feature_store,
+):
+    """
+    Test intermediate tables are dropped after get historical features
+    """
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
+    await get_historical_features(
+        session=mock_snowflake_session,
+        tile_cache_service=tile_cache_service,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        observation_set=df_request,
+        feature_store=snowflake_feature_store,
+        output_table_details=output_table_details,
+    )
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            table_name="REQUEST_TABLE_1",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        )
+    ]
 
 
 @pytest.fixture(name="mocked_tile_cache")

@@ -4,7 +4,7 @@ Tests for OnlineServingService
 import json
 import os
 import textwrap
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
@@ -377,6 +377,23 @@ async def test_get_online_features_multiple_queries__dataframe(
         update_fixture=update_fixtures,
     )
 
+    # REQUEST_TABLE_1 is an intermediate table that should be dropped
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+        call(table_name="REQUEST_TABLE_1", schema_name="sf_schema", database_name="sf_db"),
+    ]
+
 
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
@@ -405,3 +422,20 @@ async def test_get_online_features_multiple_queries__batch_request_table(
         "tests/fixtures/expected_get_online_features_multiple_queries_batch_request_table.sql",
         update_fixture=update_fixtures,
     )
+
+    # Only two intermediate tables in this case. Request table is already a materialized table, so
+    # it should not be dropped.
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+    ]
