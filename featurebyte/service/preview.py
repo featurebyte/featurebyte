@@ -98,7 +98,7 @@ class PreviewService:
         FeatureStoreShape
             Row and column counts
         """
-        with timer("Get feature store and session", logger):
+        with timer("PreviewService.shape: Get feature store and session", logger):
             feature_store, session = await self._get_feature_store_session(
                 graph=preview.graph,
                 node_name=preview.node_name,
@@ -107,13 +107,17 @@ class PreviewService:
 
         node_num, edge_num = len(preview.graph.nodes), len(preview.graph.edges)
         with timer(
-            "Construct shape SQL", logger, extra={"node_num": node_num, "edge_num": edge_num}
+            "PreviewService.shape: Construct shape SQL",
+            logger,
+            extra={"node_num": node_num, "edge_num": edge_num},
         ):
             shape_sql, num_cols = GraphInterpreter(
                 preview.graph, source_type=feature_store.type
             ).construct_shape_sql(node_name=preview.node_name)
 
-        with timer("Execute shape SQL", logger, extra={"shape_sql": shape_sql}):
+        with timer(
+            "PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}
+        ):
             result = await session.execute_query(shape_sql)
 
         assert result is not None
