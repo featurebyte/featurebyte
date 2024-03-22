@@ -167,6 +167,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 join_alias="R",
                 join_type="inner",
                 on=join_conditions_expr,
+                copy=False,
             )
         )
         return cast(Select, select_expr)
@@ -243,7 +244,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             "index",
             *keys,
             *window_exprs,
-        ).from_(input_tiled.subquery(copy=False))
+        ).from_(input_tiled.subquery(copy=False), copy=False)
 
         outer_condition = expressions.EQ(
             this=quoted_identifier(self.ROW_NUMBER),
@@ -256,7 +257,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 *[spec.tile_column_name for spec in self.tile_specs],
             )
             .from_(inner_expr.subquery(copy=False))
-            .where(outer_condition)
+            .where(outer_condition, copy=False)
         )
 
         return tile_expr
