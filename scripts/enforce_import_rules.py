@@ -133,19 +133,21 @@ if __name__ == "__main__":
         "black",
         "cachetools",
         "cryptography",
+        "databricks",
         "fastapi",
         "jinja2",
         "matplotlib",
         "numpy",
         "pandas",
+        "pyarrow",
+        "pyarrow.parquet",
         "pydantic",
         "pymongo",
+        "pyspark",
         "sqlglot",
         "typeguard",
         "yaml",
         "IPython",
-        "databricks",
-        "pyspark",
     }
 
     # Common libraries that can be imported from both backend and client

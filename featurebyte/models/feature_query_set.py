@@ -3,7 +3,7 @@ FeatureQuerySet related classes
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import Optional, Union
 
 from dataclasses import dataclass
 
@@ -30,4 +30,6 @@ class FeatureQuerySet:
 
     feature_queries: list[FeatureQuery]
     output_query: Union[str, Expression]
+    output_table_name: Optional[str]
     progress_message: str
+    validate_output_row_index: bool = False

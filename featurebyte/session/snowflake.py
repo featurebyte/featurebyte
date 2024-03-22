@@ -14,14 +14,14 @@ import pandas as pd
 import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
-from snowflake.connector.cursor import ResultMetadata
+from snowflake.connector.constants import FIELD_TYPES
 from snowflake.connector.errors import Error as SnowflakeError
 from snowflake.connector.errors import NotSupportedError, ProgrammingError
 from snowflake.connector.pandas_tools import write_pandas
 
-from featurebyte.common.utils import pa_table_to_record_batches
+from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import DataWarehouseConnectionError
+from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -43,6 +43,17 @@ from featurebyte.session.enum import SnowflakeDataType
 logger = get_logger(__name__)
 
 logging.getLogger("snowflake.connector").setLevel(logging.ERROR)
+
+
+db_vartype_mapping = {
+    SnowflakeDataType.REAL: DBVarType.FLOAT,
+    SnowflakeDataType.BINARY: DBVarType.BINARY,
+    SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
+    SnowflakeDataType.DATE: DBVarType.DATE,
+    SnowflakeDataType.TIME: DBVarType.TIME,
+    SnowflakeDataType.ARRAY: DBVarType.ARRAY,
+    SnowflakeDataType.OBJECT: DBVarType.DICT,
+}
 
 
 class SnowflakeSession(BaseSession):
@@ -151,6 +162,46 @@ class SnowflakeSession(BaseSession):
 
         return output
 
+    def _get_schema_from_cursor(self, cursor: Any) -> pa.Schema:
+        """
+        Get schema from a cursor
+
+        Parameters
+        ----------
+        cursor: Any
+            Cursor to fetch data from
+
+        Returns
+        -------
+        pa.Schema
+
+        Raises
+        ------
+        CursorSchemaError
+            When the cursor description is not as expected
+        """
+        fields = []
+        for field in cursor.description:
+            if not hasattr(field, "type_code"):
+                raise CursorSchemaError()
+            field_type = FIELD_TYPES[field.type_code]
+            if field_type.name == "FIXED" and field.scale and field.scale > 0:
+                # DECIMAL type
+                pa_type = pa.decimal128(field.precision, field.scale)
+            else:
+                pa_type = field_type.pa_type(field)
+            db_var_type = self._convert_to_internal_variable_type(
+                {
+                    "type": field_type.name,
+                    "length": field.internal_size,
+                    "scale": field.scale,
+                }
+            )
+            fields.append(
+                pa.field(field.name, pa_type, metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type})
+            )
+        return pa.schema(fields)
+
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         """
         Fetch the result of executed SQL query from connection cursor
@@ -178,51 +229,25 @@ class SnowflakeSession(BaseSession):
                 return super().fetch_query_result_impl(cursor)
         return None
 
-    @staticmethod
-    def _get_column_name_to_db_var_type(cursor: Any) -> dict[str, DBVarType]:
-        """
-        Get DB var type of data being fetched from the snowflake cursor.
-
-        Parameters
-        ----------
-        cursor: Any
-            The connection cursor
-
-        Returns
-        -------
-        dict[str, DBVarType]
-            A dictionary mapping column names to DB var types
-        """
-        output = {}
-        # See https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#label-python-connector-type-codes
-        # for more details. We currently only map one value since that's the only one we need to do any special
-        # handling for. If we need to apply more special handling in the future, we can add more mappings here.
-        type_code_to_db_var_type_mapping: dict[int, DBVarType] = {10: DBVarType.ARRAY}
-        for metadata in cursor.description:
-            if not isinstance(metadata, ResultMetadata):
-                continue
-            type_code = metadata.type_code
-            if type_code in type_code_to_db_var_type_mapping:
-                output[metadata.name] = type_code_to_db_var_type_mapping[type_code]
-        return output
-
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
-        col_name_to_db_var_type = self._get_column_name_to_db_var_type(cursor)
         # fetch results in batches and write to the stream
+        schema = None
         try:
-            counter = 0
+            schema = self._get_schema_from_cursor(cursor)
             for table in cursor.fetch_arrow_batches():
-                for batch in pa_table_to_record_batches(table, col_name_to_db_var_type):
-                    counter += 1
+                for batch in table.cast(schema).to_batches():
                     yield batch
-            if counter == 0:
-                # Arrow batch is empty, need to return empty table with schema
-                table = cursor.get_result_batches()[0].to_arrow()
-                yield pa_table_to_record_batches(table)[0]
-        except NotSupportedError:
+            # return empty table to ensure correct schema is returned
+            yield pa.record_batch(
+                pd.DataFrame(columns=[field.name for field in schema]), schema=schema
+            )
+        except (NotSupportedError, CursorSchemaError):
             batches = super().fetch_query_stream_impl(cursor)
             async for batch in batches:
-                yield batch
+                if schema is None:
+                    yield batch
+                else:
+                    yield pa.record_batch(batch.to_pandas(), schema=schema)
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
@@ -244,17 +269,8 @@ class SnowflakeSession(BaseSession):
 
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
-        to_internal_variable_map = {
-            SnowflakeDataType.REAL: DBVarType.FLOAT,
-            SnowflakeDataType.BINARY: DBVarType.BINARY,
-            SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
-            SnowflakeDataType.DATE: DBVarType.DATE,
-            SnowflakeDataType.TIME: DBVarType.TIME,
-            SnowflakeDataType.ARRAY: DBVarType.ARRAY,
-            SnowflakeDataType.OBJECT: DBVarType.OBJECT,
-        }
-        if snowflake_var_info["type"] in to_internal_variable_map:
-            return to_internal_variable_map[snowflake_var_info["type"]]
+        if snowflake_var_info["type"] in db_vartype_mapping:
+            return db_vartype_mapping[snowflake_var_info["type"]]
         if snowflake_var_info["type"] == SnowflakeDataType.FIXED:
             # scale is defined as number of digits following the decimal point (see link in reference)
             return DBVarType.INT if snowflake_var_info["scale"] == 0 else DBVarType.FLOAT
@@ -313,14 +329,16 @@ class SnowflakeSession(BaseSession):
             {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
         )
         return TableDetails(
-            details=details.iloc[0].to_dict(),
+            details=json.loads(details.iloc[0].to_json(orient="index")),
             fully_qualified_name=sql_to_string(
                 fully_qualified_table_name, source_type=self.source_type
             ),
         )
 
     @staticmethod
-    def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> list[tuple[str, str]]:
+    def get_columns_schema_from_dataframe(  # pylint: disable=too-many-branches
+        dataframe: pd.DataFrame,
+    ) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
 
         Parameters
@@ -344,6 +362,8 @@ class SnowflakeSession(BaseSession):
                     db_type = "TIMESTAMP_TZ"
                 else:
                     db_type = "TIMESTAMP_NTZ"
+            elif pd.api.types.is_bool_dtype(dtype):
+                db_type = "BOOLEAN"
             elif pd.api.types.is_float_dtype(dtype):
                 db_type = "DOUBLE"
             elif pd.api.types.is_integer_dtype(dtype):

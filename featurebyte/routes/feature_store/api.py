@@ -354,14 +354,14 @@ class FeatureStoreRouter(
         sample: FeatureStoreSample,
         size: int = Query(default=0, gte=0, le=1000000),
         seed: int = Query(default=1234),
-        catalog_id: PydanticObjectId = Query(default=DEFAULT_CATALOG_ID),
+        catalog_id: PydanticObjectId = Query(default=None),
     ) -> Task:
         """
         Submit data description task for query graph node
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         task_submit: Task = await controller.create_data_description(
-            sample=sample, size=size, seed=seed, catalog_id=catalog_id
+            sample=sample, size=size, seed=seed, catalog_id=catalog_id or DEFAULT_CATALOG_ID
         )
         return task_submit
 

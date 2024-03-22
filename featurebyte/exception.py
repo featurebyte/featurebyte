@@ -505,3 +505,9 @@ class TaskCanceledError(FeatureByteException):
     """
     Raise when task is canceled
     """
+
+
+class CursorSchemaError(FeatureByteException):
+    """
+    Raise when cursor schema is not as expected
+    """

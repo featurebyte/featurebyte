@@ -163,7 +163,7 @@ def test_item_table_update_critical_data_info(item_table):
     window_preview_df = window_feature.preview(
         pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
     )
-    assert window_preview_df.count_12h.iloc[0] == '{\n  "type_84": 1\n}'
+    assert window_preview_df.count_12h.iloc[0] == {"type_84": 1}
 
     feature = item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,

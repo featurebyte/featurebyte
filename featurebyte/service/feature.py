@@ -128,6 +128,22 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             # derivation.
             feature_dict["aggregation_ids"] = ["dummy_aggregation_id"]
             feature_dict["aggregation_result_names"] = ["dummy_aggregation_result_name"]
+
+        feature = FeatureModel(**feature_dict)
+        if sanitize_for_definition:
+            return feature
+
+        # derive entity join steps
+        store_info_service = self.offline_store_info_initialization_service
+        entity_id_to_serving_name = {
+            entity_id: entity.serving_names[0]
+            for entity_id, entity in derived_data.entity_id_to_entity.items()
+        }
+        feature_dict[
+            "entity_join_steps"
+        ] = await store_info_service.get_entity_join_steps_for_feature_table(
+            feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
+        )
         return FeatureModel(**feature_dict)
 
     @staticmethod

@@ -25,11 +25,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.common.utils import (
-    create_new_arrow_stream_writer,
-    dataframe_from_arrow_stream,
-    pa_table_to_record_batches,
-)
+from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
@@ -50,7 +46,6 @@ HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
-
 
 logger = get_logger(__name__)
 
@@ -393,9 +388,7 @@ class BaseSession(BaseModel):
         """
         # fetch all results into a single dataframe and write batched records to the stream
         dataframe = self.fetch_query_result_impl(cursor)
-        table = pa.Table.from_pandas(dataframe)
-        for batch in pa_table_to_record_batches(table):
-            yield batch
+        yield pa.record_batch(dataframe)
 
     async def get_async_query_stream(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS

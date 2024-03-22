@@ -11,6 +11,7 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from pandas.testing import assert_frame_equal
+from snowflake.connector.cursor import ResultMetadataV2
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
@@ -154,11 +155,19 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
     Fixture for a mocked connection cursor for Snowflake
     """
     with patch("featurebyte.session.snowflake.connector") as mock_connector:
-        mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
         if not is_fetch_pandas_all_available:
+            mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
             mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         else:
+            mock_cursor = Mock(
+                name="MockCursor",
+                description=[
+                    ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
+                    ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
+                    ResultMetadataV2(name="col_c", type_code=0, is_nullable=True),
+                ],
+            )
             mock_cursor.fetch_pandas_all.return_value = pd.DataFrame(
                 {
                     "col_a": [1, 4, 7],
@@ -633,6 +642,10 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
     connection = snowflake_connector.connect.return_value
     cursor = connection.cursor.return_value
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
+    cursor.description = [
+        ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
+        ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
+    ]
 
     session = SnowflakeSession(**snowflake_session_dict)
 
@@ -700,26 +713,16 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     session = SnowflakeSession(**snowflake_session_dict)
     result = await session.execute_query(query)
     assert result is None
-
+    # empty dataframe from mock_fetch_arrow_batches
+    cursor.description = [
+        ResultMetadataV2(name="a", type_code=1, is_nullable=True),
+        ResultMetadataV2(name="b", type_code=1, is_nullable=True),
+    ]
     empty_df = pd.DataFrame({"a": [], "b": []})
 
-    def mock_fetch_arrow_batches_empty():
-        return
-        yield
-
-    # empty dataframe, no batch data from fetch_arrow_batches
-    cursor.description = [True]
-    session = SnowflakeSession(**snowflake_session_dict)
-    cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches_empty
-    cursor.get_result_batches.return_value = [Mock(to_arrow=lambda: pa.Table.from_pandas(empty_df))]
-    result = await session.execute_query(query)
-    assert_frame_equal(result, empty_df)
-
-    # empty dataframe, with batch data from fetch_arrow_batches
     def mock_fetch_arrow_batches():
         yield pa.Table.from_pandas(empty_df)
 
-    cursor.description = [True]
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
     result = await session.execute_query(query)
     assert_frame_equal(result, empty_df)

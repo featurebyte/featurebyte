@@ -62,6 +62,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
+        "entity_join_steps": None,
         "entity_dtypes": ["INT"],
         "table_ids": [ObjectId(api_object_to_id["event_table"])],
         "feature_list_ids": [],
