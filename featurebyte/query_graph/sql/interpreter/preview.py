@@ -864,8 +864,9 @@ class PreviewMixin(BaseGraphInterpreter):
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
+        flat_node = self.get_flattened_node(node_name)
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
+            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
         )
 
         sample_sql_tree, type_conversions = self._construct_sample_sql(
