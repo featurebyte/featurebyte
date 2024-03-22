@@ -3,7 +3,9 @@ Session related helper functions
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional, Union
+from typing import Any, Callable, Coroutine, List, Optional, Union
+
+import asyncio
 
 import pandas as pd
 from sqlglot import expressions
@@ -12,7 +14,7 @@ from sqlglot.expressions import Expression
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
-from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
 
@@ -66,6 +68,56 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
         raise ValueError("Row index column is invalid in the output table")
 
 
+async def run_coroutines(coroutines: List[Coroutine[Any, Any, None]]) -> None:
+    """
+    Execute the provided list of coroutines
+
+    Parameters
+    ----------
+    coroutines: List[Coroutine[Any, Any, None]]
+        List of coroutines to be executed
+
+    Raises
+    ------
+    Exception
+        If any task failed
+    """
+    tasks = [asyncio.create_task(coro) for coro in coroutines]
+    try:
+        await asyncio.gather(*tasks)
+    except Exception:
+        logger.error(
+            "Canceling all other tasks because at least one task failed",
+            exc_info=True,
+        )
+        for task in tasks:
+            task.cancel()
+        raise
+
+
+async def execute_feature_query(
+    session: BaseSession,
+    feature_query: FeatureQuery,
+    done_callback: Callable[[], Coroutine[Any, Any, None]],
+) -> None:
+    """
+    Process a single FeatureQuery
+
+    Parameters
+    ----------
+    session: BaseSession
+        Session object
+    feature_query: FeatureQuery
+        Instance of a FeatureQuery
+    done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]]
+        To be called when task is completed to update progress
+    """
+    session = await session.clone_if_not_threadsafe()
+    await session.execute_query_long_running(_to_query_str(feature_query.sql, session.source_type))
+    await validate_output_row_index(session, feature_query.table_name)
+    await done_callback()
+
+
 async def execute_feature_query_set(
     session: BaseSession,
     feature_query_set: FeatureQuerySet,
@@ -89,18 +141,31 @@ async def execute_feature_query_set(
     """
     total_num_queries = len(feature_query_set.feature_queries) + 1
     materialized_feature_table = []
-    try:
-        for i, feature_query in enumerate(feature_query_set.feature_queries):
-            await session.execute_query_long_running(
-                _to_query_str(feature_query.sql, session.source_type)
+    processed = 0
+
+    async def _progress_callback() -> None:
+        nonlocal processed
+        processed += 1
+        if progress_callback:
+            await progress_callback(
+                int(100 * processed / total_num_queries),
+                feature_query_set.progress_message,
             )
-            await validate_output_row_index(session, feature_query.table_name)
-            materialized_feature_table.append(feature_query.table_name)
-            if progress_callback:
-                await progress_callback(
-                    int(100 * (i + 1) / total_num_queries),
-                    feature_query_set.progress_message,
+
+    try:
+        coroutines = []
+        for feature_query in feature_query_set.feature_queries:
+            coroutines.append(
+                execute_feature_query(
+                    session=session,
+                    feature_query=feature_query,
+                    done_callback=_progress_callback,
                 )
+            )
+            materialized_feature_table.append(feature_query.table_name)
+        if coroutines:
+            with timer("Execute feature queries", logger=logger):
+                await run_coroutines(coroutines)
 
         result = await session.execute_query_long_running(
             _to_query_str(feature_query_set.output_query, session.source_type)

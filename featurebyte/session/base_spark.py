@@ -250,7 +250,7 @@ class BaseSparkSession(BaseSession, ABC):
                 )
 
                 await self.execute_query(
-                    f"CREATE TABLE `{table_name}` USING DELTA "
+                    f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
                     f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
                     f"AS SELECT * FROM `{temp_view_name}`"
                 )

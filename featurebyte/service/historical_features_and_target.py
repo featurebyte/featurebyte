@@ -173,68 +173,76 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
     )
 
-    # Compute tiles on demand if required
-    if not is_feature_list_deployed:
-        tile_cache_progress_callback = (
-            get_ranged_progress_callback(
-                progress_callback,
-                0,
-                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+    try:
+        # Compute tiles on demand if required
+        if not is_feature_list_deployed:
+            tile_cache_progress_callback = (
+                get_ranged_progress_callback(
+                    progress_callback,
+                    0,
+                    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                )
+                if progress_callback
+                else None
             )
-            if progress_callback
-            else None
-        )
-        tic = time.time()
-        await compute_tiles_on_demand(
-            session=session,
-            tile_cache_service=tile_cache_service,
+            tic = time.time()
+            await compute_tiles_on_demand(
+                session=session,
+                tile_cache_service=tile_cache_service,
+                graph=graph,
+                nodes=nodes,
+                request_id=request_id,
+                request_table_name=request_table_name,
+                request_table_columns=request_table_columns,
+                feature_store_id=feature_store.id,
+                serving_names_mapping=serving_names_mapping,
+                parent_serving_preparation=parent_serving_preparation,
+                progress_callback=tile_cache_progress_callback
+                if tile_cache_progress_callback
+                else None,
+            )
+
+            elapsed = time.time() - tic
+            logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
+
+        if progress_callback:
+            await progress_callback(
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
+            )
+
+        # Generate SQL code that computes the features
+        historical_feature_query_set = get_historical_features_query_set(
             graph=graph,
             nodes=nodes,
-            request_id=request_id,
-            request_table_name=request_table_name,
             request_table_columns=request_table_columns,
-            feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
+            source_type=feature_store.type,
+            output_table_details=output_table_details,
+            output_feature_names=get_feature_names(graph, nodes),
+            request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
-            progress_callback=tile_cache_progress_callback
-            if tile_cache_progress_callback
+            output_include_row_index=output_include_row_index,
+            progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+        )
+        await execute_feature_query_set(
+            session,
+            feature_query_set=historical_feature_query_set,
+            progress_callback=get_ranged_progress_callback(
+                progress_callback,
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                100,
+            )
+            if progress_callback
             else None,
         )
-
-        elapsed = time.time() - tic
-        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
-
-    if progress_callback:
-        await progress_callback(
-            TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
+        logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
+    finally:
+        await session.drop_table(
+            table_name=request_table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
         )
-
-    # Generate SQL code that computes the features
-    historical_feature_query_set = get_historical_features_query_set(
-        graph=graph,
-        nodes=nodes,
-        request_table_columns=request_table_columns,
-        serving_names_mapping=serving_names_mapping,
-        source_type=feature_store.type,
-        output_table_details=output_table_details,
-        output_feature_names=get_feature_names(graph, nodes),
-        request_table_name=request_table_name,
-        parent_serving_preparation=parent_serving_preparation,
-        output_include_row_index=output_include_row_index,
-        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
-    )
-    await execute_feature_query_set(
-        session,
-        feature_query_set=historical_feature_query_set,
-        progress_callback=get_ranged_progress_callback(
-            progress_callback,
-            TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-            100,
-        )
-        if progress_callback
-        else None,
-    )
-    logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
 
 
 async def get_target(
@@ -296,29 +304,37 @@ async def get_target(
     )
 
     # Generate SQL code that computes the targets
-    historical_feature_query_set = get_historical_features_query_set(
-        graph=graph,
-        nodes=nodes,
-        request_table_columns=request_table_columns,
-        serving_names_mapping=serving_names_mapping,
-        source_type=feature_store.type,
-        output_table_details=output_table_details,
-        output_feature_names=get_feature_names(graph, nodes),
-        request_table_name=request_table_name,
-        parent_serving_preparation=parent_serving_preparation,
-        output_include_row_index=output_include_row_index,
-        progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
-    )
-
-    await execute_feature_query_set(
-        session=session,
-        feature_query_set=historical_feature_query_set,
-        progress_callback=get_ranged_progress_callback(
-            progress_callback,
-            TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-            100,
+    try:
+        historical_feature_query_set = get_historical_features_query_set(
+            graph=graph,
+            nodes=nodes,
+            request_table_columns=request_table_columns,
+            serving_names_mapping=serving_names_mapping,
+            source_type=feature_store.type,
+            output_table_details=output_table_details,
+            output_feature_names=get_feature_names(graph, nodes),
+            request_table_name=request_table_name,
+            parent_serving_preparation=parent_serving_preparation,
+            output_include_row_index=output_include_row_index,
+            progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
         )
-        if progress_callback
-        else None,
-    )
-    logger.debug(f"compute_targets in total took {time.time() - tic_:.2f}s")
+
+        await execute_feature_query_set(
+            session=session,
+            feature_query_set=historical_feature_query_set,
+            progress_callback=get_ranged_progress_callback(
+                progress_callback,
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                100,
+            )
+            if progress_callback
+            else None,
+        )
+        logger.debug(f"compute_targets in total took {time.time() - tic_:.2f}s")
+    finally:
+        await session.drop_table(
+            table_name=request_table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )

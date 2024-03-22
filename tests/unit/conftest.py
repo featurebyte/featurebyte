@@ -1886,7 +1886,7 @@ def mock_snowflake_session_fixture():
     """
     SnowflakeSession object fixture
     """
-    return Mock(
+    session = Mock(
         name="mock_snowflake_session",
         spec=SnowflakeSession,
         source_type=SourceType.SNOWFLAKE,
@@ -1894,6 +1894,8 @@ def mock_snowflake_session_fixture():
         schema_name="sf_schema",
         _no_schema_error=ProgrammingError,
     )
+    session.clone_if_not_threadsafe.return_value = session
+    return session
 
 
 @pytest.fixture

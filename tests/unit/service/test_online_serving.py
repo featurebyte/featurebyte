@@ -4,19 +4,17 @@ Tests for OnlineServingService
 import json
 import os
 import textwrap
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.exception import FeatureListNotOnlineEnabledError, RequiredEntityNotProvidedError
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.session.base import BaseSession
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
@@ -102,7 +100,7 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
 
 
 @pytest.fixture(name="mock_session_for_online_serving")
-def mock_session_for_online_serving_fixture():
+def mock_session_for_online_serving_fixture(mock_snowflake_session):
     """Mock session for online serving"""
 
     async def mock_execute_query(query):
@@ -114,18 +112,11 @@ def mock_session_for_online_serving_fixture():
     with patch(
         "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
-        mock_session = Mock(
-            name="mock_session_for_online_serving",
-            execute_query=Mock(side_effect=mock_execute_query),
-            execute_query_long_running=Mock(side_effect=mock_execute_query),
-            database_name="my_db",
-            schema_name="my_schema",
-            generate_session_unique_id=Mock(return_value="1"),
-            source_type=SourceType.SNOWFLAKE,
-            spec=BaseSession,
-        )
-        mock_get_feature_store_session.return_value = mock_session
-        yield mock_session
+        mock_snowflake_session.execute_query = Mock(side_effect=mock_execute_query)
+        mock_snowflake_session.execute_query_long_running = Mock(side_effect=mock_execute_query)
+        mock_snowflake_session.generate_session_unique_id.return_value = "1"
+        mock_get_feature_store_session.return_value = mock_snowflake_session
+        yield mock_snowflake_session
 
 
 @pytest.fixture
@@ -386,6 +377,23 @@ async def test_get_online_features_multiple_queries__dataframe(
         update_fixture=update_fixtures,
     )
 
+    # REQUEST_TABLE_1 is an intermediate table that should be dropped
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+        call(table_name="REQUEST_TABLE_1", schema_name="sf_schema", database_name="sf_db"),
+    ]
+
 
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
@@ -414,3 +422,20 @@ async def test_get_online_features_multiple_queries__batch_request_table(
         "tests/fixtures/expected_get_online_features_multiple_queries_batch_request_table.sql",
         update_fixture=update_fixtures,
     )
+
+    # Only two intermediate tables in this case. Request table is already a materialized table, so
+    # it should not be dropped.
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+    ]

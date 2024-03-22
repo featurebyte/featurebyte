@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, List, Optional, Tuple
 
-import asyncio
 import time
 
 from featurebyte.enum import InternalName
@@ -17,6 +16,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.session_helper import run_coroutines
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
@@ -61,11 +61,6 @@ class TileManagerService:
             list of TileSpec, temp_entity_table to update the feature store
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
-
-        Raises
-        ------
-        Exception
-            If any task failed
         """
         num_jobs = len(tile_inputs)
         processed = 0
@@ -79,28 +74,17 @@ class TileManagerService:
 
         if progress_callback:
             await progress_callback(0, "Computing tiles on demand")
-        tasks = []
+        coroutines = []
         for tile_spec, entity_table in tile_inputs:
-            tasks.append(
-                asyncio.create_task(
-                    self._generate_tiles_on_demand_for_tile_spec(
-                        session=session,
-                        tile_spec=tile_spec,
-                        entity_table=entity_table,
-                        progress_callback=_progress_callback,
-                    )
+            coroutines.append(
+                self._generate_tiles_on_demand_for_tile_spec(
+                    session=session,
+                    tile_spec=tile_spec,
+                    entity_table=entity_table,
+                    progress_callback=_progress_callback,
                 )
             )
-        try:
-            await asyncio.gather(*tasks)
-        except Exception:
-            logger.error(
-                "Canceling all other tasks because at least one task failed",
-                exc_info=True,
-            )
-            for task in tasks:
-                task.cancel()
-            raise
+        await run_coroutines(coroutines)
 
     async def _generate_tiles_on_demand_for_tile_spec(
         self,
@@ -110,8 +94,7 @@ class TileManagerService:
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         tic = time.time()
-        if not session.is_threadsafe():
-            session = await session.clone()
+        session = await session.clone_if_not_threadsafe()
         await self.generate_tiles(
             session=session,
             tile_spec=tile_spec,
