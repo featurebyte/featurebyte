@@ -9,6 +9,8 @@ from featurebyte.sql.tile_common import TileCommon
 
 logger = get_logger(__name__)
 
+LIST_TABLE_SCHEMA_TIMEOUT_SECONDS = 10 * 60
+
 
 class TileRegistry(TileCommon):
     """
@@ -55,7 +57,10 @@ class TileRegistry(TileCommon):
                 c.upper()
                 for c in (
                     await self._session.list_table_schema(
-                        self.table_name, self._session.database_name, self._session.schema_name
+                        self.table_name,
+                        self._session.database_name,
+                        self._session.schema_name,
+                        timeout=LIST_TABLE_SCHEMA_TIMEOUT_SECONDS,
                     )
                 ).keys()
             ]
