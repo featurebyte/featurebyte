@@ -16,7 +16,7 @@ from snowflake.connector.errors import DatabaseError, NotSupportedError, Operati
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
-from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
+from featurebyte.exception import DataWarehouseConnectionError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
@@ -53,7 +53,7 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
 @pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
 @pytest.mark.asyncio
 async def test_snowflake_session__credential_from_config(
-    snowflake_session_dict, snowflake_execute_query
+    snowflake_session_dict, snowflake_connector_cursor, snowflake_execute_query
 ):
     """
     Test snowflake session
@@ -62,8 +62,9 @@ async def test_snowflake_session__credential_from_config(
     await session.initialize()
 
     # check session initialization includes timezone and role specification
-    assert snowflake_execute_query.call_args_list[0][0] == ('USE ROLE "TESTING"',)
-    assert snowflake_execute_query.call_args_list[-1][0] == (
+    cursor_execute_args_list = snowflake_connector_cursor.execute.call_args_list
+    assert cursor_execute_args_list[0][0] == ('USE ROLE "TESTING"',)
+    assert cursor_execute_args_list[-1][0] == (
         "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'",
     )
 
@@ -616,10 +617,10 @@ def test_constructor__credentials_error(snowflake_connector, error_type, snowfla
     """
     Check snowflake connection exception handling
     """
-    snowflake_connector.connect.side_effect = error_type
-    with pytest.raises(CredentialsError) as exc:
+    snowflake_connector.connect.side_effect = error_type(msg="Something went wrong.")
+    with pytest.raises(DataWarehouseConnectionError) as exc:
         SnowflakeSession(**snowflake_session_dict)
-    assert "Invalid credentials provided." in str(exc.value)
+    assert "Something went wrong." in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -687,16 +688,12 @@ async def test_timeout(mock_fetch_query_stream_impl, snowflake_connector, snowfl
 
 
 @pytest.mark.asyncio
-async def test_exception_handling_in_thread(snowflake_connector, snowflake_session_dict):
+async def test_exception_handling_in_thread(snowflake_connector_cursor, snowflake_session_dict):
     """
     Test execute_query time out
     """
-
-    connection = snowflake_connector.connect.return_value
-    cursor = connection.cursor.return_value
-    cursor.execute.side_effect = ValueError("error occurred")
     session = SnowflakeSession(**snowflake_session_dict)
-
+    snowflake_connector_cursor.execute.side_effect = ValueError("error occurred")
     with pytest.raises(ValueError) as exc:
         await session.execute_query("SELECT * FROM T")
     assert "error occurred" in str(exc.value)

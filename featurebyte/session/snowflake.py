@@ -15,17 +15,13 @@ import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
-from snowflake.connector.errors import (
-    DatabaseError,
-    NotSupportedError,
-    OperationalError,
-    ProgrammingError,
-)
+from snowflake.connector.errors import Error as SnowflakeError
+from snowflake.connector.errors import NotSupportedError, ProgrammingError
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import CredentialsError, CursorSchemaError
+from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -94,17 +90,13 @@ class SnowflakeSession(BaseSession):
                 application=APPLICATION_NAME,
                 client_session_keep_alive=True,
             )
-        except (OperationalError, DatabaseError) as exc:
-            raise CredentialsError("Invalid credentials provided.") from exc
+        except SnowflakeError as exc:
+            raise DataWarehouseConnectionError(exc.msg) from exc
 
-    async def initialize(self) -> None:
-        # If the featurebyte schema does not exist, the self._connection can still be created
-        # without errors. Below checks whether the schema actually exists. If not, it will be
-        # created and initialized with custom functions and procedures.
-        await self.execute_query(f'USE ROLE "{self.role_name}"')
-        await super().initialize()
+        cursor = self._connection.cursor()
+        cursor.execute(f'USE ROLE "{self.role_name}"')
         # set timezone to UTC
-        await self.execute_query(
+        cursor.execute(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
 
