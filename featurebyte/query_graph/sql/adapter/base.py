@@ -679,7 +679,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         Select
         """
         _ = vector_aggregate_columns, quote_vector_agg_aliases
-        return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
+        return input_expr.select(*select_keys, *agg_exprs, copy=False).group_by(*keys, copy=False)
 
     @classmethod
     @abstractmethod

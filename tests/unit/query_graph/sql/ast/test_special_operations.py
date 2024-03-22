@@ -13,11 +13,12 @@ def test_handle_filter_node(snowflake_event_view_with_entity):
     """
     view = snowflake_event_view_with_entity
     filtered_view = view[view["col_float"] > 1.5]
-    graph, node = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE).flatten_graph(
-        filtered_view.node.name
-    )
+    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    node = interpreter.get_flattened_node(filtered_view.node.name)
     sql_node = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
+        query_graph=interpreter.query_graph,
+        sql_type=SQLType.AGGREGATION,
+        source_type=SourceType.SNOWFLAKE,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name
@@ -29,11 +30,12 @@ def test_handle_assign_node(snowflake_event_view_with_entity):
     """
     view = snowflake_event_view_with_entity
     view["col_float"] = view["col_float"] + 1.5
-    graph, node = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE).flatten_graph(
-        view.node.name
-    )
+    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    node = interpreter.get_flattened_node(view.node.name)
     sql_node = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
+        query_graph=interpreter.query_graph,
+        sql_type=SQLType.AGGREGATION,
+        source_type=SourceType.SNOWFLAKE,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name
@@ -45,11 +47,12 @@ def test_handle_project_node(snowflake_event_view_with_entity):
     """
     view = snowflake_event_view_with_entity
     view = view[["col_int", "col_float"]]
-    graph, node = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE).flatten_graph(
-        view.node.name
-    )
+    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    node = interpreter.get_flattened_node(view.node.name)
     sql_node = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
+        query_graph=interpreter.query_graph,
+        sql_type=SQLType.AGGREGATION,
+        source_type=SourceType.SNOWFLAKE,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name

@@ -71,7 +71,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             ),
             alias="index",
         )
-        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery())
+        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery(copy=False))
         keys = [quoted_identifier(k) for k in self.keys]
         if self.value_by is not None:
             keys.append(quoted_identifier(self.value_by))
@@ -167,6 +167,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 join_alias="R",
                 join_type="inner",
                 on=join_conditions_expr,
+                copy=False,
             )
         )
         return cast(Select, select_expr)
@@ -183,7 +184,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
     ) -> Expression:
         inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
         groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_groupby_keys]
-        original_query = select().from_(input_tiled.subquery())
+        original_query = select().from_(input_tiled.subquery(copy=False))
 
         groupby_columns = []
         for spec in self.tile_specs:
@@ -243,7 +244,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             "index",
             *keys,
             *window_exprs,
-        ).from_(input_tiled.subquery())
+        ).from_(input_tiled.subquery(copy=False), copy=False)
 
         outer_condition = expressions.EQ(
             this=quoted_identifier(self.ROW_NUMBER),
@@ -255,8 +256,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 *keys,
                 *[spec.tile_column_name for spec in self.tile_specs],
             )
-            .from_(inner_expr.subquery())
-            .where(outer_condition)
+            .from_(inner_expr.subquery(copy=False))
+            .where(outer_condition, copy=False)
         )
 
         return tile_expr

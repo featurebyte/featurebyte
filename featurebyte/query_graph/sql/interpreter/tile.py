@@ -239,8 +239,8 @@ class TileGenMixin(BaseGraphInterpreter):
         -------
         List[TileGenSql]
         """
-        flat_graph, flat_starting_node = self.flatten_graph(node_name=starting_node.name)
+        flat_starting_node = self.get_flattened_node(starting_node.name)
         generator = TileSQLGenerator(
-            flat_graph, is_on_demand=is_on_demand, source_type=self.source_type
+            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
         )
         return generator.construct_tile_gen_sql(flat_starting_node)
