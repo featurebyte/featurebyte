@@ -671,18 +671,17 @@ class BaseGraphNode(BasePrunableNode):
                     variable_name_prefix=var_name, node_name=None
                 )
 
-            statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            statements.append(
                 (
                     var_name_map["request_time"],
-                    get_object_class_from_function_call(
-                        "pd.to_datetime",
+                    self._to_datetime_expr(
                         ExpressionStr(
                             subset_frame_column_expr(
                                 VariableNameStr(input_df_name),
                                 SpecialColumnName.POINT_IN_TIME.value,
                             )
-                        ),
-                        utc=True,
+                        )
                     ),
                 )
             )
@@ -697,13 +696,11 @@ class BaseGraphNode(BasePrunableNode):
             statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
                 (
                     var_name_map["feat_ts"],
-                    get_object_class_from_function_call(
-                        "pd.to_datetime",
+                    self._to_datetime_expr(
                         ExpressionStr(
                             subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
                         ),
                         unit="s",
-                        utc=True,
                     ),
                 )
             )
@@ -724,10 +721,7 @@ class BaseGraphNode(BasePrunableNode):
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            to_dt_expr = get_object_class_from_function_call(
-                "pd.to_datetime", input_var_name_expr, utc=True
-            )
-            statements.append((var_name, to_dt_expr))
+            statements.append((var_name, self._to_datetime_expr(input_var_name_expr)))
             return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():

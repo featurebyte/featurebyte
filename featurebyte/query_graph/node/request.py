@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    ExpressionStr,
     StatementT,
     VariableNameGenerator,
     VariableNameStr,
@@ -111,10 +112,7 @@ class RequestColumnNode(BaseNode):
             var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=var_name_prefix, node_name=self.name
             )
-            expression = get_object_class_from_function_call(
-                "pd.to_datetime", input_var_name_expr, utc=True
-            )
-            return [(var_name, expression)], var_name
+            return [(var_name, self._to_datetime_expr(input_var_name_expr))], var_name
         return [], input_var_name_expr
 
     def _derive_on_demand_view_code(
