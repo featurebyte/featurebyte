@@ -38,6 +38,7 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
+    target.save()
     observations_set = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2001-01-01 10:00:00", periods=10, freq="1d"),
