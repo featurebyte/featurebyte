@@ -1860,7 +1860,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
-            node_output_category=NodeOutputCategory.VIEW,
+            node_output_category=NodeOutputCategory.TARGET,
             to_associate_with_node_name=False,
         )
         keys = ValueStr.create(self.parameters.keys)
