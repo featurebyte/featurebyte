@@ -3,31 +3,27 @@ OnlineEnableService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.models.feature_namespace import FeatureNamespaceModel
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
-from featurebyte.schema.feature_list import FeatureListServiceUpdate
-from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 
-class OnlineEnableService(OpsServiceMixin):
+class OnlineEnableService:
     """
     OnlineEnableService class is responsible for maintaining the feature & feature list structure
     of feature online enablement.
@@ -52,54 +48,32 @@ class OnlineEnableService(OpsServiceMixin):
         self.feature_list_service = feature_list_service
         self.feature_manager_service = feature_manager_service
 
-    @classmethod
-    def _extract_online_enabled_feature_ids(
-        cls, feature: FeatureModel, document: FeatureListModel | FeatureNamespaceModel
-    ) -> list[ObjectId]:
-        if feature.online_enabled:
-            return cls.include_object_id(document.online_enabled_feature_ids, feature.id)
-        return cls.exclude_object_id(document.online_enabled_feature_ids, feature.id)
-
-    async def _update_feature_list(
+    async def _update_feature_lists(
         self,
-        feature_list_id: ObjectId,
+        feature_list_ids: List[PydanticObjectId],
         feature: FeatureModel,
-        return_document: bool = True,
-    ) -> Optional[FeatureListModel]:
+    ) -> None:
         """
         Update online_enabled_feature_ids in feature list
 
         Parameters
         ----------
-        feature_list_id: ObjectId
-            Target feature list ID
+        feature_list_ids: List[PydanticObjectId]
+            Feature list IDs to be updated
         feature: FeatureModel
             Updated Feature object
-        return_document: bool
-            Whether to return updated document
-
-        Returns
-        -------
-        Optional[FeatureListModel]
         """
-        document = await self.feature_list_service.get_document(document_id=feature_list_id)
-        return await self.feature_list_service.update_document(
-            document_id=feature_list_id,
-            data=FeatureListServiceUpdate(
-                online_enabled_feature_ids=self._extract_online_enabled_feature_ids(
-                    feature=feature, document=document
-                ),
-            ),
-            document=document,
-            return_document=return_document,
+        op_key = "$addToSet" if feature.online_enabled else "$pull"
+        await self.feature_list_service.update_documents(
+            query_filter={"_id": {"$in": feature_list_ids}},
+            update={op_key: {"online_enabled_feature_ids": feature.id}},
         )
 
     async def _update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
         feature: FeatureModel,
-        return_document: bool = True,
-    ) -> Optional[FeatureNamespaceModel]:
+    ) -> None:
         """
         Update online_enabled_feature_ids in feature namespace
 
@@ -109,25 +83,11 @@ class OnlineEnableService(OpsServiceMixin):
             FeatureNamespace ID
         feature: FeatureModel
             Updated Feature object
-        return_document: bool
-            Whether to return updated document
-
-        Returns
-        -------
-        Optional[FeatureNamespaceModel]
         """
-        document = await self.feature_namespace_service.get_document(
-            document_id=feature_namespace_id
-        )
-        return await self.feature_namespace_service.update_document(
-            document_id=feature_namespace_id,
-            data=FeatureNamespaceServiceUpdate(
-                online_enabled_feature_ids=self._extract_online_enabled_feature_ids(
-                    feature=feature, document=document
-                ),
-            ),
-            document=document,
-            return_document=return_document,
+        op_key = "$addToSet" if feature.online_enabled else "$pull"
+        await self.feature_namespace_service.update_documents(
+            query_filter={"_id": {"$in": [feature_namespace_id]}},
+            update={op_key: {"online_enabled_feature_ids": feature.id}},
         )
 
     @staticmethod
@@ -235,18 +195,16 @@ class OnlineEnableService(OpsServiceMixin):
                 data=FeatureServiceUpdate(online_enabled=online_enabled),
                 document=document,
                 return_document=True,
+                populate_remote_attributes=False,
             )
             assert isinstance(feature, FeatureModel)
             await self._update_feature_namespace(
                 feature_namespace_id=feature.feature_namespace_id,
                 feature=feature,
-                return_document=False,
             )
-            for feature_list_id in feature.feature_list_ids:
-                await self._update_feature_list(
-                    feature_list_id=feature_list_id,
-                    feature=feature,
-                    return_document=False,
-                )
+            await self._update_feature_lists(
+                feature_list_ids=feature.feature_list_ids,
+                feature=feature,
+            )
 
-            return await self.feature_service.get_document(document_id=feature_id)
+        return await self.feature_service.get_document(document_id=feature_id)

@@ -1018,6 +1018,7 @@ class BaseDocumentService(
         document: Optional[Document] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = False,
     ) -> Optional[Document]:
         """
         Update document at persistent
@@ -1036,13 +1037,17 @@ class BaseDocumentService(
             Whether to make additional query to retrieval updated document & return
         skip_block_modification_check: bool
             Whether to skip block modification check (use with caution, only use when updating document description)
+        populate_remote_attributes: bool
+            Whether to populate remote attributes (e.g. file paths) when returning document
 
         Returns
         -------
         Optional[Document]
         """
         if document is None:
-            document = await self.get_document(document_id=document_id)
+            document = await self.get_document(
+                document_id=document_id, populate_remote_attributes=False
+            )
 
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
@@ -1056,7 +1061,9 @@ class BaseDocumentService(
         )
 
         if return_document:
-            return await self.get_document(document_id=document_id)
+            return await self.get_document(
+                document_id=document_id, populate_remote_attributes=populate_remote_attributes
+            )
         return None
 
     @retry(

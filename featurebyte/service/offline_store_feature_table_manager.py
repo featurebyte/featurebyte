@@ -470,6 +470,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         output = await self.feast_registry_service.update_document(
             document_id=feast_registry.id,
             data=FeastRegistryUpdate(feature_lists=feature_lists),
+            populate_remote_attributes=True,
         )
         assert output is not None
         return output
