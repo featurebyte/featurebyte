@@ -638,7 +638,7 @@ class BaseGraphNode(BasePrunableNode):
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
-        input_var_name_expr: VarNameExpressionInfo,
+        input_var_name_expr: VariableNameStr,
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
         is_databricks_udf: bool,

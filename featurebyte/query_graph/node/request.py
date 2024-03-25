@@ -103,10 +103,10 @@ class RequestColumnNode(BaseNode):
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
-        input_var_name_expr: VarNameExpressionInfo,
+        input_var_name_expr: VariableNameStr,
         var_name_prefix: str,
         is_databricks_udf: bool,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], VariableNameStr]:
         if self.parameters.dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=var_name_prefix, node_name=self.name
