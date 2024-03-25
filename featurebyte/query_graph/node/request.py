@@ -23,12 +23,10 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
-    ExpressionStr,
     StatementT,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
-    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 
