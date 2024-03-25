@@ -144,7 +144,7 @@ class CredentialService(
         document: Optional[CredentialModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[CredentialModel]:
         """
         Update document at persistent

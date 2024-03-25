@@ -287,7 +287,7 @@ class FeastRegistryService(
         document: Optional[FeastRegistryModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[FeastRegistryModel]:
         assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
         if data.feature_lists is None:

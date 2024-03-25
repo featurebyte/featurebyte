@@ -1018,7 +1018,7 @@ class BaseDocumentService(
         document: Optional[Document] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[Document]:
         """
         Update document at persistent

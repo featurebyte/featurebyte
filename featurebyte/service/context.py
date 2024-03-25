@@ -119,7 +119,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         document: Optional[ContextModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[ContextModel]:
         document = await self.get_document(
             document_id=document_id, populate_remote_attributes=False

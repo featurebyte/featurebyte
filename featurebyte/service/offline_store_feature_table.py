@@ -150,7 +150,7 @@ class OfflineStoreFeatureTableService(
         data: OfflineStoreFeatureTableUpdate,
         exclude_none: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> OfflineStoreFeatureTableModel:
         original_doc = await self.get_document(
             document_id=document_id, populate_remote_attributes=False
@@ -189,7 +189,7 @@ class OfflineStoreFeatureTableService(
         document: Optional[OfflineStoreFeatureTableModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
-        populate_remote_attributes: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[OfflineStoreFeatureTableModel]:
         if isinstance(data, FeaturesUpdate):
             with self.get_feature_cluster_storage_lock(
