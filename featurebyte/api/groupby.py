@@ -261,7 +261,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        The aggregate_as_at method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
+        The aggregate_asat method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
         aggregates data from the column specified by the value_column parameter using the aggregation method provided
         by the method parameter. By default, the aggrgegation is done on rows active at the point-in-time indicated in
         the feature request. The primary entity of the Feature is determined by the grouping key of the GroupBy
@@ -499,7 +499,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Target:
         """
-        The forward_aggregate_as_at method of a GroupBy instance returns an Aggregate ""as at""
+        The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""
         Target object. The object aggregates data from the column specified by the value_column
         parameter using the aggregation method provided by the method parameter. By default, the
         aggrgegation is done on rows active at the point-in-time indicated in the feature request.

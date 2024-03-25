@@ -842,6 +842,10 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy.forward_aggregate"],
             doc_path_override="api.groupby.GroupBy.forward_aggregate.md",
         ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.forward_aggregate_asat"],
+            doc_path_override="api.groupby.GroupBy.forward_aggregate_asat.md",
+        ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksUnityDetails"]),
