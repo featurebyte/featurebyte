@@ -351,7 +351,7 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
         left_view_with_ts_and_key = left_view_with_ts_and_key.select(
-            alias_(quoted_identifier(input_col), alias=output_col, quoted=True)
+            alias_(quoted_identifier(input_col), alias=output_col, quoted=True), copy=False
         )
 
     # Right table. Set up the same special columns. The ordering of the columns in the SELECT
