@@ -316,14 +316,14 @@ class ViewColumn(Series, SampleMixin):
         For SCD views, lookup targets are materialized through point-in-time joins, and the resulting value represents
         the active row for the natural key at the point-in-time indicated in the target request.
 
-        To obtain a target value at a specific time before the request's point-in-time, an offset can be specified.
+        To obtain a target value at a specific time after the request's point-in-time, an offset can be specified.
 
         Parameters
         ----------
         target_name: str
             Name of the target to create.
         offset: str
-            When specified, retrieve target value as of this offset prior to the point-in-time.
+            When specified, retrieve target value as of this offset after the point-in-time.
 
         Returns
         -------
@@ -338,12 +338,12 @@ class ViewColumn(Series, SampleMixin):
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
 
 
-        If the view is a Slowly Changing Dimension View, you may also consider to create a target that retrieves the
-        entity's attribute at a point-in-time prior to the point-in-time specified in the target request by specifying
+        If the view is a Slowly Changing Dimension View, you may also consider creating a target that retrieves the
+        entity's attribute at a specific time after the point-in-time specified in the target request by specifying
         an offset.
 
-        >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_target(
-        ...   "UsesWindows_12w_ago", offset="12w"
+        >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
+        ...   "UsesWindows_next_12w", offset="12w"
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
