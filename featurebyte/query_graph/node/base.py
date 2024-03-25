@@ -838,6 +838,33 @@ class BaseNode(BaseModel):
 
         return self.clone(parameters=node_params), output_column_remap
 
+    @staticmethod
+    def _to_datetime_expr(
+        var_name_expr: VarNameExpressionStr, to_handle_none: bool = True, **to_datetime_kwargs: Any
+    ) -> ExpressionStr:
+        """
+        Convert input variable name expression to datetime expression
+
+        Parameters
+        ----------
+        var_name_expr: VarNameExpressionStr
+            Variable name expression
+        to_handle_none: bool
+            Whether to handle null values
+        to_datetime_kwargs: Any
+            Additional keyword arguments for pd.to_datetime function
+
+        Returns
+        -------
+        ExpressionStr
+        """
+        to_dt_expr = get_object_class_from_function_call(
+            "pd.to_datetime", var_name_expr, utc=True, **to_datetime_kwargs
+        )
+        if to_handle_none:
+            return ExpressionStr(f"pd.NaT if {var_name_expr} is None else {to_dt_expr}")
+        return ExpressionStr(to_dt_expr)
+
 
 class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""

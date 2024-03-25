@@ -27,7 +27,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
-    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 
@@ -104,17 +103,19 @@ class RequestColumnNode(BaseNode):
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
-        input_var_name_expr: VarNameExpressionInfo,
+        input_var_name_expr: VariableNameStr,
         var_name_prefix: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        is_databricks_udf: bool,
+    ) -> Tuple[List[StatementT], VariableNameStr]:
         if self.parameters.dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=var_name_prefix, node_name=self.name
             )
-            expression = get_object_class_from_function_call(
-                "pd.to_datetime", input_var_name_expr, utc=True
+            statement = (
+                var_name,
+                self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
             )
-            return [(var_name, expression)], var_name
+            return [statement], var_name
         return [], input_var_name_expr
 
     def _derive_on_demand_view_code(
@@ -130,6 +131,7 @@ class RequestColumnNode(BaseNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=expr,
             var_name_prefix="request_col",
+            is_databricks_udf=False,
         )
 
     def _derive_user_defined_function_code(
@@ -149,4 +151,5 @@ class RequestColumnNode(BaseNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=request_input_var_name,
             var_name_prefix="feat",
+            is_databricks_udf=True,
         )
