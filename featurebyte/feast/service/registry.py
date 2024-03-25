@@ -287,10 +287,13 @@ class FeastRegistryService(
         document: Optional[FeastRegistryModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[FeastRegistryModel]:
         assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
         if data.feature_lists is None:
-            return await self.get_document(document_id=document_id)
+            return await self.get_document(
+                document_id=document_id, populate_remote_attributes=populate_remote_attributes
+            )
 
         with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
             original_doc = await self.get_document(
@@ -319,7 +322,9 @@ class FeastRegistryService(
                 user_id=self.user.id,
                 disable_audit=self.should_disable_audit,
             )
-            return await self.get_document(document_id=document_id)
+            return await self.get_document(
+                document_id=document_id, populate_remote_attributes=populate_remote_attributes
+            )
 
     async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
         """

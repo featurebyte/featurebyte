@@ -91,7 +91,9 @@ async def test_update_feast_registry(
 ):
     """Test update feast registry"""
     updated_doc = await feast_registry_service.update_document(
-        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
+        document_id=feast_registry.id,
+        data=FeastRegistryUpdate(feature_lists=[]),
+        populate_remote_attributes=True,
     )
     registry_proto = updated_doc.registry_proto()
     assert registry_proto.feature_services == []
@@ -108,7 +110,9 @@ async def test_update_feast_registry(
 
     feature_list_model = feature_list.cached_model
     updated_doc = await feast_registry_service.update_document(
-        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[feature_list_model])
+        document_id=feast_registry.id,
+        data=FeastRegistryUpdate(feature_lists=[feature_list_model]),
+        populate_remote_attributes=True,
     )
     registry_proto = updated_doc.registry_proto()
     assert {entity.spec.name for entity in registry_proto.entities} == expected_entity_names

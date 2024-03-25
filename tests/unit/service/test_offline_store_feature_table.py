@@ -154,6 +154,7 @@ async def test_update_document(
             output_dtypes=["FLOAT", "FLOAT"],
             entity_universe=offline_store_feature_table.entity_universe,
         ),
+        populate_remote_attributes=True,
     )
     assert updated_doc.feature_cluster == feature_cluster_two_features
 
@@ -203,7 +204,9 @@ async def test_update_document__with_failure(
 
     # update the document again & check the feature cluster file is created
     updated_doc = await service.update_document(
-        document_id=offline_store_feature_table.id, data=update_data
+        document_id=offline_store_feature_table.id,
+        data=update_data,
+        populate_remote_attributes=True,
     )
     assert updated_doc.feature_cluster == feature_cluster_two_features
     cluster_path = os.path.join(service.storage.base_path, updated_doc.feature_cluster_path)

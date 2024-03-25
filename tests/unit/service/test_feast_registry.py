@@ -123,6 +123,7 @@ async def test_update_document__registry_without_path(
     registry = await registry_service.update_document(
         document_id=registry_without_path.id,
         data=FeastRegistryUpdate(feature_lists=[feature_list]),
+        populate_remote_attributes=True,
     )
     assert registry.registry_path
     assert registry.registry
@@ -145,6 +146,7 @@ async def test_update_document__registry_with_path(
     registry = await registry_service.update_document(
         document_id=registry_with_path.id,
         data=FeastRegistryUpdate(feature_lists=[feature_list]),
+        populate_remote_attributes=True,
     )
     assert registry.registry
     assert registry.name == registry_with_path.name
