@@ -641,6 +641,7 @@ class BaseGraphNode(BasePrunableNode):
         input_var_name_expr: VarNameExpressionInfo,
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
+        is_databricks_udf: bool,
         config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
@@ -681,7 +682,8 @@ class BaseGraphNode(BasePrunableNode):
                                 VariableNameStr(input_df_name),
                                 SpecialColumnName.POINT_IN_TIME.value,
                             )
-                        )
+                        ),
+                        to_handle_none=is_databricks_udf,
                     ),
                 )
             )
@@ -700,6 +702,7 @@ class BaseGraphNode(BasePrunableNode):
                         ExpressionStr(
                             subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
                         ),
+                        to_handle_none=False,
                         unit="s",
                     ),
                 )
@@ -721,7 +724,12 @@ class BaseGraphNode(BasePrunableNode):
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            statements.append((var_name, self._to_datetime_expr(input_var_name_expr)))
+            statements.append(
+                (
+                    var_name,
+                    self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+                )
+            )
             return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():
@@ -769,6 +777,7 @@ class BaseGraphNode(BasePrunableNode):
             config_for_ttl=config_for_ttl,
             ttl_handling_column=ttl_handling_column,
             ttl_seconds=ttl_seconds,
+            is_databricks_udf=False,
         )
 
     def _derive_user_defined_function_code(
@@ -800,4 +809,5 @@ class BaseGraphNode(BasePrunableNode):
             null_filling_func=lambda expr, val: ExpressionStr(
                 f"{val.as_input()} if pd.isna({expr}) else {expr}"
             ),
+            is_databricks_udf=True,
         )

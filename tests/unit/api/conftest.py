@@ -477,3 +477,24 @@ def mock_source_table_fixture():
         "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
     ):
         yield mock_source_table
+
+
+@pytest.fixture(name="patch_alive_progress", autouse=True)
+def patch_alive_progress_fixture():
+    """
+    Patch the alive progress method
+    """
+    patched = {}
+    patch_targets = [
+        "featurebyte.api.utils",
+        "featurebyte.api.feature_group",
+        "featurebyte.api.mixin",
+    ]
+    started_patchers = []
+    for module in patch_targets:
+        patcher = patch(f"{module}.alive_bar")
+        patched[module] = patcher.start()
+        started_patchers.append(patcher)
+    yield patched
+    for patcher in started_patchers:
+        patcher.stop()

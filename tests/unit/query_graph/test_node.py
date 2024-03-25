@@ -3,6 +3,7 @@ Unit tests for featurebyte/query_graph/node/base.py
 """
 from typing import Any, List, Literal
 
+import pandas as pd
 import pytest
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,7 @@ from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.count_dict import CountDictTransformNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import VariableNameStr
 
 
 @pytest.fixture(name="node")
@@ -96,3 +98,49 @@ def test_get_required_input_columns(node):
 def test_count_dict_transform_node(parameters):
     """Test CountDitTransformNode not introducing additional param for unique_count transform type"""
     assert CountDictTransformNode(**parameters).dict(exclude={"type": True}) == parameters
+
+
+@pytest.mark.parametrize(
+    "input_vals,additional_params,expected_expr,expected_vals",
+    [
+        # test datetime series
+        (
+            pd.Series(["2020-01-01", None]),
+            {"to_handle_none": False},
+            "pd.to_datetime(input_vals, utc=True)",
+            pd.Series([pd.Timestamp("2020-01-01"), pd.NaT], dtype="datetime64[ns, UTC]"),
+        ),
+        # test datetime value
+        (
+            "2020-01-01",
+            {"to_handle_none": True},
+            "pd.NaT if input_vals is None else pd.to_datetime(input_vals, utc=True)",
+            pd.Timestamp("2020-01-01", tz="UTC"),
+        ),
+        # test None value
+        (
+            None,
+            {"to_handle_none": True},
+            "pd.NaT if input_vals is None else pd.to_datetime(input_vals, utc=True)",
+            pd.NaT,
+        ),
+        # test NaT value
+        (
+            pd.NaT,
+            {"to_handle_none": True},
+            "pd.NaT if input_vals is None else pd.to_datetime(input_vals, utc=True)",
+            pd.NaT,
+        ),
+    ],
+)
+def test_to_datetime_expr(input_vals, additional_params, expected_expr, expected_vals):
+    """Test to_datetime_expr"""
+    expr = BaseNode._to_datetime_expr(VariableNameStr("input_vals"), **additional_params)
+    assert expr == expected_expr
+    output = eval(expr, {"input_vals": input_vals, "pd": pd})
+    if isinstance(expected_vals, pd.Series):
+        assert output.equals(expected_vals)
+    elif expected_vals is pd.NaT:
+        assert output is pd.NaT
+    else:
+        assert output == expected_vals

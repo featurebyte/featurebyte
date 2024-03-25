@@ -230,7 +230,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__feature_V231227__part0__ts"], unit="s", utc=True
+            inputs["__feature_V231227__part0__ts"], utc=True, unit="s"
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
@@ -330,7 +330,7 @@ def test_feature__ttl_item_aggregate_request_column(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__composite_feature_V231227__part0__ts"], unit="s", utc=True
+            inputs["__composite_feature_V231227__part0__ts"], utc=True, unit="s"
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__composite_feature_V231227__part0"] = np.nan
@@ -342,7 +342,7 @@ def test_feature__ttl_item_aggregate_request_column(
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
-            inputs["__composite_feature_V231227__part1__ts"], unit="s", utc=True
+            inputs["__composite_feature_V231227__part1__ts"], utc=True, unit="s"
         )
         mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
         inputs.loc[~mask_1, "__composite_feature_V231227__part1"] = np.nan
@@ -422,7 +422,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__feature_zscore_V231227__part1__ts"], unit="s", utc=True
+            inputs["__feature_zscore_V231227__part1__ts"], utc=True, unit="s"
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_zscore_V231227__part1"] = np.nan
@@ -439,7 +439,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
-            inputs["__feature_zscore_V231227__part2__ts"], unit="s", utc=True
+            inputs["__feature_zscore_V231227__part2__ts"], utc=True, unit="s"
         )
         mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
         inputs.loc[~mask_1, "__feature_zscore_V231227__part2"] = np.nan
@@ -478,7 +478,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
-            inputs["__feature_V231227__part1__ts"], unit="s", utc=True
+            inputs["__feature_V231227__part1__ts"], utc=True, unit="s"
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_V231227__part1"] = np.nan
@@ -727,8 +727,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
             inputs[
                 "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0__ts"
             ],
-            unit="s",
             utc=True,
+            unit="s",
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[
@@ -762,8 +762,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
             inputs[
                 "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2__ts"
             ],
-            unit="s",
             utc=True,
+            unit="s",
         )
         mask_2 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
         inputs.loc[

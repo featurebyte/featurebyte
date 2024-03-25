@@ -723,6 +723,10 @@ def check_on_demand_feature_code_generation(
         if col != "POINT_IN_TIME":
             df[f"{col}__ts"] = feat_event_ts.astype(int) // 1e9
 
+    # introduce some missing values to test null handling for datetime
+    if df.shape[0] > 1:
+        df["POINT_IN_TIME"].iloc[1] = None
+
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes
 

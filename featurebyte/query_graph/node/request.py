@@ -107,12 +107,17 @@ class RequestColumnNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         input_var_name_expr: VarNameExpressionInfo,
         var_name_prefix: str,
+        is_databricks_udf: bool,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if self.parameters.dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=var_name_prefix, node_name=self.name
             )
-            return [(var_name, self._to_datetime_expr(input_var_name_expr))], var_name
+            statement = (
+                var_name,
+                self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+            )
+            return [statement], var_name
         return [], input_var_name_expr
 
     def _derive_on_demand_view_code(
@@ -128,6 +133,7 @@ class RequestColumnNode(BaseNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=expr,
             var_name_prefix="request_col",
+            is_databricks_udf=False,
         )
 
     def _derive_user_defined_function_code(
@@ -147,4 +153,5 @@ class RequestColumnNode(BaseNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=request_input_var_name,
             var_name_prefix="feat",
+            is_databricks_udf=True,
         )
