@@ -253,6 +253,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
@@ -266,6 +267,8 @@ class BaseSession(BaseModel):
             Schema name
         table_name: str
             Table name
+        timeout: float
+            Timeout in seconds
 
         Returns
         -------
