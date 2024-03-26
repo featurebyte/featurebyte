@@ -21,6 +21,6 @@ docker exec mongo-testrs mongorestore --gzip --drop \
     --nsInclude="featurebyte.feature_list_namespace" \
     --nsExclude="featurebyte.feature_ideation_suggested_feature" \
     --archive=$MONGO_DUMP_FILENAME \
-    --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
+    --uri 'mongodb://localhost:27017/?replicaSet=rs0'
 
 rm -f $MONGO_DUMP_FILENAME

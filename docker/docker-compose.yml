@@ -6,6 +6,8 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=example
+    ports:
+      - 27017:27017  # Expose MongoDB port
     entrypoint: []
     healthcheck:
       test: mongosh 'mongodb://localhost/admin?replicaSet=rs0' --quiet --eval "exit" 2>/dev/null

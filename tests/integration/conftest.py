@@ -72,7 +72,7 @@ from featurebyte.worker.registry import TASK_REGISTRY_MAP
 # Static testing mongodb connection from docker/test/docker-compose.yml
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
-MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+MONGO_CONNECTION = "mongodb://localhost:27017/?replicaSet=rs0"
 
 
 logger = get_logger(__name__)
