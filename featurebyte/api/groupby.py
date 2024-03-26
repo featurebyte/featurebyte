@@ -567,7 +567,7 @@ class GroupBy:
         >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
         ...   "CustomerID"
         ... )
-        >>> target = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
+        >>> target = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
         ...   method=fb.AggFunc.COUNT,
         ...   feature_name="Number of Active Credit Cards",
         ... )
