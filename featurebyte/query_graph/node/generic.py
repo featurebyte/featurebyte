@@ -1820,14 +1820,12 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
         method = ValueStr.create(self.parameters.agg_func)
         feature_name = ValueStr.create(self.parameters.name)
         offset = ValueStr.create(self.parameters.offset)
-        backward = ValueStr.create(self.parameters.backward)
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate_asat(value_column={value_column}, "
             f"method={method}, "
             f"feature_name={feature_name}, "
             f"offset={offset}, "
-            f"backward={backward}, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
