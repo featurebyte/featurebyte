@@ -1,15 +1,48 @@
 version: "3.8"
 
 services:
-  mongo-rs:
+  mongo-testrs:
     hostname: mongo-testrs
     container_name: mongo-testrs
     image: "featurebyte/mongo:latest"
     environment:
-      - MONGO_HOSTNAME=localhost
-    ports:
-      - 27021:27021
-      - 27022:27022
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    entrypoint: []
+    healthcheck:
+      test: mongosh 'mongodb://localhost/admin?replicaSet=rs0' --quiet --eval "exit" 2>/dev/null
+    command:
+      - /bin/bash
+      - -c
+      - |
+        set -em
+
+        # Creating Database
+        /usr/bin/mongod --quiet --dbpath=/tmp --bind_ip_all --replSet rs0 &
+        while ! mongosh --quiet --eval "exit" 2>/dev/null; do sleep 1; done; echo "mongodb started"
+
+        # If not bootstrapped, bootstrap
+        if ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; then
+          mongosh --quiet <<EOF
+            var config = { "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "localhost", "priority": 1 }]};
+            rs.initiate(config, { force: true });
+        EOF
+        fi
+
+        # Checking rs.status()
+        while ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; do sleep 1; done
+
+        # Create User
+        echo "Creating User"
+        mongosh --quiet admin <<EOF
+        db.createUser({
+          user: "$${MONGO_INITDB_ROOT_USERNAME}",
+          pwd: "$${MONGO_INITDB_ROOT_PASSWORD}",
+          roles: [{ role: "root", db: "admin" }]
+        });
+        EOF
+
+        fg  # Reconnect to mongod
 
   redis:
     hostname: redis-test
