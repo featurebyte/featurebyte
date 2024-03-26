@@ -5,10 +5,13 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional, Union
 
+import warnings
+
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.asat_aggregator import AsAtAggregator
 from featurebyte.api.aggregator.forward_aggregator import ForwardAggregator
+from featurebyte.api.aggregator.forward_asat_aggregator import ForwardAsAtAggregator
 from featurebyte.api.aggregator.simple_aggregator import SimpleAggregator
 from featurebyte.api.aggregator.window_aggregator import WindowAggregator
 from featurebyte.api.change_view import ChangeView
@@ -258,7 +261,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        The aggregate_as_at method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
+        The aggregate_asat method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
         aggregates data from the column specified by the value_column parameter using the aggregation method provided
         by the method parameter. By default, the aggrgegation is done on rows active at the point-in-time indicated in
         the feature request. The primary entity of the Feature is determined by the grouping key of the GroupBy
@@ -307,7 +310,8 @@ class GroupBy:
             "w": week
 
         backward: bool
-            Whether the offset should be applied backward or forward
+            Whether the offset should be applied backward or forward. Note that this parameter is
+            deprecated. Please use `forward_aggregate_asat` to create a Target object instead.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
@@ -341,6 +345,11 @@ class GroupBy:
         ...   offset="12w"
         ... )
         """
+        if backward is False:
+            warnings.warn(
+                "The backward parameter has no effect. Please use forward_aggregate_asat to create "
+                "a Target object instead."
+            )
         return AsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
         ).aggregate_asat(
@@ -475,6 +484,110 @@ class GroupBy:
             method=method,
             window=window,
             target_name=target_name,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
+        )
+
+    @typechecked
+    def forward_aggregate_asat(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        target_name: Optional[str] = None,
+        offset: Optional[str] = None,
+        fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
+    ) -> Target:
+        """
+        The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""
+        Target object. The object aggregates data from the column specified by the value_column
+        parameter using the aggregation method provided by the method parameter. By default, the
+        aggrgegation is done on rows active at the point-in-time indicated in the feature request.
+        The primary entity of the Feature is determined by the grouping key of the GroupBy instance,
+        These aggregation operations are exclusively available for Slowly Changing Dimension (SCD)
+        views, and the grouping key used in the GroupBy instance should not be the natural key of
+        the SCD view.
+
+        For instance, a possible example of an aggregate ‘as at’ target from a Credit Cards table
+        could be the count of credit cards held by a customer at the point-in-time indicated in the
+        target request.
+
+        If an offset is defined, the aggregation uses the active rows of the SCD view's data at the
+        point-in-time indicated in the feature request, plus the specified offset.
+
+        If the GroupBy instance involves computation across a categorical column, the returned
+        Target object is a Cross Aggregate "as at" Target. In this scenario, the target value
+        after materialization is a dictionary with keys representing the categories of the
+        categorical column and their corresponding values indicating the aggregated values for each
+        category. You may choose to fill the target value with a default value if the column to be
+        aggregated is empty.
+
+        It is possible to perform additional transformations on the Target object, and the Target
+        object is added to the catalog solely when explicitly saved.
+
+        Parameters
+        ----------
+        value_column: Optional[str]
+            Column to be aggregated
+        method: Optional[Literal[tuple(AggFunc)]]
+            Aggregation method
+        target_name: str
+            Output feature name
+        offset: Optional[str]
+            Optional offset to apply to the point in time column in the target request. The
+            aggregation result will be as at the point in time adjusted by this offset. Format of
+            offset is "{size}{unit}", where size is a positive integer and unit is one of the
+            following:
+
+            "ns": nanosecond
+            "us": microsecond
+            "ms": millisecond
+            "s": second
+            "m": minute
+            "h": hour
+            "d": day
+            "w": week
+
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
+
+        Returns
+        -------
+        Feature
+
+        Examples
+        --------
+        Count number of active cards per customer at a point-in-time.
+
+        >>> # Filter active cards
+        >>> cond = credit_card_accounts['status'] == "active"  # doctest: +SKIP
+        >>> # Group by customer
+        >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
+        ...   "CustomerID"
+        ... )
+        >>> target = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="Number of Active Credit Cards",
+        ... )
+
+
+        Count number of active cards per customer 12 weeks after a point-in-time
+
+        >>> target_12w_after = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="Number of Active Credit Cards 12 w after",
+        ...   offset="12w"
+        ... )
+        """
+        return ForwardAsAtAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).forward_aggregate_asat(
+            value_column=value_column,
+            method=method,
+            target_name=target_name,
+            offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
         )

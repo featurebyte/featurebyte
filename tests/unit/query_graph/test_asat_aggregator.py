@@ -9,7 +9,12 @@ from sqlglot.expressions import select
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.node.generic import AggregateAsAtParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, AggregationSource
+from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
+from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
+from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
+    ForwardAggregateAsAtSpec,
+)
+from featurebyte.query_graph.sql.specs import AggregationSource
 
 
 @pytest.fixture
@@ -169,6 +174,44 @@ def aggregation_spec_with_category(
     return AggregateAsAtSpec(
         node_name="aggregate_as_at_1",
         feature_name=parameters.name,
+        serving_names=["serving_cust_id"],
+        serving_names_mapping=None,
+        parameters=parameters,
+        aggregation_source=scd_aggregation_source,
+        entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
+    )
+
+
+@pytest.fixture
+def aggregation_spec_with_offset(
+    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
+):
+    parameters = aggregate_as_at_node_parameters.copy()
+    parameters.offset = "7d"
+    return AggregateAsAtSpec(
+        node_name="aggregate_as_at_4",
+        feature_name=aggregate_as_at_node_parameters.name,
+        serving_names=["serving_cust_id"],
+        serving_names_mapping=None,
+        parameters=parameters,
+        aggregation_source=scd_aggregation_source,
+        entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
+    )
+
+
+@pytest.fixture
+def forward_aggregation_spec_with_offset(
+    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
+):
+    parameters = aggregate_as_at_node_parameters.copy()
+    parameters.offset = "7d"
+    return ForwardAggregateAsAtSpec(
+        node_name="forward_aggregate_as_at_1",
+        feature_name=aggregate_as_at_node_parameters.name,
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=parameters,
@@ -532,6 +575,114 @@ def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
           GROUP BY
             INNER_."POINT_IN_TIME",
             INNER_."serving_cust_id"
+        ) AS T0
+          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+          AND REQ."serving_cust_id" = T0."serving_cust_id"
+        """
+    ).strip()
+    assert result.updated_table_expr.sql(pretty=True) == expected
+
+
+def test_aggregate_asat_with_offset(aggregation_spec_with_offset):
+    """
+    Test AsAtAggregator with offset parameter
+    """
+
+    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(aggregation_spec_with_offset)
+
+    result = aggregator.update_aggregation_table_expr(
+        select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a,
+          b,
+          c,
+          "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_7d_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_7d_input_1"
+        FROM REQUEST_TABLE
+        LEFT JOIN (
+          SELECT
+            REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+            REQ."serving_cust_id" AS "serving_cust_id",
+            SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_7d_input_1"
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
+          INNER JOIN (
+            SELECT
+              *,
+              LEAD("effective_ts") OVER (PARTITION BY "scd_key" ORDER BY "effective_ts" NULLS LAST) AS "__FB_END_TS"
+            FROM (
+              SELECT
+                *
+              FROM SCD_TABLE
+            )
+          ) AS SCD
+            ON REQ."serving_cust_id" = SCD."cust_id"
+            AND (
+              SCD."effective_ts" <= DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+              AND (
+                SCD."__FB_END_TS" > DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+                OR SCD."__FB_END_TS" IS NULL
+              )
+            )
+          GROUP BY
+            REQ."POINT_IN_TIME",
+            REQ."serving_cust_id"
+        ) AS T0
+          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+          AND REQ."serving_cust_id" = T0."serving_cust_id"
+        """
+    ).strip()
+    assert result.updated_table_expr.sql(pretty=True) == expected
+
+
+def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset):
+    """
+    Test ForwardAsAtAggregator with offset parameter
+    """
+
+    aggregator = ForwardAsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(forward_aggregation_spec_with_offset)
+
+    result = aggregator.update_aggregation_table_expr(
+        select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a,
+          b,
+          c,
+          "T0"."_fb_internal_serving_cust_id_forward_as_at_sum_value_cust_id_None_7d_input_1" AS "_fb_internal_serving_cust_id_forward_as_at_sum_value_cust_id_None_7d_input_1"
+        FROM REQUEST_TABLE
+        LEFT JOIN (
+          SELECT
+            REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+            REQ."serving_cust_id" AS "serving_cust_id",
+            SUM(SCD."value") AS "_fb_internal_serving_cust_id_forward_as_at_sum_value_cust_id_None_7d_input_1"
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
+          INNER JOIN (
+            SELECT
+              *,
+              LEAD("effective_ts") OVER (PARTITION BY "scd_key" ORDER BY "effective_ts" NULLS LAST) AS "__FB_END_TS"
+            FROM (
+              SELECT
+                *
+              FROM SCD_TABLE
+            )
+          ) AS SCD
+            ON REQ."serving_cust_id" = SCD."cust_id"
+            AND (
+              SCD."effective_ts" <= DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+              AND (
+                SCD."__FB_END_TS" > DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+                OR SCD."__FB_END_TS" IS NULL
+              )
+            )
+          GROUP BY
+            REQ."POINT_IN_TIME",
+            REQ."serving_cust_id"
         ) AS T0
           ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
           AND REQ."serving_cust_id" = T0."serving_cust_id"

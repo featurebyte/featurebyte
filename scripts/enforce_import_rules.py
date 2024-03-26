@@ -125,6 +125,7 @@ if __name__ == "__main__":
         "textwrap",
         "typing",
         "uuid",
+        "warnings",
     }
     THIRD_PARTY_LIBS = {
         # NOTE: this list contains the third party libraries that will be installed by featurebyte client

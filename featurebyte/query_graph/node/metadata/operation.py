@@ -354,6 +354,7 @@ class AggregationColumn(BaseDataColumn):
         NodeType.REQUEST_COLUMN,
         NodeType.FORWARD_AGGREGATE,
         NodeType.LOOKUP_TARGET,
+        NodeType.FORWARD_AGGREGATE_AS_AT,
     ]
     type: Literal[FeatureDataColumnType.AGGREGATION] = FeatureDataColumnType.AGGREGATION
 
