@@ -46,7 +46,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
         ):
-            await self.feature_table_cache_service.create_view_from_cache(
+            await self.feature_table_cache_service.create_view_or_table_from_cache(
                 feature_store=executor_params.feature_store,
                 observation_table=executor_params.observation_set,
                 graph=executor_params.graph,

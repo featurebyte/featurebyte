@@ -181,8 +181,20 @@ def intercepted_definition_hashes_for_nodes_fixture(feature_table_cache_service)
         yield mocked_method
 
 
+@pytest.fixture
+def create_view_should_work():
+    """
+    Fixture to determine whether view creation should work or error
+    """
+    return True
+
+
 @pytest.fixture(name="mock_snowflake_session")
-def mock_snowflake_session_fixture(mock_snowflake_session, feature_table_cache_metadata_service):
+def mock_snowflake_session_fixture(
+    mock_snowflake_session,
+    feature_table_cache_metadata_service,
+    create_view_should_work,
+):
     """
     Patch session query results
     """
@@ -196,6 +208,8 @@ def mock_snowflake_session_fixture(mock_snowflake_session, feature_table_cache_m
                 if len(doc.feature_definitions) > 0:
                     return
             raise ProgrammingError("table not found")
+        if "CREATE VIEW" in query and not create_view_should_work:
+            raise ProgrammingError("View definition too large")
 
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
 
@@ -494,7 +508,7 @@ async def test_create_view_from_cache__create_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    await feature_table_cache_service.create_view_from_cache(
+    await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -565,7 +579,7 @@ async def test_create_view_from_cache__update_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    await feature_table_cache_service.create_view_from_cache(
+    await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -581,7 +595,7 @@ async def test_create_view_from_cache__update_cache(
     mock_snowflake_session.reset_mock()
 
     # update feature table cache
-    await feature_table_cache_service.create_view_from_cache(
+    await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -629,6 +643,87 @@ async def test_create_view_from_cache__update_cache(
     )
     assert sqls[3] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
+        "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "cust_id",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
+        '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
+        f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
+    )
+
+
+@pytest.mark.parametrize("create_view_should_work", [False])
+@pytest.mark.asyncio
+async def test_create_view_from_cache__create_view_failed(
+    feature_store,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    observation_table,
+    feature_list,
+    mock_get_historical_features,
+    mock_snowflake_session,
+):
+    """Test creating view failed and we should fallback to creating a table"""
+    output_view_details = TableDetails(
+        database_name=mock_snowflake_session.database_name,
+        schema_name=mock_snowflake_session.schema_name,
+        table_name="result_view",
+    )
+    await feature_table_cache_service.create_view_or_table_from_cache(
+        feature_store=feature_store,
+        observation_table=observation_table,
+        graph=feature_list.feature_clusters[0].graph,
+        nodes=feature_list.feature_clusters[0].nodes,
+        output_view_details=output_view_details,
+        is_target=False,
+        feature_list_id=feature_list.id,
+    )
+
+    assert mock_get_historical_features.await_count == 1
+    assert mock_snowflake_session.execute_query.await_count == 4
+
+    feature_table_cache = (
+        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+            observation_table_id=observation_table.id,
+        )
+    )
+
+    call_args = mock_snowflake_session.execute_query.await_args_list
+    sqls = [arg[0][0] for arg in call_args]
+
+    assert_sql_equal(
+        sqls[0],
+        f"""
+        SELECT
+          COUNT(*)
+        FROM "{feature_table_cache.table_name}"
+        LIMIT 1
+        """,
+    )
+    assert sqls[1] == (
+        "CREATE TABLE "
+        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
+        "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "cust_id",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
+        '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
+        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    )
+    assert sqls[2] == (
+        'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
+        "SELECT\n"
+        '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "cust_id",\n'
+        '  "POINT_IN_TIME",\n'
+        '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
+        '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
+        f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
+    )
+    assert sqls[3] == (
+        'CREATE TABLE "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
         '  "cust_id",\n'

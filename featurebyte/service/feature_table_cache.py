@@ -643,7 +643,7 @@ class FeatureTableCacheService:
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
         return await db_session.execute_query(sql)
 
-    async def create_view_from_cache(
+    async def create_view_or_table_from_cache(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -726,7 +726,7 @@ class FeatureTableCacheService:
                 )
             )
         )
-        create_view_exr = expressions.Create(
+        create_expr = expressions.Create(
             this=expressions.Table(
                 this=get_fully_qualified_table_name(output_view_details.dict()),
             ),
@@ -734,5 +734,22 @@ class FeatureTableCacheService:
             expression=select_expr,
             replace=False,
         )
-        sql = sql_to_string(create_view_exr, source_type=db_session.source_type)
-        await db_session.execute_query(sql)
+        sql = sql_to_string(create_expr, source_type=db_session.source_type)
+        try:
+            await db_session.execute_query(sql)
+        except:  # pylint: disable=bare-except
+            logger.info(
+                "Failed to create view. Trying to create a table instead",
+                extra={"observation_table_id": observation_table.id},
+                exc_info=True,
+            )
+            create_expr = expressions.Create(
+                this=expressions.Table(
+                    this=get_fully_qualified_table_name(output_view_details.dict()),
+                ),
+                kind="TABLE",
+                expression=select_expr,
+                replace=False,
+            )
+            sql = sql_to_string(create_expr, source_type=db_session.source_type)
+            await db_session.execute_query(sql)
