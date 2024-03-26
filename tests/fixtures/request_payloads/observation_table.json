@@ -26,5 +26,6 @@
         "type": "source_table"
     },
     "sample_rows": null,
-    "skip_entity_validation_checks": false
+    "skip_entity_validation_checks": false,
+    "target_column": null
 }

@@ -25,6 +25,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
     skip_entity_validation_checks: bool = Field(default=False)
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: Optional[List[PydanticObjectId]]
+    target_column: Optional[StrictStr] = Field(default=None)
 
 
 class ObservationTableUpload(FeatureByteBaseModel):
@@ -36,6 +37,7 @@ class ObservationTableUpload(FeatureByteBaseModel):
     name: StrictStr
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: List[PydanticObjectId]
+    target_column: Optional[StrictStr] = Field(default=None)
 
 
 class ObservationTableList(PaginationMixin):

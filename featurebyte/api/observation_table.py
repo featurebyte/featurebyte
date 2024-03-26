@@ -19,6 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.primary_entity_mixin import PrimaryEntityMixin
+from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.entity_doc import (
     ENTITY_DOC,
@@ -27,7 +28,12 @@ from featurebyte.api.templates.entity_doc import (
 )
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.observation_table import ObservationInput, ObservationTableModel, Purpose
+from featurebyte.models.observation_table import (
+    ObservationInput,
+    ObservationTableModel,
+    Purpose,
+    TargetInput,
+)
 from featurebyte.schema.observation_table import (
     ObservationTableListRecord,
     ObservationTableUpdate,
@@ -95,6 +101,39 @@ class ObservationTable(
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return [Entity.get_by_id(entity_id) for entity_id in self.primary_entity_ids]
+
+    @property
+    def target_namespace(self) -> Optional[TargetNamespace]:
+        """
+        Returns the target namespace associated to the observation table.
+
+        Returns
+        -------
+        Optional[TargetNamespace]
+            Target namespace of the observation table.
+        """
+        target_namespace_id = self.cached_model.target_namespace_id  # type: ignore
+        if not target_namespace_id:
+            return None
+        return TargetNamespace.get_by_id(target_namespace_id)
+
+    @property
+    def target(self) -> Optional[Any]:
+        """
+        Returns the target associated to the observation table.
+
+        Returns
+        -------
+        Optional[Any]
+            Target of the observation table.
+        """
+        from featurebyte.api.target import Target  # pylint: disable=import-outside-toplevel
+
+        if isinstance(self.cached_model.request_input, TargetInput):
+            target_id = self.cached_model.request_input.target_id
+            if target_id:
+                return Target.get_by_id(target_id)
+        return None
 
     @property
     def context_id(self) -> ObjectId:
@@ -380,6 +419,7 @@ class ObservationTable(
         name: str,
         purpose: Optional[Purpose] = None,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Upload a file to create an observation table. This file can either be a CSV or Parquet file.
@@ -394,6 +434,10 @@ class ObservationTable(
             Purpose of the observation table.
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The primary entities must match the entities in the target namespace.
 
         Returns
         -------
@@ -417,6 +461,7 @@ class ObservationTable(
             purpose=purpose,
             primary_entity_ids=primary_entity_ids,
             uploaded_file_name=os.path.basename(file_path),
+            target_column=target_column,
         )
         with open(file_path, "rb") as file_object:
             observation_table_doc = cls.post_async_task(

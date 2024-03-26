@@ -1009,6 +1009,7 @@ class SourceTable(AbstractTableData):
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -1037,6 +1038,10 @@ class SourceTable(AbstractTableData):
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The primary entities must match the entities in the target namespace.
 
         Returns
         -------
@@ -1085,6 +1090,7 @@ class SourceTable(AbstractTableData):
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
+            target_column=target_column,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

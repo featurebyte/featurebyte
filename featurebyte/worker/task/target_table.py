@@ -7,13 +7,14 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel, Purpose
+from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -37,6 +38,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         observation_table_service: ObservationTableService,
         target_computer: TargetComputer,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        target_service: TargetService,
     ):
         super().__init__()
         self.feature_store_service = feature_store_service
@@ -45,6 +47,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.observation_table_service = observation_table_service
         self.target_computer = target_computer
         self.derive_primary_entity_helper = derive_primary_entity_helper
+        self.target_service = target_service
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -64,14 +67,20 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             isinstance(observation_set, ObservationTableModel)
             and observation_set.has_row_index is True
         )
+
         async with self.drop_table_on_error(
             db_session=db_session,
             table_details=location.table_details,
             payload=payload,
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
-            graph = payload.graph
-            node_names = payload.node_names
+            if payload.target_id is None:
+                graph = payload.graph
+                node_names = payload.node_names
+            else:
+                target = await self.target_service.get_document(document_id=payload.target_id)
+                graph = target.graph
+                node_names = [target.node_name]
             assert graph is not None
             assert node_names is not None
             result = await self.target_computer.compute(
@@ -115,17 +124,29 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             if isinstance(observation_set, ObservationTableModel):
                 purpose = observation_set.purpose
 
+            # track target_namespace_id if target_id is provided in the payload
+            target_id = payload.target_id
+            target_namespace_id = None
+            if target_id is not None:
+                target = await self.target_service.get_document(document_id=target_id)
+                target_namespace_id = target.target_namespace_id
+
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,
                 context_id=payload.context_id,
-                request_input=payload.request_input,
+                request_input=TargetInput(
+                    target_id=target_id,
+                    observation_table_id=payload.observation_table_id,
+                    type=payload.request_input.type,
+                ),
                 primary_entity_ids=primary_entity_ids,
                 purpose=purpose,
                 has_row_index=True,
                 is_view=result.is_output_view,
+                target_namespace_id=target_namespace_id,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

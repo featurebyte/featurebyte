@@ -99,6 +99,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "description": None,
+            "target_name": None,
         }
 
     def test_get_purpose(self, test_api_client_persistent, create_success_response):
@@ -420,5 +421,121 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
                 assert (
                     response.json()["detail"]
-                    == "Required columns not found: POINT_IN_TIME, cust_id"
+                    == "Required column(s) not found: POINT_IN_TIME, cust_id"
                 )
+
+    @pytest.mark.asyncio
+    async def test_create_with_target_column_no_target_422(self, test_api_client_persistent):
+        """Test create with target column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "target"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == "Target name not found: target"
+
+    @pytest.mark.asyncio
+    async def test_create_with_target_column_missing_column_422(self, test_api_client_persistent):
+        """Test create with target column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target namespace
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
+        payload["name"] = "other_target"
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "other_target"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == "Required column(s) not found: other_target"
+
+    @pytest.mark.asyncio
+    async def test_create_with_target_column_primary_entity_mismatch_422(
+        self, test_api_client_persistent
+    ):
+        """Test create with target column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target namespace
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
+        payload["name"] = "target"
+        payload["entity_ids"] = [str(ObjectId())]
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "target"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"] == 'Target "target" does not have matching primary entity ids.'
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_target_column_201(self, test_api_client_persistent):
+        """Test create with target column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target namespace
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
+        payload["name"] = "target"
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        target_namespace_id = response.json()["_id"]
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "target"
+        response = self.post(test_api_client, payload)
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        # Get observation table
+        response = test_api_client.get(
+            f"{self.base_route}/{response_dict['payload']['output_document_id']}"
+        )
+        assert response.status_code == HTTPStatus.OK, response_dict
+        response_dict = response.json()
+        assert response_dict["target_namespace_id"] == target_namespace_id
+
+    @pytest.mark.asyncio
+    async def test_update_use_case_without_target(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update use case"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        use_case_id = str(ObjectId())
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        use_case_payload["_id"] = use_case_id
+        use_case_payload["name"] = "test_use_case"
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # test add use case
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert use_case_id in response.json()["use_case_ids"]
