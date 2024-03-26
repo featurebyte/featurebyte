@@ -1827,7 +1827,6 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
             f"method={method}, "
             f"feature_name={feature_name}, "
             f"offset={offset}, "
-            f"backward={backward}, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
