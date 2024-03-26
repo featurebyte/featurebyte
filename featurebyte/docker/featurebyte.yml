@@ -29,7 +29,6 @@ services:
 
         # Checking rs.status()
         while ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; do sleep 1; done
-        EOF
 
         fg  # Reconnect to mongod
     volumes:
