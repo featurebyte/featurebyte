@@ -572,11 +572,6 @@ async def test_get_historical_features(
     """
     Test getting historical features from FeatureList
     """
-    print("hi")
-    with open(f"/Users/yungsiang/workspace/temp/view-definition-too-large/query_x2.sql") as f:
-        content = f.read()
-        await session.execute_query_long_running(content)
-
     _ = user_entity, new_user_id_entity
     input_format, output_format = in_out_formats
     assert input_format in {"dataframe", "table", "uploaded_table"}
