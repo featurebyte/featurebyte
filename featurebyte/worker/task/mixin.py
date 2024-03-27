@@ -26,7 +26,6 @@ class DataWarehouseMixin:
         db_session: BaseSession,
         table_details: TableDetails,
         payload: BaseTaskPayload,
-        is_view: bool = False,
     ) -> AsyncIterator[None]:
         """
         Drop the table on error
@@ -39,8 +38,6 @@ class DataWarehouseMixin:
             The table details
         payload: BaseTaskPayload
             The task payload
-        is_view: bool
-            Whether it is view, not table
 
         Yields
         ------
@@ -66,6 +63,5 @@ class DataWarehouseMixin:
                 schema_name=table_details.schema_name,
                 database_name=table_details.database_name,
                 if_exists=True,
-                is_view=is_view,
             )
             raise exc

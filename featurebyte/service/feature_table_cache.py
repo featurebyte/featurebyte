@@ -658,7 +658,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> None:
+    ) -> bool:
         """
         Create or update cache table and create a new view which refers to the cached table
 
@@ -683,6 +683,11 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        bool
+            Whether the output is a view
         """
         with timer(
             "Update feature table cache",
@@ -739,6 +744,7 @@ class FeatureTableCacheService:
         sql = sql_to_string(create_expr, source_type=db_session.source_type)
         try:
             await db_session.execute_query_long_running(sql)
+            return True
         except:  # pylint: disable=bare-except
             logger.info(
                 "Failed to create view. Trying to create a table instead",
@@ -755,3 +761,4 @@ class FeatureTableCacheService:
             )
             sql = sql_to_string(create_expr, source_type=db_session.source_type)
             await db_session.execute_query_long_running(sql)
+            return False

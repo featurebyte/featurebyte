@@ -629,7 +629,6 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
-        is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -644,21 +643,30 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
-        is_view : bool
-            If True - it is view not table.
         """
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
-        query = sql_to_string(
-            expressions.Drop(
-                this=expressions.Table(this=fully_qualified_table_name),
-                kind="VIEW" if is_view else "TABLE",
-                exists=if_exists,
-            ),
-            source_type=self.source_type,
-        )
-        await self.execute_query(query)
+
+        async def _drop(is_view: bool) -> None:
+            fully_qualified_table_name = get_fully_qualified_table_name(
+                {
+                    "table_name": table_name,
+                    "schema_name": schema_name,
+                    "database_name": database_name,
+                }
+            )
+            query = sql_to_string(
+                expressions.Drop(
+                    this=expressions.Table(this=fully_qualified_table_name),
+                    kind="VIEW" if is_view else "TABLE",
+                    exists=if_exists,
+                ),
+                source_type=self.source_type,
+            )
+            await self.execute_query(query)
+
+        try:
+            await _drop(is_view=False)
+        except:  # pylint: disable=bare-except
+            await _drop(is_view=True)
 
     def format_quoted_identifier(self, identifier_name: str) -> str:
         """
