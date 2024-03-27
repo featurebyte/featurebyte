@@ -3,8 +3,6 @@ Unit tests for BatchFeatureTable class
 """
 from typing import Any, Dict
 
-from unittest.mock import patch
-
 import pandas as pd
 import pytest
 
@@ -13,16 +11,11 @@ from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-@pytest.fixture(autouse=True)
-def mock_online_enable_service_update_data_warehouse():
-    """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
-    with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
-        yield
-
-
 @pytest.fixture(name="batch_feature_table")
 def batch_feature_table_fixture(
-    deployment, batch_request_table_from_view, snowflake_execute_query_for_materialized_table
+    deployment,
+    batch_request_table_from_view,
+    mock_deployment_flow,
 ):
     """BatchFeatureTable fixture"""
     deployment.enable()
