@@ -260,6 +260,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
+        overwrite: true
   test-integration-databricks:
     if: false
     needs:
