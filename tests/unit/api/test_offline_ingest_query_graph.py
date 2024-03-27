@@ -236,17 +236,19 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
         feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = request_col + (request_col - request_col)
-        feat_2 = (feat_1 - feat).dt.total_seconds() // 86400
-        feat_3 = pd.Series(
+        feat_1 = pd.to_datetime(request_col) - pd.to_datetime(request_col)
+        feat_2 = pd.to_datetime(request_col) + pd.to_timedelta(feat_1)
+        feat_3 = pd.to_datetime(feat_2) - pd.to_datetime(feat)
+        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() // 86400
+        feat_5 = pd.Series(
             np.where(
-                pd.isna(feat_2) | pd.isna(inputs["__feature_V231227__part1"]),
+                pd.isna(feat_4) | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                feat_2 + inputs["__feature_V231227__part1"],
+                feat_4 + inputs["__feature_V231227__part1"],
             ),
-            index=feat_2.index,
+            index=feat_4.index,
         )
-        df["feature_V231227"] = feat_3
+        df["feature_V231227"] = feat_5
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -338,7 +340,8 @@ def test_feature__ttl_item_aggregate_request_column(
             inputs["__composite_feature_V231227__part0"], utc=True
         )
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = (request_col - feat).dt.total_seconds() // 86400
+        feat_1 = pd.to_datetime(request_col) - pd.to_datetime(feat)
+        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() // 86400
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
@@ -346,7 +349,7 @@ def test_feature__ttl_item_aggregate_request_column(
         )
         mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
         inputs.loc[~mask_1, "__composite_feature_V231227__part1"] = np.nan
-        feat_2 = pd.Series(
+        feat_3 = pd.Series(
             np.where(
                 pd.isna(inputs["__composite_feature_V231227__part1"])
                 | pd.isna(inputs["__composite_feature_V231227__part2"]),
@@ -356,11 +359,11 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part1"].index,
         )
-        feat_3 = pd.Series(
-            np.where(pd.isna(feat_2) | pd.isna(feat_1), np.nan, feat_2 + feat_1),
-            index=feat_2.index,
+        feat_4 = pd.Series(
+            np.where(pd.isna(feat_3) | pd.isna(feat_2), np.nan, feat_3 + feat_2),
+            index=feat_3.index,
         )
-        df["composite_feature_V231227"] = feat_3
+        df["composite_feature_V231227"] = feat_4
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()

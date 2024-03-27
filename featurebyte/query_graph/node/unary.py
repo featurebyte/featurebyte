@@ -292,7 +292,10 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.astype({self.parameters.type})"
 
     def generate_odfv_expression(self, operand: str) -> str:
-        return f"{operand}.map(lambda x: {self.parameters.type}(x) if pd.notnull(x) else x)"
+        expr = f"{operand}.map(lambda x: {self.parameters.type}(x) if pd.notnull(x) else x)"
+        if self.parameters.type == "str":
+            return f"{expr}.astype(object)"
+        return expr
 
     def generate_udf_expression(self, operand: str) -> str:
         return f"{self.parameters.type}({operand})"

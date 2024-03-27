@@ -48,7 +48,7 @@ NODE_PARAMS = {"name": "node_name"}
         (IsNullNode(**NODE_PARAMS), "feat.isnull()", "pd.isna(feat)"),
         (
             CastNode(**NODE_PARAMS, parameters={"type": "str", "from_dtype": DBVarType.INT}),
-            "feat.map(lambda x: str(x) if pd.notnull(x) else x)",
+            "feat.map(lambda x: str(x) if pd.notnull(x) else x).astype(object)",
             "str(feat)",
         ),
         (
