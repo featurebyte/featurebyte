@@ -508,7 +508,7 @@ async def test_create_view_from_cache__create_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -520,6 +520,7 @@ async def test_create_view_from_cache__create_cache(
 
     assert mock_get_historical_features.await_count == 1
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
+    assert is_output_view is True
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -579,7 +580,7 @@ async def test_create_view_from_cache__update_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -590,6 +591,7 @@ async def test_create_view_from_cache__update_cache(
     )
     assert mock_get_historical_features.await_count == 1
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
+    assert is_output_view is True
 
     mock_get_historical_features.reset_mock()
     mock_snowflake_session.reset_mock()
@@ -670,7 +672,7 @@ async def test_create_view_from_cache__create_view_failed(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -682,6 +684,7 @@ async def test_create_view_from_cache__create_view_failed(
 
     assert mock_get_historical_features.await_count == 1
     assert mock_snowflake_session.execute_query_long_running.await_count == 4
+    assert is_output_view is False
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(

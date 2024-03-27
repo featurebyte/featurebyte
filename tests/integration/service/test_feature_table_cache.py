@@ -368,14 +368,12 @@ async def test_create_view_from_cache(
             schema_name=view_1.schema_name,
             database_name=view_1.database_name,
             if_exists=True,
-            is_view=True,
         )
         await session.drop_table(
             table_name=view_2.table_name,
             schema_name=view_2.schema_name,
             database_name=view_2.database_name,
             if_exists=True,
-            is_view=True,
         )
 
 
