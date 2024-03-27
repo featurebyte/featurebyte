@@ -23,5 +23,5 @@ def test_logging(mock_log_handler):
     parts = mock_log_handler.records[0].split("|")
     assert (
         "|".join(parts[1:])
-        == " DEBUG    | tests.unit.test_logger | test_logging:17 | Test Message | {'a': 1}"
+        == " DEBUG    | tests.unit.test_logger | test_logging:18 | Test Message | {'a': 1}"
     )

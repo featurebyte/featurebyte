@@ -218,7 +218,7 @@ def test_create_observation_table(
     assert len(mock_log_handler.records) == 1
     parts = mock_log_handler.records[0].split("|")
     assert "|".join(parts[1:]) == (
-        " WARNING  | featurebyte.api.source_table | create_observation_table:1073 | "
+        " WARNING  | featurebyte.api.source_table | create_observation_table:1074 | "
         "Primary entities will be a mandatory parameter in SDK version 0.7. | {}"
     )
 
