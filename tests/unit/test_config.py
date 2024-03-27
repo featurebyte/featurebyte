@@ -124,6 +124,7 @@ def test_logging_level_change():
     Test logging level is consistent after local logging import in Configurations class
     """
     # pylint: disable=protected-access
+    original_level = logger.level
     logger.setLevel(10)
 
     config = Configurations("tests/fixtures/config/config.yaml")
@@ -131,7 +132,10 @@ def test_logging_level_change():
 
     # expect logging to adopt logging level specified in the config
     config.get_client()
-    assert logger.level == 20
+    try:
+        assert logger.level == 20
+    finally:
+        logger.setLevel(original_level)
 
 
 def test_default_local_storage():

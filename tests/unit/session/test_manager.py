@@ -22,7 +22,7 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     Log captured emitted output
     """
     original_level = session_logger.level
-    session_logger.setLevel(logging.DEBUG)
+    session_logger.setLevel(logging.DEBUG)  # ???
     session_logger.addHandler(caplog.handler)
     yield caplog
     try:

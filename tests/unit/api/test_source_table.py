@@ -206,7 +206,7 @@ def test_create_observation_table(
     from featurebyte.api.source_table import logger
 
     logger.addHandler(mock_log_handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)  ## ???
 
     # should not fail but log a warning
     snowflake_database_table.create_observation_table(
