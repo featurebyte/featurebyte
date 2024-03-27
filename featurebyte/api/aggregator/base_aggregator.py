@@ -1,6 +1,7 @@
 """
 This module contains base aggregator related class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Type, Union

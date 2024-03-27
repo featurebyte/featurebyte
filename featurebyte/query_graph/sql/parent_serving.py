@@ -1,6 +1,7 @@
 """
 SQL generation for looking up parent entities
 """
+
 from __future__ import annotations
 
 from typing import List

@@ -1,6 +1,7 @@
 """
 Namespace handler
 """
+
 from typing import Any, Dict, List, Tuple, Union
 
 from bson import ObjectId

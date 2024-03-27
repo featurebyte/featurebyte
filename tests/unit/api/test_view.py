@@ -1,6 +1,7 @@
 """
 Test view class
 """
+
 from typing import Any, Dict, List, Optional
 
 from unittest.mock import MagicMock, Mock, patch

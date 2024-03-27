@@ -1,4 +1,5 @@
 """Test table facade service"""
+
 import pytest
 
 from featurebyte import ColumnCleaningOperation, MissingValueImputation

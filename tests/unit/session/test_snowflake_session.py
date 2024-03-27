@@ -1,6 +1,7 @@
 """
 Unit test for snowflake session
 """
+
 import os
 import time
 from io import BytesIO

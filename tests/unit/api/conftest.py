@@ -1,6 +1,7 @@
 """
 Common test fixtures used across api test directories
 """
+
 import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch

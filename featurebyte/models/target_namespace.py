@@ -1,6 +1,7 @@
 """
 Target namespace module
 """
+
 from typing import List, Optional
 
 import pymongo

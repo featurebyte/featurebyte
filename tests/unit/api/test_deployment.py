@@ -1,6 +1,7 @@
 """
 Unit tests for Deployment class
 """
+
 import textwrap
 from unittest.mock import patch
 

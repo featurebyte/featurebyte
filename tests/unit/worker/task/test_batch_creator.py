@@ -1,4 +1,5 @@
 """This module contains unit tests for the batch creator module."""
+
 import pytest
 
 from featurebyte.api.api_object import ApiObject

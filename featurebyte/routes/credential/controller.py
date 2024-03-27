@@ -1,6 +1,7 @@
 """
 Credential API routes
 """
+
 from __future__ import annotations
 
 from bson import ObjectId
@@ -87,12 +88,12 @@ class CredentialController(
             feature_store_info=await self.feature_store_service.get_feature_store_info(
                 document_id=credential.feature_store_id, verbose=verbose
             ),
-            database_credential_type=credential.database_credential.type
-            if credential.database_credential
-            else None,
-            storage_credential_type=credential.storage_credential.type
-            if credential.storage_credential
-            else None,
+            database_credential_type=(
+                credential.database_credential.type if credential.database_credential else None
+            ),
+            storage_credential_type=(
+                credential.storage_credential.type if credential.storage_credential else None
+            ),
             created_at=credential.created_at,
             updated_at=credential.updated_at,
             description=credential.description,

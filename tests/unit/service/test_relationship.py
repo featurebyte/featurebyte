@@ -1,6 +1,7 @@
 """
 Tests for RelationshipService class
 """
+
 from unittest.mock import Mock
 
 import pytest

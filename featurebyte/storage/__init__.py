@@ -1,6 +1,7 @@
 """
 Storage classes
 """
+
 from featurebyte.storage.azure import AzureBlobStorage
 from featurebyte.storage.base import Storage
 from featurebyte.storage.local import LocalStorage

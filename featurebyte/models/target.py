@@ -1,6 +1,7 @@
 """
 This module contains Target related models
 """
+
 from typing import Optional
 
 import pymongo

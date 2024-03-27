@@ -1,6 +1,7 @@
 """
 This module contains the logic to construct the entity universe for a given node
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, cast

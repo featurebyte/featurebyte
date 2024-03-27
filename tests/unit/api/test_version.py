@@ -1,6 +1,7 @@
 """
 Test feature & feature list version related logic
 """
+
 import pytest
 
 from featurebyte.api.feature_list import FeatureList

@@ -1,6 +1,7 @@
 """
 Module to support serving using parent-child relationship
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Sequence, Tuple
@@ -292,9 +293,11 @@ class EntityValidationService:
             try:
                 join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                     entity_info,
-                    entity_relationships_context.feature_list_relationships_info
-                    if entity_relationships_context is not None
-                    else None,
+                    (
+                        entity_relationships_context.feature_list_relationships_info
+                        if entity_relationships_context is not None
+                        else None
+                    ),
                 )
             except RequiredEntityNotProvidedError:
                 raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from

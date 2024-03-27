@@ -1,6 +1,7 @@
 """
 This module contains the Query Graph Interpreter classes
 """
+
 from featurebyte.query_graph.sql.interpreter.preview import PreviewMixin
 from featurebyte.query_graph.sql.interpreter.tile import TileGenMixin, TileGenSql
 

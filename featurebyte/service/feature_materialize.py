@@ -1,6 +1,7 @@
 """
 FeatureMaterializeService class
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncIterator, List, Optional, Tuple, cast
@@ -160,9 +161,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 table_details=batch_request_table.table_details,
                 select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
                     current_feature_timestamp=feature_timestamp,
-                    last_materialized_timestamp=feature_table_model.last_materialized_at
-                    if use_last_materialized_timestamp
-                    else None,
+                    last_materialized_timestamp=(
+                        feature_table_model.last_materialized_at
+                        if use_last_materialized_timestamp
+                        else None
+                    ),
                 ),
             ),
             source_type=session.source_type,

@@ -1,4 +1,5 @@
 """Unit tests for data type info detectors (embedding and flat dict)"""
+
 import json
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Module containing base classes and functions for building syntax tree
 """
+
 from __future__ import annotations
 
 from typing import Optional, Type, TypeVar, cast

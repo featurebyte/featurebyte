@@ -1,6 +1,7 @@
 """
 Module to support serving parent features using child entities
 """
+
 from __future__ import annotations
 
 from typing import List, Optional

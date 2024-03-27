@@ -1,6 +1,7 @@
 """
 Tests for OnlineServingService
 """
+
 import json
 import os
 import textwrap

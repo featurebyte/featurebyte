@@ -1,6 +1,7 @@
 """
 Reused types
 """
+
 from typing import Any, Dict, List, Literal, Optional
 
 import os

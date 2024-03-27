@@ -1,6 +1,7 @@
 """
 Unit test for SourceTable
 """
+
 import logging
 from unittest.mock import AsyncMock, Mock, patch
 

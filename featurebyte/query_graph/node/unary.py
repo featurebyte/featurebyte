@@ -1,6 +1,7 @@
 """
 This module contains unary operation node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import ClassVar, List, Literal, Type, Union
 

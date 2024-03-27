@@ -1,6 +1,7 @@
 """
 Tests for featurebyte/query_graph/model/entity_lookup_plan.py
 """
+
 import pytest
 from bson import ObjectId
 

@@ -1,6 +1,7 @@
 """
 OfflineStoreFeatureTableCommentService
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
@@ -173,9 +174,9 @@ class OfflineStoreFeatureTableCommentService:
                         comment += f". Description of {feature.name}: {feature_description}"
                     comments[(table_name, offline_ingest_graph.output_column_name)] = comment
                 elif feature_description is not None:
-                    comments[
-                        (table_name, offline_ingest_graph.output_column_name)
-                    ] = feature_description
+                    comments[(table_name, offline_ingest_graph.output_column_name)] = (
+                        feature_description
+                    )
 
         out = [
             ColumnComment(

@@ -1,6 +1,7 @@
 """
 Test for target routes
 """
+
 from http import HTTPStatus
 from unittest import mock
 from unittest.mock import Mock

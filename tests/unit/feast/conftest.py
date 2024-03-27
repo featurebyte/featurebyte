@@ -1,6 +1,7 @@
 """
 This module contains common fixtures for unit tests
 """
+
 import datetime
 from unittest.mock import patch
 

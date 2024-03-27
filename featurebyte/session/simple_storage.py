@@ -1,6 +1,7 @@
 """
 SimpleStorage classes for basic object store operations
 """
+
 from typing import Any, Dict, Literal, Optional
 
 import os

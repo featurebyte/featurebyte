@@ -1,6 +1,7 @@
 """
 Test forward_aggregate_asat
 """
+
 from featurebyte.api.target import Target
 from tests.util.helper import check_sdk_code_generation, get_node
 

@@ -1,6 +1,7 @@
 """
 Module for datetime operations related sql generation
 """
+
 from __future__ import annotations
 
 from typing import Union, cast

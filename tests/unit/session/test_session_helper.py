@@ -1,6 +1,7 @@
 """
 Tests for featurebyte/session/session_helper.py
 """
+
 import textwrap
 from unittest.mock import AsyncMock, call
 

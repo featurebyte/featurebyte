@@ -1,6 +1,7 @@
 """
 Module for groupby operation (non-time aware) sql generation
 """
+
 from __future__ import annotations
 
 from typing import cast
@@ -65,9 +66,9 @@ class ItemGroupby(TableNode):
                 ),
                 result_name=output_name,
                 parent_dtype=parent_dtype,
-                parent_cols=[quoted_identifier(parameters["parent"])]
-                if parameters["parent"]
-                else [],
+                parent_cols=(
+                    [quoted_identifier(parameters["parent"])] if parameters["parent"] else []
+                ),
             )
         ]
         node = ItemGroupby(

@@ -1,6 +1,7 @@
 """
 Join utils class
 """
+
 from typing import List, Optional, Set
 
 import copy

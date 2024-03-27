@@ -1,6 +1,7 @@
 """
 Tests for Use Case route
 """
+
 from http import HTTPStatus
 
 import pytest

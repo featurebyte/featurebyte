@@ -1,6 +1,7 @@
 """
 Use Case API payload schema
 """
+
 from typing import Any, Dict, List, Optional
 
 from pydantic import Field, StrictStr, root_validator

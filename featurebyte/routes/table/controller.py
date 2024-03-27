@@ -1,6 +1,7 @@
 """
 Table API route controller
 """
+
 from __future__ import annotations
 
 from featurebyte.models.proxy_table import ProxyTableModel

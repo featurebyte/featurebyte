@@ -1,6 +1,7 @@
 """
 Test worker module
 """
+
 from featurebyte.worker import format_mongo_uri_for_scheduler
 
 

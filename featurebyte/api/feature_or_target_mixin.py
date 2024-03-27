@@ -1,6 +1,7 @@
 """
 Mixin class containing common methods for feature or target classes
 """
+
 from typing import Any, Sequence, Union, cast
 
 import time

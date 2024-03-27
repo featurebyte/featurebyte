@@ -3,6 +3,7 @@ This module contains all the enums used across different modules
 
 Note: do not include server only dependencies here
 """
+
 from __future__ import annotations
 
 from typing import Literal

@@ -101,7 +101,7 @@ aiofiles = "^22.1.0"
 aioredis = { version = "^2.0.1", optional = true }
 alive-progress = "^3.1.1"
 asyncache = "^0.3.1"
-black = "^23.3.0"
+black = "^24.3.0"
 cachetools = { version = "^5.2.0", optional = true }
 celery = { version = "^5.2.6", extras = ["redis"], optional = true }
 celerybeat-mongo = { version = "^0.2.0", optional = true }
@@ -152,7 +152,7 @@ server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connect
 freezegun = "^1.2.1"
 httpx = "^0.24.0"
 junitparser = "^2.8.0"
-jupyterlab = "^4.0.2"
+jupyterlab = "^4.0.11"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"
 pip-licenses = "^3.5.4"

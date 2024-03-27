@@ -1,6 +1,7 @@
 """
 Test Logger
 """
+
 import logging
 
 from featurebyte.logging import get_logger

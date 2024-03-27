@@ -1,6 +1,7 @@
 """
 Definition extractor used to extract the definition hash of a query graph.
 """
+
 from typing import Any, Dict, List, Tuple
 
 from dataclasses import dataclass

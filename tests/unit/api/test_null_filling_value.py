@@ -1,4 +1,5 @@
 """This is a test module for null filling value extractor."""
+
 import textwrap
 
 import freezegun

@@ -1,6 +1,7 @@
 """
 Test target table schema
 """
+
 import pytest
 from bson import ObjectId
 

@@ -1,6 +1,7 @@
 """
 Base class for storage testing
 """
+
 import filecmp
 import tempfile
 from pathlib import Path

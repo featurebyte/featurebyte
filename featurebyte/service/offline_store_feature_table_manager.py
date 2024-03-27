@@ -1,6 +1,7 @@
 """
 OfflineStoreFeatureTableUpdateService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
@@ -248,9 +249,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             new_tables=new_tables,
             new_features=features,
             feature_store_model=feature_store_model,
-            update_progress=get_ranged_progress_callback(update_progress, 90, 100)
-            if update_progress
-            else None,
+            update_progress=(
+                get_ranged_progress_callback(update_progress, 90, 100) if update_progress else None
+            ),
         )
 
     async def handle_online_disabled_features(
@@ -422,7 +423,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 "table_name": {"$in": aggregate_result_table_names},
             }
 
-        async for online_store_compute_query_model in self.online_store_compute_query_service.list_documents_iterator(
+        async for (
+            online_store_compute_query_model
+        ) in self.online_store_compute_query_service.list_documents_iterator(
             query_filter=query_filter
         ):
             filtered_table_names.append(online_store_compute_query_model.table_name)
@@ -436,7 +439,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     ) -> List[FeatureListModel]:
         feature_lists = []
         fl_has_been_enabled = False
-        async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
+        async for (
+            feature_list_dict
+        ) in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_list = FeatureListModel(**feature_list_dict)
             if (
                 feature_list_to_online_disable
@@ -562,7 +567,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 current_active_table_names.add(table.name)
 
         # Decommission tables that should no longer exist
-        async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
+        async for (
+            feature_table_dict
+        ) in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
             query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
         ):
             if feature_table_dict["name"] not in current_active_table_names:

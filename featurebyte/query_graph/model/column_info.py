@@ -1,6 +1,7 @@
 """
 This module contains column info related models.
 """
+
 from typing import Any, Dict, Optional
 
 from pydantic import Field, root_validator

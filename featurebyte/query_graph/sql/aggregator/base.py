@@ -1,6 +1,7 @@
 """
 Base class for aggregation SQL generators
 """
+
 from __future__ import annotations
 
 from typing import Any, Generic, Sequence, Tuple, TypeVar

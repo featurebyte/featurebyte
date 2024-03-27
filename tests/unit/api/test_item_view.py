@@ -1,6 +1,7 @@
 """
 Unit test for ItemView class
 """
+
 import textwrap
 
 import pytest

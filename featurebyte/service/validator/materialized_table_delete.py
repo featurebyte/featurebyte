@@ -1,6 +1,7 @@
 """
 This file contains the error messages used in the featurebyte package that is used in multiple places.
 """
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError

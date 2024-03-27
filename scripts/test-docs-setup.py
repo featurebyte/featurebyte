@@ -1,6 +1,7 @@
 """
 Setup for running doctests.
 """
+
 import featurebyte as fb
 from featurebyte import FeatureList, FunctionParameter, MySQLOnlineStoreDetails, UserDefinedFunction
 from featurebyte.enum import DBVarType

@@ -1,6 +1,7 @@
 """
 Feature or Target base test suite
 """
+
 import textwrap
 
 import pytest

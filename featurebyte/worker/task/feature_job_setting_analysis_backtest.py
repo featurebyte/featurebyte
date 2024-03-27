@@ -1,6 +1,7 @@
 """
 Feature job setting analysis backtest
 """
+
 from __future__ import annotations
 
 from datetime import datetime

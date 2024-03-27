@@ -1,6 +1,7 @@
 """
 This module contains tests for the offline ingest query graph.
 """
+
 import os
 import textwrap
 from unittest import mock

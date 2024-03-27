@@ -1,6 +1,7 @@
 """
 Feast registry related schemas
 """
+
 from typing import List, Optional
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

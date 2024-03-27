@@ -1,6 +1,7 @@
 """
 Periodic Task API route controller
 """
+
 from __future__ import annotations
 
 from featurebyte.models.periodic_task import PeriodicTask

@@ -1,6 +1,7 @@
 """
 UseCase API route controller
 """
+
 from typing import Any, Dict, List, Tuple
 
 from bson import ObjectId

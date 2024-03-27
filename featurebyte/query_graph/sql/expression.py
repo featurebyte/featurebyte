@@ -1,6 +1,7 @@
 """
 Additional expression used to construct SQL query
 """
+
 from typing import Optional
 
 from sqlglot.expressions import Anonymous, Expression, Func

@@ -1,6 +1,7 @@
 """
 Vector aggregate validator
 """
+
 from typing import List, Optional
 
 from featurebyte.enum import AggFunc, DBVarType

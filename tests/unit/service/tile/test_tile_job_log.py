@@ -1,6 +1,7 @@
 """
 Unit tests for TileJobLogService
 """
+
 from datetime import datetime
 
 import freezegun

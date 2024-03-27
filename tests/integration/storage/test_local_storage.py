@@ -1,6 +1,7 @@
 """
 Test LocalStorage class
 """
+
 import tempfile
 
 import pytest

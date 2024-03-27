@@ -1,6 +1,7 @@
 """
 Test registry service.
 """
+
 import random
 from unittest.mock import patch
 

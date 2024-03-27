@@ -1,6 +1,7 @@
 """
 Local temp storage class
 """
+
 from __future__ import annotations
 
 import tempfile

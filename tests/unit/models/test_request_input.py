@@ -1,6 +1,7 @@
 """
 Unit tests related to RequestInput
 """
+
 import textwrap
 from unittest.mock import AsyncMock, Mock, call
 

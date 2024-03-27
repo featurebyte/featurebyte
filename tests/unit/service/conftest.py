@@ -1,6 +1,7 @@
 """
 Fixture for Service related unit tests
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 

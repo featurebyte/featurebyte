@@ -1,6 +1,7 @@
 """
 Unit Tests for OfflineStoreFeatureTableService
 """
+
 import os
 from unittest.mock import patch
 

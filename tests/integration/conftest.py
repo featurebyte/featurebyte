@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
+
 # pylint: disable=too-many-lines
 from typing import Dict, List, cast
 
@@ -1165,9 +1166,9 @@ def create_transactions_event_table_from_data_source(
     )
     expected_dtypes = pd.Series(
         {
-            "ËVENT_TIMESTAMP": "TIMESTAMP_TZ"
-            if data_source.type == SourceType.SNOWFLAKE
-            else "TIMESTAMP",
+            "ËVENT_TIMESTAMP": (
+                "TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"
+            ),
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
             "ÜSER ID": "INT",
@@ -1690,14 +1691,14 @@ def feature_group_per_category_fixture(event_view):
     feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
     feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
     feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
-    feature_group_per_category[
-        "NUM_UNIQUE_ACTION_24h_exclude_missing"
-    ] = feature_counts_24h.cd.unique_count(include_missing=False)
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h_exclude_missing"] = (
+        feature_counts_24h.cd.unique_count(include_missing=False)
+    )
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category[
-        "ACTION_SIMILARITY_2h_to_24h"
-    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = (
+        feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    )
 
     return feature_group_per_category
 

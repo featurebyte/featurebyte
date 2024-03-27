@@ -1,6 +1,7 @@
 """
 Tests for Context route
 """
+
 from http import HTTPStatus
 from unittest import mock
 

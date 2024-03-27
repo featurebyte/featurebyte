@@ -1,6 +1,7 @@
 """
 BaseApiTestSuite
 """
+
 # pylint: disable=too-many-lines
 import json
 import os

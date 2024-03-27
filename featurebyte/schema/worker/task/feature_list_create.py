@@ -1,6 +1,7 @@
 """
 Feature list creation creation schema
 """
+
 from __future__ import annotations
 
 from typing import List, Union

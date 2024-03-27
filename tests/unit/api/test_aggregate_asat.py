@@ -1,6 +1,7 @@
 """
 Unit tests for aggregate_asat
 """
+
 import pytest
 
 from featurebyte.api.feature import Feature

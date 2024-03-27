@@ -1,6 +1,7 @@
 """
 Tests for FeatureList route
 """
+
 # pylint: disable=too-many-lines
 import os
 from collections import defaultdict

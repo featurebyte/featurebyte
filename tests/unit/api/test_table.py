@@ -1,6 +1,7 @@
 """
 Unit test for Table class
 """
+
 from __future__ import annotations
 
 import pytest

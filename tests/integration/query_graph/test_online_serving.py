@@ -1,6 +1,7 @@
 """
 Integration test for online store SQL generation
 """
+
 import asyncio
 import threading
 import time

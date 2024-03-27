@@ -1,6 +1,7 @@
 """
 Test groupby helper
 """
+
 import textwrap
 
 import pytest

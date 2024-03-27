@@ -1,6 +1,7 @@
 """
 Custom nav module
 """
+
 from typing import Any, Iterable, List, Mapping
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]

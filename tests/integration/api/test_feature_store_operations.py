@@ -1,6 +1,7 @@
 """
 Feature store operations test class
 """
+
 from typing import Any, Optional
 
 from unittest.mock import patch

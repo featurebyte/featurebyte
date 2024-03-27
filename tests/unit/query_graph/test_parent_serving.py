@@ -1,6 +1,7 @@
 """
 Tests sql generation for parent features serving
 """
+
 import textwrap
 
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities

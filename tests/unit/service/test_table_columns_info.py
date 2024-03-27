@@ -1,6 +1,7 @@
 """
 Test TableColumnsInfoService
 """
+
 from unittest.mock import patch
 
 import pytest

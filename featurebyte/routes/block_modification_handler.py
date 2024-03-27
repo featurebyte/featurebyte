@@ -1,6 +1,7 @@
 """
 Block modification handler
 """
+
 from typing import Iterator
 
 from contextlib import contextmanager

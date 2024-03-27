@@ -1,6 +1,7 @@
 """
 Feature Offline Store Info Initialization Service
 """
+
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId

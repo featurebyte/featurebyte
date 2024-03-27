@@ -1,6 +1,7 @@
 """
 Tests for count dict entropy UDF
 """
+
 import numpy as np
 import pytest
 

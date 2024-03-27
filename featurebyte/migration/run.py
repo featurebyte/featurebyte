@@ -1,6 +1,7 @@
 """
 Migration script
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Callable, Set, cast

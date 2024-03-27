@@ -1,6 +1,7 @@
 """
 This module contains EventTable related models
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type

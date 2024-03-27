@@ -1,6 +1,7 @@
 """
 Support for asynchronous messaging via Redis and web sockets
 """
+
 from typing import Any, Dict, Optional, cast
 
 import json

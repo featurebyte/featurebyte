@@ -1,6 +1,7 @@
 """
 This module functions used to patch the Feast library.
 """
+
 from __future__ import annotations
 
 from typing import List
@@ -68,9 +69,11 @@ def augment_response_with_on_demand_transforms(
         selected_subset = [f for f in transformed_features_df.columns if f in _feature_refs]
         # this is an additional step introduced to extract the correct dtypes for the transformed features
         odfv_dtype_map = {
-            f"{odfv.projection.name_to_use()}__{feature.name}"
-            if full_feature_names
-            else feature.name: feature.dtype.to_value_type()
+            (
+                f"{odfv.projection.name_to_use()}__{feature.name}"
+                if full_feature_names
+                else feature.name
+            ): feature.dtype.to_value_type()
             for feature in odfv.features
         }
 

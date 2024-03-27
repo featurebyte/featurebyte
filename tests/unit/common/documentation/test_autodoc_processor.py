@@ -1,6 +1,7 @@
 """
 Test autodoc processor
 """
+
 import pytest
 
 from featurebyte.common.documentation.autodoc_processor import (

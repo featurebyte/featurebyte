@@ -1,6 +1,7 @@
 """
 Base View test suite
 """
+
 import textwrap
 
 import pandas as pd

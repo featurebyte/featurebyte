@@ -1,6 +1,7 @@
 """
 Target namespace schema
 """
+
 from typing import List, Optional
 
 from bson import ObjectId

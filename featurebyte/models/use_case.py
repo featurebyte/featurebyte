@@ -1,6 +1,7 @@
 """
 Use Case model
 """
+
 from typing import List, Optional
 
 import pymongo

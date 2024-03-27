@@ -1,6 +1,7 @@
 """
 ObservationTableTaskPayload schema
 """
+
 from __future__ import annotations
 
 from featurebyte.enum import WorkerCommand

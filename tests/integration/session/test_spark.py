@@ -1,6 +1,7 @@
 """
 This module contains session to Spark integration tests.
 """
+
 import json
 from collections import OrderedDict
 

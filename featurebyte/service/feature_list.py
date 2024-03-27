@@ -1,6 +1,7 @@
 """
 FeatureListService class
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
@@ -460,9 +461,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             await progress_callback(30, "Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
             features=feature_data["features"],
-            progress_callback=get_ranged_progress_callback(progress_callback, 30, 60)
-            if progress_callback
-            else None,
+            progress_callback=(
+                get_ranged_progress_callback(progress_callback, 30, 60)
+                if progress_callback
+                else None
+            ),
         )
 
         # update document with derived output

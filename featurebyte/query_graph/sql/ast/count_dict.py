@@ -1,6 +1,7 @@
 """
 Module for count dict sql generation
 """
+
 from __future__ import annotations
 
 from typing import Literal

@@ -1,6 +1,7 @@
 """
 Test models#target module.
 """
+
 import pytest
 
 from featurebyte.models.target import TargetModel

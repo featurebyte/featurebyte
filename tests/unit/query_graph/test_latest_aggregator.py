@@ -2,6 +2,7 @@
 Unit tests for featurebyte.query_graph.sql.aggregator.latest.LatestAggregator
 
 """
+
 import textwrap
 
 import pytest

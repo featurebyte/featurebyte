@@ -1,6 +1,7 @@
 """
 TaskStatus API payload schema
 """
+
 from typing import Any, Dict, List, Optional, Set, Union
 
 import datetime

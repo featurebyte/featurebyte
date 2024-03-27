@@ -1,6 +1,7 @@
 """
 Config related fixtures.
 """
+
 import os
 import tempfile
 from unittest import mock

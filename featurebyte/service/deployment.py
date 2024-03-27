@@ -1,6 +1,7 @@
 """
 DeploymentService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.deployment import DeploymentModel

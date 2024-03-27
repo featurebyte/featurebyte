@@ -1,6 +1,7 @@
 """
 Unit tests for BatchFeatureTable class
 """
+
 from typing import Any, Dict
 
 from unittest.mock import patch

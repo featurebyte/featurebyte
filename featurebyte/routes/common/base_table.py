@@ -1,6 +1,7 @@
 """
 BaseDataController for API routes
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple, Type, TypeVar, cast

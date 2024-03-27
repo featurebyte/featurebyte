@@ -1,6 +1,7 @@
 """
 OfflineStoreFeatureTableModel class
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -111,9 +112,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             "catalog_id": self.catalog_id,
             "primary_entity_ids": self.primary_entity_ids,
             "serving_names": self.serving_names,
-            "feature_job_setting": self.feature_job_setting.dict()
-            if self.feature_job_setting
-            else None,
+            "feature_job_setting": (
+                self.feature_job_setting.dict() if self.feature_job_setting else None
+            ),
             "has_ttl": self.has_ttl,
             "entity_lookup_info": entity_lookup_info,
         }

@@ -1,6 +1,7 @@
 """
 Tile Monitor tests for Spark and Snowflake Session
 """
+
 from datetime import datetime
 
 import pytest

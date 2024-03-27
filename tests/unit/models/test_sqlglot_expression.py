@@ -1,6 +1,7 @@
 """
 Tests for SqlglotExpressionModel
 """
+
 from sqlglot.expressions import select
 
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel

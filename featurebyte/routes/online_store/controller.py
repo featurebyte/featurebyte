@@ -1,6 +1,7 @@
 """
 OnlineStore API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Tuple, cast

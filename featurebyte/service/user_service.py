@@ -1,6 +1,7 @@
 """
 User service module
 """
+
 from typing import Optional
 
 from bson import ObjectId

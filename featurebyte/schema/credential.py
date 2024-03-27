@@ -1,6 +1,7 @@
 """
 Pydantic schemas for handling API payloads for credential routes
 """
+
 from typing import List, Optional
 
 from bson import ObjectId

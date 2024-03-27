@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.core.timedelta
 """
+
 import pytest
 
 from featurebyte.core.timedelta import to_timedelta

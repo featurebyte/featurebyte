@@ -1,6 +1,7 @@
 """
 Test SparkSession
 """
+
 from unittest.mock import patch
 
 import pandas as pd

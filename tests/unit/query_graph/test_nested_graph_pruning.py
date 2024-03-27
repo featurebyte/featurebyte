@@ -1,6 +1,7 @@
 """
 Tests for nested graph pruning related logic
 """
+
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode

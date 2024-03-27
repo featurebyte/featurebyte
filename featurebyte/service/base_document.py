@@ -1,6 +1,7 @@
 """
 BaseService class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 

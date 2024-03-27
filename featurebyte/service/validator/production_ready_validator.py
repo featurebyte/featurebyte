@@ -1,6 +1,7 @@
 """
 Production ready validator
 """
+
 from typing import Any, Dict, List, cast
 
 from featurebyte import ColumnCleaningOperation, FeatureJobSetting

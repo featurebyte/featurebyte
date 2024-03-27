@@ -1,6 +1,7 @@
 """
 Start worker
 """
+
 from featurebyte.worker import get_celery
 from featurebyte.worker.task_executor import CPUBoundTask, IOBoundTask
 

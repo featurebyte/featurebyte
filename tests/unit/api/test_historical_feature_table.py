@@ -1,6 +1,7 @@
 """
 Unit tests for HistoricalFeatureTable class
 """
+
 from typing import Any, Dict
 
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable

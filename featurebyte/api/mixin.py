@@ -1,6 +1,7 @@
 """
 This module contains the mixin class used by api objects.
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple, Union

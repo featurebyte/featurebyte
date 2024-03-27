@@ -1,6 +1,7 @@
 """
 Test forward aggregator
 """
+
 from __future__ import annotations
 
 import textwrap

@@ -1,6 +1,7 @@
 """
 Test forward_aggregate_asat
 """
+
 import pandas as pd
 
 from tests.util.helper import tz_localize_if_needed

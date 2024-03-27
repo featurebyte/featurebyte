@@ -26,6 +26,9 @@ subtext: |
   + cryptography
   + ~~fastapi~~ (Need to bump to pydantic 2.X.X)
   + python-multipart
+  + aiohttp
+  + jupyterlab
+  + black
 
 # SAMPLE
 #subtext: |

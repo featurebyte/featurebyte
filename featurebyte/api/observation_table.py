@@ -1,6 +1,7 @@
 """
 ObservationTable class
 """
+
 # pylint: disable=duplicate-code
 from __future__ import annotations
 

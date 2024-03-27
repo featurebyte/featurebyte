@@ -1,6 +1,7 @@
 """
 Tests for Semantic route
 """
+
 from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseRelationshipApiTestSuite

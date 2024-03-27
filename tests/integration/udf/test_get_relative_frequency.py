@@ -1,6 +1,7 @@
 """
 Tests for snowflake get relative frequency UDF
 """
+
 import numpy as np
 import pytest
 

@@ -1,6 +1,7 @@
 """
 Base Feature Or Target table model
 """
+
 from typing import Optional
 
 from featurebyte.models.base import PydanticObjectId

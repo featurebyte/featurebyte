@@ -1,6 +1,7 @@
 """
 RequestColumn unit tests
 """
+
 import pytest
 
 from featurebyte.api.feature import Feature

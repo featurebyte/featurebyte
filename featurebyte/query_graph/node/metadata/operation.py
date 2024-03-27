@@ -1,6 +1,7 @@
 """
 This module contains models used to store node output operation info
 """
+
 from typing import (
     Any,
     DefaultDict,
@@ -202,9 +203,11 @@ class BaseDerivedColumn(BaseColumn):
             cur_col = column_map[key]
             column_map[key] = column.clone(
                 node_names=cur_col.node_names.union(column.node_names),
-                node_name=cur_col.node_name
-                if len(cur_col.node_names) > len(column.node_names)
-                else column.node_name,
+                node_name=(
+                    cur_col.node_name
+                    if len(cur_col.node_names) > len(column.node_names)
+                    else column.node_name
+                ),
                 filter=cur_col.filter or column.filter,
             )
         return column_map
@@ -542,14 +545,12 @@ class OperationStructure:
     @overload
     def _split_column_by_type(
         self, columns: List[Union[SourceDataColumn, DerivedDataColumn]]
-    ) -> Tuple[List[SourceDataColumn], List[DerivedDataColumn]]:
-        ...
+    ) -> Tuple[List[SourceDataColumn], List[DerivedDataColumn]]: ...
 
     @overload
     def _split_column_by_type(
         self, columns: List[Union[AggregationColumn, PostAggregationColumn]]
-    ) -> Tuple[List[AggregationColumn], List[PostAggregationColumn]]:
-        ...
+    ) -> Tuple[List[AggregationColumn], List[PostAggregationColumn]]: ...
 
     def _split_column_by_type(
         self,

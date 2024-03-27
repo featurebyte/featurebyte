@@ -1,6 +1,7 @@
 """
 SQL generation for forward as-at aggregation
 """
+
 from __future__ import annotations
 
 from featurebyte.query_graph.sql.aggregator.base_asat import BaseAsAtAggregator

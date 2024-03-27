@@ -1,6 +1,7 @@
 """
 EventTableService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.event_table import EventTableModel

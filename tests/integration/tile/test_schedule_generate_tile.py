@@ -1,6 +1,7 @@
 """
 This module contains integration tests for scheduled tile generation
 """
+
 from datetime import datetime
 
 import dateutil.parser

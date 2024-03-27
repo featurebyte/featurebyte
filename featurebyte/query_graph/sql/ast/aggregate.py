@@ -1,6 +1,7 @@
 """
 Module for aggregation related sql generation
 """
+
 from __future__ import annotations
 
 from typing import Optional, cast

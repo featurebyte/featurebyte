@@ -1,6 +1,7 @@
 """
 Test registry
 """
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 

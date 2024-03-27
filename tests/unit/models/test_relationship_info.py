@@ -1,6 +1,7 @@
 """
 Test relationship info
 """
+
 import pytest
 from bson import ObjectId
 

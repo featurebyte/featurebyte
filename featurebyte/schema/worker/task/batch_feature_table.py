@@ -1,6 +1,7 @@
 """
 Online prediction table task payload schema
 """
+
 from __future__ import annotations
 
 from featurebyte.enum import WorkerCommand

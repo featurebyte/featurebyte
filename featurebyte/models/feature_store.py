@@ -1,6 +1,7 @@
 """
 This module contains DatabaseSource related models
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type

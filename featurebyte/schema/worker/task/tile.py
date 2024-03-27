@@ -1,6 +1,7 @@
 """
 TestTaskPayload schema
 """
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tile import TileScheduledJobParameters

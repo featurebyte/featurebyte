@@ -1,6 +1,7 @@
 """
 Base models for task and task payload
 """
+
 from __future__ import annotations
 
 from typing import Any, Generic, Optional, Type, TypeVar

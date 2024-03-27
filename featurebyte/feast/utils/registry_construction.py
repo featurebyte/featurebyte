@@ -1,6 +1,7 @@
 """
 This module contains classes for constructing feast registry
 """
+
 # pylint: disable=no-name-in-module
 from __future__ import annotations
 
@@ -439,16 +440,16 @@ class FeastAssetCreator:
                     )
 
             if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
-                name_to_feast_request_source[
-                    SpecialColumnName.POINT_IN_TIME.value
-                ] = FeastRequestSource(
-                    name=SpecialColumnName.POINT_IN_TIME.value,
-                    schema=[
-                        FeastField(
-                            name=SpecialColumnName.POINT_IN_TIME.value,
-                            dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
-                        )
-                    ],
+                name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = (
+                    FeastRequestSource(
+                        name=SpecialColumnName.POINT_IN_TIME.value,
+                        schema=[
+                            FeastField(
+                                name=SpecialColumnName.POINT_IN_TIME.value,
+                                dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                            )
+                        ],
+                    )
                 )
 
         return name_to_feast_request_source

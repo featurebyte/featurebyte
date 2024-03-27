@@ -1,6 +1,7 @@
 """
 This module contains integration tests for FeatureSnowflake
 """
+
 import contextlib
 from datetime import datetime
 from unittest.mock import PropertyMock, patch

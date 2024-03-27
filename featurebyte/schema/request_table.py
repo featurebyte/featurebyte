@@ -1,6 +1,7 @@
 """
 Base class for all request tables.
 """
+
 from typing import Any, Dict, Optional
 
 from bson import ObjectId

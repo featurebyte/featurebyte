@@ -1,6 +1,7 @@
 """
 Test on-demand view code generation of distance related nodes.
 """
+
 import pandas as pd
 
 from featurebyte.query_graph.node.distance import HaversineNode

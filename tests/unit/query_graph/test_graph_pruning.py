@@ -1,6 +1,7 @@
 """
 Test for graph pruning related logics
 """
+
 import os
 
 from bson import ObjectId, json_util

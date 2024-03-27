@@ -1,6 +1,7 @@
 """
 Test typing module
 """
+
 from featurebyte.common.typing import get_or_default
 
 

@@ -1,6 +1,7 @@
 """
 Test target namespace module
 """
+
 from featurebyte.api.target_namespace import TargetNamespace
 
 

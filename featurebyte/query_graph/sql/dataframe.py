@@ -1,6 +1,7 @@
 """
 Module for sql generation given a DataFrame (typically request data)
 """
+
 from __future__ import annotations
 
 from typing import cast

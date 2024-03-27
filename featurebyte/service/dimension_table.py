@@ -1,6 +1,7 @@
 """
 DimensionTableService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.dimension_table import DimensionTableModel

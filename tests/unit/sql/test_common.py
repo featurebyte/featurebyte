@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte/sql/common.py
 """
+
 from unittest.mock import call
 
 import pytest

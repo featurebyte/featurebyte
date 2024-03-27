@@ -1,6 +1,7 @@
 """
 Tests for least frequent UDF
 """
+
 import json
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Unit test for DatabricksSession
 """
+
 import os
 from unittest.mock import patch
 
