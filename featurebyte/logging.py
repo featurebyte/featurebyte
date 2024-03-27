@@ -10,7 +10,7 @@ import os
 import sys
 
 from featurebyte.common.env_util import is_notebook
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, LogLevel
 
 
 class CustomLogger(logging.Logger):
@@ -101,7 +101,7 @@ CONSOLE_LOG_FORMATTER = logging.Formatter(
 )
 
 
-def set_logger_level(logger: logging.Logger, configurations: Configurations) -> None:
+def set_logger_level(logger: logging.Logger, logging_level: LogLevel) -> None:
     """
     Set logger level
 
@@ -109,13 +109,13 @@ def set_logger_level(logger: logging.Logger, configurations: Configurations) -> 
     ----------
     logger: logging.Logger
         Logger to set level
-    configurations: Configurations
-        Optional configurations used to configure logger
+    logging_level: LogLevel
+        Logging level to set to if LOG_LEVEL env var is not available
     """
     if os.environ.get("LOG_LEVEL"):
         logger.setLevel(os.environ.get("LOG_LEVEL"))  # type: ignore[arg-type]
     else:
-        logger.setLevel(configurations.logging.level)
+        logger.setLevel(logging_level)
 
 
 def get_logger(logger_name: str, configurations: Configurations | None = None) -> logging.Logger:
@@ -137,23 +137,17 @@ def get_logger(logger_name: str, configurations: Configurations | None = None) -
     return logging.getLogger(logger_name)
 
 
-def reconfigure_loggers(configurations: Configurations) -> None:
+def configure_featurebyte_logger(configurations: Configurations | None = None) -> None:
     """
-    Reconfigure all loggers with configurations.
+    Configure featurebyte logger
 
     Parameters
     ----------
-    configurations: Configurations
-        Configurations to use
-    """
-    configure_featurebyte_logger(configurations)
-
-
-def configure_featurebyte_logger(configurations: Configurations) -> None:
-    """
-    Configure featurebyte logger
+    configurations: Optional[Configurations]
+        Optional configurations used to configure logger
     """
     configurations = configurations or Configurations()
+
     is_notebook_env = is_notebook()
     formatter: logging.Formatter = CONSOLE_LOG_FORMATTER
     if is_notebook_env:
@@ -165,7 +159,8 @@ def configure_featurebyte_logger(configurations: Configurations) -> None:
     if logger.hasHandlers():
         logger.handlers.clear()
     logger.addHandler(console_handler)
-    set_logger_level(logger, configurations)
+
+    set_logger_level(logger, configurations.logging.level)
 
 
-__all__ = ["get_logger"]
+__all__ = ["get_logger", "configure_featurebyte_logger"]

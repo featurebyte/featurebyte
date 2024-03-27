@@ -526,10 +526,10 @@ class Configurations:
         """
         if not is_server_mode():
             # pylint: disable=import-outside-toplevel,cyclic-import
-            from featurebyte.logging import reconfigure_loggers
+            from featurebyte.logging import configure_featurebyte_logger
 
             # configure logger
-            reconfigure_loggers(self)
+            configure_featurebyte_logger(self)
 
         return APIClient(
             api_url=self.profile.api_url,
