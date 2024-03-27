@@ -67,14 +67,13 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             db_session=db_session,
             table_details=location.table_details,
             payload=payload,
-            is_view=has_row_index,
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
             graph = payload.graph
             node_names = payload.node_names
             assert graph is not None
             assert node_names is not None
-            await self.target_computer.compute(
+            result = await self.target_computer.compute(
                 observation_set=observation_set,
                 compute_request=ComputeTargetRequest(
                     feature_store_id=payload.feature_store_id,
@@ -125,7 +124,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 primary_entity_ids=primary_entity_ids,
                 purpose=purpose,
                 has_row_index=True,
-                is_view=has_row_index,
+                is_view=result.is_output_view,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

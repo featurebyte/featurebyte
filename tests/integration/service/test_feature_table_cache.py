@@ -308,7 +308,7 @@ async def test_create_view_from_cache(
         feature_names = [
             feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
         ]
-        await feature_table_cache_service.create_view_from_cache(
+        await feature_table_cache_service.create_view_or_table_from_cache(
             feature_store=feature_store_model,
             observation_table=observation_table_model,
             graph=feature_cluster.graph,
@@ -336,7 +336,7 @@ async def test_create_view_from_cache(
         )
 
         # update cache table with second feature list
-        await feature_table_cache_service.create_view_from_cache(
+        await feature_table_cache_service.create_view_or_table_from_cache(
             feature_store=feature_store_model,
             observation_table=observation_table_model,
             graph=feature_cluster.graph,
@@ -368,14 +368,12 @@ async def test_create_view_from_cache(
             schema_name=view_1.schema_name,
             database_name=view_1.database_name,
             if_exists=True,
-            is_view=True,
         )
         await session.drop_table(
             table_name=view_2.table_name,
             schema_name=view_2.schema_name,
             database_name=view_2.database_name,
             if_exists=True,
-            is_view=True,
         )
 
 

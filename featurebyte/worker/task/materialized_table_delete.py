@@ -151,7 +151,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             table_name=document.location.table_details.table_name,
             schema_name=document.location.table_details.schema_name,  # type: ignore
             database_name=document.location.table_details.database_name,  # type: ignore
-            is_view=document.is_view,
         )
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
