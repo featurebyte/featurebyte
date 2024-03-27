@@ -38,7 +38,7 @@ jobs:
         fetch-depth: 0
     - name: Checkout branch
       run: git checkout "origin/${{ github.head_ref }}"
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
@@ -49,7 +49,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Check pyproject.toml and poetry.lock are consistent
       run: task check-poetry
     - name: Build package (branch)

@@ -36,14 +36,14 @@ jobs:
         fetch-depth: 0
     - name: Checkout branch
       run: git checkout "origin/${{ github.head_ref }}"
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
