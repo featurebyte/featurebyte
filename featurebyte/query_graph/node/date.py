@@ -234,7 +234,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
-        statements = []
+        statements: List[StatementT] = []
         if sdk_code:
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
@@ -408,7 +408,7 @@ class DateAddNode(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
-        statements = []
+        statements: List[StatementT] = []
         if sdk_code:
             expr = ExpressionStr(f"{left_operand} + {right_operand}")
         else:
