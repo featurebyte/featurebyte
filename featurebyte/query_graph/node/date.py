@@ -107,7 +107,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             )
             statements.append((offset_operand, delta))
         elif len(var_name_expressions) == 2:
-            offset_operand = var_name_expressions[1].as_input()
+            offset_operand = f"pd.to_timedelta({var_name_expressions[1].as_input()})"
         else:
             offset_operand = None
 
@@ -116,7 +116,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             dt_var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=offset_adj_var_name_prefix, node_name=None
             )
-            expr = ExpressionStr(f"{ts_operand} + {offset_operand}")
+            expr = ExpressionStr(f"pd.to_datetime({ts_operand}) + {offset_operand}")
             statements.append((dt_var_name, expr))
         else:
             dt_var_name = ts_operand
@@ -134,7 +134,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat_dt",
-            expr_func=lambda dt_var_name, prop: f"{dt_var_name}.dt.{prop}",
+            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}).dt.{prop}",
         )
 
     def _derive_user_defined_function_code(
@@ -147,7 +147,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat",
-            expr_func=lambda dt_var_name, prop: f"{dt_var_name}.{prop}",
+            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}).{prop}",
         )
 
 
@@ -186,23 +186,23 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_odfv_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
-            return f"1e3 * {operand}.dt.total_seconds()"
+            return f"1e3 * pd.to_timedelta({operand}).dt.total_seconds()"
         if self.parameters.property == "microsecond":
-            return f"1e6 * {operand}.dt.total_seconds()"
+            return f"1e6 * pd.to_timedelta({operand}).dt.total_seconds()"
         if self.parameters.property == "second":
-            return f"{operand}.dt.total_seconds()"
+            return f"pd.to_timedelta({operand}).dt.total_seconds()"
 
-        return f"{operand}.dt.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
+        return f"pd.to_timedelta({operand}).dt.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
     def generate_udf_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
-            return f"1e3 * {operand}.total_seconds()"
+            return f"1e3 * pd.to_timedelta({operand}).total_seconds()"
         if self.parameters.property == "microsecond":
-            return f"1e6 * {operand}.total_seconds()"
+            return f"1e6 * pd.to_timedelta({operand}).total_seconds()"
         if self.parameters.property == "second":
-            return f"{operand}.total_seconds()"
+            return f"pd.to_timedelta({operand}).total_seconds()"
 
-        return f"{operand}.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
+        return f"pd.to_timedelta({operand}).total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
 
 class DateDifferenceNode(BaseSeriesOutputNode):
@@ -225,6 +225,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     def _derive_python_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
+        sdk_code: bool,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow subtracting timestamp with a scalar timedelta through SDK
@@ -233,7 +234,14 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
-        return [], ExpressionStr(f"{left_operand} - {right_operand}")
+        statements: List[StatementT] = []
+        if sdk_code:
+            expr = ExpressionStr(f"{left_operand} - {right_operand}")
+        else:
+            expr = ExpressionStr(
+                f"pd.to_datetime({left_operand}) - pd.to_datetime({right_operand})"
+            )
+        return statements, expr
 
     def _derive_sdk_code(
         self,
@@ -244,7 +252,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, operation_structure, config, context
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=True)
 
     def _derive_on_demand_view_code(
         self,
@@ -253,7 +261,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=False)
 
     def _derive_user_defined_function_code(
         self,
@@ -262,7 +270,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=False)
 
 
 class TimeDeltaNode(BaseSeriesOutputNode):
@@ -391,6 +399,7 @@ class DateAddNode(BaseSeriesOutputNode):
     def _derive_python_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
+        sdk_code: bool,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow adding timestamp with a scalar timedelta through SDK
@@ -399,7 +408,14 @@ class DateAddNode(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
-        return [], ExpressionStr(f"{left_operand} + {right_operand}")
+        statements: List[StatementT] = []
+        if sdk_code:
+            expr = ExpressionStr(f"{left_operand} + {right_operand}")
+        else:
+            expr = ExpressionStr(
+                f"pd.to_datetime({left_operand}) + pd.to_timedelta({right_operand})"
+            )
+        return statements, expr
 
     def _derive_sdk_code(
         self,
@@ -410,7 +426,7 @@ class DateAddNode(BaseSeriesOutputNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, operation_structure, config, context
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=True)
 
     def _derive_on_demand_view_code(
         self,
@@ -419,7 +435,7 @@ class DateAddNode(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=False)
 
     def _derive_user_defined_function_code(
         self,
@@ -428,4 +444,4 @@ class DateAddNode(BaseSeriesOutputNode):
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs)
+        return self._derive_python_code(node_inputs, sdk_code=False)
