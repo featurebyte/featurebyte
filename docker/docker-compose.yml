@@ -3,9 +3,6 @@ services:
     hostname: mongo-testrs
     container_name: mongo-testrs
     image: "featurebyte/mongo:latest"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=example
     ports:
       - 27017:27017  # Expose MongoDB port
     entrypoint: []
@@ -32,18 +29,7 @@ services:
         # Checking rs.status()
         while ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; do sleep 1; done
 
-        # Create User
-        echo "Creating User"
-        mongosh --quiet admin <<EOF
-        db.createUser({
-          user: "$${MONGO_INITDB_ROOT_USERNAME}",
-          pwd: "$${MONGO_INITDB_ROOT_PASSWORD}",
-          roles: [{ role: "root", db: "admin" }]
-        });
-        EOF
-
         fg  # Reconnect to mongod
-
   redis:
     hostname: redis-test
     container_name: redis-test
