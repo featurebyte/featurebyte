@@ -13,7 +13,7 @@ def test_logging(mock_log_handler):
     Test basic logging works
     """
     logger.addHandler(mock_log_handler)
-    logger.setLevel(logging.DEBUG)  # ???
+    logger.setLevel(logging.DEBUG)
     logger.debug("Test Message", extra={"a": 1})
 
     # check logging format looks like:
