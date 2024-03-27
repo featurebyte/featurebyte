@@ -106,6 +106,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 pytest.xml
+pytest-quick.xml
 pytest-coverage.txt
 
 # Translations
