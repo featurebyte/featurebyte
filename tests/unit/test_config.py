@@ -123,19 +123,26 @@ def test_logging_level_change():
     """
     Test logging level is consistent after local logging import in Configurations class
     """
-    # pylint: disable=protected-access
-    original_level = logger.level
+    # Logger with log level explicitly set
+    logger = get_logger("featurebyte.api.api_object")
     logger.setLevel(10)
 
+    # Logger without level set
+    logger_not_set = get_logger("featurebyte.api.api_object_util")
+
+    # Expect logger to follow the same log level in config after get_client()
+    config = Configurations("tests/fixtures/config/config.yaml")
+    config.logging.level = 30
+    config.get_client()
+    assert logger.getEffectiveLevel() == 10
+    assert logger_not_set.getEffectiveLevel() == 30
+
+    # Set to another level
     config = Configurations("tests/fixtures/config/config.yaml")
     config.logging.level = 20
-
-    # expect logging to adopt logging level specified in the config
     config.get_client()
-    try:
-        assert logger.level == 20
-    finally:
-        logger.setLevel(original_level)
+    assert logger.getEffectiveLevel() == 10
+    assert logger_not_set.getEffectiveLevel() == 20
 
 
 def test_default_local_storage():

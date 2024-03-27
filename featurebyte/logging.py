@@ -133,21 +133,8 @@ def get_logger(logger_name: str, configurations: Configurations | None = None) -
     -------
     logging.Logger
     """
-    configurations = configurations or Configurations()
-    is_notebook_env = is_notebook()
-    formatter: logging.Formatter = CONSOLE_LOG_FORMATTER
-    if is_notebook_env:
-        formatter = NOTEBOOK_LOG_FORMATTER
-
-    console_handler = logging.StreamHandler(stream=sys.stderr)
-    console_handler.setFormatter(formatter)
-    logger = logging.getLogger(logger_name)
-    logger.propagate = False
-    if logger.hasHandlers():
-        logger.handlers.clear()
-    logger.addHandler(console_handler)
-    set_logger_level(logger, configurations)
-    return logger
+    _ = configurations
+    return logging.getLogger(logger_name)
 
 
 def reconfigure_loggers(configurations: Configurations) -> None:
@@ -159,8 +146,26 @@ def reconfigure_loggers(configurations: Configurations) -> None:
     configurations: Configurations
         Configurations to use
     """
-    for name in logging.root.manager.loggerDict:  # pylint: disable=no-member
-        set_logger_level(logging.getLogger(name), configurations)
+    configure_featurebyte_logger(configurations)
+
+
+def configure_featurebyte_logger(configurations: Configurations) -> None:
+    """
+    Configure featurebyte logger
+    """
+    configurations = configurations or Configurations()
+    is_notebook_env = is_notebook()
+    formatter: logging.Formatter = CONSOLE_LOG_FORMATTER
+    if is_notebook_env:
+        formatter = NOTEBOOK_LOG_FORMATTER
+
+    console_handler = logging.StreamHandler(stream=sys.stderr)
+    console_handler.setFormatter(formatter)
+    logger = logging.getLogger("featurebyte")
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(console_handler)
+    set_logger_level(logger, configurations)
 
 
 __all__ = ["get_logger"]
