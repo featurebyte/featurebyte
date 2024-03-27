@@ -4,7 +4,7 @@
 server = ["aioredis", "cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "feast", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "eb486da96762c930927fd7b29bf03240fb2db9bb4383861112a8989bc4faf017"
+content-hash = "9737cf096923d89e2ad72a398b2c38ed15e8967ee16bb7e2fa9f2f6bdbdde44b"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
 
@@ -484,18 +484,18 @@ version = "1.1.28"
 [[package]]
 description = "Microsoft Azure Core Library for Python"
 files = [
-    {file = "azure-core-1.29.1.zip", hash = "sha256:68e5bb6e3a3230ec202001cc5cb88e57f11c441c8345e921a9ffb8c370abf936"},
-    {file = "azure_core-1.29.1-py3-none-any.whl", hash = "sha256:6bcefa1f70ff7bf3c39c07c73d8a21df73288eff7e6a1031eb8cfae71cc7bed4"},
+    {file = "azure-core-1.30.1.tar.gz", hash = "sha256:26273a254131f84269e8ea4464f3560c731f29c0c1f69ac99010845f239c1a8f"},
+    {file = "azure_core-1.30.1-py3-none-any.whl", hash = "sha256:7c5ee397e48f281ec4dd773d67a0a47a0962ed6fa833036057f9ea067f688e74"},
 ]
 name = "azure-core"
 optional = true
 python-versions = ">=3.7"
-version = "1.29.1"
+version = "1.30.1"
 
 [package.dependencies]
-requests = ">=2.18.4"
+requests = ">=2.21.0"
 six = ">=1.11.0"
-typing-extensions = ">=4.3.0"
+typing-extensions = ">=4.6.0"
 
 [package.extras]
 aio = ["aiohttp (>=3.0)"]
@@ -6261,16 +6261,16 @@ version = "2.0.7"
 [[package]]
 description = "A streaming multipart parser for Python"
 files = [
-    {file = "python_multipart-0.0.6-py3-none-any.whl", hash = "sha256:ee698bab5ef148b0a760751c261902cd096e57e10558e11aca17646b74ee1c18"},
-    {file = "python_multipart-0.0.6.tar.gz", hash = "sha256:e9925a80bb668529f1b67c7fdb0a5dacdd7cbfc6fb0bff3ea443fe22bdd62132"},
+    {file = "python_multipart-0.0.9-py3-none-any.whl", hash = "sha256:97ca7b8ea7b05f977dc3849c3ba99d51689822fab725c3703af7c866a0c2b215"},
+    {file = "python_multipart-0.0.9.tar.gz", hash = "sha256:03f54688c663f1b7977105f021043b0793151e4cb1c1a9d4a11fc13d622c4026"},
 ]
 name = "python-multipart"
 optional = false
-python-versions = ">=3.7"
-version = "0.0.6"
+python-versions = ">=3.8"
+version = "0.0.9"
 
 [package.extras]
-dev = ["atomicwrites (==1.2.1)", "attrs (==19.2.0)", "coverage (==6.5.0)", "hatch", "invoke (==1.7.3)", "more-itertools (==4.3.0)", "pbr (==4.3.0)", "pluggy (==1.0.0)", "py (==1.11.0)", "pytest (==7.2.0)", "pytest-cov (==4.0.0)", "pytest-timeout (==2.1.0)", "pyyaml (==5.1)"]
+dev = ["atomicwrites (==1.4.1)", "attrs (==23.2.0)", "coverage (==7.4.1)", "hatch", "invoke (==2.2.0)", "more-itertools (==10.2.0)", "pbr (==6.0.0)", "pluggy (==1.4.0)", "py (==1.11.0)", "pytest (==8.0.0)", "pytest-cov (==4.1.0)", "pytest-timeout (==2.2.0)", "pyyaml (==6.0.1)", "ruff (==0.2.1)"]
 
 [[package]]
 description = "A Docker client for Python, designed to be fun and intuitive!"
@@ -7862,15 +7862,15 @@ python-versions = "*"
 version = "1.26.25.14"
 
 [[package]]
-description = "Backported and Experimental Type Hints for Python 3.7+"
+description = "Backported and Experimental Type Hints for Python 3.8+"
 files = [
-    {file = "typing_extensions-4.5.0-py3-none-any.whl", hash = "sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4"},
-    {file = "typing_extensions-4.5.0.tar.gz", hash = "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb"},
+    {file = "typing_extensions-4.10.0-py3-none-any.whl", hash = "sha256:69b1a937c3a517342112fb4c6df7e72fc39a38e7891a5730ed4985b5214b5475"},
+    {file = "typing_extensions-4.10.0.tar.gz", hash = "sha256:b0abd7c89e8fb96f98db18d86106ff1d90ab692004eb746cf6eda2682f91b3cb"},
 ]
 name = "typing-extensions"
 optional = false
-python-versions = ">=3.7"
-version = "4.5.0"
+python-versions = ">=3.8"
+version = "4.10.0"
 
 [[package]]
 description = "Provider of IANA time zone data"
