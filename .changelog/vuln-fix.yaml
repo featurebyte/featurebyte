@@ -24,7 +24,7 @@ note: "Bumping vulnerable dependencies"
 subtext: |
   + orjson
   + cryptography
-
+  + fastapi
 
 # SAMPLE
 #subtext: |
