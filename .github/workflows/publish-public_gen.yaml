@@ -46,7 +46,8 @@ concurrency:
   group: ${{ github.workflow }}
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 360
     strategy:
       matrix:

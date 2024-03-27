@@ -21,7 +21,8 @@ env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
 jobs:
   test-deep-dive-notebooks:
-    runs-on: ubuntu-latest-4-cores
+    runs-on:
+      group: Public Runners
     steps:
     - uses: actions/checkout@v4
       with:

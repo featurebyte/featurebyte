@@ -71,7 +71,8 @@ jobs:
   test-unit:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -126,7 +127,8 @@ jobs:
   test-integration-snowflake:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -237,7 +239,8 @@ jobs:
     - name: Upload spark-thrift log file
       uses: actions/upload-artifact@v4
       with:
-        name: spark-thrift-logs
+        name: spark-thrift-logs-${{ matrix.spark-version }}
+        overwrite: true
         path: spark-thrift.log
         retention-days: 5
     - name: Check test status
@@ -251,6 +254,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
+        overwrite: true
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
@@ -260,7 +264,8 @@ jobs:
     if: false
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -313,7 +318,8 @@ jobs:
   test-integration-databricks-unity:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 135
     strategy:
       matrix:
@@ -361,7 +367,8 @@ jobs:
   test-docs:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
