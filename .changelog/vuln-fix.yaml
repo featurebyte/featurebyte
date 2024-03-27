@@ -23,7 +23,7 @@ note: "Bumping vulnerable dependencies"
 # Use pipe (|) for multiline entries.
 subtext: |
   + orjson
-  +
+  + cryptography
 
 
 # SAMPLE
