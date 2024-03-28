@@ -247,7 +247,10 @@ class FeastRegistryService(
 
     async def _populate_remote_attributes(self, document: FeastRegistryModel) -> FeastRegistryModel:
         if document.registry_path:
-            document.registry = await self.storage.get_bytes(Path(document.registry_path))
+            document.registry = await self.storage.get_bytes(
+                Path(document.registry_path),
+                cache_key=f"{document.registry_path}_{document.updated_at}",
+            )
         return document
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
