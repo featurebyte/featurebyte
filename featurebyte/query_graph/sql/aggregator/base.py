@@ -257,7 +257,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             join_type="left",
             join_alias=agg_table_alias,
             on=expressions.and_(*join_conditions) if join_conditions else expressions.true(),
-        ).select(*agg_result_name_aliases)
+            copy=False,
+        ).select(*agg_result_name_aliases, copy=False)
         return updated_table_expr
 
     @staticmethod

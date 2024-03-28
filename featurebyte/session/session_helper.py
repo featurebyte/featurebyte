@@ -4,7 +4,7 @@ Session related helper functions
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Union
+from typing import Any, Callable, Coroutine, List, Optional, Union, cast
 
 import asyncio
 
@@ -69,7 +69,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
         raise ValueError("Row index column is invalid in the output table")
 
 
-async def run_coroutines(coroutines: List[Coroutine[Any, Any, None]]) -> None:
+async def run_coroutines(coroutines: List[Coroutine[Any, Any, Any]]) -> List[Any]:
     """
     Execute the provided list of coroutines
 
@@ -78,6 +78,11 @@ async def run_coroutines(coroutines: List[Coroutine[Any, Any, None]]) -> None:
     coroutines: List[Coroutine[Any, Any, None]]
         List of coroutines to be executed
 
+    Returns
+    -------
+    List[Any]
+        List of results from the coroutines
+
     Raises
     ------
     Exception
@@ -85,7 +90,7 @@ async def run_coroutines(coroutines: List[Coroutine[Any, Any, None]]) -> None:
     """
     tasks = [asyncio.create_task(coro) for coro in coroutines]
     try:
-        await asyncio.gather(*tasks)
+        return cast(List[Any], await asyncio.gather(*tasks))
     except Exception:
         logger.error(
             "Canceling all other tasks because at least one task failed",

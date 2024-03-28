@@ -87,7 +87,7 @@ class Table:
             expr = self.expr_with_non_missing_timestamp_values
         else:
             expr = self.expr
-        return cast(Expression, expr.subquery(alias=alias))
+        return cast(Expression, expr.subquery(alias=alias, copy=False))
 
     @property
     def expr_with_non_missing_timestamp_values(self) -> Select:
@@ -219,10 +219,11 @@ def get_scd_join_expr(
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
 
-    select_expr = select_expr.from_(left_subquery).join(
+    select_expr = select_expr.from_(left_subquery, copy=False).join(
         right_subquery,
         join_type=join_type,
         on=expressions.and_(*join_conditions),
+        copy=False,
     )
     return select_expr
 
@@ -370,12 +371,12 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
             alias=TS_TIE_BREAKER_COL,
             quoted=True,
         ),
-    ).from_(right_table.as_subquery(remove_missing_timestamp_values=True))
+    ).from_(right_table.as_subquery(remove_missing_timestamp_values=True), copy=False)
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
         right_ts_and_key = right_ts_and_key.select(
-            alias_(expressions.NULL, alias=column, quoted=True)
+            alias_(expressions.NULL, alias=column, quoted=True), copy=False
         )
 
     # Merge the above two temporary tables into one
@@ -429,10 +430,10 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
             )
-            .from_(all_ts_and_key.subquery())
-            .subquery()
+            .from_(all_ts_and_key.subquery(copy=False))
+            .subquery(copy=False)
         )
-        .where(filter_original_left_view_rows)
+        .where(filter_original_left_view_rows, copy=False)
     )
 
     return left_view_with_effective_timestamp_expr

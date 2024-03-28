@@ -456,7 +456,7 @@ def patched_num_features_per_query():
     """
     with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
         with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 4):
-            with patch("featurebyte.service.tile_cache.NUM_NODES_PER_QUERY", 4):
+            with patch("featurebyte.tile.tile_cache.NUM_TRACKER_TABLES_PER_QUERY", 1):
                 yield
 
 
