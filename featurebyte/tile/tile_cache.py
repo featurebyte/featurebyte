@@ -332,7 +332,9 @@ class TileCache:
         unique_tile_infos = tile_cache_status.unique_tile_infos
         keys_with_tracker = tile_cache_status.keys_with_tracker
         keys_without_tracker = list(set(unique_tile_infos.keys()) - set(keys_with_tracker))
+        session = await self.session.clone_if_not_threadsafe()
         await self._register_working_table(
+            session=session,
             unique_tile_infos=unique_tile_infos,
             keys_with_tracker=keys_with_tracker,
             keys_no_tracker=keys_without_tracker,
@@ -346,6 +348,7 @@ class TileCache:
             tile_cache_validity[key] = False
         if keys_with_tracker:
             existing_validity = await self._get_tile_cache_validity_from_working_table(
+                session=session,
                 request_id=request_id,
                 keys=keys_with_tracker,
                 unique_tile_infos=unique_tile_infos,
@@ -467,6 +470,7 @@ class TileCache:
 
     async def _register_working_table(
         self,
+        session: BaseSession,
         unique_tile_infos: dict[TileInfoKey, TileGenSql],
         keys_with_tracker: list[TileInfoKey],
         keys_no_tracker: list[TileInfoKey],
@@ -549,19 +553,20 @@ class TileCache:
         table_create_query = sql_to_string(
             self.adapter.create_table_as(
                 TableDetails(
-                    database_name=self.session.database_name,
-                    schema_name=self.session.schema_name,
+                    database_name=session.database_name,
+                    schema_name=session.schema_name,
                     table_name=tile_cache_working_table_name,
                 ),
                 table_expr,
             ),
             source_type=self.source_type,
         )
-        await self.session.execute_query_long_running(table_create_query)
+        await session.execute_query_long_running(table_create_query)
         self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(
         self,
+        session: BaseSession,
         request_id: str,
         keys: list[TileInfoKey],
         unique_tile_infos: dict[TileInfoKey, TileGenSql],
@@ -635,9 +640,9 @@ class TileCache:
         )
         tile_cache_validity_sql = sql_to_string(
             select(*validity_exprs).from_(quoted_identifier(tile_cache_working_table_name)),
-            source_type=self.session.source_type,
+            source_type=session.source_type,
         )
-        df_validity = await self.session.execute_query_long_running(tile_cache_validity_sql)
+        df_validity = await session.execute_query_long_running(tile_cache_validity_sql)
 
         # Result should only have one row
         assert df_validity is not None
