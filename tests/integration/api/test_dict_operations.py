@@ -1,6 +1,7 @@
 """
 Test operations on dict / cross aggregation features
 """
+
 import pandas as pd
 import pytest
 

@@ -1,6 +1,7 @@
 """
 Tests for Feature list related models
 """
+
 import pytest
 from bson.objectid import ObjectId
 

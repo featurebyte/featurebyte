@@ -1,6 +1,7 @@
 """
 Base View test suite
 """
+
 import textwrap
 import time
 from abc import abstractmethod

@@ -1,6 +1,7 @@
 """
 Target namespace controller
 """
+
 from typing import Any, List, Tuple
 
 from bson import ObjectId

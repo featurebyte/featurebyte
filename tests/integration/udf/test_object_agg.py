@@ -1,6 +1,7 @@
 """
 Tests for cosine similarity UDF
 """
+
 import pandas as pd
 import pytest
 import pytest_asyncio

@@ -1,6 +1,7 @@
 """
 FeatureStore API payload schema
 """
+
 from typing import Any, Dict, List, Optional
 
 from datetime import datetime

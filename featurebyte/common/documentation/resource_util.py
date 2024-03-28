@@ -1,6 +1,7 @@
 """
 Resource util.
 """
+
 from typing import Any
 
 import inspect

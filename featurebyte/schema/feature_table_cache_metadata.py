@@ -1,6 +1,7 @@
 """
 Feature Table Cache schema classes
 """
+
 from typing import List
 
 from featurebyte.models.feature_table_cache_metadata import CachedFeatureDefinition

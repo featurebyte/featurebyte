@@ -1,6 +1,7 @@
 """
 FastAPI Application
 """
+
 from typing import Any, Callable, Coroutine, List, Optional
 
 import aioredis

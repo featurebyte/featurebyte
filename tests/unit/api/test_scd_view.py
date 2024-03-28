@@ -1,6 +1,7 @@
 """
 Unit tests for SCDView class
 """
+
 import pytest
 
 from featurebyte.api.scd_view import SCDView

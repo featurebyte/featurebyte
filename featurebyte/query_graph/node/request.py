@@ -1,6 +1,7 @@
 """
 Request data related node classes
 """
+
 from typing import List, Literal, Sequence, Tuple
 
 from pydantic import BaseModel, Field, StrictStr

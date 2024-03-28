@@ -1,6 +1,7 @@
 """
 Snowflake double vector agg no value by test fixture module
 """
+
 import textwrap
 
 SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY = textwrap.dedent(

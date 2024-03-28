@@ -1,6 +1,7 @@
 """
 Materialized Table Mixin
 """
+
 from typing import Any, Callable, ClassVar, Optional, Tuple, Union
 
 from http import HTTPStatus

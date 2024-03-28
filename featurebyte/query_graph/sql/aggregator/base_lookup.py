@@ -1,6 +1,7 @@
 """
 SQL generation for lookup features
 """
+
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar

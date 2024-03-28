@@ -1,6 +1,7 @@
 """
 This module contains unit tests for FeatureManagerSnowflake
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock
 

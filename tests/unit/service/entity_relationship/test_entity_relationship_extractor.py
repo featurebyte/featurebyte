@@ -1,6 +1,7 @@
 """
 Test entity relationship extractor
 """
+
 # pylint: disable=too-many-arguments,anomalous-backslash-in-string
 import pytest
 

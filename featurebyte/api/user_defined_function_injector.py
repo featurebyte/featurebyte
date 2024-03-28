@@ -1,6 +1,7 @@
 """
 This module contains generic function construction logic for user defined functions.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List, Tuple, Type, Union

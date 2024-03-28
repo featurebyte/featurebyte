@@ -1,6 +1,7 @@
 """
 Feast registry model
 """
+
 from typing import List, Optional
 
 from pathlib import Path

@@ -1,6 +1,7 @@
 """
 Tests for StaticSourceTable routes
 """
+
 from http import HTTPStatus
 
 import pytest

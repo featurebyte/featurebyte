@@ -1,6 +1,7 @@
 """
 Test base session
 """
+
 from io import BytesIO
 
 import pandas as pd

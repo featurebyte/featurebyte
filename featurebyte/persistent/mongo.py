@@ -1,6 +1,7 @@
 """
 Persistent storage using MongoDB
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast

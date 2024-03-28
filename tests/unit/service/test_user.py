@@ -1,6 +1,7 @@
 """
 Basic test user module
 """
+
 import pytest
 from bson import ObjectId
 

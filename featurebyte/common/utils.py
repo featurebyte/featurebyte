@@ -1,6 +1,7 @@
 """
 Common utility functions
 """
+
 from __future__ import annotations
 
 from typing import Any, Generator, Iterator, List, Optional, Union

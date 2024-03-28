@@ -1,6 +1,7 @@
 """
 Pytest configuration file for doctest
 """
+
 import pandas
 import pytest
 from alive_progress import config_handler

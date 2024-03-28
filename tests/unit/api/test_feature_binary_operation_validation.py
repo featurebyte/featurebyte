@@ -1,6 +1,7 @@
 """
 This test module check feature binary operation validation
 """
+
 import pytest
 
 from featurebyte.query_graph.model.feature_job_setting import (

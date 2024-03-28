@@ -1,6 +1,7 @@
 """
 Semantic API route controller
 """
+
 from __future__ import annotations
 
 from featurebyte.models.relationship import Parent

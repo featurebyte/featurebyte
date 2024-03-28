@@ -1,6 +1,7 @@
 """
 Test AzureBlobStorage class
 """
+
 import os
 from unittest.mock import patch
 

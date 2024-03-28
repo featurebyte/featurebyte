@@ -1,6 +1,7 @@
 """
 Module with utility functions to compute historical features
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Optional, Union
@@ -197,9 +198,9 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
                 feature_store_id=feature_store.id,
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
-                progress_callback=tile_cache_progress_callback
-                if tile_cache_progress_callback
-                else None,
+                progress_callback=(
+                    tile_cache_progress_callback if tile_cache_progress_callback else None
+                ),
             )
 
             elapsed = time.time() - tic
@@ -227,13 +228,15 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         await execute_feature_query_set(
             session,
             feature_query_set=historical_feature_query_set,
-            progress_callback=get_ranged_progress_callback(
-                progress_callback,
-                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-                100,
-            )
-            if progress_callback
-            else None,
+            progress_callback=(
+                get_ranged_progress_callback(
+                    progress_callback,
+                    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                    100,
+                )
+                if progress_callback
+                else None
+            ),
         )
         logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
     finally:
@@ -322,13 +325,15 @@ async def get_target(
         await execute_feature_query_set(
             session=session,
             feature_query_set=historical_feature_query_set,
-            progress_callback=get_ranged_progress_callback(
-                progress_callback,
-                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-                100,
-            )
-            if progress_callback
-            else None,
+            progress_callback=(
+                get_ranged_progress_callback(
+                    progress_callback,
+                    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                    100,
+                )
+                if progress_callback
+                else None
+            ),
         )
         logger.debug(f"compute_targets in total took {time.time() - tic_:.2f}s")
     finally:

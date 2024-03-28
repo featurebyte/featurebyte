@@ -1,6 +1,7 @@
 """
 Test cases for the HistoricalFeaturesService
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock, Mock, call, patch
 

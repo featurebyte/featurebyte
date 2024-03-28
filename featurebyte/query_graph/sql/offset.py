@@ -1,6 +1,7 @@
 """
 Sql helper related to offset
 """
+
 from __future__ import annotations
 
 import pandas as pd

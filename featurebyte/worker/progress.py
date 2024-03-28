@@ -1,6 +1,7 @@
 """
 This module contains Progress class which is used for tracking progress update
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

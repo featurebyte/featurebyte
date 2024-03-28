@@ -1,6 +1,7 @@
 """
 Tests for Credential route
 """
+
 from http import HTTPStatus
 from unittest.mock import patch
 

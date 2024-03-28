@@ -1,4 +1,5 @@
 """Integration test for column attributes"""
+
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 

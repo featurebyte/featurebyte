@@ -1,6 +1,7 @@
 """
 Unit test for sqlite session
 """
+
 import sqlite3
 import tempfile
 

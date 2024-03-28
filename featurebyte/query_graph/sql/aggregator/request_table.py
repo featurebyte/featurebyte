@@ -1,6 +1,7 @@
 """
 Request table processing used by aggregators
 """
+
 from __future__ import annotations
 
 from typing import Tuple

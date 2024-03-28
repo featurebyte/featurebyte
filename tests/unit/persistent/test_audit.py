@@ -1,6 +1,7 @@
 """
 Tests for functions in featurebyte/persistent/audit.py
 """
+
 import pytest
 
 from featurebyte.models.persistent import AuditActionType

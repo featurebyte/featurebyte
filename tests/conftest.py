@@ -1,6 +1,7 @@
 """
 Common fixture for both unit and integration tests
 """
+
 from typing import AsyncIterator, Tuple
 
 import os

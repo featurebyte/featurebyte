@@ -1,6 +1,7 @@
 """
 Test resource extractor.
 """
+
 from pydantic import Field
 
 from featurebyte.common.doc_util import FBAutoDoc

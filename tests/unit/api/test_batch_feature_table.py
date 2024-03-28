@@ -1,6 +1,7 @@
 """
 Unit tests for BatchFeatureTable class
 """
+
 from typing import Any, Dict
 
 import pandas as pd

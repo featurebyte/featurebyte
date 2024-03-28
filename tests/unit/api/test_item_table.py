@@ -1,6 +1,7 @@
 """
 Unit test for ItemTable class
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch

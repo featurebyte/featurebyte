@@ -1,6 +1,7 @@
 """
 Base class for SQL interpreter.
 """
+
 from __future__ import annotations
 
 from typing import Tuple, cast

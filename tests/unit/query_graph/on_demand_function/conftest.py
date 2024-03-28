@@ -1,6 +1,7 @@
 """
 This module contains common fixtures for on-demand function tests
 """
+
 import pytest
 
 from featurebyte.enum import DBVarType

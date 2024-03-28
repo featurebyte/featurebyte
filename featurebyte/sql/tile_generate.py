@@ -1,6 +1,7 @@
 """
 Databricks Tile Generate Job Script
 """
+
 from typing import Optional
 
 import dateutil.parser

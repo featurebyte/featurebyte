@@ -1,6 +1,7 @@
 """
 Tests for BatchFeatureTable routes
 """
+
 import copy
 from http import HTTPStatus
 from unittest.mock import patch

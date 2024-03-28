@@ -1,6 +1,7 @@
 """
 SQL generation for lookup features
 """
+
 from __future__ import annotations
 
 from sqlglot.expressions import Select

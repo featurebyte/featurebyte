@@ -1,6 +1,7 @@
 """
 Test app container config
 """
+
 from __future__ import annotations
 
 import pytest

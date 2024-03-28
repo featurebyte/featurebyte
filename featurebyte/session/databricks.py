@@ -1,6 +1,7 @@
 """
 DatabricksSession class
 """
+
 # pylint: disable=duplicate-code
 from typing import Any, AsyncGenerator, BinaryIO, Optional
 

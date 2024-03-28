@@ -1,6 +1,7 @@
 """
 TaskManager service is responsible to submit task message
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

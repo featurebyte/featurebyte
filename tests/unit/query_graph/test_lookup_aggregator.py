@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.sql.aggregator.lookup.LookupAggregator
 """
+
 from __future__ import annotations
 
 import textwrap

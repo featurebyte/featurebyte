@@ -1,6 +1,7 @@
 """
 FeatureList Deploy Task Payload schema
 """
+
 from typing import Optional, Union
 from typing_extensions import Annotated, Literal
 

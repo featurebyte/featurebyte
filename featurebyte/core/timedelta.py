@@ -1,6 +1,7 @@
 """
 Module for Timedelta related functions
 """
+
 from __future__ import annotations
 
 from typeguard import typechecked

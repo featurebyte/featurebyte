@@ -1,6 +1,7 @@
 """
 Spark Thrift Server Offline Store
 """
+
 from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
 
 import json

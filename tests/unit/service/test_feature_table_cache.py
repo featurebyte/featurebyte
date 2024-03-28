@@ -1,6 +1,7 @@
 """
 Test FeatureTableCacheService
 """
+
 import json
 import os
 from unittest.mock import patch

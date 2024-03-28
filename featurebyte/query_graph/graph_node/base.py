@@ -1,6 +1,7 @@
 """
 This module contains graph node class.
 """
+
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from pydantic import BaseModel, parse_obj_as

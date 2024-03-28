@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.query_graph.graph_node.critical_data_info
 """
+
 import pytest
 from pydantic.error_wrappers import ValidationError
 

@@ -1,6 +1,7 @@
 """
 Semantic API payload schema
 """
+
 from typing import List, Optional
 
 from bson.objectid import ObjectId

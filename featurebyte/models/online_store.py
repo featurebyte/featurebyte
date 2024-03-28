@@ -1,6 +1,7 @@
 """
 This module contains Online Store related models
 """
+
 from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 

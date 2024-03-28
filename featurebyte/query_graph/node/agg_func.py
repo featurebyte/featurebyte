@@ -1,6 +1,7 @@
 """
 Aggregation method model
 """
+
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Literal, Optional, Union
 from typing_extensions import Annotated
 
@@ -50,8 +51,7 @@ class BaseAggFunc(BaseModel):
     @abstractmethod
     def _derive_output_var_type(
         self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        ...
+    ) -> DBVarType: ...
 
     @abstractmethod
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:

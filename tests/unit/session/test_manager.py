@@ -1,6 +1,7 @@
 """
 Tests for SessionManager class
 """
+
 import logging
 import time
 from unittest.mock import Mock, patch

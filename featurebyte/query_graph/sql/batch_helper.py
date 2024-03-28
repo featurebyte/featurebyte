@@ -1,6 +1,7 @@
 """
 Helpers to split a QueryGraph and nodes into smaller batches
 """
+
 from __future__ import annotations
 
 from sqlglot import expressions

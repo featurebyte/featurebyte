@@ -1,6 +1,7 @@
 """
 Tests for ObservationTable routes
 """
+
 import copy
 import os
 import tempfile

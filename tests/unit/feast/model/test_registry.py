@@ -1,6 +1,7 @@
 """
 Test feast registry model
 """
+
 from bson import ObjectId
 
 from featurebyte.feast.model.registry import FeastRegistryModel

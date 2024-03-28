@@ -1,6 +1,7 @@
 """
 Feature or target schema
 """
+
 from typing import Dict, Optional
 
 from bson import ObjectId

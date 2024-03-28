@@ -1,4 +1,5 @@
 """Module with extra services for data type info detection like embedding columns or flat (non-nested) dicts"""
+
 from __future__ import annotations
 
 from typing import Any

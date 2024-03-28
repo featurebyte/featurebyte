@@ -1,6 +1,7 @@
 """
 Test utility functions for formatting data in Jupyter notebooks
 """
+
 from featurebyte.common.formatting_util import CodeStr, InfoDict
 
 

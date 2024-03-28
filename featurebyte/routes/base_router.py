@@ -1,6 +1,7 @@
 """
 Base router
 """
+
 from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
 
 from http import HTTPStatus

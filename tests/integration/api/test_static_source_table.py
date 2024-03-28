@@ -1,6 +1,7 @@
 """
 Integration tests for StaticSourceTable
 """
+
 import pytest
 
 from tests.integration.api.materialized_table.utils import (

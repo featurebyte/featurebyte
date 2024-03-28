@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte/query_graph/node/base.py
 """
+
 from typing import Any, List, Literal
 
 import pandas as pd

@@ -1,6 +1,7 @@
 """
 Feature list migration service
 """
+
 from typing import Dict, List
 
 from bson import ObjectId

@@ -1,6 +1,7 @@
 """
 Unit tests for EntityService
 """
+
 import pytest
 from bson import ObjectId
 

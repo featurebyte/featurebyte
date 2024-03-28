@@ -1,6 +1,7 @@
 """
 TargetNamespaceService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.target_namespace import TargetNamespaceModel

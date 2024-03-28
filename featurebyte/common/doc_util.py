@@ -1,6 +1,7 @@
 """
 This module contains utility functions related to documentation
 """
+
 from typing import List, Optional
 
 from pydantic import BaseModel, Field

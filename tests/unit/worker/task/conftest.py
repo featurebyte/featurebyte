@@ -1,6 +1,7 @@
 """
 Common fixtures for worker task tests
 """
+
 import os
 from unittest.mock import AsyncMock, patch
 

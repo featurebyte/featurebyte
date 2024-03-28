@@ -1,6 +1,7 @@
 """
 Unit tests for aggregate_over
 """
+
 import pytest
 
 from featurebyte import FeatureJobSetting

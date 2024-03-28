@@ -1,6 +1,7 @@
 """
 Integration test for feature table cache
 """
+
 import time
 
 import pytest

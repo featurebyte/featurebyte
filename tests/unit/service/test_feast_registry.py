@@ -1,4 +1,5 @@
 """Test feast registry service"""
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId

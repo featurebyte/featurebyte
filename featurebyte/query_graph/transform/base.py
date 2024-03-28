@@ -1,6 +1,7 @@
 """
 This module contains base class used in query graph transform directory.
 """
+
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 from abc import abstractmethod

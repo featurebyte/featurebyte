@@ -1,6 +1,7 @@
 """
 Test for target namespace routes
 """
+
 from http import HTTPStatus
 
 from bson import ObjectId

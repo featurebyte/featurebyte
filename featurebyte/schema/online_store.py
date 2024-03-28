@@ -1,6 +1,7 @@
 """
 OnlineStore API payload schema
 """
+
 from typing import List, Optional
 
 from datetime import datetime

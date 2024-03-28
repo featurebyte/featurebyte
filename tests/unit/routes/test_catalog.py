@@ -1,6 +1,7 @@
 """
 Tests for Catalog route
 """
+
 from http import HTTPStatus
 
 import pytest

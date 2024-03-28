@@ -1,6 +1,7 @@
 """
 Mixin classes for tasks
 """
+
 from __future__ import annotations
 
 from typing import AsyncIterator

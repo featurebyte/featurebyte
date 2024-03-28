@@ -1,6 +1,7 @@
 """
 Read configurations from ini file
 """
+
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import json

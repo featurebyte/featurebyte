@@ -1,6 +1,7 @@
 """
 Tests for the SDK code generation.
 """
+
 import ast
 import textwrap
 

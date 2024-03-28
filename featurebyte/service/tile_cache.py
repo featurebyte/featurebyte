@@ -1,6 +1,7 @@
 """
 TileCacheService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Optional
@@ -97,9 +98,9 @@ class TileCacheService:
                     request_table_name=request_table_name,
                     serving_names_mapping=serving_names_mapping,
                 ):
-                    required_tile_computations[
-                        tile_compute_request.tile_info_key
-                    ] = tile_compute_request
+                    required_tile_computations[tile_compute_request.tile_info_key] = (
+                        tile_compute_request
+                    )
 
         # Execute tile computations
         try:

@@ -1,6 +1,7 @@
 """
 Test observation table utils
 """
+
 import textwrap
 
 from featurebyte import Context, get_version

@@ -1,6 +1,7 @@
 """
 Tests for nested graph related logic
 """
+
 import os.path
 
 import pytest

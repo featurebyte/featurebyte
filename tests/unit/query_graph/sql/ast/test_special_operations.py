@@ -1,6 +1,7 @@
 """
 Test for special operations that do not have a specific SQLNode implementation: filter, project, assign
 """
+
 from featurebyte import SourceType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType

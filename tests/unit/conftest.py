@@ -619,10 +619,10 @@ def snowflake_query_map_fixture():
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
     ]
-    query_map[
-        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'
-    ] = get_show_columns_query_result_for_scd_table_v2(
-        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'] = (
+        get_show_columns_query_result_for_scd_table_v2(
+            query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+        )
     )
     return query_map
 

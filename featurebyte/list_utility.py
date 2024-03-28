@@ -1,6 +1,7 @@
 """
 Utility module
 """
+
 from typing import Optional
 
 import inspect

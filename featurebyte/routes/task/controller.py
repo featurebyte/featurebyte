@@ -1,6 +1,7 @@
 """
 JobStatus API route controller
 """
+
 from __future__ import annotations
 
 from http import HTTPStatus

@@ -1,6 +1,7 @@
 """
 This module contains common table related models.
 """
+
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, cast
 
 from abc import abstractmethod

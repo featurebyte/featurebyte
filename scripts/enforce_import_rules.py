@@ -1,6 +1,7 @@
 """
 This script is used to enforce import rules for featurebyte.
 """
+
 from typing import Dict, List, Set, Tuple
 
 import ast

@@ -1,6 +1,7 @@
 """
 Test production ready validator
 """
+
 import textwrap
 
 import pytest

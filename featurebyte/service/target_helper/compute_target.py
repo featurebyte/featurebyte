@@ -1,6 +1,7 @@
 """
 Get targets module
 """
+
 from __future__ import annotations
 
 from featurebyte.logging import get_logger

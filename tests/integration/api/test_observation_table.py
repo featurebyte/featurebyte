@@ -1,6 +1,7 @@
 """
 Integration tests for ObservationTable
 """
+
 import os
 
 import pandas as pd

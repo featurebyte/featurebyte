@@ -1,6 +1,7 @@
 """
 Unit tests for BatchRequestTable class
 """
+
 from typing import Any, Dict
 
 import pandas as pd
@@ -34,8 +35,7 @@ class TestBatchRequestTable(BaseMaterializedTableApiTest[BatchRequestTable]):
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")
-    def test_list(self, table_under_test):
-        ...
+    def test_list(self, table_under_test): ...
 
 
 def test_list(batch_request_table_from_source, batch_request_table_from_view):

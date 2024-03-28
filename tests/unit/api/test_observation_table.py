@@ -1,6 +1,7 @@
 """
 Unit tests for ObservationTable class
 """
+
 from typing import Any, Dict
 
 from unittest.mock import call
@@ -36,8 +37,7 @@ class TestObservationTable(BaseMaterializedTableApiTest[ObservationTable]):
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")
-    def test_list(self, table_under_test):
-        ...
+    def test_list(self, table_under_test): ...
 
 
 @pytest.mark.usefixtures("observation_table_from_source", "observation_table_from_view")

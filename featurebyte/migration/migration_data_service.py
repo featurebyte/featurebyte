@@ -1,6 +1,7 @@
 """
 Migration related service class(es)
 """
+
 from featurebyte.migration.model import (
     SchemaMetadataCreate,
     SchemaMetadataModel,

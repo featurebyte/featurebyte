@@ -1,6 +1,7 @@
 """
 Tests for ItemGroupby SQLNode
 """
+
 import textwrap
 
 import pytest

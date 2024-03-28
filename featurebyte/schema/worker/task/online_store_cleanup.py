@@ -1,6 +1,7 @@
 """
 OnlineStoreCleanupTaskPayload schema
 """
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskPriority

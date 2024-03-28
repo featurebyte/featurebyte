@@ -1,6 +1,7 @@
 """
 Test vector validator module
 """
+
 import pytest
 
 from featurebyte.api.aggregator.vector_validator import (

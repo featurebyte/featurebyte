@@ -1,6 +1,7 @@
 """
 TargetTableModel
 """
+
 from __future__ import annotations
 
 from featurebyte.models.base import PydanticObjectId

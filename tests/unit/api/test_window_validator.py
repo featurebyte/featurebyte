@@ -1,6 +1,7 @@
 """
 Test window validator
 """
+
 import pytest
 
 from featurebyte.api.window_validator import validate_window

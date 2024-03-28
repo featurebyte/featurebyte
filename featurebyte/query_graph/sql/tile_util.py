@@ -1,6 +1,7 @@
 """
 Module for tiles related utilities
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple, cast

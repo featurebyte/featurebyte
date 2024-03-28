@@ -1,6 +1,7 @@
 """
 Unit tests for the UserDefinedFunction class.
 """
+
 import pandas as pd
 import pytest
 

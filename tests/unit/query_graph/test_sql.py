@@ -1,6 +1,7 @@
 """
 Tests for the featurebyte.query_graph.sql module
 """
+
 import textwrap
 from unittest.mock import Mock
 

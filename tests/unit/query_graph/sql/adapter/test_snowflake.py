@@ -1,6 +1,7 @@
 """
 Test snowflake adapter module
 """
+
 import textwrap
 
 import pytest

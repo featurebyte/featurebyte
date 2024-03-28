@@ -1,6 +1,7 @@
 """
 Unit tests for describe query
 """
+
 from unittest.mock import patch
 
 import pytest

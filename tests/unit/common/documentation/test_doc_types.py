@@ -1,6 +1,7 @@
 """
 Test doc types
 """
+
 import pytest
 
 from featurebyte import version

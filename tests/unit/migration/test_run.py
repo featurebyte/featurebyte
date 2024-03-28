@@ -1,6 +1,7 @@
 """
 Test functions in migration/run.py
 """
+
 import glob
 import json
 import os

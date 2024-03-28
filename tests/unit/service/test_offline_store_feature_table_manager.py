@@ -1,6 +1,7 @@
 """
 Tests for OfflineStoreFeatureTableManagerService
 """
+
 # pylint: disable=too-many-lines
 from typing import Dict
 

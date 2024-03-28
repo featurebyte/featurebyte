@@ -1,6 +1,7 @@
 """
 Primary entity validator
 """
+
 from typing import List
 
 from featurebyte.models.base import PydanticObjectId

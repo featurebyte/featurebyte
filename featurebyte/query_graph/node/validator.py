@@ -1,4 +1,5 @@
 """This module constains validator used for model input validation by classes in query_graph directory."""
+
 from typing import Any, List, Optional
 
 

@@ -1,6 +1,7 @@
 """
 Unit test for DataColumn class
 """
+
 import textwrap
 
 import pytest

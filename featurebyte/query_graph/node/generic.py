@@ -1,6 +1,7 @@
 """
 This module contains SQL operation related node classes
 """
+
 # pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
@@ -1318,9 +1319,11 @@ class JoinNode(BasePrunableNode):
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
                 # if the join type is left, current node is not a compulsory node for the column
-                node_names=col.node_names.union([self.name])
-                if params.join_type != "left"
-                else col.node_names,
+                node_names=(
+                    col.node_names.union([self.name])
+                    if params.join_type != "left"
+                    else col.node_names
+                ),
                 node_name=self.name,
             )
             for col in inputs[0].columns

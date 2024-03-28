@@ -1,6 +1,7 @@
 """
 Utility functions for docstring templating
 """
+
 from typing import Any, Dict, Optional
 
 import textwrap

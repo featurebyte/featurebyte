@@ -1,6 +1,7 @@
 """
 Common test fixtures used across unit test directories related to query_graph
 """
+
 import copy
 import json
 

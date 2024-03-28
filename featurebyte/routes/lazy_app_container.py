@@ -1,6 +1,7 @@
 """
 Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Type, Union

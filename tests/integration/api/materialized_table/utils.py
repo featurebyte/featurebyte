@@ -1,6 +1,7 @@
 """
 Test utils for materialized tables
 """
+
 from typing import List
 
 from sqlglot import parse_one

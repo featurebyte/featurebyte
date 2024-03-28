@@ -1,6 +1,7 @@
 """
 Base class for testing worker tasks
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

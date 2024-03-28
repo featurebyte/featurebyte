@@ -1,6 +1,7 @@
 """
 Test SimpleStorage classes
 """
+
 import json
 import os
 import tempfile

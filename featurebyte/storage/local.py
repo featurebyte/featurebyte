@@ -1,6 +1,7 @@
 """
 Local storage class
 """
+
 from typing import AsyncGenerator
 
 import shutil

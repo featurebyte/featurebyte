@@ -1,6 +1,7 @@
 """
 Layout for API documentation.
 """
+
 from typing import List, Optional
 
 from dataclasses import dataclass

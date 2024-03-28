@@ -1,6 +1,7 @@
 """
 This module contains all the enums used for session specific tasks.
 """
+
 from featurebyte.enum import StrEnum
 
 

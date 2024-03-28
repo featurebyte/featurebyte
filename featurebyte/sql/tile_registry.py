@@ -1,6 +1,7 @@
 """
 Tile Registry Job Script
 """
+
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
 from featurebyte.service.tile_registry_service import TileRegistryService

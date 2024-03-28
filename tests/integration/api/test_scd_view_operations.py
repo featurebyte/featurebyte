@@ -1,6 +1,7 @@
 """
 Integration tests for SCDView
 """
+
 import json
 
 import numpy as np

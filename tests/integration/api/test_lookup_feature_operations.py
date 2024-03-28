@@ -1,6 +1,7 @@
 """
 Lookup feature operations
 """
+
 import pandas as pd
 
 from tests.integration.api.feature_preview_utils import (

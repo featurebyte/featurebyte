@@ -1,6 +1,7 @@
 """
 This module contains the Query Graph Interpreter
 """
+
 from __future__ import annotations
 
 from typing import Optional, cast

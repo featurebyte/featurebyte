@@ -1,6 +1,7 @@
 """
 This module contains session to EventView integration tests
 """
+
 import json
 import os
 import time

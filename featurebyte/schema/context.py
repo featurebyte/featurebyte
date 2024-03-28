@@ -1,6 +1,7 @@
 """
 Context API payload schema
 """
+
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId

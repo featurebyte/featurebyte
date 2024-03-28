@@ -1,6 +1,7 @@
 """
 Tests for Entity route
 """
+
 from http import HTTPStatus
 
 import pytest

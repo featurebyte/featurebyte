@@ -1,6 +1,7 @@
 """
 Unit tests for classes in featurebyte/query_graph/model/table.py
 """
+
 import textwrap
 
 import pytest

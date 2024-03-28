@@ -1,6 +1,7 @@
 """
 Test config parser
 """
+
 import os
 import tempfile
 import time

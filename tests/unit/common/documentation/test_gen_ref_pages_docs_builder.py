@@ -1,6 +1,7 @@
 """
 Test gen ref pages docs builder.
 """
+
 from typing import Any, Set
 
 import re

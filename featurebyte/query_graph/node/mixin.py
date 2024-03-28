@@ -1,6 +1,7 @@
 """
 This module contains mixins used in node classes
 """
+
 from typing import List, Optional, Set
 
 from abc import ABC, abstractmethod

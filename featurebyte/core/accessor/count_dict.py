@@ -1,6 +1,7 @@
 """
 This module contains count_dict accessor class
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union

@@ -1,6 +1,7 @@
 """
 Task registry
 """
+
 from typing import Dict, Type
 
 from enum import Enum

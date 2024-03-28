@@ -1,6 +1,7 @@
 """
 Materialized Table Delete Task Payload schema
 """
+
 from __future__ import annotations
 
 from featurebyte.enum import StrEnum, WorkerCommand

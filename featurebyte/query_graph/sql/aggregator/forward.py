@@ -1,6 +1,7 @@
 """
 Target aggregator module
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -117,9 +118,11 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
-                parent_cols=[get_qualified_column_identifier(s.parameters.parent, "SOURCE_TABLE")]
-                if s.parameters.parent
-                else [],
+                parent_cols=(
+                    [get_qualified_column_identifier(s.parameters.parent, "SOURCE_TABLE")]
+                    if s.parameters.parent
+                    else []
+                ),
             )
             for s in specs
         ]
