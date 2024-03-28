@@ -66,7 +66,7 @@ class LocalStorage(Storage):
         destination_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(local_path, destination_path)
 
-    async def get(self, remote_path: Path, local_path: Path) -> None:
+    async def _get(self, remote_path: Path, local_path: Path) -> None:
         """
         Download file from storage to local path
 

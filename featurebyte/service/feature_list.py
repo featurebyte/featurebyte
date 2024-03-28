@@ -10,6 +10,7 @@ from pathlib import Path
 
 from bson import json_util
 from bson.objectid import ObjectId
+from cachetools.keys import hashkey
 from redis import Redis
 from redis.lock import Lock
 
@@ -168,7 +169,10 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
     async def _populate_remote_attributes(self, document: FeatureListModel) -> FeatureListModel:
         if document.feature_clusters_path:
-            feature_clusters = await self.storage.get_text(Path(document.feature_clusters_path))
+            feature_clusters = await self.storage.get_text(
+                Path(document.feature_clusters_path),
+                cache_key=hashkey(document.feature_clusters_path),
+            )
             document.internal_feature_clusters = json_util.loads(feature_clusters)
         return document
 

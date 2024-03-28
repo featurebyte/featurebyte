@@ -9,6 +9,7 @@ import random
 from pathlib import Path
 
 from bson import ObjectId
+from cachetools.keys import hashkey
 from redis import Redis
 from redis.lock import Lock
 
@@ -246,7 +247,10 @@ class FeastRegistryService(
 
     async def _populate_remote_attributes(self, document: FeastRegistryModel) -> FeastRegistryModel:
         if document.registry_path:
-            document.registry = await self.storage.get_bytes(Path(document.registry_path))
+            document.registry = await self.storage.get_bytes(
+                Path(document.registry_path),
+                cache_key=hashkey(document.registry_path, document.updated_at),
+            )
         return document
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:

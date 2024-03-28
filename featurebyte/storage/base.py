@@ -5,12 +5,14 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator
 
+import asyncio
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import aiofiles
 import pandas as pd
+from cachetools import LRUCache
 from pandas import DataFrame
 from pydantic import BaseModel
 
@@ -19,6 +21,9 @@ class Storage(ABC):
     """
     Base storage class
     """
+
+    _cache: Any = LRUCache(maxsize=1024)
+    _cache_lock: Any = asyncio.Lock()
 
     @abstractmethod
     async def put(self, local_path: Path, remote_path: Path) -> None:
@@ -67,10 +72,9 @@ class Storage(ABC):
         except FileNotFoundError:
             pass
 
-    @abstractmethod
-    async def get(self, remote_path: Path, local_path: Path) -> None:
+    async def get(self, remote_path: Path, local_path: Path, cache_key: Any = None) -> None:
         """
-        Download file from storage to local path
+        Download file from storage to local path with caching if cache_key is provided
 
         Parameters
         ----------
@@ -78,11 +82,48 @@ class Storage(ABC):
             Path of remote file to be downloaded
         local_path: Path
             Path to stored downloaded file
+        cache_key: Any
+            Cache key for storing downloaded file (if provided, the result will be cached).
+            Please do not use cache_key for large files.
 
-        Raises
-        ------
-        FileNotFoundError
-            Remote file does not exist
+        Returns
+        -------
+        None
+        """
+        if cache_key is None:
+            return await self._get(remote_path, local_path)
+
+        # cache hit
+        try:
+            value = self._cache[cache_key]
+            async with aiofiles.open(local_path, "wb") as file_obj:
+                await file_obj.write(value)
+            return None
+        except KeyError:
+            pass
+
+        # cache miss
+        await self._get(remote_path, local_path)
+        try:
+            async with aiofiles.open(local_path, "rb") as file_obj:
+                value = await file_obj.read()
+
+            async with self._cache_lock:
+                self._cache.setdefault(cache_key, value)
+        except ValueError:
+            pass  # value too large
+
+    @abstractmethod
+    async def _get(self, remote_path: Path, local_path: Path) -> None:
+        """
+        Retrieve file from storage to local path
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be downloaded
+        local_path: Path
+            Path to stored downloaded file
         """
 
     @abstractmethod
@@ -151,7 +192,7 @@ class Storage(ABC):
             await file_obj.flush()
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_text(self, remote_path: Path) -> str:
+    async def get_text(self, remote_path: Path, cache_key: Any = None) -> str:
         """
         Download text content from storage text file
 
@@ -159,6 +200,8 @@ class Storage(ABC):
         ----------
         remote_path: Path
             Path of remote file to be downloaded
+        cache_key: Any
+            Cache key for storing downloaded file (if provided, the result will be cached)
 
         Returns
         -------
@@ -166,7 +209,7 @@ class Storage(ABC):
             Text data
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as tmp_file:
-            await self.get(remote_path, Path(str(tmp_file.name)))
+            await self.get(remote_path, Path(str(tmp_file.name)), cache_key=cache_key)
             async with aiofiles.open(tmp_file.name, encoding="utf8") as file_obj:
                 text = await file_obj.read()
             return text
@@ -187,7 +230,7 @@ class Storage(ABC):
             await file_obj.flush()
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_bytes(self, remote_path: Path) -> bytes:
+    async def get_bytes(self, remote_path: Path, cache_key: Any = None) -> bytes:
         """
         Download bytes content from storage bytes file
 
@@ -195,6 +238,8 @@ class Storage(ABC):
         ----------
         remote_path: Path
             Path of remote file to be downloaded
+        cache_key: Any
+            Cache key for storing downloaded file (if provided, the result will be cached)
 
         Returns
         -------
@@ -202,7 +247,7 @@ class Storage(ABC):
             Bytes data
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r+b") as tmp_file:
-            await self.get(remote_path, Path(str(tmp_file.name)))
+            await self.get(remote_path, Path(str(tmp_file.name)), cache_key=cache_key)
             async with aiofiles.open(tmp_file.name, mode="r+b") as file_obj:
                 content = await file_obj.read()
             return content
@@ -222,7 +267,7 @@ class Storage(ABC):
             dataframe.to_parquet(file_obj.name)
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_dataframe(self, remote_path: Path) -> DataFrame:
+    async def get_dataframe(self, remote_path: Path, cache_key: Any = None) -> DataFrame:
         """
         Download dataframe from storage parquet file
 
@@ -230,6 +275,8 @@ class Storage(ABC):
         ----------
         remote_path: Path
             Path of remote file to be downloaded
+        cache_key: Any
+            Cache key for storing downloaded file (if provided, the result will be cached)
 
         Returns
         -------
@@ -237,5 +284,5 @@ class Storage(ABC):
             Pandas DataFrame object
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as file_obj:
-            await self.get(remote_path, Path(str(file_obj.name)))
+            await self.get(remote_path, Path(str(file_obj.name)), cache_key=cache_key)
             return pd.read_parquet(file_obj.name)
