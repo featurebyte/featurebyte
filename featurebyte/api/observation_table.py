@@ -437,7 +437,7 @@ class ObservationTable(
         target_column: Optional[str]
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
-            The primary entities must match the entities in the target namespace.
+            The data type and primary entities must match the those in the target namespace.
 
         Returns
         -------

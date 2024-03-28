@@ -391,25 +391,50 @@ INT_COL_WITH_ENTITY_2 = ColumnSpecWithEntityId(
 
 
 @pytest.mark.parametrize(
-    "columns_info, primary_entity_ids, skip_entity_checks, expected_error",
+    "columns_info, primary_entity_ids, skip_entity_checks, target_namespace, expected_error",
     [
-        ([POINT_IN_TIME_COL, INT_COL], [], False, ValueError),
-        ([POINT_IN_TIME_COL, INT_COL], [], True, None),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [], False, None),
-        ([INT_COL_WITH_ENTITY_1], [], False, MissingPointInTimeColumnError),
-        ([INT_POINT_IN_TIME_COL], [], False, UnsupportedPointInTimeColumnTypeError),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], False, ValueError),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], True, None),
+        ([POINT_IN_TIME_COL, INT_COL], [], False, None, ValueError),
+        ([POINT_IN_TIME_COL, INT_COL], [], True, None, None),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [], False, None, None),
+        ([INT_COL_WITH_ENTITY_1], [], False, None, MissingPointInTimeColumnError),
+        ([INT_POINT_IN_TIME_COL], [], False, None, UnsupportedPointInTimeColumnTypeError),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], False, None, ValueError),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], True, None, None),
+        (
+            [POINT_IN_TIME_COL, INT_COL],
+            [],
+            False,
+            Mock(name=POINT_IN_TIME_COL, dtype=DBVarType.INT),
+            ValueError,
+        ),
+        (
+            [POINT_IN_TIME_COL, INT_COL],
+            [],
+            False,
+            Mock(name="target", dtype=DBVarType.INT),
+            ValueError,
+        ),
+        (
+            [POINT_IN_TIME_COL, INT_COL],
+            [],
+            False,
+            Mock(name=POINT_IN_TIME_COL, dtype=DBVarType.VARCHAR),
+            ValueError,
+        ),
     ],
 )
 def test_validate_columns_info(
-    columns_info, primary_entity_ids, skip_entity_checks, expected_error
+    columns_info, primary_entity_ids, skip_entity_checks, target_namespace, expected_error
 ):
     """
     Test validate_columns_info
     """
     if expected_error is not None:
         with pytest.raises(expected_error):
-            validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks)
+            validate_columns_info(
+                columns_info, primary_entity_ids, skip_entity_checks, target_namespace
+            )
     else:
-        validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks)
+        validate_columns_info(
+            columns_info, primary_entity_ids, skip_entity_checks, target_namespace
+        )

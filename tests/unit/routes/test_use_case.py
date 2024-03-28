@@ -412,7 +412,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
-            == f"Cannot add UseCase {use_case_id} as its context_id is different from the existing context_id."
+            == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
         )
 
         different_target_ob_table_id = ObjectId()
@@ -426,7 +426,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
-            == f"Cannot add UseCase {use_case_id} as its target_id is different from the existing target_id."
+            == f"Cannot add UseCase {use_case_id} due to mismatched targets."
         )
 
     @pytest.mark.asyncio

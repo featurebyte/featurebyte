@@ -37,6 +37,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.models.request_input import BaseRequestInput
+from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -157,7 +158,7 @@ def validate_columns_info(
     columns_info: List[ColumnSpecWithEntityId],
     primary_entity_ids: Optional[List[PydanticObjectId]] = None,
     skip_entity_validation_checks: bool = False,
-    target_name: Optional[str] = None,
+    target_namespace: Optional[TargetNamespaceModel] = None,
 ) -> None:
     """
     Validate column info.
@@ -170,8 +171,8 @@ def validate_columns_info(
         List of primary entity IDs
     skip_entity_validation_checks: bool
         Whether to skip entity validation checks
-    target_name: Optional[str]
-        Target name
+    target_namespace: Optional[TargetNamespaceModel]
+        Target namespace document
 
     Raises
     ------
@@ -215,9 +216,13 @@ def validate_columns_info(
                 )
 
         # Check that target name is present in the column info
-        if target_name:
-            if target_name not in columns_info_mapping:
-                raise ValueError(f"Target column not found: {target_name}")
+        if target_namespace is not None:
+            if target_namespace.name not in columns_info_mapping:
+                raise ValueError(f'Target column "{target_namespace.name}" not found.')
+            if columns_info_mapping[target_namespace.name].dtype != target_namespace.dtype:
+                raise ValueError(
+                    f'Target column "{target_namespace.name}" should have dtype "{target_namespace.dtype}"'
+                )
 
 
 class ObservationTableService(
@@ -679,14 +684,13 @@ class ObservationTableService(
             target_namespace = await self.target_namespace_service.get_document(
                 document_id=target_namespace_id
             )
-            target_name = target_namespace.name
         else:
-            target_name = None
+            target_namespace = None
         validate_columns_info(
             columns_info,
             primary_entity_ids=primary_entity_ids,
             skip_entity_validation_checks=skip_entity_validation_checks,
-            target_name=target_name,
+            target_namespace=target_namespace,
         )
         # Get entity column name to minimum interval mapping
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
@@ -758,7 +762,7 @@ class ObservationTableService(
                 )
                 if use_case.context_id != observation_table.context_id:
                     raise ObservationTableInvalidUseCaseError(
-                        f"Cannot add UseCase {data.use_case_id_to_add} as its context_id is different from the existing context_id."
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched contexts."
                     )
 
                 if (
@@ -766,7 +770,15 @@ class ObservationTableService(
                     and observation_table.request_input.target_id != use_case.target_id
                 ):
                     raise ObservationTableInvalidUseCaseError(
-                        f"Cannot add UseCase {data.use_case_id_to_add} as its target_id is different from the existing target_id."
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched targets."
+                    )
+
+                if (
+                    observation_table.target_namespace_id
+                    and use_case.target_namespace_id != observation_table.target_namespace_id
+                ):
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched targets."
                     )
 
                 if (

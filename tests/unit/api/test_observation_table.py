@@ -194,7 +194,7 @@ def test_create_observation_table_with_target_definition(
     mock_compute, observation_table_from_view, float_target
 ):
     """Test create observation table with target"""
-    _ = mock_compute
+    mock_compute.return_value.is_output_view = False
     float_target.save()
     observation_table = float_target.compute_target_table(
         observation_table=observation_table_from_view,

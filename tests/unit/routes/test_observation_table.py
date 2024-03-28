@@ -247,7 +247,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
-            == f"Cannot add UseCase {use_case_id} as its context_id is different from the existing context_id."
+            == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
         )
 
         # test non_existent use_case_id to add
