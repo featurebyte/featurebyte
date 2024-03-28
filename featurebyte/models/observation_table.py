@@ -45,7 +45,7 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
     observation_table_id: Optional[PydanticObjectId]
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
@@ -146,6 +146,7 @@ class ObservationTableModel(MaterializedTableModel):
     min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
     has_row_index: Optional[bool] = Field(default=False)
+    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
     _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()

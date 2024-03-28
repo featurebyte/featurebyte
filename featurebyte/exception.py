@@ -486,6 +486,12 @@ class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a target name that does not exist
+    """
+
+
 class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
     Raise when task is not revocable

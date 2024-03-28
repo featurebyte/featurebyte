@@ -77,11 +77,19 @@ class TargetTableController(
         feature_store = await self.feature_store_service.get_document(
             document_id=table_create.feature_store_id
         )
-        graph = table_create.graph
+        if table_create.target_id is not None:
+            target = await self.target_service.get_document(table_create.target_id)
+            graph = target.graph
+            nodes = [graph.get_node_by_name(target.node.name)]
+        else:
+            assert table_create.graph is not None
+            graph = table_create.graph
+            nodes = table_create.nodes
+
         assert graph is not None
         return ValidationParameters(
             graph=graph,
-            nodes=table_create.nodes,
+            nodes=nodes,
             feature_store=feature_store,
             serving_names_mapping=table_create.serving_names_mapping,
         )
@@ -95,11 +103,4 @@ class TargetTableController(
         data: TargetTableCreate,
         observation_set: Optional[UploadFile],
     ) -> Task:
-        if data.graph is None and data.target_id is not None:
-            data_dict = data.dict()
-            target_doc = await self.target_service.get_document(data.target_id)
-            data_dict["target_id"] = None
-            data_dict["graph"] = target_doc.graph
-            data_dict["node_names"] = [target_doc.node_name]
-            data = TargetTableCreate(**data_dict)
         return await super().create_table(data=data, observation_set=observation_set)

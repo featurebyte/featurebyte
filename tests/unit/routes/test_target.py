@@ -14,9 +14,8 @@ from pandas._testing import assert_frame_equal
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models import EntityModel
 from featurebyte.models.entity import ParentEntity
-from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.schema.target_table import TargetTableCreate
+from featurebyte.schema.target_table import ObservationInputType, TargetTableCreate
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -297,7 +296,11 @@ class TestTargetApi(BaseCatalogApiTestSuite):
 
     @pytest.mark.asyncio
     async def test_creating_target_table_with_just_target_id(
-        self, test_api_client_persistent, create_success_response, create_observation_table
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        create_observation_table,
+        snowflake_feature_store,
     ):
         """
         Test that we can create a target table without a graph and node_names, but with just the target id.
@@ -311,24 +314,24 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         # Create payload with no graph and no node names
         create = TargetTableCreate(
             name="target_name",
-            feature_store_id=ObjectId(),
+            feature_store_id=snowflake_feature_store.id,
             serving_names_mapping={},
             target_id=target["_id"],
             context_id=None,
-            request_input=UploadedFileInput(
-                type=RequestInputType.UPLOADED_FILE,
-                file_name="random_file_name",
+            request_input=ObservationInputType(
+                type=RequestInputType.DATAFRAME,
             ),
             observation_table_id=obs_table_id,
         )
         data = {"payload": create.json()}
 
         with mock.patch(
-            "featurebyte.routes.common.feature_or_target_table.FeatureOrTargetTableController.create_table"
-        ) as mock_create_table:
-            test_api_client.post("/target_table", data=data)
-            assert mock_create_table.call_count == 1
-            call_args = mock_create_table.call_args_list[0][1]
-            # Check that node names is in the call args of mock_create_table
-            assert call_args["data"].node_names == ["project_1"]
-            assert call_args["data"].graph is not None
+            "featurebyte.service.entity_validation.EntityValidationService.validate_entities_or_prepare_for_parent_serving"
+        ) as mock_validate_entities_or_prepare_for_parent_serving:
+            response = test_api_client.post("/target_table", data=data)
+            assert response.status_code == HTTPStatus.CREATED, response.json()
+            assert mock_validate_entities_or_prepare_for_parent_serving.call_count > 1
+            call_args = mock_validate_entities_or_prepare_for_parent_serving.call_args_list[0][1]
+            # Check that node names is in the call args of mock_validate_entities_or_prepare_for_parent_serving
+            assert call_args["graph_nodes"][1][0].name == "project_1"
+            assert call_args["graph_nodes"][0] is not None

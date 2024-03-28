@@ -402,6 +402,7 @@ class ObservationTableInfo(BaseInfo):
     type: RequestInputType
     feature_store_name: str
     table_details: TableDetails
+    target_name: Optional[str]
 
 
 class BaseFeatureOrTargetTableInfo(BaseInfo):
