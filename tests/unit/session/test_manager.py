@@ -11,9 +11,7 @@ from pytest import LogCaptureFixture
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import SessionInitializationTimeOut
 from featurebyte.query_graph.node.schema import SQLiteDetails
-from featurebyte.session.manager import SessionManager
-from featurebyte.session.manager import logger as session_logger
-from featurebyte.session.manager import session_cache
+from featurebyte.session.manager import SessionManager, session_cache
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -21,16 +19,10 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     """
     Log captured emitted output
     """
-    original_level = session_logger.level
-    session_logger.setLevel(logging.DEBUG)
-    session_logger.addHandler(caplog.handler)
+    logger_name = "featurebyte.session.manager"
+    caplog.set_level(logging.DEBUG, logger_name)
     yield caplog
-    try:
-        session_logger.removeHandler(caplog.handler)
-    except ValueError:
-        pass
-    finally:
-        session_logger.setLevel(original_level)
+    caplog.set_level(logging.NOTSET, logger_name)
 
 
 @pytest.fixture(name="session_manager")

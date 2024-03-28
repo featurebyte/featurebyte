@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
 from featurebyte.common.utils import get_version
-from featurebyte.logging import get_logger
+from featurebyte.logging import configure_featurebyte_logger, get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.base_router import BaseRouter
@@ -54,6 +54,7 @@ from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
+configure_featurebyte_logger()
 logger = get_logger(__name__)
 
 
