@@ -4,7 +4,7 @@ Session related helper functions
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Coroutine, List, Optional, Union, cast
 
 import asyncio
 
@@ -77,6 +77,11 @@ async def run_coroutines(coroutines: List[Coroutine[Any, Any, Any]]) -> List[Any
     ----------
     coroutines: List[Coroutine[Any, Any, None]]
         List of coroutines to be executed
+
+    Returns
+    -------
+    List[Any]
+        List of results from the coroutines
 
     Raises
     ------

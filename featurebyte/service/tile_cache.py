@@ -83,6 +83,7 @@ class TileCacheService:
             nodes=nodes,
             request_table_name=request_table_name,
             serving_names_mapping=serving_names_mapping,
+            progress_callback=tile_check_progress_callback,
         )
 
         # Execute tile computations

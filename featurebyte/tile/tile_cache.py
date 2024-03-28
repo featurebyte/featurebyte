@@ -4,7 +4,7 @@ Module for TileCache and its implementors
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Iterator, Optional, Tuple, cast
+from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
 import time
 from dataclasses import dataclass
@@ -129,17 +129,26 @@ class TileCacheStatus:
             keys_with_tracker=subset_keys_with_tracker,
         )
 
-    def split_batches(self) -> Iterator[TileCacheStatus]:
+    def split_batches(self, batch_size: Optional[int] = None) -> Iterator[TileCacheStatus]:
         """
         Split TileCacheStatus in batches to be processed in parallel
+
+        Parameters
+        ----------
+        batch_size: Optional[int]
+            Number of entity tracker tables to check per batch
 
         Yields
         ------
         TileCacheStatus
+            New TileCacheStatus objects
         """
+        if batch_size is None:
+            batch_size = NUM_TRACKER_TABLES_PER_QUERY
+
         all_keys = list(self.unique_tile_infos.keys())
-        for i in range(0, len(all_keys), NUM_TRACKER_TABLES_PER_QUERY):
-            keys = [key for key in all_keys[i : i + NUM_TRACKER_TABLES_PER_QUERY]]
+        for i in range(0, len(all_keys), batch_size):
+            keys = list(key for key in all_keys[i : i + batch_size])
             yield self.subset(keys)
 
 
@@ -296,6 +305,8 @@ class TileCache:
             Request table name to use
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+            Optional progress callback function
 
         Returns
         -------
@@ -321,9 +332,9 @@ class TileCache:
         async def done_callback() -> None:
             nonlocal processed
             processed += 1
-            if progress_callback:
+            if query_progress is not None:
                 pct = int(100 * processed / len(batches))
-                await progress_callback(pct, f"Checking tile cache availability")
+                await query_progress(pct, "Checking tile cache availability")
 
         coroutines = []
         for i, subset_tile_cache_status in enumerate(batches):
@@ -414,6 +425,8 @@ class TileCache:
             List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+            Optional progress callback function
 
         Returns
         -------
@@ -448,6 +461,8 @@ class TileCache:
             List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+            Optional progress callback function
 
         Returns
         -------
@@ -540,6 +555,8 @@ class TileCache:
 
         Parameters
         ----------
+        session : BaseSession
+            Data warehouse session to use
         unique_tile_infos : dict[str, TileGenSql]
             Mapping from tile id to TileGenSql
         keys_with_tracker : list[TileInfoKey]
@@ -613,6 +630,8 @@ class TileCache:
 
         Parameters
         ----------
+        session : BaseSession
+            Data warehouse session to use
         request_id : str
             Request ID
         keys : list[TileInfoKey]
