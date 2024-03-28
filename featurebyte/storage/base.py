@@ -3,18 +3,95 @@ Storage base class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Optional
 
 import asyncio
 import json
+import os
+import shutil
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import aiofiles
 import pandas as pd
-from cachetools import LRUCache
 from pandas import DataFrame
 from pydantic import BaseModel
+
+
+class StorageCache:
+    """Storage cache class"""
+
+    _cache_lock: Any = asyncio.Lock()
+
+    def __init__(self) -> None:
+        self._cache_dir = tempfile.mkdtemp()
+
+    def __del__(self) -> None:
+        if os.path.exists(self._cache_dir):
+            shutil.rmtree(self._cache_dir)
+
+    def clear(self) -> None:
+        """
+        Clear cache
+        """
+        shutil.rmtree(self._cache_dir)
+        os.makedirs(self._cache_dir)
+
+    def exists(self, cache_key: str) -> bool:
+        """
+        Check if cache key exists
+
+        Parameters
+        ----------
+        cache_key: str
+            Cache key
+
+        Returns
+        -------
+        bool
+            True if cache key exists, False otherwise
+        """
+        cache_path = Path(self._cache_dir) / cache_key
+        return cache_path.exists()
+
+    async def write_to_cache(self, cache_key: str, local_path: Path) -> None:
+        """
+        Write file to cache
+
+        Parameters
+        ----------
+        cache_key: str
+            Cache key
+        local_path: Path
+            Local path to store file
+        """
+        cache_path = Path(self._cache_dir) / cache_key
+        async with self._cache_lock:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(local_path, cache_path)
+
+    async def write_from_cache(self, cache_key: str, local_path: Path) -> bool:
+        """
+        Read file from cache
+
+        Parameters
+        ----------
+        cache_key: str
+            Cache key
+        local_path: Path
+            Local path to store file
+
+        Returns
+        -------
+        bool
+            True if cache hit, False otherwise
+        """
+        cache_path = Path(self._cache_dir) / cache_key
+        if cache_path.exists():
+            shutil.copy(cache_path, local_path)
+            return True
+        return False
 
 
 class Storage(ABC):
@@ -22,8 +99,7 @@ class Storage(ABC):
     Base storage class
     """
 
-    _cache: Any = LRUCache(maxsize=1024)
-    _cache_lock: Any = asyncio.Lock()
+    _cache: Any = StorageCache()
 
     @abstractmethod
     async def put(self, local_path: Path, remote_path: Path) -> None:
@@ -72,7 +148,9 @@ class Storage(ABC):
         except FileNotFoundError:
             pass
 
-    async def get(self, remote_path: Path, local_path: Path, cache_key: Any = None) -> None:
+    async def get(
+        self, remote_path: Path, local_path: Path, cache_key: Optional[str] = None
+    ) -> None:
         """
         Download file from storage to local path with caching if cache_key is provided
 
@@ -82,9 +160,8 @@ class Storage(ABC):
             Path of remote file to be downloaded
         local_path: Path
             Path to stored downloaded file
-        cache_key: Any
+        cache_key: Optional[str]
             Cache key for storing downloaded file (if provided, the result will be cached).
-            Please do not use cache_key for large files.
 
         Returns
         -------
@@ -93,25 +170,10 @@ class Storage(ABC):
         if cache_key is None:
             return await self._get(remote_path, local_path)
 
-        # cache hit
-        try:
-            value = self._cache[cache_key]
-            async with aiofiles.open(local_path, "wb") as file_obj:
-                await file_obj.write(value)
-            return None
-        except KeyError:
-            pass
-
-        # cache miss
-        await self._get(remote_path, local_path)
-        try:
-            async with aiofiles.open(local_path, "rb") as file_obj:
-                value = await file_obj.read()
-
-            async with self._cache_lock:
-                self._cache.setdefault(cache_key, value)
-        except ValueError:
-            pass  # value too large
+        cache_hit = await self._cache.write_from_cache(cache_key, local_path)
+        if not cache_hit:
+            await self._get(remote_path, local_path)
+            await self._cache.write_to_cache(cache_key, local_path)
 
     @abstractmethod
     async def _get(self, remote_path: Path, local_path: Path) -> None:
@@ -192,7 +254,7 @@ class Storage(ABC):
             await file_obj.flush()
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_text(self, remote_path: Path, cache_key: Any = None) -> str:
+    async def get_text(self, remote_path: Path, cache_key: Optional[str] = None) -> str:
         """
         Download text content from storage text file
 
@@ -200,7 +262,7 @@ class Storage(ABC):
         ----------
         remote_path: Path
             Path of remote file to be downloaded
-        cache_key: Any
+        cache_key: Optional[str]
             Cache key for storing downloaded file (if provided, the result will be cached)
 
         Returns

@@ -111,10 +111,11 @@ class BaseStorageTestSuite:
         Test file upload
         """
         # clear cache
-        test_storage._cache.clear()
+        storage_cache = test_storage._cache
+        storage_cache.clear()
 
-        cache_key = "some_key"
-        assert cache_key not in test_storage._cache
+        cache_key = "some_cache_key"
+        assert storage_cache.exists(cache_key) is False
         with tempfile.NamedTemporaryFile() as file_obj:
             # download should work
             await test_storage.get(remote_path, file_obj.name, cache_key=cache_key)
@@ -123,8 +124,7 @@ class BaseStorageTestSuite:
             assert filecmp.cmp(local_path, file_obj.name)
 
             # check cache is populated
-            assert cache_key in test_storage._cache
-            cache_size = len(test_storage._cache)
+            assert storage_cache.exists(cache_key) is True
 
         with tempfile.NamedTemporaryFile() as file_obj:
             with patch.object(test_storage, "_get") as mock_get:
@@ -135,9 +135,6 @@ class BaseStorageTestSuite:
 
             # check contents should match
             assert filecmp.cmp(local_path, file_obj.name)
-
-            # check no additional cache entry
-            assert len(test_storage._cache) == cache_size
 
     @pytest.mark.asyncio
     async def test_stream_file_success(

@@ -9,7 +9,6 @@ import random
 from pathlib import Path
 
 from bson import ObjectId
-from cachetools.keys import hashkey
 from redis import Redis
 from redis.lock import Lock
 
@@ -249,7 +248,7 @@ class FeastRegistryService(
         if document.registry_path:
             document.registry = await self.storage.get_bytes(
                 Path(document.registry_path),
-                cache_key=hashkey(document.registry_path, document.updated_at),
+                cache_key=f"{document.registry_path}_{document.updated_at}",
             )
         return document
 
