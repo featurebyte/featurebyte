@@ -365,6 +365,7 @@ class TestCatalogApi(BaseApiTestSuite):
             data=DeploymentModel(
                 name="test_deployment",
                 feature_list_id=ObjectId(),
+                feature_list_namespace_id=ObjectId(),
                 enabled=True,
                 catalog_id=catalog_id,
             )
