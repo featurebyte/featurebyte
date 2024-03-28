@@ -13,6 +13,7 @@ from bson import ObjectId
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
+from featurebyte.common.progress import divide_progress_callback
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec
@@ -279,6 +280,7 @@ class TileCache:
         nodes: list[Node],
         request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> list[OnDemandTileComputeRequest]:
         """Query the entity tracker tables and obtain a list of tile computations that are required
 
@@ -299,20 +301,38 @@ class TileCache:
         -------
         list[OnDemandTileComputeRequest]
         """
-        # TODO: progress update
+        if progress_callback is None:
+            graph_progress, query_progress = None, None
+        else:
+            graph_progress, query_progress = divide_progress_callback(
+                progress_callback, at_percent=20
+            )
         tile_cache_status = await self._get_tile_cache_status(
             graph=graph,
             nodes=nodes,
             serving_names_mapping=serving_names_mapping,
+            progress_callback=graph_progress,
         )
+
         # Check tile cache availability concurrently in batches
+        batches = list(tile_cache_status.split_batches())
+        processed = 0
+
+        async def done_callback() -> None:
+            nonlocal processed
+            processed += 1
+            if progress_callback:
+                pct = int(100 * processed / len(batches))
+                await progress_callback(pct, f"Checking tile cache availability")
+
         coroutines = []
-        for i, subset_tile_cache_status in enumerate(tile_cache_status.split_batches()):
+        for i, subset_tile_cache_status in enumerate(batches):
             coroutines.append(
                 self._get_compute_requests(
                     request_id=f"{request_id}_{i}",
                     request_table_name=request_table_name,
                     tile_cache_status=subset_tile_cache_status,
+                    done_callback=done_callback,
                 )
             )
         result = await run_coroutines(coroutines)
@@ -326,6 +346,7 @@ class TileCache:
         request_id: str,
         request_table_name: str,
         tile_cache_status: TileCacheStatus,
+        done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> list[OnDemandTileComputeRequest]:
         # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
@@ -371,6 +392,9 @@ class TileCache:
                 )
                 requests.append(request)
 
+        if done_callback is not None:
+            await done_callback()
+
         return requests
 
     async def _get_tile_cache_status(
@@ -378,6 +402,7 @@ class TileCache:
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> TileCacheStatus:
         """Get a TileCacheStatus object that corresponds to the graph and nodes
 
@@ -394,8 +419,11 @@ class TileCache:
         -------
         TileCacheStatus
         """
-        unique_tile_infos = self._get_unique_tile_infos(
-            graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
+        unique_tile_infos = await self._get_unique_tile_infos(
+            graph=graph,
+            nodes=nodes,
+            serving_names_mapping=serving_names_mapping,
+            progress_callback=progress_callback,
         )
         keys_with_tracker = await self._filter_keys_with_tracker(list(unique_tile_infos.keys()))
         return TileCacheStatus(
@@ -403,8 +431,12 @@ class TileCache:
             keys_with_tracker=keys_with_tracker,
         )
 
-    def _get_unique_tile_infos(
-        self, graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
+    async def _get_unique_tile_infos(
+        self,
+        graph: QueryGraph,
+        nodes: list[Node],
+        serving_names_mapping: dict[str, str] | None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> dict[TileInfoKey, TileGenSql]:
         """Construct mapping from aggregation id to TileGenSql for easier manipulation
 
@@ -423,7 +455,7 @@ class TileCache:
         """
         out = {}
         interpreter = GraphInterpreter(graph, source_type=self.source_type)
-        for node in nodes:
+        for i, node in enumerate(nodes):
             infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
             for info in infos:
                 if info.aggregation_id not in out:
@@ -432,6 +464,12 @@ class TileCache:
                             info.serving_names, serving_names_mapping
                         )
                     out[TileInfoKey.from_tile_info(info)] = info
+            if i % 10 == 0 and progress_callback is not None:
+                await progress_callback(
+                    int(i + 1 / len(nodes) * 100), "Checking tile cache availability"
+                )
+        if progress_callback is not None:
+            await progress_callback(100, "Checking tile cache availability")
         return out
 
     async def _filter_keys_with_tracker(
