@@ -110,6 +110,9 @@ class BaseStorageTestSuite:
         """
         Test file upload
         """
+        # clear cache
+        test_storage._cache.clear()
+
         cache_key = "some_key"
         assert cache_key not in test_storage._cache
         with tempfile.NamedTemporaryFile() as file_obj:
