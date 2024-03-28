@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
@@ -64,14 +64,15 @@ jobs:
     - name: Building hive-udf
       run: task build-jar
     - name: Upload hive-udf
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: hive-udf
         path: hive-udf/lib/build/libs/*
   test-unit:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -79,18 +80,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -103,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -114,19 +115,20 @@ jobs:
     - name: Moving coverage file by appending 0
       run: mv .coverage .coverage.0
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
         path: pytest.xml.0
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.0
         path: .coverage.0
   test-integration-snowflake:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -134,18 +136,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -158,7 +160,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -167,12 +169,12 @@ jobs:
     - name: Moving coverage file by appending 1
       run: mv .coverage .coverage.1
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
         path: pytest.xml.1
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
         path: .coverage.1
@@ -191,18 +193,18 @@ jobs:
         - 3.5.0
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -215,7 +217,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -235,9 +237,10 @@ jobs:
         task test-teardown
         mv .coverage .coverage.2
     - name: Upload spark-thrift log file
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: spark-thrift-logs
+        name: spark-thrift-logs-${{ matrix.spark-version }}
+        overwrite: true
         path: spark-thrift.log
         retention-days: 5
     - name: Check test status
@@ -247,20 +250,23 @@ jobs:
           exit $EXIT_CODE
         fi
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
+        overwrite: true
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
+        overwrite: true
   test-integration-databricks:
     if: false
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -268,18 +274,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -292,7 +298,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/databricks/
@@ -301,19 +307,20 @@ jobs:
     - name: Moving coverage file by appending 3
       run: mv .coverage .coverage.3
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
         path: pytest.xml.3
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
   test-integration-databricks-unity:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 135
     strategy:
       matrix:
@@ -321,18 +328,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -349,19 +356,20 @@ jobs:
     - name: Moving coverage file by appending 4
       run: mv .coverage .coverage.4
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.4
         path: pytest.xml.4
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.4
         path: .coverage.4
   test-docs:
     needs:
     - build-jar
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
@@ -369,18 +377,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
@@ -393,7 +401,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -417,61 +425,61 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
     - name: Install dependencies
       run: poetry install -n --sync
     - name: Download unit test results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
     - name: Download integration test results (snowflake)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
     - name: Download integration test results (spark)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
     - name: Download integration test results (databricks)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
     - name: Download integration test results (databricks-unity)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.4
     - name: Download unit coverage results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.0
     - name: Download integration coverage results (snowflake)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
     - name: Download integration coverage results (spark)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
     - name: Download integration coverage results (databricks)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
     - name: Download integration coverage results (databricks-unity)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.4
     - name: Merge test results
