@@ -330,10 +330,14 @@ def mocked_tile_cache():
     """Fixture for a mocked SnowflakeTileCache object"""
     patched = {}
     with mock.patch(
-        "featurebyte.tile.tile_cache.TileCache.get_required_computation"
-    ) as mocked_get_required_computation:
-        patched["get_required_computation"] = mocked_get_required_computation
-        yield patched
+        "featurebyte.tile.tile_cache.TileCache._get_compute_requests"
+    ) as mock_get_compute_requests:
+        with mock.patch(
+            "featurebyte.tile.tile_cache.TileCache._filter_keys_with_tracker", return_value=[]
+        ):
+            with mock.patch("featurebyte.tile.tile_cache.run_coroutines"):
+                patched["_get_compute_requests"] = mock_get_compute_requests
+                yield patched
 
 
 @pytest.mark.asyncio
@@ -361,7 +365,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     graph, node = complex_feature.extract_pruned_graph_and_node()
     nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
 
-    with patch("featurebyte.service.tile_cache.NUM_NODES_PER_QUERY", 1):
+    with patch("featurebyte.tile.tile_cache.NUM_TRACKER_TABLES_PER_QUERY", 1):
         _ = await get_historical_features(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
@@ -372,13 +376,4 @@ async def test_get_historical_features__tile_cache_multiple_batches(
             output_table_details=output_table_details,
         )
 
-    assert len(mocked_tile_cache["get_required_computation"].call_args_list) == 2
-
-    nodes = []
-    for call_args in mocked_tile_cache["get_required_computation"].call_args_list:
-        _, kwargs = call_args
-        current_nodes = kwargs["nodes"]
-        nodes.extend([node.name for node in current_nodes])
-
-    expected_nodes = ["groupby_1", "groupby_2"]
-    assert nodes == expected_nodes
+    assert len(mocked_tile_cache["_get_compute_requests"].call_args_list) == 2
