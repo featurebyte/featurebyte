@@ -169,9 +169,6 @@ async def test_databricks_session(databricks_session_dict):
         "col_date": ColumnSpecWithDescription(
             name="col_date", dtype=DBVarType.DATE, description="Date Column"
         ),
-        "col_decimal": ColumnSpecWithDescription(
-            name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
-        ),
         "col_double": ColumnSpecWithDescription(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
         ),
@@ -195,6 +192,9 @@ async def test_databricks_session(databricks_session_dict):
         ),
         "col_map": ColumnSpecWithDescription(
             name="col_map", dtype=DBVarType.DICT, description="Map Column"
+        ),
+        "col_decimal": ColumnSpecWithDescription(
+            name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
         ),
         "col_struct": ColumnSpecWithDescription(
             name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
