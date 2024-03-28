@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
+from cachetools import LRUCache
 from pymongo.errors import OperationFailure
 from redis import Redis
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
@@ -108,6 +109,7 @@ class BaseDocumentService(
     # pylint: disable=too-many-public-methods
 
     document_class: Type[Document]
+    _remote_attribute_cache: Any = LRUCache(maxsize=1024)
 
     def __init__(
         self,

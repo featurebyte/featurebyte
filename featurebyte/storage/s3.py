@@ -113,7 +113,7 @@ class S3Storage(Storage):
 
             await client.delete_object(Bucket=self.bucket_name, Key=str(remote_path))
 
-    async def get(self, remote_path: Path, local_path: Path) -> None:
+    async def _get(self, remote_path: Path, local_path: Path) -> None:
         """
         Download file from storage to local path
 

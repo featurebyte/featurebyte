@@ -95,7 +95,7 @@ class AzureBlobStorage(Storage):
             except ResourceNotFoundError as exc:
                 raise FileNotFoundError("Remote file does not exist") from exc
 
-    async def get(self, remote_path: Path, local_path: Path) -> None:
+    async def _get(self, remote_path: Path, local_path: Path) -> None:
         """
         Download file from storage to local path
 
