@@ -555,7 +555,9 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         features: List[FeatureModel]
             List of features
         """
-        feature_list = await self.get_document(document_id=document_id)
+        feature_list = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         assert set(feature_list.feature_ids) == set(feature.id for feature in features)
         self._check_document_modifiable(document=feature_list.dict(by_alias=True))
 
@@ -627,7 +629,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         -------
         List[Dict[str, str]]
         """
-        feature_list = await self.get_document(feature_list_id)
+        feature_list = await self.get_document(feature_list_id, populate_remote_attributes=False)
 
         # get entities and tables used for the feature list
         return await self.entity_serving_names_service.get_sample_entity_serving_names(
