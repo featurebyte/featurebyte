@@ -4,9 +4,11 @@ This module functions used to patch the Feast library.
 
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List
 
 from collections import defaultdict
+
+import pandas as pd
 
 # pylint: disable=no-name-in-module
 from feast import OnDemandFeatureView
@@ -97,3 +99,65 @@ def augment_response_with_on_demand_transforms(
                     event_timestamps=[Timestamp()] * len(proto_values[feature_idx]),
                 )
             )
+
+
+def get_transformed_features_df(
+    feature_view: OnDemandFeatureView,
+    df_with_features: pd.DataFrame,
+    full_feature_names: bool = False,
+) -> pd.DataFrame:
+    """
+    The main difference between this and the original Feast implementation is that this function stores the
+    transformed features in a dictionary before concatenating them to the original dataframe. This is to
+    avoid the performance issues (fragmented dataframe) that arise from assigning a new column to a
+    dataframe in a loop.
+
+    Parameters
+    ----------
+    feature_view: OnDemandFeatureView
+        OnDemandFeatureView object
+    df_with_features: pd.DataFrame
+        Dataframe with features
+    full_feature_names: bool
+        A boolean that provides the option to add the feature view prefixes to the feature names,
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with transformed features
+    """
+    # Apply on demand transformations
+    # Original implementation does not use dict to store the transformed features,
+    # which leads to pandas performance issues
+    columns_to_cleanup = []
+    df_dict = {}
+    for source_fv_projection in feature_view.source_feature_view_projections.values():
+        for feature in source_fv_projection.features:
+            full_feature_ref = f"{source_fv_projection.name}__{feature.name}"
+            if full_feature_ref in df_with_features.keys():
+                # Make sure the partial feature name is always present
+                df_dict[feature.name] = df_with_features[full_feature_ref]
+                columns_to_cleanup.append(feature.name)
+            elif feature.name in df_with_features.keys():
+                # Make sure the full feature name is always present
+                df_dict[full_feature_ref] = df_with_features[feature.name]
+                columns_to_cleanup.append(full_feature_ref)
+
+    # Compute transformed values and apply to each result row
+    df_with_features = pd.concat([df_with_features, pd.DataFrame(df_dict)], axis=1)
+    df_with_transformed_features = feature_view.udf(df_with_features)
+
+    # Work out whether the correct columns names are used.
+    rename_columns: Dict[str, str] = {}
+    for feature in feature_view.features:
+        short_name = feature.name
+        long_name = f"{feature_view.projection.name_to_use()}__{feature.name}"
+        if short_name in df_with_transformed_features.columns and full_feature_names:
+            rename_columns[short_name] = long_name
+        elif not full_feature_names:
+            # Long name must be in dataframe.
+            rename_columns[long_name] = short_name
+
+    # Cleanup extra columns used for transformation
+    df_with_features.drop(columns=columns_to_cleanup, inplace=True)
+    return df_with_transformed_features.rename(columns=rename_columns)
