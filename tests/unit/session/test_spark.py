@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import S3StorageCredential, StorageType
+from featurebyte.enum import DBVarType
 from featurebyte.models.credential import GCSStorageCredential
 from featurebyte.query_graph.model.table import TableDetails
 from featurebyte.session.spark import SparkSession
@@ -58,6 +59,22 @@ def test_s3_storage(config, spark_session_params):
     )
 
 
+@pytest.fixture(name="session")
+@patch("featurebyte.session.spark.HiveConnection.__new__")
+def session_fixture(config, spark_session_params):
+    """
+    Test snowflake session
+    """
+    _ = config
+    session = SparkSession(
+        storage_credential=S3StorageCredential(
+            s3_access_key_id="test", s3_secret_access_key="test"
+        ),
+        **spark_session_params,
+    )
+    return session
+
+
 @patch("featurebyte.session.spark.HiveConnection.__new__")
 def test_gcs_storage(config):
     """
@@ -105,19 +122,11 @@ def test_gcs_storage(config):
         )
 
 
-@patch("featurebyte.session.spark.HiveConnection.__new__")
 @pytest.mark.asyncio
-async def test_get_table_details(config, spark_session_params):
+async def test_get_table_details(session):
     """
     Test snowflake session
     """
-    session = SparkSession(
-        storage_credential=S3StorageCredential(
-            s3_access_key_id="test", s3_secret_access_key="test"
-        ),
-        **spark_session_params,
-    )
-
     columns = ["col_name", "data_type", "comment"]
     rows = [
         ("id", "int", None),
@@ -174,3 +183,37 @@ async def test_get_table_details(config, spark_session_params):
             fully_qualified_name="`spark_catalog`.`featurebyte_20240110112131_971440`.`test`",
         )
         assert table_details.description == "some desc"
+
+
+@pytest.mark.parametrize(
+    "data_type, expected",
+    [
+        ("INT", DBVarType.INT),
+        ("TINYINT", DBVarType.INT),
+        ("BIGINT", DBVarType.INT),
+        ("BINARY", DBVarType.BINARY),
+        ("BOOLEAN", DBVarType.BOOL),
+        ("DATE", DBVarType.DATE),
+        ("DECIMAL", DBVarType.FLOAT),
+        ("DECIMAL(10, 0)", DBVarType.INT),
+        ("DECIMAL(10, 10)", DBVarType.FLOAT),
+        ("DOUBLE", DBVarType.FLOAT),
+        ("FLOAT", DBVarType.FLOAT),
+        ("INTERVAL", DBVarType.TIMEDELTA),
+        ("VOID", DBVarType.VOID),
+        ("TIMESTAMP", DBVarType.TIMESTAMP),
+        ("TIMESTAMP_NTZ", DBVarType.TIMESTAMP),
+        ("ARRAY<INT>", DBVarType.ARRAY),
+        ("MAP<STRING,INT>", DBVarType.DICT),
+        ("STRUCT", DBVarType.DICT),
+        ("STRING", DBVarType.VARCHAR),
+    ],
+)
+def test_convert_to_internal_variable_type(data_type, expected):
+    """
+    Test convert_to_internal_variable_type
+    """
+
+    assert (
+        SparkSession._convert_to_internal_variable_type(data_type) == expected
+    )  # pylint: disable=protected-access
