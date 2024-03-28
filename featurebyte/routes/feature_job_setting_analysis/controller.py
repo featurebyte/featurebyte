@@ -1,6 +1,7 @@
 """
 FeatureJobSettingAnalysis API route controller
 """
+
 from __future__ import annotations
 
 import tempfile

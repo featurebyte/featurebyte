@@ -1,6 +1,7 @@
 """
 Test join utils class
 """
+
 from bson import ObjectId
 
 from featurebyte.common.join_utils import (

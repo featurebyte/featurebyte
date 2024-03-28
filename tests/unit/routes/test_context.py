@@ -1,6 +1,7 @@
 """
 Tests for Context route
 """
+
 from http import HTTPStatus
 from unittest import mock
 
@@ -221,7 +222,9 @@ class TestContextApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         test_api_client.headers["active-catalog-id"] = str(catalog.id)
         observation_table = snowflake_database_table.create_observation_table(
-            "observation_table_from_source_table", context_name=context.name
+            "observation_table_from_source_table",
+            context_name=context.name,
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
 
         response = test_api_client.delete(f"{self.base_route}/{context.id}")

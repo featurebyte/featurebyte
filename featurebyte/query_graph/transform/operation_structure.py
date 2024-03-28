@@ -1,6 +1,7 @@
 """
 This module contains operation structure extraction related classes.
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel

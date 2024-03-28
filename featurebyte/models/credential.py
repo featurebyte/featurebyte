@@ -1,6 +1,7 @@
 """
 Document model for stored credentials
 """
+
 from typing import Callable, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 

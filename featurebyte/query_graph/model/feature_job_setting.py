@@ -1,6 +1,7 @@
 """
 Feature Job Setting Model
 """
+
 from typing import Any, Dict
 
 from pydantic import Field, root_validator

@@ -1,6 +1,7 @@
 """
 Base class for SQL adapters
 """
+
 from __future__ import annotations
 
 from typing import List, Literal, Optional

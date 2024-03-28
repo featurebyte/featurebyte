@@ -1,6 +1,7 @@
 """
 Test BaseTableDocumentService subclasses
 """
+
 import pytest
 from bson import ObjectId
 

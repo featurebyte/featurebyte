@@ -1,6 +1,7 @@
 """
 ObservationTableService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, cast
@@ -26,6 +27,7 @@ from featurebyte.enum import (
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
+    ObservationTableInvalidTargetNameError,
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
     UnsupportedPointInTimeColumnTypeError,
@@ -34,6 +36,8 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObject
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
+from featurebyte.models.request_input import BaseRequestInput
+from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -62,6 +66,8 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.target import TargetService
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.storage import Storage
@@ -152,6 +158,7 @@ def validate_columns_info(
     columns_info: List[ColumnSpecWithEntityId],
     primary_entity_ids: Optional[List[PydanticObjectId]] = None,
     skip_entity_validation_checks: bool = False,
+    target_namespace: Optional[TargetNamespaceModel] = None,
 ) -> None:
     """
     Validate column info.
@@ -164,6 +171,8 @@ def validate_columns_info(
         List of primary entity IDs
     skip_entity_validation_checks: bool
         Whether to skip entity validation checks
+    target_namespace: Optional[TargetNamespaceModel]
+        Target namespace document
 
     Raises
     ------
@@ -206,6 +215,15 @@ def validate_columns_info(
                     f"Primary entity IDs passed in are not present in the column info: {primary_entity_ids}"
                 )
 
+        # Check that target name is present in the column info
+        if target_namespace is not None:
+            if target_namespace.name not in columns_info_mapping:
+                raise ValueError(f'Target column "{target_namespace.name}" not found.')
+            if columns_info_mapping[target_namespace.name].dtype != target_namespace.dtype:
+                raise ValueError(
+                    f'Target column "{target_namespace.name}" should have dtype "{target_namespace.dtype}"'
+                )
+
 
 class ObservationTableService(
     BaseMaterializedTableService[ObservationTableModel, ObservationTableModel]
@@ -233,6 +251,8 @@ class ObservationTableService(
         use_case_service: UseCaseService,
         storage: Storage,
         redis: Redis[Any],
+        target_namespace_service: TargetNamespaceService,
+        target_service: TargetService,
     ):
         super().__init__(
             user,
@@ -250,10 +270,61 @@ class ObservationTableService(
         self.temp_storage = temp_storage
         self.primary_entity_validator = primary_entity_validator
         self.use_case_service = use_case_service
+        self.target_namespace_service = target_namespace_service
+        self.target_service = target_service
 
     @property
     def class_name(self) -> str:
         return "ObservationTable"
+
+    async def _validate_columns(
+        self,
+        available_columns: List[str],
+        primary_entity_ids: Optional[List[PydanticObjectId]],
+        target_column: Optional[str],
+    ) -> Optional[ObjectId]:
+        # Check if required column names are provided
+        missing_columns = []
+
+        # Check if point in time column is present
+        if SpecialColumnName.POINT_IN_TIME not in available_columns:
+            missing_columns.append(str(SpecialColumnName.POINT_IN_TIME))
+
+        # Check if entity columns are present
+        if primary_entity_ids:
+            for entity_id in primary_entity_ids:
+                entity = await self.entity_service.get_document(document_id=entity_id)
+                if not set(entity.serving_names).intersection(available_columns):
+                    missing_columns.append("/".join(entity.serving_names))
+
+        # Check if target column is present
+        if target_column:
+            if target_column not in available_columns:
+                missing_columns.append(target_column)
+            target_namespaces = await self.target_namespace_service.list_documents_as_dict(
+                query_filter={"name": target_column}
+            )
+            if target_namespaces["total"] == 0:
+                raise ObservationTableInvalidTargetNameError(
+                    f"Target name not found: {target_column}"
+                )
+
+            # validate target namespace has same primary entity ids
+            target_namespace = target_namespaces["data"][0]
+            if target_namespace["entity_ids"] != primary_entity_ids:
+                raise ObservationTableInvalidTargetNameError(
+                    f'Target "{target_column}" does not have matching primary entity ids.'
+                )
+            target_namespace_id = ObjectId(target_namespace["_id"])
+        else:
+            target_namespace_id = None
+
+        if missing_columns:
+            raise ObservationTableMissingColumnsError(
+                f"Required column(s) not found: {', '.join(missing_columns)}"
+            )
+
+        return target_namespace_id
 
     async def get_observation_table_task_payload(
         self, data: ObservationTableCreate
@@ -284,11 +355,39 @@ class ObservationTableService(
             # context.
             await self.context_service.get_document(document_id=data.context_id)
 
+        if isinstance(data.request_input, BaseRequestInput):
+            feature_store = await self.feature_store_service.get_document(
+                document_id=data.feature_store_id
+            )
+            db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+            # validate columns
+            available_columns = await data.request_input.get_column_names(db_session)
+            columns_rename_mapping = data.request_input.columns_rename_mapping
+            if columns_rename_mapping:
+                available_columns = [
+                    columns_rename_mapping.get(col, col) for col in available_columns
+                ]
+            target_namespace_id = await self._validate_columns(
+                available_columns=available_columns,
+                primary_entity_ids=data.primary_entity_ids,
+                target_column=data.target_column,
+            )
+        elif (
+            isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None
+        ):
+            target = await self.target_service.get_document(
+                document_id=data.request_input.target_id
+            )
+            target_namespace_id = target.target_namespace_id
+        else:
+            target_namespace_id = None
+
         return ObservationTableTaskPayload(
             **data.dict(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+            target_namespace_id=target_namespace_id,
         )
 
     async def get_observation_table_upload_task_payload(
@@ -316,11 +415,6 @@ class ObservationTableService(
         Returns
         -------
         ObservationTableUploadTaskPayload
-
-        Raises
-        ------
-        ObservationTableMissingColumnsError
-            If the observation set dataframe is missing required columns.
         """
 
         # Check any conflict with existing documents
@@ -330,18 +424,11 @@ class ObservationTableService(
         )
 
         # Check if required column names are provided
-        missing_columns = []
-        available_columns = set(observation_set_dataframe.columns.tolist())
-        if SpecialColumnName.POINT_IN_TIME not in observation_set_dataframe.columns:
-            missing_columns.append(str(SpecialColumnName.POINT_IN_TIME))
-        for entity_id in data.primary_entity_ids:
-            entity = await self.entity_service.get_document(document_id=entity_id)
-            if not set(entity.serving_names).intersection(available_columns):
-                missing_columns.append("/".join(entity.serving_names))
-        if missing_columns:
-            raise ObservationTableMissingColumnsError(
-                f"Required columns not found: {', '.join(missing_columns)}"
-            )
+        target_namespace_id = await self._validate_columns(
+            available_columns=observation_set_dataframe.columns.tolist(),
+            primary_entity_ids=data.primary_entity_ids,
+            target_column=data.target_column,
+        )
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
@@ -357,6 +444,7 @@ class ObservationTableService(
             observation_set_storage_path=observation_set_storage_path,
             file_format=file_format,
             uploaded_file_name=uploaded_file_name,
+            target_namespace_id=target_namespace_id,
         )
 
     @staticmethod
@@ -548,6 +636,7 @@ class ObservationTableService(
         serving_names_remapping: Optional[Dict[str, str]] = None,
         skip_entity_validation_checks: bool = False,
         primary_entity_ids: Optional[List[PydanticObjectId]] = None,
+        target_namespace_id: Optional[PydanticObjectId] = None,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -566,6 +655,8 @@ class ObservationTableService(
             Whether to skip entity validation checks
         primary_entity_ids: Optional[List[PydanticObjectId]]
             List of primary entity IDs
+        target_namespace_id: Optional[PydanticObjectId]
+            Target namespace ID
 
         Returns
         -------
@@ -589,10 +680,17 @@ class ObservationTableService(
             )
 
         # Perform validation on column info
+        if target_namespace_id is not None:
+            target_namespace = await self.target_namespace_service.get_document(
+                document_id=target_namespace_id
+            )
+        else:
+            target_namespace = None
         validate_columns_info(
             columns_info,
             primary_entity_ids=primary_entity_ids,
             skip_entity_validation_checks=skip_entity_validation_checks,
+            target_namespace=target_namespace,
         )
         # Get entity column name to minimum interval mapping
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
@@ -664,21 +762,31 @@ class ObservationTableService(
                 )
                 if use_case.context_id != observation_table.context_id:
                     raise ObservationTableInvalidUseCaseError(
-                        f"Cannot add UseCase {data.use_case_id_to_add} as its context_id is different from the existing context_id."
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched contexts."
                     )
 
-                # validate request_input and target_id
-                if not isinstance(observation_table.request_input, TargetInput):
-                    raise ObservationTableInvalidUseCaseError(
-                        "observation table request_input is not TargetInput"
-                    )
-
-                if not use_case.target_id or (
+                if (
                     isinstance(observation_table.request_input, TargetInput)
                     and observation_table.request_input.target_id != use_case.target_id
                 ):
                     raise ObservationTableInvalidUseCaseError(
-                        f"Cannot add UseCase {data.use_case_id_to_add} as its target_id is different from the existing target_id."
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched targets."
+                    )
+
+                if (
+                    observation_table.target_namespace_id
+                    and use_case.target_namespace_id != observation_table.target_namespace_id
+                ):
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched targets."
+                    )
+
+                if (
+                    observation_table.target_namespace_id
+                    and use_case.target_namespace_id != observation_table.target_namespace_id
+                ):
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as its target_namespace_id is different from the existing target_namespace_id."
                     )
 
                 use_case_ids.append(data.use_case_id_to_add)

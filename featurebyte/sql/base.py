@@ -1,6 +1,7 @@
 """
 Base Class for SQL related operations
 """
+
 from typing import Any
 
 from pydantic.fields import PrivateAttr

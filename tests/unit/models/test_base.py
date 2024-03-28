@@ -1,6 +1,7 @@
 """
 Tests FeatureByteBaseModel
 """
+
 from typing import List
 
 import pytest

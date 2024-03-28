@@ -1,6 +1,7 @@
 """
 RequestColumn related classes for on-demand features
 """
+
 from __future__ import annotations
 
 from typing import Optional

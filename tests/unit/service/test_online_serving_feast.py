@@ -1,6 +1,7 @@
 """
 Tests for OnlineServingService feast implementation
 """
+
 import pytest
 import pytest_asyncio
 

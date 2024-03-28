@@ -1,6 +1,7 @@
 """
 Test catalog service
 """
+
 import pytest
 
 from featurebyte.exception import DocumentNotFoundError

@@ -1,6 +1,7 @@
 """
 Tests for tile related SQL generation using high level API fixtures
 """
+
 import pytest
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel

@@ -1,6 +1,7 @@
 """
 Code generation config is used to control the code generating style.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

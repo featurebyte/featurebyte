@@ -1,6 +1,7 @@
 """
 Get targets module
 """
+
 from __future__ import annotations
 
 from featurebyte.logging import get_logger
@@ -15,6 +16,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
     Computer,
+    ExecutionResult,
     ExecutorParams,
     QueryExecutor,
 )
@@ -33,7 +35,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
 
     async def execute(  # pylint: disable=too-many-locals
         self, executor_params: ExecutorParams
-    ) -> None:
+    ) -> ExecutionResult:
         """
         Get targets.
 
@@ -41,12 +43,16 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         ----------
         executor_params: ExecutorParams
             Executor parameters
+
+        Returns
+        -------
+        ExecutionResult
         """
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
         ):
-            await self.feature_table_cache_service.create_view_from_cache(
+            is_output_view = await self.feature_table_cache_service.create_view_or_table_from_cache(
                 feature_store=executor_params.feature_store,
                 observation_table=executor_params.observation_set,
                 graph=executor_params.graph,
@@ -67,6 +73,8 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 progress_callback=executor_params.progress_callback,
             )
+            is_output_view = False
+        return ExecutionResult(is_output_view=is_output_view)
 
 
 class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):

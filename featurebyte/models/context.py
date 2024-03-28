@@ -1,6 +1,7 @@
 """
 This module contains context related models.
 """
+
 from typing import Any, Dict, List, Optional
 
 import pymongo

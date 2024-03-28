@@ -1,6 +1,7 @@
 """
 Test the construction of the feast register.
 """
+
 import textwrap
 
 import pytest

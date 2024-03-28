@@ -1,6 +1,7 @@
 """
 Tests for OrderedEnum class
 """
+
 from __future__ import annotations
 
 import pytest

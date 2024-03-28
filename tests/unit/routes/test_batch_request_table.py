@@ -1,6 +1,7 @@
 """
 Tests for BatchRequestTable route
 """
+
 from http import HTTPStatus
 
 from bson.objectid import ObjectId

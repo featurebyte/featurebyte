@@ -1,6 +1,7 @@
 """
 This modules contains feature manager specific models
 """
+
 from __future__ import annotations
 
 from featurebyte.enum import SourceType

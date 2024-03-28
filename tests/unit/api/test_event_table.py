@@ -1,6 +1,7 @@
 """
 Unit test for EventTable class
 """
+
 from __future__ import annotations
 
 import textwrap

@@ -1,6 +1,7 @@
 """
 Tile Generate entity tracking Job script
 """
+
 from typing import Any, List
 
 from featurebyte.enum import InternalName

@@ -1,6 +1,7 @@
 """
 This module contains session to EventView integration tests
 """
+
 import json
 import os
 import time
@@ -1428,10 +1429,13 @@ def test_create_observation_table__errors_with_no_entities(event_view):
     with pytest.raises(RecordCreationException) as exc:
         new_event_view.create_observation_table(
             f"observation_table_name_{ObjectId()}",
+            primary_entities=[],
         )
     assert "At least one entity column" in str(exc)
 
     # Test that no error if we skip the entity validation check
     new_event_view.create_observation_table(
-        f"observation_table_name_{ObjectId()}", skip_entity_validation_checks=True
+        f"observation_table_name_{ObjectId()}",
+        primary_entities=[],
+        skip_entity_validation_checks=True,
     )

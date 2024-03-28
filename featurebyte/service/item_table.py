@@ -1,6 +1,7 @@
 """
 ItemTableService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.item_table import ItemTableModel

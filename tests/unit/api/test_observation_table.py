@@ -1,13 +1,16 @@
 """
 Unit tests for ObservationTable class
 """
+
 from typing import Any, Dict
 
-from unittest.mock import call
+from unittest.mock import call, patch
 
 import pytest
 
+from featurebyte import TargetNamespace
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.exception import RecordCreationException
 from featurebyte.models.observation_table import Purpose
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
@@ -33,11 +36,11 @@ class TestObservationTable(BaseMaterializedTableApiTest[ObservationTable]):
             "created_at": info_dict["created_at"],
             "updated_at": None,
             "description": None,
+            "target_name": None,
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")
-    def test_list(self, table_under_test):
-        ...
+    def test_list(self, table_under_test): ...
 
 
 @pytest.mark.usefixtures("observation_table_from_source", "observation_table_from_view")
@@ -150,3 +153,52 @@ def test_entity_related_properties(observation_table_from_view, cust_id_entity, 
     assert len(primary_entity) == 2
     assert {entity.name for entity in primary_entity} == {"customer", "transaction"}
     assert observation_table_from_view.entities == []
+    assert observation_table_from_view.target_namespace is None
+    assert observation_table_from_view.target is None
+
+
+def test_create_observation_table_with_target_column_from_view(snowflake_event_view_with_entity):
+    """Test create observation table with target column"""
+    expected_error = "Target name not found: target"
+    with pytest.raises(RecordCreationException, match=expected_error):
+        return snowflake_event_view_with_entity.create_observation_table(
+            "observation_table_from_event_view",
+            columns_rename_mapping={
+                "col_int": "transaction_id",
+                "event_timestamp": "POINT_IN_TIME",
+            },
+            target_column="target",
+        )
+
+
+def test_create_observation_table_with_target_column_from_source_table(
+    catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+):
+    """Test create observation table with target column"""
+    _ = catalog
+    _ = patched_observation_table_service
+
+    target_namespace = TargetNamespace.create("target", primary_entity=[cust_id_entity.name])
+    observation_table = snowflake_database_table.create_observation_table(
+        "observation_table_from_source_table",
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "target"},
+        target_column="target",
+        primary_entities=[cust_id_entity.name],
+    )
+    assert observation_table.target_namespace == target_namespace
+    assert observation_table.target is None
+
+
+@patch("featurebyte.service.target_helper.compute_target.TargetComputer.compute")
+def test_create_observation_table_with_target_definition(
+    mock_compute, observation_table_from_view, float_target
+):
+    """Test create observation table with target"""
+    mock_compute.return_value.is_output_view = False
+    float_target.save()
+    observation_table = float_target.compute_target_table(
+        observation_table=observation_table_from_view,
+        observation_table_name="observation_table_with_target_definition",
+    )
+    assert observation_table.target_namespace == float_target.target_namespace
+    assert observation_table.target == float_target

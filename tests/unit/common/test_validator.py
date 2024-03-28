@@ -1,6 +1,7 @@
 """
 Test validator module
 """
+
 import pytest
 
 from featurebyte.common.validator import duration_string_validator

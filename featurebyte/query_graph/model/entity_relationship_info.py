@@ -1,6 +1,7 @@
 """
 This module contains entity relationship info related classes.
 """
+
 from typing import Dict, List, Optional, Sequence, Set
 
 from collections import defaultdict

@@ -1,6 +1,7 @@
 """
 Test the date nodes in the on-demand view code generation.
 """
+
 import numpy as np
 import pandas as pd
 import pytest

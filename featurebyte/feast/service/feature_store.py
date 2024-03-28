@@ -1,6 +1,7 @@
 """
 This module contains classes for constructing feast repository config
 """
+
 from typing import Any, Optional
 
 import tempfile

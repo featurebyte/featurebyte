@@ -1,6 +1,7 @@
 """
 Unit test for Entity class
 """
+
 from datetime import datetime
 from unittest import mock
 

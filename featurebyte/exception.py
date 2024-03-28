@@ -1,6 +1,7 @@
 """
 List of Exceptions
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -482,6 +483,12 @@ class EntityTaggingIsNotAllowedError(BaseUnprocessableEntityError):
 class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
     """
     Raise when observation table is missing required columns
+    """
+
+
+class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a target name that does not exist
     """
 
 

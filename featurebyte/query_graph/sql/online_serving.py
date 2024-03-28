@@ -1,6 +1,7 @@
 """
 SQL generation for online serving
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
@@ -407,9 +408,9 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
         return FeatureQuerySet(
             feature_queries=[],
             output_query=output_query,
-            output_table_name=output_table_details.table_name
-            if output_table_details is not None
-            else None,
+            output_table_name=(
+                output_table_details.table_name if output_table_details is not None else None
+            ),
             progress_message=PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES,
         )
 
@@ -460,9 +461,9 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
     return FeatureQuerySet(
         feature_queries=feature_queries,
         output_query=output_expr,
-        output_table_name=output_table_details.table_name
-        if output_table_details is not None
-        else None,
+        output_table_name=(
+            output_table_details.table_name if output_table_details is not None else None
+        ),
         progress_message=PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES,
     )
 

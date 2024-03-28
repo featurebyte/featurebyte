@@ -1,6 +1,7 @@
 """
 Customized MongoDB Scheduler
 """
+
 from typing import Any
 
 import datetime

@@ -1,6 +1,7 @@
 """
 SparkSession class
 """
+
 # pylint: disable=duplicate-code
 # pylint: disable=wrong-import-order
 from __future__ import annotations

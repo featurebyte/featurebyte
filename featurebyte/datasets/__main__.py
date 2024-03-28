@@ -1,6 +1,7 @@
 """
 CLI tools to run in featurebyte-server container
 """
+
 import base64
 import sys
 

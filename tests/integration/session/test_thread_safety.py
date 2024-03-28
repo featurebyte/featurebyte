@@ -1,6 +1,7 @@
 """
 Thread-safety tests for sessions
 """
+
 import asyncio
 import threading
 

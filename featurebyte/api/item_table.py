@@ -1,6 +1,7 @@
 """
 ItemTable class
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast

@@ -1,6 +1,7 @@
 """
 This module contains generic function related node classes
 """
+
 import pytest
 from bson import ObjectId
 

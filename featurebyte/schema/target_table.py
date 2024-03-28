@@ -1,20 +1,29 @@
 """
 TargetTable API payload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.observation_table import ObservationInput
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
+
+
+class ObservationInputType(FeatureByteBaseModel):
+    """
+    ObservationInputType schema
+    """
+
+    type: RequestInputType
 
 
 class TargetTableCreate(FeatureOrTargetTableCreate):
@@ -28,7 +37,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
     # for backwards compatibility reasons.
     node_names: Optional[List[StrictStr]] = Field(default=None)
-    request_input: ObservationInput
+    request_input: ObservationInputType
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
 
@@ -52,6 +61,10 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         # If target is not provided, graph and node_names should be provided.
         both_are_not_none = graph is not None and node_names is not None
         if both_are_not_none:
+            if target_id is not None:
+                raise ValueError(
+                    "If graph and node_names are provided, target_id should not be provided."
+                )
             return values
         raise ValueError(
             "Both graph and node_names should be provided, or neither should be provided."

@@ -1,6 +1,7 @@
 """
 Models related to serving parent features
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

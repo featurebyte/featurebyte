@@ -1,6 +1,7 @@
 """
 DatabricksAdapter class for generating Databricks specific SQL expressions
 """
+
 from __future__ import annotations
 
 from typing import Literal, Optional

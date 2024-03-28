@@ -1,6 +1,7 @@
 """
 Tests for PeriodicTask route
 """
+
 import json
 from http import HTTPStatus
 from unittest.mock import Mock

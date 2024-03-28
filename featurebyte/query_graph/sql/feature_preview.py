@@ -1,6 +1,7 @@
 """
 Feature or Target preview SQL generation
 """
+
 # pylint: disable=too-many-locals
 from __future__ import annotations
 

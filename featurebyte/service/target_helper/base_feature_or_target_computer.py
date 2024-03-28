@@ -1,6 +1,7 @@
 """
 Base class for feature or target computer
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Generic, List, Optional, Tuple, TypeVar, Union
@@ -65,13 +66,22 @@ class ExecutorParams(BasicExecutorParams):
 ExecutorParamsT = TypeVar("ExecutorParamsT", bound=ExecutorParams)
 
 
+@dataclass
+class ExecutionResult:
+    """
+    Execution result
+    """
+
+    is_output_view: bool
+
+
 class QueryExecutor(Generic[ExecutorParamsT]):
     """
     Query executor
     """
 
     @abstractmethod
-    async def execute(self, executor_params: ExecutorParamsT) -> None:
+    async def execute(self, executor_params: ExecutorParamsT) -> ExecutionResult:
         """
         Execute queries
 
@@ -79,6 +89,10 @@ class QueryExecutor(Generic[ExecutorParamsT]):
         ----------
         executor_params: ExecutorParamsT
             Executor parameters
+
+        Returns
+        -------
+        ExecutionResult
         """
 
 
@@ -147,7 +161,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         compute_request: ComputeRequestT,
         output_table_details: TableDetails,
-    ) -> None:
+    ) -> ExecutionResult:
         """
         Compute targets or features
 
@@ -159,6 +173,10 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Compute request
         output_table_details: TableDetails
             Table details to write the results to
+
+        Returns
+        -------
+        ExecutionResult
         """
         validation_parameters = await self.get_validation_parameters(compute_request)
 
@@ -190,4 +208,4 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             ),
             validation_parameters=validation_parameters,
         )
-        await self.query_executor.execute(params)
+        return await self.query_executor.execute(params)

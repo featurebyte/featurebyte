@@ -1,6 +1,7 @@
 """
 UseCase API routes
 """
+
 from typing import Optional, cast
 
 from http import HTTPStatus

@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.node.metadata.sdk_code
 """
+
 import importlib
 import textwrap
 

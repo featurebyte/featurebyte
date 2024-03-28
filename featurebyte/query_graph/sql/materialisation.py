@@ -1,6 +1,7 @@
 """
 SQL generation related to materialising tables such as ObservationTable
 """
+
 from __future__ import annotations
 
 from typing import List, Optional

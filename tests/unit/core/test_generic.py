@@ -1,6 +1,7 @@
 """
 Tests QueryObject
 """
+
 from __future__ import annotations
 
 import copy

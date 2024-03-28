@@ -1,6 +1,7 @@
 """
 Extract documentation into a CSV file.
 """
+
 from typing import Dict, List, Literal
 
 import csv

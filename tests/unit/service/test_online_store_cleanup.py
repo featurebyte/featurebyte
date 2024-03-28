@@ -1,6 +1,7 @@
 """
 Unit tests for OnlineStoreCleanupService
 """
+
 import textwrap
 
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService

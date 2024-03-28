@@ -1,4 +1,5 @@
 """Test related to offline store ingest graph decomposition."""
+
 import pytest
 
 from featurebyte.query_graph.transform.decompose_point import AggregationInfo, DecomposePointState

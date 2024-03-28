@@ -1,6 +1,7 @@
 """
 Catalog list handler
 """
+
 import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler

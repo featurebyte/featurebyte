@@ -1,6 +1,7 @@
 """
 SnowflakeAdapter class for generating Snowflake specific SQL expressions
 """
+
 from __future__ import annotations
 
 from typing import List, Literal, Optional, cast

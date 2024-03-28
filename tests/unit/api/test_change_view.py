@@ -4,6 +4,7 @@ Unit tests for change view
 Note that we don't currently inherit from the base view test suite as there are quite a few differences. I'll
 work on updating that in a follow-up.
 """
+
 import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch

@@ -1,6 +1,7 @@
 """
 Unit tests for the UserDefinedFunctionInjector class.
 """
+
 from typing import Union
 
 import inspect

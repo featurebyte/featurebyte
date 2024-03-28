@@ -1,6 +1,7 @@
 """
 Unit test for snowflake tile
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock, Mock, call
 

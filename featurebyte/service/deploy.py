@@ -1,6 +1,7 @@
 """
 DeployService class
 """
+
 from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
 import traceback
@@ -813,6 +814,7 @@ class DeployService:
                     _id=deployment_id,
                     name=deployment_name or default_deployment_name,
                     feature_list_id=feature_list_id,
+                    feature_list_namespace_id=feature_list.feature_list_namespace_id,
                     enabled=False,
                     use_case_id=use_case_id,
                     context_id=context_id,

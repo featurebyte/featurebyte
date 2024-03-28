@@ -1,6 +1,7 @@
 """
 Info related schema
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -401,6 +402,7 @@ class ObservationTableInfo(BaseInfo):
     type: RequestInputType
     feature_store_name: str
     table_details: TableDetails
+    target_name: Optional[str]
 
 
 class BaseFeatureOrTargetTableInfo(BaseInfo):

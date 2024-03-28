@@ -1,6 +1,7 @@
 """
 FeatureList API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Union

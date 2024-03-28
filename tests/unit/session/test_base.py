@@ -1,6 +1,7 @@
 """
 Unit test for base snowflake session.
 """
+
 from __future__ import annotations
 
 from typing import Any, OrderedDict

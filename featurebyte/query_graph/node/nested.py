@@ -1,6 +1,7 @@
 """
 This module contains nested graph related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import (
     TYPE_CHECKING,
@@ -395,9 +396,9 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         event_view_node = input_nodes[1]
         assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
         event_view_metadata = event_view_node.parameters.metadata
-        metadata[
-            "event_column_cleaning_operations"
-        ] = event_view_metadata.column_cleaning_operations
+        metadata["event_column_cleaning_operations"] = (
+            event_view_metadata.column_cleaning_operations
+        )
         return metadata
 
 

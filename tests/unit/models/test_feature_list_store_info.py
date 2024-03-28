@@ -1,6 +1,7 @@
 """
 Test feature list store info related models
 """
+
 import textwrap
 
 import pytest

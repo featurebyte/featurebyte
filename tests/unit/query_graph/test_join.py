@@ -1,6 +1,7 @@
 """
 Tests for Join SQLNode
 """
+
 import textwrap
 
 import pytest

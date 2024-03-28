@@ -1,13 +1,13 @@
 """
 Test target table schema
 """
+
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.schema.target_table import TargetTableCreate
+from featurebyte.schema.target_table import ObservationInputType, TargetTableCreate
 
 
 @pytest.mark.parametrize(
@@ -33,9 +33,8 @@ def test_target_table_create(target_id, graph, node_names, expected_error):
         "serving_names_mapping": {},
         "target_id": target_id,
         "context_id": None,
-        "request_input": UploadedFileInput(
-            type=RequestInputType.UPLOADED_FILE,
-            file_name="random_file_name",
+        "request_input": ObservationInputType(
+            type=RequestInputType.DATAFRAME,
         ),
     }
     if expected_error:

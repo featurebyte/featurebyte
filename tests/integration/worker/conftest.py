@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in worker directory
 """
+
 from typing import Any
 
 import os

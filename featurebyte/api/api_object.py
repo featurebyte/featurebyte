@@ -1,6 +1,7 @@
 """
 ApiObject class
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, TypeVar, Union

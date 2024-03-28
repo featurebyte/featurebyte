@@ -1,6 +1,7 @@
 """
 Test model indexes
 """
+
 import importlib
 import inspect
 import os

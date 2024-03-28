@@ -1,6 +1,9 @@
 """
 Tests for FeatureList route
 """
+
+import collections
+
 # pylint: disable=too-many-lines
 import os
 from collections import defaultdict
@@ -16,6 +19,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
+from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.session.snowflake import SnowflakeSession
@@ -753,7 +758,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = expected_df
+        mock_session.list_table_schema.return_value = collections.OrderedDict(
+            {
+                "cust_id": ColumnSpecWithDescription(
+                    name="cust_id",
+                    dtype=DBVarType.INT,
+                    description=None,
+                ),
+                "POINT_IN_TIME": ColumnSpecWithDescription(
+                    name="POINT_IN_TIME",
+                    dtype=DBVarType.TIMESTAMP,
+                    description=None,
+                ),
+            }
+        )
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table

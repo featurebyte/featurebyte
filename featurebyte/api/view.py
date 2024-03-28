@@ -1,6 +1,7 @@
 """
 View class
 """
+
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
@@ -1667,6 +1668,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1696,6 +1698,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table. If None, the primary entities are
             inferred from the view.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The data type and primary entities must match the those in the target namespace.
 
         Returns
         -------
@@ -1735,10 +1741,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
                 if column_info.entity_id:
                     primary_entity_ids.append(column_info.entity_id)
 
-        if not primary_entity_ids:
-            raise ValueError(
-                "No primary entities found. Please specify the primary entities when creating the observation table."
-            )
+            if not primary_entity_ids:
+                raise ValueError(
+                    "No primary entities found. Please specify the primary entities when creating the observation table."
+                )
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         definition = get_definition_for_obs_table_creation_from_view(
@@ -1766,6 +1772,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
+            target_column=target_column,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

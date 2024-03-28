@@ -1,6 +1,7 @@
 """
 Periodic task schema
 """
+
 from typing import List
 
 from featurebyte.models.periodic_task import PeriodicTask

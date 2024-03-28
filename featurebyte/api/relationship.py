@@ -1,6 +1,7 @@
 """
 Relationships API object
 """
+
 from typing import Any, Dict, Literal, Optional
 
 import pandas as pd

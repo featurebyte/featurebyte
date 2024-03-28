@@ -1,6 +1,7 @@
 """
 Entity Relationship Extractor Service
 """
+
 from typing import Dict, List, Optional, Sequence
 
 import itertools

@@ -1,6 +1,7 @@
 """
 Test common behaviour shared between aggregate_asat and forward_aggregate_asat
 """
+
 import pytest
 
 

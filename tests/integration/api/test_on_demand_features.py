@@ -1,6 +1,7 @@
 """
 Integration tests for the on-demand features.
 """
+
 import pandas as pd
 
 from featurebyte.api.feature_group import FeatureGroup

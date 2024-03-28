@@ -1,6 +1,7 @@
 """
 Unit tests for feature/exception.py module
 """
+
 import json
 
 import pytest

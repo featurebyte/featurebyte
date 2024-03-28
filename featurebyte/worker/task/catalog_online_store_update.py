@@ -1,6 +1,7 @@
 """
 Online store initialization task
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -84,9 +85,9 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
             "total"
         ]
         current_table_index = 0
-        async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator(
-            {}
-        ):
+        async for (
+            feature_table_model
+        ) in self.offline_store_feature_table_service.list_documents_iterator({}):
             logger.info(
                 "Updating online store for offline feature store table",
                 extra={

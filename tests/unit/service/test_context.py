@@ -1,6 +1,7 @@
 """
 Test ContextService
 """
+
 import pytest
 
 from featurebyte.exception import DocumentUpdateError

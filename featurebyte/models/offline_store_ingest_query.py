@@ -1,6 +1,7 @@
 """
 OfflineStoreIngestQuery object stores the offline store ingest query for a feature.
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple

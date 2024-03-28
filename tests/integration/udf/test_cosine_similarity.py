@@ -1,6 +1,7 @@
 """
 Tests for snowflake cosine similarity UDF
 """
+
 import numpy as np
 import pytest
 

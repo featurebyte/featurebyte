@@ -1,6 +1,7 @@
 """
 Enum related to feast
 """
+
 from __future__ import annotations
 
 from feast.types import PrimitiveFeastType

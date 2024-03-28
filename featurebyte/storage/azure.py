@@ -1,6 +1,7 @@
 """
 Azure Storage Blob Class
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator

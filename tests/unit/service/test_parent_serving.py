@@ -1,6 +1,7 @@
 """
 Unit tests for ParentEntityLookupService
 """
+
 import pytest
 
 from featurebyte.exception import RequiredEntityNotProvidedError

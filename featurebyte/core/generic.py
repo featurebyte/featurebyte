@@ -1,6 +1,7 @@
 """
 This module generic query object classes
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar, cast

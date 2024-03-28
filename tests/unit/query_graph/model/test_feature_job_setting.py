@@ -1,6 +1,7 @@
 """
 Test module for feature job setting
 """
+
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting

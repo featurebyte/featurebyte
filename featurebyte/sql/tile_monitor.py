@@ -1,6 +1,7 @@
 """
 Tile Monitor Job
 """
+
 import os
 
 from sqlglot import expressions

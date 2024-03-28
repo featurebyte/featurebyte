@@ -1,6 +1,7 @@
 """
 Test relationship_info controller
 """
+
 import json
 import os
 

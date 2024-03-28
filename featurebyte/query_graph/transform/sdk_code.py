@@ -1,6 +1,7 @@
 """
 This module contains an extractor class to generate SDK codes from a query graph.
 """
+
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bson import ObjectId

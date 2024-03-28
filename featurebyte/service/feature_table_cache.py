@@ -1,6 +1,7 @@
 """
 Module for managing physical feature table cache as well as metadata storage.
 """
+
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
@@ -324,7 +325,7 @@ class FeatureTableCacheService:
                 ),
                 source_type=db_session.source_type,
             )
-            await db_session.execute_query(query)
+            await db_session.execute_query_long_running(query)
         finally:
             await db_session.drop_table(
                 database_name=db_session.database_name,
@@ -386,7 +387,9 @@ class FeatureTableCacheService:
                 )
                 for node, definition in non_cached_nodes
             ]
-            await db_session.execute_query(adapter.alter_table_add_columns(table_exr, columns_expr))
+            await db_session.execute_query_long_running(
+                adapter.alter_table_add_columns(table_exr, columns_expr)
+            )
 
             # merge temp table into cache table
             merge_conditions = [
@@ -434,7 +437,7 @@ class FeatureTableCacheService:
                     ),
                 ],
             )
-            await db_session.execute_query(
+            await db_session.execute_query_long_running(
                 sql_to_string(merge_expr, source_type=db_session.source_type)
             )
         finally:
@@ -456,7 +459,7 @@ class FeatureTableCacheService:
                 .limit(1),
                 source_type=session.source_type,
             )
-            _ = await session.execute_query(query)
+            _ = await session.execute_query_long_running(query)
             return True
         except session._no_schema_error:  # pylint: disable=protected-access
             return False
@@ -641,9 +644,9 @@ class FeatureTableCacheService:
             )
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
-        return await db_session.execute_query(sql)
+        return await db_session.execute_query_long_running(sql)
 
-    async def create_view_from_cache(
+    async def create_view_or_table_from_cache(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -656,7 +659,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> None:
+    ) -> bool:
         """
         Create or update cache table and create a new view which refers to the cached table
 
@@ -681,6 +684,11 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        bool
+            Whether the output is a view
         """
         with timer(
             "Update feature table cache",
@@ -726,7 +734,7 @@ class FeatureTableCacheService:
                 )
             )
         )
-        create_view_exr = expressions.Create(
+        create_expr = expressions.Create(
             this=expressions.Table(
                 this=get_fully_qualified_table_name(output_view_details.dict()),
             ),
@@ -734,5 +742,24 @@ class FeatureTableCacheService:
             expression=select_expr,
             replace=False,
         )
-        sql = sql_to_string(create_view_exr, source_type=db_session.source_type)
-        await db_session.execute_query(sql)
+        sql = sql_to_string(create_expr, source_type=db_session.source_type)
+        try:
+            await db_session.execute_query_long_running(sql)
+            return True
+        except:  # pylint: disable=bare-except
+            logger.info(
+                "Failed to create view. Trying to create a table instead",
+                extra={"observation_table_id": observation_table.id},
+                exc_info=True,
+            )
+            create_expr = expressions.Create(
+                this=expressions.Table(
+                    this=get_fully_qualified_table_name(output_view_details.dict()),
+                ),
+                kind="TABLE",
+                expression=select_expr,
+                replace=False,
+            )
+            sql = sql_to_string(create_expr, source_type=db_session.source_type)
+            await db_session.execute_query_long_running(sql)
+            return False

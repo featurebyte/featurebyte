@@ -1,6 +1,7 @@
 """
 Feature or target table controller
 """
+
 from __future__ import annotations
 
 from typing import Any, Generic, List, Optional, TypeVar

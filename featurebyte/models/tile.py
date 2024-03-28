@@ -1,6 +1,7 @@
 """
 This module contains Tile related models
 """
+
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId

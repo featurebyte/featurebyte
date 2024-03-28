@@ -3,6 +3,7 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
+
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import importlib
@@ -293,12 +294,12 @@ def add_class_attributes_to_doc_groups(
             member_doc_group = class_doc_group + [attribute_name]
         else:
             member_doc_group = class_doc_group + [attribute_name]
-        doc_groups[
-            DocGroupKey(class_obj.__module__, class_obj.__name__, attribute_name)
-        ] = DocGroupValue(
-            member_doc_group,
-            attribute_type,
-            member_proxy_path,
+        doc_groups[DocGroupKey(class_obj.__module__, class_obj.__name__, attribute_name)] = (
+            DocGroupValue(
+                member_doc_group,
+                attribute_type,
+                member_proxy_path,
+            )
         )
     return doc_groups
 

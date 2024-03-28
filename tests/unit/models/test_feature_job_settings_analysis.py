@@ -1,6 +1,7 @@
 """
 Tests for feature job settings analysis related models
 """
+
 from featurebyte.models.feature_job_setting_analysis import MissingJobsInfo
 
 

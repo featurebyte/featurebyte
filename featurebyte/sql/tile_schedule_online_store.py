@@ -1,6 +1,7 @@
 """
 Tile Generate online store Job Script
 """
+
 from typing import List, Optional
 
 import textwrap

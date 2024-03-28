@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.query_graph.feature_compute
 """
+
 import copy
 import textwrap
 from dataclasses import asdict

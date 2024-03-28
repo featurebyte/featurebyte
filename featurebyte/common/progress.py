@@ -1,6 +1,7 @@
 """
 Utilities related to progress update
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Tuple

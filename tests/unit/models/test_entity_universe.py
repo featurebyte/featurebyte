@@ -1,6 +1,7 @@
 """
 Tests for entity_universe.py
 """
+
 import textwrap
 from datetime import datetime
 

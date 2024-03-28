@@ -1,6 +1,7 @@
 """
 Tests for feature materialization service
 """
+
 # pylint: disable=too-many-lines
 import json
 import os
@@ -376,7 +377,9 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     """
     _ = deployed_feature_list
     primary_entity_to_feature_table = {}
-    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
+    async for (
+        feature_table
+    ) in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={},
     ):
         primary_entity_to_feature_table[feature_table.name] = feature_table
@@ -601,15 +604,19 @@ async def test_feast_registry(
         ).to_dict()
 
     online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"] = [
-        json.loads(online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0])
-        if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
-        else None
+        (
+            json.loads(online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0])
+            if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
+            else None
+        )
     ]
     if source_type != SourceType.DATABRICKS_UNITY:
         online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
-            json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
-            if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
-            else None
+            (
+                json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
+                if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
+                else None
+            )
         ]
     expected = {
         f"Amount Sum by Customer x Product Action 24d_{version}": [None],

@@ -1,6 +1,7 @@
 """
 Test API Data and View objects sample function
 """
+
 from typing import Any
 
 import pandas as pd

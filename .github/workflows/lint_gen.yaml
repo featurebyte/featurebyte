@@ -22,18 +22,18 @@ jobs:
         - 3.8.12
     steps:
     - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
+    - uses: arduino/setup-task@v2
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         version: 3.x
     - name: Install Poetry
       uses: abatilo/actions-poetry@v3
       with:
-        poetry-version: 1.5.1
+        poetry-version: 1.8.2
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'

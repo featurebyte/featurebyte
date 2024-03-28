@@ -1,6 +1,7 @@
 """
 Query graph node related classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import TYPE_CHECKING, Any, Union
 from typing_extensions import Annotated

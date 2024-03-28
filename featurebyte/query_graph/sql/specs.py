@@ -1,6 +1,7 @@
 """
 Module for data structures that describe different types of aggregations that form features
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple, Type, TypeVar, cast

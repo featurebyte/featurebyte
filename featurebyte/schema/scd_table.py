@@ -1,6 +1,7 @@
 """
 SCDTable API payload schema
 """
+
 from __future__ import annotations
 
 from typing import List, Literal, Optional

@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.sql.aggregator.item.ItemAggregator
 """
+
 import textwrap
 
 import pytest

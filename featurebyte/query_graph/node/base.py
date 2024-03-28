@@ -1,6 +1,7 @@
 """
 Base classes required for constructing query graph nodes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 # pylint: disable=too-many-lines
 from typing import (

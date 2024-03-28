@@ -1,6 +1,7 @@
 """
 Feature metadata extractor
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, Type, TypeVar

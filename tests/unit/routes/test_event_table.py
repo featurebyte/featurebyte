@@ -1,6 +1,7 @@
 """
 Tests for EventTable routes
 """
+
 from http import HTTPStatus
 
 import pytest

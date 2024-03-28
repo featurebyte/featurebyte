@@ -1,6 +1,7 @@
 """
 This module contains Feature list store info related models
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional, Tuple, Union
@@ -333,12 +334,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                         request_column_name_to_dtype[node_params.column_name] = node_params.dtype
 
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
-        feature_specs: List[
-            Union[DataBricksFeatureLookup, DataBricksFeatureFunction]
-        ] = cls._create_feature_lookups(
-            features, fully_qualified_schema_name
-        ) + cls._create_feature_functions(
-            features, fully_qualified_schema_name
+        feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = (
+            cls._create_feature_lookups(features, fully_qualified_schema_name)
+            + cls._create_feature_functions(features, fully_qualified_schema_name)
         )
 
         base_dataframe_specs = [

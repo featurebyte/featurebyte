@@ -1,6 +1,7 @@
 """
 Tests for ItemTable routes
 """
+
 from http import HTTPStatus
 
 import pytest

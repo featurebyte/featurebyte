@@ -3,6 +3,7 @@ Service for interacting with the data warehouse for queries around the feature s
 
 We split this into a separate service, as these typically require a session object that is created.
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, List, Optional, Tuple

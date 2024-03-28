@@ -1,6 +1,7 @@
 """
 Periodic Task document model
 """
+
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from datetime import datetime

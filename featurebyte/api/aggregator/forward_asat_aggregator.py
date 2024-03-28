@@ -1,6 +1,7 @@
 """
 This module contains forward as at aggregator related class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Type, cast

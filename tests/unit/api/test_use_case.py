@@ -1,6 +1,7 @@
 """
 Unit test for UseCase class
 """
+
 from featurebyte import ObservationTable, TargetNamespace, UseCase
 
 

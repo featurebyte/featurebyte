@@ -594,6 +594,14 @@ def snowflake_query_map_fixture():
         'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
             {"row_count": 100}
         ],
+        (
+            'SELECT\n  COUNT(*) AS "row_count"\nFROM (\n  SELECT\n    "event_timestamp" AS "POINT_IN_TIME",'
+            '\n    "cust_id" AS "cust_id"\n  FROM (\n    SELECT\n      "col_int" AS "col_int",\n      '
+            '"col_float" AS "col_float",\n      "col_char" AS "col_char",\n      "col_text" AS "col_text",'
+            '\n      "col_binary" AS "col_binary",\n      "col_boolean" AS "col_boolean",\n      '
+            '"event_timestamp" AS "event_timestamp",\n      "cust_id" AS "cust_id"\n    '
+            'FROM "sf_database"."sf_schema"."sf_table"\n  )\n)'
+        ): [{"row_count": 100}],
         'SELECT\n  *\nFROM "sf_database"."sf_schema"."sf_table"\nLIMIT 3': [
             {
                 "col_int": [1, 2, 3],
@@ -619,10 +627,10 @@ def snowflake_query_map_fixture():
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
     ]
-    query_map[
-        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'
-    ] = get_show_columns_query_result_for_scd_table_v2(
-        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'] = (
+        get_show_columns_query_result_for_scd_table_v2(
+            query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+        )
     )
     return query_map
 
@@ -1352,7 +1360,17 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "column_name": "cust_id",
                     "data_type": json.dumps({"type": "FIXED", "scale": 0}),
                     "comment": None,
-                }
+                },
+                {
+                    "column_name": "POINT_IN_TIME",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ", "scale": 0}),
+                    "comment": None,
+                },
+                {
+                    "column_name": "target",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                },
             ]
         elif "is_row_index_valid" in query:
             return pd.DataFrame({"is_row_index_valid": [True]})
@@ -1385,7 +1403,9 @@ def observation_table_from_source_fixture(
     _ = catalog
     _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table(
-        "observation_table_from_source_table", context_name=context.name
+        "observation_table_from_source_table",
+        context_name=context.name,
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
     )
 
 
@@ -1398,7 +1418,8 @@ def observation_table_from_view_fixture(
     """
     _ = patched_observation_table_service
     return snowflake_event_view_with_entity.create_observation_table(
-        "observation_table_from_event_view"
+        "observation_table_from_event_view",
+        columns_rename_mapping={"col_int": "transaction_id", "event_timestamp": "POINT_IN_TIME"},
     )
 
 

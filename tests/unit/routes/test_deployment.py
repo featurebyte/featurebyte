@@ -1,6 +1,7 @@
 """
 Tests for Deployment route
 """
+
 import json
 import textwrap
 from http import HTTPStatus
@@ -120,6 +121,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][0]["_id"],
                     "name": "my_deployment_2",
                     "feature_list_id": response_dict["data"][0]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][0][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][0]["user_id"],
@@ -134,6 +138,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][1]["_id"],
                     "name": "my_deployment_1",
                     "feature_list_id": response_dict["data"][1]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][1][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][1]["user_id"],
@@ -148,6 +155,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][2]["_id"],
                     "name": "my_deployment_0",
                     "feature_list_id": response_dict["data"][2]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][2][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][2]["user_id"],
@@ -176,6 +186,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response = test_api_client.get("/feature_list")
         assert response.status_code == HTTPStatus.OK, response.text
         fl_ids = [obj["_id"] for obj in response.json()["data"]]
+        feature_list_namespace_ids = [
+            obj["feature_list_namespace_id"] for obj in response.json()["data"]
+        ]
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": fl_ids[0]})
         response_dict = response.json()
@@ -190,6 +203,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "description": None,
                     "enabled": False,
                     "feature_list_id": fl_ids[0],
+                    "feature_list_namespace_id": feature_list_namespace_ids[0],
                     "name": "my_deployment_2",
                     "updated_at": response_dict["data"][0]["updated_at"],
                     "use_case_id": None,
