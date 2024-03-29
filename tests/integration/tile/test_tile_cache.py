@@ -110,7 +110,7 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
 
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    await session.register_table(request_table_name, df_training_events)
+    await session.register_table(request_table_name, df_training_events, temporary=False)
 
     # No cache existed before for this feature. Check that one tile table needs to be computed
     request_id = session.generate_session_unique_id()
@@ -158,7 +158,7 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
             "üser id": [1, 2, 3, 4, np.nan],
         }
     )
-    await session.register_table(request_table_name, df_training_events)
+    await session.register_table(request_table_name, df_training_events, temporary=False)
     request_id = session.generate_session_unique_id()
     requests = await tile_cache.get_required_computation(
         request_id=request_id,
@@ -205,7 +205,7 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
 
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    await session.register_table(request_table_name, df_training_events)
+    await session.register_table(request_table_name, df_training_events, temporary=False)
     requests = await tile_cache.get_required_computation(
         request_id=request_id,
         graph=feature.graph,
