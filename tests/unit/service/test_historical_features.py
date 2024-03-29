@@ -362,7 +362,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
 
     complex_feature = float_feature * agg_per_category_feature.cd.entropy()
-    graph, node = complex_feature.extract_pruned_graph_and_node()
+    graph, _ = complex_feature.extract_pruned_graph_and_node()
     nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
 
     with patch("featurebyte.tile.tile_cache.NUM_TRACKER_TABLES_PER_QUERY", 1):
