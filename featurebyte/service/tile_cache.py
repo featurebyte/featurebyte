@@ -13,15 +13,11 @@ from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.batch_helper import split_nodes
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
 
 logger = get_logger(__name__)
-
-
-NUM_NODES_PER_QUERY = 25
 
 
 class TileCacheService:
@@ -81,26 +77,14 @@ class TileCacheService:
         else:
             tile_check_progress_callback, tile_compute_progress_callback = None, None
 
-        # Process nodes in batches for checking tile cache availability
-        tile_cache_node_groups = split_nodes(graph, nodes, NUM_NODES_PER_QUERY, is_tile_cache=True)
-        required_tile_computations = {}
-        for i, _nodes in enumerate(tile_cache_node_groups):
-            logger.info("Checking and computing tiles on demand for %d nodes", len(_nodes))
-            with timer("Get required tile computations", logger):
-                if tile_check_progress_callback is not None:
-                    await tile_check_progress_callback(
-                        i / len(tile_cache_node_groups) * 100, "Checking tile cache availability"
-                    )
-                for tile_compute_request in await tile_cache.get_required_computation(
-                    request_id=f"{request_id}_{i}",
-                    graph=graph,
-                    nodes=_nodes,
-                    request_table_name=request_table_name,
-                    serving_names_mapping=serving_names_mapping,
-                ):
-                    required_tile_computations[tile_compute_request.tile_info_key] = (
-                        tile_compute_request
-                    )
+        required_tile_computations = await tile_cache.get_required_computation(
+            request_id=request_id,
+            graph=graph,
+            nodes=nodes,
+            request_table_name=request_table_name,
+            serving_names_mapping=serving_names_mapping,
+            progress_callback=tile_check_progress_callback,
+        )
 
         # Execute tile computations
         try:
@@ -111,7 +95,7 @@ class TileCacheService:
                 )
                 with timer("Compute tiles on demand", logger):
                     await tile_cache.invoke_tile_manager(
-                        list(required_tile_computations.values()), tile_compute_progress_callback
+                        required_tile_computations, tile_compute_progress_callback
                     )
             else:
                 logger.debug("All required tiles can be reused")

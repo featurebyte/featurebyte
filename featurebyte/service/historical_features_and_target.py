@@ -19,6 +19,7 @@ from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.batch_helper import NUM_FEATURES_PER_QUERY, get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
@@ -91,23 +92,35 @@ async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
             join_steps=parent_serving_preparation.join_steps,
             feature_store_details=parent_serving_preparation.feature_store_details,
         )
-        request_table_query = sql_to_string(parent_serving_result.table_expr, session.source_type)
         effective_request_table_name = parent_serving_result.new_request_table_name
-        await session.register_table_with_query(
-            effective_request_table_name,
-            request_table_query,
+        adapter = get_sql_adapter(session.source_type)
+        request_table_query = sql_to_string(
+            adapter.create_table_as(
+                TableDetails(table_name=effective_request_table_name),
+                parent_serving_result.table_expr,
+            ),
+            source_type=session.source_type,
         )
+        await session.execute_query_long_running(request_table_query)
 
-    await tile_cache_service.compute_tiles_on_demand(
-        session=session,
-        graph=graph,
-        nodes=nodes,
-        request_id=request_id,
-        request_table_name=effective_request_table_name,
-        feature_store_id=feature_store_id,
-        serving_names_mapping=serving_names_mapping,
-        progress_callback=progress_callback,
-    )
+    try:
+        await tile_cache_service.compute_tiles_on_demand(
+            session=session,
+            graph=graph,
+            nodes=nodes,
+            request_id=request_id,
+            request_table_name=effective_request_table_name,
+            feature_store_id=feature_store_id,
+            serving_names_mapping=serving_names_mapping,
+            progress_callback=progress_callback,
+        )
+    finally:
+        if parent_serving_preparation is not None:
+            await session.drop_table(
+                table_name=effective_request_table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+            )
 
 
 async def get_historical_features(  # pylint: disable=too-many-locals, too-many-arguments
