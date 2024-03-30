@@ -21,6 +21,7 @@ from featurebyte.exception import DataWarehouseConnectionError, QueryExecutionTi
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
+from featurebyte.session.enum import SnowflakeDataType
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
 
@@ -805,3 +806,31 @@ async def test_update_feature_store_id(
     assert session.execute_query.call_args_list == [
         call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = 'feature_store_id'"),
     ]
+
+
+@pytest.mark.parametrize(
+    "snowflake_var_info, expected",
+    [
+        ({"type": SnowflakeDataType.FIXED, "scale": 0}, DBVarType.INT),
+        ({"type": SnowflakeDataType.FIXED, "scale": 2}, DBVarType.FLOAT),
+        ({"type": SnowflakeDataType.REAL, "scale": 0}, DBVarType.FLOAT),
+        ({"type": SnowflakeDataType.BINARY, "scale": 0}, DBVarType.BINARY),
+        ({"type": SnowflakeDataType.BOOLEAN, "scale": 0}, DBVarType.BOOL),
+        ({"type": SnowflakeDataType.DATE, "scale": 0}, DBVarType.DATE),
+        ({"type": SnowflakeDataType.TIME, "scale": 0}, DBVarType.TIME),
+        ({"type": SnowflakeDataType.TIMESTAMP_LTZ, "scale": 0}, DBVarType.TIMESTAMP),
+        ({"type": SnowflakeDataType.TIMESTAMP_NTZ, "scale": 0}, DBVarType.TIMESTAMP),
+        ({"type": SnowflakeDataType.TIMESTAMP_TZ, "scale": 0}, DBVarType.TIMESTAMP_TZ),
+        ({"type": SnowflakeDataType.ARRAY, "scale": 0}, DBVarType.ARRAY),
+        ({"type": SnowflakeDataType.OBJECT, "scale": 0}, DBVarType.DICT),
+        ({"type": SnowflakeDataType.TEXT, "scale": 0, "length": 10}, DBVarType.VARCHAR),
+        ({"type": SnowflakeDataType.TEXT, "scale": 0, "length": 1}, DBVarType.CHAR),
+    ],
+)
+def test_convert_to_internal_variable_type(snowflake_var_info, expected):
+    """
+    Test convert_to_internal_variable_type
+    """
+    assert (
+        SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected
+    )  # pylint: disable=protected-access

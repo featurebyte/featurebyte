@@ -61,7 +61,8 @@ pa_type_mapping = {
     "TIME": pa.time32("ms"),
     "DOUBLE": pa.float64(),
     "FLOAT": pa.float32(),
-    "DECIMAL": pa.float64(),
+    # https://spark.apache.org/docs/3.5.0/api/python/reference/pyspark.sql/api/pyspark.sql.types.DecimalType.html
+    "DECIMAL": pa.decimal128(38, 18),
     "INTERVAL": pa.duration("ns"),
     "NULL": pa.null(),
     "TIMESTAMP": pa.timestamp("ns", tz=None),
@@ -166,14 +167,9 @@ class BaseSparkSession(BaseSession, ABC):
         """
         if datatype.startswith("INTERVAL"):
             pyarrow_type = pa.int64()
-        elif datatype.startswith("DECIMAL"):
+        elif datatype.startswith("DECIMAL("):
             # e.g. DECIMAL(10, 2)
-            params = datatype[8:-1].split(",")
-            if len(params) == 2:
-                precision, scale = int(params[0]), int(params[1])
-            else:
-                # https://spark.apache.org/docs/3.5.0/api/python/reference/pyspark.sql/api/pyspark.sql.types.DecimalType.html
-                precision, scale = 38, 18
+            precision, scale = map(int, datatype[8:-1].split(","))
             if scale > 0:
                 pyarrow_type = pa.decimal128(precision, scale)
             else:
@@ -188,17 +184,24 @@ class BaseSparkSession(BaseSession, ABC):
         return pyarrow_type
 
     @staticmethod
-    def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
+    def _convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
+        spark_type: str,
+    ) -> DBVarType:
         if spark_type.endswith("INT"):
             # BIGINT, INT, SMALLINT, TINYINT
             return DBVarType.INT
-        if spark_type.startswith("DECIMAL"):
+        if spark_type.startswith("DECIMAL("):
             # DECIMAL(10, 2)
-            return DBVarType.FLOAT
+            _, scale = map(int, spark_type[8:-1].split(","))
+            if scale > 0:
+                return DBVarType.FLOAT
+            return DBVarType.INT
         if spark_type.startswith("ARRAY"):
             # ARRAY<BIGINT>
             return DBVarType.ARRAY
         if spark_type.startswith("STRUCT"):
+            return DBVarType.DICT
+        if spark_type.startswith("MAP"):
             return DBVarType.DICT
         db_vartype = db_vartype_mapping.get(spark_type, DBVarType.UNKNOWN)
         if db_vartype == DBVarType.UNKNOWN:
