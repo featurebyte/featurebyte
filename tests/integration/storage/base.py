@@ -2,6 +2,7 @@
 Base class for storage testing
 """
 
+import asyncio
 import filecmp
 import tempfile
 from pathlib import Path
@@ -9,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 from pydantic import BaseModel
 
 from featurebyte.storage import Storage
@@ -57,8 +59,9 @@ class BaseStorageTestSuite:
         """
         Yield remote path of uploaded file
         """
-        remote_path = Path("some/file")
+        remote_path = Path(f"{ObjectId()}")
         await test_storage.put(local_path, remote_path=remote_path)
+        await asyncio.sleep(0.5)
         yield remote_path
 
     @pytest.mark.asyncio
@@ -197,15 +200,10 @@ class BaseStorageTestSuite:
         assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_delete_object_success(self, test_storage: Storage, text_file_content):
+    async def test_delete_object_success(self, test_storage: Storage, remote_path: Path):
         """
         Test file delete
         """
-        # upload text
-        remote_path = Path("some/delete/file")
-        await test_storage.put_text(text=text_file_content, remote_path=remote_path)
-        assert text_file_content == await test_storage.get_text(remote_path)
-
         # Delete text
         await test_storage.delete(remote_path)
 
