@@ -129,3 +129,29 @@ def test_aggregate_asat__not_backward(snowflake_scd_view_with_entity, gender_ent
             backward=False,
         )
     assert isinstance(feature, Feature)
+
+
+def test_aggregate_asat_with_category(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
+    """Test aggregate_asat with category"""
+    _ = snowflake_scd_table, gender_entity_id
+    feature = snowflake_scd_view_with_entity.groupby(
+        "col_boolean", category="col_text"
+    ).aggregate_asat(value_column="col_float", method="sum", feature_name="asat_feature")
+    feature.save()
+
+    # check that category is set correctly
+    agg_info = feature.info()["metadata"]["aggregations"]
+    assert agg_info == {
+        "F0": {
+            "aggregation_type": "aggregate_as_at",
+            "category": "col_text",
+            "column": "Input0",
+            "filter": False,
+            "function": "sum",
+            "keys": ["col_boolean"],
+            "name": "asat_feature",
+            "window": None,
+        }
+    }
