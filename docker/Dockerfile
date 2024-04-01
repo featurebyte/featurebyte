@@ -1,5 +1,8 @@
 FROM python:3.8-slim AS builder
 
+# Increase PIP read timeout to 120 seconds to avoid timeout issues
+ENV PIP_DEFAULT_TIMEOUT=120
+
 # install build tools
 RUN apt-get update && \
     apt-get install -y build-essential curl libsasl2-dev libkrb5-dev git pkg-config libmariadb-dev && \
@@ -9,11 +12,14 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock /app/
 
 # Installing featurebyte dependencies
-RUN pip install poetry==1.5.1 && \
+RUN pip install poetry==1.8.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
     . /opt/venv/bin/activate && \
-    poetry install -n --extras=server --without dev,docs,lint
+    poetry install -n --extras=server --without dev,docs,lint && \
+    # databricks-sql-connector might be corrupted due to poetry parallel install
+    poetry run pip install --no-deps --force-reinstall databricks-sql-connector=="$(poetry show databricks-sql-connector | grep -oP 'version\s+:\s+\K\S+')"
+
 
 # Moving featurebyte source code
 COPY ./featurebyte /app/featurebyte
