@@ -8,6 +8,6 @@ $$
         return None
     if not counts:
         return 0.0
-    return entropy(list(counts.values()))
+    return entropy([abs(v) for v in counts.values()])
 $$
 ;
