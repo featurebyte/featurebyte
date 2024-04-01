@@ -14,7 +14,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(
     name = "F_COUNT_DICT_ENTROPY",
     value = "_FUNC_(counts) - compute entropy value from count dictionary")
-public class CountDictEntropyV2 extends CountDictUDFV1 {
+public class CountDictEntropyV3 extends CountDictUDFV1 {
   private final DoubleWritable output = new DoubleWritable();
 
   @Override
@@ -38,7 +38,7 @@ public class CountDictEntropyV2 extends CountDictUDFV1 {
     double[] values = new double[counts.size()];
     for (Object value : counts.values()) {
       if (value != null) {
-        double doubleValue = convertMapValueAsDouble(value);
+        double doubleValue = Math.abs(convertMapValueAsDouble(value));
         if (Double.isNaN((doubleValue)) || doubleValue == 0) continue;
         total += doubleValue;
         values[index++] = doubleValue;
