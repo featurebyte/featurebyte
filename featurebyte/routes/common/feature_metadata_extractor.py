@@ -147,6 +147,7 @@ class FeatureOrTargetMetadataExtractor:
                 "function": agg_col.method,
                 "keys": agg_col.keys,
                 "window": agg_col.window,
+                "offset": agg_col.offset,
                 "category": agg_col.category,
                 "filter": agg_col.filter,
                 "aggregation_type": agg_col.aggregation_type,

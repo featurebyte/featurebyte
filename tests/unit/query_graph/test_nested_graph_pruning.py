@@ -109,6 +109,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         "aggregations": [
             {
                 "category": None,
+                "offset": None,
                 "column": {
                     "filter": False,
                     "name": "a",

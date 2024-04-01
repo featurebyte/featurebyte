@@ -317,6 +317,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
                 "keys": ["cust_id"],
                 "window": "30m",
                 "category": None,
+                "offset": None,
                 "filter": False,
             }
         },
@@ -391,6 +392,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         "filter": False,
         "keys": ["cust_id"],
         "category": None,
+        "offset": None,
         "window": "24h",
         "function": "sum",
     }
@@ -697,6 +699,7 @@ async def test_get_target_info(app_container, entity, target):
                 "keys": ["cust_id"],
                 "window": "1d",
                 "category": None,
+                "offset": None,
                 "filter": False,
             }
         },

@@ -262,6 +262,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         {
             "name": "item_type_count_30d",
             "category": "item_type",
+            "offset": None,
             "column": None,
             "keys": ["cust_id"],
             "aggregation_type": "groupby",
