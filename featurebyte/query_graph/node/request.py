@@ -72,6 +72,7 @@ class RequestColumnNode(BaseNode):
                     keys=[],
                     window=None,
                     category=None,
+                    offset=None,
                     type=FeatureDataColumnType.AGGREGATION,
                     column=None,
                     aggregation_type=NodeType.REQUEST_COLUMN,

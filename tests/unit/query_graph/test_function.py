@@ -161,6 +161,7 @@ def test_generic_function__feature_type(
                     keys=["cust_id"],
                     window="2h",
                     category=None,
+                    offset=None,
                     aggregation_type="groupby",
                     column=SourceDataColumn(
                         name="a",

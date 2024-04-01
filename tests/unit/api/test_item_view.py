@@ -1134,6 +1134,7 @@ def test_item_view_aggregate_metadata(snowflake_item_table, transaction_entity):
             "F0": {
                 "aggregation_type": "item_groupby",
                 "category": "item_type",
+                "offset": None,
                 "column": "Input1",
                 "filter": False,
                 "function": "sum",

@@ -622,6 +622,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=self.parameters.window,
                 category=self.parameters.value_by,
+                offset=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,
@@ -733,6 +734,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=window,
                 category=self.parameters.value_by,
+                offset=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,
@@ -892,6 +894,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=None,
                 category=self.parameters.value_by,
+                offset=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,
@@ -1029,6 +1032,9 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         output_var_type: DBVarType,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
+        offset = None
+        if self.parameters.scd_parameters:
+            offset = self.parameters.scd_parameters.offset
         return [
             AggregationColumn(
                 name=feature_name,
@@ -1036,6 +1042,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
                 keys=[self.parameters.entity_column],
                 window=None,
                 category=None,
+                offset=offset,
                 column=name_to_column[input_column_name],
                 aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
@@ -1779,6 +1786,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=None,
                 category=self.parameters.value_by,
+                offset=self.parameters.offset,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,  # type: ignore[arg-type]

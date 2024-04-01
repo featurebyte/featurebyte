@@ -138,7 +138,12 @@ def test_aggregate_asat_with_category(
     _ = snowflake_scd_table, gender_entity_id
     feature = snowflake_scd_view_with_entity.groupby(
         "col_boolean", category="col_text"
-    ).aggregate_asat(value_column="col_float", method="sum", feature_name="asat_feature")
+    ).aggregate_asat(
+        value_column="col_float",
+        method="sum",
+        feature_name="asat_feature",
+        offset="7d",
+    )
     feature.save()
 
     # check that category is set correctly
@@ -152,6 +157,7 @@ def test_aggregate_asat_with_category(
             "function": "sum",
             "keys": ["col_boolean"],
             "name": "asat_feature",
+            "offset": "7d",
             "window": None,
         }
     }

@@ -193,6 +193,7 @@ def test_extract_operation_structure(feature_model_dict):
             keys=["cust_id"],
             window="30m",
             category=None,
+            offset=None,
             type="aggregation",
             column=SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params),
             filter=False,
