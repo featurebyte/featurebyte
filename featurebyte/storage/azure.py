@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator
 
+import asyncio
 from pathlib import Path
 
 import aiofiles
@@ -73,6 +74,18 @@ class AzureBlobStorage(Storage):
                     )
                     with open(local_path, "rb") as file_obj:
                         await blob_client.upload_blob(file_obj)
+
+                # add retry logic to ensure created blob is available
+                retry, max_try = 0, 10
+                while True:
+                    try:
+                        await blob_client.get_blob_properties()
+                        break
+                    except ResourceNotFoundError:
+                        await asyncio.sleep(1)
+                        retry += 1
+                        if retry == max_try:
+                            raise
 
     async def delete(self, remote_path: Path) -> None:
         """
