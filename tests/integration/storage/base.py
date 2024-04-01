@@ -61,7 +61,7 @@ class BaseStorageTestSuite:
         """
         remote_path = Path(f"{ObjectId()}")
         await test_storage.put(local_path, remote_path=remote_path)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1)
         yield remote_path
 
     @pytest.mark.asyncio
