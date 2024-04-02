@@ -227,15 +227,12 @@ jobs:
       run: |-
         set +e
         SPARK_VERSION=${{ matrix.spark-version }} task test-integration-spark
+
         # capture the exit code from the test run before stashing logs
-        EXIT_CODE=$?
-        echo $EXIT_CODE > status.txt
+        echo "SPARK_INTEGRATION_TEST_STATUS_CODE=$?" >> $GITHUB_ENV
+
+        # Capturing spark logs
         docker logs spark-thrift 2>&1 > spark-thrift.log
-        # bail out now if the test run was a failure
-        if [ $EXIT_CODE -ne 0 ]; then
-          exit $EXIT_CODE
-        fi
-        task test-teardown
     - name: Renaming test assets
       run: |
         mv .coverage .coverage.2
@@ -243,27 +240,27 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: spark-thrift-logs-${{ matrix.spark-version }}
-        overwrite: true
-        path: spark-thrift.log
+        path: spark-thrift-${{ matrix.spark-version }}.log
         retention-days: 5
+
+    # NOTE: Only holding 1 test result to be used in pytest report
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
         overwrite: true
-    - name: Check test status
-      run: |
-        EXIT_CODE=$(cat status.txt)
-        if [ $EXIT_CODE -ne 0 ]; then
-          exit $EXIT_CODE
-        fi
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
         overwrite: true
+
+    # Fail the job if the test run failed
+    - name: Check test status
+      run: |
+        exit ${{ env.SPARK_INTEGRATION_TEST_STATUS_CODE }}
   test-integration-databricks:
     if: false
     needs:
