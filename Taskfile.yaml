@@ -303,9 +303,15 @@ tasks:
     desc: Runs integration tests against Databricks
     deps:
       - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --split={{.PYTEST_SPLITS}} --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - task: test-teardown
 
   test-docs:
