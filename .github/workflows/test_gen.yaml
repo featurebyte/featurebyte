@@ -332,8 +332,9 @@ jobs:
         pytest-group:
           - 1
           - 2
+          - 3
     env:
-      PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
+      PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -365,18 +366,18 @@ jobs:
       run: task test-integration-databricks-unity
     - name: Renaming test assets
       run: |
-        mv .coverage .coverage.4.${{ matrix.pytest-split-group }}
-        mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-split-group }}
+        mv .coverage .coverage.4.${{ matrix.pytest-group }}
+        mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-group }}
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-split-group }}
-        path: pytest.xml.4.${{ matrix.pytest-split-group }}
+        name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-group }}
+        path: pytest.xml.4.${{ matrix.pytest-group }}
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-split-group }}
-        path: .coverage.4.${{ matrix.pytest-split-group }}
+        name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-group }}
+        path: .coverage.4.${{ matrix.pytest-group }}
   test-docs:
     needs:
     - build-jar
@@ -478,6 +479,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.4.2
+    - name: Download integration test results (databricks-unity_3)
+      uses: actions/download-artifact@v4
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.4.3
     - name: Download unit coverage results
       uses: actions/download-artifact@v4
       with:
@@ -502,6 +507,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.4.2
+    - name: Download integration coverage results (databricks-unity_3)
+      uses: actions/download-artifact@v4
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.4.3
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
@@ -528,6 +537,13 @@ jobs:
         color: ${{ steps.coverageComment.outputs.color }}
   slack:
     needs:
+    - build-jar
+    - test-unit
+    - test-integration-snowflake
+    - test-integration-spark
+    - test-integration-databricks
+    - test-integration-databricks-unity
+    - test-docs
     - validate
     if: ${{ always() }}
     runs-on: ubuntu-latest
