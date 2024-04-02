@@ -479,6 +479,9 @@ tasks:
       clogs:
         sh: |
           git diff $(git merge-base origin/main HEAD): --no-renames --name-status -- .changelog/ | awk '{if ($1 != "D" && $2 ~ /.yaml$/ && $2 !~ /TEMPLATE[.]yaml$/) { print $2 }}' | sed 's-.changelog/--g' | xargs
+    # Do not run if there are no changelog files
+    status:
+      - "[ '{{.clogs}}' == '' ]"
     cmds:
       - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
         silent: true
@@ -490,6 +493,9 @@ tasks:
       clogs:
         sh: |
           git diff $(git merge-base origin/main HEAD): --no-renames --name-status -- .changelog/ | awk '{if ($1 != "D" && $2 ~ /.yaml$/ && $2 !~ /TEMPLATE[.]yaml$/) { print $2 }}' | sed 's-.changelog/--g' | xargs
+    # Do not run if there are no changelog files
+    status:
+      - "[ '{{.clogs}}' == '' ]"
     cmds:
       - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
         silent: true
