@@ -302,6 +302,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
     def create(
         cls, features: List[FeatureModel], feature_store: FeatureStoreModel
     ) -> DataBricksUnityStoreInfo:
+        # pylint: disable=too-many-locals,too-many-branches
         exclude_columns = {SpecialColumnName.POINT_IN_TIME.value}
         entity_id_to_column_spec = {}
         request_column_name_to_dtype = {}
@@ -334,14 +335,21 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                         request_column_name_to_dtype[node_params.column_name] = node_params.dtype
 
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
+        feature_lookups = cls._create_feature_lookups(features, fully_qualified_schema_name)
         feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = (
-            cls._create_feature_lookups(features, fully_qualified_schema_name)
-            + cls._create_feature_functions(features, fully_qualified_schema_name)
+            feature_lookups + cls._create_feature_functions(features, fully_qualified_schema_name)
         )
 
         base_dataframe_specs = [
             ColumnSpec(name="[TARGET_COLUMN]", dtype=DBVarType.FLOAT),
         ]
+        for lookup_spec in feature_lookups:
+            if lookup_spec.lookup_key == [DUMMY_ENTITY_COLUMN_NAME]:
+                base_dataframe_specs.append(
+                    ColumnSpec(name=DUMMY_ENTITY_COLUMN_NAME, dtype=DBVarType.VARCHAR)
+                )
+                break
+
         has_point_in_time = False
         for entity_id in sorted(entity_id_to_column_spec.keys()):
             base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
