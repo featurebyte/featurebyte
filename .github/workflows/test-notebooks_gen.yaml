@@ -62,7 +62,8 @@ jobs:
       run: task test-deep-dive-notebooks
     timeout-minutes: 30
   test-quick-start-notebooks:
-    runs-on: ubuntu-latest-4-cores
+    runs-on:
+      group: Public Runners
     steps:
     - uses: actions/checkout@v4
       with:
@@ -102,7 +103,8 @@ jobs:
       run: task test-quick-start-notebooks
     timeout-minutes: 45
   test-playground-notebooks:
-    runs-on: ubuntu-latest-4-cores
+    runs-on:
+      group: Public Runners
     steps:
     - uses: actions/checkout@v4
       with:

@@ -70,9 +70,8 @@ jobs:
         path: hive-udf/lib/build/libs/*
   test-unit:
     needs:
-    - build-jar
-    runs-on:
-      group: Public Runners
+      - build-jar
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -126,9 +125,8 @@ jobs:
         path: .coverage.0
   test-integration-snowflake:
     needs:
-    - build-jar
-    runs-on:
-      group: Public Runners
+      - build-jar
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -265,8 +263,7 @@ jobs:
     if: false
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -368,8 +365,7 @@ jobs:
   test-docs:
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
