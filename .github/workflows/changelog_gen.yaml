@@ -47,7 +47,14 @@ jobs:
           echo "The CHANGELOG.md was not modified."
         fi
     - name: Ensure addition of at least 1 changelog entry
-      run: task changelog-pr-files
+      run: |-
+        FILE_CHANGES=$(git diff $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }}: --no-renames --name-status -- .changelog/ | \
+          awk '{if ($1 != "D" && $2 ~ /.yaml$/ && $2 !~ /TEMPLATE[.]yaml$/) { print $2 }}' |
+          wc -l)
+        if [[ $FILE_CHANGES -eq 0 ]]; then
+          echo "There are no file additions in the .changelog/ directory."
+          exit 1
+        fi
     - name: Validate changelog entries
       run: |-
         echo "CHANGELOG<<EOF" >> $GITHUB_ENV
