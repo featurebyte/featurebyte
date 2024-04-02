@@ -319,8 +319,7 @@ jobs:
   test-integration-databricks-unity:
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 135
     strategy:
       matrix:
