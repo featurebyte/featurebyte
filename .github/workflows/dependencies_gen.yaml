@@ -80,8 +80,9 @@ jobs:
         diff -u main.PKG-INFO branch.PKG-INFO
     - uses: mshick/add-pr-comment@v2
       with:
+        message-id: dependencies
         message: |-
-          **Diff**
+          **Dependency Changes**
           ```diff
           ${{ env.DIFF }}
           ```
