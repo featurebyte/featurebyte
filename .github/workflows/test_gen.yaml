@@ -226,13 +226,18 @@ jobs:
       continue-on-error: true
       run: |-
         set +e
-        SPARK_VERSION=${{ matrix.spark-version }} task test-integration-spark
+        export TEARDOWN=false  # Override teardown behavior
+        export SPARK_VERSION=${{ matrix.spark-version }}
+        task test-integration-spark
 
         # capture the exit code from the test run before stashing logs
         echo "SPARK_INTEGRATION_TEST_STATUS_CODE=$?" >> $GITHUB_ENV
 
         # Capturing spark logs
         docker logs spark-thrift 2>&1 > spark-thrift.log
+
+        # Teardown
+        task test-teardown
     - name: Renaming test assets
       run: |
         mv .coverage .coverage.2
