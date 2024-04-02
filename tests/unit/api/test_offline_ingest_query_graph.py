@@ -708,7 +708,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         )
         return feat_7
 
-    return user_defined_function(x_1, x_2, x_3)
+    output = user_defined_function(x_1, x_2, x_3)
+    return None if pd.isnull(output) else output
     $$
     """
     assert offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
