@@ -112,7 +112,7 @@ jobs:
       run: |-
         task test-unit
         task generate-unit-test-fixtures
-    - name: Moving coverage file by appending 0
+    - name: Renaming test assets
       run: mv .coverage .coverage.0
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -166,8 +166,9 @@ jobs:
         path: featurebyte/sql/spark/
     - name: Run tests
       run: task test-integration-snowflake
-    - name: Moving coverage file by appending 1
-      run: mv .coverage .coverage.1
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.1
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
@@ -235,6 +236,8 @@ jobs:
           exit $EXIT_CODE
         fi
         task test-teardown
+    - name: Renaming test assets
+      run: |
         mv .coverage .coverage.2
     - name: Upload spark-thrift log file
       uses: actions/upload-artifact@v4
@@ -243,18 +246,18 @@ jobs:
         overwrite: true
         path: spark-thrift.log
         retention-days: 5
-    - name: Check test status
-      run: |
-        EXIT_CODE=$(cat status.txt)
-        if [ $EXIT_CODE -ne 0 ]; then
-          exit $EXIT_CODE
-        fi
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
         overwrite: true
+    - name: Check test status
+      run: |
+        EXIT_CODE=$(cat status.txt)
+        if [ $EXIT_CODE -ne 0 ]; then
+          exit $EXIT_CODE
+        fi
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
@@ -304,8 +307,9 @@ jobs:
         path: featurebyte/sql/databricks/
     - name: Run tests
       run: task test-integration-databricks
-    - name: Moving coverage file by appending 3
-      run: mv .coverage .coverage.3
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.3
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
@@ -359,8 +363,10 @@ jobs:
       env:
         PYTEST_GROUP: ${{ matrix.pytest-group }}
       run: task test-integration-databricks-unity
-    - name: Moving coverage file by appending 4
-      run: mv .coverage .coverage.4
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.4.${{ matrix.pytest-split-group }}
+        mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-split-group }}
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
