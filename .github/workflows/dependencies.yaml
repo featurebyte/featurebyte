@@ -1,6 +1,3 @@
-# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
-# Please refer to the `dependencies.py` file in the `featurebyte/infrastructure` repo if you want to update it.
-
 # This workflow checks the differences dependencies between main and the PR
 # Labelling a PR with `dependencies` will skip this check
 

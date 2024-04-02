@@ -1,6 +1,3 @@
-# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
-# Please refer to the `publish_public.py` file in the `featurebyte/infrastructure` repo if you want to update it.
-
 # Publish Beta
 # ### REQUIREMENTS ###
 # Given a branch name of release/0.3 and a version of 0.3.4

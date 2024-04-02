@@ -1,6 +1,3 @@
-# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
-# Please refer to the `documentation.py` file in the `featurebyte/infrastructure` repo if you want to update it.
-
 # This workflow will check to see what diffs will be made to the documentation.
 # If there are any, this will fail the check. This is to ensure that all changes that are being made to
 # documentation are signed off by a developer.

@@ -1,6 +1,3 @@
-# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
-# Please refer to the `test_notebooks.py` file in the `featurebyte/infrastructure` repo if you want to update it.
-
 name: test-notebooks
 'on':
   workflow_dispatch: {}
