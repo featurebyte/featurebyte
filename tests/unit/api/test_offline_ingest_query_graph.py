@@ -3,6 +3,7 @@ This module contains tests for the offline ingest query graph.
 """
 
 import os
+import pdb
 import textwrap
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -57,6 +58,23 @@ def latest_event_timestamp_feature_fixture(
         feature_names=["latest_event_timestamp_90d"],
         feature_job_setting=feature_group_feature_job_setting,
     )["latest_event_timestamp_90d"]
+    return feature
+
+
+@pytest.fixture(name="latest_event_timestamp_overall_feature")
+def latest_event_timestamp_overall_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby([]).aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_overall_90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp_overall_90d"]
     return feature
 
 
@@ -708,7 +726,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         )
         return feat_7
 
-    return user_defined_function(x_1, x_2, x_3)
+    output = user_defined_function(x_1, x_2, x_3)
+    return None if pd.isnull(output) else output
     $$
     """
     assert offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -805,11 +824,18 @@ def test_databricks_specs(
     non_time_based_feature,
     composite_feature,
     latest_event_timestamp_feature,
+    latest_event_timestamp_overall_feature,
 ):
     """Test databricks specs"""
     req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     req_col_feature.name = "req_col_feature"
-    features = [float_feature, non_time_based_feature, composite_feature, req_col_feature]
+    features = [
+        float_feature,
+        non_time_based_feature,
+        composite_feature,
+        req_col_feature,
+        latest_event_timestamp_overall_feature,
+    ]
     for feature in features:
         feature.save()
 
@@ -843,6 +869,7 @@ def test_databricks_specs(
     from pyspark.sql.types import (
         DoubleType,
         LongType,
+        StringType,
         StructField,
         StructType,
         TimestampType,
@@ -884,6 +911,16 @@ def test_databricks_specs(
                 "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
             },
         ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_30m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["latest_event_timestamp_overall_90d_V240103"],
+            rename_outputs={
+                "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
+            },
+        ),
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
@@ -921,6 +958,7 @@ def test_databricks_specs(
     schema = StructType(
         [
             StructField("[TARGET_COLUMN]", DoubleType()),
+            StructField("__featurebyte_dummy_entity", StringType()),
             StructField("transaction_id", LongType()),
             StructField("cust_id", LongType()),
             StructField("POINT_IN_TIME", TimestampType()),

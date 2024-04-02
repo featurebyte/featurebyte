@@ -71,8 +71,7 @@ jobs:
   test-unit:
     needs:
       - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -127,8 +126,7 @@ jobs:
   test-integration-snowflake:
     needs:
       - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -270,8 +268,7 @@ jobs:
     if: false
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -383,8 +380,7 @@ jobs:
   test-docs:
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
