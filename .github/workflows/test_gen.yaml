@@ -519,13 +519,6 @@ jobs:
         color: ${{ steps.coverageComment.outputs.color }}
   slack:
     needs:
-    - build-jar
-    - test-unit
-    - test-integration-snowflake
-    - test-integration-spark
-    - test-integration-databricks
-    - test-integration-databricks-unity
-    - test-docs
     - validate
     if: ${{ always() }}
     runs-on: ubuntu-latest
