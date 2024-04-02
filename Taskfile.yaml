@@ -311,7 +311,7 @@ tasks:
         sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --split={{.PYTEST_SPLITS}} --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - task: test-teardown
 
   test-docs:
