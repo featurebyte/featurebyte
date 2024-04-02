@@ -16,5 +16,6 @@ def user_defined_function(col_1: float, col_2: float) -> float:
     feat_1 = np.nan if pd.isna(col_1) or pd.isna(col_2) else col_1 + col_2
     return feat_1
 
-return user_defined_function(x_1, x_2)
+output = user_defined_function(x_1, x_2)
+return None if pd.isnull(output) else output
 $$

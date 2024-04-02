@@ -33,5 +33,6 @@ def user_defined_function(
     feat_7 = np.nan if pd.isna(feat_6) or pd.isna(col_2) else feat_6 + col_2
     return feat_7
 
-return user_defined_function(x_1, x_2, r_1)
+output = user_defined_function(x_1, x_2, r_1)
+return None if pd.isnull(output) else output
 $$
