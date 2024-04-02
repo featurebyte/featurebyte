@@ -70,14 +70,14 @@ jobs:
         path: hive-udf/lib/build/libs/*
   test-unit:
     needs:
-    - build-jar
+      - build-jar
     runs-on:
       group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -126,14 +126,14 @@ jobs:
         path: .coverage.0
   test-integration-snowflake:
     needs:
-    - build-jar
+      - build-jar
     runs-on:
       group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
-        python-version:
-        - 3.8.12
+          python-version:
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -180,17 +180,17 @@ jobs:
         path: .coverage.1
   test-integration-spark:
     needs:
-    - build-jar
+      - build-jar
     runs-on:
       group: Public Runners
     timeout-minutes: 60
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
         spark-version:
-        - 3.3.1
-        - 3.5.0
+          - 3.3.1
+          - 3.5.0
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -271,7 +271,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -325,7 +325,10 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
+        pytest-split-group:
+          - 1
+          - 2
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -358,13 +361,13 @@ jobs:
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4
-        path: pytest.xml.4
+        name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-split-group }}
+        path: pytest.xml.4.${{ matrix.pytest-split-group }}
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-.coverage.4
-        path: .coverage.4
+        name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-split-group }}
+        path: .coverage.4.${{ matrix.pytest-split-group }}
   test-docs:
     needs:
     - build-jar
@@ -420,7 +423,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
       with:
@@ -458,10 +461,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
-    - name: Download integration test results (databricks-unity)
+    - name: Download integration test results (databricks-unity_1)
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4
+        name: python-${{ matrix.python-version }}-pytest.xml.4.1
+    - name: Download integration test results (databricks-unity_2)
+      uses: actions/download-artifact@v4
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.4.2
     - name: Download unit coverage results
       uses: actions/download-artifact@v4
       with:
@@ -478,10 +485,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
-    - name: Download integration coverage results (databricks-unity)
+    - name: Download integration coverage results (databricks-unity_1)
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-.coverage.4
+        name: python-${{ matrix.python-version }}-.coverage.4.1
+    - name: Download integration coverage results (databricks-unity_2)
+      uses: actions/download-artifact@v4
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.4.2
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
