@@ -257,7 +257,7 @@ async def test_materialize_features(
     ) as materialized_features:
         pass
 
-    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 2
+    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 3
     materialized_features_dict = asdict(materialized_features)
     materialized_features_dict["materialized_table_name"], suffix = materialized_features_dict[
         "materialized_table_name"
@@ -425,7 +425,7 @@ async def test_initialize_new_columns__table_does_not_exist(
         if "COUNT(*)" in query:
             raise ValueError()
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
@@ -476,7 +476,7 @@ async def test_initialize_new_columns__table_exists(
             return pd.DataFrame([{"RESULT": "2022-10-15 10:00:00"}])
 
     mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
     queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
@@ -521,7 +521,7 @@ async def test_initialize_new_columns__table_exists_but_empty(
             return pd.DataFrame({"RESULT": [0]})
 
     mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
     queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
@@ -561,7 +561,7 @@ async def test_initialize_new_columns__databricks_unity(
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
@@ -667,7 +667,7 @@ async def test_materialize_features_no_entity_databricks_unity(
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     patch.stopall()  # stop the patcher on initialize_new_columns()
@@ -700,7 +700,7 @@ async def test_update_online_store__never_materialized_before(
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     offline_store_feature_table.last_materialized_at = offline_last_materialized_at
     offline_store_feature_table.online_stores_last_materialized_at = []
@@ -755,7 +755,7 @@ async def test_update_online_store__materialized_before(
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     offline_store_feature_table.last_materialized_at = offline_last_materialized_at
     offline_store_feature_table.online_stores_last_materialized_at = [
