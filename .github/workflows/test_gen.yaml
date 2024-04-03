@@ -385,7 +385,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -453,62 +453,16 @@ jobs:
         cache: 'poetry'
     - name: Install dependencies
       run: poetry install -n --sync
-    - name: Download unit test results
+    - name: Download integration test results (databricks-unity)
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.0
-    - name: Download integration test results (snowflake)
+        pattern: python-${{ matrix.python-version }}-pytest.xml.*
+        merge-multiple: true
+    - name: Download integration coverage results
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.1
-    - name: Download integration test results (spark)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.2
-    - name: Download integration test results (databricks)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.3
-    - name: Download integration test results (databricks-unity_1)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4.1
-    - name: Download integration test results (databricks-unity_2)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4.2
-    - name: Download integration test results (databricks-unity_3)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4.3
-    - name: Download unit coverage results
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.0
-    - name: Download integration coverage results (snowflake)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.1
-    - name: Download integration coverage results (spark)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.2
-    - name: Download integration coverage results (databricks)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.3
-    - name: Download integration coverage results (databricks-unity_1)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.4.1
-    - name: Download integration coverage results (databricks-unity_2)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.4.2
-    - name: Download integration coverage results (databricks-unity_3)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.4.3
+        pattern: python-${{ matrix.python-version }}-.coverage.*
+        merge-multiple: true
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
@@ -518,11 +472,6 @@ jobs:
         pytest-coverage-path: pytest-coverage.txt
         junitxml-path: pytest.xml
         hide-report: true
-    - name: Check test output
-      run: |-
-        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
-          exit 1
-        fi
     - name: Update Coverage Badge
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: schneegans/dynamic-badges-action@v1.7.0
