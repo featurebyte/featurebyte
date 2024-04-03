@@ -2,13 +2,11 @@
 Unit test for SourceTable
 """
 
-import logging
 from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
 
-from featurebyte import get_logger
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException
@@ -216,9 +214,9 @@ def test_create_observation_table(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -231,9 +229,9 @@ def test_create_observation_table(
         )
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -266,9 +264,9 @@ def test_create_observation_table_with_sample_rows(
     assert observation_table.name == "my_observation_table"
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -295,9 +293,9 @@ def test_create_observation_table_with_sample_rows(
         LIMIT 100
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
