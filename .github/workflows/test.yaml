@@ -256,6 +256,12 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
         overwrite: true
+
+    # Fail the job if the test run failed
+    - name: Check test status
+      run: |
+        exit ${{ env.SPARK_INTEGRATION_TEST_STATUS_CODE }}
+
   test-integration-databricks-unity:
     needs:
     - build-jar
@@ -401,6 +407,11 @@ jobs:
         merge-multiple: true
     - name: Merge test results
       run: task test-merge
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-coverage.txt
+        path: pytest-coverage.txt
     - name: Test Coverage Report
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
