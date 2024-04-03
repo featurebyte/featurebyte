@@ -466,7 +466,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 ),
                 source_type=session.source_type,
             )
-            await session.execute_query(query)
+            await session.execute_query_long_running(query)
 
     async def drop_table(self, feature_table_model: OfflineStoreFeatureTableModel) -> None:
         """
@@ -582,7 +582,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ),
             source_type=session.source_type,
         )
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
         await cls._add_primary_key_constraint_if_necessary(session, feature_table_model)
 
     @classmethod
@@ -602,13 +602,13 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         quoted_timestamp_column = f"`{InternalName.FEATURE_TIMESTAMP_COLUMN}`"
         quoted_primary_key_columns = [f"`{column_name}`" for column_name in primary_key_columns]
         for quoted_col in [quoted_timestamp_column] + quoted_primary_key_columns:
-            await session.execute_query(
+            await session.execute_query_long_running(
                 f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
             )
         primary_key_args = ", ".join(
             [f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns
         )
-        await session.execute_query(
+        await session.execute_query_long_running(
             textwrap.dedent(
                 f"""
                 ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
@@ -653,7 +653,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ),
             source_type=session.source_type,
         )
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
 
     @staticmethod
     async def _get_last_feature_timestamp(session: BaseSession, feature_table_name: str) -> str:
@@ -670,7 +670,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ).from_(quoted_identifier(feature_table_name)),
             source_type=session.source_type,
         )
-        result = await session.execute_query(query)
+        result = await session.execute_query_long_running(query)
         return str(result["RESULT"].iloc[0])  # type: ignore
 
     @staticmethod
@@ -756,7 +756,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         )
         query = sql_to_string(merge_expr, source_type=session.source_type)
 
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
 
     @classmethod
     async def _num_rows_in_feature_table(
@@ -771,7 +771,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 ),
                 source_type=session.source_type,
             )
-            result = await session.execute_query(query)
+            result = await session.execute_query_long_running(query)
             return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
         except session._no_schema_error:  # pylint: disable=protected-access
             return None
@@ -802,7 +802,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 expressions.Table(this=quoted_identifier(feature_table_model.name)),
                 cls._get_column_defs(feature_table_model, new_columns, adapter),
             )
-            await session.execute_query(query)
+            await session.execute_query_long_running(query)
 
         return new_columns
 

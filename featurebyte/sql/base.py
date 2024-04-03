@@ -97,7 +97,7 @@ class BaseSqlModel(BaseModel):
         """
         table_exist_flag = True
         try:
-            await self._session.execute_query(f"select * from {table_name} limit 1")
+            await self._session.execute_query_long_running(f"select * from {table_name} limit 1")
         except self._session._no_schema_error:  # pylint: disable=protected-access
             table_exist_flag = False
 
