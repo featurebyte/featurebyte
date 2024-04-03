@@ -178,7 +178,6 @@ if __name__ == "__main__":
     if "--help" in args:
         print("Usage: python changelog-gen.py [<changelog-file>...]")
         print("If no changelog file is specified, the default is .changelog/*.yaml")
-        sys.exit(1)
 
     # Get all flags
     file_mode = "--file-mode" in args
@@ -190,7 +189,6 @@ if __name__ == "__main__":
 
     if len(files) == 0:
         print("No changelog files found")
-        sys.exit(1)
 
     if file_mode:
         print("Changelog files:")
