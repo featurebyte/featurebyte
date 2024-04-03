@@ -284,26 +284,24 @@ tasks:
   test-integration-spark:
     desc: Runs integration tests against Spark
     vars:
+      # Default to teardown
       TEARDOWN:
-        sh: printenv TEARDOWN || echo "true"  # Default to teardown
+        sh: printenv TEARDOWN || echo "true"
+
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     deps:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - cmd: |
           if [ "{{.TEARDOWN}}" == "true" ]; then
               task test-teardown
           fi
-
-  test-integration-databricks:
-    desc: Runs integration tests against Databricks
-    deps:
-      - task: install
-    cmds:
-      - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks
-      - task: test-teardown
 
   test-integration-databricks-unity:
     desc: Runs integration tests against Databricks

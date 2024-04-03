@@ -186,6 +186,11 @@ jobs:
           - 3.8.12
         spark-version:
           - 3.5.0
+        pytest-group:
+          - 1
+          - 2
+    env:
+      PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -218,6 +223,8 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Run tests
         continue-on-error: true
+        env:
+          PYTEST_GROUP: ${{ matrix.pytest-group }}
         run: |-
           set +e
           export TEARDOWN=false  # Override teardown behavior
@@ -234,7 +241,8 @@ jobs:
           task test-teardown
       - name: Renaming test assets
         run: |
-          mv .coverage .coverage.2
+          mv .coverage .coverage.2.${{ matrix.pytest-group }}
+          mv pytest.xml.2 pytest.xml.2.${{ matrix.pytest-group }}
       - name: Upload spark-thrift log file
         uses: actions/upload-artifact@v4
         with:
@@ -246,14 +254,14 @@ jobs:
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
-          name: python-${{ matrix.python-version }}-pytest.xml.2
-          path: pytest.xml.2
+          name: python-${{ matrix.python-version }}-pytest.xml.2.${{ matrix.pytest-group }}
+          path: pytest.xml.2.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         with:
-          name: python-${{ matrix.python-version }}-.coverage.2
-          path: .coverage.2
+          name: python-${{ matrix.python-version }}-.coverage.2.${{ matrix.pytest-group }}
+          path: .coverage.2.${{ matrix.pytest-group }}
           overwrite: true
 
       # Fail the job if the test run failed
