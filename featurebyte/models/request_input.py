@@ -82,7 +82,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         int
         """
         query = get_row_count_sql(table_expr=query_expr, source_type=session.source_type)
-        result = await session.execute_query(query)
+        result = await session.execute_query_long_running(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
     @abstractmethod
@@ -168,7 +168,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             source_type=session.source_type,
         )
 
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
 
     def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
         referenced_columns = list(self.columns or [])

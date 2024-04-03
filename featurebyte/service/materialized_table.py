@@ -172,7 +172,7 @@ class BaseMaterializedTableService(
             database_name=table_details.database_name,
             schema_name=table_details.schema_name,
         )
-        df_row_count = await db_session.execute_query(
+        df_row_count = await db_session.execute_query_long_running(
             sql_to_string(
                 get_source_count_expr(table_details),
                 db_session.source_type,
@@ -227,4 +227,4 @@ class BaseMaterializedTableService(
             ),
             source_type=session.source_type,
         )
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)

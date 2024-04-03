@@ -90,15 +90,6 @@ def db_session_fixture(point_in_time_has_missing_values):
             "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
         }
 
-    async def execute_query(*args, **kwargs):
-        query = args[0]
-        _ = kwargs
-        if "COUNT(*)" in query:
-            return pd.DataFrame({"row_count": [1000]})
-        if "INTERVAL" in query:
-            return pd.DataFrame({"MIN_INTERVAL": [3600]})
-        raise NotImplementedError(f"Unexpected query: {query}")
-
     async def execute_query_long_running(*args, **kwargs):
         query = args[0]
         _ = kwargs
@@ -112,13 +103,16 @@ def db_session_fixture(point_in_time_has_missing_values):
                     "max": ["2023-01-15T10:00:00+08:00", 10],
                 },
             )
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"row_count": [1000]})
+        if "INTERVAL" in query:
+            return pd.DataFrame({"MIN_INTERVAL": [3600]})
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
-        execute_query=Mock(side_effect=execute_query),
         execute_query_long_running=Mock(side_effect=execute_query_long_running),
         source_type=SourceType.SNOWFLAKE,
     )
@@ -340,7 +334,7 @@ async def test_request_input_get_row_count(observation_table_from_source_table, 
         )
         """
     ).strip()
-    query = db_session.execute_query.call_args[0][0]
+    query = db_session.execute_query_long_running.call_args[0][0]
     assert query == expected_query
 
 

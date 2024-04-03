@@ -543,7 +543,7 @@ class ObservationTableService(
 
         # Execute SQL
         sql_string = sql_to_string(sql_expr, db_session.source_type)
-        min_interval_df = await db_session.execute_query(sql_string)
+        min_interval_df = await db_session.execute_query_long_running(sql_string)
         assert min_interval_df is not None
         value = min_interval_df.iloc[0]["MIN_INTERVAL"]
         if value is None or pd.isna(value):
