@@ -287,7 +287,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
     def _derive_feature_specs(
         cls, feature: FeatureModel, schema_name: str, output_column_names: Set[str]
     ) -> List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]:
-        output = []
+        output: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = []
         table_name_to_feature_lookup = {}
         offline_store_info = feature.offline_store_info
         entity_id_to_serving_name = {
@@ -344,6 +344,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                         output_name=feature.name,
                     )
                 )
+                assert feature.name is not None, "Feature does not have a name"
                 output_column_names.add(feature.name)
         return output
 
@@ -357,8 +358,8 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
     ) -> Tuple[
         List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]
     ]:
-        exclude_columns = set()
-        output_column_names = set()
+        exclude_columns: Set[str] = set()
+        output_column_names: Set[str] = set()
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
         feature_specs = []
         for feature in features:
