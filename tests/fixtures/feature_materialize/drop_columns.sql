@@ -1,0 +1,3 @@
+ALTER TABLE "cat1_cust_id_30m"   DROP COLUMN IF EXISTS "a";
+
+ALTER TABLE "cat1_cust_id_30m"   DROP COLUMN IF EXISTS "b";

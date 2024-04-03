@@ -314,7 +314,7 @@ async def test_scheduled_materialize_features(
     """
     await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
 
-    executed_queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
@@ -429,7 +429,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_new_table.sql",
@@ -479,7 +479,7 @@ async def test_initialize_new_columns__table_exists(
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_existing_table.sql",
@@ -524,7 +524,7 @@ async def test_initialize_new_columns__table_exists_but_empty(
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_existing_table_empty.sql",
@@ -565,7 +565,7 @@ async def test_initialize_new_columns__databricks_unity(
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_new_table_databricks.sql",
@@ -587,7 +587,7 @@ async def test_drop_columns(
     Test drop_columns
     """
     await feature_materialize_service.drop_columns(offline_store_feature_table, ["a", "b"])
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/drop_columns.sql",
@@ -673,7 +673,7 @@ async def test_materialize_features_no_entity_databricks_unity(
     patch.stopall()  # stop the patcher on initialize_new_columns()
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table_no_entity)
 
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_features_no_entity_databricks_unity.sql",
