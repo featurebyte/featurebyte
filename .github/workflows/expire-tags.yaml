@@ -1,8 +1,8 @@
 name: expire_tags
 'on':
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   schedule:
-  - cron: 0 0 * * *
+    - cron: 0 0 * * *
 permissions:
   contents: write
   actions: write
@@ -13,21 +13,21 @@ jobs:
   tags:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Set Github Committer Settings
-      run: |-
-        git config --global user.name "featurebyte[bot]"
-        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Removing Tags
-      run: |-
-        export CUTOFF_DATE=$(date --date="-14days" +%Y-%m-%d)
-        export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | grep -v "release/" | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set Github Committer Settings
+        run: |-
+          git config --global user.name "featurebyte[bot]"
+          git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+      - name: Removing Tags
+        run: |-
+          export CUTOFF_DATE=$(date --date="-14days" +%Y-%m-%d)
+          export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | grep -v "release/" | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
 
-        echo "### Expired tags" >> $GITHUB_STEP_SUMMARY
-        printenv EXPIRED_TAGS >> $GITHUB_STEP_SUMMARY
+          echo "### Expired tags" >> $GITHUB_STEP_SUMMARY
+          printenv EXPIRED_TAGS >> $GITHUB_STEP_SUMMARY
 
-        # => Convert ref/tags/ABC = :ref/tags/ABC
-        # => git push origin :ref/tags/ABC
-        printenv EXPIRED_TAGS | sed -nE 's/^/:/p' | xargs git push origin
+          # => Convert ref/tags/ABC = :ref/tags/ABC
+          # => git push origin :ref/tags/ABC
+          printenv EXPIRED_TAGS | sed -nE 's/^/:/p' | xargs git push origin
