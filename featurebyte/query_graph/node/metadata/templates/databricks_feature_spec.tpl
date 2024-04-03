@@ -26,7 +26,7 @@ exclude_columns = {{exclude_columns}}
 # Prepare the dataset for log model
 # 'features' is a list of feature lookups to be included in the training set
 # 'exclude_columns' is a list of columns to be excluded from the training set
-target_column = "[TARGET_COLUMN]"
+target_column = "{{target_column}}"
 schema = {{schema}}
 log_model_dataset = fe.create_training_set(
     df=spark.createDataFrame([], schema),
