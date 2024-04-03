@@ -74,7 +74,7 @@ async def test_materialize__with_columns_only(session, snowflake_database_table,
         )
         """
     ).strip()
-    assert session.execute_query.call_args_list == [call(expected_query)]
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
 
 
 @pytest.mark.asyncio
@@ -108,7 +108,7 @@ async def test_materialize__with_columns_and_renames(
         )
         """
     ).strip()
-    assert session.execute_query.call_args_list == [call(expected_query)]
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
 
 
 @pytest.mark.asyncio
@@ -139,7 +139,7 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
         )
         """
     ).strip()
-    assert session.execute_query.call_args_list == [call(expected_query)]
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
 
 
 @pytest.mark.asyncio
@@ -212,4 +212,4 @@ async def test_materialize__from_view_with_columns_and_renames(
         )
         """
     ).strip()
-    assert session.execute_query.call_args_list == [call(expected_query)]
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
