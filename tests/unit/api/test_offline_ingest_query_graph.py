@@ -946,6 +946,7 @@ def test_databricks_specs(
         "POINT_IN_TIME",
         "__feature_V240103__part0",
         "__feature_V240103__part1",
+        "__featurebyte_dummy_entity",
         "__req_col_feature_V240103__part0",
         "cust_id",
         "transaction_id",
@@ -957,7 +958,7 @@ def test_databricks_specs(
     target_column = "[TARGET_COLUMN]"
     schema = StructType(
         [
-            StructField("[TARGET_COLUMN]", DoubleType()),
+            StructField(target_column, DoubleType()),
             StructField("__featurebyte_dummy_entity", StringType()),
             StructField("transaction_id", LongType()),
             StructField("cust_id", LongType()),
@@ -986,4 +987,6 @@ def test_databricks_specs(
     ]
     for replace_pair in replace_pairs:
         expected = expected.replace(*replace_pair)
-    assert store_info.feature_specs_definition.strip() == textwrap.dedent(expected).strip()
+    assert (
+        store_info.get_feature_specs_definition(None).strip() == textwrap.dedent(expected).strip()
+    )

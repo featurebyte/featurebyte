@@ -4,13 +4,13 @@ This module contains Feature list store info related models
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Set, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SpecialColumnName
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
@@ -180,15 +180,22 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             raise ValueError(f"Unsupported dtype: {dtype}")
         return type_map[dtype]
 
-    def _get_base_dataframe_schema_and_import_statement(self) -> Tuple[str, str]:
+    def _get_base_dataframe_schema_and_import_statement(
+        self, target_spec: ColumnSpec
+    ) -> Tuple[str, str]:
         schemas = []
         required_imports = {"StructType", "StructField"}
-        for column_spec in self.base_dataframe_specs:
+        base_dataframe_specs = [target_spec]
+        base_dataframe_specs.extend(self.base_dataframe_specs)
+        for column_spec in base_dataframe_specs:
             field_type = self.to_spark_dtype(column_spec.dtype)
+            column_name = column_spec.name
+            if column_spec.name == target_spec.name:
+                column_name = VariableNameStr("target_column")
             schemas.append(
                 get_object_class_from_function_call(
                     "StructField",
-                    column_spec.name,
+                    column_name,
                     ExpressionStr(f"{field_type}()"),
                 )
             )
@@ -199,10 +206,14 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         pyspark_import_statement = f"from pyspark.sql.types import {import_classes}"
         return schema_statement, pyspark_import_statement
 
-    @property
-    def feature_specs_definition(self) -> str:
+    def get_feature_specs_definition(self, target_spec: Optional[ColumnSpec]) -> str:
         """
-        Feature specs definition
+        Get Feature specs definition for DataBricks
+
+        Parameters
+        ----------
+        target_spec: Optional[ColumnSpec]
+            Target column spec
 
         Returns
         -------
@@ -210,10 +221,11 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         """
         code_gen = CodeGenerator(template="databricks_feature_spec.tpl")
         feature_specs = ExpressionStr(self.feature_specs)
+        target_spec = target_spec or ColumnSpec(name="[TARGET_COLUMN]", dtype=DBVarType.FLOAT)
         (
             base_dataframe_schema,
             pyspark_import_statement,
-        ) = self._get_base_dataframe_schema_and_import_statement()
+        ) = self._get_base_dataframe_schema_and_import_statement(target_spec=target_spec)
         codes = code_gen.generate(
             to_format=True,
             remove_unused_variables=False,
@@ -223,6 +235,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             exclude_columns=self.exclude_columns,
             require_timestamp_lookup_key=self.require_timestamp_lookup_key,
             schema=base_dataframe_schema,
+            target_column=target_spec.name,
         )
         return codes
 
@@ -299,10 +312,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         return feature_lookups
 
     @classmethod
-    def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
-    ) -> DataBricksUnityStoreInfo:
-        # pylint: disable=too-many-locals,too-many-branches
+    def _derive_entity_request_column_info_from_features(
+        cls, features: List[FeatureModel]
+    ) -> Tuple[Dict[PydanticObjectId, ColumnSpec], Dict[str, DBVarType], Set[str]]:
         exclude_columns = {SpecialColumnName.POINT_IN_TIME.value}
         entity_id_to_column_spec = {}
         request_column_name_to_dtype = {}
@@ -333,21 +345,32 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                     node_params = node.parameters
                     if node_params.column_name not in request_column_name_to_dtype:
                         request_column_name_to_dtype[node_params.column_name] = node_params.dtype
+        return entity_id_to_column_spec, request_column_name_to_dtype, exclude_columns
 
+    @classmethod
+    def _derive_base_dataframe_and_feature_specs(
+        cls,
+        entity_id_to_column_spec: Dict[PydanticObjectId, ColumnSpec],
+        request_column_name_to_dtype: Dict[str, DBVarType],
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+    ) -> Tuple[
+        List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]
+    ]:
+        exclude_columns = set()
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
         feature_lookups = cls._create_feature_lookups(features, fully_qualified_schema_name)
         feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = (
             feature_lookups + cls._create_feature_functions(features, fully_qualified_schema_name)
         )
 
-        base_dataframe_specs = [
-            ColumnSpec(name="[TARGET_COLUMN]", dtype=DBVarType.FLOAT),
-        ]
+        base_dataframe_specs = []
         for lookup_spec in feature_lookups:
             if lookup_spec.lookup_key == [DUMMY_ENTITY_COLUMN_NAME]:
                 base_dataframe_specs.append(
                     ColumnSpec(name=DUMMY_ENTITY_COLUMN_NAME, dtype=DBVarType.VARCHAR)
                 )
+                exclude_columns.add(DUMMY_ENTITY_COLUMN_NAME)
                 break
 
         has_point_in_time = False
@@ -366,11 +389,25 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                 ColumnSpec(name=SpecialColumnName.POINT_IN_TIME.value, dtype=DBVarType.TIMESTAMP)
             )
 
+        return base_dataframe_specs, feature_specs, exclude_columns
+
+    @classmethod
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> DataBricksUnityStoreInfo:
+        entity_id_to_column_spec, request_column_name_to_dtype, exclude_cols = (
+            cls._derive_entity_request_column_info_from_features(features)
+        )
+        base_dataframe_specs, feature_specs, more_exclude_cols = (
+            cls._derive_base_dataframe_and_feature_specs(
+                entity_id_to_column_spec, request_column_name_to_dtype, features, feature_store
+            )
+        )
         return cls(
             feast_enabled=True,
             feature_specs=feature_specs,
             base_dataframe_specs=base_dataframe_specs,
-            exclude_columns=sorted(exclude_columns),
+            exclude_columns=sorted(exclude_cols | more_exclude_cols),
             require_timestamp_lookup_key=True,
         )
 
