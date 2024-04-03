@@ -76,7 +76,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -111,7 +111,7 @@ jobs:
       run: |-
         task test-unit
         task generate-unit-test-fixtures
-    - name: Moving coverage file by appending 0
+    - name: Renaming test assets
       run: mv .coverage .coverage.0
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -130,8 +130,8 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        python-version:
-        - 3.8.12
+          python-version:
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -164,8 +164,9 @@ jobs:
         path: featurebyte/sql/spark/
     - name: Run tests
       run: task test-integration-snowflake
-    - name: Moving coverage file by appending 1
-      run: mv .coverage .coverage.1
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.1
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
@@ -178,17 +179,17 @@ jobs:
         path: .coverage.1
   test-integration-spark:
     needs:
-    - build-jar
+      - build-jar
     runs-on:
       group: Public Runners
     timeout-minutes: 60
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
         spark-version:
-        - 3.3.1
-        - 3.5.0
+          - 3.3.1
+          - 3.5.0
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -223,30 +224,29 @@ jobs:
       continue-on-error: true
       run: |-
         set +e
-        SPARK_VERSION=${{ matrix.spark-version }} task test-integration-spark
+        export TEARDOWN=false  # Override teardown behavior
+        export SPARK_VERSION=${{ matrix.spark-version }}
+        task test-integration-spark
+
         # capture the exit code from the test run before stashing logs
-        EXIT_CODE=$?
-        echo $EXIT_CODE > status.txt
+        echo "SPARK_INTEGRATION_TEST_STATUS_CODE=$?" >> $GITHUB_ENV
+
+        # Capturing spark logs
         docker logs spark-thrift 2>&1 > spark-thrift.log
-        # bail out now if the test run was a failure
-        if [ $EXIT_CODE -ne 0 ]; then
-          exit $EXIT_CODE
-        fi
+
+        # Teardown
         task test-teardown
+    - name: Renaming test assets
+      run: |
         mv .coverage .coverage.2
     - name: Upload spark-thrift log file
       uses: actions/upload-artifact@v4
       with:
         name: spark-thrift-logs-${{ matrix.spark-version }}
-        overwrite: true
-        path: spark-thrift.log
+        path: spark-thrift-${{ matrix.spark-version }}.log
         retention-days: 5
-    - name: Check test status
-      run: |
-        EXIT_CODE=$(cat status.txt)
-        if [ $EXIT_CODE -ne 0 ]; then
-          exit $EXIT_CODE
-        fi
+
+    # NOTE: Only holding 1 test result to be used in pytest report
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
@@ -259,6 +259,11 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
         overwrite: true
+
+    # Fail the job if the test run failed
+    - name: Check test status
+      run: |
+        exit ${{ env.SPARK_INTEGRATION_TEST_STATUS_CODE }}
   test-integration-databricks:
     if: false
     needs:
@@ -268,7 +273,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -301,8 +306,9 @@ jobs:
         path: featurebyte/sql/databricks/
     - name: Run tests
       run: task test-integration-databricks
-    - name: Moving coverage file by appending 3
-      run: mv .coverage .coverage.3
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.3
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
@@ -316,13 +322,18 @@ jobs:
   test-integration-databricks-unity:
     needs:
     - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 135
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
+        pytest-group:
+          - 1
+          - 2
+          - 3
+    env:
+      PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -349,19 +360,23 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Run tests
+      env:
+        PYTEST_GROUP: ${{ matrix.pytest-group }}
       run: task test-integration-databricks-unity
-    - name: Moving coverage file by appending 4
-      run: mv .coverage .coverage.4
+    - name: Renaming test assets
+      run: |
+        mv .coverage .coverage.4.${{ matrix.pytest-group }}
+        mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-group }}
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4
-        path: pytest.xml.4
+        name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-group }}
+        path: pytest.xml.4.${{ matrix.pytest-group }}
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-.coverage.4
-        path: .coverage.4
+        name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-group }}
+        path: .coverage.4.${{ matrix.pytest-group }}
   test-docs:
     needs:
     - build-jar
@@ -370,7 +385,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v2
@@ -416,7 +431,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-        - 3.8.12
+          - 3.8.12
     steps:
     - uses: actions/checkout@v4
       with:
@@ -438,46 +453,16 @@ jobs:
         cache: 'poetry'
     - name: Install dependencies
       run: poetry install -n --sync
-    - name: Download unit test results
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.0
-    - name: Download integration test results (snowflake)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.1
-    - name: Download integration test results (spark)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.2
-    - name: Download integration test results (databricks)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.3
     - name: Download integration test results (databricks-unity)
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-pytest.xml.4
-    - name: Download unit coverage results
+        pattern: python-${{ matrix.python-version }}-pytest.xml.*
+        merge-multiple: true
+    - name: Download integration coverage results
       uses: actions/download-artifact@v4
       with:
-        name: python-${{ matrix.python-version }}-.coverage.0
-    - name: Download integration coverage results (snowflake)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.1
-    - name: Download integration coverage results (spark)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.2
-    - name: Download integration coverage results (databricks)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.3
-    - name: Download integration coverage results (databricks-unity)
-      uses: actions/download-artifact@v4
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.4
+        pattern: python-${{ matrix.python-version }}-.coverage.*
+        merge-multiple: true
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
@@ -487,11 +472,6 @@ jobs:
         pytest-coverage-path: pytest-coverage.txt
         junitxml-path: pytest.xml
         hide-report: true
-    - name: Check test output
-      run: |-
-        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
-          exit 1
-        fi
     - name: Update Coverage Badge
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: schneegans/dynamic-badges-action@v1.7.0
