@@ -10,6 +10,7 @@ import pytest
     "dictionary, expected",
     [
         (None, np.nan),
+        ({"a": 0}, 0),
         ({}, 0),
         ({"a": 1}, 0),
         ({"a": 1, "b": 0}, 0),
