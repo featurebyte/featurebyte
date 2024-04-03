@@ -247,70 +247,6 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         schema_name = feature_store_details.schema_name
         return f"{catalog_name}.{schema_name}"
 
-    @staticmethod
-    def _create_feature_functions(
-        features: List[FeatureModel], schema_name: str
-    ) -> List[DataBricksFeatureFunction]:
-        feature_functions = []
-        for feature in features:
-            offline_store_info = feature.offline_store_info
-            if offline_store_info.udf_info:
-                input_bindings = {
-                    sql_input_info.sql_input_var_name: sql_input_info.column_name
-                    for sql_input_info in offline_store_info.udf_info.sql_inputs_info
-                }
-                feature_functions.append(
-                    DataBricksFeatureFunction(
-                        udf_name=f"{schema_name}.{offline_store_info.udf_info.sql_function_name}",
-                        input_bindings=input_bindings,
-                        output_name=feature.name,
-                    )
-                )
-        return feature_functions
-
-    @staticmethod
-    def _create_feature_lookups(
-        features: List[FeatureModel], schema_name: str
-    ) -> List[DataBricksFeatureLookup]:
-        feature_lookups = []
-        table_name_to_feature_lookup = {}
-        for feature in features:
-            offline_store_info = feature.offline_store_info
-            entity_id_to_serving_name = {
-                info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
-            }
-            for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
-                table_name = ingest_query.offline_store_table_name
-                timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
-
-                if table_name not in table_name_to_feature_lookup:
-                    if len(ingest_query.primary_entity_ids) > 0:
-                        lookup_key = [
-                            entity_id_to_serving_name[entity_id]
-                            for entity_id in ingest_query.primary_entity_ids
-                        ]
-                    else:
-                        lookup_key = [DUMMY_ENTITY_COLUMN_NAME]
-                    table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
-                        table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
-                        lookup_key=lookup_key,
-                        timestamp_lookup_key=timestamp_lookup_key,
-                        lookback_window=None,
-                        feature_names=[],
-                        rename_outputs={},
-                    )
-
-                column_name = ingest_query.output_column_name
-                feature_lookup = table_name_to_feature_lookup[table_name]
-                feature_lookup.feature_names.append(column_name)
-                if not offline_store_info.udf_info:
-                    assert feature.name is not None, "Feature does not have a name"
-                    feature_lookup.rename_outputs[column_name] = feature.name
-
-        for feature_lookup in table_name_to_feature_lookup.values():
-            feature_lookups.append(feature_lookup)
-        return feature_lookups
-
     @classmethod
     def _derive_entity_request_column_info_from_features(
         cls, features: List[FeatureModel]
@@ -348,6 +284,70 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         return entity_id_to_column_spec, request_column_name_to_dtype, exclude_columns
 
     @classmethod
+    def _derive_feature_specs(
+        cls, feature: FeatureModel, schema_name: str, output_column_names: Set[str]
+    ) -> List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]:
+        output = []
+        table_name_to_feature_lookup = {}
+        offline_store_info = feature.offline_store_info
+        entity_id_to_serving_name = {
+            info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
+        }
+        for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
+            table_name = ingest_query.offline_store_table_name
+            timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
+
+            if table_name not in table_name_to_feature_lookup:
+                if len(ingest_query.primary_entity_ids) > 0:
+                    lookup_key = [
+                        entity_id_to_serving_name[entity_id]
+                        for entity_id in ingest_query.primary_entity_ids
+                    ]
+                else:
+                    lookup_key = [DUMMY_ENTITY_COLUMN_NAME]
+                table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
+                    table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
+                    lookup_key=lookup_key,
+                    timestamp_lookup_key=timestamp_lookup_key,
+                    lookback_window=None,
+                    feature_names=[],
+                    rename_outputs={},
+                )
+
+            column_name = ingest_query.output_column_name
+            feature_lookup = table_name_to_feature_lookup[table_name]
+            output_column_name = column_name
+            if not offline_store_info.udf_info:
+                assert feature.name is not None, "Feature does not have a name"
+                output_column_name = feature.name
+
+            if output_column_name not in output_column_names:
+                output_column_names.add(output_column_name)
+                feature_lookup.feature_names.append(column_name)
+                if not offline_store_info.udf_info:
+                    feature_lookup.rename_outputs[column_name] = output_column_name
+
+        for feature_lookup in table_name_to_feature_lookup.values():
+            if feature_lookup.feature_names:
+                output.append(feature_lookup)
+
+        if offline_store_info.udf_info:
+            input_bindings = {
+                sql_input_info.sql_input_var_name: sql_input_info.column_name
+                for sql_input_info in offline_store_info.udf_info.sql_inputs_info
+            }
+            if feature.name not in output_column_names:
+                output.append(
+                    DataBricksFeatureFunction(
+                        udf_name=f"{schema_name}.{offline_store_info.udf_info.sql_function_name}",
+                        input_bindings=input_bindings,
+                        output_name=feature.name,
+                    )
+                )
+                output_column_names.add(feature.name)
+        return output
+
+    @classmethod
     def _derive_base_dataframe_and_feature_specs(
         cls,
         entity_id_to_column_spec: Dict[PydanticObjectId, ColumnSpec],
@@ -358,15 +358,19 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]
     ]:
         exclude_columns = set()
+        output_column_names = set()
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
-        feature_lookups = cls._create_feature_lookups(features, fully_qualified_schema_name)
-        feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = (
-            feature_lookups + cls._create_feature_functions(features, fully_qualified_schema_name)
-        )
+        feature_specs = []
+        for feature in features:
+            feature_specs.extend(
+                cls._derive_feature_specs(feature, fully_qualified_schema_name, output_column_names)
+            )
 
         base_dataframe_specs = []
-        for lookup_spec in feature_lookups:
-            if lookup_spec.lookup_key == [DUMMY_ENTITY_COLUMN_NAME]:
+        for feature_spec in feature_specs:
+            if isinstance(feature_spec, DataBricksFeatureLookup) and feature_spec.lookup_key == [
+                DUMMY_ENTITY_COLUMN_NAME
+            ]:
                 base_dataframe_specs.append(
                     ColumnSpec(name=DUMMY_ENTITY_COLUMN_NAME, dtype=DBVarType.VARCHAR)
                 )

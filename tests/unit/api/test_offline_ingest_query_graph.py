@@ -891,11 +891,7 @@ def test_databricks_specs(
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
-            feature_names=[
-                "sum_1d_V240103",
-                "__feature_V240103__part0",
-                "__req_col_feature_V240103__part0",
-            ],
+            feature_names=["sum_1d_V240103"],
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
@@ -903,13 +899,50 @@ def test_databricks_specs(
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
-            feature_names=[
-                "non_time_time_sum_amount_feature_V240103",
-                "__feature_V240103__part1",
-            ],
+            feature_names=["non_time_time_sum_amount_feature_V240103"],
             rename_outputs={
                 "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
             },
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
+            lookup_key=["cust_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
+            input_bindings={
+                "x_1": "__feature_V240103__part0",
+                "x_2": "__feature_V240103__part1",
+            },
+            output_name="feature",
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
+            lookup_key=["cust_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__req_col_feature_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
+            input_bindings={
+                "x_1": "__req_col_feature_V240103__part0",
+                "r_1": "POINT_IN_TIME",
+            },
+            output_name="req_col_feature",
         ),
         FeatureLookup(
             table_name="feature_engineering.some_schema.cat1__no_entity_30m",
@@ -920,22 +953,6 @@ def test_databricks_specs(
             rename_outputs={
                 "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
             },
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
-            input_bindings={
-                "x_1": "__feature_V240103__part0",
-                "x_2": "__feature_V240103__part1",
-            },
-            output_name="feature",
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
-            input_bindings={
-                "x_1": "__req_col_feature_V240103__part0",
-                "r_1": "POINT_IN_TIME",
-            },
-            output_name="req_col_feature",
         ),
     ]
 
