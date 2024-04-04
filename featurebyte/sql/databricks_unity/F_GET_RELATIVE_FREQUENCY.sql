@@ -12,6 +12,10 @@ $$
   if key_to_use not in counts:
     return 0
 
-  return counts[key_to_use] / sum(counts.values())
+  count_sums = sum(counts.values())
+  if count_sums == 0:
+    return
+
+  return counts[key_to_use] / count_sums
 $$
 ;
