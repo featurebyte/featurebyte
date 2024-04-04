@@ -3,7 +3,6 @@ This module contains tests for the offline ingest query graph.
 """
 
 import os
-import pdb
 import textwrap
 from unittest import mock
 from unittest.mock import AsyncMock
