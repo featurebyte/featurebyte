@@ -15,7 +15,7 @@ from featurebyte.models.observation_table import Purpose
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-class TestObservationTable(BaseMaterializedTableApiTest[ObservationTable]):
+class TestObservationTable(BaseMaterializedTableApiTest):
     """
     Test observation table
     """

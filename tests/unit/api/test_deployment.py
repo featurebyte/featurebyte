@@ -10,6 +10,7 @@ import pytest
 from freezegun import freeze_time
 
 import featurebyte as fb
+from featurebyte import FeatureList
 from featurebyte.api.deployment import Deployment
 from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
@@ -205,3 +206,22 @@ def test_delete_deployment(deployment):
 
     with pytest.raises(RecordRetrievalException):
         Deployment.get_by_id(deployment_id)
+
+
+def test_associated_object_list_deployment(deployment, historical_feature_table):
+    """Test associated object list deployment"""
+    feature_list = FeatureList.get_by_id(deployment.feature_list_id)
+    list_deployments = feature_list.list_deployments()
+    assert list_deployments.shape[0] == 1
+    assert list_deployments.name.iloc[0] == deployment.name
+
+    # check historical feature table
+    list_deployments = historical_feature_table.list_deployments()
+    assert list_deployments.shape[0] == 0
+
+    # create another feature list and deploy
+    another_feature_list = historical_feature_table.feature_list
+    another_deployment = another_feature_list.deploy()
+    list_deployments = another_feature_list.list_deployments()
+    assert list_deployments.shape[0] == 1
+    assert list_deployments.name.iloc[0] == another_deployment.name

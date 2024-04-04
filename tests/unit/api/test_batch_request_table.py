@@ -11,7 +11,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-class TestBatchRequestTable(BaseMaterializedTableApiTest[BatchRequestTable]):
+class TestBatchRequestTable(BaseMaterializedTableApiTest):
     """
     Test batch request table
     """

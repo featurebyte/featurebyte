@@ -4,7 +4,7 @@ HistoricalFeatureTable class
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, TypeVar, Union
 
 from pathlib import Path
 
@@ -16,9 +16,15 @@ from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableListRecord
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature_list import FeatureList
+else:
+    FeatureList = TypeVar("FeatureList")
 
 
 class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, MaterializedTableMixin):
@@ -42,6 +48,89 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("observation_table_id", ObservationTable, "observation_table_name"),
     ]
+
+    @property
+    def observation_table(self) -> Optional[ObservationTable]:
+        """
+        ObservationTable object associated with the historical feature table.
+
+        Returns
+        -------
+        Optional[ObservationTable]
+            ObservationTable object
+        """
+        observation_table_id = self.cached_model.observation_table_id
+        if observation_table_id is None:
+            return None
+        return ObservationTable.get_by_id(observation_table_id)
+
+    @property
+    def feature_list(self) -> FeatureList:
+        """
+        FeatureList object associated with the historical feature table.
+
+        Returns
+        -------
+        FeatureList
+            FeatureList object
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.feature_list import FeatureList
+
+        feature_list_id = self.cached_model.feature_list_id
+        return FeatureList.get_by_id(feature_list_id)  # type: ignore
+
+    @property
+    def feature_names(self) -> list[str]:
+        """
+        List of feature names associated with the historical feature table.
+
+        Returns
+        -------
+        list[str]
+            List of feature names
+        """
+        return self.feature_list.feature_names
+
+    @property
+    def target_name(self) -> Optional[str]:
+        """
+        Target name associated with the historical feature table.
+
+        Returns
+        -------
+        Optional[str]
+            Target name
+        """
+        observation_table = self.observation_table
+        if observation_table is None:
+            return None
+
+        target_id = observation_table.cached_model.target_id  # type: ignore
+        if target_id is None:
+            return None
+
+        target = Target.get_by_id(target_id)
+        return target.name
+
+    def list_deployments(self) -> pd.DataFrame:
+        """
+        List all deployments associated with the historical feature table.
+
+        Returns
+        -------
+        pd.DataFrame
+            List of deployments
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.list_deployments()  # doctest: +SKIP
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.deployment import Deployment
+
+        return Deployment.list(feature_list_id=self.cached_model.feature_list_id)
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """

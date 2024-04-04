@@ -10,6 +10,7 @@ from typing_extensions import Annotated, Literal
 from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
+from bson import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -151,6 +152,20 @@ class ObservationTableModel(MaterializedTableModel):
     _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    @property
+    def target_id(self) -> Optional[ObjectId]:
+        """
+        The target id associated with the observation table
+
+        Returns
+        -------
+        Optional[ObjectId]
+            The target id associated with the observation table
+        """
+        if isinstance(self.request_input, TargetInput):
+            return self.request_input.target_id
+        return None
 
     @validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod

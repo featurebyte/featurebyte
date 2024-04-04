@@ -26,7 +26,7 @@ def batch_feature_table_fixture(
     return batch_feature_table
 
 
-class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
+class TestBatchFeatureTable(BaseMaterializedTableApiTest):
     """
     Test batch feature table
     """

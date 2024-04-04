@@ -408,6 +408,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.production_ready_fraction"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.default_feature_fraction"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.version"]),
+        DocLayoutItem([FEATURE_LIST, LIST, "FeatureList.list_deployments"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.catalog_id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.feature_ids"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.id"]),
@@ -1033,6 +1034,7 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         *_get_materialized_table_layout(HISTORICAL_FEATURE_TABLE),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LIST, "HistoricalFeatureTable.list_deployments"]),
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
         ),

@@ -2,7 +2,7 @@
 Base materialize table test class
 """
 
-from typing import Any, Dict, Generic, Type, TypeVar
+from typing import Any, Dict, Type, TypeVar
 
 from abc import abstractmethod
 
@@ -16,7 +16,7 @@ from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 BaseFeatureOrTargetTableT = TypeVar("BaseFeatureOrTargetTableT", bound=ApiObject)
 
 
-class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
+class BaseMaterializedTableApiTest:
     """
     Base materialized table api tests
     """
