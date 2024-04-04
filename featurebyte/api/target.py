@@ -39,11 +39,10 @@ from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetCreate
-from featurebyte.schema.target_table import ObservationInputType, TargetTableCreate
+from featurebyte.schema.target_table import TargetTableCreate
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
 
@@ -352,11 +351,6 @@ class Target(
         """
         is_input_observation_table = isinstance(observation_table, ObservationTable)
         observation_table_id = observation_table.id if is_input_observation_table else None
-        input_type = (
-            RequestInputType.OBSERVATION_TABLE
-            if is_input_observation_table
-            else RequestInputType.DATAFRAME
-        )
 
         if self.saved:
             target_id = self.id
@@ -374,7 +368,6 @@ class Target(
             serving_names_mapping=serving_names_mapping,
             graph=graph,
             node_names=node_names,
-            request_input=ObservationInputType(type=input_type),
             context_id=observation_table.context_id if is_input_observation_table else None,
             skip_entity_validation_checks=skip_entity_validation_checks,
             target_id=target_id,

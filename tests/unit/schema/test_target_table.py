@@ -5,9 +5,8 @@ Test target table schema
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.request_input import RequestInputType
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.schema.target_table import ObservationInputType, TargetTableCreate
+from featurebyte.schema.target_table import TargetTableCreate
 
 
 @pytest.mark.parametrize(
@@ -33,9 +32,6 @@ def test_target_table_create(target_id, graph, node_names, expected_error):
         "serving_names_mapping": {},
         "target_id": target_id,
         "context_id": None,
-        "request_input": ObservationInputType(
-            type=RequestInputType.DATAFRAME,
-        ),
     }
     if expected_error:
         with pytest.raises(expected_error):

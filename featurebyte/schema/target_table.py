@@ -8,22 +8,13 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.request_input import RequestInputType
-from featurebyte.models.target_table import TargetTableModel
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
-
-
-class ObservationInputType(FeatureByteBaseModel):
-    """
-    ObservationInputType schema
-    """
-
-    type: RequestInputType
 
 
 class TargetTableCreate(FeatureOrTargetTableCreate):
@@ -37,7 +28,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
     # for backwards compatibility reasons.
     node_names: Optional[List[StrictStr]] = Field(default=None)
-    request_input: ObservationInputType
+    request_input: Optional[TargetInput]
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
 
@@ -89,7 +80,7 @@ class TargetTableList(PaginationMixin):
     Schema for listing targe tables
     """
 
-    data: List[TargetTableModel]
+    data: List[ObservationTableModel]
 
 
 class TargetTableListRecord(BaseMaterializedTableListRecord):

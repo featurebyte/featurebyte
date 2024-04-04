@@ -14,8 +14,7 @@ from pandas._testing import assert_frame_equal
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models import EntityModel
 from featurebyte.models.entity import ParentEntity
-from featurebyte.models.request_input import RequestInputType
-from featurebyte.schema.target_table import ObservationInputType, TargetTableCreate
+from featurebyte.schema.target_table import TargetTableCreate
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -318,9 +317,6 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             serving_names_mapping={},
             target_id=target["_id"],
             context_id=None,
-            request_input=ObservationInputType(
-                type=RequestInputType.DATAFRAME,
-            ),
             observation_table_id=obs_table_id,
         )
         data = {"payload": create.json()}

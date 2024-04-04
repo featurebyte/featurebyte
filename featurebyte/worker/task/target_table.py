@@ -6,8 +6,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
@@ -68,21 +70,34 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             and observation_set.has_row_index is True
         )
 
+        # track target_namespace_id if target_id is provided in the payload
+        target_namespace_id = None
+        if payload.request_input and isinstance(payload.request_input, TargetInput):
+            # Handle backward compatibility for requests from older SDK
+            target_id = payload.request_input.target_id
+        else:
+            target_id = payload.target_id
+
         async with self.drop_table_on_error(
             db_session=db_session,
             table_details=location.table_details,
             payload=payload,
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
-            if payload.target_id is None:
-                graph = payload.graph
-                node_names = payload.node_names
-            else:
-                target = await self.target_service.get_document(document_id=payload.target_id)
-                graph = target.graph
-                node_names = [target.node_name]
+            graph = payload.graph
+            node_names = payload.node_names
+            if target_id is not None:
+                try:
+                    target = await self.target_service.get_document(document_id=target_id)
+                    target_namespace_id = target.target_namespace_id
+                    graph = target.graph
+                    node_names = [target.node_name]
+                except DocumentNotFoundError:
+                    pass
+
             assert graph is not None
             assert node_names is not None
+
             result = await self.target_computer.compute(
                 observation_set=observation_set,
                 compute_request=ComputeTargetRequest(
@@ -90,7 +105,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     graph=graph,
                     node_names=node_names,
                     serving_names_mapping=payload.serving_names_mapping,
-                    target_id=payload.target_id,
+                    target_id=target_id,
                 ),
                 output_table_details=location.table_details,
             )
@@ -124,13 +139,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             if isinstance(observation_set, ObservationTableModel):
                 purpose = observation_set.purpose
 
-            # track target_namespace_id if target_id is provided in the payload
-            target_id = payload.target_id
-            target_namespace_id = None
-            if target_id is not None:
-                target = await self.target_service.get_document(document_id=target_id)
-                target_namespace_id = target.target_namespace_id
-
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,
@@ -140,7 +148,11 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 request_input=TargetInput(
                     target_id=target_id,
                     observation_table_id=payload.observation_table_id,
-                    type=payload.request_input.type,
+                    type=(
+                        RequestInputType.OBSERVATION_TABLE
+                        if payload.observation_table_id
+                        else RequestInputType.DATAFRAME
+                    ),
                 ),
                 primary_entity_ids=primary_entity_ids,
                 purpose=purpose,
