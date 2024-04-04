@@ -1408,6 +1408,11 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
             ).strip()
         )
 
+    @property
+    def download_filename_prefix(self):
+        """Prefix for download file name"""
+        return self.base_route.lstrip("/")
+
     def test_download_parquet(
         self, test_api_client_persistent, create_success_response, mock_get_session
     ):
@@ -1443,7 +1448,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         assert len(response.content) > 0
         assert response.headers == {
             "content-disposition": (
-                f'attachment; name="data"; filename="{self.base_route.lstrip("/")}_{table_name}.parquet"'
+                f'attachment; name="data"; filename="{self.download_filename_prefix}_{table_name}.parquet"'
             ),
             "content-type": "application/octet-stream",
         }

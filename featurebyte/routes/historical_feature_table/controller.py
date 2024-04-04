@@ -9,6 +9,7 @@ from typing import Any, Optional, cast
 import pandas as pd
 from bson import ObjectId
 
+from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
@@ -93,8 +94,9 @@ class HistoricalFeatureTableController(
         )
 
     async def get_additional_info_params(
-        self, document: HistoricalFeatureTableModel
+        self, document: BaseFeatureOrTargetTableModel
     ) -> dict[str, Any]:
+        assert isinstance(document, HistoricalFeatureTableModel)
         if document.feature_list_id is None:
             return {}
         feature_list = await self.feature_list_service.get_document(
