@@ -125,7 +125,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         Examples
         --------
         >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
-        >>> historical_feature_table.list_deployments()
+        >>> historical_feature_table.list_deployments()  # doctest: +SKIP
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.deployment import Deployment
