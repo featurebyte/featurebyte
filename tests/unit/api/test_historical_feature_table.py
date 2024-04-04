@@ -39,3 +39,4 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
         assert table_under_test.feature_list.name == "feature_list_for_historical_feature_table"
         assert table_under_test.feature_names == ["sum_1d"]
         assert table_under_test.target_name is None
+        assert table_under_test.list_deployments().shape[0] == 0

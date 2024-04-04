@@ -4,7 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Union
 
 from http import HTTPStatus
 
@@ -358,7 +358,11 @@ class Deployment(DeletableApiObject):
         return cls._get_by_id(id=id)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list(
+        cls,
+        include_id: Optional[bool] = True,
+        feature_list_id: Optional[Union[ObjectId, str]] = None,
+    ) -> pd.DataFrame:
         """
         Returns a DataFrame that lists the deployments by their names, feature list names, feature list versions,
         number of features, and whether the features are enabled.
@@ -367,6 +371,8 @@ class Deployment(DeletableApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list.
+        feature_list_id: Optional[Union[ObjectId, str]]
+            Filter deployments by feature list ID.
 
         Returns
         -------
@@ -379,7 +385,10 @@ class Deployment(DeletableApiObject):
 
         >>> deployments = fb.Deployment.list()
         """
-        return super().list(include_id=include_id)
+        params = {}
+        if feature_list_id:
+            params["feature_list_id"] = str(feature_list_id)
+        return cls._list(include_id=include_id, params=params)
 
     def delete(self) -> None:
         """

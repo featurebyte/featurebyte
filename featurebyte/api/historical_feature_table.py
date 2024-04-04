@@ -113,6 +113,25 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         target = Target.get_by_id(target_id)
         return target.name
 
+    def list_deployments(self) -> pd.DataFrame:
+        """
+        List all deployments associated with the historical feature table.
+
+        Returns
+        -------
+        pd.DataFrame
+            List of deployments
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.list_deployments()
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.deployment import Deployment
+
+        return Deployment.list(feature_list_id=self.cached_model.feature_list_id)
+
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the historical feature table.
