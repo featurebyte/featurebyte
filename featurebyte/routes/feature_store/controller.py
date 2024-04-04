@@ -416,6 +416,7 @@ class FeatureStoreController(
             sample=sample,
             size=size,
             seed=seed,
+            user_id=self.task_controller.task_manager.user.id,
             catalog_id=catalog_id,
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
