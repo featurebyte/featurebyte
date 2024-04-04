@@ -1,5 +1,8 @@
 version: '3'
 
+env:
+  FEAST_USAGE: False
+
 tasks:
   init:
     desc: "Initialize the project for development"

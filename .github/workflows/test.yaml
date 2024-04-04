@@ -235,7 +235,7 @@ jobs:
           echo "SPARK_INTEGRATION_TEST_STATUS_CODE=$?" >> $GITHUB_ENV
 
           # Capturing spark logs
-          docker logs spark-thrift 2>&1 > spark-thrift.log
+          docker logs spark-thrift 2>&1 > spark-thrift-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}.log
 
           # Teardown
           task test-teardown
@@ -246,8 +246,8 @@ jobs:
       - name: Upload spark-thrift log file
         uses: actions/upload-artifact@v4
         with:
-          name: spark-thrift-logs-${{ matrix.spark-version }}
-          path: spark-thrift-${{ matrix.spark-version }}.log
+          name: spark-thrift-logs-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}
+          path: spark-thrift-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}.log
           retention-days: 5
 
       # NOTE: Only holding 1 test result to be used in pytest report
