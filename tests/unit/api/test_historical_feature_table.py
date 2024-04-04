@@ -8,7 +8,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-class TestHistoricalFeatureTable(BaseMaterializedTableApiTest[HistoricalFeatureTable]):
+class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
     """
     Test historical feature table
     """
@@ -32,3 +32,10 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest[HistoricalFeatureT
             "updated_at": None,
             "description": None,
         }
+
+    def test_associated_attributes(self, table_under_test):
+        """Test attributes associated with the historical feature table"""
+        assert table_under_test.observation_table.name == "observation_table_from_source_table"
+        assert table_under_test.feature_list.name == "feature_list_for_historical_feature_table"
+        assert table_under_test.feature_names == ["sum_1d"]
+        assert table_under_test.target_name is None
