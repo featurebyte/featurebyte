@@ -19,6 +19,7 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
         (same_values, "'c'", float(1 / 3)),
         (ascending_values, "'a'", float(1 / 6)),
         (ascending_values, "'c'", float(1 / 2)),
+        ({"a": 0}, "'a'", np.nan),
     ],
 )
 @pytest.mark.asyncio
