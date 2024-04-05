@@ -150,6 +150,7 @@ if __name__ == "__main__":
         "typeguard",
         "yaml",
         "IPython",
+        "mlflow",
     }
 
     # Common libraries that can be imported from both backend and client

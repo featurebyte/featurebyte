@@ -4,6 +4,8 @@ Unit tests for HistoricalFeatureTable class
 
 from typing import Any, Dict
 
+from unittest import mock
+
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
@@ -40,3 +42,27 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
         assert table_under_test.feature_names == ["sum_1d"]
         assert table_under_test.target_name is None
         assert table_under_test.list_deployments().shape[0] == 0
+
+    def test_get_with_mlflow(self, table_under_test):
+        """Test get with mlflow installed"""
+        original_import = __import__
+        mlflow_mock = mock.Mock()
+
+        def import_mock(name, *args, **kwargs):
+            if name == "mlflow":
+                return mlflow_mock
+            return original_import(name, *args, **kwargs)
+
+        with mock.patch("builtins.__import__", side_effect=import_mock):
+            HistoricalFeatureTable.get(name=table_under_test.name)
+
+        mlflow_mock.log_param.assert_called_once_with(
+            "fb_training_data",
+            {
+                "catalog_id": table_under_test.catalog_id,
+                "feature_list_name": "feature_list_for_historical_feature_table",
+                "target_name": None,
+                "dataset_name": "my_historical_feature_table",
+                "primary_entity": ["customer"],
+            },
+        )

@@ -18,6 +18,7 @@ from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import get_active_catalog_id
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableListRecord
 
@@ -112,6 +113,32 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         target = Target.get_by_id(target_id)
         return target.name
+
+    @classmethod
+    def get(cls, name: str) -> HistoricalFeatureTable:
+        hist_feature_table = cls._get(name=name)
+
+        # Add mlflow tracking in get_historical_tables
+        try:
+            import mlflow  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            mlflow = None
+
+        if mlflow and mlflow.active_run():
+            # log featurebyte training data information
+            feature_list = hist_feature_table.feature_list
+            mlflow.log_param(
+                "fb_training_data",
+                {
+                    "catalog_id": get_active_catalog_id(),
+                    "feature_list_name": feature_list.name,
+                    "target_name": hist_feature_table.target_name,
+                    "dataset_name": hist_feature_table.name,
+                    "primary_entity": [entity.name for entity in feature_list.primary_entity],
+                },
+            )
+
+        return hist_feature_table
 
     def list_deployments(self) -> pd.DataFrame:
         """
