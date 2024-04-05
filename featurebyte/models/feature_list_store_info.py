@@ -206,7 +206,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         pyspark_import_statement = f"from pyspark.sql.types import {import_classes}"
         return schema_statement, pyspark_import_statement
 
-    def get_feature_specs_definition(self, target_spec: Optional[ColumnSpec]) -> str:
+    def get_feature_specs_definition(
+        self, target_spec: Optional[ColumnSpec], include_log_model: bool = True
+    ) -> str:
         """
         Get Feature specs definition for DataBricks
 
@@ -214,6 +216,8 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         ----------
         target_spec: Optional[ColumnSpec]
             Target column spec
+        include_log_model: bool
+            Whether to include log model statement in the generated code
 
         Returns
         -------
@@ -236,6 +240,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             require_timestamp_lookup_key=self.require_timestamp_lookup_key,
             schema=base_dataframe_schema,
             target_column=target_spec.name,
+            include_log_model=include_log_model,
         )
         return codes
 

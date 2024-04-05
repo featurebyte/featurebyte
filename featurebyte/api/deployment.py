@@ -12,16 +12,22 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.accessor.databricks import DataBricksAccessor
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.savable_api_object import DeletableApiObject
+from featurebyte.api.use_case import UseCase
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
-from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
+from featurebyte.exception import (
+    DeploymentDataBricksAccessorError,
+    FeatureListNotOnlineEnabledError,
+    RecordRetrievalException,
+)
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
@@ -64,6 +70,37 @@ class Deployment(DeletableApiObject):
     ]
 
     @property
+    def databricks(self) -> DataBricksAccessor:
+        """
+        DataBricks accessor object
+
+        Returns
+        -------
+        DataBricksAccessor
+
+        Raises
+        ------
+        DeploymentDataBricksAccessorError
+            If deployment is not enabled or not using DataBricks Unity as the store
+        """
+        if not self.enabled:
+            raise DeploymentDataBricksAccessorError("Deployment is not enabled")
+
+        store_info = self.feature_list.cached_model.store_info  # type: ignore
+        if store_info.type != "databricks_unity":
+            raise DeploymentDataBricksAccessorError(
+                "Deployment is not using DataBricks Unity as the store"
+            )
+
+        target_name, target_dtype = None, None
+        if self.use_case and self.use_case.target:
+            target = self.use_case.target
+            target_name, target_dtype = target.name, target.dtype
+        return DataBricksAccessor(
+            store_info=store_info, target_name=target_name, target_dtype=target_dtype
+        )
+
+    @property
     def enabled(self) -> bool:
         """
         Deployment enabled status
@@ -84,6 +121,31 @@ class Deployment(DeletableApiObject):
         PydanticObjectId
         """
         return self.cached_model.feature_list_id
+
+    @property
+    def feature_list(self) -> FeatureList:
+        """
+        Feature list object associated with this deployment
+
+        Returns
+        -------
+        FeatureList
+        """
+        return FeatureList.get_by_id(self.feature_list_id)
+
+    @property
+    def use_case(self) -> Optional[UseCase]:
+        """
+        Use case object associated with this deployment
+
+        Returns
+        -------
+        Optional[UseCase]
+        """
+        use_case_id = self.cached_model.use_case_id  # type: ignore
+        if use_case_id is None:
+            return None
+        return UseCase.get_by_id(use_case_id)
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """

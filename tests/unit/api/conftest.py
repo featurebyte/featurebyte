@@ -11,7 +11,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog, FeatureJobSetting, TargetNamespace, UseCase
+from featurebyte import Catalog, RequestColumn, TargetNamespace, UseCase
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -427,7 +427,9 @@ def deployment_fixture(float_feature, use_case):
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
+def latest_event_timestamp_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
     """
     Fixture for a timestamp feature
     """
@@ -436,10 +438,43 @@ def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
         method="latest",
         windows=["90d"],
         feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1h", frequency="1h", time_modulo_frequency="30m"
-        ),
+        feature_job_setting=feature_group_feature_job_setting,
     )["latest_event_timestamp_90d"]
+    return feature
+
+
+@pytest.fixture(name="latest_event_timestamp_overall_feature")
+def latest_event_timestamp_overall_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby([]).aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_overall_90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp_overall_90d"]
+    return feature
+
+
+@pytest.fixture(name="ttl_non_ttl_composite_feature")
+def ttl_non_ttl_composite_feature_fixture(float_feature, non_time_based_feature):
+    """Fixture for a composite feature"""
+    ttl_component = 2 * (float_feature + 100)
+    non_ttl_component = 3 - (non_time_based_feature + 100)
+    feature = ttl_component + non_ttl_component
+    feature.name = "feature"
+    return feature
+
+
+@pytest.fixture(name="req_col_day_diff_feature")
+def req_col_feature_fixture(latest_event_timestamp_feature):
+    """Fixture for a feature that uses a request column"""
+    feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+    feature.name = "req_col_feature"
     return feature
 
 

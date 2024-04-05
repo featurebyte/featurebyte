@@ -35,6 +35,7 @@ log_model_dataset = fe.create_training_set(
     exclude_columns=exclude_columns,
 )
 
+{% if include_log_model -%}
 # Log the model and register it to the unity catalog
 fe.log_model(
     model=model,  # model is the trained model
@@ -43,3 +44,4 @@ fe.log_model(
     training_set=log_model_dataset,
     registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
 )
+{% endif -%}

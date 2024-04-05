@@ -3,18 +3,14 @@ This module contains tests for the offline ingest query graph.
 """
 
 import os
-import pdb
 import textwrap
-from unittest import mock
-from unittest.mock import AsyncMock
 
 import freezegun
 import pytest
 from bson import json_util
 
-from featurebyte import DatabricksDetails, Entity, FeatureJobSetting, FeatureList, RequestColumn
+from featurebyte import Entity, FeatureJobSetting, RequestColumn
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -42,40 +38,6 @@ def always_enable_feast_integration_fixture(
     """Enable feast integration & patch catalog ID for all tests in this module"""
     _ = enable_feast_integration, patched_catalog_get_create_payload, mock_deployment_flow
     yield
-
-
-@pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
-    """
-    Fixture for a timestamp feature
-    """
-    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
-        value_column="event_timestamp",
-        method="latest",
-        windows=["90d"],
-        feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=feature_group_feature_job_setting,
-    )["latest_event_timestamp_90d"]
-    return feature
-
-
-@pytest.fixture(name="latest_event_timestamp_overall_feature")
-def latest_event_timestamp_overall_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
-    """
-    Fixture for a timestamp feature
-    """
-    feature = snowflake_event_view_with_entity.groupby([]).aggregate_over(
-        value_column="event_timestamp",
-        method="latest",
-        windows=["90d"],
-        feature_names=["latest_event_timestamp_overall_90d"],
-        feature_job_setting=feature_group_feature_job_setting,
-    )["latest_event_timestamp_overall_90d"]
-    return feature
 
 
 @pytest.fixture(name="entity_id_to_serving_name")
@@ -115,14 +77,14 @@ def composite_feature_fixture(float_feature, non_time_based_feature):
 
 @freezegun.freeze_time("2023-12-29")
 def test_feature__ttl_and_non_ttl_components(
-    composite_feature, test_dir, update_fixtures, default_feature_job_setting
+    ttl_non_ttl_composite_feature, test_dir, update_fixtures, default_feature_job_setting
 ):
     """Test that a feature contains both ttl and non-ttl components."""
-    composite_feature.save()
-    deploy_features_through_api([composite_feature])
+    ttl_non_ttl_composite_feature.save()
+    deploy_features_through_api([ttl_non_ttl_composite_feature])
 
     # check offline ingest query graph
-    feature_model = composite_feature.cached_model
+    feature_model = ttl_non_ttl_composite_feature.cached_model
     offline_store_info = feature_model.offline_store_info
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
@@ -816,194 +778,3 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
-
-
-@freezegun.freeze_time("2024-01-03")
-def test_databricks_specs(
-    float_feature,
-    non_time_based_feature,
-    composite_feature,
-    latest_event_timestamp_feature,
-    latest_event_timestamp_overall_feature,
-):
-    """Test databricks specs"""
-    req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
-    req_col_feature.name = "req_col_feature"
-    features = [
-        float_feature,
-        non_time_based_feature,
-        composite_feature,
-        req_col_feature,
-        latest_event_timestamp_overall_feature,
-    ]
-    for feature in features:
-        feature.save()
-
-    feature_list = FeatureList(features, name="feature_list")
-    feature_list.save()
-    with mock.patch(
-        "featurebyte.service.feature_list.FeatureStoreService.get_document", new_callable=AsyncMock
-    ) as mock_get_document:
-        # mock the feature store service to return the databricks feature store
-        feature_store = FeatureStoreModel(
-            name="databricks_feature_store",
-            type="databricks_unity",
-            details=DatabricksDetails(
-                host="host.databricks.com",
-                http_path="sql/protocalv1/some_path",
-                catalog_name="feature_engineering",
-                schema_name="some_schema",
-                storage_path=f"dbfs:/FileStore/some_storage_path",
-            ),
-        )
-        mock_get_document.return_value = feature_store
-        deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
-        deployment.enable()
-
-    store_info = feature_list.cached_model.store_info
-    expected = """
-    # auto-generated by FeatureByte (based-on databricks-feature-store 0.16.3)
-    # Import necessary modules for feature engineering and machine learning
-    from databricks.feature_engineering import FeatureEngineeringClient
-    from databricks.feature_engineering import FeatureFunction, FeatureLookup
-    from pyspark.sql.types import (
-        DoubleType,
-        LongType,
-        StringType,
-        StructField,
-        StructType,
-        TimestampType,
-    )
-    import mlflow
-
-    # Initialize the Feature Engineering client to interact with Databricks Feature Store
-    fe = FeatureEngineeringClient()
-
-    # Timestamp column name used to retrieve the latest feature values
-    timestamp_lookup_key = "POINT_IN_TIME"
-
-    # Define the features for the model
-    # FeatureLookup is used to specify how to retrieve features from the feature store
-    # Each FeatureLookup or FeatureFunction object defines a set of features to be included
-    features = [
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["sum_1d_V240103"],
-            rename_outputs={"sum_1d_V240103": "sum_1d"},
-        ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
-            lookup_key=["transaction_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["non_time_time_sum_amount_feature_V240103"],
-            rename_outputs={
-                "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
-            },
-        ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
-            lookup_key=["transaction_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__feature_V240103__part1"],
-            rename_outputs={},
-        ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__feature_V240103__part0"],
-            rename_outputs={},
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
-            input_bindings={
-                "x_1": "__feature_V240103__part0",
-                "x_2": "__feature_V240103__part1",
-            },
-            output_name="feature",
-        ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__req_col_feature_V240103__part0"],
-            rename_outputs={},
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
-            input_bindings={
-                "x_1": "__req_col_feature_V240103__part0",
-                "r_1": "POINT_IN_TIME",
-            },
-            output_name="req_col_feature",
-        ),
-        FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1__no_entity_30m",
-            lookup_key=["__featurebyte_dummy_entity"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["latest_event_timestamp_overall_90d_V240103"],
-            rename_outputs={
-                "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
-            },
-        ),
-    ]
-
-    # List of columns to exclude from the training set
-    # Users should consider including request columns and primary entity columns here
-    # This is important if these columns are not features but are only needed for lookup purposes
-    exclude_columns = [
-        "POINT_IN_TIME",
-        "__feature_V240103__part0",
-        "__feature_V240103__part1",
-        "__featurebyte_dummy_entity",
-        "__req_col_feature_V240103__part0",
-        "cust_id",
-        "transaction_id",
-    ]
-
-    # Prepare the dataset for log model
-    # 'features' is a list of feature lookups to be included in the training set
-    # 'exclude_columns' is a list of columns to be excluded from the training set
-    target_column = "[TARGET_COLUMN]"
-    schema = StructType(
-        [
-            StructField(target_column, DoubleType()),
-            StructField("__featurebyte_dummy_entity", StringType()),
-            StructField("transaction_id", LongType()),
-            StructField("cust_id", LongType()),
-            StructField("POINT_IN_TIME", TimestampType()),
-        ]
-    )
-    log_model_dataset = fe.create_training_set(
-        df=spark.createDataFrame([], schema),
-        feature_lookups=features,
-        label=target_column,
-        exclude_columns=exclude_columns,
-    )
-
-    # Log the model and register it to the unity catalog
-    fe.log_model(
-        model=model,  # model is the trained model
-        artifact_path="[ARTIFACT_PATH]",  # artifact_path is the path to the model
-        flavor=mlflow.sklearn,
-        training_set=log_model_dataset,
-        registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
-    )
-    """
-    replace_pairs = [
-        ("[FEATURE_ID1]", str(composite_feature.cached_model.id)),
-        ("[FEATURE_ID2]", str(req_col_feature.cached_model.id)),
-    ]
-    for replace_pair in replace_pairs:
-        expected = expected.replace(*replace_pair)
-    assert (
-        store_info.get_feature_specs_definition(None).strip() == textwrap.dedent(expected).strip()
-    )

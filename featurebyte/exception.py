@@ -371,6 +371,12 @@ class NoFeatureJobSettingInSourceError(FeatureByteException):
     """
 
 
+class DeploymentDataBricksAccessorError(FeatureByteException):
+    """
+    Raise when there is an error with deployment
+    """
+
+
 class NoChangesInFeatureVersionError(DocumentError):
     """
     Raise when we try to create a new feature version, but there are no differences.
@@ -441,6 +447,15 @@ class CatalogNotSpecifiedError(BaseFailedDependencyError):
 
     def __str__(self) -> str:
         return "Catalog not specified. Please specify a catalog."
+
+
+class NotInDataBricksEnvironmentError(BaseFailedDependencyError):
+    """
+    Raise when the code is not running in a DataBricks environment
+    """
+
+    def __str__(self) -> str:
+        return "This method can only be called in a DataBricks environment."
 
 
 class UseCaseInvalidDataError(BaseUnprocessableEntityError):
