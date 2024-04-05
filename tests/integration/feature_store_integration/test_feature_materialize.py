@@ -568,7 +568,7 @@ async def test_feast_registry(
     feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
     assert feast_registry is not None
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
-        feast_registry.id
+        feast_registry
     )
 
     # Check feature views and feature services
@@ -580,7 +580,7 @@ async def test_feast_registry(
 
     # Check feast materialize and get_online_features
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
-        feast_registry.id
+        feast_registry
     )
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()

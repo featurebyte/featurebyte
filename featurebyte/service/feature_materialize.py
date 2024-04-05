@@ -18,6 +18,7 @@ from redis.lock import Lock
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SourceType
+from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
@@ -537,7 +538,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             return None
-        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
+        assert isinstance(feast_registry, FeastRegistryModel)
+        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
         assert feature_table_model.feature_cluster is not None, "Missing feature cluster"

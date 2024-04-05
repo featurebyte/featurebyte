@@ -140,7 +140,7 @@ async def test_get_feast_feature_store(
 ):
     """Test get feast feature store"""
     feast_fs = await feast_feature_store_service.get_feast_feature_store(
-        feast_registry_id=feast_registry.id
+        feast_registry=feast_registry
     )
 
     # check that assets in the registry can be retrieved
