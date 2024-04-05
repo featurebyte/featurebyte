@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
@@ -76,8 +77,9 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             return None
+        assert isinstance(feast_registry, FeastRegistryModel)
         feast_feature_store = await self.feast_feature_store_service.get_feast_feature_store(
-            feast_registry_id=feast_registry.id,
+            feast_registry=feast_registry,
             online_store_id=payload.online_store_id,
         )
         session = None

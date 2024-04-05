@@ -4,7 +4,7 @@ This module functions used to patch the Feast library.
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, Iterable, List
 
 from collections import defaultdict
 
@@ -101,16 +101,48 @@ def augment_response_with_on_demand_transforms(
             )
 
 
+class DataFrameWrapper(pd.DataFrame):
+    """
+    Wrapper class for pandas DataFrame to support alias column names. This feature is used to improve the
+    runtime & memory performance of the get_transformed_features_df function.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self._alias = {}
+
+    def add_column_alias(self, column_name: str, alias: str) -> None:
+        """
+        Add a column alias
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        alias: str
+            Alias name of the column
+        """
+        self._alias[alias] = column_name
+
+    def __getitem__(self, key: Any):
+        if not isinstance(key, str) and isinstance(key, Iterable):
+            return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
+
+        if isinstance(key, str) and key in self._alias:
+            key = self._alias[key]
+
+        return super().__getitem__(key)
+
+
 def get_transformed_features_df(
     feature_view: OnDemandFeatureView,
     df_with_features: pd.DataFrame,
     full_feature_names: bool = False,
 ) -> pd.DataFrame:
     """
-    The main difference between this and the original Feast implementation is that this function stores the
-    transformed features in a dictionary before concatenating them to the original dataframe. This is to
-    avoid the performance issues (fragmented dataframe) that arise from assigning a new column to a
-    dataframe in a loop.
+    The main difference between this and the original Feast implementation is that an extended pandas
+    DataFrame with alias column names support is used to improve the runtime & memory performance of the
+    function.
 
     Parameters
     ----------
@@ -126,25 +158,20 @@ def get_transformed_features_df(
     pd.DataFrame
         Dataframe with transformed features
     """
-    # Apply on demand transformations
-    # Original implementation does not use dict to store the transformed features,
-    # which leads to pandas performance issues
-    columns_to_cleanup = []
-    df_dict = {}
+    # Original implementation assigns a new column on each iteration, this implementation uses a wrapper
+    # class to improve the runtime & memory performance.
+    df_with_features = DataFrameWrapper(df_with_features)
     for source_fv_projection in feature_view.source_feature_view_projections.values():
         for feature in source_fv_projection.features:
             full_feature_ref = f"{source_fv_projection.name}__{feature.name}"
             if full_feature_ref in df_with_features.keys():
                 # Make sure the partial feature name is always present
-                df_dict[feature.name] = df_with_features[full_feature_ref]
-                columns_to_cleanup.append(feature.name)
+                df_with_features.add_column_alias(full_feature_ref, feature.name)
             elif feature.name in df_with_features.keys():
                 # Make sure the full feature name is always present
-                df_dict[full_feature_ref] = df_with_features[feature.name]
-                columns_to_cleanup.append(full_feature_ref)
+                df_with_features.add_column_alias(feature.name, full_feature_ref)
 
     # Compute transformed values and apply to each result row
-    df_with_features = pd.concat([df_with_features, pd.DataFrame(df_dict)], axis=1)
     df_with_transformed_features = feature_view.udf(df_with_features)
 
     # Work out whether the correct columns names are used.
@@ -158,6 +185,4 @@ def get_transformed_features_df(
             # Long name must be in dataframe.
             rename_columns[long_name] = short_name
 
-    # Cleanup extra columns used for transformation
-    df_with_features.drop(columns=columns_to_cleanup, inplace=True)
-    return df_with_transformed_features.rename(columns=rename_columns)
+    return pd.DataFrame(df_with_transformed_features).rename(columns=rename_columns)

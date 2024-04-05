@@ -276,7 +276,7 @@ async def check_feast_registry(
     feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
     assert feast_registry is not None
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
-        feast_registry.id
+        feast_registry
     )
     assert feature_store.project == expected_project_name
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_views

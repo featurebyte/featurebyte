@@ -13,6 +13,7 @@ from feast.repo_config import FeastConfigBaseModel, RegistryConfig
 
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.model.online_store import get_feast_online_store_details
+from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -51,7 +52,7 @@ class FeastFeatureStoreService:
 
     async def get_feast_feature_store(
         self,
-        feast_registry_id: ObjectId,
+        feast_registry: FeastRegistryModel,
         online_store_id: Optional[ObjectId] = None,
     ) -> FeastFeatureStore:
         """
@@ -59,8 +60,8 @@ class FeastFeatureStoreService:
 
         Parameters
         ----------
-        feast_registry_id: ObjectId
-            Feast registry id
+        feast_registry: FeastRegistryModel
+            Feast registry model
         online_store_id: Optional[ObjectId]
             Online store id to use if specified instead of using the one in the catalog. This is used
             when the returned feature store is about to be used to update a different online store
@@ -71,9 +72,6 @@ class FeastFeatureStoreService:
         FeastFeatureStore
             Feast feature store
         """
-        feast_registry = await self.feast_registry_service.get_document(
-            document_id=feast_registry_id
-        )
         feature_store = await self.feature_store_service.get_document(
             document_id=feast_registry.feature_store_id
         )
@@ -156,4 +154,5 @@ class FeastFeatureStoreService:
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             return None
-        return await self.get_feast_feature_store(feast_registry_id=feast_registry.id)
+        assert isinstance(feast_registry, FeastRegistryModel)
+        return await self.get_feast_feature_store(feast_registry=feast_registry)
