@@ -4,7 +4,7 @@ This module functions used to patch the Feast library.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Union
 
 from collections import defaultdict
 
@@ -109,7 +109,7 @@ class DataFrameWrapper(pd.DataFrame):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._alias = {}
+        self._alias: Dict[str, str] = {}
 
     def add_column_alias(self, column_name: str, alias: str) -> None:
         """
@@ -124,7 +124,7 @@ class DataFrameWrapper(pd.DataFrame):
         """
         self._alias[alias] = column_name
 
-    def __getitem__(self, key: Any):
+    def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
         if not isinstance(key, str) and isinstance(key, Iterable):
             return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
 
