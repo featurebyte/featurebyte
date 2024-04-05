@@ -1,11 +1,13 @@
 import textwrap
 from unittest import mock
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import freezegun
+import pandas as pd
 import pytest
 
 from featurebyte import DatabricksDetails, FeatureList
+from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
 
 
@@ -25,9 +27,9 @@ def databricks_deployment_fixture(
     float_feature,
     non_time_based_feature,
     ttl_non_ttl_composite_feature,
-    latest_event_timestamp_feature,
     latest_event_timestamp_overall_feature,
     req_col_day_diff_feature,
+    use_case,
 ):
     """Databricks deployment fixture"""
     features = [
@@ -59,9 +61,32 @@ def databricks_deployment_fixture(
             ),
         )
         mock_get_document.return_value = feature_store
-        deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+        deployment = feature_list.deploy(
+            make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
+        )
         deployment.enable()
         yield deployment
+
+
+@pytest.fixture(name="mock_is_databricks_env")
+def mock_is_databricks_env_fixture():
+    """Mock is_databricks_environment"""
+    with patch(
+        "featurebyte.api.accessor.databricks._is_databricks_environment"
+    ) as mock_is_databricks_env:
+        yield mock_is_databricks_env
+
+
+def test_databricks_accessor__with_non_databricks_unity_feature_store(deployment):
+    """Test databricks accessor with non-databricks feature store"""
+    expected = "Deployment is not enabled"
+    with pytest.raises(DeploymentDataBricksAccessorError, match=expected):
+        _ = deployment.databricks
+
+    deployment.enable()
+    expected = "Deployment is not using DataBricks Unity as the store"
+    with pytest.raises(DeploymentDataBricksAccessorError, match=expected):
+        _ = deployment.databricks
 
 
 def test_databricks_specs(
@@ -179,7 +204,7 @@ def test_databricks_specs(
     # Prepare the dataset for log model
     # 'features' is a list of feature lookups to be included in the training set
     # 'exclude_columns' is a list of columns to be excluded from the training set
-    target_column = "[TARGET_COLUMN]"
+    target_column = "float_target"
     schema = StructType(
         [
             StructField(target_column, DoubleType()),
@@ -214,3 +239,32 @@ def test_databricks_specs(
 
     feat_specs = databricks_deployment.databricks.get_feature_specs()
     assert feat_specs.strip() == textwrap.dedent(expected).strip()
+
+
+def test_databricks_commands__run_in_non_databricks_env(databricks_deployment):
+    """Test databricks commands run in non-databricks environment"""
+    expected = "This method can only be called in a DataBricks environment."
+    with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
+        databricks_deployment.databricks.log_model(
+            model=None, artifact_path="some_path", flavor=None, registered_model_name="some_name"
+        )
+
+    with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
+        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+
+
+def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_deployment):
+    """Test databricks commands with missing import"""
+    _ = mock_is_databricks_env
+
+    expected = "Please install the databricks feature engineering package to use this accessor."
+    with pytest.raises(ImportError, match=expected):
+        databricks_deployment.databricks.log_model(
+            model=None,
+            artifact_path="some_path",
+            flavor=None,
+            registered_model_name="some_name",
+        )
+
+    with pytest.raises(ImportError, match=expected):
+        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())

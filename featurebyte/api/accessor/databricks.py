@@ -41,9 +41,14 @@ def _get_feature_engineering_client() -> Any:
 
     Raises
     ------
+    NotInDataBricksEnvironmentError
+        If the method is not called in DataBricks environment
     ImportError
         If the databricks feature engineering package is not installed
     """
+    if not _is_databricks_environment():
+        raise NotInDataBricksEnvironmentError()
+
     # pylint: disable=import-outside-toplevel
     try:
         from databricks.feature_engineering import FeatureEngineeringClient
@@ -98,6 +103,7 @@ class DataBricksAccessor:
         artifact_path: str,
         flavor: ModuleType,
         registered_model_name: str,
+        print_feature_specs: bool = True,
         **kwargs: Any,
     ) -> None:
         """
@@ -113,21 +119,20 @@ class DataBricksAccessor:
             MLflow module to use to log the model.
         registered_model_name: str
             Name of the registered model
+        print_feature_specs: bool
+            Whether to print the feature specs
         kwargs: Any
             Additional keyword arguments to pass to the log_model method
-
-        Raises
-        ------
-        NotInDataBricksEnvironmentError
-            If the method is not called in DataBricks environment
         """
-        if not _is_databricks_environment():
-            raise NotInDataBricksEnvironmentError(
-                "This method can only be called in DataBricks environment."
-            )
+        # create feature engineering client
+        databricks_fe_client = _get_feature_engineering_client()
 
         exec_locals: dict[str, Any] = {}
         feature_specs_definition = self.get_feature_specs(include_log_model=False)
+
+        # print feature specs
+        if print_feature_specs:
+            print(feature_specs_definition)
 
         # exec feature specs definition to generate training set
         exec(feature_specs_definition, exec_locals)  # pylint: disable=exec-used  # nosec
@@ -136,7 +141,6 @@ class DataBricksAccessor:
         kwargs["training_set"] = exec_locals["log_model_dataset"]
 
         # log model
-        databricks_fe_client = _get_feature_engineering_client()
         databricks_fe_client.log_model(
             model=model,
             artifact_path=artifact_path,
@@ -169,6 +173,7 @@ class DataBricksAccessor:
         pd.DataFrame
             Scored dataframe
         """
+        # create feature engineering client
         databricks_fe_client = _get_feature_engineering_client()
 
         if SpecialColumnName.POINT_IN_TIME not in df.columns:
