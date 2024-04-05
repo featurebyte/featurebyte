@@ -224,10 +224,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_table_model = None
 
             if update_progress:
-                await update_progress(
-                    int((idx + 1) / offline_table_count * 60),
-                    f"Materializing features to online store for table {offline_store_table_name}",
+                message = (
+                    f"Materializing features to online store for table {offline_store_table_name} "
+                    f"({idx + 1} / {offline_table_count} tables)"
                 )
+                await update_progress(int((idx + 1) / offline_table_count * 60), message)
 
             if feature_table_model is not None:
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
@@ -300,10 +301,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
 
             if update_progress:
-                await update_progress(
-                    int((idx + 1) / offline_table_count * 90),
-                    f"Updating offline store feature table {feature_table_dict['name']} for online disabling features",
+                message = (
+                    f"Updating offline store feature table {feature_table_dict['name']} for online disabling features "
+                    f"({idx + 1} / {offline_table_count} tables)"
                 )
+                await update_progress(int((idx + 1) / offline_table_count * 90), message)
 
         await self._create_or_update_feast_registry(feature_lists)
         feature_store_model = await self._get_feature_store_model()
