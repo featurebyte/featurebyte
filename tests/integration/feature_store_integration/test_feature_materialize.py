@@ -579,6 +579,9 @@ async def test_feast_registry(
     } == expected_feature_service_names
 
     # Check feast materialize and get_online_features
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry
+    )
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()
     entity_row = {
