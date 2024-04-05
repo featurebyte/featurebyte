@@ -43,7 +43,7 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
         assert table_under_test.target_name is None
         assert table_under_test.list_deployments().shape[0] == 0
 
-    def test_get_with_mlflow(self, table_under_test):
+    def test_get_with_mlflow(self, table_under_test, caplog):
         """Test get with mlflow installed"""
         original_import = __import__
         mlflow_mock = mock.Mock()
@@ -65,4 +65,15 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
                 "dataset_name": "my_historical_feature_table",
                 "primary_entity": ["customer"],
             },
+        )
+
+        # check when log_param raises an exception
+        mlflow_mock.log_param.side_effect = Exception("Random error")
+        with mock.patch("builtins.__import__", side_effect=import_mock):
+            HistoricalFeatureTable.get(name=table_under_test.name)
+
+        last_log = caplog.records[-1]
+        assert (
+            last_log.msg
+            == "Failed to log featurebyte training data information to mlflow: Random error"
         )
