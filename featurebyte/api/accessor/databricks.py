@@ -130,7 +130,7 @@ class DataBricksAccessor:
         feature_specs_definition = self.get_feature_specs(include_log_model=False)
 
         # exec feature specs definition to generate training set
-        exec(feature_specs_definition, exec_locals)  # pylint: disable=exec-used
+        exec(feature_specs_definition, exec_locals)  # pylint: disable=exec-used  # nosec
 
         kwargs = kwargs or {}
         kwargs["training_set"] = exec_locals["log_model_dataset"]
