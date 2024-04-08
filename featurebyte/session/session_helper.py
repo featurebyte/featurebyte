@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
+import os
+
 import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -21,7 +23,7 @@ from featurebyte.utils.async_helper import asyncio_gather
 logger = get_logger(__name__)
 
 
-MAX_QUERY_CONCURRENCY = 10
+MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "10"))
 
 
 def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:

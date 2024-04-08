@@ -2,26 +2,26 @@
 Helper functions for asyncio
 """
 
-from typing import Coroutine
+from typing import Any, Coroutine, List
 
 import asyncio
 from asyncio import Future
 
 
-def asyncio_gather(*coros: Coroutine, max_concurrency: int = 0) -> Future:
+def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -> Future[List[Any]]:
     """
     Run coroutines with a optional concurrency limit
 
     Parameters
     ----------
-    coros: Coroutine
+    coros: Coroutine[Any, Any, Any]
         Coroutines to run
     max_concurrency: int
         Maximum number of coroutines to run concurrently
 
     Returns
     -------
-    Future
+    Future[List[Any]]
     """
 
     if max_concurrency < 1:
@@ -32,7 +32,7 @@ def asyncio_gather(*coros: Coroutine, max_concurrency: int = 0) -> Future:
     semaphore = asyncio.Semaphore(max_concurrency)
 
     # Run coroutines with a semaphore
-    async def _coro(coro):
+    async def _coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with semaphore:
             nonlocal failed, tasks
             if failed:  # pylint: disable=used-before-assignment
