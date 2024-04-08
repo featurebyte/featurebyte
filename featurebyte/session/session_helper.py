@@ -4,9 +4,9 @@ Session related helper functions
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Union, cast
+from typing import Any, Callable, Coroutine, List, Optional, Union
 
-import asyncio
+import os
 
 import pandas as pd
 from sqlglot import expressions
@@ -18,8 +18,12 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
+from featurebyte.utils.async_helper import asyncio_gather
 
 logger = get_logger(__name__)
+
+
+MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "10"))
 
 
 def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:
@@ -82,23 +86,9 @@ async def run_coroutines(coroutines: List[Coroutine[Any, Any, Any]]) -> List[Any
     -------
     List[Any]
         List of results from the coroutines
-
-    Raises
-    ------
-    Exception
-        If any task failed
     """
-    tasks = [asyncio.create_task(coro) for coro in coroutines]
-    try:
-        return cast(List[Any], await asyncio.gather(*tasks))
-    except Exception:
-        logger.error(
-            "Canceling all other tasks because at least one task failed",
-            exc_info=True,
-        )
-        for task in tasks:
-            task.cancel()
-        raise
+    future = asyncio_gather(*coroutines, max_concurrency=MAX_QUERY_CONCURRENCY)
+    return await future
 
 
 async def execute_feature_query(

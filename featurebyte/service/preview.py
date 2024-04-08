@@ -77,7 +77,9 @@ class PreviewService:
                     "details": feature_store_dict["details"],
                 }
             )
-            feature_store = await feature_stores.__anext__()
+            feature_store = (
+                await feature_stores.__anext__()  # pylint: disable=unnecessary-dunder-call
+            )
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
