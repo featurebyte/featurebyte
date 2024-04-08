@@ -539,7 +539,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         if feast_registry is None:
             return None
         assert isinstance(feast_registry, FeastRegistryModel)
-        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry)
+        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry)  # type: ignore
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
         assert feature_table_model.feature_cluster is not None, "Missing feature cluster"

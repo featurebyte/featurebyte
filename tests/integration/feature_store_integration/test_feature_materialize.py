@@ -571,9 +571,8 @@ async def test_feast_registry(
         feast_registry
     )
 
-    # Check feature views and feature services
+    # Check feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
-    assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
     assert {
         fs.name for fs in feature_store.list_feature_services()
     } == expected_feature_service_names
@@ -720,6 +719,11 @@ async def test_feast_registry(
             entity_rows=[entity_row],
         ).to_dict()
     assert_dict_approx_equal(online_features, expected)
+
+    # check feature views (DO NOT CALL list_feature_views() before get_online_features as it will
+    # cache the list of feature views and has side effect on the following call, this should be
+    # Feast specific issue).
+    assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
 
 
 @pytest.mark.order(5)

@@ -6,7 +6,9 @@ from typing import Any, Optional
 
 import tempfile
 
+from asyncache import cached
 from bson import ObjectId
+from cachetools import LRUCache
 from feast import FeatureStore as BaseFeastFeatureStore
 from feast import RepoConfig
 from feast.repo_config import FeastConfigBaseModel, RegistryConfig
@@ -15,10 +17,13 @@ from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastCo
 from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
+from featurebyte.logging import get_logger
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+logger = get_logger(__name__)
 
 
 class FeastFeatureStore(BaseFeastFeatureStore):
@@ -29,6 +34,22 @@ class FeastFeatureStore(BaseFeastFeatureStore):
     def __init__(self, online_store_id: Optional[ObjectId], *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.online_store_id = online_store_id
+
+
+feast_feature_store_cache: Any = LRUCache(maxsize=64)
+
+
+def _get_feast_feature_store_cache_key(
+    obj: Any, feast_registry: FeastRegistryModel, online_store_id: Optional[ObjectId] = None
+) -> Any:
+    _ = obj
+    cache_key = (
+        feast_registry.id,
+        feast_registry.updated_at,
+        feast_registry.registry_path,
+        online_store_id,
+    )
+    return cache_key
 
 
 class FeastFeatureStoreService:
@@ -50,6 +71,7 @@ class FeastFeatureStoreService:
         self.catalog_service = catalog_service
         self.online_store_service = online_store_service
 
+    @cached(cache=feast_feature_store_cache, key=_get_feast_feature_store_cache_key)
     async def get_feast_feature_store(
         self,
         feast_registry: FeastRegistryModel,
@@ -72,6 +94,7 @@ class FeastFeatureStoreService:
         FeastFeatureStore
             Feast feature store
         """
+        logger.info("Creating feast feature store for registry %s", str(feast_registry.id))
         feature_store = await self.feature_store_service.get_document(
             document_id=feast_registry.feature_store_id
         )
@@ -155,4 +178,5 @@ class FeastFeatureStoreService:
         if feast_registry is None:
             return None
         assert isinstance(feast_registry, FeastRegistryModel)
-        return await self.get_feast_feature_store(feast_registry=feast_registry)
+        logger.info("Feast feature store cache size: %d", len(feast_feature_store_cache))
+        return await self.get_feast_feature_store(feast_registry=feast_registry)  # type:ignore
