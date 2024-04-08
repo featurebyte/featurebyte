@@ -86,18 +86,9 @@ async def run_coroutines(coroutines: List[Coroutine[Any, Any, Any]]) -> List[Any
     -------
     List[Any]
         List of results from the coroutines
-
-    Raises
-    ------
-    Exception
-        If any task failed
     """
     future = asyncio_gather(*coroutines, max_concurrency=MAX_QUERY_CONCURRENCY)
-    try:
-        return await future
-    except Exception:
-        future.cancel()
-        raise
+    return await future
 
 
 async def execute_feature_query(

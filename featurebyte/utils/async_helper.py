@@ -30,13 +30,14 @@ def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -
         return asyncio.gather(*coros)
 
     failed = False
+    tasks_canceled = False
     tasks = []
     semaphore = asyncio.Semaphore(max_concurrency)
 
     # Run coroutines with a semaphore
     async def _coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with semaphore:
-            nonlocal failed, tasks
+            nonlocal failed, tasks, tasks_canceled
             if failed:  # pylint: disable=used-before-assignment
                 # Close unawaited coroutines on failure
                 coro.close()
@@ -47,9 +48,11 @@ def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -
                 return await task
             except Exception:
                 failed = True
-                # Cancel all tasks on failure
-                for task in tasks:
-                    task.cancel()
+                if not tasks_canceled:
+                    # Cancel all tasks on failure
+                    for task in tasks:
+                        task.cancel()
+                    tasks_canceled = True
                 raise
 
     return asyncio.gather(*(_coro(c) for c in coros))
