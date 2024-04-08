@@ -367,6 +367,12 @@ class DeployFeatureListManagementService:
             # Don't need to test again serving entity ids that were already enabled
             supported_serving_entity_ids_set.difference_update(current_enabled)
 
+        # Feature list primary entity ids should always be included. It might not be added above if
+        # no use case or context has been configured for the deployment.
+        primary_entity_ids = tuple(feature_list_model.primary_entity_ids)
+        if primary_entity_ids not in enabled_serving_entity_ids:
+            enabled_serving_entity_ids.append(primary_entity_ids)
+
         return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
 
     async def deploy_feature_list(
