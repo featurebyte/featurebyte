@@ -101,6 +101,10 @@ class SnowflakeSession(BaseSession):
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
 
+    def __del__(self) -> None:
+        if self._connection is not None:
+            self._connection.close()
+
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
 
