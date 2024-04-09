@@ -35,8 +35,14 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
         assert isinstance(self.session, DatabricksUnitySession)
         grant_permissions_query = f"GRANT ALL PRIVILEGES ON SCHEMA `{self.session.schema_name}` TO `{self.session.group_name}`"
         await self.session.execute_query(grant_permissions_query)
+
+    async def register_missing_objects(self) -> None:
         # create staging volume if not exists
+        assert isinstance(self.session, DatabricksUnitySession)
         await self.session.execute_query(f"CREATE VOLUME IF NOT EXISTS {self.session.volume_name}")
+
+        # register missing other common objects by calling the super method
+        await super().register_missing_objects()
 
     @property
     def sql_directory_name(self) -> str:
