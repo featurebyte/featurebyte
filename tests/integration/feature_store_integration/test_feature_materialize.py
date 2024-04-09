@@ -571,9 +571,15 @@ async def test_feast_registry(
         feast_registry
     )
 
-    # Check feature views and feature services
+    # check feature views (DO NOT CALL list_feature_views() as it will cache the list of feature views
+    # and has side effect on the following call, this should be Feast specific issue).
+    assert {
+        fv.name
+        for fv in feature_store._list_feature_views(allow_cache=False, hide_dummy_entity=False)
+    } == expected_feature_table_names
+
+    # Check feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
-    assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
     assert {
         fs.name for fs in feature_store.list_feature_services()
     } == expected_feature_service_names

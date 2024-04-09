@@ -6,7 +6,9 @@ from typing import Any, Optional
 
 import tempfile
 
+from asyncache import cached
 from bson import ObjectId
+from cachetools import LRUCache
 from feast import FeatureStore as BaseFeastFeatureStore
 from feast import RepoConfig
 from feast.repo_config import FeastConfigBaseModel, RegistryConfig
@@ -15,10 +17,14 @@ from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastCo
 from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
+from featurebyte.logging import get_logger
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+logger = get_logger(__name__)
 
 
 class FeastFeatureStore(BaseFeastFeatureStore):
@@ -29,6 +35,28 @@ class FeastFeatureStore(BaseFeastFeatureStore):
     def __init__(self, online_store_id: Optional[ObjectId], *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.online_store_id = online_store_id
+
+
+feast_feature_store_cache: Any = LRUCache(maxsize=64)
+
+
+def _get_feast_feature_store_cache_key(
+    feast_registry: FeastRegistryModel,
+    feature_store: FeatureStoreModel,
+    credentials: Any,
+    online_store_config: Optional[FeastConfigBaseModel],
+    effective_online_store_id: ObjectId,
+) -> Any:
+    _ = credentials, online_store_config
+    cache_key = (
+        feature_store.id,
+        feature_store.updated_at,
+        feast_registry.id,
+        feast_registry.updated_at,
+        feast_registry.registry_path,
+        effective_online_store_id,
+    )
+    return cache_key
 
 
 class FeastFeatureStoreService:
@@ -50,44 +78,15 @@ class FeastFeatureStoreService:
         self.catalog_service = catalog_service
         self.online_store_service = online_store_service
 
-    async def get_feast_feature_store(
-        self,
+    @staticmethod
+    @cached(cache=feast_feature_store_cache, key=_get_feast_feature_store_cache_key)
+    async def _get_feast_feature_store(
         feast_registry: FeastRegistryModel,
-        online_store_id: Optional[ObjectId] = None,
+        feature_store: FeatureStoreModel,
+        credentials: Any,
+        online_store_config: Optional[FeastConfigBaseModel],
+        effective_online_store_id: ObjectId,
     ) -> FeastFeatureStore:
-        """
-        Create feast repo config
-
-        Parameters
-        ----------
-        feast_registry: FeastRegistryModel
-            Feast registry model
-        online_store_id: Optional[ObjectId]
-            Online store id to use if specified instead of using the one in the catalog. This is used
-            when the returned feature store is about to be used to update a different online store
-            (e.g. for initialization purpose)
-
-        Returns
-        -------
-        FeastFeatureStore
-            Feast feature store
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feast_registry.feature_store_id
-        )
-        credentials = await self.credential_provider.get_credential(
-            user_id=self.user.id, feature_store_name=feature_store.name
-        )
-
-        # Get online store feast config
-        catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
-        effective_online_store_id = (
-            online_store_id if online_store_id is not None else catalog.online_store_id
-        )
-        online_store = await self._get_feast_online_store_config(
-            online_store_id=effective_online_store_id,
-        )
-
         with tempfile.NamedTemporaryFile() as temp_file:
             # Use temp file to pass the registry proto to the feature store. Once the
             # feature store is created, the temp file is no longer needed.
@@ -119,7 +118,7 @@ class FeastFeatureStoreService:
                     database_credential=database_credential,
                     storage_credential=storage_credential,
                 ),
-                online_store=online_store,
+                online_store=online_store_config,
                 entity_key_serialization_version=2,
             )
             feast_feature_store = FeastFeatureStore(
@@ -127,6 +126,54 @@ class FeastFeatureStoreService:
                 online_store_id=effective_online_store_id,
             )
             return feast_feature_store
+
+    async def get_feast_feature_store(
+        self,
+        feast_registry: FeastRegistryModel,
+        online_store_id: Optional[ObjectId] = None,
+    ) -> FeastFeatureStore:
+        """
+        Create feast repo config
+
+        Parameters
+        ----------
+        feast_registry: FeastRegistryModel
+            Feast registry model
+        online_store_id: Optional[ObjectId]
+            Online store id to use if specified instead of using the one in the catalog. This is used
+            when the returned feature store is about to be used to update a different online store
+            (e.g. for initialization purpose)
+
+        Returns
+        -------
+        FeastFeatureStore
+            Feast feature store
+        """
+        logger.info("Creating feast feature store for registry %s", str(feast_registry.id))
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feast_registry.feature_store_id
+        )
+        credentials = await self.credential_provider.get_credential(
+            user_id=self.user.id, feature_store_name=feature_store.name
+        )
+
+        # Get online store feast config
+        catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
+        effective_online_store_id = (
+            online_store_id if online_store_id is not None else catalog.online_store_id
+        )
+        online_store_config = await self._get_feast_online_store_config(
+            online_store_id=effective_online_store_id,
+        )
+        logger.info("Feast feature store cache size: %d", len(feast_feature_store_cache))
+        feast_feature_store = await self._get_feast_feature_store(
+            feast_registry=feast_registry,
+            feature_store=feature_store,
+            credentials=credentials,
+            online_store_config=online_store_config,
+            effective_online_store_id=effective_online_store_id,
+        )
+        return feast_feature_store  # type:ignore
 
     async def _get_feast_online_store_config(
         self, online_store_id: Optional[ObjectId]
