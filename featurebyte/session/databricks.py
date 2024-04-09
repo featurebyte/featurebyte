@@ -20,9 +20,7 @@ from featurebyte.session.base import APPLICATION_NAME
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
-    from databricks import (
-        sql as databricks_sql,  # type: ignore[attr-defined]  # Databricks does dynamic imports
-    )
+    from databricks import sql as databricks_sql  # type: ignore[attr-defined]
     from databricks.sdk import WorkspaceClient
     from databricks.sdk.mixins.files import DbfsExt
     from databricks.sql.exc import ServerOperationError

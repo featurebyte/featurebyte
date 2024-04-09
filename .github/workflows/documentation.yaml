@@ -22,7 +22,7 @@ concurrency:
 jobs:
   build-updated-docs:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'documentation') }}
     strategy:
       matrix:
         python-version:
