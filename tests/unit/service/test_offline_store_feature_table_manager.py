@@ -147,7 +147,12 @@ async def deployed_scd_lookup_feature(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, scd_lookup_feature)
+    feature_list = await deploy_feature(
+        app_container, scd_lookup_feature, return_type="feature_list"
+    )
+    assert feature_list.enabled_serving_entity_ids == [feature_list.primary_entity_ids]
+    feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
+    return feature
 
 
 @pytest_asyncio.fixture
