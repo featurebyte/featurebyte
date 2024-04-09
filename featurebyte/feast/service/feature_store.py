@@ -44,10 +44,10 @@ def _get_feast_feature_store_cache_key(
     feast_registry: FeastRegistryModel,
     feature_store: FeatureStoreModel,
     credentials: Any,
-    online_store: Optional[FeastConfigBaseModel],
+    online_store_config: Optional[FeastConfigBaseModel],
     effective_online_store_id: ObjectId,
 ) -> Any:
-    _ = credentials, online_store
+    _ = credentials, online_store_config
     cache_key = (
         feature_store.id,
         feature_store.updated_at,
@@ -84,7 +84,7 @@ class FeastFeatureStoreService:
         feast_registry: FeastRegistryModel,
         feature_store: FeatureStoreModel,
         credentials: Any,
-        online_store: Optional[FeastConfigBaseModel],
+        online_store_config: Optional[FeastConfigBaseModel],
         effective_online_store_id: ObjectId,
     ) -> FeastFeatureStore:
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -118,7 +118,7 @@ class FeastFeatureStoreService:
                     database_credential=database_credential,
                     storage_credential=storage_credential,
                 ),
-                online_store=online_store,
+                online_store=online_store_config,
                 entity_key_serialization_version=2,
             )
             feast_feature_store = FeastFeatureStore(
@@ -162,7 +162,7 @@ class FeastFeatureStoreService:
         effective_online_store_id = (
             online_store_id if online_store_id is not None else catalog.online_store_id
         )
-        online_store = await self._get_feast_online_store_config(
+        online_store_config = await self._get_feast_online_store_config(
             online_store_id=effective_online_store_id,
         )
         logger.info("Feast feature store cache size: %d", len(feast_feature_store_cache))
@@ -170,7 +170,7 @@ class FeastFeatureStoreService:
             feast_registry=feast_registry,
             feature_store=feature_store,
             credentials=credentials,
-            online_store=online_store,
+            online_store_config=online_store_config,
             effective_online_store_id=effective_online_store_id,
         )
         return feast_feature_store  # type:ignore
