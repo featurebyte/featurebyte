@@ -26,14 +26,10 @@ tasks:
     sources:
       - pyproject.toml
       - poetry.lock
-    vars:
-      DATABRICKS_SQL_VERSION:
-        sh: poetry show databricks-sql-connector | grep -oP 'version\s+:\s+\K\S+'
     deps:
       - task: build-jar
     cmds:
       - poetry install -n --sync --extras=server
-      - poetry run pip install --no-deps --force-reinstall databricks-sql-connector=={{.DATABRICKS_SQL_VERSION}}
 
   install-published-featurebyte:
     desc: "Install the published version of the featurebyte SDK"

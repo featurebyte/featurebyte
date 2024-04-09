@@ -1,4 +1,4 @@
-FROM python:3.8-slim AS builder
+FROM python:3.10-slim AS builder
 
 # Increase PIP read timeout to 120 seconds to avoid timeout issues
 ENV PIP_DEFAULT_TIMEOUT=120
@@ -16,10 +16,7 @@ RUN pip install poetry==1.8.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
     . /opt/venv/bin/activate && \
-    poetry install -n --extras=server --without dev,docs,lint && \
-    # databricks-sql-connector might be corrupted due to poetry parallel install
-    poetry run pip install --no-deps --force-reinstall databricks-sql-connector=="$(poetry show databricks-sql-connector | grep -oP 'version\s+:\s+\K\S+')"
-
+    poetry install -n --extras=server --without dev,docs,lint
 
 # Moving featurebyte source code
 COPY ./featurebyte /app/featurebyte
@@ -31,7 +28,7 @@ RUN . /opt/venv/bin/activate && \
     pip install dist/*.whl
 
 
-FROM python:3.8-slim AS runner
+FROM python:3.10-slim AS runner
 
 ARG USER_HOME=/app
 
