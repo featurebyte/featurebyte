@@ -15,7 +15,7 @@ from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
 try:
-    from databricks.sdk import FilesAPI
+    from databricks.sdk.service.files import FilesAPI
 except ImportError:
     pass
 

@@ -73,7 +73,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -128,7 +128,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -183,7 +183,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
         spark-version:
           - 3.5.0
         pytest-group:
@@ -277,7 +277,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
         pytest-group:
           - 1
           - 2
@@ -335,7 +335,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -380,7 +380,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
         with:

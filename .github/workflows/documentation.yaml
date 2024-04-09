@@ -22,11 +22,11 @@ concurrency:
 jobs:
   build-updated-docs:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'documentation') }}
     strategy:
       matrix:
         python-version:
-          - 3.8.12
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
         with:
