@@ -124,9 +124,10 @@ class BaseSession(BaseModel):
     def _initialize_connection(self) -> None:
         """Initialize connection"""
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __del__(self) -> None:
         # close connection
-        self._connection.close()
+        if self._connection is not None:
+            self._connection.close()
 
     async def clone_if_not_threadsafe(self) -> BaseSession:
         """
