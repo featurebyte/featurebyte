@@ -4,7 +4,7 @@
 server = ["aioredis", "cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "feast", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "22b6952454b8cd929eb1006c36531f1346b13712f25415f606bd63c9802f582f"
+content-hash = "23a010503bbe1d87ad8336c7f77d3406c162bffa79392e3a2dbd9b1f6436acd8"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
 
@@ -5126,8 +5126,8 @@ version = "1.5.3"
 [package.dependencies]
 numpy = [
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
-    {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
     {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
+    {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
 ]
 python-dateutil = ">=2.8.1"
 pytz = ">=2020.1"
@@ -7654,9 +7654,20 @@ files = [
     {file = "types_protobuf-4.24.0.20240408-py3-none-any.whl", hash = "sha256:9b87cd279378693071247227f52e89738af7c8d6f06dbdd749b0cf473c4916ce"},
 ]
 name = "types-protobuf"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "4.24.0.20240408"
+
+[[package]]
+description = "Typing stubs for pycurl"
+files = [
+    {file = "types-pycurl-7.45.2.20240311.tar.gz", hash = "sha256:6f308beb5779a9e229673e8993cb1cfbe70568f6302a1e5a5caa42c536fd6291"},
+    {file = "types_pycurl-7.45.2.20240311-py3-none-any.whl", hash = "sha256:44d093337041cb696ad4c16a063aea79c22b7d9219fb1d8af6b1e2f80f09069b"},
+]
+name = "types-pycurl"
+optional = false
+python-versions = ">=3.8"
+version = "7.45.2.20240311"
 
 [[package]]
 description = "Typing stubs for PyMySQL"
