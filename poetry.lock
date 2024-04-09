@@ -4,7 +4,7 @@
 server = ["aioredis", "cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "feast", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "23a010503bbe1d87ad8336c7f77d3406c162bffa79392e3a2dbd9b1f6436acd8"
+content-hash = "33271c68eff80b74b4bba107f35b6894cc20b4b6bf68a6148ac4f43ce662ca71"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
 
@@ -5126,8 +5126,8 @@ version = "1.5.3"
 [package.dependencies]
 numpy = [
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
-    {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
 ]
 python-dateutil = ">=2.8.1"
 pytz = ">=2020.1"
