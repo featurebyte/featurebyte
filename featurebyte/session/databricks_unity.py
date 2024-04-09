@@ -38,6 +38,7 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
 
     async def register_missing_objects(self) -> None:
         # create staging volume if not exists
+        assert isinstance(self.session, DatabricksUnitySession)
         await self.session.execute_query(f"CREATE VOLUME IF NOT EXISTS {self.session.volume_name}")
 
         # register missing other common objects by calling the super method
