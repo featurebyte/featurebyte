@@ -98,6 +98,7 @@ def test_databricks_specs(
     # Import necessary modules for feature engineering and machine learning
     from databricks.feature_engineering import FeatureEngineeringClient
     from databricks.feature_engineering import FeatureFunction, FeatureLookup
+    from pyspark.sql import SparkSession
     from pyspark.sql.types import (
         DoubleType,
         LongType,
@@ -214,6 +215,7 @@ def test_databricks_specs(
             StructField("POINT_IN_TIME", TimestampType()),
         ]
     )
+    spark = SparkSession.builder.getOrCreate()
     log_model_dataset = fe.create_training_set(
         df=spark.createDataFrame([], schema),
         feature_lookups=features,
@@ -237,7 +239,7 @@ def test_databricks_specs(
     for replace_pair in replace_pairs:
         expected = expected.replace(*replace_pair)
 
-    feat_specs = databricks_deployment.databricks.get_feature_specs()
+    feat_specs = databricks_deployment.databricks.get_feature_specs_definition()
     assert feat_specs.strip() == textwrap.dedent(expected).strip()
 
 

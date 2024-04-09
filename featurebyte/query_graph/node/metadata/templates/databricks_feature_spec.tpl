@@ -2,6 +2,7 @@
 # Import necessary modules for feature engineering and machine learning
 from databricks.feature_engineering import FeatureEngineeringClient
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
+from pyspark.sql import SparkSession
 {{pyspark_import_statement}}
 import mlflow
 
@@ -28,6 +29,7 @@ exclude_columns = {{exclude_columns}}
 # 'exclude_columns' is a list of columns to be excluded from the training set
 target_column = "{{target_column}}"
 schema = {{schema}}
+spark = SparkSession.builder.getOrCreate()
 log_model_dataset = fe.create_training_set(
     df=spark.createDataFrame([], schema),
     feature_lookups=features,

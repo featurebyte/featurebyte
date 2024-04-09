@@ -67,6 +67,7 @@ def test_databricks_feature_specs_definition(
     # Import necessary modules for feature engineering and machine learning
     from databricks.feature_engineering import FeatureEngineeringClient
     from databricks.feature_engineering import FeatureFunction, FeatureLookup
+    from pyspark.sql import SparkSession
     from pyspark.sql.types import [IMPORTS]
     import mlflow
 
@@ -107,6 +108,7 @@ def test_databricks_feature_specs_definition(
             StructField("column1", LongType()),
         ]
     )
+    spark = SparkSession.builder.getOrCreate()
     log_model_dataset = fe.create_training_set(
         df=spark.createDataFrame([], schema),
         feature_lookups=features,
