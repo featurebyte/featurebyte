@@ -162,6 +162,46 @@ async def test_apply_comments(service, mock_snowflake_session):
 
 
 @pytest.mark.asyncio
+async def test_apply_comments__unexpected_exception(service, mock_snowflake_session, caplog):
+    """
+    Test apply_comments uses session object correctly
+    """
+    with patch(
+        "featurebyte.service.offline_store_feature_table_comment.SessionManagerService.get_feature_store_session"
+    ) as patched:
+        patched.return_value = mock_snowflake_session
+        mock_snowflake_session.comment_table.side_effect = Exception("Unexpected exception")
+        mock_snowflake_session.comment_column.side_effect = Exception(
+            "Another unexpected exception"
+        )
+        await service.apply_comments(
+            Mock(name="mock_feature_store_model"),
+            [
+                TableComment(
+                    table_name="tab_1",
+                    comment="comment for tab_1",
+                ),
+                ColumnComment(
+                    table_name="tab_2",
+                    column_name="col_2",
+                    comment="comment for tab_2's col_2",
+                ),
+            ],
+        )
+
+    assert len(caplog.records) == 2
+    table_comment_record = caplog.records[0]
+    assert table_comment_record.levelname == "ERROR"
+    assert table_comment_record.message == "Failed to add comment: Unexpected exception"
+    assert table_comment_record.extra == {"table_name": "tab_1"}
+
+    column_comment_record = caplog.records[1]
+    assert column_comment_record.levelname == "ERROR"
+    assert column_comment_record.message == "Failed to add comment: Another unexpected exception"
+    assert column_comment_record.extra == {"table_name": "tab_2", "column_name": "col_2"}
+
+
+@pytest.mark.asyncio
 async def test_table_comment(
     service,
     deployed_features,
