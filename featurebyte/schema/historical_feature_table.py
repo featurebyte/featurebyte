@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import StrictStr, root_validator
+from pydantic import root_validator
 
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import NameStr, PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
@@ -52,4 +52,4 @@ class HistoricalFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
     HistoricalFeatureTable update payload
     """
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]

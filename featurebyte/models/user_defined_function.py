@@ -18,6 +18,7 @@ from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueValuesConstraint,
 )
@@ -213,7 +214,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         Catalog id of the function (if any), if not provided, it can be used across all catalogs
     """
 
-    name: str
+    name: NameStr
     sql_function_name: str
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType

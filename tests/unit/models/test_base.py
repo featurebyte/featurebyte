@@ -95,3 +95,14 @@ def test_reference_info(asset_name, expected_collection_name):
     """Test reference info collection name property"""
     ref_info = ReferenceInfo(asset_name=asset_name, document_id=ObjectId())
     assert ref_info.collection_name == expected_collection_name
+
+
+def test_base_model__name_validation():
+    """Test base model id field validation logic"""
+    model = FeatureByteBaseDocumentModel()
+    assert model.id is not None
+    model = FeatureByteBaseDocumentModel(name="test")
+    assert model.id is not None
+    with pytest.raises(ValidationError) as exc:
+        FeatureByteBaseDocumentModel(name="t" * 256)
+    assert "ensure this value has at most 255 characters" in str(exc.value)

@@ -7,10 +7,10 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.enum import SourceType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
@@ -25,7 +25,7 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     type: SourceType
     details: DatabaseDetails
     database_credential: Optional[DatabaseCredential]

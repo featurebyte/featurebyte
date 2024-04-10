@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.validator import columns_info_validator
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnInfoWithoutSemanticId
@@ -25,7 +25,7 @@ class TableCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     tabular_source: TabularSource
     columns_info: List[ColumnInfoWithoutSemanticId]
     record_creation_timestamp_column: Optional[StrictStr]
@@ -129,7 +129,7 @@ class ColumnCriticalDataInfoUpdate(FeatureByteBaseModel):
     Column critical data info update payload schema
     """
 
-    column_name: StrictStr
+    column_name: NameStr
     critical_data_info: Optional[CriticalDataInfo]
 
 
@@ -138,7 +138,7 @@ class ColumnEntityUpdate(FeatureByteBaseModel):
     Column entity update payload schema
     """
 
-    column_name: StrictStr
+    column_name: NameStr
     entity_id: Optional[PydanticObjectId]
 
 
@@ -147,7 +147,7 @@ class ColumnDescriptionUpdate(FeatureByteBaseModel):
     Column description update payload schema
     """
 
-    column_name: StrictStr
+    column_name: NameStr
     description: Optional[StrictStr]
 
 
@@ -156,5 +156,5 @@ class ColumnSemanticUpdate(FeatureByteBaseModel):
     Column semantic update payload schema
     """
 
-    column_name: StrictStr
+    column_name: NameStr
     semantic_id: Optional[PydanticObjectId]

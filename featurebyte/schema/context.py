@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -19,7 +19,7 @@ class ContextCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr]
 
@@ -64,7 +64,7 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_eda_table: Optional[bool]
     remove_default_preview_table: Optional[bool]
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
 
     @root_validator(pre=True)
     @classmethod

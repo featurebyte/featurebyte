@@ -97,7 +97,9 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         """
         column_semantic_map = {}
         for field, semantic_type in self.semantic_tag_rules.items():
-            semantic_id = await self.semantic_service.get_or_create_document(name=semantic_type)
+            semantic_id = await self.semantic_service.get_or_create_document(
+                name=semantic_type.value
+            )
             special_column_name = getattr(document, field)
             if special_column_name:
                 column_semantic_map[special_column_name] = semantic_id

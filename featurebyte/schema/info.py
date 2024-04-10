@@ -8,10 +8,15 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import (
+    FeatureByteBaseModel,
+    NameStr,
+    PydanticObjectId,
+    VersionIdentifier,
+)
 from featurebyte.models.credential import DatabaseCredentialType, StorageCredentialType
 from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
 from featurebyte.models.feature_list_namespace import FeatureListStatus
@@ -148,7 +153,7 @@ class TableColumnInfo(FeatureByteBaseModel):
     """
     TableColumnInfo for storing column information
 
-    name: str
+    name: NameStr
         Column name
     dtype: DBVarType
         Variable type of the column
@@ -162,7 +167,7 @@ class TableColumnInfo(FeatureByteBaseModel):
         Description of the column
     """
 
-    name: StrictStr
+    name: NameStr
     dtype: DBVarType
     entity: Optional[str] = Field(default=None)
     semantic: Optional[str] = Field(default=None)

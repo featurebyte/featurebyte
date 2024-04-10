@@ -16,6 +16,7 @@ from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -32,7 +33,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
     """Model for a feature store"""
 
-    name: StrictStr
+    name: NameStr
 
     def get_feature_store_details(self) -> FeatureStoreDetails:
         """

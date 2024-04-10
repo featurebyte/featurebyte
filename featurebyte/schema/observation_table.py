@@ -9,7 +9,7 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.observation_table import ObservationInput, ObservationTableModel, Purpose
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
@@ -34,7 +34,7 @@ class ObservationTableUpload(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: List[PydanticObjectId]
     target_column: Optional[StrictStr] = Field(default=None)
@@ -64,7 +64,7 @@ class ObservationTableUpdate(FeatureByteBaseModel):
     use_case_id_to_add: Optional[PydanticObjectId]
     use_case_id_to_remove: Optional[PydanticObjectId]
     purpose: Optional[Purpose]
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
 
 
 class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, ObservationTableUpdate):
