@@ -645,6 +645,11 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+
+        Raises
+        ------
+        DataWarehouseOperationError
+            If the operation failed
         """
 
         async def _drop(is_view: bool) -> None:
