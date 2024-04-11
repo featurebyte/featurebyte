@@ -84,5 +84,5 @@ SELECT
       "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
       0
     )
-  ) AS FLOAT) AS "a_2h_avg_by_user_div_7d_by_biz"
+  ) AS DOUBLE) AS "a_2h_avg_by_user_div_7d_by_biz"
 FROM _FB_AGGREGATED AS AGG

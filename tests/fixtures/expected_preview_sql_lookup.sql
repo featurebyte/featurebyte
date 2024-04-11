@@ -37,5 +37,5 @@ SELECT
   AGG."CUSTOMER_ID",
   CAST((
     "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_1" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1"
-  ) AS FLOAT) AS "MY FEATURE"
+  ) AS DOUBLE) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG

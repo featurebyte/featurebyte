@@ -788,7 +788,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             textwrap.dedent(
                 """
                 SELECT
-                  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS FLOAT) AS "sum_30m"
+                  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
                 FROM _FB_AGGREGATED AS AGG
                 """
             ).strip()

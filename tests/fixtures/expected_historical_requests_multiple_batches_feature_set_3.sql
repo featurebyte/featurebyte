@@ -66,5 +66,5 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  CAST("_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS FLOAT) AS "a_latest_value_past_90d"
+  CAST("_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS DOUBLE) AS "a_latest_value_past_90d"
 FROM _FB_AGGREGATED AS AGG

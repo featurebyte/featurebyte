@@ -180,6 +180,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG.`POINT_IN_TIME`,
   AGG.`CUSTOMER_ID`,
-  CAST(`_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS FLOAT) AS `a_2h_average`,
-  CAST(`_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS FLOAT) AS `a_48h_average`
+  CAST(`_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS DOUBLE) AS `a_2h_average`,
+  CAST(`_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS DOUBLE) AS `a_48h_average`
 FROM _FB_AGGREGATED AS AGG

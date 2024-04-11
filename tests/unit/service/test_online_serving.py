@@ -189,7 +189,7 @@ def expected_online_feature_query_fixture():
         SELECT
           AGG."__FB_TABLE_ROW_INDEX",
           AGG."cust_id",
-          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS FLOAT) AS "sum_30m"
+          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
@@ -346,7 +346,7 @@ async def test_feature_list_deployed_with_batch_request_table(
         )
         SELECT
           AGG."cust_id",
-          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS FLOAT) AS "sum_30m"
+          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()

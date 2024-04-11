@@ -443,7 +443,7 @@ class FeatureExecutionPlan:
                 ):
                     feature_expr = expressions.Cast(
                         this=feature_expr,
-                        to=expressions.DataType.build("FLOAT"),
+                        to=expressions.DataType.build("DOUBLE"),
                     )
                 feature_alias = expressions.alias_(
                     feature_expr, alias=feature_spec.feature_name, quoted=True
