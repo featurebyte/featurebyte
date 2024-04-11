@@ -543,7 +543,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
         if feature_table_model.feature_cluster is not None:
-            feature_store_id = feature_table_model.feature_store_id
+            feature_store_id = feature_table_model.feature_cluster.feature_store_id
         else:
             feature_store_id = feature_table_model.feature_store_id
         assert feature_store_id is not None, "feature_store_id not available"
