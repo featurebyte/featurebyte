@@ -846,7 +846,7 @@ async def test_materialize_features_internal_relationships(
 
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table_internal_relationships,
-    ):
+    ) as materialized_features_set:
         pass
 
     # Check that executed queries are correct

@@ -5,11 +5,13 @@ This module contains classes for constructing feast registry
 # pylint: disable=no-name-in-module
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 import tempfile
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import timedelta
+from itertools import chain
 from unittest.mock import patch
 
 from feast import Entity as FeastEntity
@@ -47,6 +49,10 @@ from featurebyte.models.offline_store_ingest_query import (
 )
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.models.parent_serving import EntityLookupStep
+from featurebyte.models.precomputed_lookup_feature_table import (
+    get_precomputed_lookup_feature_tables,
+)
+from featurebyte.query_graph.model.entity_relationship_info import EntityAncestorDescendantMapper
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.entity import get_combined_serving_names
 
@@ -123,6 +129,8 @@ class OfflineStoreTable(FeatureByteBaseModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     primary_entity_info: List[OfflineStoreEntityInfo]
+    source_feature_table_name: Optional[str]
+    feature_list_ids: Optional[List[PydanticObjectId]]
 
     @property
     def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
@@ -318,6 +326,7 @@ class OfflineStoreTableBuilder:
             List of offline store tables
         """
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
+        offline_table_key_to_feature_ids = defaultdict(set)
         for feature in features:
             offline_ingest_query_graphs = (
                 feature.offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -325,6 +334,7 @@ class OfflineStoreTableBuilder:
             for ingest_query_graph in offline_ingest_query_graphs:
                 table_name = ingest_query_graph.offline_store_table_name
                 offline_table_key_to_ingest_query_graphs[table_name].append(ingest_query_graph)
+                offline_table_key_to_feature_ids[table_name].add(feature.id)
 
         offline_store_tables = []
         for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
@@ -334,6 +344,40 @@ class OfflineStoreTableBuilder:
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             offline_store_tables.append(offline_store_table)
+            precomputed_lookup_feature_tables = get_precomputed_lookup_feature_tables(
+                primary_entity_ids=list(offline_store_table.primary_entity_ids),
+                feature_ids=list(offline_table_key_to_feature_ids[table_name]),
+                feature_lists=feature_lists,
+                feature_table_name=table_name,
+                feature_table_has_ttl=offline_store_table.has_ttl,
+                entity_id_to_serving_name=entity_id_to_serving_name,
+                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+                feature_store_model=feature_store,
+            )
+            for precomputed_lookup_feature_table in precomputed_lookup_feature_tables:
+                table_info = precomputed_lookup_feature_table.precomputed_lookup_feature_table_info
+                assert table_info is not None
+                lookup_offline_store_table = OfflineStoreTable(
+                    table_name=precomputed_lookup_feature_table.name,
+                    feature_job_setting=offline_store_table.feature_job_setting,
+                    has_ttl=offline_store_table.has_ttl,
+                    output_column_names=offline_store_table.output_column_names,
+                    output_dtypes=offline_store_table.output_dtypes,
+                    primary_entity_info=[
+                        OfflineStoreEntityInfo(
+                            id=entity_id,
+                            name=serving_name,
+                            dtype=DBVarType.VARCHAR,
+                        )
+                        for (entity_id, serving_name) in zip(
+                            precomputed_lookup_feature_table.primary_entity_ids,
+                            precomputed_lookup_feature_table.serving_names,
+                        )
+                    ],
+                    source_feature_table_name=table_name,
+                    feature_list_ids=table_info.feature_list_ids,
+                )
+                offline_store_tables.append(lookup_offline_store_table)
 
         offline_store_tables_for_entity_lookup = (
             OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
@@ -400,6 +444,162 @@ class OfflineStoreTableBuilder:
         return entity_lookup_feature_tables
 
 
+@dataclass
+class FeatureViewItem:
+    """
+    Represents a feature view with additional metadata
+
+    feature_view: Union[FeastFeatureView, FeastOnDemandFeatureView]
+        The underlying feature view
+    primary_entity_ids: List[PydanticObjectId]
+        The primary entity ids of the feature view
+    source_feature_table_name: Optional[str]
+        Name of source feature table if the underlying feature view corresponds to a precomputed
+        lookup feature table
+    feature_list_ids: Optional[List[PydanticObjectId]]
+        Feature lists that can access this feature view. Only set for precomputed feature table's
+        feature view
+    """
+
+    feature_view: Union[FeastFeatureView, FeastOnDemandFeatureView]
+    primary_entity_ids: List[PydanticObjectId]
+    source_feature_table_name: Optional[str]
+    feature_list_ids: Optional[List[PydanticObjectId]]
+
+
+class FeatureViewContainer:
+    """
+    FeatureViewContainer provides access to feature views when constructing higher level feast
+    assets such as feature services
+    """
+
+    def __init__(self, feature_lists: List[FeatureListModel]):
+        self.feature_views: List[FeatureViewItem] = []
+        self.on_demand_feature_views: List[FeatureViewItem] = []
+        self.feature_lists_relationships_info = {}
+        for feature_list in feature_lists:
+            combined_lookup_steps = []
+            if feature_list.features_entity_lookup_info:
+                for info in feature_list.features_entity_lookup_info:
+                    for step in info.join_steps:
+                        if step not in combined_lookup_steps:
+                            combined_lookup_steps.extend(info.join_steps)
+            self.feature_lists_relationships_info[feature_list.id] = (
+                feature_list.relationships_info or [] + combined_lookup_steps
+            )
+
+    def add_feature_view(
+        self, offline_store_table: OfflineStoreTable, feature_view: FeastFeatureView
+    ) -> None:
+        """
+        Add a feature view to the collection
+
+        Parameters
+        ----------
+        offline_store_table: OfflineStoreTable
+            Offline store table
+        feature_view: FeastFeatureView
+            Feast feature view object
+        """
+        item = FeatureViewItem(
+            feature_view=feature_view,
+            primary_entity_ids=list(offline_store_table.primary_entity_ids),
+            source_feature_table_name=offline_store_table.source_feature_table_name,
+            feature_list_ids=offline_store_table.feature_list_ids,
+        )
+        self.feature_views.append(item)
+
+    def add_on_demand_feature_view(
+        self,
+        primary_entity_ids: List[PydanticObjectId],
+        feature_list_id: PydanticObjectId,
+        on_demand_feature_view: FeastOnDemandFeatureView,
+    ) -> None:
+        """
+        Add an on demand feature view to the collection. More parameters to be provided since there
+        isn't a corresponding offline store table that provide those information.
+
+        Parameters
+        ----------
+        primary_entity_ids: List[PydanticObjectId]
+            Primary entity ids of the feature view
+        feature_list_id: PydanticObjectId
+            Id of the feature list that the on demand feature view corresponds to
+        on_demand_feature_view: FeastOnDemandFeatureView
+            Feast on demand feature view
+        """
+        item = FeatureViewItem(
+            feature_view=on_demand_feature_view,
+            primary_entity_ids=primary_entity_ids,
+            source_feature_table_name=None,
+            feature_list_ids=[feature_list_id],
+        )
+        self.on_demand_feature_views.append(item)
+
+    def iterate_matching_feature_views(
+        self,
+        feature_list_id: PydanticObjectId,
+        serving_entity_ids: List[PydanticObjectId],
+        include_on_demand_feature_views: bool,
+    ) -> Iterator[FeatureViewItem]:
+        """
+        Iterate over feature views matching the given conditions when constructing a feature service
+        for a specific feature list and serving entity ids
+
+        Parameters
+        ----------
+        feature_list_id: PydanticObjectId
+            Feature list id to filter
+        serving_entity_ids: List[PydanticObjectId]
+            Serving entity ids to filter
+        include_on_demand_feature_views: bool
+            Whether to include on demand feature views in the result
+
+        Yields
+        ------
+        FeatureViewItem
+            FeatureViewItem object
+        """
+        if include_on_demand_feature_views:
+            items = chain(self.on_demand_feature_views, self.feature_views)
+        else:
+            items = chain(self.feature_views)
+        for item in items:
+            related_serving_entity_ids = EntityAncestorDescendantMapper.create(
+                self.feature_lists_relationships_info[feature_list_id],
+            ).keep_related_entity_ids(
+                entity_ids_to_filter=serving_entity_ids,
+                filter_by=item.primary_entity_ids,
+            )
+            if item.primary_entity_ids == related_serving_entity_ids and (
+                item.feature_list_ids is None or feature_list_id in item.feature_list_ids
+            ):
+                yield item
+
+    def get_feature_views(self) -> List[FeastFeatureView]:
+        """
+        Get the list of all available feature views
+
+        Returns
+        -------
+        List[FeastFeatureView]
+        """
+        return [cast(FeastFeatureView, item.feature_view) for item in self.feature_views]
+
+    def get_on_demand_feature_views(self) -> List[FeastOnDemandFeatureView]:
+        """
+        Get the list of all available on demand feature views
+
+        Returns
+        -------
+        List[FeastOnDemandFeatureView]
+        """
+        return [
+            cast(FeastOnDemandFeatureView, item.feature_view)
+            for item in self.on_demand_feature_views
+        ]
+
+
 class FeastAssetCreator:
     """
     Class for creating various Feast assets like Data Source, Feature View, etc.
@@ -459,6 +659,8 @@ class FeastAssetCreator:
         features: List[FeatureModel],
         name_to_feast_feature_view: Dict[str, FeastFeatureView],
         name_to_feast_request_source: Dict[str, FeastRequestSource],
+        feature_list_id: PydanticObjectId,
+        serving_entity_ids: List[PydanticObjectId],
     ) -> List[FeastOnDemandFeatureView]:
         """
         Create feast on demand feature views based on the features
@@ -471,6 +673,10 @@ class FeastAssetCreator:
             Mapping from feast feature view name to feast feature view
         name_to_feast_request_source: Dict[str, FeastRequestSource]
             Mapping from feast request source name to feast request source
+        feature_list_id: PydanticObjectId
+            Id of the feature list for which the feature view will be constructed
+        serving_entity_ids: List[PydanticObjectId]
+            Serving entity ids for which the feature view will be constructed
 
         Returns
         -------
@@ -488,6 +694,8 @@ class FeastAssetCreator:
                 feature_model=feature,
                 name_to_feast_feature_view=name_to_feast_feature_view,
                 name_to_feast_request_source=name_to_feast_request_source,
+                feature_list_id=feature_list_id,
+                serving_entity_ids=serving_entity_ids,
             )
             on_demand_feature_views.append(on_demand_feature_view)
         return on_demand_feature_views
@@ -496,8 +704,7 @@ class FeastAssetCreator:
     def create_feast_feature_services(
         feature_lists: List[FeatureListModel],
         features: List[FeatureModel],
-        feast_feature_views: List[FeastFeatureView],
-        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
+        feature_view_container: FeatureViewContainer,
     ) -> List[FeastFeatureService]:
         """
         Create feast feature services based on the feature lists
@@ -508,10 +715,8 @@ class FeastAssetCreator:
             List of featurebyte feature list models
         features: List[FeatureModel]
             List of featurebyte feature models
-        feast_feature_views: List[FeastFeatureView]
-            List of feast feature views
-        feast_on_demand_feature_views: List[FeastOnDemandFeatureView]
-            List of feast on demand feature views
+        feature_view_container: FeatureViewContainer
+            FeatureViewContainer object that provides access to feature view objects
 
         Returns
         -------
@@ -528,23 +733,36 @@ class FeastAssetCreator:
             # construct input for feature service
             input_feature_views = []
             found_feature_name_versions = set()
-            for feature_view in feast_on_demand_feature_views + feast_feature_views:
-                feast_feat_names = [
-                    feat.name
-                    for feat in feature_view.features
-                    if feat.name in feature_name_versions
-                    and feat.name not in found_feature_name_versions
-                ]
-                if feast_feat_names:
-                    input_feature_views.append(feature_view[feast_feat_names])
-                    found_feature_name_versions.update(feast_feat_names)
+            for serving_entity_ids in feature_list.enabled_serving_entity_ids:
+                for feature_view_item in feature_view_container.iterate_matching_feature_views(
+                    feature_list_id=feature_list.id,
+                    serving_entity_ids=serving_entity_ids,
+                    include_on_demand_feature_views=True,
+                ):
+                    feature_view = feature_view_item.feature_view
+                    feast_feat_names = [
+                        feat.name
+                        for feat in feature_view.features
+                        if feat.name in feature_name_versions
+                        and feat.name not in found_feature_name_versions
+                    ]
+                    if feast_feat_names:
+                        input_feature_views.append(feature_view[feast_feat_names])
+                        found_feature_name_versions.update(feast_feat_names)
 
-            # construct feature service
-            feature_service = FeastFeatureService(
-                name=feature_list.versioned_name,
-                features=input_feature_views,
-            )
-            feature_services.append(feature_service)
+                # construct feature service
+                if serving_entity_ids == feature_list.primary_entity_ids:
+                    feature_service_name = feature_list.versioned_name
+                else:
+                    feature_service_name = "_".join(
+                        [feature_list.versioned_name]
+                        + [str(entity_id) for entity_id in serving_entity_ids]
+                    )
+                feature_service = FeastFeatureService(
+                    name=feature_service_name,
+                    features=input_feature_views,
+                )
+                feature_services.append(feature_service)
         return feature_services
 
 
@@ -679,7 +897,7 @@ class FeastRegistryBuilder:
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
-        name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
+        feature_view_container = FeatureViewContainer(feature_lists=feature_lists)
         feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
             **feature_store.get_feature_store_details().dict()
         )
@@ -706,21 +924,43 @@ class FeastRegistryBuilder:
                 entity=feast_entity,
                 data_source=feast_data_source,
             )
-            name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
+            feature_view_container.add_feature_view(offline_store_table, feast_feature_view)
 
         name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(
             features
         )
-        on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
-            features=features,
-            name_to_feast_feature_view=name_to_feast_feature_view,
-            name_to_feast_request_source=name_to_feast_request_source,
-        )
+        feature_id_to_model = {feature.id: feature for feature in features}
+        for feature_list in feature_lists:
+            for serving_entity_ids in feature_list.enabled_serving_entity_ids:
+                feature_list_features = [
+                    feature_id_to_model[feature_id] for feature_id in feature_list.feature_ids
+                ]
+                name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
+                for item in feature_view_container.iterate_matching_feature_views(
+                    feature_list_id=feature_list.id,
+                    serving_entity_ids=serving_entity_ids,
+                    include_on_demand_feature_views=False,
+                ):
+                    assert isinstance(item.feature_view, FeastFeatureView)
+                    name = item.source_feature_table_name or item.feature_view.name
+                    name_to_feast_feature_view[name] = item.feature_view
+                on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
+                    features=feature_list_features,
+                    name_to_feast_feature_view=name_to_feast_feature_view,
+                    name_to_feast_request_source=name_to_feast_request_source,
+                    feature_list_id=feature_list.id,
+                    serving_entity_ids=serving_entity_ids,
+                )
+                for on_demand_feature_view in on_demand_feature_views:
+                    feature_view_container.add_on_demand_feature_view(
+                        primary_entity_ids=serving_entity_ids,
+                        feature_list_id=feature_list.id,
+                        on_demand_feature_view=on_demand_feature_view,
+                    )
         feast_feature_services = FeastAssetCreator.create_feast_feature_services(
             feature_lists=feature_lists,
             features=features,
-            feast_feature_views=list(name_to_feast_feature_view.values()),
-            feast_on_demand_feature_views=on_demand_feature_views,
+            feature_view_container=feature_view_container,
         )
 
         return cls._create_feast_registry_proto(
@@ -729,7 +969,7 @@ class FeastRegistryBuilder:
             feast_data_sources=feast_data_sources,
             primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
             feast_request_sources=list(name_to_feast_request_source.values()),
-            feast_feature_views=list(name_to_feast_feature_view.values()),
-            feast_on_demand_feature_views=on_demand_feature_views,
+            feast_feature_views=feature_view_container.get_feature_views(),
+            feast_on_demand_feature_views=feature_view_container.get_on_demand_feature_views(),
             feast_feature_services=feast_feature_services,
         )

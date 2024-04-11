@@ -12,6 +12,7 @@ from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 
 
@@ -64,6 +65,8 @@ class OnDemandFeatureViewConstructor:
         feature_model: FeatureModel,
         name_to_feast_feature_view: Dict[str, FeatureView],
         name_to_feast_request_source: Dict[str, RequestSource],
+        feature_list_id: PydanticObjectId,
+        serving_entity_ids: List[PydanticObjectId],
     ) -> OnDemandFeatureView:
         """
         Create a Feast OnDemandFeatureView from an offline store info.
@@ -76,6 +79,10 @@ class OnDemandFeatureViewConstructor:
             Dict of FeatureView names to FeatureViews to be used as sources for the OnDemandFeatureView
         name_to_feast_request_source: Dict[str, RequestSource]
             Dict of RequestSource names to RequestSources to be used as sources for the OnDemandFeatureView
+        feature_list_id: PydanticObjectId
+            Id of the feature list for which the feature view will be constructed
+        serving_entity_ids: List[PydanticObjectId]
+            Serving entity ids for which the feature view will be constructed
 
         Returns
         -------
@@ -124,9 +131,15 @@ class OnDemandFeatureViewConstructor:
             sources.append(req_source)
 
         assert offline_store_info.odfv_info is not None, "OfflineStoreInfo does not have ODFV info"
+        function_name = offline_store_info.odfv_info.function_name
+        new_function_name = "_".join(
+            [function_name, str(feature_list_id)]
+            + [str(entity_id) for entity_id in serving_entity_ids]
+        )
+        definition = offline_store_info.odfv_info.codes.replace(function_name, new_function_name)
         feature_view = create_feast_on_demand_feature_view(
-            definition=offline_store_info.odfv_info.codes,
-            function_name=offline_store_info.odfv_info.function_name,
+            definition=definition,
+            function_name=new_function_name,
             sources=sources,
             schema=[
                 Field(

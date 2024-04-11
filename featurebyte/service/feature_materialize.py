@@ -930,10 +930,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         """
         if not columns:
             return
-        # Note: This guard is to be removed when feast registry is updated to include precomputed
-        # lookup feature tables
-        if feature_table.precomputed_lookup_feature_table_info is not None:
-            return
         await materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table.name),

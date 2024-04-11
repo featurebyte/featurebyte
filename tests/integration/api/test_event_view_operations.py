@@ -574,6 +574,26 @@ async def test_get_historical_features(
     Test getting historical features from FeatureList
     """
     _ = user_entity, new_user_id_entity
+    try:
+        for n in [1000, 5000, 10000, 20000]:
+            print(f"Processing n: {n}, schema: {session.schema_name}")
+            filename = (
+                f"/Users/yungsiang/workspace/temp/test-databricks-sql-limits/create_view_{n}.sql"
+            )
+            with open(filename) as f:
+                query = f.read()
+            await session.execute_query_long_running(query)
+            print(f"Success!")
+    except:
+        import traceback
+
+        raise
+    # for n in [1000]:
+    #     filename = f"/Users/yungsiang/workspace/temp/test-databricks-sql-limits/create_table_nested_{n}.sql"
+    #     with open(filename) as f:
+    #         query = f.read()
+    #     await session.execute_query_long_running(query)
+    print("All done!")
     input_format, output_format = in_out_formats
     assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}

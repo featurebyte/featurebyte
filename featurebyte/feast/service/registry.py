@@ -181,20 +181,16 @@ class FeastRegistryService(
             feature_ids.update(recent_feature_list.feature_ids)
 
         features = []
-        entity_ids = set()
         feature_lists = recent_feature_lists
         feature_store_ids = set()
         async for feature in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(feature_ids)}}
         ):
             features.append(feature)
-            entity_ids.update(feature.entity_ids)
             feature_store_ids.add(feature.tabular_source.feature_store_id)
 
         entities = []
-        async for entity in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(entity_ids)}}
-        ):
+        async for entity in self.entity_service.list_documents_iterator(query_filter={}):
             entities.append(entity)
 
         if len(feature_store_ids) > 1:

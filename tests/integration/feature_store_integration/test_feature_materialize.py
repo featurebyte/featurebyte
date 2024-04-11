@@ -358,7 +358,7 @@ def order_use_case_fixture(order_entity):
 
 @pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
 async def deployed_features_list_composite_entities_fixture(
-    saved_feature_list_composite_entities, app_container
+    saved_feature_list_composite_entities, app_container, order_use_case
 ):
     """
     Fixture for deployed feature list
@@ -370,7 +370,7 @@ async def deployed_features_list_composite_entities_fixture(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
-        deployment = feature_list.deploy()
+        deployment = feature_list.deploy(use_case_name=order_use_case.name)
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
@@ -678,15 +678,7 @@ async def test_feast_registry(
     )
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()
-    entity_row = {
-        "üser id": 5,
-        "cust_id": 761,
-        "user_status": "STÀTUS_CODE_37",
-        "PRODUCT_ACTION": "detail",
-        "order_id": "T1230",
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
-        "üser id x PRODUCT_ACTION": "detail::761",
-    }
+    entity_row = {"order_id": "T1230", "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00")}
     with patch.object(
         feature_store,
         "_augment_response_with_on_demand_transforms",
@@ -962,7 +954,7 @@ def process_output_features_helper(feat_dict, source_type):
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_online_features__primary_entity_ids(
-    config, deployed_feature_list, expected_features_order_id_T3850, source_type
+    session, config, deployed_feature_list, expected_features_order_id_T3850, source_type
 ):
     """
     Check online features by providing only the primary entity ids. Expect the online serving
