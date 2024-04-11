@@ -349,8 +349,6 @@ async def test_feature_table_one_feature_deployed(
     deployed_float_feature,
     deployed_float_feature_list,
     transaction_to_customer_relationship_info,
-    transaction_entity,
-    cust_id_entity,
     storage,
     update_fixtures,
 ):
