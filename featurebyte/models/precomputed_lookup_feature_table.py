@@ -88,6 +88,7 @@ def get_precomputed_lookup_feature_tables(
     feature_ids: List[PydanticObjectId],
     feature_lists: List[FeatureListModel],
     feature_table_name: str,
+    feature_table_has_ttl: bool,
     entity_id_to_serving_name: Dict[PydanticObjectId, str],
     entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
     feature_store_model: FeatureStoreModel,
@@ -106,6 +107,8 @@ def get_precomputed_lookup_feature_tables(
         List of currently online enabled feature lists
     feature_table_name: str
         Name of the source feature table
+    feature_table_has_ttl: bool
+        Whether the source feature table has ttl
     entity_id_to_serving_name: Dict[PydanticObjectId, str]
         Mapping from entity id to serving name
     entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
@@ -173,7 +176,7 @@ def get_precomputed_lookup_feature_tables(
                         lookup_steps=lookup_steps,
                         source_feature_table_id=feature_table_id,
                     ),
-                    has_ttl=False,
+                    has_ttl=feature_table_has_ttl,
                     output_column_names=[],
                     output_dtypes=[],
                     catalog_id=feature_lists[0].catalog_id,

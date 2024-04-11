@@ -445,7 +445,7 @@ async def test_feature_table_one_feature_deployed(
         "feature_ids": [],
         "feature_job_setting": None,
         "feature_store_id": deployed_float_feature.tabular_source.feature_store_id,
-        "has_ttl": False,
+        "has_ttl": True,
         "last_materialized_at": None,
         "name": f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
         "name_prefix": None,

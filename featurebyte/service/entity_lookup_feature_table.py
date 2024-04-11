@@ -121,6 +121,7 @@ class EntityLookupFeatureTableService:
         feature_ids: List[PydanticObjectId],
         feature_lists: List[FeatureListModel],
         feature_table_name: str,
+        feature_table_has_ttl: bool,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         feature_store_model: FeatureStoreModel,
         feature_table_id: Optional[PydanticObjectId],
@@ -138,6 +139,8 @@ class EntityLookupFeatureTableService:
             List of currently online enabled feature lists
         feature_table_name: str
             Name of the source feature table
+        feature_table_has_ttl: bool
+            Whether the source feature table has ttl
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Mapping from entity id to serving name
         feature_store_model: FeatureStoreModel
@@ -155,6 +158,7 @@ class EntityLookupFeatureTableService:
             feature_ids=feature_ids,
             feature_lists=feature_lists,
             feature_table_name=feature_table_name,
+            feature_table_has_ttl=feature_table_has_ttl,
             entity_id_to_serving_name=entity_id_to_serving_name,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
             feature_table_id=feature_table_id,

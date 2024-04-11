@@ -565,6 +565,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 "_id": 1,
                 "name": 1,
                 "primary_entity_ids": 1,
+                "has_ttl": 1,
             },
         )
 
@@ -576,6 +577,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_ids=feature_ids,
                 feature_lists=feature_lists,
                 feature_table_name=feature_table_dict["name"],
+                feature_table_has_ttl=feature_table_dict["has_ttl"],
                 entity_id_to_serving_name={
                     entity.id: entity.serving_names[0] for entity in all_entities
                 },
