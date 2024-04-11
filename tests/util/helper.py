@@ -32,6 +32,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -958,7 +959,7 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     async for info in app_container.relationship_info_service.list_documents_iterator(
         query_filter={"entity_id": child_entity_id, "related_entity_id": parent_entity_id}
     ):
-        return info
+        return EntityRelationshipInfo(**info.dict(by_alias=True))
     raise AssertionError("Relationship not found")
 
 

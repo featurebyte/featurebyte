@@ -4,7 +4,7 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from datetime import datetime
 from pathlib import Path
@@ -102,7 +102,7 @@ class OfflineStoreFeatureTableService(
     async def _create_document(
         self, data: OfflineStoreFeatureTableModel
     ) -> OfflineStoreFeatureTableModel:
-        if data.entity_lookup_info is None:
+        if data.entity_lookup_info is None and data.precomputed_lookup_feature_table_info is None:
             # check if name already exists
             data.name = data.get_name()
             query_filter = {"name": data.name}
@@ -115,7 +115,9 @@ class OfflineStoreFeatureTableService(
                 data.name_suffix = str(count)
                 data.name = data.get_name()
 
-        data = await self._move_feature_cluster_to_storage(data)
+        if data.feature_cluster is not None:
+            data = await self._move_feature_cluster_to_storage(data)
+
         try:
             output = await super().create_document(data)
             assert output.catalog_id == data.catalog_id
@@ -250,3 +252,27 @@ class OfflineStoreFeatureTableService(
             update_schema,
             document=document,
         )
+
+    async def list_precomputed_lookup_feature_tables(
+        self,
+        source_feature_table_id: ObjectId,
+    ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
+        """
+        Retrieve list of precomputed lookup feature tables associated with a source feature table
+
+        Parameters
+        ----------
+        source_feature_table_id: ObjectId
+            Feature table id to search for
+
+        Yields
+        -------
+        AsyncIterator[OfflineStoreFeatureTableModel]
+            List query output
+        """
+        async for doc in self.list_documents_iterator(
+            query_filter={
+                "precomputed_lookup_feature_table_info.source_feature_table_id": source_feature_table_id
+            }
+        ):
+            yield doc

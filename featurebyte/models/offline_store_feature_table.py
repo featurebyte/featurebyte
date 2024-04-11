@@ -43,6 +43,17 @@ class OnlineStoreLastMaterializedAt(BaseModel):
     value: datetime
 
 
+class PrecomputedLookupFeatureTableInfo(BaseModel):
+    """
+    Metadata for a feature table that is derived from a source feature table in order to support
+    precomputed lookup using a related entity
+    """
+
+    lookup_steps: List[EntityRelationshipInfo]
+    feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
+    source_feature_table_id: Optional[PydanticObjectId]
+
+
 class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
     OfflineStoreFeatureTable class
@@ -68,6 +79,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
     entity_lookup_info: Optional[EntityRelationshipInfo]
+    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
 
     @root_validator
@@ -108,6 +120,11 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         entity_lookup_info = None
         if self.entity_lookup_info:
             entity_lookup_info = self.entity_lookup_info.dict(by_alias=True)
+        precomputed_lookup_feature_table_info = None
+        if self.precomputed_lookup_feature_table_info:
+            precomputed_lookup_feature_table_info = self.precomputed_lookup_feature_table_info.dict(
+                by_alias=True
+            )
         return {
             "catalog_id": self.catalog_id,
             "primary_entity_ids": self.primary_entity_ids,
@@ -117,6 +134,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             ),
             "has_ttl": self.has_ttl,
             "entity_lookup_info": entity_lookup_info,
+            "precomputed_lookup_feature_table_info": precomputed_lookup_feature_table_info,
         }
 
     @property
@@ -137,6 +155,40 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             raise ValueError("entity_universe is not set")
         return EntityUniverseModel(**self.internal_entity_universe)
 
+    @staticmethod
+    def get_serving_names_for_table_name(
+        serving_names: List[str],
+        max_serv_name_len: int = 19,
+        max_serv_num: int = 2,
+    ) -> str:
+        """
+        Get the serving names formatted to be used as part of the feature table name
+
+        Parameters
+        ----------
+        serving_names: List[str]
+            List of serving names
+        max_serv_name_len: int
+            Maximum length of each serving name when formatting
+        max_serv_num: int
+            Maximum number of serving names to include when formatting
+
+        Returns
+        -------
+        str
+        """
+        # take first 3 serving names and join them with underscore
+        # if serving name is longer than 16 characters, truncate it
+        # max length of the name = 15 * 3 + 2 = 47
+        # strip leading and trailing underscores for all serving names & sanitized name
+        name = sanitize_identifier(
+            "_".join(
+                serving_name[:max_serv_name_len].strip("_")
+                for serving_name in serving_names[:max_serv_num]
+            )
+        ).strip("_")
+        return name
+
     def _get_basename(self) -> str:
         # max length of feature table name is 64
         # reserving 8 characters for prefix (catalog name, `<project_name>_`, which is 7 hex digits)
@@ -151,19 +203,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             - (max_serv_num - 1)  # underscores
             - 1  # frequency separator
         )
-
         name = "_no_entity"
         if self.serving_names:
-            # take first 3 serving names and join them with underscore
-            # if serving name is longer than 16 characters, truncate it
-            # max length of the name = 15 * 3 + 2 = 47
-            # strip leading and trailing underscores for all serving names & sanitized name
-            name = sanitize_identifier(
-                "_".join(
-                    serving_name[:max_serv_name_len].strip("_")
-                    for serving_name in self.serving_names[:max_serv_num]
-                )
-            ).strip("_")
+            name = self.get_serving_names_for_table_name(
+                self.serving_names,
+                max_serv_name_len=max_serv_name_len,
+                max_serv_num=max_serv_num,
+            )
 
         if self.feature_job_setting:
             # take the frequency part of the feature job setting
@@ -238,6 +284,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_job_setting"),
             pymongo.operations.IndexModel("has_ttl"),
             pymongo.operations.IndexModel("entity_lookup_info"),
+            pymongo.operations.IndexModel(
+                "precomputed_lookup_feature_table_info.source_feature_table_id"
+            ),
         ]
         auditable = False
 
@@ -272,7 +321,9 @@ class OnlineStoresLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
 
 
 OfflineStoreFeatureTableUpdate = Union[
-    FeaturesUpdate, OfflineLastMaterializedAtUpdate, OnlineStoresLastMaterializedAtUpdate
+    FeaturesUpdate,
+    OfflineLastMaterializedAtUpdate,
+    OnlineStoresLastMaterializedAtUpdate,
 ]
 
 
