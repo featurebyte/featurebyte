@@ -286,6 +286,6 @@ def _get_feature_lists_to_relationships_info(
                     if step not in combined_lookup_steps:
                         combined_lookup_steps.extend(info.join_steps)
         feature_lists_relationships_info[feature_list.id] = (
-            feature_list.relationships_info or [] + combined_lookup_steps
-        )
+            feature_list.relationships_info or []
+        ) + combined_lookup_steps
     return feature_lists_relationships_info
