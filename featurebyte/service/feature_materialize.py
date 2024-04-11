@@ -542,10 +542,12 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         return await self.feast_feature_store_service.get_feast_feature_store(feast_registry)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
-        assert feature_table_model.feature_cluster is not None, "Missing feature cluster"
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_table_model.feature_cluster.feature_store_id
-        )
+        if feature_table_model.feature_cluster is not None:
+            feature_store_id = feature_table_model.feature_store_id
+        else:
+            feature_store_id = feature_table_model.feature_store_id
+        assert feature_store_id is not None, "feature_store_id not available"
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         return session
 
