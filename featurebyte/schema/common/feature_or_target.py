@@ -5,9 +5,9 @@ Feature or target schema
 from typing import Dict, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 
 
 class FeatureOrTargetTableCreate(FeatureByteBaseModel):
@@ -16,7 +16,7 @@ class FeatureOrTargetTableCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     feature_store_id: PydanticObjectId
     observation_table_id: Optional[PydanticObjectId]
 

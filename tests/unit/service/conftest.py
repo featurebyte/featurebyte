@@ -468,7 +468,7 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
                 data=EventTableCreate(**payload)
             )
             event_timestamp = await semantic_service.get_or_create_document(
-                name=SemanticType.EVENT_TIMESTAMP
+                name=SemanticType.EVENT_TIMESTAMP.value
             )
             columns_info = []
             for col in event_table.columns_info:

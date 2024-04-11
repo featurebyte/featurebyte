@@ -7,7 +7,7 @@ from typing import List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -19,7 +19,7 @@ class SemanticCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: str
+    name: NameStr
 
 
 class SemanticList(PaginationMixin):

@@ -7,10 +7,11 @@ from __future__ import annotations
 from typing import List, Optional
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -25,8 +26,8 @@ class EntityCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
-    serving_name: StrictStr
+    name: NameStr
+    serving_name: NameStr
 
 
 class EntityList(PaginationMixin):
@@ -42,7 +43,7 @@ class EntityUpdate(FeatureByteBaseModel):
     Entity update schema
     """
 
-    name: StrictStr
+    name: NameStr
 
 
 class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -50,7 +51,7 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     Entity service update schema
     """
 
-    name: Optional[str]
+    name: Optional[NameStr]
     ancestor_ids: Optional[List[PydanticObjectId]]
     parents: Optional[List[ParentEntity]]
     table_ids: Optional[List[PydanticObjectId]]

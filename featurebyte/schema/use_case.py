@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -17,7 +17,7 @@ class UseCaseCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=PydanticObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     target_id: Optional[PydanticObjectId]
     target_namespace_id: Optional[PydanticObjectId]
     context_id: PydanticObjectId
@@ -45,7 +45,7 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_eda_table: Optional[bool]
     remove_default_preview_table: Optional[bool]
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
 
     @root_validator(pre=True)
     @classmethod

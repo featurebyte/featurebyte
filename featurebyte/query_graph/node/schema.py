@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, NameStr
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -273,9 +273,9 @@ class InputNodeFeatureStoreDetails(FeatureByteBaseModel):
 class TableDetails(FeatureByteBaseModel):
     """Table details"""
 
-    database_name: Optional[StrictStr]
-    schema_name: Optional[StrictStr]
-    table_name: StrictStr
+    database_name: Optional[NameStr]
+    schema_name: Optional[NameStr]
+    table_name: NameStr
 
 
 class ColumnSpec(FeatureByteBaseModel):
@@ -283,5 +283,5 @@ class ColumnSpec(FeatureByteBaseModel):
     Schema for columns retrieval
     """
 
-    name: StrictStr
+    name: NameStr
     dtype: DBVarType

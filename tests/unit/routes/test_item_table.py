@@ -131,7 +131,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
     async def test_item_id_semantic(self, data_response, app_container):
         """Test item id semantic is set correctly"""
         item_id_semantic = await app_container.semantic_service.get_or_create_document(
-            name=SemanticType.ITEM_ID
+            name=SemanticType.ITEM_ID.value
         )
 
         # check the that semantic ID is set correctly

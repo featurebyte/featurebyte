@@ -13,6 +13,7 @@ from pydantic import Field, StrictStr, root_validator
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -24,7 +25,7 @@ class EventTableCandidate(FeatureByteBaseModel):
     Event Table Candidate Schema
     """
 
-    name: StrictStr
+    name: NameStr
     tabular_source: TabularSource
     event_timestamp_column: StrictStr
     record_creation_timestamp_column: StrictStr
@@ -36,7 +37,7 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
     event_table_id: Optional[PydanticObjectId] = Field(default=None)
     event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_date: Optional[datetime] = Field(default=None)
