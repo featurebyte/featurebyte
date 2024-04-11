@@ -215,6 +215,12 @@ class DataWarehouseConnectionError(BaseUnprocessableEntityError):
     """
 
 
+class DataWarehouseOperationError(BaseUnprocessableEntityError):
+    """
+    Raise when data warehouse operations failed
+    """
+
+
 class DocumentError(BaseUnprocessableEntityError):
     """
     General exception raised when there are some issue at persistent layer operations

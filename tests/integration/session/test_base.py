@@ -8,9 +8,11 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
+from featurebyte.exception import DataWarehouseOperationError
 
 
 def sample_dataframe():
@@ -116,3 +118,73 @@ async def test_arrow_schema(session):
         "ARRAY",
         "DICT",
     ]
+
+
+async def check_table_does_not_exist(session, name):
+    """
+    Helper function to check that a table or view doesn't exist
+    """
+    with pytest.raises(session._no_schema_error):
+        await session.execute_query(f"SELECT * FROM {name} LIMIT 1")
+
+
+@pytest.mark.asyncio
+async def test_drop_table__table_ok(session):
+    """
+    Test drop_table function
+    """
+    name = f"MY_TABLE_{str(ObjectId()).upper()}"
+    await session.execute_query(f"CREATE TABLE {name} AS SELECT 1 AS A")
+    await session.drop_table(
+        table_name=name,
+        schema_name=session.schema_name,
+        database_name=session.database_name,
+    )
+    await check_table_does_not_exist(session, name)
+
+
+@pytest.mark.asyncio
+async def test_drop_table__table_error(session):
+    """
+    Test drop_table function
+    """
+    name = f"MY_TABLE_{str(ObjectId()).upper()}"
+    await session.execute_query(f"CREATE TABLE {name} AS SELECT 1 AS A")
+    with pytest.raises(DataWarehouseOperationError) as exc_info:
+        await session.drop_table(
+            table_name="wrong_name",
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+        )
+    assert "wrong_name" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_drop_table__view_ok(session):
+    """
+    Test drop_table function
+    """
+    name = f"MY_VIEW_{str(ObjectId()).upper()}"
+    await session.execute_query(f"CREATE VIEW {name} AS SELECT 1 AS A")
+    await session.drop_table(
+        table_name=name,
+        schema_name=session.schema_name,
+        database_name=session.database_name,
+    )
+    await check_table_does_not_exist(session, name)
+
+
+@pytest.mark.asyncio
+async def test_drop_table__view_error(session):
+    """
+    Test drop_table function
+    """
+    name = f"MY_VIEW_{str(ObjectId()).upper()}"
+    await session.execute_query(f"CREATE VIEW {name} AS SELECT 1 AS A")
+    with pytest.raises(DataWarehouseOperationError) as exc_info:
+        await session.drop_table(
+            table_name="wrong_name",
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+        )
+    assert "wrong_name" in str(exc_info.value)
