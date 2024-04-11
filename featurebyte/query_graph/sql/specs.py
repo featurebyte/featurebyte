@@ -687,4 +687,4 @@ class FeatureSpec:
 
     feature_name: str
     feature_expr: Expression
-    feature_dtype: DBVarType
+    feature_dtype: Optional[DBVarType]

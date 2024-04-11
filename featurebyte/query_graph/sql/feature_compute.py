@@ -297,7 +297,8 @@ class FeatureExecutionPlan:
         if key in self.feature_specs:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
-        self.feature_name_dtype_mapping[key] = feature_spec.feature_dtype
+        if feature_spec.feature_dtype is not None:
+            self.feature_name_dtype_mapping[key] = feature_spec.feature_dtype
 
     def add_feature_entity_lookup_step(self, entity_lookup_step: EntityLookupStep) -> None:
         """
@@ -787,6 +788,6 @@ class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
             feature_spec = FeatureSpec(
                 feature_name=feature_name,
                 feature_expr=sql_node.sql,
-                feature_dtype=name_to_dtype[feature_name],
+                feature_dtype=name_to_dtype.get(feature_name),
             )
             self.plan.add_feature_spec(feature_spec)
