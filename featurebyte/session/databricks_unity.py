@@ -33,7 +33,9 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
         await super().create_schema()
         # grant permissions on schema to the group
         assert isinstance(self.session, DatabricksUnitySession)
-        grant_permissions_query = f"GRANT ALL PRIVILEGES ON SCHEMA `{self.session.schema_name}` TO `{self.session.group_name}`"
+        grant_permissions_query = (
+            f"ALTER SCHEMA `{self.session.schema_name}` OWNER TO `{self.session.group_name}`"
+        )
         await self.session.execute_query(grant_permissions_query)
 
     async def register_missing_objects(self) -> None:
