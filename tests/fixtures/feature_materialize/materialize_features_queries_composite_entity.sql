@@ -64,6 +64,6 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."cust_id",
   AGG."another_key",
-  "_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c" AS "composite_entity_feature_1d_V220101",
+  CAST("_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c" AS DOUBLE) AS "composite_entity_feature_1d_V220101",
   COALESCE(CONCAT(CAST("cust_id" AS VARCHAR), '::', CAST("another_key" AS VARCHAR)), '') AS "cust_id x another_key"
 FROM _FB_AGGREGATED AS AGG;

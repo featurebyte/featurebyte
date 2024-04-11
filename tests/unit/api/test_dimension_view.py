@@ -434,7 +434,7 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
-          "_fb_internal_cust_id_lookup_col_float_project_1" AS "FloatFeature",
+          CAST("_fb_internal_cust_id_lookup_col_float_project_1" AS DOUBLE) AS "FloatFeature",
           "_fb_internal_cust_id_lookup_col_char_project_1" AS "CharFeature",
           "_fb_internal_cust_id_lookup_col_binary_project_1" AS "BinaryFeature",
           "_fb_internal_cust_id_lookup_col_boolean_project_1" AS "BoolFeature"

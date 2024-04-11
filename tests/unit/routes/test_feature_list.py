@@ -6,6 +6,7 @@ import collections
 
 # pylint: disable=too-many-lines
 import os
+import textwrap
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -823,8 +824,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
-            "FROM _FB_AGGREGATED AS AGG"
+            textwrap.dedent(
+                """
+                SELECT
+                  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
+                FROM _FB_AGGREGATED AS AGG
+                """
+            ).strip()
         )
 
     def test_feature_clusters_derived_and_stored(

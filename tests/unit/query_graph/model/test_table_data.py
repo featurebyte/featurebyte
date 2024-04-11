@@ -282,13 +282,13 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
             WHEN (
               CAST(CASE WHEN (
                 "amount" IS NULL
-              ) THEN 0.0 ELSE "amount" END AS FLOAT) < 0.0
+              ) THEN 0.0 ELSE "amount" END AS DOUBLE) < 0.0
             )
             THEN NULL
             ELSE CAST(CASE WHEN (
               "amount" IS NULL
-            ) THEN 0.0 ELSE "amount" END AS FLOAT)
-          END AS FLOAT) AS "amount"
+            ) THEN 0.0 ELSE "amount" END AS DOUBLE)
+          END AS DOUBLE) AS "amount"
         FROM "db_name"."schema_name"."table_name"
         LIMIT 10
         """

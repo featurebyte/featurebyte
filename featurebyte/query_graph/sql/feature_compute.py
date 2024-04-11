@@ -13,7 +13,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
     EntityRelationshipsContext,
@@ -62,6 +62,7 @@ from featurebyte.query_graph.sql.specs import (
     TileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 AggregatorType = Union[
     LatestAggregator,
@@ -106,6 +107,7 @@ class FeatureExecutionPlan:
         self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
         self.parent_serving_preparation = parent_serving_preparation
+        self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
 
     @property
@@ -295,6 +297,8 @@ class FeatureExecutionPlan:
         if key in self.feature_specs:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
+        if feature_spec.feature_dtype is not None:
+            self.feature_name_dtype_mapping[key] = feature_spec.feature_dtype
 
     def add_feature_entity_lookup_step(self, entity_lookup_step: EntityLookupStep) -> None:
         """
@@ -433,8 +437,17 @@ class FeatureExecutionPlan:
                 columns.append(quoted_identifier(agg_result_name))
         else:
             for feature_spec in self.feature_specs.values():
+                feature_expr = feature_spec.feature_expr
+                if (
+                    self.feature_name_dtype_mapping.get(feature_spec.feature_name)
+                    == DBVarType.FLOAT
+                ):
+                    feature_expr = expressions.Cast(
+                        this=feature_expr,
+                        to=expressions.DataType.build("DOUBLE"),
+                    )
                 feature_alias = expressions.alias_(
-                    feature_spec.feature_expr, alias=feature_spec.feature_name, quoted=True
+                    feature_expr, alias=feature_spec.feature_name, quoted=True
                 )
                 columns.append(feature_alias)
 
@@ -543,7 +556,7 @@ class FeatureExecutionPlan:
         return post_aggregation_sql
 
 
-class FeatureExecutionPlanner:
+class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
     """Responsible for constructing a FeatureExecutionPlan given QueryGraphModel and Node
 
     Parameters
@@ -570,6 +583,7 @@ class FeatureExecutionPlanner:
         if source_type is None:
             source_type = SourceType.SNOWFLAKE
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
+        self.op_struct_extractor = OperationStructureExtractor(graph=self.graph)
         self.plan = FeatureExecutionPlan(
             source_type,
             is_online_serving,
@@ -746,6 +760,10 @@ class FeatureExecutionPlanner:
             aggregation_specs=aggregation_specs,
         )
         sql_node = sql_graph.build(node)
+        op_struct = self.op_struct_extractor.extract(node=node).operation_structure_map[node.name]
+        name_to_dtype = {
+            aggregation.name: aggregation.dtype for aggregation in op_struct.aggregations
+        }
 
         if isinstance(sql_node, TableNode):
             # sql_node corresponds to a FeatureGroup that results from point-in-time groupby or item
@@ -754,6 +772,7 @@ class FeatureExecutionPlanner:
                 feature_spec = FeatureSpec(
                     feature_name=feature_name,
                     feature_expr=feature_expr,
+                    feature_dtype=name_to_dtype[feature_name],
                 )
                 self.plan.add_feature_spec(feature_spec)
         else:
@@ -766,5 +785,9 @@ class FeatureExecutionPlanner:
                 # this could still be previewed as an "unnamed" feature since the expression is
                 # available, but it cannot be published.
                 feature_name = "Unnamed"
-            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=sql_node.sql)
+            feature_spec = FeatureSpec(
+                feature_name=feature_name,
+                feature_expr=sql_node.sql,
+                feature_dtype=name_to_dtype.get(feature_name),
+            )
             self.plan.add_feature_spec(feature_spec)

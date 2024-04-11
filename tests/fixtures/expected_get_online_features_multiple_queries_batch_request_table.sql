@@ -110,7 +110,7 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."cust_id",
-  "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_1d"
+  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d"
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT

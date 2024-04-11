@@ -35,7 +35,7 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  (
+  CAST((
     "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_1" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1"
-  ) AS "MY FEATURE"
+  ) AS DOUBLE) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG

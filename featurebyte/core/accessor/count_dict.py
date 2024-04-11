@@ -291,7 +291,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["CustomerProductGroupCountsUniqueCount_7d"].iloc[0]
-        5
+        5.0
         """
         return self._make_operation(
             "unique_count",
