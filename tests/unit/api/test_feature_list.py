@@ -935,19 +935,19 @@ def test_get_sql(feature_list):
     expected = textwrap.dedent(
         """
         SELECT
-          (
+          CAST((
             "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
-          ) AS "production_ready_feature",
-          (
+          ) AS FLOAT) AS "production_ready_feature",
+          CAST((
             (
               "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
-          ) AS "draft_feature",
-          (
+          ) AS FLOAT) AS "draft_feature",
+          CAST((
             (
               "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
-          ) AS "deprecated_feature"
+          ) AS FLOAT) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
         """
     ).strip()

@@ -322,12 +322,14 @@ def test_feature_execution_planner(
             feature_expr=quoted_identifier(
                 f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
                 f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
     assert plan.required_entity_ids == {ObjectId("637516ebc9c18f5a277a78db")}
@@ -419,12 +421,14 @@ def test_feature_execution_planner__serving_names_mapping(
             feature_expr=quoted_identifier(
                 f"_fb_internal_NEW_CUST_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
                 f"_fb_internal_NEW_CUST_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
 
@@ -480,12 +484,14 @@ def test_feature_execution_planner__query_graph_with_graph_node(
             feature_expr=quoted_identifier(
                 f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
                 f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
 

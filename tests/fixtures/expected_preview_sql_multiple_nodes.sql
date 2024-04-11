@@ -370,10 +370,10 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_2h_average",
-  "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average",
-  "_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "a_2h_max",
-  "_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "a_36h_max",
-  "_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS "a_2h_sum",
-  "_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS "a_36h_sum"
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS FLOAT) AS "a_2h_average",
+  CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS FLOAT) AS "a_48h_average",
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS FLOAT) AS "a_2h_max",
+  CAST("_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS FLOAT) AS "a_36h_max",
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS FLOAT) AS "a_2h_sum",
+  CAST("_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS FLOAT) AS "a_36h_sum"
 FROM _FB_AGGREGATED AS AGG

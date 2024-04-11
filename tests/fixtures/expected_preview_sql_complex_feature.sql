@@ -299,10 +299,10 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  (
+  CAST((
     "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" / NULLIF(
       "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
       0
     )
-  ) AS "a_2h_avg_by_user_div_7d_by_biz"
+  ) AS FLOAT) AS "a_2h_avg_by_user_div_7d_by_biz"
 FROM _FB_AGGREGATED AS AGG

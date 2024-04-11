@@ -3,6 +3,7 @@ Tests for Feature route
 """
 
 import collections
+import textwrap
 
 # pylint: disable=too-many-lines
 from collections import defaultdict
@@ -784,7 +785,13 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
+            textwrap.dedent(
+                """
+                SELECT
+                  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS FLOAT) AS "sum_30m"
+                FROM _FB_AGGREGATED AS AGG
+                """
+            ).strip()
         )
 
     @freeze_time("2022-01-02 10:00:00")
