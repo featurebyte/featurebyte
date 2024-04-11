@@ -22,6 +22,7 @@ import aiofiles
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from cachetools import TTLCache
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -48,6 +49,7 @@ HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
+session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 logger = get_logger(__name__)
 
@@ -115,6 +117,7 @@ class BaseSession(BaseModel):
     database_name: str = ""
     schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
+    _cache_key: Any = PrivateAttr(default=None)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
 
     def __init__(self, **data: Any) -> None:
@@ -128,6 +131,17 @@ class BaseSession(BaseModel):
         # close connection
         if self._connection is not None:
             self._connection.close()
+
+    def set_cache_key(self, key: Any) -> None:
+        """
+        Set hash key used to cache session object
+
+        Parameters
+        ----------
+        key: Any
+            Hash key
+        """
+        self._cache_key = key
 
     async def clone_if_not_threadsafe(self) -> BaseSession:
         """
@@ -511,8 +525,20 @@ class BaseSession(BaseModel):
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
+
+        Raises
+        ------
+        Exception
+            If query execution fails
         """
-        bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+        try:
+            bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+        except Exception as exc:
+            # remove session from cache if query fails
+            if self._cache_key:
+                session_cache.pop(self._cache_key, None)
+            raise exc
+
         buffer = BytesIO()
         async for chunk in bytestream:
             buffer.write(chunk)
@@ -575,12 +601,22 @@ class BaseSession(BaseModel):
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
+
+        Raises
+        ------
+        Exception
+            If query execution fails
         """
         cursor = self.connection.cursor()
         try:
             cursor.execute(query)
             result = self.fetch_query_result_impl(cursor)
             return result
+        except Exception as exc:
+            # remove session from cache if query fails
+            if self._cache_key:
+                session_cache.pop(self._cache_key, None)
+            raise exc
         finally:
             cursor.close()
 

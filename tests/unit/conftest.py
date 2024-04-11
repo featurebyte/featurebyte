@@ -57,8 +57,8 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
-from featurebyte.session.manager import SessionManager, session_cache
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, session_cache
+from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
