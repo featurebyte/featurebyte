@@ -22,6 +22,7 @@ from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.offline_store_feature_table import (
     OfflineLastMaterializedAtUpdate,
     OfflineStoreFeatureTableModel,
@@ -542,6 +543,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         return await self.feast_feature_store_service.get_feast_feature_store(feast_registry)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
+        feature_store_id: Optional[PydanticObjectId]
         if feature_table_model.feature_cluster is not None:
             feature_store_id = feature_table_model.feature_cluster.feature_store_id
         else:
