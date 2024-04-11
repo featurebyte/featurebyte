@@ -107,7 +107,7 @@ class FeatureExecutionPlan:
         self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
         self.parent_serving_preparation = parent_serving_preparation
-        self.feature_name_dtype_mapping = {}
+        self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
 
     @property
@@ -555,7 +555,7 @@ class FeatureExecutionPlan:
         return post_aggregation_sql
 
 
-class FeatureExecutionPlanner:
+class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
     """Responsible for constructing a FeatureExecutionPlan given QueryGraphModel and Node
 
     Parameters
