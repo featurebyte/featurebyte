@@ -19,6 +19,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
+from featurebyte.service.base_table_document import DocumentCreate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -167,7 +168,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
             )
         return document
 
-    async def create_table(self, data: TableDocumentT) -> TableDocumentT:
+    async def create_table(self, data: DocumentCreate) -> TableDocumentT:
         """
         Create Table record at persistent
 

@@ -89,7 +89,7 @@ async def test_get_entity_info(app_container, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_event_table_info(app_container, event_table, entity):
+async def test_get_event_table_info(app_container, event_table):
     """Test get_event_table_info"""
     info = await app_container.event_table_controller.get_info(
         document_id=event_table.id, verbose=False
@@ -109,9 +109,7 @@ async def test_get_event_table_info(app_container, event_table, entity):
         default_feature_job_setting=FeatureJobSetting(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         ),
-        entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
-        ],
+        entities=[],
         semantics=["event_timestamp"],
         column_count=9,
         columns_info=None,
@@ -141,7 +139,7 @@ async def test_get_event_table_info(app_container, event_table, entity):
                     description="Timestamp column",
                 ),
                 TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
+                TableColumnInfo(name="cust_id", dtype="INT"),
             ],
         }
     )

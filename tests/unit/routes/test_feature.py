@@ -128,6 +128,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         """Setup for post route"""
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("context", "context"),
             ("event_table", "event_table"),
         ]
@@ -135,6 +136,10 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
+
+            if api_object.endswith("_table"):
+                # tag table entity for table objects
+                self.tag_table_entity(api_client, api_object, payload)
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -1022,6 +1027,13 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         table_id = create_response_dict["table_ids"][0]
+
+        # untag id column's entity from the table first
+        response = test_api_client.patch(
+            f"event_table/{table_id}/column_entity",
+            json={"column_name": "col_int", "entity_id": None},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
 
         # attempt to delete an event table used by a feature
         response = test_api_client.delete(f"/event_table/{table_id}")

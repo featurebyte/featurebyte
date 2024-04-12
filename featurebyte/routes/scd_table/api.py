@@ -127,7 +127,7 @@ class SCDTableRouter(
 
     async def create_object(self, request: Request, data: SCDTableCreate) -> SCDTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)  # type: ignore
+        return await controller.create_table(data=data)
 
     async def get_scd_table_info(
         self, request: Request, scd_table_id: PydanticObjectId, verbose: bool = VerboseQuery

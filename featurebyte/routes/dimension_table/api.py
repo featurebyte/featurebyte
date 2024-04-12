@@ -137,7 +137,7 @@ class DimensionTableRouter(
         self, request: Request, data: DimensionTableCreate
     ) -> DimensionTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)  # type: ignore
+        return await controller.create_table(data=data)
 
     async def get_dimension_table_info(
         self, request: Request, dimension_table_id: PydanticObjectId, verbose: bool = VerboseQuery
