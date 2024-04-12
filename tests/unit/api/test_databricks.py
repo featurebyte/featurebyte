@@ -6,7 +6,7 @@ import freezegun
 import pandas as pd
 import pytest
 
-from featurebyte import DatabricksDetails, FeatureList
+from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
 
@@ -22,6 +22,27 @@ def always_enable_feast_integration_fixture(
     yield
 
 
+@pytest.fixture(name="databricks_use_case")
+def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_entity):
+    """Databricks use case fixture"""
+    primary_entity = [transaction_entity.name]
+    grouped_event_view = snowflake_event_view_with_entity.groupby("col_int")
+    target = grouped_event_view.forward_aggregate(
+        method="sum",
+        value_column="col_float",
+        window="1d",
+        target_name="float_target",
+    )
+    target.save()
+    context = Context.create(name="transaction_context", primary_entity=primary_entity)
+    use_case = UseCase.create(
+        name="transaction_use_case",
+        target_name=target.name,
+        context_name=context.name,
+    )
+    return use_case
+
+
 @pytest.fixture(name="databricks_deployment")
 def databricks_deployment_fixture(
     float_feature,
@@ -29,9 +50,10 @@ def databricks_deployment_fixture(
     ttl_non_ttl_composite_feature,
     latest_event_timestamp_overall_feature,
     req_col_day_diff_feature,
-    use_case,
+    databricks_use_case,
 ):
     """Databricks deployment fixture"""
+    use_case = databricks_use_case
     features = [
         float_feature,
         non_time_based_feature,

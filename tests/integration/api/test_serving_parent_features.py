@@ -4,8 +4,18 @@ import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
-from featurebyte import Context, Entity, FeatureList, Relationship, Table, TargetNamespace, UseCase
+from featurebyte import (
+    Configurations,
+    Context,
+    Entity,
+    FeatureList,
+    Relationship,
+    Table,
+    TargetNamespace,
+    UseCase,
+)
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import tz_localize_if_needed
 
@@ -260,6 +270,43 @@ def feature_list_with_parent_child_features_fixture(
     finally:
         if deployment:
             deployment.disable()
+
+
+def test_use_case_list_filtering_by_feature_list(feature_list_with_parent_child_features):
+    """
+    Test that use case list is filtered by feature list
+    """
+    feature_list = feature_list_with_parent_child_features
+    supported_serving_entity_ids = feature_list.cached_model.supported_serving_entity_ids
+
+    # retrieve use case filtered by feature list ID
+    client = Configurations().get_client()
+    params = {"feature_list_id": str(feature_list.id)}
+    response = client.get("/use_case", params=params)
+    response_dict = response.json()
+    assert response_dict["total"] == 1
+
+    use_case_doc = response_dict["data"][0]
+    context = Context.get_by_id(ObjectId(use_case_doc["context_id"]))
+    context_primary_entity_ids = context.primary_entity_ids
+
+    # check that use case's primary entity ids is in the supported serving entity ids
+    assert context_primary_entity_ids in supported_serving_entity_ids
+
+    # create another use case with different primary entity
+    entity = Entity.create(name="another_entity", serving_names=["another_serving_id"])
+    target = TargetNamespace.create(name="another_target", primary_entity=[entity.name])
+    context = Context.create(name="another_context", primary_entity=[entity.name])
+    another_use_case = UseCase.create(
+        name="another_use_case", target_name=target.name, context_name=context.name
+    )
+
+    # retrieve all use cases and check that other use case is in the non-filtered list
+    response = client.get("/use_case")
+    response_dict = response.json()
+    assert response_dict["total"] > 1
+    use_case_ids = [doc["_id"] for doc in response_dict["data"]]
+    assert str(another_use_case.id) in use_case_ids
 
 
 @pytest.fixture(name="feature_list_with_complex_features", scope="module")

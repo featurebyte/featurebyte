@@ -2,7 +2,7 @@
 UseCase API route controller
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
@@ -11,8 +11,10 @@ from featurebyte.exception import (
     DocumentDeletionError,
     ObservationTableInvalidUseCaseError,
 )
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableServiceUpdate
@@ -21,7 +23,9 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
@@ -51,6 +55,7 @@ class UseCaseController(
         historical_feature_table_service: HistoricalFeatureTableService,
         catalog_service: CatalogService,
         target_namespace_service: TargetNamespaceService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(use_case_service)
         self.user_service = user_service
@@ -62,6 +67,7 @@ class UseCaseController(
         self.historical_feature_table_service = historical_feature_table_service
         self.catalog_service = catalog_service
         self.target_namespace_service = target_namespace_service
+        self.feature_list_service = feature_list_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """
@@ -261,6 +267,62 @@ class UseCaseController(
             target_name=target_name,
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
+        )
+
+    async def list_use_cases(
+        self,
+        page: int = 1,
+        page_size: int = DEFAULT_PAGE_SIZE,
+        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
+        search: Optional[str] = None,
+        name: Optional[str] = None,
+        feature_list_id: Optional[PydanticObjectId] = None,
+    ) -> UseCaseList:
+        """
+        List UseCases
+
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: Optional[List[Tuple[str, SortDir]]]
+            Sort by fields
+        search: Optional[str]
+            Search string
+        name: Optional[str]
+            UseCase name
+        feature_list_id: Optional[PydanticObjectId]
+            FeatureList id
+
+        Returns
+        -------
+        UseCaseList
+        """
+        query_filter = {}
+        if feature_list_id:
+            feature_list_doc = await self.feature_list_service.get_document_as_dict(
+                document_id=feature_list_id, projection={"supported_serving_entity_ids": 1}
+            )
+            supported_serving_entity_ids = feature_list_doc.get("supported_serving_entity_ids")
+            if supported_serving_entity_ids:
+                context_ids = []
+                async for context_doc in self.context_service.list_documents_as_dict_iterator(
+                    query_filter={"primary_entity_ids": {"$in": supported_serving_entity_ids}},
+                    projection={"_id": 1},
+                ):
+                    context_ids.append(context_doc["_id"])
+
+                query_filter["context_id"] = {"$in": context_ids}
+
+        return await self.list(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            search=search,
+            name=name,
+            query_filter=query_filter,
         )
 
     async def list_feature_tables(
