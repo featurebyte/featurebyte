@@ -30,7 +30,7 @@ from sqlglot.expressions import Expression
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
-from featurebyte.exception import QueryExecutionTimeOut
+from featurebyte.exception import DataWarehouseOperationError, QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -681,6 +681,11 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+
+        Raises
+        ------
+        DataWarehouseOperationError
+            If the operation failed
         """
 
         async def _drop(is_view: bool) -> None:
@@ -703,8 +708,16 @@ class BaseSession(BaseModel):
 
         try:
             await _drop(is_view=False)
-        except:  # pylint: disable=bare-except
-            await _drop(is_view=True)
+        except Exception as exc:  # pylint: disable=bare-except
+            msg = str(exc)
+            if "VIEW" in msg:
+                try:
+                    await _drop(is_view=True)
+                    return
+                except Exception as exc_view:  # pylint: disable=bare-except
+                    msg = str(exc_view)
+                    raise DataWarehouseOperationError(msg) from exc_view
+            raise DataWarehouseOperationError(msg) from exc
 
     def format_quoted_identifier(self, identifier_name: str) -> str:
         """
