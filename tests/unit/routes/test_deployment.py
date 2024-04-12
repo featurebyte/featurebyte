@@ -50,6 +50,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
             ("feature_list", "feature_list_single"),
@@ -59,6 +60,11 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
+
+            if api_object.endswith("_table"):
+                # tag table entity for table objects
+                self.tag_table_entity(api_client, api_object, payload)
+
             if api_object == "feature":
                 self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 

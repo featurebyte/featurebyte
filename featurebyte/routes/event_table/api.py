@@ -137,7 +137,7 @@ class EventTableRouter(
 
     async def create_object(self, request: Request, data: EventTableCreate) -> EventTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)  # type: ignore
+        return await controller.create_table(data=data)
 
     async def get_event_table_info(
         self, request: Request, event_table_id: PydanticObjectId, verbose: bool = VerboseQuery

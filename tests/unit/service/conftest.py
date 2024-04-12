@@ -21,6 +21,7 @@ from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -156,6 +157,12 @@ def dimension_table_service_fixture(app_container):
 def scd_table_service_fixture(app_container):
     """SCDTable service"""
     return app_container.scd_table_service
+
+
+@pytest.fixture(name="table_facade_service")
+def table_facade_service_fixture(app_container):
+    """TableFacade service"""
+    return app_container.table_facade_service
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -438,9 +445,9 @@ async def entity_transaction_fixture(test_dir, entity_service):
 
 
 @pytest_asyncio.fixture(name="context")
-async def context_fixture(test_dir, context_service, feature_store, entity):
+async def context_fixture(test_dir, context_service, feature_store, entity, entity_transaction):
     """Context model"""
-    _ = feature_store, entity
+    _ = feature_store, entity, entity_transaction
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/context.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -467,14 +474,14 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
             event_table = await event_table_service.create_document(
                 data=EventTableCreate(**payload)
             )
-            event_timestamp = await semantic_service.get_or_create_document(
+            event_timestamp_sem = await semantic_service.get_or_create_document(
                 name=SemanticType.EVENT_TIMESTAMP.value
             )
             columns_info = []
             for col in event_table.columns_info:
                 col_dict = col.dict()
                 if col.name == "event_timestamp":
-                    col_dict["semantic_id"] = event_timestamp.id
+                    col_dict["semantic_id"] = event_timestamp_sem.id
                 columns_info.append(col_dict)
 
             event_table = await event_table_service.update_document(
@@ -789,7 +796,9 @@ async def setup_for_feature_readiness_fixture(
         yield new_feature_id, new_flist.id
 
 
-async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns):
+async def create_event_table_with_entities(
+    data_name, test_dir, event_table_service, columns, table_facade_service
+):
     """Helper function to create an EventTable with provided columns and entities"""
 
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
@@ -801,18 +810,27 @@ async def create_event_table_with_entities(data_name, test_dir, event_table_serv
         keep_cols = ["event_timestamp", "created_at", "col_int"]
         for col_info in columns_info:
             if col_info["name"] in keep_cols:
+                col_info["entity_id"] = None  # strip entity id from the original payload
                 new_columns_info.append(col_info)
         for col_name, col_entity_id in columns:
             col_info = {"name": col_name, "entity_id": col_entity_id, "dtype": "INT"}
             new_columns_info.append(col_info)
-        return new_columns_info
+
+        output = [ColumnInfo(**col_info) for col_info in new_columns_info]
+        return output
 
     payload.pop("_id")
     payload["tabular_source"]["table_details"]["table_name"] = data_name
-    payload["columns_info"] = _update_columns_info(payload["columns_info"])
     payload["name"] = data_name
 
     event_table = await event_table_service.create_document(data=EventTableCreate(**payload))
+    columns_info = _update_columns_info(payload["columns_info"])
+    await table_facade_service.update_table_columns_info(
+        table_id=event_table.id,
+        columns_info=columns_info,
+        service=event_table_service,
+    )
+    event_table = await event_table_service.get_document(document_id=event_table.id)
     return event_table
 
 
@@ -864,6 +882,7 @@ async def entity_e_fixture(entity_service):
 async def create_table_and_add_parent(
     test_dir,
     event_table_service,
+    table_facade_service,
     relationship_info_service,
     child_entity,
     parent_entity,
@@ -878,6 +897,7 @@ async def create_table_and_add_parent(
         test_dir,
         event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
+        table_facade_service,
     )
     relationship_info = await relationship_info_service.create_document(
         data=RelationshipInfoCreate(
@@ -898,6 +918,7 @@ async def b_is_parent_of_a_fixture(
     entity_b,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -908,6 +929,7 @@ async def b_is_parent_of_a_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_a,
         parent_entity=entity_b,
@@ -922,6 +944,7 @@ async def c_is_parent_of_b_fixture(
     entity_c,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -932,6 +955,7 @@ async def c_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_c,
@@ -946,6 +970,7 @@ async def d_is_parent_of_b_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -956,6 +981,7 @@ async def d_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_d,
@@ -970,6 +996,7 @@ async def d_is_parent_of_c_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -980,6 +1007,7 @@ async def d_is_parent_of_c_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_d,
@@ -995,6 +1023,7 @@ async def a_is_parent_of_c_and_d_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -1005,6 +1034,7 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_a,
@@ -1014,6 +1044,7 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_d,
         parent_entity=entity_a,

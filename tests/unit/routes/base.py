@@ -174,6 +174,21 @@ class BaseApiTestSuite:
         )
         assert response.status_code == HTTPStatus.OK, response.json()
 
+    @staticmethod
+    def tag_table_entity(api_client, table_type, table_payload):
+        """Tag table entity"""
+        if not table_type in {"item_table", "event_table", "dimension_table", "scd_table"}:
+            return
+
+        table_id = table_payload["_id"]
+        for column in table_payload["columns_info"]:
+            if column["entity_id"]:
+                response = api_client.patch(
+                    f"/{table_type}/{table_id}/column_entity",
+                    json={"column_name": column["name"], "entity_id": column["entity_id"]},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
+
     def update_deployment_enabled(self, api_client, deployment_id, catalog_id, enabled=True):
         """Enable deployment"""
         response = api_client.patch(
@@ -254,6 +269,9 @@ class BaseApiTestSuite:
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
         assert response_dict["_id"] == id_before
+
+        if "_table" in self.base_route:
+            self.tag_table_entity(test_api_client, self.base_route.strip("/"), self.payload)
         return response
 
     def multiple_success_payload_generator(self, api_client):
@@ -841,6 +859,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -1239,7 +1258,12 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
 
         # check that table route can be used to retrieve the created table
         response = test_api_client.get(f"/table/{success_response_dict['_id']}")
-        assert response.json() == success_response_dict
+        response_dict = response.json()
+
+        # overwrite the updated_at & columns_info fields (due to entity tagging)
+        success_response_dict["updated_at"] = response_dict["updated_at"]
+        success_response_dict["columns_info"] = response_dict["columns_info"]
+        assert response_dict == success_response_dict
 
     def test_table_list_200(self, test_api_client_persistent, create_multiple_success_responses):
         """Test table list (success, multiple)"""

@@ -20,28 +20,7 @@ class ColumnSpecWithDescription(ColumnSpec):
     description: Optional[str] = Field(default=None)
 
 
-class ColumnInfoWithoutSemanticId(ColumnSpecWithDescription):
-    """
-    ColumnInfo for storing column information
-
-    name: str
-        Column name
-    dtype: DBVarType
-        Variable type of the column
-    entity_id: Optional[PydanticObjectId]
-        Entity id associated with the column
-    critical_data_info: Optional[CriticalDataInfo]
-        Critical data info of the column
-    description: Optional[str]
-        Column description
-    """
-
-    entity_id: Optional[PydanticObjectId] = Field(default=None)
-    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
-    description: Optional[str] = Field(default=None)
-
-
-class ColumnInfo(ColumnInfoWithoutSemanticId):
+class ColumnInfo(ColumnSpecWithDescription):
     """
     ColumnInfo for storing column information
 

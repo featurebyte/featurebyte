@@ -277,8 +277,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         (feature_list_multiple, "feature_list_multi"),
         (float_target, "target"),
     ]
+    table_names = {"event_table", "item_table", "dimension_table", "scd_table"}
     for api_object, name in api_object_name_pairs:
         json_payload = api_object._get_create_payload()
+        if name in table_names:
+            # for tables, overwrite the columns_info to include entity related columns
+            columns_info = api_object.cached_model.json_dict()["columns_info"]
+            for col_info in columns_info:
+                col_info.pop("semantic_id")
+            json_payload["columns_info"] = columns_info
+
         json_payload["_COMMENT"] = generated_comment
         update_or_check_payload_fixture(request_payload_dir, name, json_payload, update_fixtures)
 
