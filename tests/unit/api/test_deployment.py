@@ -13,7 +13,11 @@ import featurebyte as fb
 from featurebyte import FeatureList
 from featurebyte.api.deployment import Deployment
 from featurebyte.config import Configurations
-from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
+from featurebyte.exception import (
+    FeatureListNotOnlineEnabledError,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -225,3 +229,19 @@ def test_associated_object_list_deployment(deployment, historical_feature_table)
     list_deployments = another_feature_list.list_deployments()
     assert list_deployments.shape[0] == 1
     assert list_deployments.name.iloc[0] == another_deployment.name
+
+
+def test_deployment_creation__primary_entity_validation(
+    latest_event_timestamp_overall_feature, use_case
+):
+    """Test deployment creation with primary entity validation"""
+    feature_list = FeatureList([latest_event_timestamp_overall_feature], name="my_feature_list")
+    feature_list.save()
+
+    expected_error = (
+        "Primary entity of the use case is not in the feature list's supported serving entities."
+    )
+    with pytest.raises(RecordCreationException, match=expected_error):
+        feature_list.deploy(
+            make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
+        )

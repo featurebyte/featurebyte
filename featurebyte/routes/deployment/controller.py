@@ -11,7 +11,11 @@ from http import HTTPStatus
 from bson import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentDeletionError,
+    FeatureListNotOnlineEnabledError,
+)
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -92,12 +96,22 @@ class DeploymentController(
             Task to create deployment.
         """
         # check if feature list exists
-        _ = await self.feature_list_service.get_document(document_id=data.feature_list_id)
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=data.feature_list_id
+        )
 
         context_id = None
         if data.use_case_id:
             use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
             context_id = use_case.context_id
+            context = await self.context_service.get_document(document_id=context_id)
+
+            # check whether the context primary entity is in the feature list supported serving entities
+            supported_serving_ids = feature_list_doc["supported_serving_entity_ids"]
+            if supported_serving_ids and context.primary_entity_ids not in supported_serving_ids:
+                raise DocumentCreationError(
+                    "Primary entity of the use case is not in the feature list's supported serving entities."
+                )
 
         payload = DeploymentCreateUpdateTaskPayload(
             deployment_payload=CreateDeploymentPayload(
