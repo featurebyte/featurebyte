@@ -94,6 +94,11 @@ class DeploymentController(
         -------
         Task
             Task to create deployment.
+
+        Raises
+        ------
+        DocumentCreationError
+            Primary entity of the use case is not in the feature list's supported serving entities.
         """
         # check if feature list exists
         feature_list_doc = await self.feature_list_service.get_document_as_dict(
