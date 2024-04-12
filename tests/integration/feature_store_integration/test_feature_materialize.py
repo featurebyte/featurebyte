@@ -380,7 +380,7 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     async for (
         feature_table
     ) in app_container.offline_store_feature_table_service.list_documents_iterator(
-        query_filter={},
+        query_filter={"precomputed_lookup_feature_table_info": None},
     ):
         primary_entity_to_feature_table[feature_table.name] = feature_table
     return primary_entity_to_feature_table
@@ -402,6 +402,18 @@ def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables):
     return offline_store_feature_tables["cat1_userid_1d"]
 
 
+def get_relationship_info(feature_list_model, child_entity, parent_entity):
+    """
+    Helper function to get a relationship info between two entities
+    """
+    for info in feature_list_model.relationships_info:
+        if info.entity_id == child_entity.id and info.related_entity_id == parent_entity.id:
+            return info
+    raise AssertionError(
+        f"Relationship with child as {child_entity.name} and parent as {parent_entity.name} not found"
+    )
+
+
 @pytest_asyncio.fixture(name="expected_entity_lookup_feature_table_names")
 async def expected_entity_lookup_feature_table_names_fixture(
     app_container,
@@ -421,12 +433,7 @@ async def expected_entity_lookup_feature_table_names_fixture(
     )
 
     def _get_relationship_info(child_entity, parent_entity):
-        for info in feature_list_model.relationships_info:
-            if info.entity_id == child_entity.id and info.related_entity_id == parent_entity.id:
-                return info
-        raise AssertionError(
-            f"Relationship with child as {child_entity.name} and parent as {parent_entity.name} not found"
-        )
+        return get_relationship_info(feature_list_model, child_entity, parent_entity)
 
     for info in [
         _get_relationship_info(order_entity, customer_entity),

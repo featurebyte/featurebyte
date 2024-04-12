@@ -106,7 +106,7 @@ def get_entity_lookup_feature_tables(
     for lookup_relationship in required_lookup_relationships:
         assert catalog_id is not None, "Catalog id is not set"
         lookup_step = entity_lookup_steps_mapping[lookup_relationship.id]
-        lookup_graph_result = _get_entity_lookup_graph(
+        lookup_graph_result = get_entity_lookup_graph(
             lookup_step=lookup_step,
             feature_store=feature_store,
         )
@@ -146,10 +146,24 @@ def get_entity_lookup_feature_tables(
     return out
 
 
-def _get_entity_lookup_graph(
+def get_entity_lookup_graph(
     lookup_step: EntityLookupStep,
     feature_store: FeatureStoreModel,
 ) -> EntityLookupGraphResult:
+    """
+    Create a query graph that represents the parent entity lookup operation
+
+    Parameters
+    ----------
+    lookup_step: EntityLookupStep
+        Entity lookup information
+    feature_store: FeatureStoreModel
+        Feature store
+
+    Returns
+    -------
+    EntityLookupGraphResult
+    """
     relation_table = lookup_step.table
     graph = QueryGraph()
     input_node = graph.add_operation_node(

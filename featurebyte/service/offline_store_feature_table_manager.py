@@ -12,10 +12,13 @@ from dataclasses import dataclass
 from bson import ObjectId
 
 from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.common.utils import timer
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.service.registry import FeastRegistryService
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -43,6 +46,8 @@ from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
 )
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -192,6 +197,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         # store feature tables to online store
         await self._create_or_update_feast_registry(feature_lists)
         offline_table_count = len(ingest_graph_container.offline_store_table_name_to_features)
+        feature_store_model = await self._get_feature_store_model()
 
         new_tables = []
         for idx, (
@@ -213,6 +219,14 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             for feature in offline_store_table_features:
                 if feature.id not in feature_ids_set:
                     feature_ids.append(feature.id)
+
+            await self._update_precomputed_lookup_feature_tables(
+                feature_table_dict["_id"],
+                feature_ids,
+                feature_lists,
+                feature_store_model,
+            )
+
             if feature_ids != feature_table_dict["feature_ids"]:
                 feature_table_model = await self._update_offline_store_feature_table(
                     feature_table_dict,
@@ -236,7 +250,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_model
                 )
 
-        feature_store_model = await self._get_feature_store_model()
+        if not features:
+            await self._update_precomputed_lookup_feature_tables_no_op_enable(
+                feature_lists,
+                feature_store_model,
+            )
+
         new_tables.extend(
             await self._create_or_update_entity_lookup_feature_tables(
                 feature_lists,
@@ -282,6 +301,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_list_to_online_disable=feature_list_to_online_disable
         )
         offline_table_count = len(feature_table_data["data"])
+        feature_store_model = await self._get_feature_store_model()
 
         for idx, feature_table_dict in enumerate(feature_table_data["data"]):
             updated_feature_ids = [
@@ -289,14 +309,29 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 for feature_id in feature_table_dict["feature_ids"]
                 if feature_id not in feature_ids_to_remove
             ]
+            await self._update_precomputed_lookup_feature_tables(
+                feature_table_dict["_id"],
+                updated_feature_ids,
+                feature_lists,
+                feature_store_model,
+            )
             if updated_feature_ids:
                 updated_feature_table = await self._update_offline_store_feature_table(
                     feature_table_dict,
                     updated_feature_ids,
                 )
+                columns_to_drop = self._get_offline_store_feature_table_columns(features)
                 await self.feature_materialize_service.drop_columns(
-                    updated_feature_table, self._get_offline_store_feature_table_columns(features)
+                    updated_feature_table, columns_to_drop
                 )
+                async for (
+                    lookup_feature_table
+                ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables(
+                    feature_table_dict["_id"]
+                ):
+                    await self.feature_materialize_service.drop_columns(
+                        lookup_feature_table, columns_to_drop
+                    )
             else:
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
 
@@ -308,7 +343,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await update_progress(int((idx + 1) / offline_table_count * 90), message)
 
         await self._create_or_update_feast_registry(feature_lists)
-        feature_store_model = await self._get_feature_store_model()
         await self._delete_entity_lookup_feature_tables(feature_lists, feature_store_model)
         if update_progress:
             await update_progress(100, "Updated entity lookup feature tables")
@@ -357,6 +391,33 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             ),
         )
 
+    async def _get_entities(
+        self, entity_ids: Optional[List[PydanticObjectId]]
+    ) -> List[EntityModel]:
+        entities_mapping = {}
+        query_filter = {} if entity_ids is None else {"_id": {"$in": entity_ids}}
+        async for entity_model in self.entity_service.list_documents_iterator(
+            query_filter=query_filter
+        ):
+            entities_mapping[entity_model.id] = entity_model
+        if entity_ids is not None:
+            # Preserve ordering of the provided entity_ids
+            entities = [entities_mapping[entity_id] for entity_id in entity_ids]
+        else:
+            entities = list(entities_mapping.values())
+        return entities
+
+    async def _get_feature_ids_to_model(
+        self,
+        feature_ids: List[ObjectId],
+    ) -> Dict[ObjectId, FeatureModel]:
+        feature_ids_to_model: Dict[ObjectId, FeatureModel] = {}
+        async for feature_model in self.feature_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_ids}}
+        ):
+            feature_ids_to_model[feature_model.id] = feature_model
+        return feature_ids_to_model
+
     async def _construct_offline_store_feature_table_model(
         self,
         feature_table_name: str,
@@ -365,21 +426,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
     ) -> OfflineStoreFeatureTableModel:
-        feature_ids_to_model: Dict[ObjectId, FeatureModel] = {}
-        async for feature_model in self.feature_service.list_documents_iterator(
-            query_filter={"_id": {"$in": feature_ids}}
-        ):
-            feature_ids_to_model[feature_model.id] = feature_model
-
-        primary_entities_mapping = {}
-        async for entity_model in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": primary_entity_ids}}
-        ):
-            primary_entities_mapping[entity_model.id] = entity_model
-        primary_entities = [
-            primary_entities_mapping[primary_entity_id] for primary_entity_id in primary_entity_ids
-        ]
-
+        feature_ids_to_model = await self._get_feature_ids_to_model(feature_ids)
+        primary_entities = await self._get_entities(primary_entity_ids)
         required_aggregate_result_tables = await self._get_required_aggregate_result_tables(
             feature_id_to_models=feature_ids_to_model,
             primary_entity_serving_names=[entity.serving_names[0] for entity in primary_entities],
@@ -482,6 +530,84 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         assert output is not None
         return output
 
+    async def _update_precomputed_lookup_feature_tables_no_op_enable(
+        self,
+        feature_lists: List[FeatureListModel],
+        feature_store_model: FeatureStoreModel,
+    ) -> None:
+        # Called when online enabling, but no features are enabled but a new deployment is made on
+        # an existing feature list
+        async for (
+            feature_table_dict
+        ) in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
+            query_filter={"precomputed_lookup_feature_table_info": None},
+            projection={"_id": 1, "feature_ids": 1},
+        ):
+            feature_ids = feature_table_dict["feature_ids"]
+            await self._update_precomputed_lookup_feature_tables(
+                feature_table_dict["_id"],
+                feature_ids,
+                feature_lists,
+                feature_store_model,
+            )
+
+    async def _update_precomputed_lookup_feature_tables(
+        self,
+        feature_table_id: PydanticObjectId,
+        feature_ids: List[PydanticObjectId],
+        feature_lists: List[FeatureListModel],
+        feature_store_model: FeatureStoreModel,
+    ) -> None:
+        # Reload feature table to get the most updated state of the feature table document
+        feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
+            feature_table_id,
+            projection={
+                "_id": 1,
+                "name": 1,
+                "primary_entity_ids": 1,
+                "has_ttl": 1,
+            },
+        )
+
+        # Derive precompute lookup feature tables that should exist
+        all_entities = await self._get_entities(entity_ids=None)
+        with timer("Get precomputed lookup feature tables", logger=logger):
+            precomputed_lookup_feature_tables = await self.entity_lookup_feature_table_service.get_precomputed_lookup_feature_tables(
+                primary_entity_ids=feature_table_dict["primary_entity_ids"],
+                feature_ids=feature_ids,
+                feature_lists=feature_lists,
+                feature_table_name=feature_table_dict["name"],
+                feature_table_has_ttl=feature_table_dict["has_ttl"],
+                entity_id_to_serving_name={
+                    entity.id: entity.serving_names[0] for entity in all_entities
+                },
+                feature_table_id=feature_table_id,
+                feature_store_model=feature_store_model,
+            )
+
+        # Tables to be initialized or dropped
+        existing_tables = {
+            table.name: table
+            async for table in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables(
+                feature_table_id
+            )
+        }
+        new_tables = [
+            table
+            for table in precomputed_lookup_feature_tables
+            if table.name not in existing_tables
+        ]
+        desired_table_names = {table.name for table in precomputed_lookup_feature_tables}
+        removed_tables = [
+            table for table in existing_tables.values() if table.name not in desired_table_names
+        ]
+
+        for table in new_tables:
+            await self.offline_store_feature_table_service.create_document(table)
+
+        for table in removed_tables:
+            await self._delete_offline_store_feature_table(table.id)
+
     async def _create_or_update_entity_lookup_feature_tables(
         self,
         feature_lists: List[FeatureListModel],
@@ -578,14 +704,18 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self._delete_offline_store_feature_table(feature_table_dict["_id"])
 
     async def _delete_offline_store_feature_table(self, feature_table_id: ObjectId) -> None:
+        feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
+            feature_table_id, projection={"_id": 1, "precomputed_lookup_feature_table_info": 1}
+        )
         await self.feature_materialize_service.drop_table(
             await self.offline_store_feature_table_service.get_document(
                 feature_table_id,
             )
         )
-        await self.feature_materialize_scheduler_service.stop_job(
-            feature_table_id,
-        )
+        if feature_table_dict["precomputed_lookup_feature_table_info"] is None:
+            await self.feature_materialize_scheduler_service.stop_job(
+                feature_table_id,
+            )
         await self.offline_store_feature_table_service.delete_document(feature_table_id)
 
     async def _get_feature_store_model(self) -> FeatureStoreModel:

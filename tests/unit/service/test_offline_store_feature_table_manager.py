@@ -15,6 +15,7 @@ from bson import ObjectId, json_util
 from featurebyte.common.model_util import get_version
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -47,7 +48,7 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
 
 
 @pytest_asyncio.fixture
-async def deployed_float_feature(
+async def deployed_float_feature_list(
     app_container,
     float_feature,
     transaction_entity,
@@ -56,7 +57,7 @@ async def deployed_float_feature(
     mock_offline_store_feature_manager_dependencies,
 ):
     """
-    Fixture for deployed float feature
+    Fixture for a deployed feature list with float feature
     """
     _ = mock_update_data_warehouse
     feature_list = await deploy_feature(
@@ -68,8 +69,17 @@ async def deployed_float_feature(
     assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
+    return feature_list
 
-    feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
+
+@pytest_asyncio.fixture
+async def deployed_float_feature(app_container, deployed_float_feature_list):
+    """
+    Fixture for a deployed float feature
+    """
+    feature = await app_container.feature_service.get_document(
+        deployed_float_feature_list.feature_ids[0]
+    )
     return feature
 
 
@@ -156,7 +166,7 @@ async def deployed_scd_lookup_feature(
 
 
 @pytest_asyncio.fixture
-async def deployed_aggregate_asat_feature(
+async def deployed_aggregate_asat_feature_list(
     app_container,
     aggregate_asat_feature,
     cust_id_entity,
@@ -169,7 +179,20 @@ async def deployed_aggregate_asat_feature(
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
     return await deploy_feature(
-        app_container, aggregate_asat_feature, context_primary_entity_ids=[cust_id_entity.id]
+        app_container,
+        aggregate_asat_feature,
+        context_primary_entity_ids=[cust_id_entity.id],
+        return_type="feature_list",
+    )
+
+
+@pytest_asyncio.fixture
+async def deployed_aggregate_asat_feature(app_container, deployed_aggregate_asat_feature_list):
+    """
+    Fixture for deployed aggregate asat feature
+    """
+    return await app_container.feature_service.get_document(
+        deployed_aggregate_asat_feature_list.feature_ids[0]
     )
 
 
@@ -289,23 +312,21 @@ async def check_feast_registry(
 
 
 @pytest_asyncio.fixture
-async def transaction_to_customer_relationship_info_id(
+async def transaction_to_customer_relationship_info(
     app_container, transaction_entity, cust_id_entity
 ):
     """
     Fixture for the relationship info id between transaction and customer entities
     """
-    return (
-        await get_relationship_info(
-            app_container,
-            child_entity_id=transaction_entity.id,
-            parent_entity_id=cust_id_entity.id,
-        )
-    ).id
+    return await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
 
 
 @pytest_asyncio.fixture
-async def customer_to_gender_relationship_info_id(
+async def customer_to_gender_relationship_info(
     app_container,
     cust_id_entity,
     gender_entity,
@@ -313,13 +334,11 @@ async def customer_to_gender_relationship_info_id(
     """
     Fixture for the relationship info id between customer and gender entities
     """
-    return (
-        await get_relationship_info(
-            app_container,
-            child_entity_id=cust_id_entity.id,
-            parent_entity_id=gender_entity.id,
-        )
-    ).id
+    return await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
 
 
 @pytest.mark.asyncio
@@ -328,7 +347,8 @@ async def test_feature_table_one_feature_deployed(
     document_service,
     periodic_task_service,
     deployed_float_feature,
-    transaction_to_customer_relationship_info_id,
+    deployed_float_feature_list,
+    transaction_to_customer_relationship_info,
     storage,
     update_fixtures,
 ):
@@ -337,15 +357,18 @@ async def test_feature_table_one_feature_deployed(
     """
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(
-        by_alias=True, exclude={"created_at", "updated_at", "id"}
-    )
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_id = feature_table_dict.pop("_id")
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
@@ -375,6 +398,7 @@ async def test_feature_table_one_feature_deployed(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -393,7 +417,7 @@ async def test_feature_table_one_feature_deployed(
         app_container,
         expected_feature_views={
             "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         },
         expected_feature_services={f"sum_1d_list_{get_version()}"},
         expected_project_name=str(app_container.catalog_id)[-7:],
@@ -405,6 +429,45 @@ async def test_feature_table_one_feature_deployed(
     )
     assert os.path.exists(full_feature_cluster_path)
 
+    # check precomputed lookup feature table
+    feature_table = feature_tables[f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"]
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": catalog_id,
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster": None,
+        "feature_cluster_path": None,
+        "feature_ids": [],
+        "feature_job_setting": None,
+        "feature_store_id": deployed_float_feature.tabular_source.feature_store_id,
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        "name_prefix": None,
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": [],
+        "output_dtypes": [],
+        "precomputed_lookup_feature_table_info": {
+            "feature_list_ids": [deployed_float_feature_list.id],
+            "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
+            "source_feature_table_id": feature_table_id,
+        },
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
+        "serving_names": ["transaction_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/transaction_id_to_cust_id_universe.sql",
+        update_fixture=update_fixtures,
+    )
+
 
 @pytest.mark.asyncio
 async def test_feature_table_two_features_deployed(
@@ -413,16 +476,20 @@ async def test_feature_table_two_features_deployed(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
-    transaction_to_customer_relationship_info_id,
+    transaction_to_customer_relationship_info,
     update_fixtures,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -458,6 +525,7 @@ async def test_feature_table_two_features_deployed(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["sum_1d_V231227", "sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT", "FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -477,7 +545,7 @@ async def test_feature_table_two_features_deployed(
         app_container,
         expected_feature_views={
             "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         },
         expected_feature_services={
             f"sum_1d_list_{fl_version}",
@@ -494,7 +562,7 @@ async def test_feature_table_undeploy(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
-    transaction_to_customer_relationship_info_id,
+    transaction_to_customer_relationship_info,
     mock_offline_store_feature_manager_dependencies,
     storage,
     update_fixtures,
@@ -506,9 +574,13 @@ async def test_feature_table_undeploy(
     await undeploy_feature_async(deployed_float_feature, app_container)
 
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -544,6 +616,7 @@ async def test_feature_table_undeploy(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -563,8 +636,12 @@ async def test_feature_table_undeploy(
     assert os.path.exists(full_feature_cluster_path)
 
     # Check drop_columns called
-    args, _ = mock_offline_store_feature_manager_dependencies["drop_columns"].call_args
+    args, _ = mock_offline_store_feature_manager_dependencies["drop_columns"].call_args_list[0]
     assert args[0].name == "cat1_cust_id_30m"
+    assert args[1] == ["sum_1d_V231227"]
+
+    args, _ = mock_offline_store_feature_manager_dependencies["drop_columns"].call_args_list[1]
+    assert args[0].name == f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
     assert args[1] == ["sum_1d_V231227"]
 
     # Check online disabling the last feature deletes the feature table
@@ -579,9 +656,9 @@ async def test_feature_table_undeploy(
     drop_table_calls = mock_offline_store_feature_manager_dependencies["drop_table"].call_args_list
     assert {c.args[0].name for c in drop_table_calls} == {
         "cat1_cust_id_30m",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
-    assert args[0].name == "cat1_cust_id_30m"
     await check_feast_registry(
         app_container,
         expected_feature_views=set(),
@@ -597,16 +674,22 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
-    transaction_to_customer_relationship_info_id,
+    transaction_to_customer_relationship_info,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
+    # The table cat1_cust_id_3h doesn't have a precomputed lookup feature table because the
+    # deployment is expected to be served using cust_id entity
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         "cat1_cust_id_3h",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
 
     # Check customer entity feature table
@@ -643,6 +726,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "online_stores_last_materialized_at": [],
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -685,6 +769,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "online_stores_last_materialized_at": [],
         "output_column_names": ["sum_24h_every_3h_V231227"],
         "output_dtypes": ["FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -699,7 +784,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         expected_feature_views={
             "cat1_cust_id_30m",
             "cat1_cust_id_3h",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         },
         expected_feature_services={
             f"sum_24h_every_3h_list_{fl_version}",
@@ -749,6 +834,7 @@ async def test_feature_table_without_entity(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["count_1d_V231227"],
         "output_dtypes": ["INT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [],
         "serving_names": [],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -808,6 +894,7 @@ async def test_lookup_feature(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["some_lookup_feature_V231227"],
         "output_dtypes": ["BOOL"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -829,22 +916,24 @@ async def test_aggregate_asat_feature(
     document_service,
     periodic_task_service,
     deployed_aggregate_asat_feature,
-    customer_to_gender_relationship_info_id,
+    deployed_aggregate_asat_feature_list,
+    customer_to_gender_relationship_info,
     update_fixtures,
 ):
     """
     Test feature table creation with aggregate asat feature
     """
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier([customer_to_gender_relationship_info])
     assert set(feature_tables.keys()) == {
         "cat1_gender_1d",
-        f"fb_entity_lookup_{customer_to_gender_relationship_info_id}",
+        f"cat1_gender_1d_via_cust_id_{expected_suffix}",
+        f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_gender_1d"]
 
-    feature_table_dict = feature_table.dict(
-        by_alias=True, exclude={"created_at", "updated_at", "id"}
-    )
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_id = feature_table_dict.pop("_id")
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")
     assert_equal_with_expected_fixture(
@@ -872,6 +961,7 @@ async def test_aggregate_asat_feature(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["asat_gender_count_V231227"],
         "output_dtypes": ["INT"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": deployed_aggregate_asat_feature.primary_entity_ids,
         "serving_names": ["gender"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
@@ -883,10 +973,49 @@ async def test_aggregate_asat_feature(
         app_container,
         expected_feature_views={
             "cat1_gender_1d",
-            f"fb_entity_lookup_{customer_to_gender_relationship_info_id}",
+            f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
         },
         expected_feature_services={f"asat_gender_count_list_{get_version()}"},
         expected_project_name=str(app_container.catalog_id)[-7:],
+    )
+
+    # check precomputed lookup feature table
+    feature_table = feature_tables[f"cat1_gender_1d_via_cust_id_{expected_suffix}"]
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster": None,
+        "feature_cluster_path": None,
+        "feature_ids": [],
+        "feature_job_setting": None,
+        "feature_store_id": deployed_aggregate_asat_feature.tabular_source.feature_store_id,
+        "has_ttl": False,
+        "last_materialized_at": None,
+        "name": f"cat1_gender_1d_via_cust_id_{expected_suffix}",
+        "name_prefix": None,
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": [],
+        "output_dtypes": [],
+        "precomputed_lookup_feature_table_info": {
+            "feature_list_ids": [deployed_aggregate_asat_feature_list.id],
+            "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
+            "source_feature_table_id": feature_table_id,
+        },
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/cust_id_to_gender_universe.sql",
+        update_fixture=update_fixtures,
     )
 
 
@@ -894,7 +1023,7 @@ async def test_aggregate_asat_feature(
 async def test_new_deployment_when_all_features_already_deployed(
     app_container,
     deployed_feature_list_when_all_features_already_deployed,
-    transaction_to_customer_relationship_info_id,
+    transaction_to_customer_relationship_info,
 ):
     """
     Test enabling a new deployment when all the underlying features are already deployed
@@ -903,7 +1032,7 @@ async def test_new_deployment_when_all_features_already_deployed(
         app_container,
         expected_feature_views={
             "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         },
         expected_feature_services={
             f"sum_1d_list_{get_version()}",
@@ -976,7 +1105,7 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     deployed_float_feature_list_cust_id_use_case,
     transaction_entity,
     cust_id_entity,
-    transaction_to_customer_relationship_info_id,
+    transaction_to_customer_relationship_info,
 ):
     """
     Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
@@ -999,9 +1128,13 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     # Check enabled_serving_entity_ids and offline feature tables
     assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
     feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info_id}",
+        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
 
 
@@ -1057,6 +1190,7 @@ async def test_feature_with_internal_parent_child_relationships(
         "online_stores_last_materialized_at": [],
         "output_column_names": ["complex_parent_child_feature_V231227"],
         "output_dtypes": ["VARCHAR"],
+        "precomputed_lookup_feature_table_info": None,
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
