@@ -4,12 +4,16 @@ Databricks unity
 
 from __future__ import annotations
 
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Literal
 
+import pandas as pd
 from pydantic import Field, PrivateAttr
+from sqlglot.expressions import Select
 
 from featurebyte import SourceType
 from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSchemaInitializer
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
@@ -129,3 +133,21 @@ class DatabricksUnitySession(DatabricksSession):
             for _, (name,) in tables[["TABLE_NAME"]].iterrows():
                 output.append(TableSpec(name=name))
         return output
+
+    async def create_table_as(
+        self,
+        table_details: TableDetails,
+        select_expr: Select,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        replace: bool = False,
+    ) -> pd.DataFrame | None:
+        result = await super().create_table_as(table_details, select_expr, kind, replace)
+        # grant ownership of the table to the group
+        fully_qualified_table_name = sql_to_string(
+            get_fully_qualified_table_name(table_details.dict()), source_type=self.source_type
+        )
+        grant_permissions_query = (
+            f"ALTER TABLE {fully_qualified_table_name} OWNER TO `{self.group_name}`"
+        )
+        await self.execute_query(grant_permissions_query)
+        return result

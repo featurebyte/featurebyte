@@ -19,7 +19,6 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
@@ -160,15 +159,7 @@ class BaseRequestInput(FeatureByteBaseModel):
                     .limit(sample_rows)
                 )
 
-        expression = get_sql_adapter(session.source_type).create_table_as(
-            table_details=destination, select_expr=query_expr
-        )
-        query = sql_to_string(
-            expression,
-            source_type=session.source_type,
-        )
-
-        await session.execute_query_long_running(query)
+        await session.create_table_as(table_details=destination, select_expr=query_expr)
 
     def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
         referenced_columns = list(self.columns or [])

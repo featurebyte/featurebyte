@@ -209,7 +209,11 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def create_table_as(
-        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+        cls,
+        table_details: TableDetails,
+        select_expr: Select,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        replace: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -220,6 +224,8 @@ class DatabricksAdapter(BaseAdapter):
             TableDetails of the table to be created
         select_expr: Select
             Select expression
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
         replace: bool
             Whether to replace the table if exists
 
@@ -228,24 +234,29 @@ class DatabricksAdapter(BaseAdapter):
         Expression
         """
         destination_expr = get_fully_qualified_table_name(table_details.dict())
-        table_properties = [
-            expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
-            expressions.Property(
-                this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
-            ),
-            expressions.Property(
-                this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
-            ),
-            expressions.Property(
-                this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
-            ),
-        ]
+
+        if kind == "TABLE":
+            table_properties = [
+                expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
+                ),
+            ]
+            properties = expressions.Properties(expressions=table_properties)
+        else:
+            properties = None
 
         return expressions.Create(
             this=expressions.Table(this=destination_expr),
-            kind="TABLE",
+            kind=kind,
             expression=select_expr,
-            properties=expressions.Properties(expressions=table_properties),
+            properties=properties,
             replace=replace,
         )
 

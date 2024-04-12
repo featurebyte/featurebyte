@@ -498,7 +498,11 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
     @classmethod
     @abstractmethod
     def create_table_as(
-        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+        cls,
+        table_details: TableDetails,
+        select_expr: Select,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        replace: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -509,6 +513,8 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             TableDetails of the table to be created
         select_expr: Select
             Select expression
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
         replace: bool
             Whether to replace the table if exists
 

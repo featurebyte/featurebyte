@@ -605,18 +605,14 @@ class TileCache:
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        table_create_query = sql_to_string(
-            self.adapter.create_table_as(
-                TableDetails(
-                    database_name=session.database_name,
-                    schema_name=session.schema_name,
-                    table_name=tile_cache_working_table_name,
-                ),
-                table_expr,
+        await session.create_table_as(
+            TableDetails(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=tile_cache_working_table_name,
             ),
-            source_type=self.source_type,
+            table_expr,
         )
-        await session.execute_query_long_running(table_create_query)
         self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(

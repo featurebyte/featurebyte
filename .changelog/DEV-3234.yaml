@@ -1,0 +1,31 @@
+# This template file is used to generate changelog entries on release
+# Check the generated entry in your PR with the task command
+
+# To view the generated changelog, run the following command:
+# task changelog-pr
+
+# --- TEMPLATE --- #
+# One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern
+# (e.g. gh-actions, docs, middleware, worker)
+component: session
+
+# (Optional) One or more tracking issues or pull requests related to the change
+issues: []
+
+note: "Set ownership of created tables to the session group. This is a fix for the issue where the tables created cannot be updated by other users in the group."
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:
+
+# SAMPLE
+#subtext: |
+#  + note this will make everything better
+#  + major performance improvement
+#  + time reduction for test suite from 10 minutes to 2 minutes
+#  ```
+#   Code sample
+#   goes here
+#  ```

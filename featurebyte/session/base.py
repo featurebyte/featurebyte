@@ -5,7 +5,7 @@ Session class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Dict, Optional, OrderedDict, Type
+from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
@@ -25,7 +25,7 @@ from bson import ObjectId
 from cachetools import TTLCache
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
-from sqlglot.expressions import Expression
+from sqlglot.expressions import Expression, Select
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
@@ -35,6 +35,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.node.schema import TableDetails as NodeTableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -735,6 +736,43 @@ class BaseSession(BaseModel):
         str
         """
         return sql_to_string(expr, source_type=self.source_type)
+
+    async def create_table_as(
+        self,
+        table_details: NodeTableDetails,
+        select_expr: Select,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        replace: bool = False,
+    ) -> pd.DataFrame | None:
+        """
+        Create a table using a select statement
+
+        Parameters
+        ----------
+        table_details: NodeTableDetails
+            Details of the table to be created
+        select_expr: Select
+            Select expression to create the table
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
+        replace: bool
+            Whether to replace the table if exists
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        adapter = get_sql_adapter(self.source_type)
+        query = sql_to_string(
+            adapter.create_table_as(
+                table_details=table_details,
+                select_expr=select_expr,
+                kind=kind,
+                replace=replace,
+            ),
+            source_type=self.source_type,
+        )
+        return await self.execute_query_long_running(query)
 
 
 class SqlObjectType(StrEnum):

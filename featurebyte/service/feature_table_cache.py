@@ -308,24 +308,19 @@ class FeatureTableCacheService:
                 )
                 for node, feature_definition in nodes
             ]
-            adapter = get_sql_adapter(db_session.source_type)
-            query = sql_to_string(
-                adapter.create_table_as(
-                    table_details=TableDetails(
-                        database_name=db_session.database_name,
-                        schema_name=db_session.schema_name,
-                        table_name=final_table_name,
-                    ),
-                    select_expr=(
-                        expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-                        .select(*request_columns)
-                        .select(*feature_names)
-                        .from_(quoted_identifier(intermediate_table_name))
-                    ),
+            await db_session.create_table_as(
+                table_details=TableDetails(
+                    database_name=db_session.database_name,
+                    schema_name=db_session.schema_name,
+                    table_name=final_table_name,
                 ),
-                source_type=db_session.source_type,
+                select_expr=(
+                    expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+                    .select(*request_columns)
+                    .select(*feature_names)
+                    .from_(quoted_identifier(intermediate_table_name))
+                ),
             )
-            await db_session.execute_query_long_running(query)
         finally:
             await db_session.drop_table(
                 database_name=db_session.database_name,
@@ -734,17 +729,12 @@ class FeatureTableCacheService:
                 )
             )
         )
-        create_expr = expressions.Create(
-            this=expressions.Table(
-                this=get_fully_qualified_table_name(output_view_details.dict()),
-            ),
-            kind="VIEW",
-            expression=select_expr,
-            replace=False,
-        )
-        sql = sql_to_string(create_expr, source_type=db_session.source_type)
         try:
-            await db_session.execute_query_long_running(sql)
+            await db_session.create_table_as(
+                table_details=output_view_details,
+                select_expr=select_expr,
+                kind="VIEW",
+            )
             return True
         except:  # pylint: disable=bare-except
             logger.info(
@@ -752,14 +742,8 @@ class FeatureTableCacheService:
                 extra={"observation_table_id": observation_table.id},
                 exc_info=True,
             )
-            create_expr = expressions.Create(
-                this=expressions.Table(
-                    this=get_fully_qualified_table_name(output_view_details.dict()),
-                ),
-                kind="TABLE",
-                expression=select_expr,
-                replace=False,
+            await db_session.create_table_as(
+                table_details=output_view_details,
+                select_expr=select_expr,
             )
-            sql = sql_to_string(create_expr, source_type=db_session.source_type)
-            await db_session.execute_query_long_running(sql)
             return False
