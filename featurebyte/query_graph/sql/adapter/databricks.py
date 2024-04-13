@@ -15,7 +15,7 @@ from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -211,8 +211,9 @@ class DatabricksAdapter(BaseAdapter):
     def create_table_as(
         cls,
         table_details: TableDetails,
-        select_expr: Select,
+        select_expr: Select | str,
         kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
         replace: bool = False,
     ) -> Expression:
         """
@@ -222,10 +223,12 @@ class DatabricksAdapter(BaseAdapter):
         ----------
         table_details: TableDetails
             TableDetails of the table to be created
-        select_expr: Select
+        select_expr: Select | str
             Select expression
         kind: Literal["TABLE", "VIEW"]
             Kind of table to create
+        partition_keys: list[str] | None
+            Partition keys
         replace: bool
             Whether to replace the table if exists
 
@@ -248,6 +251,14 @@ class DatabricksAdapter(BaseAdapter):
                     this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
                 ),
             ]
+            if partition_keys:
+                table_properties.append(
+                    expressions.PartitionedByProperty(
+                        this=expressions.Schema(
+                            expressions=[quoted_identifier(key) for key in partition_keys]
+                        )
+                    )
+                )
             properties = expressions.Properties(expressions=table_properties)
         else:
             properties = None

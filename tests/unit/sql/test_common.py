@@ -18,7 +18,7 @@ async def test_register_temporary_physical_table(mock_snowflake_session):
     try:
         async with register_temporary_physical_table(mock_snowflake_session, query) as temp_table:
             assert mock_snowflake_session.execute_query_long_running.call_args == call(
-                f"CREATE TABLE {temp_table} AS (SELECT * FROM (select a, b, c from my_table))"
+                f'CREATE TABLE "{temp_table}" AS\nselect a, b, c from my_table'
             )
             raise RuntimeError("Fail on purpose")
     except RuntimeError:

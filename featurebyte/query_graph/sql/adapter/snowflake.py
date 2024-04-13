@@ -168,8 +168,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
     def create_table_as(
         cls,
         table_details: TableDetails,
-        select_expr: Select,
+        select_expr: Select | str,
         kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
         replace: bool = False,
     ) -> Expression:
         """
@@ -179,10 +180,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         ----------
         table_details: TableDetails
             TableDetails of the table to be created
-        select_expr: Select
+        select_expr: Select | str
             Select expression
         kind: Literal["TABLE", "VIEW"]
             Kind of table to create
+        partition_keys: list[str] | None
+            Partition keys
         replace: bool
             Whether to replace the table if exists
 

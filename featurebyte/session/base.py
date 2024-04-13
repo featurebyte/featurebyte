@@ -17,6 +17,7 @@ import time
 from abc import ABC, abstractmethod
 from asyncio import events
 from io import BytesIO
+from random import randint
 
 import aiofiles
 import pandas as pd
@@ -737,41 +738,138 @@ class BaseSession(BaseModel):
         """
         return sql_to_string(expr, source_type=self.source_type)
 
+    async def retry_sql(
+        self,
+        sql: str,
+        retry_num: int = 10,
+        sleep_interval: int = 5,
+    ) -> pd.DataFrame | None:
+        """
+        Retry sql operation
+
+        Parameters
+        ----------
+        sql: str
+            SQL query
+        retry_num: int
+            Number of retries
+        sleep_interval: int
+            Sleep interval between retries
+
+        Returns
+        -------
+        pd.DataFrame
+            Result of the sql operation
+
+        Raises
+        ------
+        Exception
+            if the sql operation fails after retry_num retries
+        """
+
+        for i in range(retry_num):
+            try:
+                return await self.execute_query_long_running(sql)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "SQL query failed",
+                    extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
+                )
+                if i == retry_num - 1:
+                    logger.error(
+                        "SQL query failed", extra={"attempts": retry_num, "exception": exc}
+                    )
+                    raise
+
+            random_interval = randint(1, sleep_interval)
+            await asyncio.sleep(random_interval)
+
+        return None
+
+    async def table_exists(self, table_name: str) -> bool:
+        """
+        Check if table exists
+
+        Parameters
+        ----------
+        table_name: str
+            input table name
+
+        Returns
+        -------
+            True if table exists, False otherwise
+        """
+        try:
+            expr = (
+                expressions.Select(expressions=[expressions.Star()])
+                .from_(quoted_identifier(table_name.upper()))
+                .limit(1)
+            )
+            await self.execute_query_long_running(sql_to_string(expr, self.source_type))
+            return True
+        except self._no_schema_error:  # pylint: disable=broad-except
+            pass
+        return False
+
     async def create_table_as(
         self,
-        table_details: NodeTableDetails,
-        select_expr: Select,
+        table_details: NodeTableDetails | str,
+        select_expr: Select | str,
         kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
         replace: bool = False,
+        retry: bool = False,
+        retry_num: int = 10,
+        sleep_interval: int = 5,
     ) -> pd.DataFrame | None:
         """
         Create a table using a select statement
 
         Parameters
         ----------
-        table_details: NodeTableDetails
-            Details of the table to be created
-        select_expr: Select
-            Select expression to create the table
+        table_details: NodeTableDetails | str
+            Details or name of the table to be created
+        select_expr: Select | str
+            Select expression or SQL to create the table
+        partition_keys: list[str] | None
+            Partition keys
         kind: Literal["TABLE", "VIEW"]
             Kind of table to create
         replace: bool
             Whether to replace the table if exists
+        retry: bool
+            Whether to retry the operation
+        retry_num: int
+            Number of retries
+        sleep_interval: int
+            Sleep interval between retries
 
         Returns
         -------
         pd.DataFrame | None
         """
         adapter = get_sql_adapter(self.source_type)
+
+        if isinstance(table_details, str):
+            table_details = NodeTableDetails(
+                database_name=None,
+                schema_name=None,
+                table_name=table_details.upper(),  # use upper case for unquoted identifiers
+            )
+
         query = sql_to_string(
             adapter.create_table_as(
                 table_details=table_details,
                 select_expr=select_expr,
                 kind=kind,
+                partition_keys=partition_keys,
                 replace=replace,
             ),
             source_type=self.source_type,
         )
+
+        if retry:
+            return await self.retry_sql(query, retry_num=retry_num, sleep_interval=sleep_interval)
         return await self.execute_query_long_running(query)
 
 
@@ -1022,6 +1120,9 @@ class BaseSchemaInitializer(ABC):
             if sql_object_type == SqlObjectType.TABLE:
                 # Table naming convention does not include "T_" prefix
                 identifier = identifier[len("T_") :]
+            elif sql_object_type == SqlObjectType.FUNCTION and identifier == "F_OBJECT_DELETE":
+                # OBJECT_DELETE does not include "F_" prefix
+                identifier = identifier[len("F_") :]
 
             full_filename = os.path.join(sql_directory, filename)
 
