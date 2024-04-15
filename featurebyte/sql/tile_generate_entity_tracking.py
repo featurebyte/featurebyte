@@ -8,7 +8,6 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaseSqlModel
-from featurebyte.sql.common import construct_create_table_query, retry_sql
 
 logger = get_logger(__name__)
 
@@ -67,10 +66,11 @@ class TileGenerateEntityTracking(BaseSqlModel):
                 ]
             )
             entity_table = f"select {cols} from ({self.entity_table})"
-            create_sql = construct_create_table_query(
-                tracking_table_name, entity_table, session=self._session
+            await self._session.create_table_as(
+                table_details=tracking_table_name,
+                select_expr=entity_table,
+                retry=True,
             )
-            await retry_sql(self._session, create_sql)
         else:
             if self.entity_column_names:
                 entity_insert_cols_str = ", ".join(entity_insert_cols)
@@ -94,4 +94,4 @@ class TileGenerateEntityTracking(BaseSqlModel):
                             insert ({tile_last_start_date_column})
                                 values (b.{tile_last_start_date_column})
                 """
-            await retry_sql(session=self._session, sql=merge_sql)
+            await self._session.retry_sql(merge_sql)

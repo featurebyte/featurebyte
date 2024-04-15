@@ -143,19 +143,13 @@ class MaterializedTableObservationSet(ObservationSet):
             columns.append(
                 expressions.alias_(row_number, alias=InternalName.TABLE_ROW_INDEX, quoted=True),
             )
-        adapter = get_sql_adapter(session.source_type)
-        query = sql_to_string(
-            adapter.create_table_as(
-                TableDetails(table_name=request_table_name),
-                expressions.select(*columns).from_(
-                    get_fully_qualified_table_name(
-                        self.observation_table.location.table_details.dict()
-                    )
-                ),
+
+        await session.create_table_as(
+            table_details=TableDetails(table_name=request_table_name),
+            select_expr=expressions.select(*columns).from_(
+                get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
             ),
-            source_type=session.source_type,
         )
-        await session.execute_query_long_running(query)
 
 
 def get_internal_observation_set(

@@ -229,23 +229,19 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ),
             column_names=feature_table_model.serving_names,
         )
-        adapter = get_sql_adapter(session.source_type)
         feature_timestamp = datetime.utcnow()
-        create_batch_request_table_query = sql_to_string(
-            adapter.create_table_as(
-                table_details=batch_request_table.table_details,
-                select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
-                    current_feature_timestamp=feature_timestamp,
-                    last_materialized_timestamp=(
-                        feature_table_model.last_materialized_at
-                        if use_last_materialized_timestamp
-                        else None
-                    ),
+
+        await session.create_table_as(
+            table_details=batch_request_table.table_details,
+            select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
+                current_feature_timestamp=feature_timestamp,
+                last_materialized_timestamp=(
+                    feature_table_model.last_materialized_at
+                    if use_last_materialized_timestamp
+                    else None
                 ),
             ),
-            source_type=session.source_type,
         )
-        await session.execute_query_long_running(create_batch_request_table_query)
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details
         )
@@ -299,6 +295,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     column_names.append(column_name)
                     column_dtypes.append(data_type)
 
+            adapter = get_sql_adapter(session.source_type)
             materialized_features = MaterializedFeatures(
                 materialized_table_name=output_table_details.table_name,
                 column_names=column_names,
@@ -830,39 +827,32 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_serving_names: List[str],
         materialized_features: MaterializedFeatures,
     ) -> None:
-        adapter = get_sql_adapter(session.source_type)
-        query = sql_to_string(
-            adapter.create_table_as(
-                table_details=TableDetails(
-                    database_name=session.database_name,
-                    schema_name=session.schema_name,
-                    table_name=feature_table_name,
-                ),
-                select_expr=expressions.select(
-                    expressions.alias_(
-                        make_literal_value(
-                            materialized_features.feature_timestamp.isoformat(),
-                            cast_as_timestamp=True,
-                        ),
-                        alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
-                        quoted=True,
-                    )
-                )
-                .select(
-                    *[
-                        quoted_identifier(column)
-                        for column in materialized_features.serving_names_and_column_names
-                    ]
-                )
-                .from_(quoted_identifier(materialized_features.materialized_table_name)),
+        await session.create_table_as(
+            table_details=TableDetails(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=feature_table_name,
             ),
-            source_type=session.source_type,
+            select_expr=expressions.select(
+                expressions.alias_(
+                    make_literal_value(
+                        materialized_features.feature_timestamp.isoformat(),
+                        cast_as_timestamp=True,
+                    ),
+                    alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                    quoted=True,
+                )
+            )
+            .select(
+                *[
+                    quoted_identifier(column)
+                    for column in materialized_features.serving_names_and_column_names
+                ]
+            )
+            .from_(quoted_identifier(materialized_features.materialized_table_name)),
         )
-        await session.execute_query_long_running(query)
         await cls._add_primary_key_constraint_if_necessary(
-            session,
-            feature_table_name=feature_table_name,
-            feature_table_serving_names=feature_table_serving_names,
+            session, feature_table_name, feature_table_serving_names
         )
 
     @classmethod

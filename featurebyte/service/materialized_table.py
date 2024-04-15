@@ -16,7 +16,6 @@ from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.materialisation import (
     get_row_index_column_expr,
@@ -215,16 +214,11 @@ class BaseMaterializedTableService(
             Table details of the materialized table
         """
         row_number_expr = get_row_index_column_expr()
-        adapter = get_sql_adapter(session.source_type)
-        query = sql_to_string(
-            adapter.create_table_as(
-                table_details,
-                expressions.select(
-                    row_number_expr,
-                    expressions.Star(),
-                ).from_(quoted_identifier(table_details.table_name)),
-                replace=True,
-            ),
-            source_type=session.source_type,
+        await session.create_table_as(
+            table_details,
+            expressions.select(
+                row_number_expr,
+                expressions.Star(),
+            ).from_(quoted_identifier(table_details.table_name)),
+            replace=True,
         )
-        await session.execute_query_long_running(query)
