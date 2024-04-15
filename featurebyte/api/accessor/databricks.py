@@ -122,7 +122,7 @@ class DataBricksAccessor:
 
         Returns
         -------
-        str
+        Any
             Feature specs
         """
         exec_locals = self._exec_feature_spec_definition(print_feature_specs)
@@ -193,6 +193,11 @@ class DataBricksAccessor:
         -------
         pd.DataFrame
             Scored dataframe
+
+        Raises
+        ------
+        ImportError
+            If the pyspark package is not installed
         """
         # create feature engineering client
         databricks_fe_client = _get_feature_engineering_client()
