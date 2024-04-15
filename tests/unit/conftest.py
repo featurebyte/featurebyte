@@ -2348,7 +2348,6 @@ def mock_offline_store_feature_manager_dependencies_fixture():
     patch_targets = {
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService": [
             "initialize_new_columns",
-            "initialize_precomputed_lookup_feature_table",
             "drop_columns",
             "drop_table",
         ],

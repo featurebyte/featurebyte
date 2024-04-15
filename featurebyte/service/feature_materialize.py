@@ -600,41 +600,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                             end_date=materialize_end_date,
                         )
 
-    async def initialize_precomputed_lookup_feature_table(
-        self,
-        lookup_feature_table: OfflineStoreFeatureTableModel,
-    ) -> None:
-        """
-        Initialize a precomputed lookup feature table by creating it and backfill using the source
-        feature table
-
-        Parameters
-        ----------
-        lookup_feature_table: OfflineStoreFeatureTableModel
-            Precomputed lookup feature table to be initialized
-
-        Raises
-        ------
-        NotImplementedError
-            Not implemented yet
-        """
-        assert lookup_feature_table.precomputed_lookup_feature_table_info is not None
-        assert (
-            lookup_feature_table.precomputed_lookup_feature_table_info.source_feature_table_id
-            is not None
-        )
-        source_feature_table = await self.offline_store_feature_table_service.get_document(
-            lookup_feature_table.precomputed_lookup_feature_table_info.source_feature_table_id
-        )
-        session = await self._get_session(source_feature_table)
-        num_rows_in_feature_table = await self._num_rows_in_feature_table(
-            session, source_feature_table.name
-        )
-        if num_rows_in_feature_table is not None and num_rows_in_feature_table > 0:
-            raise NotImplementedError(
-                "Sync precomputed lookup feature table with source feature table"
-            )
-
     async def _initialize_new_columns_offline(
         self,
         session: BaseSession,
