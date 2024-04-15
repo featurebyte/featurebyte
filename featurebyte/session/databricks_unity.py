@@ -4,7 +4,7 @@ Databricks unity
 
 from __future__ import annotations
 
-from typing import Any, BinaryIO, Literal, cast
+from typing import Any, BinaryIO, Literal
 
 import pandas as pd
 from pydantic import Field, PrivateAttr
@@ -18,7 +18,6 @@ from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSc
 from featurebyte.session.base_spark import (
     BaseSparkMetadataSchemaInitializer,
     BaseSparkSchemaInitializer,
-    BaseSparkSession,
 )
 from featurebyte.session.databricks import DatabricksSession
 
@@ -37,9 +36,7 @@ class DataBricksMetadataSchemaInitializer(BaseSparkMetadataSchemaInitializer):
         await super().create_metadata_table_if_not_exists(current_migration_version)
         # grant permissions on metadata table to the group
         assert isinstance(self.session, DatabricksUnitySession)
-        await self.session.execute_query(
-            f"ALTER TABLE METADATA_SCHEMA OWNER TO `{self.session.group_name}`"
-        )
+        await self.session.set_owner("TABLE", "METADATA_SCHEMA")
 
 
 class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
@@ -47,7 +44,9 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
     Databricks unity schema initializer
     """
 
-    def __init__(self, session: BaseSparkSession):
+    session: DatabricksUnitySession
+
+    def __init__(self, session: DatabricksUnitySession):
         super().__init__(session=session)
         self.metadata_schema_initializer = DataBricksMetadataSchemaInitializer(session)
 
@@ -59,28 +58,20 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
         await super().create_schema()
         # grant permissions on schema to the group
         assert isinstance(self.session, DatabricksUnitySession)
-        grant_permissions_query = (
-            f"ALTER SCHEMA `{self.session.schema_name}` OWNER TO `{self.session.group_name}`"
-        )
-        await self.session.execute_query(grant_permissions_query)
+        await self.session.set_owner("SCHEMA", self.session.schema_name)
 
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
         await super()._register_sql_objects(items)
-        session = cast(DatabricksUnitySession, self.session)
         for item in items:
             item_type = item["type"].upper()
             item_identifier = item["identifier"]
-            await self.session.execute_query(
-                f"ALTER {item_type} `{item_identifier}` OWNER TO `{session.group_name}`"
-            )
+            await self.session.set_owner(item_type, item_identifier)
 
     async def register_missing_objects(self) -> None:
         # create staging volume if not exists
         assert isinstance(self.session, DatabricksUnitySession)
         await self.session.execute_query(f"CREATE VOLUME IF NOT EXISTS {self.session.volume_name}")
-        await self.session.execute_query(
-            f"ALTER VOLUME {self.session.volume_name} OWNER TO `{self.session.group_name}`"
-        )
+        await self.session.set_owner("VOLUME", self.session.volume_name)
 
         # register missing other common objects by calling the super method
         await super().register_missing_objects()
@@ -143,13 +134,28 @@ class DatabricksUnitySession(DatabricksSession):
     def _delete_file_from_storage(self, path: str) -> None:
         self._files_client.delete(file_path=path)
 
+    async def set_owner(
+        self, kind: Literal["SCHEMA", "TABLE", "VIEW", "VOLUME", "FUNCTION"], name: str
+    ) -> None:
+        """
+        Set owner of the object
+
+        Parameters
+        ----------
+        kind: Literal["SCHEMA", "TABLE", "VIEW", "VOLUME", "FUNCTION"]
+            Object type
+        name: str
+            Object name
+        """
+        await self.execute_query(f"ALTER {kind} {name} OWNER TO `{self.group_name}`")
+
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
     ) -> None:
         await super().register_table(table_name, dataframe, temporary)
         if not temporary:
             # grant ownership of the table or view to the group
-            await self.execute_query(f"ALTER TABLE `{table_name}` OWNER TO `{self.group_name}`")
+            await self.set_owner("TABLE", table_name)
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         schemas = await self.execute_query_interactive(
@@ -207,8 +213,5 @@ class DatabricksUnitySession(DatabricksSession):
         fully_qualified_table_name = sql_to_string(
             get_fully_qualified_table_name(table_details.dict()), source_type=self.source_type
         )
-        grant_permissions_query = (
-            f"ALTER {kind} {fully_qualified_table_name} OWNER TO `{self.group_name}`"
-        )
-        await self.execute_query(grant_permissions_query)
+        await self.set_owner(kind, fully_qualified_table_name)
         return result
