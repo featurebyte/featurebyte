@@ -216,6 +216,7 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
     """
     Fixture for offline store feature table with precomputed lookup
     """
+    _ = deployed_feature_list_requiring_parent_serving
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"primary_entity_ids": gender_entity_id}
     ):
@@ -841,7 +842,7 @@ async def test_materialize_features_internal_relationships(
 
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table_internal_relationships,
-    ) as materialized_features_set:
+    ):
         pass
 
     # Check that executed queries are correct

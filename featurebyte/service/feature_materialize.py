@@ -521,6 +521,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             assert feature_store.online_store_id is not None
             assert feature_timestamp is not None
             for current_feature_table in feature_tables:
+                # Note: This guard is to be removed when feast registry is updated to
+                # include precomputed lookup feature tables
+                if current_feature_table.precomputed_lookup_feature_table_info is not None:
+                    continue
                 online_store_last_materialized_at = (
                     current_feature_table.get_online_store_last_materialized_at(
                         feature_store.online_store_id
@@ -586,6 +590,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                             await self._update_offline_last_materialized_at(
                                 current_feature_table, materialized_features.feature_timestamp
                             )
+                        # Note: This guard is to be removed when feast registry is updated to
+                        # include precomputed lookup feature tables
+                        if current_feature_table.precomputed_lookup_feature_table_info is not None:
+                            continue
                         await self._initialize_new_columns_online(
                             feature_table=current_feature_table,
                             column_names=column_names,

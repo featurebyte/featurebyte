@@ -386,6 +386,21 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     return primary_entity_to_feature_table
 
 
+@pytest_asyncio.fixture(name="offline_store_feature_tables_all", scope="module")
+async def offline_store_feature_tables_all_fixture(app_container, deployed_feature_list):
+    """
+    Fixture for offline store feature tables based on the deployed features, including precomputed
+    lookup feature tables
+    """
+    _ = deployed_feature_list
+    primary_entity_to_feature_table = {}
+    async for (
+        feature_table
+    ) in app_container.offline_store_feature_table_service.list_documents_iterator(query_filter={}):
+        primary_entity_to_feature_table[feature_table.name] = feature_table
+    return primary_entity_to_feature_table
+
+
 @pytest.fixture(name="user_entity_ttl_feature_table")
 def user_entity_ttl_feature_table_fixture(offline_store_feature_tables):
     """
@@ -513,11 +528,11 @@ def test_feature_cluster_with_expected_internal_relationships(offline_store_feat
 @pytest.mark.order(2)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
-async def test_feature_tables_populated(session, offline_store_feature_tables, source_type):
+async def test_feature_tables_populated(session, offline_store_feature_tables_all, source_type):
     """
     Check feature tables are populated correctly
     """
-    for feature_table in offline_store_feature_tables.values():
+    for feature_table in offline_store_feature_tables_all.values():
         df = await session.execute_query(
             sql_to_string(
                 parse_one(f'SELECT * FROM "{feature_table.name}"'),
@@ -529,11 +544,17 @@ async def test_feature_tables_populated(session, offline_store_feature_tables, s
         assert df.shape[0] > 0
 
         # Should have all the serving names and output columns tracked in OfflineStoreFeatureTable
-        expected = set(
-            [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
-            + feature_table.serving_names
-            + feature_table.output_column_names
-        )
+        expected = set([InternalName.FEATURE_TIMESTAMP_COLUMN.value] + feature_table.serving_names)
+        if feature_table.precomputed_lookup_feature_table_info is None:
+            output_column_names = feature_table.output_column_names
+        else:
+            output_column_names = next(
+                table
+                for table in offline_store_feature_tables_all.values()
+                if table.id
+                == feature_table.precomputed_lookup_feature_table_info.source_feature_table_id
+            ).output_column_names
+        expected.update(output_column_names)
         if len(feature_table.serving_names) > 0:
             expected.add(" x ".join(feature_table.serving_names))
         elif source_type == SourceType.DATABRICKS_UNITY:
