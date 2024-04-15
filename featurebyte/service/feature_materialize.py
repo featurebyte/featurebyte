@@ -317,7 +317,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ) in await self._materialize_precomputed_lookup_feature_tables(
                 session=session,
                 adapter=adapter,
-                unique_id=unique_id,
                 feature_table_model=feature_table_model,
                 feature_timestamp=feature_timestamp,
                 materialized_feature_table_name=output_table_details.table_name,
@@ -358,7 +357,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self,
         session: BaseSession,
         adapter: BaseAdapter,
-        unique_id: ObjectId,
         feature_table_model: OfflineStoreFeatureTableModel,
         feature_timestamp: datetime,
         materialized_feature_table_name: str,
@@ -371,6 +369,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         )
         result = []
         for lookup_feature_table in precomputed_lookup_feature_tables:
+            unique_id = ObjectId()
             lookup_universe_table_details = TableDetails(
                 database_name=session.database_name,
                 schema_name=session.schema_name,
