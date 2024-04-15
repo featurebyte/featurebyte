@@ -9,6 +9,7 @@ import os
 import tempfile
 import traceback
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -1916,6 +1917,7 @@ def mock_snowflake_session_fixture():
         _no_schema_error=ProgrammingError,
     )
     session.clone_if_not_threadsafe.return_value = session
+    session.create_table_as = partial(SnowflakeSession.create_table_as, session)
     return session
 
 

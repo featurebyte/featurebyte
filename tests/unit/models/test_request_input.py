@@ -3,6 +3,7 @@ Unit tests related to RequestInput
 """
 
 import textwrap
+from functools import partial
 from unittest.mock import AsyncMock, Mock, call
 
 import pytest
@@ -21,7 +22,7 @@ def session_fixture():
     """
     Fixture for the db session object
     """
-    return Mock(
+    session = Mock(
         name="mock_snowflake_session",
         spec=SnowflakeSession,
         source_type=SourceType.SNOWFLAKE,
@@ -32,6 +33,8 @@ def session_fixture():
             }
         ),
     )
+    session.create_table_as = partial(SnowflakeSession.create_table_as, session)
+    return session
 
 
 @pytest.fixture(name="destination_table")

@@ -5,7 +5,6 @@ Tile Registry Job Script
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
 from featurebyte.service.tile_registry_service import TileRegistryService
-from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
 logger = get_logger(__name__)
@@ -77,4 +76,4 @@ class TileRegistry(TileCommon):
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
-                await retry_sql(self._session, tile_add_sql)
+                await self._session.retry_sql(tile_add_sql)

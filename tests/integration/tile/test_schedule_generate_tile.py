@@ -8,12 +8,12 @@ import dateutil.parser
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import expressions
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_job_log import TileJobLogService
-from featurebyte.sql.common import construct_create_table_query
 
 
 @pytest.fixture(name="tile_task_executor")
@@ -122,10 +122,12 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
     tile_end_ts = "2022-06-05T23:53:00Z"
 
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    create_sql = construct_create_table_query(
-        table_name, "select * from TEMP_TABLE", session=session
+    await session.create_table_as(
+        table_details=table_name,
+        select_expr=expressions.Select(expressions=[expressions.Star()]).from_(
+            expressions.Table(this="TEMP_TABLE")
+        ),
     )
-    await session.execute_query(create_sql)
 
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
