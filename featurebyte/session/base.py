@@ -856,6 +856,8 @@ class BaseSession(BaseModel):
                 schema_name=None,
                 table_name=table_details.upper(),  # use upper case for unquoted identifiers
             )
+        if isinstance(select_expr, str):
+            select_expr = f"SELECT * FROM ({select_expr})"
 
         query = sql_to_string(
             adapter.create_table_as(
