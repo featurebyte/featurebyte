@@ -67,6 +67,12 @@ SELECT
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT
+  COUNT(*)
+FROM "cat1_cust_id_30m";
+
+ALTER TABLE "cat1_cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
+
+SELECT
   MAX("__feature_timestamp") AS RESULT
 FROM "cat1_cust_id_30m";
 

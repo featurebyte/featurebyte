@@ -22,6 +22,10 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityRelationshipInfo,
+    FeatureEntityLookupInfo,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -40,7 +44,7 @@ from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.utils.messaging import REDIS_URI
-from tests.util.helper import manage_document
+from tests.util.helper import deploy_feature, get_relationship_info, manage_document
 
 
 @pytest.fixture(name="get_credential")
@@ -1087,3 +1091,51 @@ async def catalog_with_online_store_fixture(app_container, catalog, online_store
         document_id=catalog.id, data=catalog_update
     )
     return catalog
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
+async def deployed_feature_list_requiring_parent_serving_fixture(
+    app_container,
+    float_feature,
+    aggregate_asat_feature,
+    cust_id_entity,
+    gender_entity,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+):
+    """
+    Fixture a deployed feature list that require serving parent features
+
+    float_feature: customer entity feature
+    aggregate_asat_feature: gender entity feature
+
+    Gender is a parent of customer.
+
+    Primary entity of the combined feature is customer.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+    new_feature = float_feature + aggregate_asat_feature
+    new_feature.name = "feature_requiring_parent_serving"
+    feature_list = await deploy_feature(
+        app_container,
+        new_feature,
+        return_type="feature_list",
+    )
+
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        )
+    ]
+
+    return feature_list

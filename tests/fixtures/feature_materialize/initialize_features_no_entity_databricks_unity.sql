@@ -82,6 +82,10 @@ SELECT
   '0' AS `__featurebyte_dummy_entity`
 FROM _FB_AGGREGATED AS AGG;
 
+SELECT
+  COUNT(*)
+FROM `cat1__no_entity_1d`;
+
 CREATE TABLE `sf_db`.`sf_schema`.`cat1__no_entity_1d`
 USING DELTA
 TBLPROPERTIES (

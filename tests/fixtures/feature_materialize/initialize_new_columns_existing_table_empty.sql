@@ -66,6 +66,12 @@ SELECT
   CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m_V220101"
 FROM _FB_AGGREGATED AS AGG;
 
+SELECT
+  COUNT(*)
+FROM "cat1_cust_id_30m";
+
+ALTER TABLE "cat1_cust_id_30m" ADD COLUMN "sum_30m_V220101" FLOAT;
+
 MERGE INTO "cat1_cust_id_30m" AS offline_store_table USING (
   SELECT
     "cust_id",

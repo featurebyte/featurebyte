@@ -13,7 +13,11 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
-from featurebyte.models.offline_store_feature_table import OnlineStoreLastMaterializedAt
+from featurebyte.models.offline_store_feature_table import (
+    OfflineLastMaterializedAtUpdate,
+    OnlineStoreLastMaterializedAt,
+)
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
@@ -195,10 +199,26 @@ async def offline_store_feature_table_internal_relationships_fixture(
     app_container, deployed_feature_list_internal_relationships
 ):
     """
-    Fixture for offline store feature table with no entity
+    Fixture for offline store feature table with internal relationships
     """
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"feature_ids": deployed_feature_list_internal_relationships.feature_ids}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_with_precomputed_lookup")
+async def offline_store_feature_table_with_precomputed_lookup_fixture(
+    app_container,
+    deployed_feature_list_requiring_parent_serving,
+    gender_entity_id,
+):
+    """
+    Fixture for offline store feature table with precomputed lookup
+    """
+    _ = deployed_feature_list_requiring_parent_serving
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"primary_entity_ids": gender_entity_id}
     ):
         return model
 
@@ -254,10 +274,15 @@ async def test_materialize_features(
     """
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table,
-    ) as materialized_features:
+    ) as materialized_features_set:
         pass
 
     assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 3
+
+    table_name = "cat1_cust_id_30m"
+    assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
+
+    materialized_features = materialized_features_set.all_materialized_features[table_name]
     materialized_features_dict = asdict(materialized_features)
     materialized_features_dict["materialized_table_name"], suffix = materialized_features_dict[
         "materialized_table_name"
@@ -629,10 +654,14 @@ async def test_materialize_features_composite_entity(
 
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table_composite_entity,
-    ) as materialized_features:
+    ) as materialized_features_set:
         pass
 
+    table_name = "cat1_cust_id_another_key_30m"
+    assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
+
     # Check concatenated column generated
+    materialized_features = materialized_features_set.all_materialized_features[table_name]
     assert materialized_features.serving_names_and_column_names == [
         "cust_id",
         "another_key",
@@ -833,5 +862,108 @@ async def test_materialize_features_internal_relationships(
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/materialize_features_queries_internal_relationships.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__initialize_new_columns(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test initialize_new_columns when a feature list requires parent entity serving
+    """
+    _ = mock_get_feature_store_session
+
+    def mock_execute_query(query):
+        if "COUNT(*)\nFROM" in query:
+            raise ValueError()
+
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    # stop the patcher on initialize_new_columns(), needed because
+    # offline_store_feature_table_with_precomputed_lookup's feature fixture patched it.
+    patch.stopall()
+    await feature_materialize_service.initialize_new_columns(
+        feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+    )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/initialize_new_columns_precomputed_lookup.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test scheduled_materialize_features when a feature list requires parent entity serving
+    """
+    _ = mock_get_feature_store_session
+
+    # Simulate previous materialize date
+    service = app_container.offline_store_feature_table_service
+    update_schema = OfflineLastMaterializedAtUpdate(
+        last_materialized_at=datetime(2022, 1, 5),
+    )
+    offline_store_feature_table_with_precomputed_lookup = await service.update_document(
+        document_id=offline_store_feature_table_with_precomputed_lookup.id, data=update_schema
+    )
+    async for table in service.list_precomputed_lookup_feature_tables(
+        offline_store_feature_table_with_precomputed_lookup.id
+    ):
+        await service.update_document(document_id=table.id, data=update_schema)
+
+    # Run scheduled materialize at a later date
+    with freeze_time(datetime(2022, 1, 6)):
+        await feature_materialize_service.scheduled_materialize_features(
+            feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+        )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup.sql",
         update_fixtures,
     )
