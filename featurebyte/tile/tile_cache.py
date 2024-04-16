@@ -41,7 +41,7 @@ from featurebyte.session.session_helper import run_coroutines
 logger = get_logger(__name__)
 
 TILE_CACHE_LIST_TABLES_TIMEOUT_SECONDS = 60 * 10
-NUM_TRACKER_TABLES_PER_QUERY = 25
+NUM_TRACKER_TABLES_PER_QUERY = 20
 
 
 @dataclass(frozen=True)
