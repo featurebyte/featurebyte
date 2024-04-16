@@ -746,17 +746,17 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 feature_table_serving_names=current_feature_table.serving_names,
                 materialized_features=materialized_features,
             )
-            if offline_info is not None:
-                column_names, materialize_end_date, is_new_table = offline_info
-                if is_new_table:
-                    await self._update_offline_last_materialized_at(
-                        current_feature_table, materialized_features.feature_timestamp
-                    )
-                await self._initialize_new_columns_online(
-                    feature_table=current_feature_table,
-                    column_names=column_names,
-                    end_date=materialize_end_date,
+        if offline_info is not None:
+            column_names, materialize_end_date, is_new_table = offline_info
+            if is_new_table:
+                await self._update_offline_last_materialized_at(
+                    current_feature_table, materialized_features.feature_timestamp
                 )
+            await self._initialize_new_columns_online(
+                feature_table=current_feature_table,
+                column_names=column_names,
+                end_date=materialize_end_date,
+            )
 
     async def _initialize_new_columns_offline(
         self,
