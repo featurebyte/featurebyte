@@ -14,7 +14,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 
-NUM_FEATURES_PER_QUERY = 50
+NUM_FEATURES_PER_QUERY = 20
 
 
 def split_nodes(
