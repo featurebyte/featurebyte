@@ -10,11 +10,19 @@ import pymongo
 from pydantic import BaseSettings, Field, StrictStr
 
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+
+
+class FeastRegistryInfo(FeatureByteBaseModel):
+    """Feast registry info"""
+
+    registry_id: PydanticObjectId
+    registry_path: str
 
 
 class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
@@ -26,6 +34,7 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     enabled: bool
     context_id: Optional[PydanticObjectId] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)
+    registry_info: Optional[FeastRegistryInfo] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

@@ -18,7 +18,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, ServingEntity
 from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.schema.deployment import DeploymentUpdate
+from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -659,7 +659,7 @@ class DeployService:
         # update deployment status
         await self.deployment_service.update_document(
             document_id=deployment.id,
-            data=DeploymentUpdate(enabled=True),
+            data=DeploymentServiceUpdate(enabled=True),
             return_document=False,
         )
         await self._update_progress(100, "Deployment enabled successfully!")
@@ -770,7 +770,7 @@ class DeployService:
         # update deployment status
         await self.deployment_service.update_document(
             document_id=deployment.id,
-            data=DeploymentUpdate(enabled=False),
+            data=DeploymentServiceUpdate(enabled=False),
             return_document=False,
         )
         await self._update_progress(100, "Deployment disabled successfully!")

@@ -10,7 +10,7 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment import DeploymentModel, FeastRegistryInfo
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -39,6 +39,14 @@ class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     enabled: Optional[bool]
+
+
+class DeploymentServiceUpdate(DeploymentUpdate):
+    """
+    Schema for deployment service update
+    """
+
+    registry_info: Optional[FeastRegistryInfo]
 
 
 class DeploymentSummary(FeatureByteBaseModel):
