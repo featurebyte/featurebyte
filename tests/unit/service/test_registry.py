@@ -3,7 +3,7 @@ Test registry service.
 """
 
 import random
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
@@ -67,16 +67,16 @@ async def test_registry_service__project_name_creation(registry_service_map):
     registry_service = None
     existing_catalog_ids = set()
     existing_project_names = set()
-    for (feature_store_name, catalog_name), registry_service in registry_service_map.items():
+    deployment = Mock()
+    deployment.registry_info = None
+    for (_, catalog_name), registry_service in registry_service_map.items():
+        deployment.id = ObjectId()
         catalog = Catalog.get(name=catalog_name)
-        feature_store = FeatureStore.get(name=feature_store_name)
-        feast_registry = await registry_service.get_or_create_feast_registry(
-            catalog_id=catalog.id, feature_store_id=feature_store.id
-        )
+        feast_registry = await registry_service.get_or_create_feast_registry(deployment=deployment)
         expected_table_prefix = catalog_name_to_table_prefix[catalog_name]
         existing_catalog_ids.add(catalog.id)
         existing_project_names.add(feast_registry.name)
-        assert feast_registry.name == str(catalog.id)[-7:]
+        assert feast_registry.name == str(deployment.id)[-7:]
         assert feast_registry.offline_table_name_prefix == expected_table_prefix
 
     # test create project name (check that new project name is generated)
@@ -87,8 +87,8 @@ async def test_registry_service__project_name_creation(registry_service_map):
         assert new_project_name not in existing_project_names
 
     # check max try
-    existing_catalog_id = list(existing_catalog_ids)[0]
+    existing_deployment_id = deployment.id
     with patch("featurebyte.feast.service.registry.random") as mock_random:
-        mock_random.randrange.return_value = int(str(existing_catalog_id)[-7:], 16)
+        mock_random.randrange.return_value = int(str(existing_deployment_id)[-7:], 16)
         with pytest.raises(RuntimeError, match="Unable to generate unique project name"):
-            await registry_service._create_project_name(existing_catalog_id)
+            await registry_service._create_project_name(existing_deployment_id)

@@ -26,6 +26,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     registry: bytes = Field(default_factory=bytes, exclude=True)
     feature_store_id: PydanticObjectId
     registry_path: Optional[str] = Field(default=None)
+    deployment_id: Optional[PydanticObjectId] = Field(default=None)
 
     @property
     def remote_attribute_paths(self) -> List[Path]:

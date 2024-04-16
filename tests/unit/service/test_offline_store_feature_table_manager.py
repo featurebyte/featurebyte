@@ -47,12 +47,37 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
     _ = enable_feast_integration
 
 
+@pytest.fixture(name="deployment_id0")
+def deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="deployment_id1")
+def deployment_id1_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="deployment_id2")
+def deployment_id2_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
 @pytest_asyncio.fixture
 async def deployed_float_feature_list(
     app_container,
     float_feature,
     transaction_entity,
     cust_id_entity,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -65,6 +90,7 @@ async def deployed_float_feature_list(
         float_feature,
         context_primary_entity_ids=[transaction_entity.id],
         return_type="feature_list",
+        deployment_id=deployment_id0,
     )
     assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
@@ -88,6 +114,7 @@ async def deployed_float_feature_list_cust_id_use_case(
     app_container,
     float_feature,
     cust_id_entity,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -99,6 +126,7 @@ async def deployed_float_feature_list_cust_id_use_case(
         app_container,
         float_feature,
         return_type="feature_list",
+        deployment_id=deployment_id0,
     )
     assert feature_list.enabled_serving_entity_ids == [[cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
@@ -108,7 +136,7 @@ async def deployed_float_feature_list_cust_id_use_case(
 
 @pytest_asyncio.fixture
 async def deployed_float_feature_post_processed(
-    app_container, float_feature, transaction_entity
+    app_container, float_feature, transaction_entity, deployment_id1
 ) -> FeatureModel:
     """
     Fixture for deployed feature that is post processed from float feature
@@ -116,24 +144,30 @@ async def deployed_float_feature_post_processed(
     feature = float_feature + 123
     feature.name = f"{float_feature.name}_plus_123"
     return await deploy_feature(
-        app_container, feature, context_primary_entity_ids=[transaction_entity.id]
+        app_container,
+        feature,
+        context_primary_entity_ids=[transaction_entity.id],
+        deployment_id=deployment_id1,
     )
 
 
 @pytest_asyncio.fixture
 async def deployed_float_feature_different_job_setting(
-    app_container, float_feature_different_job_setting
+    app_container, float_feature_different_job_setting, deployment_id2
 ):
     """
     Fixture for deployed float feature with different job setting
     """
-    return await deploy_feature(app_container, float_feature_different_job_setting)
+    return await deploy_feature(
+        app_container, float_feature_different_job_setting, deployment_id=deployment_id2
+    )
 
 
 @pytest_asyncio.fixture
 async def deployed_feature_without_entity(
     app_container,
     feature_without_entity,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -142,13 +176,14 @@ async def deployed_feature_without_entity(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, feature_without_entity)
+    return await deploy_feature(app_container, feature_without_entity, deployment_id=deployment_id0)
 
 
 @pytest_asyncio.fixture
 async def deployed_scd_lookup_feature(
     app_container,
     scd_lookup_feature,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -158,7 +193,7 @@ async def deployed_scd_lookup_feature(
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
     feature_list = await deploy_feature(
-        app_container, scd_lookup_feature, return_type="feature_list"
+        app_container, scd_lookup_feature, return_type="feature_list", deployment_id=deployment_id0
     )
     assert feature_list.enabled_serving_entity_ids == [feature_list.primary_entity_ids]
     feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
@@ -170,6 +205,7 @@ async def deployed_aggregate_asat_feature_list(
     app_container,
     aggregate_asat_feature,
     cust_id_entity,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -183,6 +219,7 @@ async def deployed_aggregate_asat_feature_list(
         aggregate_asat_feature,
         context_primary_entity_ids=[cust_id_entity.id],
         return_type="feature_list",
+        deployment_id=deployment_id0,
     )
 
 
@@ -200,6 +237,7 @@ async def deployed_aggregate_asat_feature(app_container, deployed_aggregate_asat
 async def deployed_item_aggregate_feature(
     app_container,
     non_time_based_feature,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -208,7 +246,7 @@ async def deployed_item_aggregate_feature(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, non_time_based_feature)
+    return await deploy_feature(app_container, non_time_based_feature, deployment_id=deployment_id0)
 
 
 @pytest_asyncio.fixture
@@ -216,6 +254,7 @@ async def deployed_complex_feature(
     app_container,
     non_time_based_feature,
     feature_without_entity,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -228,13 +267,14 @@ async def deployed_complex_feature(
     f2 = feature_without_entity
     new_feature = f1 + f2 + f1
     new_feature.name = "Complex Feature"
-    return await deploy_feature(app_container, new_feature)
+    return await deploy_feature(app_container, new_feature, deployment_id=deployment_id0)
 
 
 @pytest_asyncio.fixture
 async def deployed_feature_with_internal_parent_child_relationships(
     app_container,
     feature_with_internal_parent_child_relationships,
+    deployment_id0,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -243,7 +283,11 @@ async def deployed_feature_with_internal_parent_child_relationships(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, feature_with_internal_parent_child_relationships)
+    return await deploy_feature(
+        app_container,
+        feature_with_internal_parent_child_relationships,
+        deployment_id=deployment_id0,
+    )
 
 
 @pytest_asyncio.fixture
@@ -251,6 +295,7 @@ async def deployed_feature_list_when_all_features_already_deployed(
     app_container,
     float_feature,
     deployed_float_feature,
+    deployment_id1,
 ):
     """
     Fixture for a deployment created when all the underlying features are already deployed
@@ -261,6 +306,7 @@ async def deployed_feature_list_when_all_features_already_deployed(
         float_feature,
         feature_list_name_override="my_new_feature_list",
         return_type="feature_list",
+        deployment_id=deployment_id1,
     )
     return out
 
@@ -349,6 +395,7 @@ async def test_feature_table_one_feature_deployed(
     deployed_float_feature,
     deployed_float_feature_list,
     transaction_to_customer_relationship_info,
+    deployment_id0,
     storage,
     update_fixtures,
 ):
@@ -420,7 +467,7 @@ async def test_feature_table_one_feature_deployed(
             f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         },
         expected_feature_services={f"sum_1d_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id0)[-7:],
     )
 
     # check that feature cluster file exists
@@ -477,6 +524,7 @@ async def test_feature_table_two_features_deployed(
     deployed_float_feature,
     deployed_float_feature_post_processed,
     transaction_to_customer_relationship_info,
+    deployment_id1,
     update_fixtures,
 ):
     """
@@ -551,7 +599,7 @@ async def test_feature_table_two_features_deployed(
             f"sum_1d_list_{fl_version}",
             f"sum_1d_plus_123_list_{fl_version}",
         },
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id1)[-7:],
     )
 
 
@@ -565,6 +613,7 @@ async def test_feature_table_undeploy(
     transaction_to_customer_relationship_info,
     mock_offline_store_feature_manager_dependencies,
     storage,
+    deployment_id1,
     update_fixtures,
 ):
     """
@@ -663,7 +712,7 @@ async def test_feature_table_undeploy(
         app_container,
         expected_feature_views=set(),
         expected_feature_services=set(),
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id1)[-7:],
     )
 
 
@@ -675,6 +724,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
     transaction_to_customer_relationship_info,
+    deployment_id2,
 ):
     """
     Test feature table creation and update when two features are deployed
@@ -790,7 +840,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             f"sum_24h_every_3h_list_{fl_version}",
             f"sum_1d_list_{fl_version}",
         },
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id2)[-7:],
     )
 
 
@@ -800,6 +850,7 @@ async def test_feature_table_without_entity(
     document_service,
     periodic_task_service,
     deployed_feature_without_entity,
+    deployment_id0,
 ):
     """
     Test feature table creation when feature has no entity
@@ -846,7 +897,7 @@ async def test_feature_table_without_entity(
         app_container,
         expected_feature_views={"cat1__no_entity_1d"},
         expected_feature_services={f"count_1d_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id0)[-7:],
     )
 
 
@@ -856,6 +907,7 @@ async def test_lookup_feature(
     document_service,
     periodic_task_service,
     deployed_scd_lookup_feature,
+    deployment_id0,
     update_fixtures,
 ):
     """
@@ -906,7 +958,7 @@ async def test_lookup_feature(
         app_container,
         expected_feature_views={"cat1_cust_id_1d"},
         expected_feature_services={f"some_lookup_feature_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id0)[-7:],
     )
 
 
@@ -918,6 +970,7 @@ async def test_aggregate_asat_feature(
     deployed_aggregate_asat_feature,
     deployed_aggregate_asat_feature_list,
     customer_to_gender_relationship_info,
+    deployment_id0,
     update_fixtures,
 ):
     """
@@ -976,7 +1029,7 @@ async def test_aggregate_asat_feature(
             f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
         },
         expected_feature_services={f"asat_gender_count_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id0)[-7:],
     )
 
     # check precomputed lookup feature table
@@ -1024,6 +1077,7 @@ async def test_new_deployment_when_all_features_already_deployed(
     app_container,
     deployed_feature_list_when_all_features_already_deployed,
     transaction_to_customer_relationship_info,
+    deployment_id1,
 ):
     """
     Test enabling a new deployment when all the underlying features are already deployed
@@ -1038,7 +1092,7 @@ async def test_new_deployment_when_all_features_already_deployed(
             f"sum_1d_list_{get_version()}",
             deployed_feature_list_when_all_features_already_deployed.versioned_name,
         },
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        expected_project_name=str(deployment_id1)[-7:],
     )
 
 

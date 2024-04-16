@@ -774,6 +774,7 @@ async def deploy_feature_list(
     feature_list_model,
     context_primary_entity_ids=None,
     deployment_name_override=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a feature list using services
@@ -793,7 +794,7 @@ async def deploy_feature_list(
     use_case_model = await app_container.use_case_service.create_document(data)
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
-        deployment_id=ObjectId(),
+        deployment_id=deployment_id,
         deployment_name=(
             feature_list_model.name
             if deployment_name_override is None
@@ -810,6 +811,7 @@ async def deploy_feature_ids(
     feature_list_name,
     feature_ids,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a list of features using services
@@ -826,6 +828,7 @@ async def deploy_feature_ids(
         app_container=app_container,
         feature_list_model=feature_list_model,
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
 
 
@@ -835,6 +838,7 @@ async def deploy_feature(
     return_type="feature",
     feature_list_name_override=None,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to create deploy a single feature using services
@@ -856,6 +860,7 @@ async def deploy_feature(
         feature_list_name,
         [feature.id],
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)

@@ -96,6 +96,7 @@ async def test_update_feast_registry(
         data=FeastRegistryUpdate(feature_lists=[]),
         populate_remote_attributes=True,
     )
+    assert updated_doc.deployment_id == feast_registry.deployment_id
     registry_proto = updated_doc.registry_proto()
     assert registry_proto.feature_services == []
     assert registry_proto.feature_views == []

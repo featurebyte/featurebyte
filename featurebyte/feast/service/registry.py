@@ -16,6 +16,7 @@ from redis.lock import Lock
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -87,10 +88,10 @@ class FeastRegistryService(
         return self.redis.lock(f"feast_registry_storage_update:{self.catalog_id}", timeout=timeout)
 
     async def _create_project_name(
-        self, catalog_id: ObjectId, hex_digit_num: int = 7, max_try: int = 100
+        self, deployment_id: ObjectId, hex_digit_num: int = 7, max_try: int = 100
     ) -> str:
         # generate 7 hex digits
-        project_name = str(catalog_id)[-hex_digit_num:]
+        project_name = str(deployment_id)[-hex_digit_num:]
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter={"name": project_name},
@@ -119,48 +120,48 @@ class FeastRegistryService(
             collection_name=self.collection_name,
             pipeline=[
                 {"$match": {"feature_store_id": feature_store_id}},
-                {"$group": {"_id": None, "unique_names": {"$addToSet": "$name"}}},
+                {
+                    "$group": {
+                        "_id": "$catalog_id",
+                        "offline_table_name_prefix": {"$first": "$offline_table_name_prefix"},
+                    }
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "catalog_id": "$_id",
+                        "offline_table_name_prefix": 1,
+                    }
+                },
             ],
         )
-        results = list(res)
-        found_names = set(results[0]["unique_names"]) if results else set()
-        name_count = len(found_names)
-        return f"cat{name_count + 1}"
+        catalog_id_to_prefix = {
+            item["catalog_id"]: item["offline_table_name_prefix"] for item in res
+        }
+        if self.catalog_id in catalog_id_to_prefix:
+            return catalog_id_to_prefix[self.catalog_id]
+        return f"cat{len(catalog_id_to_prefix) + 1}"
 
-    async def get_or_create_feast_registry(
-        self,
-        catalog_id: ObjectId,
-        feature_store_id: Optional[ObjectId],
-    ) -> FeastRegistryModel:
+    async def get_or_create_feast_registry(self, deployment: DeploymentModel) -> FeastRegistryModel:
         """
         Get or create project name
 
         Parameters
         ----------
-        catalog_id: ObjectId
-            Catalog id
-        feature_store_id: Optional[ObjectId]
-            Feature store id
+        deployment: DeploymentModel
+            Deployment object
 
         Returns
         -------
         FeastRegistryModel
         """
-        query_filter = {"catalog_id": catalog_id}
-        if feature_store_id:
-            query_filter["feature_store_id"] = feature_store_id
-        else:
-            catalog = await self.catalog_service.get_document(document_id=catalog_id)
-            query_filter["feature_store_id"] = catalog.default_feature_store_ids[0]
-
-        query_result = await self.list_documents_as_dict(query_filter=query_filter, page_size=1)
-        if query_result["total"]:
-            registry = await self._populate_remote_attributes(
-                FeastRegistryModel(**query_result["data"][0])
-            )
+        if deployment.registry_info:
+            registry = await self.get_document(document_id=deployment.registry_info.registry_id)
             return registry
 
-        registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[]))
+        registry = await self.create_document(
+            data=FeastRegistryCreate(feature_lists=[], deployment_id=deployment.id)
+        )
         return registry
 
     async def _construct_feast_registry_model(  # pylint: disable=too-many-locals
@@ -168,6 +169,7 @@ class FeastRegistryService(
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],
         feature_lists: List[FeatureListModel],
+        deployment_id: ObjectId,
         document_id: Optional[ObjectId] = None,
     ) -> FeastRegistryModel:
         # retrieve latest feature lists
@@ -222,7 +224,7 @@ class FeastRegistryService(
         )
 
         if not project_name:
-            project_name = await self._create_project_name(catalog_id=self.catalog_id)
+            project_name = await self._create_project_name(deployment_id=deployment_id)
         if not offline_table_name_prefix:
             offline_table_name_prefix = await self._create_offline_table_name_prefix(
                 feature_store_id=feature_store_id
@@ -243,6 +245,7 @@ class FeastRegistryService(
             offline_table_name_prefix=offline_table_name_prefix,
             registry=feast_registry_proto.SerializeToString(),
             feature_store_id=feature_store_id,
+            deployment_id=deployment_id,
         )
 
     async def _populate_remote_attributes(self, document: FeastRegistryModel) -> FeastRegistryModel:
@@ -278,7 +281,10 @@ class FeastRegistryService(
         """
         with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
             document = await self._construct_feast_registry_model(
-                project_name=None, offline_table_name_prefix=None, feature_lists=data.feature_lists
+                project_name=None,
+                offline_table_name_prefix=None,
+                feature_lists=data.feature_lists,
+                deployment_id=data.deployment_id,
             )
             document = await self._move_registry_to_storage(document)
             return await super().create_document(data=document)  # type: ignore
@@ -307,6 +313,7 @@ class FeastRegistryService(
                 project_name=original_doc.name,
                 offline_table_name_prefix=original_doc.offline_table_name_prefix,
                 feature_lists=data.feature_lists,
+                deployment_id=original_doc.deployment_id,
                 document_id=document_id,
             )
             assert recreated_model.id == document_id

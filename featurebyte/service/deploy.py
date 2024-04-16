@@ -471,23 +471,20 @@ class FeastIntegrationService:
             offline_store_feature_table_manager_service
         )
 
-    async def get_or_create_feast_registry(self, catalog_id: ObjectId) -> FeastRegistryModel:
+    async def get_or_create_feast_registry(self, deployment: DeploymentModel) -> FeastRegistryModel:
         """
         Get existing or create new Feast registry
 
         Parameters
         ----------
-        catalog_id: ObjectId
-            Target catalog ID
+        deployment: DeploymentModel
+            Target deployment
 
         Returns
         -------
         FeastRegistryModel
         """
-        feast_registry = await self.feast_registry_service.get_or_create_feast_registry(
-            catalog_id=catalog_id,
-            feature_store_id=None,
-        )
+        feast_registry = await self.feast_registry_service.get_or_create_feast_registry(deployment)
         return feast_registry
 
     async def get_feast_registry(self) -> Optional[FeastRegistryModel]:
@@ -505,6 +502,7 @@ class FeastIntegrationService:
         self,
         features: List[FeatureModel],
         feature_list_to_online_enable: FeatureListModel,
+        deployment_id: ObjectId,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
     ) -> None:
         """
@@ -516,12 +514,15 @@ class FeastIntegrationService:
             List of features to be enabled online
         feature_list_to_online_enable: FeatureListModel
             Target feature list (online enable)
+        deployment_id: ObjectId
+            Target deployment ID
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
             features=features,
             feature_list_to_online_enable=feature_list_to_online_enable,
+            deployment_id=deployment_id,
             update_progress=update_progress,
         )
 
@@ -529,6 +530,7 @@ class FeastIntegrationService:
         self,
         features: List[FeatureModel],
         feature_list_to_online_disable: FeatureListModel,
+        deployment_id: ObjectId,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
     ) -> None:
         """
@@ -540,12 +542,15 @@ class FeastIntegrationService:
             List of features to be disabled online
         feature_list_to_online_disable: FeatureListModel
             Target feature list not to deploy (online disable)
+        deployment_id: ObjectId
+            Target deployment ID
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
             features=features,
             feature_list_to_online_disable=feature_list_to_online_disable,
+            deployment_id=deployment_id,
             update_progress=update_progress,
         )
 
@@ -609,7 +614,7 @@ class DeployService:
         feast_registry = None
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
             feast_registry = await self.feast_integration_service.get_or_create_feast_registry(
-                catalog_id=deployment.catalog_id
+                deployment=deployment
             )
 
         # enable features online
@@ -645,6 +650,7 @@ class DeployService:
             await self.feast_integration_service.handle_online_enabled_features(
                 features=features_offline_feature_table_to_update,
                 feature_list_to_online_enable=feature_list,
+                deployment_id=deployment.id,
                 update_progress=get_ranged_progress_callback(
                     self.task_progress_updater.update_progress, 72, 98
                 ),
@@ -762,6 +768,7 @@ class DeployService:
                     await self.feast_integration_service.handle_online_disabled_features(
                         features=features_offline_feature_table_to_update,
                         feature_list_to_online_disable=feature_list,
+                        deployment_id=deployment.id,
                         update_progress=get_ranged_progress_callback(
                             self.task_progress_updater.update_progress, 72, 99
                         ),
@@ -817,7 +824,7 @@ class DeployService:
         try:
             deployment = await self.deployment_service.create_document(
                 data=DeploymentModel(
-                    _id=deployment_id,
+                    _id=deployment_id or ObjectId(),
                     name=deployment_name or default_deployment_name,
                     feature_list_id=feature_list_id,
                     feature_list_namespace_id=feature_list.feature_list_namespace_id,
