@@ -43,7 +43,10 @@ async def feast_registry_fixture(
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
-    registry = await feast_registry_service.get_feast_registry_for_catalog()
+    deployment_model = deployment.cached_model
+    registry = await feast_registry_service.get_document(
+        document_id=deployment_model.registry_info.registry_id
+    )
     assert registry is not None
 
     # check that the registry file is created

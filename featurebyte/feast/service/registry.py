@@ -339,14 +339,38 @@ class FeastRegistryService(
 
     async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
         """
-        Get feast registry document for the catalog if it exists
+        Get feast registry document for the catalog if it exists (this is used to retrieve older feast registry
+        that is not deployment specific)
 
         Returns
         -------
         Optional[FeastRegistryModel]
         """
         async for feast_registry_model in self.list_documents_iterator(
-            query_filter={"catalog_id": self.catalog_id}
+            query_filter={
+                "catalog_id": self.catalog_id,
+                "$or": [{"deployment_id": {"$exists": False}}, {"deployment_id": None}],
+            }
         ):
             return await self._populate_remote_attributes(feast_registry_model)
         return None
+
+    async def get_feast_registry(self, deployment: DeploymentModel) -> Optional[FeastRegistryModel]:
+        """
+        Get feast registry document for the deployment if it exists
+
+        Parameters
+        ----------
+        deployment: DeploymentModel
+            Deployment object
+
+        Returns
+        -------
+        Optional[FeastRegistryModel]
+        """
+        if deployment.registry_info:
+            # if the registry is deployment specific, get the feast registry document
+            return await self.get_document(document_id=deployment.registry_info.registry_id)
+
+        # otherwise, attempt to get the older feast registry that is not deployment specific
+        return await self.get_feast_registry_for_catalog()
