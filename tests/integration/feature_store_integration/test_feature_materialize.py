@@ -339,6 +339,23 @@ async def deployed_features_list_fixture(
         assert len(udfs_for_on_demand_func) == 0
 
 
+@pytest.fixture(name="order_use_case", scope="module")
+def order_use_case_fixture(order_entity):
+    """
+    Fixture for order level use case
+    """
+    target = fb.TargetNamespace.create(
+        "order_target",
+        primary_entity=[order_entity.name],
+    )
+    context = fb.Context.create(
+        name="order_context",
+        primary_entity=[order_entity.name],
+    )
+    use_case = fb.UseCase.create("order_use_case", target.name, context.name, "order_description")
+    return use_case
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
 async def deployed_features_list_composite_entities_fixture(
     saved_feature_list_composite_entities, app_container
@@ -354,6 +371,49 @@ async def deployed_features_list_composite_entities_fixture(
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
         deployment = feature_list.deploy()
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            await deploy_service.update_deployment(
+                deployment_id=deployment.id,
+                to_enable_deployment=True,
+            )
+
+    yield deployment
+    await deploy_service.update_deployment(
+        deployment_id=deployment.id,
+        to_enable_deployment=False,
+    )
+
+
+@pytest_asyncio.fixture(
+    name="deployed_feature_list_composite_entities_order_use_case", scope="module"
+)
+async def deployed_features_list_composite_entities_order_use_case_fixture(
+    saved_feature_list_composite_entities,
+    deployed_feature_list_composite_entities,
+    app_container,
+    order_use_case,
+):
+    """
+    Fixture for deployed feature list.
+
+    The same feature list was deployed (via deployed_feature_list_composite_entities) but not with
+    the order use case. Creating this deployment now requires lookup feature tables to be created.
+    """
+    _ = deployed_feature_list_composite_entities
+
+    feature_list = saved_feature_list_composite_entities
+
+    deploy_service = app_container.deploy_service
+    with patch(
+        "featurebyte.service.feature_manager.get_next_job_datetime",
+        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
+    ):
+        deployment = feature_list.deploy(
+            "deployment order use case", use_case_name=order_use_case.name
+        )
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
@@ -1010,12 +1070,14 @@ def test_online_features__non_existing_order_id(
 
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__composite_entities(config, deployed_feature_list_composite_entities):
+def test_online_features__composite_entities(
+    config, deployed_feature_list_composite_entities_order_use_case
+):
     """
     Check online features when the feature list only has a feature with composite entities
     """
     client = config.get_client()
-    deployment = deployed_feature_list_composite_entities
+    deployment = deployed_feature_list_composite_entities_order_use_case
 
     entity_serving_names = [
         {

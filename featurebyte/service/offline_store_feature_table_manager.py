@@ -648,6 +648,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         for table in new_tables:
             await self.offline_store_feature_table_service.create_document(table)
 
+        await self.feature_materialize_service.initialize_precomputed_lookup_feature_table(
+            feature_table_id, new_tables
+        )
+
         for table in removed_tables:
             await self._delete_offline_store_feature_table(table.id)
 

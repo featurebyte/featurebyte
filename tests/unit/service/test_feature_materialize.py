@@ -2,6 +2,8 @@
 Test FeatureMaterializeService
 """
 
+# pylint: disable=too-many-lines
+
 from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import call, patch
@@ -78,6 +80,8 @@ async def deployed_feature_list_fixture(
     deployment_id = ObjectId()
     with patch(
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+    ), patch(
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
     ):
         await app_container.deploy_service.create_deployment(
             feature_list_id=production_ready_feature_list.id,
@@ -965,5 +969,67 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__initialize_new_table(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test initialize_precomputed_lookup_feature_table
+    """
+    _ = mock_get_feature_store_session
+
+    def mock_execute_query(query):
+        if "COUNT(*)\nFROM" in query:
+            # Simulate that source feature table exists and lookup feature table doesn't
+            table_name = query.split("FROM", 1)[1].strip().replace('"', "")
+            if table_name == "cat1_gender_1d":
+                return pd.DataFrame({"RESULT": [10]})
+            raise ValueError()
+        if 'MAX("__feature_timestamp")' in query:
+            return pd.DataFrame([{"RESULT": datetime(2022, 1, 5).isoformat()}])
+        return None
+
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    service = app_container.offline_store_feature_table_service
+    source_feature_table = offline_store_feature_table_with_precomputed_lookup
+    lookup_feature_tables = [
+        doc async for doc in service.list_precomputed_lookup_feature_tables(source_feature_table.id)
+    ]
+
+    # stop the patcher on initialize_new_columns(), needed because
+    # offline_store_feature_table_with_precomputed_lookup's feature fixture patched it.
+    patch.stopall()
+    await feature_materialize_service.initialize_precomputed_lookup_feature_table(
+        source_feature_table.id, lookup_feature_tables
+    )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/initialize_precomputed_lookup_feature_table.sql",
         update_fixtures,
     )
