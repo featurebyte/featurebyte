@@ -232,7 +232,7 @@ async def feast_feature_store_fixture(app_container):
     """
     Fixture for the feast feature store
     """
-    return await app_container.feast_feature_store_service.get_feast_feature_store_for_catalog()
+    return await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment()
 
 
 @pytest.fixture(name="mock_materialize_partial")
