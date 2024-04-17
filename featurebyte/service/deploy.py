@@ -507,6 +507,11 @@ class FeastIntegrationService:
         """
         Get Feast registry
 
+        Parameters
+        ----------
+        deployment: DeploymentModel
+            Target deployment
+
         Returns
         -------
         Optional[FeastRegistryModel]

@@ -21,7 +21,7 @@ def always_enable_feast_integration_fixture(enable_feast_integration, catalog_wi
 
 
 @pytest.fixture(name="float_feat_deployment_id")
-def float_feat_deployment_id_fixture(app_container, float_feature):
+def float_feat_deployment_id_fixture():
     """
     Fixture for float feature deployment id
     """
@@ -29,7 +29,7 @@ def float_feat_deployment_id_fixture(app_container, float_feature):
 
 
 @pytest.fixture(name="fl_with_point_in_time_request_column_deployment_id")
-def fl_with_point_in_time_request_column_deployment_id_fixture(app_container, float_feature):
+def fl_with_point_in_time_request_column_deployment_id_fixture():
     """
     Fixture for float feature deployment id
     """

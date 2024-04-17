@@ -81,6 +81,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     entity_lookup_info: Optional[EntityRelationshipInfo]
     precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     @root_validator
     @classmethod

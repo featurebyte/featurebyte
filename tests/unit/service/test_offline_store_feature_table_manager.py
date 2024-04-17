@@ -2,7 +2,7 @@
 Tests for OfflineStoreFeatureTableManagerService
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 from typing import Dict
 
 import os
@@ -589,6 +589,7 @@ async def test_feature_table_one_feature_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -644,6 +645,7 @@ async def test_feature_table_one_feature_deployed(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
         "serving_names": ["transaction_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -717,6 +719,9 @@ async def test_feature_table_two_features_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": sorted(
+            [float_feat_deployment_id, float_feat_post_processed_deployment_id]
+        ),
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -807,6 +812,7 @@ async def test_feature_table_undeploy(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_post_processed_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -937,6 +943,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -980,6 +987,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_diff_fjs_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -1042,6 +1050,7 @@ async def test_feature_table_without_entity(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [feat_without_entity_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1104,6 +1113,7 @@ async def test_lookup_feature(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [scd_lookup_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1173,6 +1183,7 @@ async def test_aggregate_asat_feature(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [aggregate_asat_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1215,6 +1226,7 @@ async def test_aggregate_asat_feature(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [aggregate_asat_deployment_id],
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -1234,6 +1246,8 @@ async def test_new_deployment_when_all_features_already_deployed(
     """
     Test enabling a new deployment when all the underlying features are already deployed
     """
+    _ = deployed_feature_list_when_all_features_already_deployed
+    _ = transaction_to_customer_relationship_info
     await check_feast_registry(
         app_container,
         deployment_id=feat_list_with_all_feats_deployed_deployment_id,
@@ -1348,6 +1362,7 @@ async def test_deployment_enabled_with_complex_feature(
     """
     Test enabling a deployment with a complex feature
     """
+    _ = deployed_complex_feature
     await check_feast_registry(
         app_container,
         deployment_id=complex_feat_deployment_id,
@@ -1422,6 +1437,7 @@ async def test_feature_with_internal_parent_child_relationships(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [feat_with_internal_parent_child_relationships_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
