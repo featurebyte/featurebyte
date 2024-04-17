@@ -47,6 +47,23 @@ CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
 LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER = "__fb_last_materialized_timestamp"
 
 
+def get_dummy_entity_universe() -> Select:
+    """
+    Returns a dummy entity universe (actual value not important since it doesn't affect features
+    calculation)
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(
+        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+    )
+
+
+DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
+
+
 @dataclass
 class EntityUniverseParams:
     """
@@ -185,7 +202,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(AggregateAsAtNode, self.node)
 
         if not node.parameters.serving_names:
-            return get_dummy_entity_universe()
+            return DUMMY_ENTITY_UNIVERSE
 
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
@@ -289,7 +306,7 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         node = cast(GroupByNode, self.node)
 
         if not node.parameters.serving_names:
-            return get_dummy_entity_universe()
+            return DUMMY_ENTITY_UNIVERSE
 
         tile_specs = TileBasedAggregationSpec.from_groupby_query_node(
             graph=self.graph,
@@ -317,20 +334,6 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             .where(online_store_table_condition)
         )
         return universe_expr
-
-
-def get_dummy_entity_universe() -> Select:
-    """
-    Returns a dummy entity universe (actual value not important since it doesn't affect features
-    calculation)
-
-    Returns
-    -------
-    Select
-    """
-    return expressions.select(
-        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
-    )
 
 
 def get_entity_universe_constructor(
@@ -438,12 +441,17 @@ def get_combined_universe(
     """
     combined_universe_expr: Optional[Expression] = None
     processed_universe_exprs = set()
+    has_dummy_entity_universe = False
 
     for params in entity_universe_params:
         entity_universe_constructor = get_entity_universe_constructor(
             params.graph, params.node, source_type
         )
         current_universe_expr = entity_universe_constructor.get_entity_universe_template()
+        if current_universe_expr == DUMMY_ENTITY_UNIVERSE:
+            # Add dummy entity universe later after going through all other universes
+            has_dummy_entity_universe = True
+            continue
         if params.join_steps:
             current_universe_expr = apply_join_steps(current_universe_expr, params.join_steps[::-1])
         if combined_universe_expr is None:
@@ -455,6 +463,13 @@ def get_combined_universe(
                 expression=combined_universe_expr,
             )
         processed_universe_exprs.add(current_universe_expr)
+
+    if has_dummy_entity_universe and combined_universe_expr is None:
+        # Construct dummy entity universe only when there is no other universes to union with. This
+        # is to handle the case when a feature is made up of window aggregates with and without
+        # entity (such ingest graph is not decomposed). When that happens, the dummy universe is
+        # ignored.
+        combined_universe_expr = DUMMY_ENTITY_UNIVERSE
 
     assert combined_universe_expr is not None
     return combined_universe_expr
