@@ -45,7 +45,6 @@ from featurebyte.service.offline_store_feature_table_comment import (
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
 )
-from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
 logger = get_logger(__name__)
 
@@ -143,7 +142,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         offline_store_feature_table_comment_service: OfflineStoreFeatureTableCommentService,
         feature_service: FeatureService,
-        online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
         feature_materialize_service: FeatureMaterializeService,
         feature_materialize_scheduler_service: FeatureMaterializeSchedulerService,
@@ -162,7 +160,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             offline_store_feature_table_comment_service
         )
         self.feature_service = feature_service
-        self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
         self.feature_materialize_service = feature_materialize_service
         self.feature_materialize_scheduler_service = feature_materialize_scheduler_service
