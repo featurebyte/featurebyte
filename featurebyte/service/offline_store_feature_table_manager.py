@@ -428,10 +428,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     ) -> OfflineStoreFeatureTableModel:
         feature_ids_to_model = await self._get_feature_ids_to_model(feature_ids)
         primary_entities = await self._get_entities(primary_entity_ids)
-        required_aggregate_result_tables = await self._get_required_aggregate_result_tables(
-            feature_id_to_models=feature_ids_to_model,
-            primary_entity_serving_names=[entity.serving_names[0] for entity in primary_entities],
-        )
 
         catalog_model = await self.catalog_service.get_document(self.catalog_id)
         feature_store_model = await self.feature_store_service.get_document(
@@ -441,46 +437,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return await self.offline_store_feature_table_construction_service.get_offline_store_feature_table_model(
             feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
-            aggregate_result_table_names=required_aggregate_result_tables,
             primary_entities=primary_entities,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
             source_type=feature_store_model.type,
         )
-
-    async def _get_required_aggregate_result_tables(
-        self,
-        feature_id_to_models: Dict[ObjectId, FeatureModel],
-        primary_entity_serving_names: List[str],
-    ) -> List[str]:
-        aggregate_result_table_names = set()
-        for feature_model in feature_id_to_models.values():
-            aggregate_result_table_names.update(feature_model.online_store_table_names)
-        aggregate_result_table_names = list(aggregate_result_table_names)  # type: ignore[assignment]
-
-        # Get aggregate result tables
-        filtered_table_names = []
-        if primary_entity_serving_names:
-            query_filter = {
-                "table_name": {"$in": aggregate_result_table_names},
-                "serving_names": {
-                    "$all": primary_entity_serving_names,
-                    "$size": len(primary_entity_serving_names),
-                },
-            }
-        else:
-            query_filter = {
-                "table_name": {"$in": aggregate_result_table_names},
-            }
-
-        async for (
-            online_store_compute_query_model
-        ) in self.online_store_compute_query_service.list_documents_iterator(
-            query_filter=query_filter
-        ):
-            filtered_table_names.append(online_store_compute_query_model.table_name)
-
-        return sorted(set(filtered_table_names))
 
     async def _get_online_enabled_feature_lists(
         self,

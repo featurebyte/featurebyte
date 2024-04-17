@@ -14,7 +14,6 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
-    construct_window_aggregates_universe,
     get_combined_universe,
 )
 from featurebyte.models.entity_validation import EntityInfo
@@ -117,7 +116,6 @@ class OfflineStoreFeatureTableConstructionService:
         self,
         feature_table_name: str,
         features: List[FeatureModel],
-        aggregate_result_table_names: List[str],
         primary_entities: List[EntityModel],
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
@@ -132,8 +130,6 @@ class OfflineStoreFeatureTableConstructionService:
             Feature table name
         features : List[FeatureModel]
             List of features
-        aggregate_result_table_names : List[str]
-            List of aggregate result table names
         primary_entities : List[EntityModel]
             List of primary entities
         has_ttl : bool
@@ -155,8 +151,6 @@ class OfflineStoreFeatureTableConstructionService:
         )
 
         entity_universe = await self.get_entity_universe_model(
-            serving_names=[entity.serving_names[0] for entity in primary_entities],
-            aggregate_result_table_names=aggregate_result_table_names,
             offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
             source_type=source_type,
         )
@@ -177,8 +171,6 @@ class OfflineStoreFeatureTableConstructionService:
 
     async def get_entity_universe_model(
         self,
-        serving_names: List[str],
-        aggregate_result_table_names: List[str],
         offline_ingest_graphs: List[
             Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
         ],
@@ -189,10 +181,6 @@ class OfflineStoreFeatureTableConstructionService:
 
         Parameters
         ----------
-        serving_names: List[str]
-            The serving names of the entities
-        aggregate_result_table_names: List[str]
-            The names of the aggregate result tables for window aggregates
         offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
             The offline ingest graphs that the entity universe is to be constructed from
         source_type: SourceType
@@ -202,51 +190,42 @@ class OfflineStoreFeatureTableConstructionService:
         -------
         EntityUniverse
         """
-        if aggregate_result_table_names:
-            universe_expr = construct_window_aggregates_universe(
-                serving_names=serving_names,
-                aggregate_result_table_names=aggregate_result_table_names,
-            )
-        else:
-            params = []
-            for offline_ingest_graph, relationships_info in offline_ingest_graphs:
-                primary_entities = [
-                    (await self.entity_service.get_document(entity_id))
-                    for entity_id in offline_ingest_graph.primary_entity_ids
-                ]
-                for info in offline_ingest_graph.aggregation_nodes_info:
-                    node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
-                    # The entity universe has to be described in terms of the primary entity. If the
-                    # aggregation is based on a parent entity, we need to map it back to the primary
-                    # entity (a child).
-                    non_primary_entity_ids = self._get_non_primary_entity_ids(
-                        node,
-                        offline_ingest_graph.primary_entity_ids,
+        params = []
+        for offline_ingest_graph, relationships_info in offline_ingest_graphs:
+            primary_entities = [
+                (await self.entity_service.get_document(entity_id))
+                for entity_id in offline_ingest_graph.primary_entity_ids
+            ]
+            for info in offline_ingest_graph.aggregation_nodes_info:
+                node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
+                # The entity universe has to be described in terms of the primary entity. If the
+                # aggregation is based on a parent entity, we need to map it back to the primary
+                # entity (a child).
+                non_primary_entity_ids = self._get_non_primary_entity_ids(
+                    node,
+                    offline_ingest_graph.primary_entity_ids,
+                )
+                if non_primary_entity_ids:
+                    entity_info = EntityInfo(
+                        required_entities=[
+                            (await self.entity_service.get_document(entity_id))
+                            for entity_id in non_primary_entity_ids
+                        ],
+                        provided_entities=primary_entities,
                     )
-                    if non_primary_entity_ids:
-                        entity_info = EntityInfo(
-                            required_entities=[
-                                (await self.entity_service.get_document(entity_id))
-                                for entity_id in non_primary_entity_ids
-                            ],
-                            provided_entities=primary_entities,
-                        )
-                        join_steps = (
-                            await self.parent_entity_lookup_service.get_required_join_steps(
-                                entity_info, relationships_info
-                            )
-                        )
-                    else:
-                        join_steps = None
-                    params.append(
-                        EntityUniverseParams(
-                            graph=offline_ingest_graph.graph,
-                            node=node,
-                            join_steps=join_steps,
-                        )
+                    join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                        entity_info, relationships_info
                     )
-            universe_expr = get_combined_universe(params, source_type)
-
+                else:
+                    join_steps = None
+                params.append(
+                    EntityUniverseParams(
+                        graph=offline_ingest_graph.graph,
+                        node=node,
+                        join_steps=join_steps,
+                    )
+                )
+        universe_expr = get_combined_universe(params, source_type)
         return EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe_expr))
 
     @staticmethod

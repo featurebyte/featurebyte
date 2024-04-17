@@ -380,7 +380,8 @@ async def test_feature_table_one_feature_deployed(
                 "DISTINCT\n"
                 '  "cust_id"\n'
                 "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
+                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -507,7 +508,8 @@ async def test_feature_table_two_features_deployed(
                 "DISTINCT\n"
                 '  "cust_id"\n'
                 "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
+                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
             }
         },
         "feature_ids": [deployed_float_feature.id, deployed_float_feature_post_processed.id],
@@ -598,7 +600,8 @@ async def test_feature_table_undeploy(
                 "DISTINCT\n"
                 '  "cust_id"\n'
                 "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
+                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
             }
         },
         "feature_ids": [deployed_float_feature_post_processed.id],
@@ -708,7 +711,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                 "DISTINCT\n"
                 '  "cust_id"\n'
                 "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
+                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -751,7 +755,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                 "DISTINCT\n"
                 '  "cust_id"\n'
                 "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
+                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'"
             }
         },
         "feature_ids": [deployed_float_feature_different_job_setting.id],
