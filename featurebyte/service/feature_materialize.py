@@ -188,7 +188,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.redis = redis
 
         # Cache feature store by deployment id
-        self._deployment_id_to_feature_store: Dict[PydanticObjectId, Any] = {}
+        self._deployment_id_to_feature_store: Dict[
+            PydanticObjectId, Optional[FeastFeatureStore]
+        ] = {}
 
     @asynccontextmanager
     async def materialize_features(  # pylint: disable=too-many-locals
@@ -551,17 +553,15 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     deployment_id=current_feature_table.deployment_ids[0]
                 )
                 if feature_store and feature_store.config.online_store is not None:
-                    online_store_last_materialized_at = (
-                        current_feature_table.get_online_store_last_materialized_at(
-                            feature_store.online_store_id
-                        )
+                    online_store_last_materialized_at = current_feature_table.get_online_store_last_materialized_at(
+                        feature_store.online_store_id  # type: ignore
                     )
                     await self._materialize_online(
                         feature_store=feature_store,
                         feature_table=current_feature_table,
                         columns=feature_table_model.output_column_names,
                         start_date=online_store_last_materialized_at,
-                        end_date=feature_timestamp,
+                        end_date=feature_timestamp,  # type: ignore
                     )
 
     async def initialize_new_columns(
