@@ -87,11 +87,16 @@ class FeastRegistryService(
         """
         return self.redis.lock(f"feast_registry_storage_update:{self.catalog_id}", timeout=timeout)
 
-    async def _create_project_name(
-        self, deployment_id: ObjectId, hex_digit_num: int = 7, max_try: int = 100
-    ) -> str:
+    async def _get_or_create_project_name(self, hex_digit_num: int = 7, max_try: int = 100) -> str:
+        # check if there exists a registry document with the same catalog ID,
+        # reuse the project name if it exists
+        async for registry_doc in self.list_documents_as_dict_iterator(
+            query_filter={"catalog_id": self.catalog_id}
+        ):
+            return str(registry_doc["name"])
+
         # generate 7 hex digits
-        project_name = str(deployment_id)[-hex_digit_num:]
+        project_name = str(self.catalog_id)[-hex_digit_num:]
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter={"name": project_name},
@@ -139,7 +144,7 @@ class FeastRegistryService(
             item["catalog_id"]: item["offline_table_name_prefix"] for item in res
         }
         if self.catalog_id in catalog_id_to_prefix:
-            return catalog_id_to_prefix[self.catalog_id]
+            return str(catalog_id_to_prefix[self.catalog_id])
         return f"cat{len(catalog_id_to_prefix) + 1}"
 
     async def get_or_create_feast_registry(self, deployment: DeploymentModel) -> FeastRegistryModel:
@@ -169,7 +174,7 @@ class FeastRegistryService(
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],
         feature_lists: List[FeatureListModel],
-        deployment_id: ObjectId,
+        deployment_id: Optional[ObjectId],
         document_id: Optional[ObjectId] = None,
     ) -> FeastRegistryModel:
         # retrieve latest feature lists
@@ -224,7 +229,7 @@ class FeastRegistryService(
         )
 
         if not project_name:
-            project_name = await self._create_project_name(deployment_id=deployment_id)
+            project_name = await self._get_or_create_project_name()
         if not offline_table_name_prefix:
             offline_table_name_prefix = await self._create_offline_table_name_prefix(
                 feature_store_id=feature_store_id

@@ -475,7 +475,7 @@ async def check_feast_registry(
     )
 
     # check feast feature store properties
-    expected_project_name = str(deployment_id)[-7:]
+    expected_project_name = str(deployment.catalog_id)[-7:]
     assert feature_store.project == expected_project_name
     if enabled_deployment:
         expected_feature_views = expected_feast_registry_mapping[deployment_id]["feature_views"]

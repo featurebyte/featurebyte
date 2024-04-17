@@ -60,11 +60,6 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=None,
             ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=None,
-            ),
         ]
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_store_id"),

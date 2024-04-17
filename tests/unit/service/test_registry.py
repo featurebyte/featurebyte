@@ -76,19 +76,23 @@ async def test_registry_service__project_name_creation(registry_service_map):
         expected_table_prefix = catalog_name_to_table_prefix[catalog_name]
         existing_catalog_ids.add(catalog.id)
         existing_project_names.add(feast_registry.name)
-        assert feast_registry.name == str(deployment.id)[-7:]
+        assert feast_registry.name == str(catalog.id)[-7:]
         assert feast_registry.offline_table_name_prefix == expected_table_prefix
 
     # test create project name (check that new project name is generated)
     assert registry_service is not None
     random.seed(0)
     for catalog_id in existing_catalog_ids:
-        new_project_name = await registry_service._create_project_name(catalog_id)
+        updated_catalog_id = str(catalog_id)
+        updated_catalog_id = ObjectId(updated_catalog_id[:-7][::-1] + updated_catalog_id[-7:])
+        assert updated_catalog_id != str(catalog_id)
+        registry_service.catalog_id = updated_catalog_id
+        new_project_name = await registry_service._get_or_create_project_name()
         assert new_project_name not in existing_project_names
 
     # check max try
-    existing_deployment_id = deployment.id
+    existing_catalog_id = registry_service.catalog_id
     with patch("featurebyte.feast.service.registry.random") as mock_random:
-        mock_random.randrange.return_value = int(str(existing_deployment_id)[-7:], 16)
+        mock_random.randrange.return_value = int(str(existing_catalog_id)[-7:], 16)
         with pytest.raises(RuntimeError, match="Unable to generate unique project name"):
-            await registry_service._create_project_name(existing_deployment_id)
+            await registry_service._get_or_create_project_name()
