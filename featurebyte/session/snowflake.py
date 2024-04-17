@@ -96,6 +96,11 @@ class SnowflakeSession(BaseSession):
 
         cursor = self._connection.cursor()
         cursor.execute(f'USE ROLE "{self.role_name}"')
+        try:
+            cursor.execute(f'USE SCHEMA "{self.database_name}"."{self.schema_name}"')
+        except self._no_schema_error:
+            # the schema may not exist yet if the feature store is being created
+            pass
         # set timezone to UTC
         cursor.execute(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
