@@ -15,6 +15,7 @@ class FeastRegistryCreate(FeatureByteBaseModel):
     """
 
     feature_lists: List[FeatureListModel]
+    deployment_id: PydanticObjectId
 
 
 class FeastRegistryUpdate(BaseDocumentServiceUpdateSchema):

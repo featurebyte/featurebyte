@@ -63,6 +63,14 @@ def always_patch_app_get_storage_fixture(storage):
         yield
 
 
+@pytest.fixture(name="deployment_name", scope="module")
+def deployment_name_fixture():
+    """
+    Fixture for deployment name
+    """
+    return "External feature list deployment"
+
+
 @pytest.fixture(name="app_container", scope="module")
 def app_container_fixture(persistent, user, catalog, storage):
     """
@@ -295,7 +303,7 @@ def removed_relationships_fixture(
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
 async def deployed_features_list_fixture(
-    session, saved_feature_list, removed_relationships, app_container
+    session, saved_feature_list, removed_relationships, app_container, deployment_name
 ):
     """
     Fixture for deployed feature list
@@ -307,7 +315,7 @@ async def deployed_features_list_fixture(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
-        deployment = saved_feature_list.deploy()
+        deployment = saved_feature_list.deploy(deployment_name)
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
         ) as mock_datetime:
@@ -540,17 +548,6 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
     return expected
 
 
-@pytest.fixture(name="expected_feature_service_names")
-def expected_feature_service_names_fixture():
-    """
-    Fixture for expected feature service names
-    """
-    return {
-        f"EXTERNAL_FS_FEATURE_LIST_{get_version()}",
-        f"EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES_{get_version()}",
-    }
-
-
 @pytest.mark.order(1)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_feature_tables_expected(
@@ -648,15 +645,25 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list", "deployed_feature_list_composite_entities")
 async def test_feast_registry(
-    app_container, expected_feature_table_names, expected_feature_service_names, source_type
+    app_container,
+    expected_feature_table_names,
+    source_type,
+    deployment_name,
 ):
     """
     Check feast registry is populated correctly
     """
-    feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
-    assert feast_registry is not None
-    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
-        feast_registry
+    deployment = None
+    async for deployment in app_container.deployment_service.list_documents_iterator(
+        query_filter={"name": deployment_name}
+    ):
+        break
+
+    assert deployment is not None
+    feature_store = (
+        await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
+            deployment=deployment
+        )
     )
 
     # check feature views (DO NOT CALL list_feature_views() as it will cache the list of feature views
@@ -668,13 +675,13 @@ async def test_feast_registry(
 
     # Check feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
-    assert {
-        fs.name for fs in feature_store.list_feature_services()
-    } == expected_feature_service_names
+    assert {fs.name for fs in feature_store.list_feature_services()} == {feature_service_name}
 
     # Check feast materialize and get_online_features
-    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
-        feast_registry
+    feature_store = (
+        await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
+            deployment=deployment
+        )
     )
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()

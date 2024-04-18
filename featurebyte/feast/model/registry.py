@@ -26,6 +26,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     registry: bytes = Field(default_factory=bytes, exclude=True)
     feature_store_id: PydanticObjectId
     registry_path: Optional[str] = Field(default=None)
+    deployment_id: Optional[PydanticObjectId] = Field(default=None)
 
     @classmethod
     def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
@@ -57,11 +58,6 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
         unique_constraints = [
             UniqueValuesConstraint(
                 fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=None,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=None,
             ),

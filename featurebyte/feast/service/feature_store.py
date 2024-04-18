@@ -18,6 +18,7 @@ from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -190,15 +191,22 @@ class FeastFeatureStoreService:
 
         return online_store
 
-    async def get_feast_feature_store_for_catalog(self) -> Optional[FeastFeatureStore]:
+    async def get_feast_feature_store_for_deployment(
+        self, deployment: DeploymentModel
+    ) -> Optional[FeastFeatureStore]:
         """
         Retrieve a FeastFeatureStore object for the current catalog
+
+        Parameters
+        ----------
+        deployment: DeploymentModel
+            Deployment model
 
         Returns
         -------
         Optional[FeastFeatureStore]
         """
-        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
+        feast_registry = await self.feast_registry_service.get_feast_registry(deployment=deployment)
         if feast_registry is None:
             return None
         assert isinstance(feast_registry, FeastRegistryModel)

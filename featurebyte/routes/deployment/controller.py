@@ -240,14 +240,15 @@ class DeploymentController(
             Invalid request payload
         """
         document = await self.service.get_document(deployment_id)
-
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
             if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
-                    await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
+                    await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
+                        deployment=document
+                    )
                 )
             else:
                 feast_store = None

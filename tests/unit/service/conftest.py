@@ -1093,6 +1093,14 @@ async def catalog_with_online_store_fixture(app_container, catalog, online_store
     return catalog
 
 
+@pytest.fixture(name="fl_requiring_parent_serving_deployment_id")
+def fl_requiring_parent_serving_deployment_id_fixture():
+    """
+    Fixture for a deployment id for a feature list that requires parent serving
+    """
+    return ObjectId()
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
 async def deployed_feature_list_requiring_parent_serving_fixture(
     app_container,
@@ -1100,6 +1108,7 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     aggregate_asat_feature,
     cust_id_entity,
     gender_entity,
+    fl_requiring_parent_serving_deployment_id,
     mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
 ):
@@ -1121,6 +1130,7 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
         app_container,
         new_feature,
         return_type="feature_list",
+        deployment_id=fl_requiring_parent_serving_deployment_id,
     )
 
     expected_relationship_info = await get_relationship_info(

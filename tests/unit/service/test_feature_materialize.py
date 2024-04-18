@@ -228,11 +228,14 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
 
 
 @pytest_asyncio.fixture(name="feast_feature_store")
-async def feast_feature_store_fixture(app_container):
+async def feast_feature_store_fixture(app_container, offline_store_feature_table):
     """
     Fixture for the feast feature store
     """
-    return await app_container.feast_feature_store_service.get_feast_feature_store_for_catalog()
+    deployment_id = offline_store_feature_table.deployment_ids[0]
+    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+    feast_store_service = app_container.feast_feature_store_service
+    return await feast_store_service.get_feast_feature_store_for_deployment(deployment=deployment)
 
 
 @pytest.fixture(name="mock_materialize_partial")

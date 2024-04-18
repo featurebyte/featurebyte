@@ -253,6 +253,38 @@ class OfflineStoreFeatureTableService(
             document=document,
         )
 
+    async def add_deployment_id(self, document_id: ObjectId, deployment_id: ObjectId) -> None:
+        """
+        Add deployment id to the offline store feature table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Offline store feature table id
+        deployment_id: ObjectId
+            Deployment id
+        """
+        await self.update_documents(
+            query_filter={"_id": document_id},
+            update={"$addToSet": {"deployment_ids": deployment_id}},
+        )
+
+    async def remove_deployment_id(self, document_id: ObjectId, deployment_id: ObjectId) -> None:
+        """
+        Remove deployment id from the offline store feature table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Offline store feature table id
+        deployment_id: ObjectId
+            Deployment id
+        """
+        await self.update_documents(
+            query_filter={"_id": document_id},
+            update={"$pull": {"deployment_ids": deployment_id}},
+        )
+
     async def list_precomputed_lookup_feature_tables(
         self,
         source_feature_table_id: ObjectId,

@@ -18,6 +18,7 @@ from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistry
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -29,6 +30,7 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
@@ -148,6 +150,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feast_registry_service: FeastRegistryService,
         feature_list_service: FeatureListService,
         entity_lookup_feature_table_service: EntityLookupFeatureTableService,
+        deployment_service: DeploymentService,
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
@@ -166,11 +169,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self.feast_registry_service = feast_registry_service
         self.feature_list_service = feature_list_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
+        self.deployment_service = deployment_service
 
     async def handle_online_enabled_features(
         self,
         features: List[FeatureModel],
         feature_list_to_online_enable: FeatureListModel,
+        deployment: DeploymentModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -183,6 +188,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Features to be enabled for online serving
         feature_list_to_online_enable: FeatureListModel
             Feature list model to deploy (may not be enabled yet)
+        deployment: DeploymentModel
+            Deployment ID
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
@@ -192,7 +199,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
         # Refresh feast registry since it's needed for when materializing the features from offline
         # store feature tables to online store
-        await self._create_or_update_feast_registry(feature_lists)
+        await self._create_or_update_feast_registry(
+            feature_lists=feature_lists,
+            active_feature_list=feature_list_to_online_enable,
+            deployment=deployment,
+            to_enable=True,
+        )
         offline_table_count = len(ingest_graph_container.offline_store_table_name_to_features)
         feature_store_model = await self._get_feature_store_model()
 
@@ -222,6 +234,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_ids,
                 feature_lists,
                 feature_store_model,
+                deployment.id,
+                to_enable=True,
+            )
+            await self.offline_store_feature_table_service.add_deployment_id(
+                document_id=feature_table_dict["_id"], deployment_id=deployment.id
             )
 
             if feature_ids != feature_table_dict["feature_ids"]:
@@ -251,12 +268,14 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             await self._update_precomputed_lookup_feature_tables_no_op_enable(
                 feature_lists,
                 feature_store_model,
+                deployment.id,
             )
 
         new_tables.extend(
             await self._create_or_update_entity_lookup_feature_tables(
                 feature_lists,
                 feature_store_model,
+                deployment.id,
                 get_ranged_progress_callback(update_progress, 60, 90) if update_progress else None,
             )
         )
@@ -275,6 +294,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self,
         features: List[FeatureModel],
         feature_list_to_online_disable: FeatureListModel,
+        deployment: DeploymentModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -287,6 +307,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Model of the feature to be disabled for online serving
         feature_list_to_online_disable: FeatureListModel
             Feature list model to not deploy (may not be disabled yet)
+        deployment: DeploymentModel
+            Deployment
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
@@ -311,7 +333,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 updated_feature_ids,
                 feature_lists,
                 feature_store_model,
+                deployment.id,
+                to_enable=False,
             )
+            await self.offline_store_feature_table_service.remove_deployment_id(
+                document_id=feature_table_dict["_id"], deployment_id=deployment.id
+            )
+
             if updated_feature_ids:
                 updated_feature_table = await self._update_offline_store_feature_table(
                     feature_table_dict,
@@ -339,7 +367,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
                 await update_progress(int((idx + 1) / offline_table_count * 90), message)
 
-        await self._create_or_update_feast_registry(feature_lists)
+        await self._create_or_update_feast_registry(
+            feature_lists=feature_lists,
+            active_feature_list=feature_list_to_online_disable,
+            deployment=deployment,
+            to_enable=False,
+        )
         await self._delete_entity_lookup_feature_tables(feature_lists, feature_store_model)
         if update_progress:
             await update_progress(100, "Updated entity lookup feature tables")
@@ -472,26 +505,50 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return feature_lists
 
     async def _create_or_update_feast_registry(
-        self, feature_lists: List[FeatureListModel]
-    ) -> FeastRegistryModel:
-        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
+        self,
+        feature_lists: List[FeatureListModel],
+        active_feature_list: FeatureListModel,
+        deployment: DeploymentModel,
+        to_enable: bool,
+    ) -> Optional[FeastRegistryModel]:
+        feast_registry = await self.feast_registry_service.get_feast_registry(deployment)
         if feast_registry is None:
-            return await self.feast_registry_service.create_document(
-                FeastRegistryCreate(feature_lists=feature_lists)
-            )
+            if to_enable:
+                # create a new deployment specific feast registry
+                return await self.feast_registry_service.create_document(
+                    FeastRegistryCreate(
+                        feature_lists=[active_feature_list], deployment_id=deployment.id
+                    )
+                )
 
+            # no feast registry to update required for disabling a deployment that doesn't have feast registry
+            return None
+
+        if feast_registry.deployment_id is None:
+            # for non-deployment specific feast registry, no need to update the feast registry using
+            # existing online-enabled feature lists
+            output = await self.feast_registry_service.update_document(
+                document_id=feast_registry.id,
+                data=FeastRegistryUpdate(feature_lists=feature_lists),
+                populate_remote_attributes=False,
+            )
+            return output
+
+        # for deployment specific feast registry, update the feast registry with specific feature list
         output = await self.feast_registry_service.update_document(
             document_id=feast_registry.id,
-            data=FeastRegistryUpdate(feature_lists=feature_lists),
-            populate_remote_attributes=True,
+            data=FeastRegistryUpdate(
+                feature_lists=[active_feature_list] if to_enable else [],
+            ),
+            populate_remote_attributes=False,
         )
-        assert output is not None
         return output
 
     async def _update_precomputed_lookup_feature_tables_no_op_enable(
         self,
         feature_lists: List[FeatureListModel],
         feature_store_model: FeatureStoreModel,
+        deployment_id: PydanticObjectId,
     ) -> None:
         # Called when online enabling, but no features are enabled but a new deployment is made on
         # an existing feature list
@@ -507,6 +564,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_ids,
                 feature_lists,
                 feature_store_model,
+                deployment_id,
+                to_enable=True,
             )
 
     async def _update_precomputed_lookup_feature_tables(
@@ -515,6 +574,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_ids: List[PydanticObjectId],
         feature_lists: List[FeatureListModel],
         feature_store_model: FeatureStoreModel,
+        deployment_id: PydanticObjectId,
+        to_enable: bool,
     ) -> None:
         # Reload feature table to get the most updated state of the feature table document
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
@@ -562,6 +623,14 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         for table in new_tables:
             await self.offline_store_feature_table_service.create_document(table)
+            if to_enable:
+                await self.offline_store_feature_table_service.add_deployment_id(
+                    document_id=table.id, deployment_id=deployment_id
+                )
+            else:
+                await self.offline_store_feature_table_service.remove_deployment_id(
+                    document_id=table.id, deployment_id=deployment_id
+                )
 
         await self.feature_materialize_service.initialize_precomputed_lookup_feature_table(
             feature_table_id, new_tables
@@ -574,6 +643,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self,
         feature_lists: List[FeatureListModel],
         feature_store_model: FeatureStoreModel,
+        deployment_id: ObjectId,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> List[OfflineStoreFeatureTableModel]:
         """
@@ -586,6 +656,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             Currently online enabled feature lists
         feature_store_model: FeatureStoreModel
             Feature store model
+        deployment_id: ObjectId
+            Deployment ID
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
 
@@ -621,6 +693,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     await self.offline_store_feature_table_service.create_document(
                         entity_lookup_feature_table
                     )
+                )
+                await self.offline_store_feature_table_service.add_deployment_id(
+                    document_id=entity_lookup_feature_table.id, deployment_id=deployment_id
                 )
                 await self.feature_materialize_service.initialize_new_columns(
                     entity_lookup_feature_table

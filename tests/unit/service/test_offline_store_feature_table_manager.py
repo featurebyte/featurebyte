@@ -2,7 +2,7 @@
 Tests for OfflineStoreFeatureTableManagerService
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 from typing import Dict
 
 import os
@@ -47,12 +47,85 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
     _ = enable_feast_integration
 
 
+@pytest.fixture(name="float_feat_deployment_id")
+def float_feat_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="float_feat_post_processed_deployment_id")
+def float_feat_post_processed_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="float_feat_diff_fjs_deployment_id")
+def float_feat_diff_fjs_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="feat_without_entity_deployment_id")
+def feat_without_entity_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="scd_lookup_deployment_id")
+def scd_lookup_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="aggregate_asat_deployment_id")
+def aggregate_asat_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="complex_feat_deployment_id")
+def complex_feat_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="feat_with_internal_parent_child_relationships_deployment_id")
+def feat_with_internal_parent_child_relationships_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="feat_list_with_all_feats_deployed_deployment_id")
+def feat_list_with_all_features_deployed_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
 @pytest_asyncio.fixture
 async def deployed_float_feature_list(
     app_container,
     float_feature,
     transaction_entity,
     cust_id_entity,
+    float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -65,6 +138,7 @@ async def deployed_float_feature_list(
         float_feature,
         context_primary_entity_ids=[transaction_entity.id],
         return_type="feature_list",
+        deployment_id=float_feat_deployment_id,
     )
     assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
@@ -88,6 +162,7 @@ async def deployed_float_feature_list_cust_id_use_case(
     app_container,
     float_feature,
     cust_id_entity,
+    float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -99,6 +174,7 @@ async def deployed_float_feature_list_cust_id_use_case(
         app_container,
         float_feature,
         return_type="feature_list",
+        deployment_id=float_feat_deployment_id,
     )
     assert feature_list.enabled_serving_entity_ids == [[cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
@@ -108,7 +184,7 @@ async def deployed_float_feature_list_cust_id_use_case(
 
 @pytest_asyncio.fixture
 async def deployed_float_feature_post_processed(
-    app_container, float_feature, transaction_entity
+    app_container, float_feature, transaction_entity, float_feat_post_processed_deployment_id
 ) -> FeatureModel:
     """
     Fixture for deployed feature that is post processed from float feature
@@ -116,24 +192,32 @@ async def deployed_float_feature_post_processed(
     feature = float_feature + 123
     feature.name = f"{float_feature.name}_plus_123"
     return await deploy_feature(
-        app_container, feature, context_primary_entity_ids=[transaction_entity.id]
+        app_container,
+        feature,
+        context_primary_entity_ids=[transaction_entity.id],
+        deployment_id=float_feat_post_processed_deployment_id,
     )
 
 
 @pytest_asyncio.fixture
 async def deployed_float_feature_different_job_setting(
-    app_container, float_feature_different_job_setting
+    app_container, float_feature_different_job_setting, float_feat_diff_fjs_deployment_id
 ):
     """
     Fixture for deployed float feature with different job setting
     """
-    return await deploy_feature(app_container, float_feature_different_job_setting)
+    return await deploy_feature(
+        app_container,
+        float_feature_different_job_setting,
+        deployment_id=float_feat_diff_fjs_deployment_id,
+    )
 
 
 @pytest_asyncio.fixture
 async def deployed_feature_without_entity(
     app_container,
     feature_without_entity,
+    feat_without_entity_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -142,13 +226,16 @@ async def deployed_feature_without_entity(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, feature_without_entity)
+    return await deploy_feature(
+        app_container, feature_without_entity, deployment_id=feat_without_entity_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
 async def deployed_scd_lookup_feature(
     app_container,
     scd_lookup_feature,
+    scd_lookup_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -158,7 +245,10 @@ async def deployed_scd_lookup_feature(
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
     feature_list = await deploy_feature(
-        app_container, scd_lookup_feature, return_type="feature_list"
+        app_container,
+        scd_lookup_feature,
+        return_type="feature_list",
+        deployment_id=scd_lookup_deployment_id,
     )
     assert feature_list.enabled_serving_entity_ids == [feature_list.primary_entity_ids]
     feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
@@ -170,6 +260,7 @@ async def deployed_aggregate_asat_feature_list(
     app_container,
     aggregate_asat_feature,
     cust_id_entity,
+    aggregate_asat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -183,6 +274,7 @@ async def deployed_aggregate_asat_feature_list(
         aggregate_asat_feature,
         context_primary_entity_ids=[cust_id_entity.id],
         return_type="feature_list",
+        deployment_id=aggregate_asat_deployment_id,
     )
 
 
@@ -200,6 +292,7 @@ async def deployed_aggregate_asat_feature(app_container, deployed_aggregate_asat
 async def deployed_item_aggregate_feature(
     app_container,
     non_time_based_feature,
+    float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -208,7 +301,9 @@ async def deployed_item_aggregate_feature(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, non_time_based_feature)
+    return await deploy_feature(
+        app_container, non_time_based_feature, deployment_id=float_feat_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
@@ -216,6 +311,7 @@ async def deployed_complex_feature(
     app_container,
     non_time_based_feature,
     feature_without_entity,
+    complex_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -228,13 +324,16 @@ async def deployed_complex_feature(
     f2 = feature_without_entity
     new_feature = f1 + f2 + f1
     new_feature.name = "Complex Feature"
-    return await deploy_feature(app_container, new_feature)
+    return await deploy_feature(
+        app_container, new_feature, deployment_id=complex_feat_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
 async def deployed_feature_with_internal_parent_child_relationships(
     app_container,
     feature_with_internal_parent_child_relationships,
+    feat_with_internal_parent_child_relationships_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -243,7 +342,11 @@ async def deployed_feature_with_internal_parent_child_relationships(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, feature_with_internal_parent_child_relationships)
+    return await deploy_feature(
+        app_container,
+        feature_with_internal_parent_child_relationships,
+        deployment_id=feat_with_internal_parent_child_relationships_deployment_id,
+    )
 
 
 @pytest_asyncio.fixture
@@ -251,6 +354,7 @@ async def deployed_feature_list_when_all_features_already_deployed(
     app_container,
     float_feature,
     deployed_float_feature,
+    feat_list_with_all_feats_deployed_deployment_id,
 ):
     """
     Fixture for a deployment created when all the underlying features are already deployed
@@ -261,8 +365,63 @@ async def deployed_feature_list_when_all_features_already_deployed(
         float_feature,
         feature_list_name_override="my_new_feature_list",
         return_type="feature_list",
+        deployment_id=feat_list_with_all_feats_deployed_deployment_id,
     )
     return out
+
+
+@pytest.fixture(name="expected_feast_registry_mapping")
+def expected_feast_registry_mapping_fixture(
+    float_feat_deployment_id,
+    float_feat_post_processed_deployment_id,
+    float_feat_diff_fjs_deployment_id,
+    feat_without_entity_deployment_id,
+    scd_lookup_deployment_id,
+    aggregate_asat_deployment_id,
+    complex_feat_deployment_id,
+    feat_with_internal_parent_child_relationships_deployment_id,
+    feat_list_with_all_feats_deployed_deployment_id,
+):
+    """Fixture for expected feast registry mapping"""
+    fl_version = get_version()
+    return {
+        float_feat_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_services": {f"sum_1d_list_{fl_version}"},
+        },
+        float_feat_post_processed_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_services": {f"sum_1d_plus_123_list_{fl_version}"},
+        },
+        float_feat_diff_fjs_deployment_id: {
+            "feature_views": {"cat1_cust_id_3h"},
+            "feature_services": {f"sum_24h_every_3h_list_{fl_version}"},
+        },
+        feat_without_entity_deployment_id: {
+            "feature_views": {"cat1__no_entity_1d"},
+            "feature_services": {f"count_1d_list_{fl_version}"},
+        },
+        scd_lookup_deployment_id: {
+            "feature_views": {"cat1_cust_id_1d"},
+            "feature_services": {f"some_lookup_feature_list_{fl_version}"},
+        },
+        aggregate_asat_deployment_id: {
+            "feature_views": {"cat1_gender_1d", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_services": {f"asat_gender_count_list_{fl_version}"},
+        },
+        complex_feat_deployment_id: {
+            "feature_views": {"cat1__no_entity_1d", "cat1_transaction_id_1d"},
+            "feature_services": {f"Complex Feature_list_{fl_version}"},
+        },
+        feat_with_internal_parent_child_relationships_deployment_id: {
+            "feature_views": {"cat1_cust_id_1d"},
+            "feature_services": {f"complex_parent_child_feature_list_{fl_version}"},
+        },
+        feat_list_with_all_feats_deployed_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m"},
+            "feature_services": {f"my_new_feature_list_{fl_version}"},
+        },
+    }
 
 
 @pytest.fixture
@@ -296,17 +455,41 @@ async def has_scheduled_task(periodic_task_service, feature_table):
 
 
 async def check_feast_registry(
-    app_container, expected_feature_views, expected_feature_services, expected_project_name
+    app_container,
+    deployment_id,
+    expected_feast_registry_mapping,
+    enabled_deployment,
+    **format_kwargs,
 ):
     """
     Helper function to check feast registry
     """
-    feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
+    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+    assert deployment.registry_info is not None
+    feast_registry = await app_container.feast_registry_service.get_document(
+        document_id=deployment.registry_info.registry_id
+    )
     assert feast_registry is not None
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
         feast_registry
     )
+
+    # check feast feature store properties
+    expected_project_name = str(deployment.catalog_id)[-7:]
     assert feature_store.project == expected_project_name
+    if enabled_deployment:
+        expected_feature_views = expected_feast_registry_mapping[deployment_id]["feature_views"]
+        expected_feature_services = expected_feast_registry_mapping[deployment_id][
+            "feature_services"
+        ]
+    else:
+        expected_feature_views = set()
+        expected_feature_services = set()
+
+    # format expected feature views and feature services
+    expected_feature_views = {fv.format(**format_kwargs) for fv in expected_feature_views}
+    expected_feature_services = {fs.format(**format_kwargs) for fs in expected_feature_services}
+
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_views
     assert {fs.name for fs in feature_store.list_feature_services()} == expected_feature_services
 
@@ -349,7 +532,9 @@ async def test_feature_table_one_feature_deployed(
     deployed_float_feature,
     deployed_float_feature_list,
     transaction_to_customer_relationship_info,
+    float_feat_deployment_id,
     storage,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -405,6 +590,7 @@ async def test_feature_table_one_feature_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -416,12 +602,10 @@ async def test_feature_table_one_feature_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={
-            "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
-        },
-        expected_feature_services={f"sum_1d_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        deployment_id=float_feat_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+        entity_rel_id1=transaction_to_customer_relationship_info.id,
     )
 
     # check that feature cluster file exists
@@ -462,6 +646,7 @@ async def test_feature_table_one_feature_deployed(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
         "serving_names": ["transaction_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -478,6 +663,9 @@ async def test_feature_table_two_features_deployed(
     deployed_float_feature,
     deployed_float_feature_post_processed,
     transaction_to_customer_relationship_info,
+    float_feat_deployment_id,
+    float_feat_post_processed_deployment_id,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -533,6 +721,9 @@ async def test_feature_table_two_features_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": sorted(
+            [float_feat_deployment_id, float_feat_post_processed_deployment_id]
+        ),
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -542,19 +733,15 @@ async def test_feature_table_two_features_deployed(
 
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
-    fl_version = get_version()
-    await check_feast_registry(
-        app_container,
-        expected_feature_views={
-            "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
-        },
-        expected_feature_services={
-            f"sum_1d_list_{fl_version}",
-            f"sum_1d_plus_123_list_{fl_version}",
-        },
-        expected_project_name=str(app_container.catalog_id)[-7:],
-    )
+    # check two deployments' feast registry
+    for deployment_id in [float_feat_deployment_id, float_feat_post_processed_deployment_id]:
+        await check_feast_registry(
+            app_container,
+            deployment_id=deployment_id,
+            expected_feast_registry_mapping=expected_feast_registry_mapping,
+            enabled_deployment=True,
+            entity_rel_id1=transaction_to_customer_relationship_info.id,
+        )
 
 
 @pytest.mark.asyncio
@@ -567,6 +754,9 @@ async def test_feature_table_undeploy(
     transaction_to_customer_relationship_info,
     mock_offline_store_feature_manager_dependencies,
     storage,
+    float_feat_deployment_id,
+    float_feat_post_processed_deployment_id,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -625,6 +815,7 @@ async def test_feature_table_undeploy(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_post_processed_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -647,6 +838,19 @@ async def test_feature_table_undeploy(
     assert args[0].name == f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
     assert args[1] == ["sum_1d_V231227"]
 
+    # Check feast registry after first undeploy
+    for deployment_id, enabled_deployment in [
+        (float_feat_deployment_id, False),
+        (float_feat_post_processed_deployment_id, True),
+    ]:
+        await check_feast_registry(
+            app_container,
+            deployment_id=deployment_id,
+            expected_feast_registry_mapping=expected_feast_registry_mapping,
+            enabled_deployment=enabled_deployment,
+            entity_rel_id1=transaction_to_customer_relationship_info.id,
+        )
+
     # Check online disabling the last feature deletes the feature table
     await undeploy_feature_async(deployed_float_feature_post_processed, app_container)
     feature_tables = await get_all_feature_tables(document_service)
@@ -662,12 +866,16 @@ async def test_feature_table_undeploy(
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
         f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
-    await check_feast_registry(
-        app_container,
-        expected_feature_views=set(),
-        expected_feature_services=set(),
-        expected_project_name=str(app_container.catalog_id)[-7:],
-    )
+
+    # Check feast registry after both undeploy
+    for deployment_id in [float_feat_deployment_id, float_feat_post_processed_deployment_id]:
+        await check_feast_registry(
+            app_container,
+            deployment_id=deployment_id,
+            expected_feast_registry_mapping=expected_feast_registry_mapping,
+            enabled_deployment=False,
+            entity_rel_id1=transaction_to_customer_relationship_info.id,
+        )
 
 
 @pytest.mark.asyncio
@@ -678,6 +886,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
     transaction_to_customer_relationship_info,
+    float_feat_deployment_id,
+    float_feat_diff_fjs_deployment_id,
+    expected_feast_registry_mapping,
 ):
     """
     Test feature table creation and update when two features are deployed
@@ -736,6 +947,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -780,23 +992,19 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [float_feat_diff_fjs_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
-    fl_version = get_version()
-    await check_feast_registry(
-        app_container,
-        expected_feature_views={
-            "cat1_cust_id_30m",
-            "cat1_cust_id_3h",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
-        },
-        expected_feature_services={
-            f"sum_24h_every_3h_list_{fl_version}",
-            f"sum_1d_list_{fl_version}",
-        },
-        expected_project_name=str(app_container.catalog_id)[-7:],
-    )
+    # Check feast registry after both deployments
+    for deployment_id in [float_feat_deployment_id, float_feat_diff_fjs_deployment_id]:
+        await check_feast_registry(
+            app_container,
+            deployment_id=deployment_id,
+            expected_feast_registry_mapping=expected_feast_registry_mapping,
+            enabled_deployment=True,
+            entity_rel_id1=transaction_to_customer_relationship_info.id,
+        )
 
 
 @pytest.mark.asyncio
@@ -805,6 +1013,8 @@ async def test_feature_table_without_entity(
     document_service,
     periodic_task_service,
     deployed_feature_without_entity,
+    feat_without_entity_deployment_id,
+    expected_feast_registry_mapping,
 ):
     """
     Test feature table creation when feature has no entity
@@ -845,13 +1055,14 @@ async def test_feature_table_without_entity(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [feat_without_entity_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1__no_entity_1d"},
-        expected_feature_services={f"count_1d_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        deployment_id=feat_without_entity_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
     )
 
 
@@ -861,6 +1072,8 @@ async def test_lookup_feature(
     document_service,
     periodic_task_service,
     deployed_scd_lookup_feature,
+    scd_lookup_deployment_id,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -905,13 +1118,14 @@ async def test_lookup_feature(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [scd_lookup_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"cat1_cust_id_1d"},
-        expected_feature_services={f"some_lookup_feature_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        deployment_id=scd_lookup_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
     )
 
 
@@ -923,6 +1137,8 @@ async def test_aggregate_asat_feature(
     deployed_aggregate_asat_feature,
     deployed_aggregate_asat_feature_list,
     customer_to_gender_relationship_info,
+    aggregate_asat_deployment_id,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -972,16 +1188,15 @@ async def test_aggregate_asat_feature(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "deployment_ids": [aggregate_asat_deployment_id],
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={
-            "cat1_gender_1d",
-            f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
-        },
-        expected_feature_services={f"asat_gender_count_list_{get_version()}"},
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        deployment_id=aggregate_asat_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+        entity_rel_id1=customer_to_gender_relationship_info.id,
     )
 
     # check precomputed lookup feature table
@@ -1016,6 +1231,7 @@ async def test_aggregate_asat_feature(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [aggregate_asat_deployment_id],
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -1029,21 +1245,19 @@ async def test_new_deployment_when_all_features_already_deployed(
     app_container,
     deployed_feature_list_when_all_features_already_deployed,
     transaction_to_customer_relationship_info,
+    feat_list_with_all_feats_deployed_deployment_id,
+    expected_feast_registry_mapping,
 ):
     """
     Test enabling a new deployment when all the underlying features are already deployed
     """
+    _ = deployed_feature_list_when_all_features_already_deployed
+    _ = transaction_to_customer_relationship_info
     await check_feast_registry(
         app_container,
-        expected_feature_views={
-            "cat1_cust_id_30m",
-            f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
-        },
-        expected_feature_services={
-            f"sum_1d_list_{get_version()}",
-            deployed_feature_list_when_all_features_already_deployed.versioned_name,
-        },
-        expected_project_name=str(app_container.catalog_id)[-7:],
+        deployment_id=feat_list_with_all_feats_deployed_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
     )
 
 
@@ -1144,10 +1358,31 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
 
 
 @pytest.mark.asyncio
+async def test_deployment_enabled_with_complex_feature(
+    app_container,
+    deployed_complex_feature,
+    complex_feat_deployment_id,
+    expected_feast_registry_mapping,
+):
+    """
+    Test enabling a deployment with a complex feature
+    """
+    _ = deployed_complex_feature
+    await check_feast_registry(
+        app_container,
+        deployment_id=complex_feat_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+    )
+
+
+@pytest.mark.asyncio
 async def test_feature_with_internal_parent_child_relationships(
     app_container,
     document_service,
     deployed_feature_with_internal_parent_child_relationships,
+    feat_with_internal_parent_child_relationships_deployment_id,
+    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """
@@ -1172,6 +1407,14 @@ async def test_feature_with_internal_parent_child_relationships(
             info.pop("_id")
     for info in feature_cluster["combined_relationships_info"]:
         info.pop("_id")
+
+    # Check feast registry
+    await check_feast_registry(
+        app_container,
+        deployment_id=feat_with_internal_parent_child_relationships_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+    )
 
     _ = feature_table_dict.pop("entity_universe")  # covered in service/test_feature_materialize.py
     assert feature_table_dict == {
@@ -1199,6 +1442,7 @@ async def test_feature_with_internal_parent_child_relationships(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [feat_with_internal_parent_child_relationships_deployment_id],
     }
     assert_equal_json_fixture(
         feature_cluster,
