@@ -979,7 +979,7 @@ async def manage_document(doc_service, create_data, storage):
         doc = await doc_service.create_document(data=create_data)
 
         # check remote paths are created
-        for path in doc.remote_attribute_paths:
+        for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
             full_path = os.path.join(storage.base_path, path)
             assert os.path.exists(full_path), f"Remote path {full_path} not created"
 
@@ -990,6 +990,6 @@ async def manage_document(doc_service, create_data, storage):
             await doc_service.delete_document(document_id=doc.id)
 
             # check remote paths are deleted
-            for path in doc.remote_attribute_paths:
+            for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
                 full_path = os.path.join(storage.base_path, path)
                 assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"

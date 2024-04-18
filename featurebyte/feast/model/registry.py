@@ -2,7 +2,7 @@
 Feast registry model
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pathlib import Path
 
@@ -27,11 +27,12 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     feature_store_id: PydanticObjectId
     registry_path: Optional[str] = Field(default=None)
 
-    @property
-    def remote_attribute_paths(self) -> List[Path]:
+    @classmethod
+    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
-        if self.registry_path:
-            paths.append(Path(self.registry_path))
+        registry_path = document_dict.get("registry_path")
+        if registry_path:
+            paths.append(Path(registry_path))
         return paths
 
     def registry_proto(self) -> RegistryProto:

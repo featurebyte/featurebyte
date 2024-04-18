@@ -422,7 +422,7 @@ class BaseDocumentService(
         int
             number of records deleted
         """
-        document = await self.get_document(
+        document_dict = await self.get_document_as_dict(
             document_id=document_id,
             exception_detail=exception_detail,
             use_raw_query_filter=use_raw_query_filter,
@@ -432,7 +432,7 @@ class BaseDocumentService(
         )
 
         # check if document is modifiable
-        self._check_document_modifiable(document=document.dict(by_alias=True))
+        self._check_document_modifiable(document=document_dict)
 
         query_filter = self._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
@@ -445,7 +445,11 @@ class BaseDocumentService(
         )
 
         # remove remote attributes
-        for remote_path in document.remote_attribute_paths:
+        for (
+            remote_path
+        ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
+            document_dict
+        ):
             await self.storage.try_delete_if_exists(remote_path)
         return int(num_of_records_deleted)
 
