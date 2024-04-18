@@ -359,11 +359,6 @@ class FeastFeatureStoreService:
         -------
         Optional[FeastFeatureStore]
             Feast feature store used for materialization
-
-        Raises
-        ------
-        ValueError
-            If online store is not specified
         """
         feast_stores = []
         first_registry = None
