@@ -50,6 +50,8 @@ from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.entity import get_combined_serving_names
 
+DEFAULT_REGISTRY_PROJECT_NAME = "featurebyte_project"
+
 
 class EntityFeatureChecker:
     """
@@ -190,14 +192,10 @@ class OfflineStoreTable(FeatureByteBaseModel):
         value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
         assert len(self.primary_entity_info) > 0
         serving_names = [entity_info.name for entity_info in self.primary_entity_info]
-        if len(serving_names) == 1:
-            join_keys = serving_names
-        else:
-            # For now, an entity may only have a single join key in feast
-            join_keys = [get_combined_serving_names(serving_names)]
+        entity_name = get_combined_serving_names(serving_names)
         entity = FeastEntity(
-            name=" x ".join(serving_names),
-            join_keys=join_keys,
+            name=entity_name,
+            join_keys=[entity_name],
             value_type=value_type,
         )
         return entity  # type: ignore[no-any-return]
@@ -578,18 +576,28 @@ class FeastRegistryBuilder:
         )
 
     @classmethod
-    def _create_feast_registry_proto(
+    def create_feast_registry_proto_from_repo_content(
         cls,
-        project_name: Optional[str],
+        project_name: str,
         online_store: Optional[OnlineStoreModel],
-        feast_data_sources: List[FeastDataSource],
-        primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
-        feast_request_sources: List[FeastRequestSource],
-        feast_feature_views: List[FeastFeatureView],
-        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
-        feast_feature_services: List[FeastFeatureService],
+        repo_content: RepoContents,
     ) -> RegistryProto:
-        project_name = project_name or "featurebyte_project"
+        """
+        Create a feast RegistryProto from a RepoContents object
+
+        Parameters
+        ----------
+        project_name: str
+            Project name
+        online_store: Optional[OnlineStoreModel]
+            Online store model
+        repo_content: RepoContents
+            Repo contents containing the feast assets
+
+        Returns
+        -------
+        RegistryProto
+        """
         with tempfile.NamedTemporaryFile() as temp_file:
             repo_config = cls._create_repo_config(
                 project_name=project_name,
@@ -598,27 +606,6 @@ class FeastRegistryBuilder:
             )
             feature_store = FeastFeatureStore(config=repo_config)
             registry = feature_store.registry
-
-            # prepare repo content by adding all feast assets
-            repo_content = RepoContents(
-                data_sources=[],
-                entities=[],
-                feature_views=[],
-                feature_services=[],
-                on_demand_feature_views=[],
-                stream_feature_views=[],
-                request_feature_views=[],
-            )
-            for data_source in feast_data_sources + feast_request_sources:
-                repo_content.data_sources.append(data_source)
-            for entity in primary_entity_ids_to_feast_entity.values():
-                repo_content.entities.append(entity)
-            for feature_view in feast_feature_views:
-                repo_content.feature_views.append(feature_view)
-            for on_demand_feature_view in feast_on_demand_feature_views:
-                repo_content.on_demand_feature_views.append(on_demand_feature_view)
-            for feature_service in feast_feature_services:
-                repo_content.feature_services.append(feature_service)
 
             with patch("feast.on_demand_feature_view.OnDemandFeatureView.infer_features"):
                 # FIXME: (DEV-2946) patch to avoid calling infer_features() which may cause error
@@ -632,6 +619,48 @@ class FeastRegistryBuilder:
                     skip_source_validation=True,
                 )
                 return cast(RegistryProto, registry.proto())
+
+    @classmethod
+    def _create_feast_registry_proto(
+        cls,
+        project_name: Optional[str],
+        online_store: Optional[OnlineStoreModel],
+        feast_data_sources: List[FeastDataSource],
+        primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
+        feast_request_sources: List[FeastRequestSource],
+        feast_feature_views: List[FeastFeatureView],
+        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
+        feast_feature_services: List[FeastFeatureService],
+    ) -> RegistryProto:
+        project_name = project_name or DEFAULT_REGISTRY_PROJECT_NAME
+
+        # prepare repo content by adding all feast assets
+        repo_content = RepoContents(
+            data_sources=[],
+            entities=[],
+            feature_views=[],
+            feature_services=[],
+            on_demand_feature_views=[],
+            stream_feature_views=[],
+            request_feature_views=[],
+        )
+        for data_source in feast_data_sources + feast_request_sources:
+            repo_content.data_sources.append(data_source)
+        for entity in primary_entity_ids_to_feast_entity.values():
+            repo_content.entities.append(entity)
+        for feature_view in feast_feature_views:
+            repo_content.feature_views.append(feature_view)
+        for on_demand_feature_view in feast_on_demand_feature_views:
+            repo_content.on_demand_feature_views.append(on_demand_feature_view)
+        for feature_service in feast_feature_services:
+            repo_content.feature_services.append(feature_service)
+
+        registry_proto = cls.create_feast_registry_proto_from_repo_content(
+            project_name=project_name,
+            online_store=online_store,
+            repo_content=repo_content,
+        )
+        return registry_proto
 
     @classmethod
     def create(  # pylint: disable=too-many-locals
