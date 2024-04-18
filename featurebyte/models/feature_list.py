@@ -554,11 +554,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             ]
         return self._feature_clusters
 
-    @property
-    def remote_attribute_paths(self) -> List[Path]:
+    @classmethod
+    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
-        if self.feature_clusters_path:
-            paths.append(Path(self.feature_clusters_path))
+        feature_clusters_path = document_dict.get("feature_clusters_path")
+        if feature_clusters_path:
+            paths.append(Path(feature_clusters_path))
         return paths
 
     @property
