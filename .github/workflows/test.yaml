@@ -181,6 +181,7 @@ jobs:
       group: Public Runners
     timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - 3.10.14
@@ -275,6 +276,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 135
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - 3.10.14
