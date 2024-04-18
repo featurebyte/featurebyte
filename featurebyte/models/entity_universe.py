@@ -13,16 +13,22 @@ from datetime import datetime
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AggregateAsAtNode, ItemGroupbyNode, LookupNode
+from featurebyte.query_graph.node.generic import (
+    AggregateAsAtNode,
+    GroupByNode,
+    ItemGroupbyNode,
+    LookupNode,
+)
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
@@ -32,11 +38,30 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
 LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER = "__fb_last_materialized_timestamp"
+
+
+def get_dummy_entity_universe() -> Select:
+    """
+    Returns a dummy entity universe (actual value not important since it doesn't affect features
+    calculation)
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(
+        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+    )
+
+
+DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
 
 
 @dataclass
@@ -76,6 +101,7 @@ class BaseEntityUniverseConstructor:
         )
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
+        self.adapter = get_sql_adapter(source_type)
 
     @abstractmethod
     def get_entity_universe_template(self) -> Expression:
@@ -176,7 +202,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(AggregateAsAtNode, self.node)
 
         if not node.parameters.serving_names:
-            return get_dummy_entity_universe()
+            return DUMMY_ENTITY_UNIVERSE
 
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
@@ -267,18 +293,47 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         return universe_expr
 
 
-def get_dummy_entity_universe() -> Select:
+class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     """
-    Returns a dummy entity universe (actual value not important since it doesn't affect features
-    calculation)
+    Construct the entity universe expression for tile based aggregate node
+    """
 
-    Returns
-    -------
-    Select
-    """
-    return expressions.select(
-        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
-    )
+    def get_serving_names(self) -> List[str]:
+        node = cast(GroupByNode, self.node)
+        return node.parameters.serving_names
+
+    def get_entity_universe_template(self) -> Expression:
+        node = cast(GroupByNode, self.node)
+
+        if not node.parameters.serving_names:
+            return DUMMY_ENTITY_UNIVERSE
+
+        tile_specs = TileBasedAggregationSpec.from_groupby_query_node(
+            graph=self.graph,
+            groupby_node=node,
+            adapter=self.adapter,
+            agg_result_name_include_serving_names=True,
+        )
+        assert len(tile_specs) == 1
+        agg_spec = tile_specs[0]
+        result_type = self.adapter.get_physical_type_from_dtype(agg_spec.dtype)
+        online_store_table_name = get_online_store_table_name(
+            set(agg_spec.entity_ids if agg_spec.entity_ids is not None else []),
+            result_type=result_type,
+        )
+        online_store_table_condition = expressions.EQ(
+            this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+            expression=make_literal_value(agg_spec.agg_result_name),
+        )
+        universe_expr = (
+            select(
+                *[quoted_identifier(serving_name) for serving_name in node.parameters.serving_names]
+            )
+            .distinct()
+            .from_(expressions.Table(this=online_store_table_name))
+            .where(online_store_table_condition)
+        )
+        return universe_expr
 
 
 def get_entity_universe_constructor(
@@ -309,6 +364,7 @@ def get_entity_universe_constructor(
         NodeType.LOOKUP: LookupNodeEntityUniverseConstructor,
         NodeType.AGGREGATE_AS_AT: AggregateAsAtNodeEntityUniverseConstructor,
         NodeType.ITEM_GROUPBY: ItemAggregateNodeEntityUniverseConstructor,
+        NodeType.GROUPBY: TileBasedAggregateNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
         return node_type_to_constructor[node.type](graph, node, source_type)  # type: ignore
@@ -385,12 +441,17 @@ def get_combined_universe(
     """
     combined_universe_expr: Optional[Expression] = None
     processed_universe_exprs = set()
+    has_dummy_entity_universe = False
 
     for params in entity_universe_params:
         entity_universe_constructor = get_entity_universe_constructor(
             params.graph, params.node, source_type
         )
         current_universe_expr = entity_universe_constructor.get_entity_universe_template()
+        if current_universe_expr == DUMMY_ENTITY_UNIVERSE:
+            # Add dummy entity universe later after going through all other universes
+            has_dummy_entity_universe = True
+            continue
         if params.join_steps:
             current_universe_expr = apply_join_steps(current_universe_expr, params.join_steps[::-1])
         if combined_universe_expr is None:
@@ -403,46 +464,15 @@ def get_combined_universe(
             )
         processed_universe_exprs.add(current_universe_expr)
 
+    if has_dummy_entity_universe and combined_universe_expr is None:
+        # Construct dummy entity universe only when there is no other universes to union with. This
+        # is to handle the case when a feature is made up of window aggregates with and without
+        # entity (such ingest graph is not decomposed). When that happens, the dummy universe is
+        # ignored.
+        combined_universe_expr = DUMMY_ENTITY_UNIVERSE
+
     assert combined_universe_expr is not None
     return combined_universe_expr
-
-
-def construct_window_aggregates_universe(
-    serving_names: List[str],
-    aggregate_result_table_names: List[str],
-) -> Expression:
-    """
-    Construct the entity universe expression for window aggregate
-
-    Parameters
-    ----------
-    serving_names: List[str]
-        The serving names of the entities
-    aggregate_result_table_names: List[str]
-        The names of the aggregate result tables
-
-    Returns
-    -------
-    Expression
-    """
-    if not serving_names:
-        return get_dummy_entity_universe()
-
-    assert len(aggregate_result_table_names) > 0
-
-    # select distinct serving names across all aggregation result tables
-    distinct_serving_names_from_tables = [
-        select(*[quoted_identifier(serving_name) for serving_name in serving_names])
-        .distinct()
-        .from_(table_name)
-        for table_name in aggregate_result_table_names
-    ]
-
-    union_expr = distinct_serving_names_from_tables[0]
-    for expr in distinct_serving_names_from_tables[1:]:
-        union_expr = expressions.Union(this=expr, distinct=True, expression=union_expr)  # type: ignore
-
-    return union_expr
 
 
 class EntityUniverseModel(FeatureByteBaseModel):
