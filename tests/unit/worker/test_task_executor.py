@@ -6,7 +6,7 @@ import datetime
 from multiprocessing import Array, Process, Value
 from uuid import uuid4
 
-import greenlet
+import gevent
 import pytest
 from bson.objectid import ObjectId
 
@@ -139,8 +139,8 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
             for idx, byte in enumerate(error_message[:100]):
                 exception_value[idx] = byte
 
-    # execute task in greenlet thread
-    greenlet.greenlet(run_greenlet_task).switch()
+    # execute multiple tasks in greenlet thread
+    gevent.joinall([gevent.spawn(run_greenlet_task), gevent.spawn(run_greenlet_task)])
 
 
 @pytest.mark.parametrize("timeout", [10, 1])
