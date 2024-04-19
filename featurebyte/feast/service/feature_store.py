@@ -13,10 +13,9 @@ from cachetools import LRUCache
 from feast import Entity as FeastEntity
 from feast import FeatureStore as BaseFeastFeatureStore
 from feast import FeatureView as FeastFeatureView
-from feast import RepoConfig
 from feast.feature_view import DUMMY_ENTITY
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from feast.repo_config import FeastConfigBaseModel, RegistryConfig
+from feast.repo_config import FeastConfigBaseModel
 from feast.repo_contents import RepoContents
 
 from featurebyte.feast.model.online_store import get_feast_online_store_details
@@ -96,23 +95,16 @@ def create_feast_feature_store(
 
         # note that registry_store_type is pointing to FeatureByteRegistryStore, which
         # loads the registry proto from the file & stores it in memory without writing it.
-        registry_config = RegistryConfig(
-            registry_type="file",
-            registry_store_type="featurebyte.feast.registry_store.FeatureByteRegistryStore",
-            path=feast_registry_path,
-            cache_ttl_seconds=0,
-        )
         offline_store_config = FeastRegistryBuilder.get_offline_store_config(
             feature_store_model=feature_store,
             offline_store_credentials=offline_store_credentials,
         )
-        repo_config = RepoConfig(
-            project=project_name,
-            provider="local",
-            registry=registry_config,
-            offline_store=offline_store_config,
-            online_store=online_store_config,
-            entity_key_serialization_version=2,
+        repo_config = FeastRegistryBuilder.create_repo_config(
+            project_name=project_name,
+            registry_file_path=feast_registry_path,
+            offline_store_config=offline_store_config,
+            online_store_config=online_store_config,
+            registry_store_type="featurebyte.feast.registry_store.FeatureByteRegistryStore",
         )
         feast_feature_store = FeastFeatureStore(
             config=repo_config,

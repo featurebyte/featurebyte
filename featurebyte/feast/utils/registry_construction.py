@@ -616,6 +616,7 @@ class FeastRegistryBuilder:
         registry_file_path: str,
         offline_store_config: Optional[Any] = None,
         online_store_config: Optional[Any] = None,
+        registry_store_type: Optional[str] = None,
     ) -> RepoConfig:
         """
         Create a RepoConfig object for the feast registry construction
@@ -632,14 +633,21 @@ class FeastRegistryBuilder:
             Feast online store configuration
         online_store_config: Optional[Any]
             Online store configuration
+        registry_store_type: Optional[str]
+            Registry store type used for the registry
 
         Returns
         -------
         RepoConfig
         """
-        params = {"online_store": online_store_config}
+        repo_config_kwargs = {"online_store": online_store_config}
         if offline_store_config:
-            params["offline_store"] = offline_store_config
+            repo_config_kwargs["offline_store"] = offline_store_config
+
+        registry_config_kwargs = {}
+        if registry_store_type:
+            registry_config_kwargs["registry_store_type"] = registry_store_type
+
         return RepoConfig(
             project=project_name,
             provider="local",
@@ -647,8 +655,9 @@ class FeastRegistryBuilder:
                 registry_type="file",
                 path=registry_file_path,
                 cache_ttl_seconds=0,
+                **registry_config_kwargs,
             ),
-            **params,
+            **repo_config_kwargs,
         )
 
     @classmethod
