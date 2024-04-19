@@ -552,18 +552,94 @@ class FeastRegistryBuilder:
     """
 
     @staticmethod
-    def _create_repo_config(
-        project_name: str, online_store: Optional[OnlineStoreModel], registry_file_path: str
+    def get_offline_store_config(
+        feature_store_model: FeatureStoreModel, offline_store_credentials: Any
+    ) -> Any:
+        """
+        Get the offline store configuration
+
+        Parameters
+        ----------
+        feature_store_model: FeatureStoreModel
+            Feature store model
+        offline_store_credentials: Any
+            Offline store credentials
+
+        Returns
+        -------
+        Any
+            Offline store configuration
+        """
+        feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
+            **feature_store_model.get_feature_store_details().dict()
+        )
+        database_credential = None
+        storage_credential = None
+        if offline_store_credentials:
+            database_credential = offline_store_credentials.database_credential
+            storage_credential = offline_store_credentials.storage_credential
+        offline_store_config = feature_store_details.details.get_offline_store_config(
+            database_credential=database_credential,
+            storage_credential=storage_credential,
+        )
+        return offline_store_config
+
+    @staticmethod
+    def get_online_store_config(
+        online_store: Optional[OnlineStoreModel],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get the online store configuration
+
+        Parameters
+        ----------
+        online_store: Optional[OnlineStoreModel]
+            Online store model
+
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            Online store configuration
+        """
+        if online_store is None:
+            return None
+
+        return (
+            get_feast_online_store_details(online_store_details=online_store.details)
+            .to_feast_online_store_config()
+            .dict(by_alias=True)
+        )
+
+    @staticmethod
+    def create_repo_config(
+        project_name: str,
+        registry_file_path: str,
+        offline_store_config: Optional[Any] = None,
+        online_store_config: Optional[Any] = None,
     ) -> RepoConfig:
-        online_store_config: Optional[Dict[str, Any]] = None
-        if online_store:
-            online_store_config = (
-                get_feast_online_store_details(
-                    online_store_details=online_store.details,
-                )
-                .to_feast_online_store_config()
-                .dict(by_alias=True)
-            )
+        """
+        Create a RepoConfig object for the feast registry construction
+
+        Parameters
+        ----------
+        project_name: str
+            Project name
+        registry_file_path: str
+            Registry file path
+        offline_store_config: Optional[Any]
+            Feast offline store configuration
+        online_store_config: Optional[Any]
+            Feast online store configuration
+        online_store_config: Optional[Any]
+            Online store configuration
+
+        Returns
+        -------
+        RepoConfig
+        """
+        params = {"online_store": online_store_config}
+        if offline_store_config:
+            params["offline_store"] = offline_store_config
         return RepoConfig(
             project=project_name,
             provider="local",
@@ -572,13 +648,14 @@ class FeastRegistryBuilder:
                 path=registry_file_path,
                 cache_ttl_seconds=0,
             ),
-            online_store=online_store_config,
+            **params,
         )
 
     @classmethod
     def create_feast_registry_proto_from_repo_content(
         cls,
         project_name: str,
+        offline_store_config: Optional[Any],
         online_store: Optional[OnlineStoreModel],
         repo_content: RepoContents,
     ) -> RegistryProto:
@@ -589,6 +666,8 @@ class FeastRegistryBuilder:
         ----------
         project_name: str
             Project name
+        offline_store_config: Optional[Any]
+            Offline store configuration
         online_store: Optional[OnlineStoreModel]
             Online store model
         repo_content: RepoContents
@@ -599,9 +678,11 @@ class FeastRegistryBuilder:
         RegistryProto
         """
         with tempfile.NamedTemporaryFile() as temp_file:
-            repo_config = cls._create_repo_config(
+            online_store_config = cls.get_online_store_config(online_store)
+            repo_config = cls.create_repo_config(
                 project_name=project_name,
-                online_store=online_store,
+                offline_store_config=offline_store_config,
+                online_store_config=online_store_config,
                 registry_file_path=temp_file.name,
             )
             feature_store = FeastFeatureStore(config=repo_config)
@@ -657,6 +738,7 @@ class FeastRegistryBuilder:
 
         registry_proto = cls.create_feast_registry_proto_from_repo_content(
             project_name=project_name,
+            offline_store_config=None,
             online_store=online_store,
             repo_content=repo_content,
         )
