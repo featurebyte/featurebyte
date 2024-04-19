@@ -9,7 +9,6 @@ from typing import Any, Awaitable, Optional
 import asyncio
 import os
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
 from threading import Thread
@@ -36,24 +35,7 @@ from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 logger = get_logger(__name__)
 
 
-def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """
-    Start background event loop
-
-    Parameters
-    ----------
-    loop: AbstractEventLoop
-        Event loop to run
-    """
-    try:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-    finally:
-        try:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        finally:
-            asyncio.set_event_loop(None)
-            loop.close()
+ASYNCIO_LOOP: asyncio.AbstractEventLoop | None = None
 
 
 def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
@@ -76,20 +58,12 @@ def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
     SoftTimeLimitExceeded
         timeout is exceeded
     """
-    try:
-        loop = asyncio.get_running_loop()
-        logger.debug("Use existing async loop", extra={"loop": loop})
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        loop.set_default_executor(ThreadPoolExecutor(max_workers=1000))
-        logger.debug("Create new async loop", extra={"loop": loop})
-        thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
-        thread.start()
-
-    logger.info("Asyncio tasks", extra={"num_tasks": len(asyncio.all_tasks(loop=loop))})
-
-    logger.info("Start task", extra={"timeout": timeout})
-    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    logger.debug(
+        "Running async function",
+        extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks())},
+    )
+    assert ASYNCIO_LOOP is not None, "async loop is not initialized"
+    future = asyncio.run_coroutine_threadsafe(coro, ASYNCIO_LOOP)
     try:
         return future.result(timeout=timeout)
     except ConcurrentTimeoutError as exc:
@@ -308,3 +282,28 @@ class CPUBoundTask(BaseCeleryTask):
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
         return asyncio.run(self.execute_task(self.request.id, **payload))
+
+
+def start_background_loop() -> None:
+    """
+    Start background event loop
+    """
+    global ASYNCIO_LOOP  # pylint: disable=global-statement
+    ASYNCIO_LOOP = asyncio.new_event_loop()
+    asyncio.set_event_loop(ASYNCIO_LOOP)
+    try:
+        ASYNCIO_LOOP.run_forever()
+    finally:
+        try:
+            ASYNCIO_LOOP.run_until_complete(ASYNCIO_LOOP.shutdown_asyncgens())
+        finally:
+            ASYNCIO_LOOP.close()
+
+
+def initialize_asyncio_event_loop() -> None:
+    """
+    Initialize asyncio event loop
+    """
+    logger.debug("Initializing asyncio event loop")
+    thread = Thread(target=start_background_loop, daemon=True)
+    thread.start()
