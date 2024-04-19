@@ -5,7 +5,7 @@ This module contains classes for constructing feast registry
 # pylint: disable=no-name-in-module
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import tempfile
 from collections import defaultdict
@@ -22,7 +22,7 @@ from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from feast.repo_config import RegistryConfig, RepoConfig
+from feast.repo_config import FeastConfigBaseModel, RegistryConfig, RepoConfig
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
 
@@ -587,7 +587,7 @@ class FeastRegistryBuilder:
     @staticmethod
     def get_online_store_config(
         online_store: Optional[OnlineStoreModel],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[FeastConfigBaseModel]:
         """
         Get the online store configuration
 
@@ -598,17 +598,15 @@ class FeastRegistryBuilder:
 
         Returns
         -------
-        Optional[Dict[str, Any]]
+        Optional[FaestConfigBaseModel]
             Online store configuration
         """
         if online_store is None:
             return None
 
-        return (
-            get_feast_online_store_details(online_store_details=online_store.details)
-            .to_feast_online_store_config()
-            .dict(by_alias=True)
-        )
+        return get_feast_online_store_details(
+            online_store_details=online_store.details
+        ).to_feast_online_store_config()
 
     @staticmethod
     def create_repo_config(
@@ -629,8 +627,6 @@ class FeastRegistryBuilder:
             Registry file path
         offline_store_config: Optional[Any]
             Feast offline store configuration
-        online_store_config: Optional[Any]
-            Feast online store configuration
         online_store_config: Optional[Any]
             Online store configuration
         registry_store_type: Optional[str]
@@ -853,3 +849,87 @@ class FeastRegistryBuilder:
             feast_on_demand_feature_views=on_demand_feature_views,
             feast_feature_services=feast_feature_services,
         )
+
+    @classmethod
+    def create_feast_registry_proto_for_feature_materialization(
+        cls,
+        project_name: Optional[str],
+        offline_store_config: Any,
+        online_store: Optional[OnlineStoreModel],
+        feature_table_name: str,
+        feast_stores: Sequence[FeastFeatureStore],
+    ) -> RegistryProto:
+        """
+        Create a feast RegistryProto for feature materialization task
+
+        Parameters
+        ----------
+        project_name: Optional[str]
+            Project name
+        offline_store_config: Any
+            Offline store configuration
+        online_store: Optional[OnlineStoreModel]
+            Online store model
+        feature_table_name: str
+            Feature table name
+        feast_stores: Sequence[FeastFeatureStore]
+            Sequence of feast feature stores to get the feature view from
+
+        Returns
+        -------
+        RegistryProto
+        """
+        repo_content = RepoContents(
+            data_sources=[],
+            entities=[],
+            feature_views=[],
+            feature_services=[],
+            on_demand_feature_views=[],
+            stream_feature_views=[],
+            request_feature_views=[],
+        )
+
+        first_store = feast_stores[0]
+        repo_content.data_sources.extend(first_store.list_data_sources())
+        repo_content.entities.extend(first_store.list_entities())
+
+        first_fv = first_store.get_feature_view(feature_table_name)
+        if not first_fv.entities:
+            existing_entities = {entity.name for entity in repo_content.entities}
+            if DUMMY_ENTITY.name not in existing_entities:
+                repo_content.entities.append(DUMMY_ENTITY)
+
+            fv_entities = [DUMMY_ENTITY]
+        else:
+            fv_entities = [
+                FeastEntity(
+                    name=entity.name,
+                    join_keys=[entity.name],
+                    value_type=entity.dtype.to_value_type(),
+                )
+                for entity in first_fv.entity_columns
+            ]
+
+        feature_view_params = {
+            "name": feature_table_name,
+            "entities": fv_entities,
+            "ttl": first_fv.ttl,
+            "online": True,
+            "source": first_fv.batch_source,
+        }
+        name_to_field_map = {}
+        for feast_store in feast_stores:
+            for feature in feast_store.get_feature_view(feature_table_name).features:
+                if feature.name not in name_to_field_map:
+                    name_to_field_map[feature.name] = feature
+
+        feature_view_params["schema"] = list(name_to_field_map.values())
+        repo_content.feature_views.append(FeastFeatureView(**feature_view_params))
+
+        registry_proto = FeastRegistryBuilder.create_feast_registry_proto_from_repo_content(
+            project_name=project_name or DEFAULT_REGISTRY_PROJECT_NAME,
+            offline_store_config=offline_store_config,
+            online_store=online_store,
+            repo_content=repo_content,
+        )
+        return registry_proto

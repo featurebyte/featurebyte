@@ -3,22 +3,17 @@ This module contains classes for constructing feast repository config
 """
 
 # pylint: disable=no-name-in-module
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import tempfile
 
 from asyncache import cached
 from bson import ObjectId
 from cachetools import LRUCache
-from feast import Entity as FeastEntity
 from feast import FeatureStore as BaseFeastFeatureStore
-from feast import FeatureView as FeastFeatureView
-from feast.feature_view import DUMMY_ENTITY
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import FeastConfigBaseModel
-from feast.repo_contents import RepoContents
 
-from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.registry_construction import (
@@ -174,17 +169,6 @@ class FeastFeatureStoreService:
         self.deployment_service = deployment_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
 
-    @staticmethod
-    async def _get_feast_online_store_config(
-        online_store_doc: Optional[OnlineStoreModel],
-    ) -> Optional[FeastConfigBaseModel]:
-        if online_store_doc is None:
-            return None
-
-        online_store_details = online_store_doc.details
-        online_store = get_feast_online_store_details(online_store_details)
-        return online_store.to_feast_online_store_config()
-
     async def _get_effective_online_store_doc(
         self, online_store_id: Optional[ObjectId], catalog: CatalogModel
     ) -> Optional[OnlineStoreModel]:
@@ -233,8 +217,8 @@ class FeastFeatureStoreService:
         online_store_doc = await self._get_effective_online_store_doc(
             online_store_id=online_store_id, catalog=catalog
         )
-        online_store_config = await self._get_feast_online_store_config(
-            online_store_doc=online_store_doc
+        online_store_config = FeastRegistryBuilder.get_online_store_config(
+            online_store=online_store_doc
         )
         logger.info("Feast feature store cache size: %d", len(feast_feature_store_cache))
         feast_feature_store = await _get_feast_feature_store(
@@ -266,70 +250,6 @@ class FeastFeatureStoreService:
             return None
         assert isinstance(feast_registry, FeastRegistryModel)
         return await self.get_feast_feature_store(feast_registry=feast_registry)
-
-    @classmethod
-    def _combine_feast_stores(
-        cls,
-        project_name: Optional[str],
-        offline_store_config: Any,
-        online_store: Optional[OnlineStoreModel],
-        feature_table_name: str,
-        feast_stores: List[FeastFeatureStore],
-    ) -> RegistryProto:
-        repo_content = RepoContents(
-            data_sources=[],
-            entities=[],
-            feature_views=[],
-            feature_services=[],
-            on_demand_feature_views=[],
-            stream_feature_views=[],
-            request_feature_views=[],
-        )
-
-        first_store = feast_stores[0]
-        repo_content.data_sources.extend(first_store.list_data_sources())
-        repo_content.entities.extend(first_store.list_entities())
-
-        first_fv = first_store.get_feature_view(feature_table_name)
-        if not first_fv.entities:
-            existing_entities = {entity.name for entity in repo_content.entities}
-            if DUMMY_ENTITY.name not in existing_entities:
-                repo_content.entities.append(DUMMY_ENTITY)
-
-            fv_entities = [DUMMY_ENTITY]
-        else:
-            fv_entities = [
-                FeastEntity(
-                    name=entity.name,
-                    join_keys=[entity.name],
-                    value_type=entity.dtype.to_value_type(),
-                )
-                for entity in first_fv.entity_columns
-            ]
-
-        feature_view_params = {
-            "name": feature_table_name,
-            "entities": fv_entities,
-            "ttl": first_fv.ttl,
-            "online": True,
-            "source": first_fv.batch_source,
-        }
-        name_to_field_map = {}
-        for feast_store in feast_stores:
-            for feature in feast_store.get_feature_view(feature_table_name).features:
-                if feature.name not in name_to_field_map:
-                    name_to_field_map[feature.name] = feature
-
-        feature_view_params["schema"] = list(name_to_field_map.values())
-        repo_content.feature_views.append(FeastFeatureView(**feature_view_params))
-
-        registry_proto = FeastRegistryBuilder.create_feast_registry_proto_from_repo_content(
-            project_name=project_name or DEFAULT_REGISTRY_PROJECT_NAME,
-            offline_store_config=offline_store_config,
-            online_store=online_store,
-            repo_content=repo_content,
-        )
-        return registry_proto
 
     async def get_feast_feature_store_for_feature_materialization(
         self,
@@ -387,15 +307,17 @@ class FeastFeatureStoreService:
         online_store_doc = await self._get_effective_online_store_doc(
             online_store_id=online_store_id, catalog=catalog
         )
-        online_store_config = await self._get_feast_online_store_config(
-            online_store_doc=online_store_doc
+        online_store_config = FeastRegistryBuilder.get_online_store_config(
+            online_store=online_store_doc
         )
-        registry_proto = self._combine_feast_stores(
-            project_name=first_registry.name,
-            offline_store_config=offline_store_config,
-            online_store=online_store_doc,
-            feature_table_name=feature_table_model.name,
-            feast_stores=feast_stores,
+        registry_proto = (
+            FeastRegistryBuilder.create_feast_registry_proto_for_feature_materialization(
+                project_name=first_registry.name,
+                offline_store_config=offline_store_config,
+                online_store=online_store_doc,
+                feature_table_name=feature_table_model.name,
+                feast_stores=feast_stores,
+            )
         )
         feast_feature_store = create_feast_feature_store(
             project_name=first_registry.name,
