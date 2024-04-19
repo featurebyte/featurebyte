@@ -536,6 +536,9 @@ class BaseSession(BaseModel):
         try:
             bytestream = self.get_async_query_stream(query=query, timeout=timeout)
         except Exception as exc:
+            logger.error(
+                "Error executing query", extra={"query": query, "source_type": self.source_type}
+            )
             # remove session from cache if query fails
             if self._cache_key:
                 session_cache.pop(self._cache_key, None)
