@@ -6,7 +6,7 @@ import datetime
 from multiprocessing import Array, Process, Value
 from uuid import uuid4
 
-import greenlet
+import gevent
 import pytest
 from bson.objectid import ObjectId
 
@@ -14,7 +14,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
-from featurebyte.worker.task_executor import run_async
+from featurebyte.worker.task_executor import initialize_asyncio_event_loop, run_async
 from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
 
 
@@ -123,6 +123,8 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
     monkey.patch_all()
     import time  # pylint: disable=import-outside-toplevel
 
+    initialize_asyncio_event_loop()
+
     async def async_task(state: Value):
         """Async task that blocks for 2 seconds and update state to 2"""
         time.sleep(2)
@@ -137,8 +139,8 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
             for idx, byte in enumerate(error_message[:100]):
                 exception_value[idx] = byte
 
-    # execute task in greenlet thread
-    greenlet.greenlet(run_greenlet_task).switch()
+    # execute multiple tasks in greenlet thread
+    gevent.joinall([gevent.spawn(run_greenlet_task), gevent.spawn(run_greenlet_task)])
 
 
 @pytest.mark.parametrize("timeout", [10, 1])
@@ -155,7 +157,8 @@ def test_run_async(timeout):
         process.join()
         # state should be updated by async task in greenlet thread
         assert state.value == 2
-        assert exception_value[:].decode("utf-8").strip("\x00") == ""
+        output = exception_value[:].decode("utf-8").strip("\x00")
+        assert output == "", output
     else:
         # expect celery SoftTimeLimitExceeded error
         # with pytest.raises(SoftTimeLimitExceeded) as exc:
@@ -163,7 +166,5 @@ def test_run_async(timeout):
         process.join()
         # state should remain unchanged
         assert state.value == 1
-        assert (
-            exception_value[:].decode("utf-8").strip("\x00")
-            == f"SoftTimeLimitExceeded('Task timed out after {timeout}s',)"
-        )
+        output = exception_value[:].decode("utf-8").strip("\x00")
+        assert output == f"SoftTimeLimitExceeded('Task timed out after {timeout}s',)", output
