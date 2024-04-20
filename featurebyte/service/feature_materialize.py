@@ -187,11 +187,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.deployment_service = deployment_service
         self.redis = redis
 
-        # Cache feature store by deployment id
-        self._deployment_id_to_feature_store: Dict[
-            PydanticObjectId, Optional[FeastFeatureStore]
-        ] = {}
-
     @asynccontextmanager
     async def materialize_features(  # pylint: disable=too-many-locals
         self,
@@ -543,14 +538,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 )
 
         # Feast online materialize
-        # feature_store = await self._get_feast_feature_store(deployment_id)
-        # if feature_store is not None and feature_store.config.online_store is not None:
-        #     assert feature_store.online_store_id is not None
-        #     assert feature_timestamp is not None
         for current_feature_table in feature_tables:
             if current_feature_table.deployment_ids:
-                feature_store = await self._get_feast_feature_store(
-                    deployment_id=current_feature_table.deployment_ids[0]
+                service = self.feast_feature_store_service
+                feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                    feature_table_model=current_feature_table, online_store_id=None
                 )
                 if feature_store and feature_store.config.online_store is not None:
                     online_store_last_materialized_at = current_feature_table.get_online_store_last_materialized_at(
@@ -833,8 +825,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             document_id=feature_table.id, populate_remote_attributes=False
         )
         if updated_feature_table.deployment_ids:
-            feature_store = await self._get_feast_feature_store(
-                deployment_id=updated_feature_table.deployment_ids[0]
+            service = self.feast_feature_store_service
+            feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                feature_table_model=updated_feature_table, online_store_id=None
             )
             if feature_store is not None and feature_store.config.online_store is not None:
                 assert feature_store.online_store_id is not None
@@ -978,35 +971,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         await self.offline_store_feature_table_service.update_document(
             document_id=feature_table_model.id, data=update_schema
         )
-
-    async def _get_feast_feature_store(
-        self, deployment_id: PydanticObjectId
-    ) -> Optional[FeastFeatureStore]:
-        """
-        Get the FeastFeatureStore object given a deployment id
-
-        Parameters
-        ----------
-        deployment_id: PydanticObjectId
-            Deployment id
-
-        Returns
-        -------
-        Optional[FeastFeatureStore]
-            FeastFeatureStore object
-        """
-        if deployment_id in self._deployment_id_to_feature_store:
-            return self._deployment_id_to_feature_store[deployment_id]
-
-        deployment = await self.deployment_service.get_document(document_id=deployment_id)
-        if not deployment.registry_info:
-            return None
-
-        feast_store = await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
-            deployment
-        )
-        self._deployment_id_to_feature_store[deployment_id] = feast_store
-        return feast_store
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
         feature_store_id: Optional[PydanticObjectId]
