@@ -3,10 +3,8 @@ Tests for task executor
 """
 
 import datetime
-from multiprocessing import Array, Process, Value
 from uuid import uuid4
 
-import gevent
 import pytest
 from bson.objectid import ObjectId
 
@@ -14,7 +12,6 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
-from featurebyte.worker.task_executor import initialize_asyncio_event_loop, run_async
 from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
 
 
@@ -113,58 +110,3 @@ async def test_task_executor(random_task_class, persistent, app_container):
     task_manager = app_container.task_manager
     task_result = await task_manager.get_task_result(task_id=str(task_id))
     assert task_result == 1234
-
-
-def run_process_task(state: Value, exception_value: Value, timeout: int):
-    """Run task in a separate process using greenlet thread"""
-    from gevent import monkey  # pylint: disable=import-outside-toplevel
-
-    # all imports should be done after monkey patch
-    monkey.patch_all()
-    import time  # pylint: disable=import-outside-toplevel
-
-    initialize_asyncio_event_loop()
-
-    async def async_task(state: Value):
-        """Async task that blocks for 2 seconds and update state to 2"""
-        time.sleep(2)
-        state.value = 2
-
-    def run_greenlet_task():
-        """Run task in a separate greenlet"""
-        try:
-            run_async(coro=async_task(state), timeout=timeout)
-        except Exception as exc:  # pylint: disable=broad-except
-            error_message = str(exc).encode("utf-8")
-            for idx, byte in enumerate(error_message[:100]):
-                exception_value[idx] = byte
-
-    # execute multiple tasks in greenlet thread
-    gevent.joinall([gevent.spawn(run_greenlet_task), gevent.spawn(run_greenlet_task)])
-
-
-@pytest.mark.parametrize("timeout", [10, 1])
-def test_run_async(timeout):
-    """
-    Test run async task in a separate thread
-    """
-    state = Value("i", 1)
-    exception_value = Array("c", 100)
-    process = Process(target=run_process_task, args=(state, exception_value, timeout))
-
-    if timeout > 2:
-        process.start()
-        process.join()
-        # state should be updated by async task in greenlet thread
-        assert state.value == 2
-        output = exception_value[:].decode("utf-8").strip("\x00")
-        assert output == "", output
-    else:
-        # expect celery SoftTimeLimitExceeded error
-        # with pytest.raises(SoftTimeLimitExceeded) as exc:
-        process.start()
-        process.join()
-        # state should remain unchanged
-        assert state.value == 1
-        output = exception_value[:].decode("utf-8").strip("\x00")
-        assert output == f"SoftTimeLimitExceeded('Task timed out after {timeout}s',)", output

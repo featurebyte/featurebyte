@@ -4,19 +4,16 @@ This module contains TaskExecutor class
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Optional
+from typing import Any
 
-import asyncio
 import os
 from abc import abstractmethod
-from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
-from threading import Thread
 from uuid import UUID
 
+from asgiref import sync
 from bson import ObjectId
 from celery import Task
-from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
@@ -33,43 +30,6 @@ from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
-
-
-ASYNCIO_LOOP: asyncio.AbstractEventLoop | None = None
-
-
-def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
-    """
-    Run async function in both async and non-async context
-    Parameters
-    ----------
-    coro: Coroutine
-        Coroutine to run
-    timeout: Optional[int]
-        Timeout in seconds, default to None (no timeout)
-
-    Returns
-    -------
-    Any
-        result from function call
-
-    Raises
-    ------
-    SoftTimeLimitExceeded
-        timeout is exceeded
-    """
-    logger.debug(
-        "Running async function",
-        extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks())},
-    )
-    assert ASYNCIO_LOOP is not None, "async loop is not initialized"
-    future = asyncio.run_coroutine_threadsafe(coro, ASYNCIO_LOOP)
-    try:
-        return future.result(timeout=timeout)
-    except ConcurrentTimeoutError as exc:
-        # try to cancel the job if it has not started
-        future.cancel()
-        raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
 
 
 class TaskExecutor:
@@ -268,9 +228,7 @@ class IOBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_io_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        return run_async(
-            self.execute_task(self.request.id, **payload), timeout=self.request.timelimit[1]
-        )
+        return sync.AsyncToSync(self.execute_task)(self.request.id, **payload)
 
 
 class CPUBoundTask(BaseCeleryTask):
@@ -281,29 +239,4 @@ class CPUBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_cpu_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        return asyncio.run(self.execute_task(self.request.id, **payload))
-
-
-def start_background_loop() -> None:
-    """
-    Start background event loop
-    """
-    global ASYNCIO_LOOP  # pylint: disable=global-statement
-    ASYNCIO_LOOP = asyncio.new_event_loop()
-    asyncio.set_event_loop(ASYNCIO_LOOP)
-    try:
-        ASYNCIO_LOOP.run_forever()
-    finally:
-        try:
-            ASYNCIO_LOOP.run_until_complete(ASYNCIO_LOOP.shutdown_asyncgens())
-        finally:
-            ASYNCIO_LOOP.close()
-
-
-def initialize_asyncio_event_loop() -> None:
-    """
-    Initialize asyncio event loop
-    """
-    logger.debug("Initializing asyncio event loop")
-    thread = Thread(target=start_background_loop, daemon=True)
-    thread.start()
+        return sync.AsyncToSync(self.execute_task)(self.request.id, **payload)
