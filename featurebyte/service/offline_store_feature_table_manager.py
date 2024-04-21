@@ -749,7 +749,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_table_id,
             )
         )
-        if feature_table_dict["precomputed_lookup_feature_table_info"] is None:
+        if feature_table_dict.get("precomputed_lookup_feature_table_info") is None:
             await self.feature_materialize_scheduler_service.stop_job(
                 feature_table_id,
             )
