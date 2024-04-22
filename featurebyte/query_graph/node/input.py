@@ -3,8 +3,8 @@ This module contains SQL operation related to input node
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union
-from typing_extensions import Annotated
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 

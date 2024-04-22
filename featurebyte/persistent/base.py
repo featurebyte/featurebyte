@@ -4,18 +4,8 @@ Persistent base class
 
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    cast,
-)
+from typing import Any, AsyncIterator, Callable, Dict, Iterable, List, Optional, Tuple, cast
+from typing_extensions import Literal
 
 import copy
 from abc import ABC, abstractmethod

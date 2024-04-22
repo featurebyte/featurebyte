@@ -5,7 +5,8 @@ Catalog module
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+from typing_extensions import Literal
 
 import pandas as pd
 from bson import ObjectId
@@ -681,7 +682,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     @update_and_reset_catalog
     def list_relationships(
-        self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
+        self,
+        include_id: Optional[bool] = True,
+        relationship_type: Optional[Literal[tuple(RelationshipType)]] = None,  # type: ignore[misc]
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.

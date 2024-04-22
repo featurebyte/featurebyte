@@ -5,7 +5,8 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Sequence, Union
+from typing import Any, List, Optional, Sequence, Union
+from typing_extensions import Literal
 
 import os
 from pathlib import Path

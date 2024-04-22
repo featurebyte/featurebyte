@@ -12,10 +12,10 @@ from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.typing import OptionalScalar
 
 
 class ForwardAsAtAggregator(BaseAsAtAggregator):

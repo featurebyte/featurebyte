@@ -2,7 +2,8 @@
 Vector node module
 """
 
-from typing import List, Literal, Sequence, Tuple
+from typing import List, Sequence, Tuple
+from typing_extensions import Literal
 
 import textwrap
 

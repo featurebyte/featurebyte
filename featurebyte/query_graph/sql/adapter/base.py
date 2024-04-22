@@ -4,7 +4,8 @@ Base class for SQL adapters
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Optional
+from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

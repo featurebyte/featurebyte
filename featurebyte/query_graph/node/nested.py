@@ -9,7 +9,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -17,13 +16,12 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Literal
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import (
@@ -58,6 +56,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.typing import Scalar
 
 
 class ProxyInputNode(BaseNode):

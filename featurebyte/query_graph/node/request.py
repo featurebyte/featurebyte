@@ -2,7 +2,8 @@
 Request data related node classes
 """
 
-from typing import List, Literal, Sequence, Tuple
+from typing import List, Sequence, Tuple
+from typing_extensions import Literal
 
 from pydantic import BaseModel, Field, StrictStr
 
