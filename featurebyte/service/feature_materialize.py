@@ -616,6 +616,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         lookup_feature_tables: List[OfflineStoreFeatureTableModel]
             Precomputed lookup feature tables to be initialized
         """
+        if not lookup_feature_tables:
+            return
+
         source_feature_table = await self.offline_store_feature_table_service.get_document(
             source_feature_table_id
         )
@@ -938,10 +941,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         # noqa: DAR101
         """
         if not columns:
-            return
-        # Note: This guard is to be removed when feast registry is updated to include precomputed
-        # lookup feature tables
-        if feature_table.precomputed_lookup_feature_table_info is not None:
             return
         await materialize_partial(
             feature_store=feature_store,

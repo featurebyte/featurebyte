@@ -682,7 +682,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
 @pytest.mark.usefixtures("deployed_feature_list", "deployed_feature_list_composite_entities")
 async def test_feast_registry(
     app_container,
-    expected_feature_table_names,
+    offline_store_feature_tables_all,
     source_type,
     deployment_name,
 ):
@@ -707,7 +707,7 @@ async def test_feast_registry(
     assert {
         fv.name
         for fv in feature_store._list_feature_views(allow_cache=False, hide_dummy_entity=False)
-    } == expected_feature_table_names
+    } == {table.name for table in offline_store_feature_tables_all.values()}
 
     # Check feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
@@ -722,13 +722,8 @@ async def test_feast_registry(
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()
     entity_row = {
-        "üser id": 5,
-        "cust_id": 761,
-        "user_status": "STÀTUS_CODE_37",
-        "PRODUCT_ACTION": "detail",
-        "order_id": "T1230",
+        "order_id": "T3850",
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
-        "üser id x PRODUCT_ACTION": "detail::761",
     }
     with patch.object(
         feature_store,
@@ -756,47 +751,42 @@ async def test_feast_registry(
             )
         ]
     expected = {
-        f"Amount Sum by Customer x Product Action 24d_{version}": [None],
-        f"Current Number of Users With This Status_{version}": [1.0],
+        f"Amount Sum by Customer x Product Action 24d_{version}": [169.77000427246094],
+        f"Current Number of Users With This Status_{version}": [1],
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [
             {
-                "__MISSING__": 240.76,
-                "detail": 254.23,
-                "purchase": 216.87,
-                "rëmove": 98.34,
-                "àdd": 146.22,
+                "__MISSING__": 174.39,
+                "detail": 169.77,
+                "purchase": 473.31,
+                "rëmove": 102.37,
+                "àdd": 27.1,
             }
         ],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [683.55],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [68355.0],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [623.1500244140625],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [62315.0],
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [
             [
-                0.6807108071969569,
-                0.41463276624595335,
-                0.4432548634609973,
-                0.6828628340472915,
-                0.5967769997569004,
-                0.5210525989755145,
-                0.4687023396052305,
-                0.35638918237609585,
-                0.42879787416376725,
-                0.548615163058392,
+                0.5365338952415342,
+                0.4908373917748641,
+                0.42408493050514906,
+                0.5512648363475837,
+                0.5269536439690168,
+                0.4490616290417775,
+                0.41383692828120605,
+                0.4543201999832706,
+                0.5041296835615285,
+                0.4379877816657862,
             ]
         ],
-        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [727.4592974268256],
+        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [667.059326171875],
         f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [0.0],
-        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.8578220571057548],
-        f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43.0],
-        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [149.0],
-        f"Most Frequent Item Type by Order_{version}": ["type_12"],
-        "PRODUCT_ACTION": ["detail"],
-        f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
-        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
-        "cust_id": ["761"],
-        "order_id": ["T1230"],
-        "user_status": ["STÀTUS_CODE_37"],
-        "üser id": ["5"],
-        "üser id x PRODUCT_ACTION": ["detail::761"],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.9171356558799744],
+        f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43],
+        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [149],
+        f"Most Frequent Item Type by Order_{version}": ["type_24"],
+        f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
+        "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -816,17 +806,12 @@ async def test_feast_registry(
             entity_rows=[entity_row],
         ).to_dict()
     expected = {
-        "üser id": ["5"],
-        "cust_id": ["761"],
-        "PRODUCT_ACTION": ["detail"],
-        "user_status": ["STÀTUS_CODE_37"],
-        "order_id": ["T1230"],
-        "üser id x PRODUCT_ACTION": ["detail::761"],
+        "order_id": ["T3850"],
         f"Amount Sum by Customer x Product Action 24d_{version}": [None],
-        f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
+        f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Current Number of Users With This Status_{version}": [1],
-        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
-        f"Most Frequent Item Type by Order_{version}": ["type_12"],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
+        f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [None],
@@ -868,6 +853,8 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
     client = config.get_client()
     deployment = deployed_feature_list
 
+    # Note that the serving key for the deployment is order_id. The additional entities provided
+    # will not be used.
     entity_serving_names = [
         {
             "üser id": 5,
@@ -901,38 +888,38 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
             feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
         )
     expected = {
-        "Amount Sum by Customer x Product Action 24d": 254.23000000000002,
-        "Complex Feature by User": "STÀTUS_CODE_37_1",
-        "Current Number of Users With This Status": 1.0,
+        "Amount Sum by Customer x Product Action 24d": None,
+        "Complex Feature by User": None,
+        "Current Number of Users With This Status": None,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
-            "__MISSING__": 240.76,
-            "detail": 254.23,
-            "purchase": 216.87,
-            "rëmove": 98.34,
-            "àdd": 146.22,
+            "__MISSING__": 234.77,
+            "detail": 235.24,
+            "purchase": 225.78,
+            "rëmove": 11.39,
+            "àdd": 338.51,
         },
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 683.55,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 68355.0,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.3800048828125,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
-            0.6807108071969569,
-            0.41463276624595335,
-            0.4432548634609973,
-            0.6828628340472915,
-            0.5967769997569004,
-            0.5210525989755145,
-            0.4687023396052305,
-            0.35638918237609585,
-            0.42879787416376725,
-            0.548615163058392,
+            0.41825654595626777,
+            0.3459365542614712,
+            0.5725510296687925,
+            0.424307035963231,
+            0.4930920411475925,
+            0.4502761817462119,
+            0.3192654242159094,
+            0.40611594238301874,
+            0.6493784232675229,
+            0.38572185913993623,
         ],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 727.4592974268256,
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 476.289306640625,
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8578220571057548,
-        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.895897626876831,
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": None,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 149,
         "Most Frequent Item Type by Order": "type_12",
         "PRODUCT_ACTION": "detail",
-        "User Status Feature": "STÀTUS_CODE_37",
+        "User Status Feature": None,
         "cust_id": 761,
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",

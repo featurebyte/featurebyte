@@ -208,6 +208,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         offline_table_count = len(ingest_graph_container.offline_store_table_name_to_features)
         feature_store_model = await self._get_feature_store_model()
 
+        # Update precomputed lookup feature tables for existing features
+        await self._update_precomputed_lookup_feature_tables_all(
+            feature_lists,
+            feature_store_model,
+            deployment.id,
+        )
+
         new_tables = []
         for idx, (
             offline_store_table_name,
@@ -229,6 +236,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 if feature.id not in feature_ids_set:
                     feature_ids.append(feature.id)
 
+            # Initialize precomputed lookup feature tables using updated feature_ids
             await self._update_precomputed_lookup_feature_tables(
                 feature_table_dict["_id"],
                 feature_ids,
@@ -263,13 +271,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
-
-        if not features:
-            await self._update_precomputed_lookup_feature_tables_no_op_enable(
-                feature_lists,
-                feature_store_model,
-                deployment.id,
-            )
 
         new_tables.extend(
             await self._create_or_update_entity_lookup_feature_tables(
@@ -544,14 +545,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
         return output
 
-    async def _update_precomputed_lookup_feature_tables_no_op_enable(
+    async def _update_precomputed_lookup_feature_tables_all(
         self,
         feature_lists: List[FeatureListModel],
         feature_store_model: FeatureStoreModel,
         deployment_id: PydanticObjectId,
     ) -> None:
-        # Called when online enabling, but no features are enabled but a new deployment is made on
-        # an existing feature list
         async for (
             feature_table_dict
         ) in self.offline_store_feature_table_service.list_documents_as_dict_iterator(

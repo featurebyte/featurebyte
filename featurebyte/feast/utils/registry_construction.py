@@ -2,16 +2,17 @@
 This module contains classes for constructing feast registry
 """
 
-# pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module, too-many-lines
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
 import tempfile
 from collections import defaultdict
 from datetime import timedelta
 from unittest.mock import patch
 
+from bson import ObjectId
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
 from feast import FeatureStore as FeastFeatureStore
@@ -47,6 +48,11 @@ from featurebyte.models.offline_store_ingest_query import (
 )
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.models.parent_serving import EntityLookupStep
+from featurebyte.models.precomputed_lookup_feature_table import (
+    _get_feature_lists_to_relationships_info,
+    get_precomputed_lookup_feature_tables,
+)
+from featurebyte.query_graph.model.entity_relationship_info import EntityAncestorDescendantMapper
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.entity import get_combined_serving_names
 
@@ -125,6 +131,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     primary_entity_info: List[OfflineStoreEntityInfo]
+    source_feature_table_name: Optional[str]
 
     @property
     def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
@@ -293,6 +300,7 @@ class OfflineStoreTableBuilder:
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         feature_store: FeatureStoreModel,
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+        serving_entity_ids: Optional[List[PydanticObjectId]],
     ) -> List[OfflineStoreTable]:
         """
         Group each offline store ingest query graphs of features into list of offline store tables
@@ -309,6 +317,8 @@ class OfflineStoreTableBuilder:
             Feature store model
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
             Entity lookup steps mapping derived from feature lists
+        serving_entity_ids: Optional[List[PydanticObjectId]]
+            Serving entity ids based on the deployment
 
         Returns
         -------
@@ -316,6 +326,7 @@ class OfflineStoreTableBuilder:
             List of offline store tables
         """
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
+        offline_table_key_to_feature_ids = defaultdict(set)
         for feature in features:
             offline_ingest_query_graphs = (
                 feature.offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -323,6 +334,7 @@ class OfflineStoreTableBuilder:
             for ingest_query_graph in offline_ingest_query_graphs:
                 table_name = ingest_query_graph.offline_store_table_name
                 offline_table_key_to_ingest_query_graphs[table_name].append(ingest_query_graph)
+                offline_table_key_to_feature_ids[table_name].add(feature.id)
 
         offline_store_tables = []
         for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
@@ -332,6 +344,30 @@ class OfflineStoreTableBuilder:
                 entity_id_to_serving_name=entity_id_to_serving_name,
             )
             offline_store_tables.append(offline_store_table)
+            if serving_entity_ids is not None:
+                assert len(feature_lists) == 1
+                relationships_info = _get_feature_lists_to_relationships_info(feature_lists)[
+                    feature_lists[0].id
+                ]
+                relationships_mapper = EntityAncestorDescendantMapper.create(relationships_info)
+                related_serving_entity_ids = relationships_mapper.keep_related_entity_ids(
+                    entity_ids_to_filter=serving_entity_ids,
+                    filter_by=offline_store_table.primary_entity_ids,
+                )
+                if sorted(offline_store_table.primary_entity_ids) != related_serving_entity_ids:
+                    precomputed_lookup_feature_table = (
+                        OfflineStoreTableBuilder._get_precomputed_lookup_feature_table(
+                            offline_store_table=offline_store_table,
+                            related_serving_entity_ids=related_serving_entity_ids,
+                            feature_lists=feature_lists,
+                            entity_id_to_serving_name=entity_id_to_serving_name,
+                            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+                            feature_store=feature_store,
+                            offline_table_key_to_feature_ids=offline_table_key_to_feature_ids,
+                        )
+                    )
+                    assert precomputed_lookup_feature_table is not None
+                    offline_store_tables.append(precomputed_lookup_feature_table)
 
         offline_store_tables_for_entity_lookup = (
             OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
@@ -342,6 +378,60 @@ class OfflineStoreTableBuilder:
         )
 
         return offline_store_tables + offline_store_tables_for_entity_lookup
+
+    @staticmethod
+    def _get_precomputed_lookup_feature_table(
+        offline_store_table: OfflineStoreTable,
+        related_serving_entity_ids: List[ObjectId],
+        feature_lists: List[FeatureListModel],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+        feature_store: FeatureStoreModel,
+        offline_table_key_to_feature_ids: Dict[str, Set[PydanticObjectId]],
+    ) -> Optional[OfflineStoreTable]:
+        """
+        Get a precomputed lookup feature table corresponding to offline_store_table that can be
+        readily served using serving_entity_ids
+
+        # noqa: DAR101
+
+        Returns
+        -------
+        Optional[OfflineStoreTable]
+        """
+        precomputed_lookup_feature_tables = get_precomputed_lookup_feature_tables(
+            primary_entity_ids=list(offline_store_table.primary_entity_ids),
+            feature_ids=list(offline_table_key_to_feature_ids[offline_store_table.table_name]),
+            feature_lists=feature_lists,
+            feature_table_name=offline_store_table.table_name,
+            feature_table_has_ttl=offline_store_table.has_ttl,
+            entity_id_to_serving_name=entity_id_to_serving_name,
+            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            feature_store_model=feature_store,
+        )
+        for precomputed_lookup_feature_table in precomputed_lookup_feature_tables:
+            lookup_offline_store_table = OfflineStoreTable(
+                table_name=precomputed_lookup_feature_table.name,
+                feature_job_setting=offline_store_table.feature_job_setting,
+                has_ttl=offline_store_table.has_ttl,
+                output_column_names=offline_store_table.output_column_names,
+                output_dtypes=offline_store_table.output_dtypes,
+                primary_entity_info=[
+                    OfflineStoreEntityInfo(
+                        id=entity_id,
+                        name=serving_name,
+                        dtype=DBVarType.VARCHAR,
+                    )
+                    for (entity_id, serving_name) in zip(
+                        precomputed_lookup_feature_table.primary_entity_ids,
+                        precomputed_lookup_feature_table.serving_names,
+                    )
+                ],
+                source_feature_table_name=offline_store_table.table_name,
+            )
+            if sorted(lookup_offline_store_table.primary_entity_ids) == related_serving_entity_ids:
+                return lookup_offline_store_table
+        return None
 
     @staticmethod
     def create_offline_store_tables_for_entity_lookup(
@@ -758,6 +848,7 @@ class FeastRegistryBuilder:
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+        serving_entity_ids: Optional[List[PydanticObjectId]],
         project_name: Optional[str] = None,
     ) -> RegistryProto:
         """
@@ -777,6 +868,8 @@ class FeastRegistryBuilder:
             List of featurebyte feature list models
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
             Mapping from relationships info id to EntityLookupStep objects
+        serving_entity_ids: Optional[List[PydanticObjectId]]
+            Serving entity ids of the deployment that the registry will be associated with
         project_name: Optional[str]
             Project name
 
@@ -792,10 +885,12 @@ class FeastRegistryBuilder:
             entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
             feature_store=feature_store,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            serving_entity_ids=serving_entity_ids,
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
         name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
+        all_feast_feature_views = []
         feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
             **feature_store.get_feature_store_details().dict()
         )
@@ -822,7 +917,12 @@ class FeastRegistryBuilder:
                 entity=feast_entity,
                 data_source=feast_data_source,
             )
-            name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
+            if offline_store_table.source_feature_table_name is not None:
+                table_name = offline_store_table.source_feature_table_name
+            else:
+                table_name = offline_store_table.table_name
+            name_to_feast_feature_view[table_name] = feast_feature_view
+            all_feast_feature_views.append(feast_feature_view)
 
         name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(
             features
@@ -845,7 +945,7 @@ class FeastRegistryBuilder:
             feast_data_sources=feast_data_sources,
             primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
             feast_request_sources=list(name_to_feast_request_source.values()),
-            feast_feature_views=list(name_to_feast_feature_view.values()),
+            feast_feature_views=all_feast_feature_views,
             feast_on_demand_feature_views=on_demand_feature_views,
             feast_feature_services=feast_feature_services,
         )

@@ -93,6 +93,16 @@ async def get_feast_feature_store(app_container, deployment_id):
     return feast_feature_store
 
 
+async def get_deployment_from_feature_list(app_container, feature_list_id):
+    """
+    Helper function to get deployment from feature list
+    """
+    async for deployment in app_container.deployment_service.list_documents_iterator(
+        query_filter={"feature_list_id": feature_list_id}
+    ):
+        return deployment
+
+
 @pytest.mark.asyncio
 async def test_feature_no_point_in_time(
     app_container,
@@ -105,8 +115,11 @@ async def test_feature_no_point_in_time(
     """
     request_data = [{"cust_id": "a"}]
     feast_feature_store = await get_feast_feature_store(app_container, float_feat_deployment_id)
+    deployment = await get_deployment_from_feature_list(
+        app_container, deployed_feature_list_with_float_feature.id
+    )
     result = await online_serving_service.get_online_features_by_feast(
-        deployed_feature_list_with_float_feature, feast_feature_store, request_data
+        deployed_feature_list_with_float_feature, deployment, feast_feature_store, request_data
     )
     assert result.dict() == {"features": [{"cust_id": "a", "sum_1d": None}]}
 
@@ -125,8 +138,12 @@ async def test_feature_with_point_in_time(
     feast_feature_store = await get_feast_feature_store(
         app_container, fl_with_point_in_time_request_column_deployment_id
     )
+    deployment = await get_deployment_from_feature_list(
+        app_container, deployed_feature_list_with_point_in_time_request_column_feature.id
+    )
     result = await online_serving_service.get_online_features_by_feast(
         deployed_feature_list_with_point_in_time_request_column_feature,
+        deployment,
         feast_feature_store,
         request_data,
     )
@@ -149,9 +166,13 @@ async def test_validate_required_serving_names(
         app_container, fl_with_point_in_time_request_column_deployment_id
     )
     request_data = [{"cust_idz": "a"}]
+    deployment = await get_deployment_from_feature_list(
+        app_container, deployed_feature_list_with_point_in_time_request_column_feature.id
+    )
     with pytest.raises(RequiredEntityNotProvidedError) as exc_info:
         await online_serving_service.get_online_features_by_feast(
             deployed_feature_list_with_point_in_time_request_column_feature,
+            deployment,
             feast_feature_store,
             request_data,
         )
@@ -175,8 +196,12 @@ async def test_feature_requiring_parent_serving(
         app_container, fl_requiring_parent_serving_deployment_id
     )
     request_data = [{"cust_id": "a"}]
+    deployment = await get_deployment_from_feature_list(
+        app_container, deployed_feature_list_requiring_parent_serving.id
+    )
     result = await online_serving_service.get_online_features_by_feast(
         deployed_feature_list_requiring_parent_serving,
+        deployment,
         feast_feature_store,
         request_data,
     )

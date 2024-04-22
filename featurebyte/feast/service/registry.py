@@ -22,6 +22,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.feature import FeatureService
@@ -53,6 +54,7 @@ class FeastRegistryService(
         online_store_service: OnlineStoreService,
         catalog_service: CatalogService,
         entity_lookup_feature_table_service: EntityLookupFeatureTableService,
+        deployment_service: DeploymentService,
         storage: Storage,
         redis: Redis[Any],
     ):
@@ -71,6 +73,7 @@ class FeastRegistryService(
         self.online_store_service = online_store_service
         self.catalog_service = catalog_service
         self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
+        self.deployment_service = deployment_service
 
     def get_registry_storage_lock(self, timeout: int) -> Lock:
         """
@@ -199,9 +202,7 @@ class FeastRegistryService(
             feature_store_ids.add(feature.tabular_source.feature_store_id)
 
         entities = []
-        async for entity in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(entity_ids)}}
-        ):
+        async for entity in self.entity_service.list_documents_iterator(query_filter={}):
             entities.append(entity)
 
         if len(feature_store_ids) > 1:
@@ -235,6 +236,12 @@ class FeastRegistryService(
                 feature_store_id=feature_store_id
             )
 
+        serving_entity_ids = None
+        if deployment_id is not None:
+            deployment = await self.deployment_service.get_document(deployment_id)
+            if deployment.serving_entity_ids is not None:
+                serving_entity_ids = deployment.serving_entity_ids
+
         feast_registry_proto = FeastRegistryBuilder.create(
             feature_store=feature_store,
             online_store=online_store,
@@ -243,6 +250,7 @@ class FeastRegistryService(
             feature_lists=feature_lists,
             project_name=project_name,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+            serving_entity_ids=serving_entity_ids,
         )
         return FeastRegistryModel(
             _id=document_id,

@@ -273,11 +273,6 @@ class FeastFeatureStoreService:
         Optional[FeastFeatureStore]
             Feast feature store used for materialization
         """
-        # Note: This guard is to be removed when feast registry is updated to include precomputed
-        # lookup feature tables
-        if feature_table_model.precomputed_lookup_feature_table_info is not None:
-            return None
-
         feast_stores = []
         first_registry = None
         for deployment_id in feature_table_model.deployment_ids:

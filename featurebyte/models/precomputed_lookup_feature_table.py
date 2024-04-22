@@ -137,9 +137,10 @@ def get_precomputed_lookup_feature_tables(
     ] = {}
     for feature_list in feature_lists:
         for full_serving_entity_ids in feature_list.enabled_serving_entity_ids:
-            serving_entity_ids = EntityAncestorDescendantMapper.create(
+            relationships_mapper = EntityAncestorDescendantMapper.create(
                 feature_lists_relationships_info[feature_list.id],
-            ).keep_related_entity_ids(
+            )
+            serving_entity_ids = relationships_mapper.keep_related_entity_ids(
                 entity_ids_to_filter=full_serving_entity_ids,
                 filter_by=primary_entity_ids,
             )
