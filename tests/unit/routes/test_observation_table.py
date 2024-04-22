@@ -448,6 +448,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "tests/fixtures/request_payloads/target_namespace.json"
         )
         payload["name"] = "other_target"
+        payload["default_target_id"] = None
+        payload["target_ids"] = []
         response = test_api_client.post("/target_namespace", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
@@ -485,6 +487,21 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
+    async def test_create_with_target_column_definition_exists_422(
+        self, test_api_client_persistent
+    ):
+        """Test create with target column that has a definition"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "float_target"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == 'Target "float_target" already has a definition.'
+
+    @pytest.mark.asyncio
     async def test_create_with_target_column_201(self, test_api_client_persistent):
         """Test create with target column"""
         test_api_client, _ = test_api_client_persistent
@@ -495,6 +512,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "tests/fixtures/request_payloads/target_namespace.json"
         )
         payload["name"] = "target"
+        payload["default_target_id"] = None
+        payload["target_ids"] = []
         response = test_api_client.post("/target_namespace", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
         target_namespace_id = response.json()["_id"]
