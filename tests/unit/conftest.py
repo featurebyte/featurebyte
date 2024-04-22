@@ -1695,6 +1695,18 @@ def float_feature_composite_entity_fixture(
     yield feature
 
 
+@pytest.fixture(name="float_feature_multiple_windows")
+def float_feature_multiple_windows_fixture(feature_group):
+    """
+    Float Feature fixture
+    """
+    feature = feature_group["sum_2h"] / feature_group["sum_1d"]
+    feature.name = "sum_ratio_2h_over_1d"
+    # Save and retrieve so that the graph is pruned
+    feature.save()
+    yield Feature.get_by_id(feature.id)
+
+
 @pytest.fixture(name="bool_feature")
 def bool_feature_fixture(float_feature):
     """
