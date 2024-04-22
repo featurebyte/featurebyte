@@ -1,6 +1,7 @@
 """
 Test Feature Job Setting Analysis worker task
 """
+
 import copy
 import datetime
 from unittest.mock import call

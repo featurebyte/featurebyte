@@ -1,6 +1,7 @@
 """
 Materialized Table Delete Task
 """
+
 from __future__ import annotations
 
 from typing import Any, cast
@@ -68,7 +69,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             MaterializedTableCollectionName.OBSERVATION: self.observation_table_service,
             MaterializedTableCollectionName.HISTORICAL_FEATURE: self.historical_feature_table_service,
             MaterializedTableCollectionName.STATIC_SOURCE: self.static_source_table_service,
-            MaterializedTableCollectionName.TARGET: self.target_table_service,
         }
         service = service_map[payload.collection_name]
         materialized_table = await service.get_document(document_id=payload.document_id)  # type: ignore[attr-defined]
@@ -120,14 +120,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         await self.historical_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_target_table(
-        self, payload: MaterializedTableDeleteTaskPayload
-    ) -> MaterializedTableModel:
-        document = await self.target_table_service.get_document(document_id=payload.document_id)
-        await self._delete_table_at_data_warehouse(document)
-        await self.target_table_service.delete_document(document_id=document.id)
-        return cast(MaterializedTableModel, document)
-
     async def _delete_static_source_table(
         self, payload: MaterializedTableDeleteTaskPayload
     ) -> MaterializedTableModel:
@@ -151,7 +143,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             table_name=document.location.table_details.table_name,
             schema_name=document.location.table_details.schema_name,  # type: ignore
             database_name=document.location.table_details.database_name,  # type: ignore
-            is_view=document.is_view,
         )
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
@@ -162,7 +153,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
             MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
             MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
-            MaterializedTableCollectionName.TARGET: self._delete_target_table,
         }
 
         # delete document stored at mongo

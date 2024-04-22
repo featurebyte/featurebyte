@@ -1,25 +1,19 @@
 """
 PreviewService class
 """
+
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, Tuple
-
-import os
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte.common.utils import dataframe_to_json
-from featurebyte.enum import InternalName
-from featurebyte.exception import LimitExceededError
+from featurebyte.common.utils import dataframe_to_json, timer
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -28,10 +22,6 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
-
-MAX_TABLE_CELLS = int(
-    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
-)  # 10 million rows, 300 columns
 
 DEFAULT_COLUMNS_BATCH_SIZE = 50
 
@@ -87,7 +77,9 @@ class PreviewService:
                     "details": feature_store_dict["details"],
                 }
             )
-            feature_store = await feature_stores.__anext__()
+            feature_store = (
+                await feature_stores.__anext__()  # pylint: disable=unnecessary-dunder-call
+            )
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
@@ -109,16 +101,28 @@ class PreviewService:
         FeatureStoreShape
             Row and column counts
         """
-        feature_store, session = await self._get_feature_store_session(
-            graph=preview.graph,
-            node_name=preview.node_name,
-            feature_store_id=preview.feature_store_id,
-        )
-        shape_sql, num_cols = GraphInterpreter(
-            preview.graph, source_type=feature_store.type
-        ).construct_shape_sql(node_name=preview.node_name)
-        logger.debug("Execute shape SQL", extra={"shape_sql": shape_sql})
-        result = await session.execute_query(shape_sql)
+        with timer("PreviewService.shape: Get feature store and session", logger):
+            feature_store, session = await self._get_feature_store_session(
+                graph=preview.graph,
+                node_name=preview.node_name,
+                feature_store_id=preview.feature_store_id,
+            )
+
+        node_num, edge_num = len(preview.graph.nodes), len(preview.graph.edges)
+        with timer(
+            "PreviewService.shape: Construct shape SQL",
+            logger,
+            extra={"node_num": node_num, "edge_num": edge_num},
+        ):
+            shape_sql, num_cols = GraphInterpreter(
+                preview.graph, source_type=feature_store.type
+            ).construct_shape_sql(node_name=preview.node_name)
+
+        with timer(
+            "PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}
+        ):
+            result = await session.execute_query(shape_sql)
+
         assert result is not None
         return FeatureStoreShape(
             num_rows=result["count"].iloc[0],
@@ -294,69 +298,3 @@ class PreviewService:
         df_result = await session.execute_query(value_counts_sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         return df_result.set_index("key")["count"].to_dict()  # type: ignore
-
-    async def download_table(
-        self,
-        location: TabularSource,
-    ) -> Optional[AsyncGenerator[bytes, None]]:
-        """
-        Download table from location.
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to download from
-
-        Returns
-        -------
-        AsyncGenerator[bytes, None]
-            Asynchronous bytes generator
-
-        Raises
-        ------
-        LimitExceededError
-            Table size exceeds the limit.
-        """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
-        )
-
-        # check size of the table
-        sql_expr = get_source_count_expr(source=location.table_details)
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        result = await db_session.execute_query(sql)
-        assert result is not None
-        columns = await db_session.list_table_schema(**location.table_details.json_dict())
-        has_row_index = InternalName.TABLE_ROW_INDEX in columns
-        columns = {  # type: ignore[assignment]
-            col_name: v
-            for (col_name, v) in columns.items()
-            if col_name != InternalName.TABLE_ROW_INDEX
-        }
-        shape = (result["row_count"].iloc[0], len(columns))
-
-        logger.debug(
-            "Downloading table from feature store",
-            extra={
-                "location": location.json_dict(),
-                "shape": shape,
-            },
-        )
-
-        if shape[0] * shape[0] > MAX_TABLE_CELLS:
-            raise LimitExceededError(f"Table size {shape} exceeds download limit.")
-
-        sql_expr = get_source_expr(source=location.table_details, column_names=list(columns.keys()))
-        if has_row_index:
-            sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-        sql = sql_to_string(
-            sql_expr,
-            source_type=db_session.source_type,
-        )
-        return db_session.get_async_query_stream(sql)

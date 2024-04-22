@@ -1,6 +1,7 @@
 """
 Credential module
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -21,15 +22,6 @@ from featurebyte.schema.credential import CredentialCreate, CredentialRead, Cred
 class Credential(DeletableApiObject, SavableApiObject):
     """
     Credential class is the data model used to represent your credentials that are persisted.
-
-    Examples
-    --------
-    >>> credential = Credential(  # doctest: +SKIP
-    ...   name=feature_store.name,
-    ...   feature_store_id=feature_store.id,
-    ...   database_credential=database_credential,
-    ...   storage_credential=storage_credential,
-    ... )
     """
 
     # documentation metadata
@@ -120,7 +112,7 @@ class Credential(DeletableApiObject, SavableApiObject):
         Create a new credential.
 
         >>> credential = fb.Credential.create(  # doctest: +SKIP
-        ...     feature_store=fb.FeatureStore.get("playground"),
+        ...     feature_store_name="playground",
         ...     database_credential=UsernamePasswordCredential(
         ...         username="username",
         ...         password="password"

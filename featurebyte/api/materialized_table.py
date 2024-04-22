@@ -1,10 +1,9 @@
 """
 Materialized Table Mixin
 """
+
 from typing import Any, Callable, ClassVar, Optional, Tuple, Union
 
-import os
-import tempfile
 from http import HTTPStatus
 from pathlib import Path
 
@@ -13,10 +12,16 @@ from typeguard import typechecked
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.source_table import SourceTable
-from featurebyte.common.utils import parquet_from_arrow_stream
+from featurebyte.api.utils import (
+    dataframe_from_arrow_stream_with_progress,
+    parquet_from_arrow_stream,
+)
+from featurebyte.common.utils import ResponseStream
 from featurebyte.config import Configurations
+from featurebyte.enum import SourceType
 from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.models.materialized_table import MaterializedTableModel
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
 
 class MaterializedTableMixin(MaterializedTableModel):
@@ -58,7 +63,9 @@ class MaterializedTableMixin(MaterializedTableModel):
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         parquet_from_arrow_stream(
-            response=response, output_path=output_path, num_rows=self.num_rows
+            ResponseStream(response.iter_content(1024)),
+            output_path=output_path,
+            num_rows=self.num_rows,
         )
         return output_path
 
@@ -69,11 +76,53 @@ class MaterializedTableMixin(MaterializedTableModel):
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Error retrieving record from API.
         """
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = os.path.join(temp_dir, "temp.parquet")
-            self.download(output_path=output_path)
-            return pd.read_parquet(output_path)
+        client = Configurations().get_client()
+        response = client.get(f"{self._route}/pyarrow_table/{self.id}", stream=True)
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return dataframe_from_arrow_stream_with_progress(
+            ResponseStream(response.iter_content(1024)), num_rows=self.num_rows
+        )
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+
+        Raises
+        ------
+        NotImplementedError
+            When spark is not available in the current environment.
+        """
+
+        try:
+            from pyspark.sql import SparkSession  # pylint: disable=import-outside-toplevel
+
+            spark = SparkSession.builder.getOrCreate()
+
+            fully_qualified_table_name = sql_to_string(
+                get_fully_qualified_table_name(
+                    {
+                        "table_name": self.location.table_details.table_name,
+                        "schema_name": self.location.table_details.schema_name,
+                        "database_name": self.location.table_details.database_name,
+                    }
+                ),
+                source_type=SourceType.SPARK,
+            )
+            return spark.table(fully_qualified_table_name)
+        except (ModuleNotFoundError, ImportError, ValueError) as exc:
+            raise NotImplementedError("Spark is not available in the current environment.") from exc
 
     def delete(self) -> None:
         """

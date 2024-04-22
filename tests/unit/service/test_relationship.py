@@ -1,6 +1,7 @@
 """
 Tests for RelationshipService class
 """
+
 from unittest.mock import Mock
 
 import pytest
@@ -47,6 +48,7 @@ class FamilyDocumentService(BaseDocumentService):
         document=None,
         return_document=True,
         skip_block_modification_check=False,
+        populate_remote_attributes=False,
     ):
         await self.persistent.update_one(
             collection_name=self.collection_name,
@@ -55,7 +57,9 @@ class FamilyDocumentService(BaseDocumentService):
             user_id=self.user.id,
         )
         if return_document:
-            return await self.get_document(document_id=document_id)
+            return await self.get_document(
+                document_id=document_id, populate_remote_attributes=populate_remote_attributes
+            )
         return None
 
 

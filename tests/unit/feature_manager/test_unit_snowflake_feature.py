@@ -1,6 +1,7 @@
 """
 This module contains unit tests for FeatureManagerSnowflake
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock
 
@@ -95,23 +96,17 @@ async def test_online_enable(
     mock_generate_tiles.assert_called_once()
 
     # Expected execute_query calls are triggered by TileScheduleOnlineStore:
-    # 1. Check if online store table exists (execute_query)
-    # 2. Compute online store values and store in a temporary table
-    # 3. Insert into online store table (execute_query_long_running)
-    assert mock_snowflake_session.execute_query.call_count == 1
-    assert mock_snowflake_session.execute_query_long_running.call_count == 2
 
-    # First call
-    args, _ = mock_snowflake_session.execute_query.call_args_list[0]
-    assert args[0] == (
-        "select * from online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c limit 1"
+    # 1. Check if online store table exists (execute_query)
+    mock_snowflake_session.table_exists.assert_called_once_with(
+        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
     )
 
-    # Second call
+    # 2. Compute online store values and store in a temporary table
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
-    assert args[0].strip().startswith("CREATE TABLE __SESSION_TEMP_TABLE_")
+    assert args[0].strip().startswith('CREATE TABLE "__SESSION_TEMP_TABLE_')
 
-    # Third call
+    # 3. Insert into online store table (execute_query_long_running)
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
     assert args[0].strip().startswith("INSERT INTO online_store_")
 

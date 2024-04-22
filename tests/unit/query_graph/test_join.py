@@ -1,6 +1,7 @@
 """
 Tests for Join SQLNode
 """
+
 import textwrap
 
 import pytest
@@ -231,7 +232,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
           "order_id" AS "order_id",
           "order_method" AS "order_method",
           (
-            "_fb_internal_item_count_None_order_id_None_input_1" + 123
+            "_fb_internal_order_id_item_count_None_order_id_None_input_1" + 123
           ) AS "ord_size"
         FROM (
           SELECT
@@ -239,7 +240,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
             REQ."cust_id",
             REQ."order_id",
             REQ."order_method",
-            "T0"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
+            "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_1" AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
           FROM (
             SELECT
               "ts" AS "ts",
@@ -251,7 +252,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
           LEFT JOIN (
             SELECT
               ITEM."order_id" AS "order_id",
-              COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
+              COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
             FROM (
               SELECT
                 "order_id" AS "order_id",
@@ -336,7 +337,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                 "order_id" AS "order_id",
                 "order_method" AS "order_method",
                 (
-                  "_fb_internal_item_count_None_order_id_None_input_1" + 123
+                  "_fb_internal_order_id_item_count_None_order_id_None_input_1" + 123
                 ) AS "ord_size"
               FROM (
                 SELECT
@@ -344,7 +345,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                   REQ."cust_id",
                   REQ."order_id",
                   REQ."order_method",
-                  "T0"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
+                  "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_1" AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
                 FROM (
                   SELECT
                     "ts" AS "ts",
@@ -356,7 +357,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                 LEFT JOIN (
                   SELECT
                     ITEM."order_id" AS "order_id",
-                    COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
+                    COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
                   FROM (
                     SELECT
                       "order_id" AS "order_id",
@@ -411,7 +412,7 @@ def test_scd_join(global_graph, scd_join_node):
           FROM (
             SELECT
               "__FB_KEY_COL_0",
-              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
               "cust_id",
               "event_column_1_out",
@@ -451,6 +452,8 @@ def test_scd_join(global_graph, scd_join_node):
                   "cust_id" AS "cust_id",
                   "membership_status" AS "membership_status"
                 FROM "db"."public"."customer_profile_table"
+                WHERE
+                  "effective_timestamp" IS NOT NULL
               )
             )
           )
@@ -459,10 +462,21 @@ def test_scd_join(global_graph, scd_join_node):
         ) AS L
         LEFT JOIN (
           SELECT
-            "effective_ts" AS "effective_ts",
-            "cust_id" AS "cust_id",
-            "membership_status" AS "membership_status"
-          FROM "db"."public"."customer_profile_table"
+            ANY_VALUE("effective_ts") AS "effective_ts",
+            "cust_id",
+            ANY_VALUE("membership_status") AS "membership_status"
+          FROM (
+            SELECT
+              "effective_ts" AS "effective_ts",
+              "cust_id" AS "cust_id",
+              "membership_status" AS "membership_status"
+            FROM "db"."public"."customer_profile_table"
+            WHERE
+              "effective_timestamp" IS NOT NULL
+          )
+          GROUP BY
+            "effective_timestamp",
+            "cust_id"
         ) AS R
           ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
         """

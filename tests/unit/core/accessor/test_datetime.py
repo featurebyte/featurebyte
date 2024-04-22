@@ -1,6 +1,7 @@
 """
 Unit tests for core/accessor/datetime.py
 """
+
 import pytest
 
 from featurebyte.core.accessor.datetime import DatetimeAccessor

@@ -1,6 +1,7 @@
 """
 SparkSession class
 """
+
 # pylint: disable=duplicate-code
 # pylint: disable=wrong-import-order
 from __future__ import annotations
@@ -14,14 +15,12 @@ import tempfile
 
 import pandas as pd
 import pyarrow as pa
-from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
-from pyarrow import Schema
+from pyarrow import ArrowTypeError, Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
-from pyhive.hive import Cursor
 from thrift.transport.TTransport import TTransportException
 
-from featurebyte.common.utils import literal_eval
+from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType, StorageType
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
@@ -53,9 +52,6 @@ SparkDatabaseCredential = Annotated[
 ]
 
 
-PYARROW_ARRAY_TYPE = pa.list_(pa.float64())
-
-
 class SparkSession(BaseSparkSession):
     """
     Spark session class
@@ -74,13 +70,11 @@ class SparkSession(BaseSparkSession):
     database_credential: Optional[SparkDatabaseCredential]
     storage_credential: Optional[StorageCredential]
 
-    def __init__(self, **data: Any) -> None:
+    def _initialize_connection(self) -> None:
         auth = None
         scheme = None
         access_token = None
         kerberos_service_name = None
-
-        super().__init__(**data)
 
         if self.database_credential:
             if isinstance(self.database_credential, KerberosKeytabCredential):
@@ -243,150 +237,53 @@ class SparkSession(BaseSparkSession):
     def is_threadsafe(cls) -> bool:
         return False
 
-    def _get_pyarrow_type(self, datatype: str) -> pa.types:
+    def _get_schema_from_cursor(self, cursor: Any) -> Schema:
         """
-        Get pyarrow type from Spark data type
+        Get schema from a cursor
 
         Parameters
         ----------
-        datatype: str
-            Spark data type
-
-        Returns
-        -------
-        pa.types
-        """
-        datatype = datatype.upper()
-        mapping = {
-            "STRING_TYPE": pa.string(),
-            "TINYINT_TYPE": pa.int8(),
-            "SMALLINT_TYPE": pa.int16(),
-            "INT_TYPE": pa.int32(),
-            "BIGINT_TYPE": pa.int64(),
-            "BINARY_TYPE": pa.large_binary(),
-            "BOOLEAN_TYPE": pa.bool_(),
-            "DATE_TYPE": pa.timestamp("ns", tz=None),
-            "TIME_TYPE": pa.time32("ms"),
-            "DOUBLE_TYPE": pa.float64(),
-            "FLOAT_TYPE": pa.float32(),
-            "DECIMAL_TYPE": pa.float64(),
-            "INTERVAL_TYPE": pa.duration("ns"),
-            "NULL_TYPE": pa.null(),
-            "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
-            "ARRAY_TYPE": PYARROW_ARRAY_TYPE,
-            "MAP_TYPE": pa.string(),
-            "STRUCT_TYPE": pa.string(),
-        }
-        if datatype.startswith("INTERVAL"):
-            pyarrow_type = pa.int64()
-        else:
-            pyarrow_type = mapping.get(datatype)
-
-        if not pyarrow_type:
-            # warn and fallback to string for unrecognized types
-            logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
-            pyarrow_type = pa.string()
-        return pyarrow_type
-
-    def _process_batch_data(self, data: pd.DataFrame, schema: Schema) -> pd.DataFrame:
-        """
-        Process batch data before converting to PyArrow record batch.
-
-        Parameters
-        ----------
-        data: pd.DataFrame
-            Data to process
-        schema: Schema
-            Schema of the data
-
-        Returns
-        -------
-        pd.DataFrame
-            Processed data
-        """
-        if data.empty:
-            return data
-
-        for i, column in enumerate(schema.names):
-            current_type = schema.field(i).type
-            # Convert decimal columns to float
-            if current_type == pa.float64() and not is_float_dtype(data[column]):
-                data[column] = data[column].astype(float)
-            elif isinstance(current_type, pa.TimestampType) and not is_datetime64_dtype(
-                data[column]
-            ):
-                data[column] = pd.to_datetime(data[column])
-            elif current_type == PYARROW_ARRAY_TYPE:
-                # Check if column is string. If so, convert to a list.
-                is_string_series = data[column].apply(lambda x: isinstance(x, str))
-                if is_string_series.any():
-                    data[column] = data[column].apply(literal_eval)
-        return data
-
-    def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
-        """
-        Fetch a batch of rows from a query result, returning them as a PyArrow record batch.
-
-        Parameters
-        ----------
-        cursor: Cursor
-            Cursor to fetch data from
-        schema: Schema
-            Schema of the data to fetch
-        batch_size: int
-            Number of rows to fetch at a time
-
-        Returns
-        -------
-        pa.RecordBatch
-            None if no more rows are available
-        """
-        results = cursor.fetchmany(batch_size)
-        # Process data to update types of certain columns based on their schema type
-        processed_data = self._process_batch_data(
-            pd.DataFrame(results if results else None, columns=schema.names), schema
-        )
-        return pa.record_batch(processed_data, schema=schema)
-
-    def fetchall_arrow(self, cursor: Cursor) -> pa.Table:
-        """
-        Fetch all (remaining) rows of a query result, returning them as a PyArrow table.
-
-        Parameters
-        ----------
-        cursor: Cursor
+        cursor: Any
             Cursor to fetch data from
 
         Returns
         -------
-        pa.Table
+        Schema
         """
-        schema = pa.schema(
-            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
-        )
-        record_batches = []
-        while True:
-            record_batch = self._read_batch(cursor, schema)
-            record_batches.append(record_batch)
-            if record_batch.num_rows == 0:
-                break
-        return pa.Table.from_batches(record_batches)
+        fields = []
+        for row in cursor.description:
+            field_name = row[0]
+            field_type = "_".join(row[1].split("_")[:-1])
+            db_var_type = self._convert_to_internal_variable_type(field_type)
+            fields.append(
+                pa.field(
+                    field_name,
+                    self._get_pyarrow_type(field_type),
+                    metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type},
+                )
+            )
+        return pa.schema(fields)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
-        arrow_table = self.fetchall_arrow(cursor)
-        return arrow_table.to_pandas()
+        schema = self._get_schema_from_cursor(cursor)
+        records = cursor.fetchall()
+        if not records:
+            return pa.record_batch([[]] * len(schema), schema=schema).to_pandas()
+        return pa.table(list(zip(*records)), schema=schema).to_pandas()
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches
-        schema = pa.schema(
-            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
-        )
+        schema = self._get_schema_from_cursor(cursor)
         while True:
             try:
-                record_batch = self._read_batch(cursor, schema)
-            except TypeError:
+                records = cursor.fetchmany(1000)
+                if not records:
+                    # return empty table to ensure correct schema is returned
+                    yield pa.record_batch([[]] * len(schema), schema=schema)
+                    break
+                yield pa.record_batch(list(zip(*records)), schema=schema)
+            except TypeError as exc:
+                if isinstance(exc, ArrowTypeError):
+                    raise
                 # TypeError is raised on DDL queries in Spark 3.4 and above
-                break
-            yield record_batch
-            if record_batch.num_rows == 0:
                 break

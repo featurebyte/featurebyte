@@ -53,7 +53,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictEntropy() throws HiveException {
-    CountDictEntropyV2 udf = new CountDictEntropyV2();
+    CountDictEntropyV3 udf = new CountDictEntropyV3();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
@@ -63,7 +63,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictEntropyZeroCounts() throws HiveException {
-    CountDictEntropyV2 udf = new CountDictEntropyV2();
+    CountDictEntropyV3 udf = new CountDictEntropyV3();
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDictOther)};
@@ -137,7 +137,7 @@ public class CountDictTransformsTest {
 
   @Test
   public void testCountDictCosineSimilarity() throws HiveException {
-    CountDictCosineSimilarityV1 udf = new CountDictCosineSimilarityV1();
+    CountDictCosineSimilarityV2 udf = new CountDictCosineSimilarityV2();
     ObjectInspector[] arguments = {mapValueOI, mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {

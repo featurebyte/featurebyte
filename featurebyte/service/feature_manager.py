@@ -1,6 +1,7 @@
 """
 FeatureManagerService class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Set
@@ -26,6 +27,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.databricks_unity import DatabricksUnitySession
 
 logger = get_logger(__name__)
 
@@ -79,6 +81,7 @@ class FeatureManagerService:
             and session.source_type == SourceType.DATABRICKS_UNITY
         ):
             # Register Databricks UDF for on-demand feature
+            assert isinstance(session, DatabricksUnitySession)
             await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
 
         if not feature_spec.is_online_store_eligible:
@@ -301,6 +304,7 @@ class FeatureManagerService:
             and session.source_type == SourceType.DATABRICKS_UNITY
         ):
             # Remove Databricks UDF for on-demand feature
+            assert isinstance(session, DatabricksUnitySession)
             await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
 
         if not feature_spec.is_online_store_eligible:
@@ -408,15 +412,15 @@ class FeatureManagerService:
 
     @staticmethod
     async def may_register_databricks_udf_for_on_demand_feature(
-        session: BaseSession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
     ) -> None:
         """
         Register Databricks UDF for on-demand feature.
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
+        session: DatabricksUnitySession
+            Instance of DatabricksUnitySession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """
@@ -432,18 +436,19 @@ class FeatureManagerService:
             )
             await session.execute_query(f"DROP FUNCTION IF EXISTS {udf_info.sql_function_name}")
             await session.execute_query(udf_info.codes)
+            await session.set_owner("FUNCTION", udf_info.sql_function_name)
 
     @staticmethod
     async def remove_databricks_udf_for_on_demand_feature_if_exists(
-        session: BaseSession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
     ) -> None:
         """
         Remove Databricks UDF for on-demand feature.
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
+        session: DatabricksUnitySession
+            Instance of DatabricksUnitySession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """

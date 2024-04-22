@@ -1,6 +1,7 @@
 """
 This script is used to enforce import rules for featurebyte.
 """
+
 from typing import Dict, List, Set, Tuple
 
 import ast
@@ -123,8 +124,10 @@ if __name__ == "__main__":
         "threading",
         "tempfile",
         "textwrap",
+        "types",
         "typing",
         "uuid",
+        "warnings",
     }
     THIRD_PARTY_LIBS = {
         # NOTE: this list contains the third party libraries that will be installed by featurebyte client
@@ -133,17 +136,22 @@ if __name__ == "__main__":
         "black",
         "cachetools",
         "cryptography",
+        "databricks",
         "fastapi",
         "jinja2",
         "matplotlib",
         "numpy",
         "pandas",
+        "pyarrow",
+        "pyarrow.parquet",
         "pydantic",
         "pymongo",
+        "pyspark",
         "sqlglot",
         "typeguard",
         "yaml",
         "IPython",
+        "mlflow",
     }
 
     # Common libraries that can be imported from both backend and client

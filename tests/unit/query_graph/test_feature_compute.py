@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.query_graph.feature_compute
 """
+
 import copy
 import textwrap
 from dataclasses import asdict
@@ -10,6 +11,12 @@ from bson import ObjectId
 from sqlglot import select
 
 from featurebyte.enum import AggFunc, DBVarType, SourceType
+from featurebyte.models.parent_serving import (
+    EntityLookupInfo,
+    EntityLookupStep,
+    EntityRelationshipsContext,
+    ParentServingPreparation,
+)
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
@@ -21,12 +28,14 @@ from featurebyte.query_graph.sql.specs import (
     ItemAggregationSpec,
     TileBasedAggregationSpec,
 )
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
     """Fixture for an AggregationSpec"""
     agg_spec = TileBasedAggregationSpec(
+        node_name=expected_pruned_graph_and_node_1["pruned_node"].name,
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -44,6 +53,7 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
         entity_ids=[ObjectId()],
         dtype=DBVarType.FLOAT,
         agg_func=AggFunc.SUM,
+        agg_result_name_include_serving_names=True,
         **expected_pruned_graph_and_node_1,
     )
     return agg_spec
@@ -85,6 +95,8 @@ def item_agg_spec_fixture():
         agg_func="count",
     )
     agg_spec = ItemAggregationSpec(
+        node_name="item_groupby_1",
+        feature_name=parameters.name,
         parameters=parameters,
         serving_names=["OID"],
         serving_names_mapping=None,
@@ -93,6 +105,7 @@ def item_agg_spec_fixture():
         ),
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
     )
     return agg_spec
 
@@ -237,11 +250,13 @@ def test_feature_execution_planner(
         query_graph_with_groupby, source_type=SourceType.SNOWFLAKE, is_online_serving=False
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(
+    actual = list(
         plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
-    ) == [
+    )
+    expected = [
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -265,11 +280,13 @@ def test_feature_execution_planner(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_1,
             )
         ],
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -293,22 +310,26 @@ def test_feature_execution_planner(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_2,
             )
         ],
     ]
+    assert actual == expected
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
     assert plan.required_entity_ids == {ObjectId("637516ebc9c18f5a277a78db")}
@@ -335,6 +356,7 @@ def test_feature_execution_planner__serving_names_mapping(
     ) == [
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -358,11 +380,13 @@ def test_feature_execution_planner__serving_names_mapping(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_1,
             )
         ],
         [
             TileBasedAggregationSpec(
+                node_name=groupby_node.name,
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -386,6 +410,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
+                agg_result_name_include_serving_names=True,
                 **expected_pruned_graph_and_node_2,
             )
         ],
@@ -394,14 +419,16 @@ def test_feature_execution_planner__serving_names_mapping(
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_NEW_CUST_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_NEW_CUST_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
 
@@ -429,8 +456,8 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     agg_result_dict.pop("adapter")
     assert agg_result_dict == {
         "column_names": [
-            "_fb_internal_lookup_cust_value_1_input_1",
-            "_fb_internal_lookup_cust_value_2_input_1",
+            "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_1",
+            "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1",
         ],
         "join_keys": ["CUSTOMER_ID"],
         "forward_point_in_time_offset": None,
@@ -455,14 +482,16 @@ def test_feature_execution_planner__query_graph_with_graph_node(
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
             feature_expr=quoted_identifier(
-                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+                f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}"
             ),
+            feature_dtype=DBVarType.FLOAT,
         ),
     }
 
@@ -482,3 +511,79 @@ def test_feature_execution_planner__feature_no_entity_ids(
     )
     plan = planner.generate_plan([groupby_node])
     assert plan.required_entity_ids == set()
+
+
+def test_feature_execution_planner__entity_relationships_context(
+    complex_feature_query_graph,
+    feature_node_relationships_info_business_is_parent_of_user,
+    entity_lookup_step_creator,
+    customer_entity_id,
+    business_entity_id,
+    relation_table,
+    parent_serving_preparation,
+    update_fixtures,
+):
+    """
+    Test FeatureExecutionPlanner with EntityRelationshipsContext specified
+    """
+    node, graph = complex_feature_query_graph
+    entity_relationships_context = EntityRelationshipsContext(
+        feature_list_primary_entity_ids=[customer_entity_id],
+        feature_list_serving_names=["cust_id"],
+        feature_list_relationships_info=[],
+        feature_node_relationships_infos=[
+            feature_node_relationships_info_business_is_parent_of_user
+        ],
+        entity_lookup_step_creator=entity_lookup_step_creator,
+    )
+    parent_serving_preparation.entity_relationships_context = entity_relationships_context
+    planner = FeatureExecutionPlanner(
+        graph,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    plan = planner.generate_plan([node])
+
+    # Check aggregation specs serving names updated correctly
+    for agg_specs in plan.aggregators[
+        "window"
+    ].window_aggregation_spec_set.get_grouped_aggregation_specs():
+        for agg_spec in agg_specs:
+            assert agg_spec.keys[0] in {"cust_id", "biz_id"}
+            if agg_spec.keys[0] == "cust_id":
+                assert agg_spec.serving_names == ["cust_id"]
+            else:
+                assert agg_spec.serving_names == ["cust_id_100000000000000000000000"]
+
+    # Check entity lookup steps recorded in plan correctly
+    assert plan.feature_entity_lookup_steps == {
+        "cust_id_100000000000000000000000": EntityLookupStep(
+            id=ObjectId("100000000000000000000000"),
+            table=relation_table.dict(by_alias=True),
+            parent=EntityLookupInfo(
+                entity_id=business_entity_id,
+                key="relation_biz_id",
+                serving_name="cust_id_100000000000000000000000",
+            ),
+            child=EntityLookupInfo(
+                entity_id=customer_entity_id,
+                key="relation_cust_id",
+                serving_name="cust_id",
+            ),
+        )
+    }
+
+    # Check combined sql
+    sql = plan.construct_combined_sql(
+        request_table_name="REQUEST_TABLE",
+        point_in_time_column="POINT_IN_TIME",
+        request_table_columns=["a", "b", "c"],
+        prior_cte_statements=[],
+        exclude_columns=None,
+    ).sql(pretty=True)
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_combined_sql_with_relationships.sql",
+        update_fixture=update_fixtures,
+    )

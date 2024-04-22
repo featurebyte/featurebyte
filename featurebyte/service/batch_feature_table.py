@@ -1,6 +1,7 @@
 """
 BatchFeatureTableService class
 """
+
 from __future__ import annotations
 
 from bson import ObjectId

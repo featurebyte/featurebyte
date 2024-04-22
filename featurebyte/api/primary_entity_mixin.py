@@ -1,6 +1,7 @@
 """
 Primary entity mixin
 """
+
 from typing import List, Sequence
 
 from abc import abstractmethod

@@ -1,6 +1,7 @@
 """
 Databricks Tile Generate Job Script
 """
+
 from typing import Optional
 
 import dateutil.parser
@@ -9,7 +10,6 @@ from featurebyte.common import date_util
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileType
 from featurebyte.service.tile_registry_service import TileRegistryService
-from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -77,8 +77,11 @@ class TileGenerate(TileCommon):
         # insert new records and update existing records
         if not tile_table_exist_flag:
             logger.debug(f"creating tile table: {self.tile_id}")
-            create_sql = construct_create_table_query(self.tile_id, tile_sql, session=self._session)
-            await retry_sql(self._session, create_sql)
+            await self._session.create_table_as(
+                table_details=self.tile_id,
+                select_expr=tile_sql,
+                retry=True,
+            )
             logger.debug(f"done creating table: {self.tile_id}")
         else:
             logger.debug("merging into tile table", extra={"tile_id": self.tile_id})
@@ -100,7 +103,7 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            await retry_sql(session=self._session, sql=merge_sql)
+            await self._session.retry_sql(sql=merge_sql)
 
         if self.last_tile_start_str:
             ind_value = date_util.timestamp_utc_to_tile_index(

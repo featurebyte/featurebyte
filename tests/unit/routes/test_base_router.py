@@ -1,6 +1,7 @@
 """
 Test base router module
 """
+
 from fastapi import APIRouter
 
 from featurebyte.routes.base_router import BaseRouter

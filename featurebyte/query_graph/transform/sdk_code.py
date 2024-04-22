@@ -1,6 +1,7 @@
 """
 This module contains an extractor class to generate SDK codes from a query graph.
 """
+
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bson import ObjectId
@@ -117,6 +118,7 @@ class SDKCodeGlobalState(BaseModel):
             NodeType.LOOKUP_TARGET,
             NodeType.ITEM_GROUPBY,
             NodeType.AGGREGATE_AS_AT,
+            NodeType.FORWARD_AGGREGATE_AS_AT,
         ):
             # ForwardAggregateNode's, LookupTargetNode's, ItemGroupByNode's & AggregateAsAtNode's SDK code like
             # * `view.groupby(...).forward_aggregate(...)`

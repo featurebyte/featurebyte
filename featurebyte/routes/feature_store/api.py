@@ -1,18 +1,22 @@
 """
 FeatureStore API routes
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from http import HTTPStatus
+
 from fastapi import Query, Request
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -32,6 +36,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
+from featurebyte.schema.task import Task
 
 
 class FeatureStoreRouter(
@@ -87,8 +92,20 @@ class FeatureStoreRouter(
             response_model=FeatureStoreShape,
         )
         self.router.add_api_route(
+            "/table_shape",
+            self.get_table_shape,
+            methods=["POST"],
+            response_model=FeatureStoreShape,
+        )
+        self.router.add_api_route(
             "/preview",
             self.get_data_preview,
+            methods=["POST"],
+            response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/table_preview",
+            self.get_table_preview,
             methods=["POST"],
             response_model=Dict[str, Any],
         )
@@ -103,6 +120,13 @@ class FeatureStoreRouter(
             self.get_data_description,
             methods=["POST"],
             response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/data_description",
+            self.submit_data_description_task,
+            methods=["POST"],
+            response_model=Task,
+            status_code=HTTPStatus.CREATED,
         )
 
     async def create_object(
@@ -265,6 +289,17 @@ class FeatureStoreRouter(
         return await controller.shape(preview=preview)
 
     @staticmethod
+    async def get_table_shape(
+        request: Request,
+        location: TabularSource,
+    ) -> FeatureStoreShape:
+        """
+        Retrieve shape for a tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_shape(location=location)
+
+    @staticmethod
     async def get_data_preview(
         request: Request,
         preview: FeatureStorePreview,
@@ -275,6 +310,18 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.preview(preview=preview, limit=limit)
+
+    @staticmethod
+    async def get_table_preview(
+        request: Request,
+        location: TabularSource,
+        limit: int = Query(default=10, gt=0, le=10000),
+    ) -> Dict[str, Any]:
+        """
+        Retrieve data preview for tabular source
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.table_preview(location=location, limit=limit)
 
     @staticmethod
     async def get_data_sample(
@@ -301,6 +348,23 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.describe(sample=sample, size=size, seed=seed)
+
+    @staticmethod
+    async def submit_data_description_task(
+        request: Request,
+        sample: FeatureStoreSample,
+        size: int = Query(default=0, gte=0, le=1000000),
+        seed: int = Query(default=1234),
+        catalog_id: PydanticObjectId = Query(default=None),
+    ) -> Task:
+        """
+        Submit data description task for query graph node
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        task_submit: Task = await controller.create_data_description(
+            sample=sample, size=size, seed=seed, catalog_id=catalog_id or DEFAULT_CATALOG_ID
+        )
+        return task_submit
 
     async def delete_object(
         self, request: Request, feature_store_id: PydanticObjectId

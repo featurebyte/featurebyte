@@ -1,6 +1,7 @@
 """
 Online store initialization task
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -13,6 +14,7 @@ from featurebyte.schema.worker.task.online_store_initialize import (
     CatalogOnlineStoreInitializeTaskPayload,
 )
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.worker.task.base import BaseTask
@@ -41,6 +43,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         feast_registry_service: FeastRegistryService,
         feast_feature_store_service: FeastFeatureStoreService,
         catalog_service: CatalogService,
+        deployment_service: DeploymentService,
         task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__()
@@ -49,6 +52,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         self.feast_registry_service = feast_registry_service
         self.feast_feature_store_service = feast_feature_store_service
         self.catalog_service = catalog_service
+        self.deployment_service = deployment_service
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> str:
@@ -72,21 +76,14 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         )
 
     async def _run_materialize(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> None:
-        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
-        if feast_registry is None:
-            return None
-        feast_feature_store = await self.feast_feature_store_service.get_feast_feature_store(
-            feast_registry_id=feast_registry.id,
-            online_store_id=payload.online_store_id,
-        )
         session = None
         total_count = (await self.offline_store_feature_table_service.list_documents_as_dict())[
             "total"
         ]
         current_table_index = 0
-        async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator(
-            {}
-        ):
+        async for (
+            feature_table_model
+        ) in self.offline_store_feature_table_service.list_documents_iterator({}):
             logger.info(
                 "Updating online store for offline feature store table",
                 extra={
@@ -105,8 +102,18 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
                 session = await self.feature_materialize_service._get_session(  # pylint: disable=protected-access
                     feature_table_model
                 )
-            await self.feature_materialize_service.update_online_store(
-                feature_store=feast_feature_store,
-                feature_table_model=feature_table_model,
-                session=session,
-            )
+
+            if feature_table_model.deployment_ids:
+                service = self.feast_feature_store_service
+                feast_feature_store = (
+                    await service.get_feast_feature_store_for_feature_materialization(
+                        feature_table_model=feature_table_model,
+                        online_store_id=payload.online_store_id,
+                    )
+                )
+                if feast_feature_store:
+                    await self.feature_materialize_service.update_online_store(
+                        feature_store=feast_feature_store,
+                        feature_table_model=feature_table_model,
+                        session=session,
+                    )

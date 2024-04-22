@@ -1,6 +1,7 @@
 """
 Feature util module.
 """
+
 from typing import List, Optional, Union
 
 import pandas as pd

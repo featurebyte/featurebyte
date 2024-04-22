@@ -1,6 +1,7 @@
 """
 Vector node module
 """
+
 from typing import List, Literal, Sequence, Tuple
 
 import textwrap

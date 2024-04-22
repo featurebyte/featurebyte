@@ -1,6 +1,7 @@
 """
 Unit tests for worker/util directory
 """
+
 from unittest.mock import Mock
 
 import pytest

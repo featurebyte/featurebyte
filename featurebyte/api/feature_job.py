@@ -1,6 +1,7 @@
 """
 FeatureJobMixin class
 """
+
 from typing import Any, Dict, List, Tuple
 
 import base64

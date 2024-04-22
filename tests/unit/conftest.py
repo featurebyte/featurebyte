@@ -9,6 +9,7 @@ import os
 import tempfile
 import traceback
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -20,6 +21,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
+from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
@@ -56,8 +58,8 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
-from featurebyte.session.manager import SessionManager, session_cache
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, session_cache
+from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
@@ -159,8 +161,8 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
-@pytest.fixture(name="snowflake_connector")
-def mock_snowflake_connector():
+@pytest.fixture(name="snowflake_connector_patches")
+def snowflake_connector_patches():
     """
     Mock snowflake connector in featurebyte.session.snowflake module
     """
@@ -171,28 +173,52 @@ def mock_snowflake_connector():
         cursor = connection.cursor.return_value
         cursor.sfqid = "some-query-id"
         cursor.fetch_arrow_batches.return_value = []
-        yield mock_connector
+        yield {
+            "connector": mock_connector,
+            "cursor": cursor,
+        }
+
+
+@pytest.fixture(name="snowflake_connector")
+def snowflake_connector_fixture(snowflake_connector_patches):
+    """
+    Mock snowflake connector cursor
+    """
+    yield snowflake_connector_patches["connector"]
+
+
+@pytest.fixture(name="snowflake_connector_cursor")
+def snowflake_connector_cursor_fixture(snowflake_connector_patches):
+    """
+    Mock snowflake connector cursor
+    """
+    yield snowflake_connector_patches["cursor"]
 
 
 @pytest.fixture(name="snowflake_query_map")
 def snowflake_query_map_fixture():
     """snowflake query map fixture"""
     query_map = {
-        "SHOW DATABASES": [{"name": "sf_database"}],
-        'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_table", "comment": ""},
-            {"name": "sf_table_no_tz", "comment": None},
-            {"name": "items_table", "comment": "Item table"},
-            {"name": "items_table_same_event_id", "comment": None},
-            {"name": "fixed_table", "comment": None},
-            {"name": "non_scalar_table", "comment": None},
-            {"name": "scd_table", "comment": "SCD table"},
-            {"name": "scd_table_state_map", "comment": None},
-            {"name": "dimension_table", "comment": "Dimension table"},
+        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [
+            {"DATABASE_NAME": "sf_database"}
         ],
-        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_view", "comment": "this is view"}
+        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [
+            {"SCHEMA_NAME": "sf_schema"}
+        ],
+        (
+            'SELECT TABLE_NAME, COMMENT FROM "sf_database".INFORMATION_SCHEMA.TABLES WHERE '
+            "TABLE_SCHEMA = 'sf_schema'"
+        ): [
+            {"TABLE_NAME": "sf_table", "COMMENT": ""},
+            {"TABLE_NAME": "sf_table_no_tz", "COMMENT": None},
+            {"TABLE_NAME": "items_table", "COMMENT": "Item table"},
+            {"TABLE_NAME": "items_table_same_event_id", "COMMENT": None},
+            {"TABLE_NAME": "fixed_table", "COMMENT": None},
+            {"TABLE_NAME": "non_scalar_table", "COMMENT": None},
+            {"TABLE_NAME": "scd_table", "COMMENT": "SCD table"},
+            {"TABLE_NAME": "scd_table_state_map", "COMMENT": None},
+            {"TABLE_NAME": "dimension_table", "COMMENT": "Dimension table"},
+            {"TABLE_NAME": "sf_view", "COMMENT": "this is view"},
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {
@@ -566,14 +592,46 @@ def snowflake_query_map_fixture():
             }
         ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
+        'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
+            {"row_count": 100}
+        ],
+        (
+            'SELECT\n  COUNT(*) AS "row_count"\nFROM (\n  SELECT\n    "event_timestamp" AS "POINT_IN_TIME",'
+            '\n    "cust_id" AS "cust_id"\n  FROM (\n    SELECT\n      "col_int" AS "col_int",\n      '
+            '"col_float" AS "col_float",\n      "col_char" AS "col_char",\n      "col_text" AS "col_text",'
+            '\n      "col_binary" AS "col_binary",\n      "col_boolean" AS "col_boolean",\n      '
+            '"event_timestamp" AS "event_timestamp",\n      "cust_id" AS "cust_id"\n    '
+            'FROM "sf_database"."sf_schema"."sf_table"\n  )\n)'
+        ): [{"row_count": 100}],
+        'SELECT\n  *\nFROM "sf_database"."sf_schema"."sf_table"\nLIMIT 3': [
+            {
+                "col_int": [1, 2, 3],
+                "col_float": [1.0, 2.0, 3.0],
+                "col_char": ["a", "b", "c"],
+                "col_text": ["abc", "def", "ghi"],
+                "col_binary": [1, 0, 1],
+                "col_boolean": [True, False, True],
+                "event_timestamp": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "created_at": [
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                    "2021-01-01 00:00:00",
+                ],
+                "cust_id": [1, 2, 3],
+            }
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
     ]
-    query_map[
-        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'
-    ] = get_show_columns_query_result_for_scd_table_v2(
-        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'] = (
+        get_show_columns_query_result_for_scd_table_v2(
+            query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+        )
     )
     return query_map
 
@@ -820,6 +878,12 @@ def transaction_entity_id_fixture():
     return ObjectId("63f94ed6ea1f050131379204")
 
 
+@pytest.fixture(name="gender_entity_id")
+def gender_entity_id_fixture():
+    """Gender entity ID"""
+    return ObjectId("65f11f1d8a03610e41399306")
+
+
 @pytest.fixture(name="snowflake_event_table")
 def snowflake_event_table_fixture(
     snowflake_database_table,
@@ -946,11 +1010,12 @@ def snowflake_scd_table_state_map_fixture(snowflake_data_source):
 
 
 @pytest.fixture(name="snowflake_scd_table_with_entity")
-def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity):
+def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity, gender_entity):
     """
     Fixture for an SCD table with entity
     """
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    snowflake_scd_table["col_boolean"].as_entity(gender_entity.name)
     return snowflake_scd_table
 
 
@@ -1046,12 +1111,12 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
 
 
 @pytest.fixture(name="gender_entity")
-def gender_entity_fixture(catalog):
+def gender_entity_fixture(gender_entity_id, catalog):
     """
     Gender entity fixture
     """
     _ = catalog
-    entity = Entity(name="gender", serving_names=["gender"])
+    entity = Entity(name="gender", serving_names=["gender"], _id=gender_entity_id)
     entity.save()
     yield entity
 
@@ -1296,8 +1361,20 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "column_name": "cust_id",
                     "data_type": json.dumps({"type": "FIXED", "scale": 0}),
                     "comment": None,
-                }
+                },
+                {
+                    "column_name": "POINT_IN_TIME",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ", "scale": 0}),
+                    "comment": None,
+                },
+                {
+                    "column_name": "target",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                },
             ]
+        elif "is_row_index_valid" in query:
+            return pd.DataFrame({"is_row_index_valid": [True]})
         elif "COUNT(*)" in query:
             res = [
                 {
@@ -1327,7 +1404,9 @@ def observation_table_from_source_fixture(
     _ = catalog
     _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table(
-        "observation_table_from_source_table", context_name=context.name
+        "observation_table_from_source_table",
+        context_name=context.name,
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
     )
 
 
@@ -1340,7 +1419,8 @@ def observation_table_from_view_fixture(
     """
     _ = patched_observation_table_service
     return snowflake_event_view_with_entity.create_observation_table(
-        "observation_table_from_event_view"
+        "observation_table_from_event_view",
+        columns_rename_mapping={"col_int": "transaction_id", "event_timestamp": "POINT_IN_TIME"},
     )
 
 
@@ -1769,11 +1849,10 @@ def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
 
 
 @pytest.fixture(name="aggregate_asat_feature")
-def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity):
     """
     Fixture to get an aggregate asat feature from SCD table
     """
-    snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
     scd_view = snowflake_scd_table_with_entity.get_view()
     feature = scd_view.groupby("col_boolean").aggregate_asat(
         value_column=None,
@@ -1797,6 +1876,22 @@ def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
     return feature
 
 
+@pytest.fixture(name="feature_with_internal_parent_child_relationships")
+def feature_with_internal_parent_child_relationships_fixture(
+    scd_lookup_feature, aggregate_asat_feature
+):
+    """
+    Feature with internal parent child relationships, for example:
+
+    C = A + B
+
+    where B is a parent of A
+    """
+    feature = scd_lookup_feature.astype(str) + "_" + aggregate_asat_feature.astype(str)
+    feature.name = "complex_parent_child_feature"
+    return feature
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(credentials, snowflake_connector):
     """
@@ -1813,13 +1908,17 @@ def mock_snowflake_session_fixture():
     """
     SnowflakeSession object fixture
     """
-    return Mock(
+    session = Mock(
         name="mock_snowflake_session",
         spec=SnowflakeSession,
         source_type=SourceType.SNOWFLAKE,
         database_name="sf_db",
         schema_name="sf_schema",
+        _no_schema_error=ProgrammingError,
     )
+    session.clone_if_not_threadsafe.return_value = session
+    session.create_table_as = partial(SnowflakeSession.create_table_as, session)
+    return session
 
 
 @pytest.fixture
@@ -2251,6 +2350,7 @@ def mock_offline_store_feature_manager_dependencies_fixture():
     patch_targets = {
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService": [
             "initialize_new_columns",
+            "initialize_precomputed_lookup_feature_table",
             "drop_columns",
             "drop_table",
         ],
@@ -2300,3 +2400,13 @@ def patch_app_get_storage(storage, temp_storage):
             mock_get_storage.return_value = storage
             mock_get_temp_storage.return_value = temp_storage
             yield
+
+
+@pytest.fixture(name="mock_is_featurebyte_schema")
+def patch_is_featurebyte_schema():
+    """Patch is_featurebyte_schema"""
+    with patch(
+        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._is_featurebyte_schema"
+    ) as mock_is_featurebyte_schema:
+        mock_is_featurebyte_schema.return_value = False
+        yield

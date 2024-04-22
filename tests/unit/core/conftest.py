@@ -1,6 +1,7 @@
 """
 Common test fixtures used across test files in core directory
 """
+
 import textwrap
 
 import pytest

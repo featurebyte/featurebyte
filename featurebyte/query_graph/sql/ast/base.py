@@ -1,6 +1,7 @@
 """
 Module containing base classes and functions for building syntax tree
 """
+
 from __future__ import annotations
 
 from typing import Optional, Type, TypeVar, cast
@@ -9,7 +10,6 @@ from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
 
-from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
@@ -18,28 +18,11 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
+from featurebyte.query_graph.sql.specs import AggregationSpec
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
-
-
-@dataclass
-class EventTableTimestampFilter:
-    """
-    Information about the timestamp filter to be applied when selecting from EventTable
-
-    timestamp_column_name: str
-        Name of the timestamp column
-    event_table_id: ObjectId
-        Id of the EventTable. Only EventTable matching this id should be filtered.
-    """
-
-    timestamp_column_name: str
-    event_table_id: ObjectId
-    start_timestamp_placeholder_name: Optional[str] = None
-    end_timestamp_placeholder_name: Optional[str] = None
-    to_cast_placeholders: Optional[bool] = True
 
 
 @dataclass
@@ -68,6 +51,7 @@ class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
     input_sql_nodes: list[SQLNode]
     to_filter_scd_by_current_flag: Optional[bool]
     event_table_timestamp_filter: Optional[EventTableTimestampFilter]
+    aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()

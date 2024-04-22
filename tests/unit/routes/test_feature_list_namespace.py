@@ -1,6 +1,7 @@
 """
 Test for FeatureListNamespace route
 """
+
 from http import HTTPStatus
 
 import pytest

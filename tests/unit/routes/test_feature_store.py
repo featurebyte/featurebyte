@@ -1,6 +1,7 @@
 """
 Test for FeatureStore route
 """
+
 import copy
 import textwrap
 from http import HTTPStatus
@@ -14,7 +15,7 @@ from pandas.testing import assert_frame_equal
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte import FeatureStore
-from featurebyte.common.utils import dataframe_from_json
+from featurebyte.common.utils import dataframe_from_json, dataframe_to_json
 from featurebyte.exception import CredentialsError
 from featurebyte.models.credential import (
     CredentialModel,
@@ -22,7 +23,9 @@ from featurebyte.models.credential import (
     UsernamePasswordCredential,
 )
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -242,11 +245,16 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         }
 
     def test_list_tables__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+        mock_is_featurebyte_schema,
     ):
         """
         Test list tables
         """
+        _ = mock_is_featurebyte_schema
         test_api_client, _ = test_api_client_persistent
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
@@ -695,7 +703,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     def test_shape_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test table shape (success)"""
+        """Test shape (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame({"count": [100]})
@@ -727,6 +735,76 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                 SELECT
                   COUNT(*) AS "count"
                 FROM data
+                """
+            ).strip()
+        )
+
+    @pytest.fixture(name="tabular_source")
+    def tabular_source_fixture(self, create_success_response):
+        """Tabular source fixture"""
+        return TabularSource(
+            feature_store_id=create_success_response.json()["_id"],
+            table_details=TableDetails(
+                database_name="sf_database",
+                schema_name="sf_schema",
+                table_name="sf_table",
+            ),
+        )
+
+    def test_table_shape_200(self, test_api_client_persistent, tabular_source, mock_get_session):
+        """Test table shape (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame({"row_count": [100]})
+        mock_session = mock_get_session.return_value
+        mock_session.list_table_schema.return_value = {
+            f"col_{i}": {"name": f"col_{i}"} for i in range(9)
+        }
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        response = test_api_client.post(
+            "/feature_store/table_shape", json=tabular_source.json_dict()
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {"num_rows": 100, "num_cols": 9}
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                SELECT
+                  COUNT(*) AS "row_count"
+                FROM "sf_database"."sf_schema"."sf_table"
+                """
+            ).strip()
+        )
+
+    def test_table_preview_200(self, test_api_client_persistent, tabular_source, mock_get_session):
+        """Test table preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame(
+            {
+                "col_int": [1, 2, 3],
+            }
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        response = test_api_client.post(
+            "/feature_store/table_preview?limit=3", json=tabular_source.json_dict()
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == dataframe_to_json(expected_df)
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                SELECT
+                  *
+                FROM "sf_database"."sf_schema"."sf_table"
+                LIMIT 3
                 """
             ).strip()
         )

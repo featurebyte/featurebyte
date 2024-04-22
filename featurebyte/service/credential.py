@@ -1,6 +1,7 @@
 """
 CredentialService
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -144,6 +145,7 @@ class CredentialService(
         document: Optional[CredentialModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[CredentialModel]:
         """
         Update document at persistent
@@ -162,13 +164,17 @@ class CredentialService(
             Whether to make additional query to retrieval updated document & return
         skip_block_modification_check: bool
             Whether to skip block modification check (used only when updating description)
+        populate_remote_attributes: bool
+            Whether to populate remote attributes
 
         Returns
         -------
         Optional[Document]
         """
         if document is None:
-            document = await self.get_document(document_id=document_id)
+            document = await self.get_document(
+                document_id=document_id, populate_remote_attributes=False
+            )
 
         # ensure document is decrypted
         try:
@@ -189,4 +195,5 @@ class CredentialService(
             document=document,
             return_document=return_document,
             skip_block_modification_check=skip_block_modification_check,
+            populate_remote_attributes=populate_remote_attributes,
         )

@@ -1,16 +1,32 @@
-version: "3.8"
-
 services:
-  mongo-rs:
+  mongo-testrs:
     hostname: mongo-testrs
     container_name: mongo-testrs
     image: "featurebyte/mongo:latest"
-    environment:
-      - MONGO_HOSTNAME=localhost
     ports:
-      - 27021:27021
-      - 27022:27022
+      - 27017:27017  # Expose MongoDB port
+    entrypoint: []
+    healthcheck:
+      test: mongosh 'mongodb://localhost/admin?replicaSet=rs0' --quiet --eval "exit" 2>/dev/null
+    command:
+      - /bin/bash
+      - -c
+      - |
+        set -em
 
+        # Creating Database
+        /usr/bin/mongod --quiet --dbpath=/tmp --bind_ip_all --replSet rs0 &
+        while ! mongosh --quiet --eval "exit" 2>/dev/null; do sleep 1; done; echo "mongodb started"
+
+        # If not bootstrapped, bootstrap
+        if ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; then
+          mongosh --quiet <<EOF
+            var config = { "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "localhost", "priority": 1 }]};
+            rs.initiate(config, { force: true });
+        EOF
+        fi
+
+        fg  # Reconnect to mongod proc
   redis:
     hostname: redis-test
     container_name: redis-test
@@ -49,7 +65,7 @@ services:
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
         --master=local[2] \
-        --conf spark.driver.memory=2G \
+        --conf spark.driver.memory=3G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \

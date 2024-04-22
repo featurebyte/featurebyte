@@ -9,6 +9,20 @@
     "featurelist_get_historical_features": {
         "feature_clusters": [
             {
+                "combined_relationships_info": [],
+                "feature_node_definition_hashes": [
+                    {
+                        "definition_hash": null,
+                        "node_name": "project_1"
+                    }
+                ],
+                "feature_node_relationships_infos": [
+                    {
+                        "node_name": "project_1",
+                        "primary_entity_ids": [],
+                        "relationships_info": []
+                    }
+                ],
                 "feature_store_id": "646f6c190ed28a5271fb02a1",
                 "graph": {
                     "edges": [

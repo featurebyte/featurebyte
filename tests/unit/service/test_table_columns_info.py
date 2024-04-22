@@ -1,6 +1,7 @@
 """
 Test TableColumnsInfoService
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -8,10 +9,12 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte import Relationship
+from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.dimension_table import DimensionTableServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_table import EventTableServiceUpdate
@@ -343,6 +346,10 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     # call update entity relationship
     await table_columns_info_service._update_entity_relationship(
         document=event_table,
+        updated_columns_info=[
+            ColumnInfo(name=f"col_{entity_id}", dtype=DBVarType.VARCHAR, entity_id=entity_id)
+            for entity_id in new_primary_entities.union(new_parent_entities)
+        ],
         old_primary_entities=old_primary_entities,
         old_parent_entities=old_parent_entities,
         new_primary_entities=new_primary_entities,
@@ -449,6 +456,8 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     Test _update_entity_relationship when relationship infos are added
     """
     # setup old primary entity
+    new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entity_docs)
+    new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entity_docs)
     old_primary_entity_ids = convert_entity_name_to_ids(old_primary_entities, entity_docs)
     old_parent_entity_ids = convert_entity_name_to_ids(old_parent_entities, entity_docs)
 
@@ -470,10 +479,14 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     # Call update entity relationship
     await table_columns_info_service._update_entity_relationship(
         document=event_table,
+        updated_columns_info=[
+            ColumnInfo(name=f"col_{entity_id}", dtype=DBVarType.VARCHAR, entity_id=entity_id)
+            for entity_id in new_primary_entities.union(new_parent_entities)
+        ],
         old_primary_entities=old_primary_entity_ids,
         old_parent_entities=old_parent_entity_ids,
-        new_primary_entities=convert_entity_name_to_ids(new_primary_entities, entity_docs),
-        new_parent_entities=convert_entity_name_to_ids(new_parent_entities, entity_docs),
+        new_primary_entities=new_primary_entities,
+        new_parent_entities=new_parent_entities,
     )
 
     # Verify that relationships have correct updated by user IDs

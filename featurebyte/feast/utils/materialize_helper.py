@@ -1,6 +1,7 @@
 """
 Helper function for feature materialization
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -14,6 +15,7 @@ from feast import FeatureStore, FeatureView, utils
 from tqdm import tqdm
 
 from featurebyte.enum import InternalName
+from featurebyte.exception import FeatureMaterializationError
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, to_thread
 
 DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
@@ -64,6 +66,11 @@ async def materialize_partial(
         Start date of materialization
     with_feature_timestamp : bool
         Whether to include the feature timestamp in the materialization
+
+    Raises
+    ------
+    FeatureMaterializationError
+        If materialization fails for any reason
     """
     if start_date is None:
         start_date = DEFAULT_MATERIALIZE_START_DATE
@@ -106,14 +113,20 @@ async def materialize_partial(
     with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"), patch(
         "feast.infra.utils.snowflake.snowflake_utils._cache", snowflake_session_cache
     ):
-        await to_thread(
-            provider.materialize_single_feature_view,
-            LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-            config=feature_store.config,
-            feature_view=partial_feature_view,
-            start_date=start_date,
-            end_date=end_date,
-            registry=feature_store._registry,  # pylint: disable=protected-access
-            project=feature_store.project,
-            tqdm_builder=silent_tqdm_builder,
-        )
+        try:
+            await to_thread(
+                provider.materialize_single_feature_view,
+                LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                config=feature_store.config,
+                feature_view=partial_feature_view,
+                start_date=start_date,
+                end_date=end_date,
+                registry=feature_store._registry,  # pylint: disable=protected-access
+                project=feature_store.project,
+                tqdm_builder=silent_tqdm_builder,
+            )
+        except Exception as exc:
+            # add more context to the exception
+            raise FeatureMaterializationError(
+                f"Failed to materialize {partial_feature_view.name}: {partial_feature_view.features}"
+            ) from exc

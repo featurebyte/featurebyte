@@ -1,6 +1,7 @@
 """
 BatchFeatureTable related model(s)
 """
+
 from __future__ import annotations
 
 import pymongo

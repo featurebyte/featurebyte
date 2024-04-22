@@ -1,7 +1,8 @@
 """
 Base materialize table test class
 """
-from typing import Any, Dict, Generic, Type, TypeVar
+
+from typing import Any, Dict, Type, TypeVar
 
 from abc import abstractmethod
 
@@ -15,7 +16,7 @@ from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 BaseFeatureOrTargetTableT = TypeVar("BaseFeatureOrTargetTableT", bound=ApiObject)
 
 
-class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
+class BaseMaterializedTableApiTest:
     """
     Base materialized table api tests
     """
@@ -83,7 +84,7 @@ class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
         assert df["name"].tolist() == [f"my_{expected_name}"]
         assert df["feature_store_name"].tolist() == ["sf_featurestore"]
         assert df["observation_table_name"].tolist() == ["observation_table_from_source_table"]
-        assert df["shape"].tolist() == [[500, 1]]
+        assert df["shape"].tolist() == [[500, 3]]
 
     def test_list(self, table_under_test):
         """

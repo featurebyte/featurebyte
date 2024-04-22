@@ -1,6 +1,7 @@
 """
 Schemas common to materialized table
 """
+
 from typing import Any, Dict, Tuple
 
 from pydantic import root_validator

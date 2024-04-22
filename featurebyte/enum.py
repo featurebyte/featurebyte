@@ -3,6 +3,7 @@ This module contains all the enums used across different modules
 
 Note: do not include server only dependencies here
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -203,7 +204,7 @@ class DBVarType(StrEnum):
         -------
         set[DBVarType]
         """
-        return {cls.ARRAY, cls.OBJECT, cls.STRUCT}
+        return {cls.ARRAY, cls.OBJECT, cls.STRUCT, cls.DICT}
 
     @classmethod
     def dictionary_types(cls) -> set[DBVarType]:
@@ -216,7 +217,7 @@ class DBVarType(StrEnum):
         """
         # FIXME: remove this after we update to the dictionary type
         # Snowflake uses OBJECT for dictionary type & Spark uses STRUCT for dictionary type
-        return {cls.OBJECT, cls.STRUCT}
+        return {cls.OBJECT, cls.STRUCT, cls.DICT, cls.MAP}
 
     @classmethod
     def array_types(cls) -> set[DBVarType]:
@@ -407,6 +408,7 @@ class WorkerCommand(StrEnum):
     ONLINE_STORE_TABLE_CLEANUP = "ONLINE_STORE_TABLE_CLEANUP"
     CATALOG_ONLINE_STORE_UPDATE = "CATALOG_ONLINE_STORE_UPDATE"
     SCHEDULED_FEATURE_MATERIALIZE = "SCHEDULED_FEATURE_MATERIALIZE"
+    DATA_DESCRIPTION = "DATA_DESCRIPTION"
 
     # Tasks to be deprecated
     FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE = "FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE"
@@ -473,6 +475,17 @@ class MaterializedTableNamePrefix(StrEnum):
         list[str]
         """
         return [c.value for c in cls]
+
+    @classmethod
+    def visible(cls) -> list[str]:
+        """
+        List all prefixes for visible tables
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls if c.value != cls.FEATURE_TABLE_CACHE]
 
 
 class FunctionParameterInputForm(StrEnum):

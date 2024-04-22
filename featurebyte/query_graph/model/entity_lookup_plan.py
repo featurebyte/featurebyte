@@ -1,10 +1,12 @@
 """
 Parent / child entity lookup related models
 """
+
 from __future__ import annotations
 
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
+import copy
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -289,3 +291,56 @@ class EntityLookupPlanner:
                     if key not in visited:
                         visited.add(key)
                         pending.append(new_node)
+
+
+@dataclass
+class EntityColumn:
+    """
+    Entity column that can be transformed into parent's entity column
+
+    entity_id: ObjectId
+        Entity id of the column
+    serving_name: ObjectId
+        Serving name of the column
+    child_serving_name: Optional[str]
+        The column name from which the current column originates from (via a lookup join using
+        parent child relationship). Missing if there is no prior join applied on the column.
+    relationship_info_id: Optional[ObjectId]
+        Id of the relationship info for the lookup join
+    """
+
+    entity_id: ObjectId
+    serving_name: str
+    child_serving_name: Optional[str]
+    relationship_info_id: Optional[ObjectId]
+
+    def get_parent_entity_columns(
+        self, lookup_steps: list[EntityRelationshipInfo]
+    ) -> list[EntityColumn]:
+        """
+        Apply entity lookup steps and generate new entity columns that are the parents. The
+        generated column name for parent EntityColumn tracks the lineage of the lookup steps.
+
+        Parameters
+        ----------
+        lookup_steps: list[EntityRelationshipInfo]
+            Lookup steps to apply
+
+        Returns
+        -------
+        list[EntityColumn]
+        """
+        columns = [copy.deepcopy(self)]
+        for lookup_step in lookup_steps:
+            new_columns = []
+            for column in columns:
+                if lookup_step.entity_id == column.entity_id:
+                    current = EntityColumn(
+                        entity_id=lookup_step.related_entity_id,
+                        serving_name=column.serving_name + f"_{lookup_step.id}",
+                        child_serving_name=column.serving_name,
+                        relationship_info_id=lookup_step.id,
+                    )
+                    new_columns.append(current)
+            columns.extend(new_columns)
+        return columns

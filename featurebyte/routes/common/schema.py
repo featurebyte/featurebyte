@@ -1,6 +1,7 @@
 """
 Common classes mixin for API payload schema
 """
+
 from fastapi import Query
 
 # route query parameters

@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.algorithms
 """
+
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 

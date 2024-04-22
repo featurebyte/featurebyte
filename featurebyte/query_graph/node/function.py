@@ -1,6 +1,7 @@
 """
 This module contains generic function related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import Annotated

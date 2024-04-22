@@ -1,7 +1,6 @@
 """
 Test preview service module
 """
-import textwrap
 
 import pandas as pd
 import pytest
@@ -11,8 +10,6 @@ from featurebyte import FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.schema.preview import FeatureOrTargetPreview
@@ -253,68 +250,3 @@ async def test_value_counts(
         num_categories_limit=500,
     )
     assert result == {"a": 100, "b": 50}
-
-
-@pytest.mark.parametrize("has_row_index", [False, True])
-@pytest.mark.asyncio
-async def test_download_table(
-    preview_service,
-    feature_store,
-    mock_snowflake_session,
-    has_row_index,
-):
-    """
-    Test download_table
-    """
-
-    # mock row count query
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
-        {
-            "row_count": [100],
-        }
-    )
-
-    # mock list_table_schema query
-    df_list_table_schema = pd.DataFrame(
-        {
-            "col_a": {"name": "col_a"},
-            "col_b": {"name": "col_b"},
-        }
-    )
-    if has_row_index:
-        df_list_table_schema["__FB_TABLE_ROW_INDEX"] = {"name": "__FB_TABLE_ROW_INDEX"}
-    mock_snowflake_session.list_table_schema.return_value = df_list_table_schema
-
-    # check download_table triggers expected queries
-    _ = await preview_service.download_table(
-        location=TabularSource(
-            feature_store_id=feature_store.id,
-            table_details=TableDetails(
-                database_name="my_db",
-                schema_name="my_schema",
-                table_name="my_table",
-            ),
-        ),
-    )
-    if has_row_index:
-        expected_query = textwrap.dedent(
-            """
-            SELECT
-              "col_a",
-              "col_b"
-            FROM "my_db"."my_schema"."my_table"
-            ORDER BY
-              "__FB_TABLE_ROW_INDEX"
-            """
-        ).strip()
-    else:
-        expected_query = textwrap.dedent(
-            """
-            SELECT
-              "col_a",
-              "col_b"
-            FROM "my_db"."my_schema"."my_table"
-            """
-        ).strip()
-    args, _ = mock_snowflake_session.get_async_query_stream.call_args
-    assert args[0] == expected_query

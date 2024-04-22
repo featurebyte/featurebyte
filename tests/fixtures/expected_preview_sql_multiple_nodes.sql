@@ -241,20 +241,20 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T0"."_fb_internal_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "_fb_internal_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
-    "T0"."_fb_internal_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS "_fb_internal_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a",
-    "T1"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-    "T2"."_fb_internal_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "_fb_internal_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
-    "T2"."_fb_internal_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS "_fb_internal_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
+    "T0"."_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS "_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a",
+    "T1"."_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+    "T2"."_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
+    "T2"."_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS "_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-      MAX(value_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1) AS "_fb_internal_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
-      SUM(value_sum_b2286956686465632b008a61bb6119659c62a05a) AS "_fb_internal_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a"
+      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+      MAX(value_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1) AS "_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
+      SUM(value_sum_b2286956686465632b008a61bb6119659c62a05a) AS "_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -295,7 +295,7 @@ WITH REQUEST_TABLE AS (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
+      SUM(sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) / SUM(count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35) AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -332,8 +332,8 @@ WITH REQUEST_TABLE AS (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      MAX(value_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1) AS "_fb_internal_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
-      SUM(value_sum_b2286956686465632b008a61bb6119659c62a05a) AS "_fb_internal_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a"
+      MAX(value_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1) AS "_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1",
+      SUM(value_sum_b2286956686465632b008a61bb6119659c62a05a) AS "_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -370,10 +370,10 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_2h_average",
-  "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average",
-  "_fb_internal_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "a_2h_max",
-  "_fb_internal_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS "a_36h_max",
-  "_fb_internal_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS "a_2h_sum",
-  "_fb_internal_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS "a_36h_sum"
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_2h_average",
+  CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average",
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS DOUBLE) AS "a_2h_max",
+  CAST("_fb_internal_CUSTOMER_ID_window_w129600_max_5f3caf50a31246555f3cbf0d21fbdab3ba7afdf1" AS DOUBLE) AS "a_36h_max",
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_sum_b2286956686465632b008a61bb6119659c62a05a" AS DOUBLE) AS "a_2h_sum",
+  CAST("_fb_internal_CUSTOMER_ID_window_w129600_sum_b2286956686465632b008a61bb6119659c62a05a" AS DOUBLE) AS "a_36h_sum"
 FROM _FB_AGGREGATED AS AGG

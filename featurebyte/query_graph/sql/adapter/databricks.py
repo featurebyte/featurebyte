@@ -1,6 +1,7 @@
 """
 DatabricksAdapter class for generating Databricks specific SQL expressions
 """
+
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -14,7 +15,7 @@ from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -208,7 +209,12 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def create_table_as(
-        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+        cls,
+        table_details: TableDetails,
+        select_expr: Select | str,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
+        replace: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -217,8 +223,12 @@ class DatabricksAdapter(BaseAdapter):
         ----------
         table_details: TableDetails
             TableDetails of the table to be created
-        select_expr: Select
+        select_expr: Select | str
             Select expression
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
+        partition_keys: list[str] | None
+            Partition keys
         replace: bool
             Whether to replace the table if exists
 
@@ -227,24 +237,37 @@ class DatabricksAdapter(BaseAdapter):
         Expression
         """
         destination_expr = get_fully_qualified_table_name(table_details.dict())
-        table_properties = [
-            expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
-            expressions.Property(
-                this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
-            ),
-            expressions.Property(
-                this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
-            ),
-            expressions.Property(
-                this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
-            ),
-        ]
+
+        if kind == "TABLE":
+            table_properties = [
+                expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
+                ),
+            ]
+            if partition_keys:
+                table_properties.append(
+                    expressions.PartitionedByProperty(
+                        this=expressions.Schema(
+                            expressions=[quoted_identifier(key) for key in partition_keys]
+                        )
+                    )
+                )
+            properties = expressions.Properties(expressions=table_properties)
+        else:
+            properties = None
 
         return expressions.Create(
             this=expressions.Table(this=destination_expr),
-            kind="TABLE",
+            kind=kind,
             expression=select_expr,
-            properties=expressions.Properties(expressions=table_properties),
+            properties=properties,
             replace=replace,
         )
 

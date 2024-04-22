@@ -1,6 +1,7 @@
 """
 Preview schema
 """
+
 from typing import Optional
 
 from featurebyte.models.base import PydanticObjectId

@@ -1,6 +1,7 @@
 """
 This module contains Feature related models
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -106,6 +107,12 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
     # transaction and state will not be included as they are not used by the feature.
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
+    )
+
+    # entity join steps contains the steps required to join the entities used by the feature or target
+    # when it is None, it means that the attribute is not initialized (for backward compatibility)
+    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None
     )
 
@@ -551,6 +558,7 @@ class FeatureModel(BaseFeatureModel):
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
     online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
+    agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
     last_updated_by_scheduled_task_at: Optional[datetime] = Field(
         allow_mutation=False, default=None
     )
@@ -590,7 +598,10 @@ class FeatureModel(BaseFeatureModel):
         values["aggregation_result_names"] = []
         online_store_table_names = set()
         for query in get_online_store_precompute_queries(
-            graph, graph.get_node_by_name(node_name), feature_store_type
+            graph,
+            graph.get_node_by_name(node_name),
+            feature_store_type,
+            values["agg_result_name_include_serving_names"],
         ):
             values["aggregation_result_names"].append(query.result_name)
             online_store_table_names.add(query.table_name)

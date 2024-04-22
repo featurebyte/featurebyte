@@ -1,6 +1,7 @@
 """
 Test extract CSV
 """
+
 from typing import List
 
 from dataclasses import dataclass

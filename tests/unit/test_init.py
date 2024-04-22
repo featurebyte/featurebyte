@@ -1,6 +1,7 @@
 """
 Test init module functions
 """
+
 from typing import Optional
 
 from unittest import mock

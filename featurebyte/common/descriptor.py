@@ -1,6 +1,7 @@
 """
 This module contains descriptor class.
 """
+
 from typing import Any, Callable, Optional, Type, TypeVar
 
 from functools import partial

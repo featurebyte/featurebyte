@@ -1,6 +1,7 @@
 """
 On demand function (for DataBricks) related classes and functions.
 """
+
 from typing import Any, Dict, List, Tuple
 
 from pydantic import BaseModel, Field

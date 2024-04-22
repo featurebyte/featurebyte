@@ -6,12 +6,12 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."_fb_internal_lookup_membership_status_14d_input_1" AS "_fb_internal_lookup_membership_status_14d_input_1"
+    REQ."_fb_internal_CUSTOMER_ID_lookup_membership_status_14d_input_1" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_14d_input_1"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R."membership_status" AS "_fb_internal_lookup_membership_status_14d_input_1"
+      R."membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_14d_input_1"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -21,7 +21,7 @@ WITH REQUEST_TABLE AS (
       FROM (
         SELECT
           "__FB_KEY_COL_0",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
           "__FB_EFFECTIVE_TS_COL"
@@ -53,6 +53,8 @@ WITH REQUEST_TABLE AS (
               "cust_id" AS "cust_id",
               "membership_status" AS "membership_status"
             FROM "db"."public"."customer_profile_table"
+            WHERE
+              "event_timestamp" IS NOT NULL
           )
         )
       )
@@ -61,10 +63,21 @@ WITH REQUEST_TABLE AS (
     ) AS L
     LEFT JOIN (
       SELECT
-        "effective_ts" AS "effective_ts",
-        "cust_id" AS "cust_id",
-        "membership_status" AS "membership_status"
-      FROM "db"."public"."customer_profile_table"
+        ANY_VALUE("effective_ts") AS "effective_ts",
+        "cust_id",
+        ANY_VALUE("membership_status") AS "membership_status"
+      FROM (
+        SELECT
+          "effective_ts" AS "effective_ts",
+          "cust_id" AS "cust_id",
+          "membership_status" AS "membership_status"
+        FROM "db"."public"."customer_profile_table"
+        WHERE
+          "event_timestamp" IS NOT NULL
+      )
+      GROUP BY
+        "event_timestamp",
+        "cust_id"
     ) AS R
       ON L."__FB_LAST_TS" = R."event_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
   ) AS REQ
@@ -72,5 +85,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_lookup_membership_status_14d_input_1" AS "Current Membership Status"
+  "_fb_internal_CUSTOMER_ID_lookup_membership_status_14d_input_1" AS "Current Membership Status"
 FROM _FB_AGGREGATED AS AGG

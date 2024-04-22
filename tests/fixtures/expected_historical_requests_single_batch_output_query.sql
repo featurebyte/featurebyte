@@ -51,15 +51,15 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-    "T1"."_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-    "T2"."_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+    "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+    "T1"."_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
+    "T2"."_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -94,7 +94,7 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -129,7 +129,7 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -164,5 +164,5 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_1d"
+  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d"
 FROM _FB_AGGREGATED AS AGG

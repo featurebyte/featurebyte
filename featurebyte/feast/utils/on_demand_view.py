@@ -1,6 +1,7 @@
 """
 On demand feature view related classes and functions.
 """
+
 from typing import Any, Dict, List, Optional, Union, cast
 
 from unittest.mock import patch

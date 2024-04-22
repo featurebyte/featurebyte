@@ -1,6 +1,7 @@
 """
 SQL generation for looking up parent entities
 """
+
 from __future__ import annotations
 
 from typing import List
@@ -152,6 +153,7 @@ def _get_lookup_spec_from_join_step(
     )
 
     return LookupSpec(
+        node_name="dummy",
         input_column_name=join_step.parent.key,
         feature_name=join_step.parent.serving_name,
         entity_column=join_step.child.key,
@@ -162,4 +164,5 @@ def _get_lookup_spec_from_join_step(
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
+        agg_result_name_include_serving_names=True,
     )

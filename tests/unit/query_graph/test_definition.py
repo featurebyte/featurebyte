@@ -1,6 +1,7 @@
 """
 Unit tests for query graph definition extractor
 """
+
 import pytest
 from bson import ObjectId
 

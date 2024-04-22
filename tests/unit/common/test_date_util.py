@@ -1,6 +1,7 @@
 """
 Tests for functions in date_util.py module
 """
+
 from datetime import datetime
 
 import dateutil.parser

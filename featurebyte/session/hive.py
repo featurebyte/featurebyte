@@ -1,6 +1,7 @@
 """
 Customized Hive Connection class
 """
+
 from typing import Any, Mapping, Optional
 
 import logging

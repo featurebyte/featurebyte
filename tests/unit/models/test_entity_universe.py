@@ -1,6 +1,7 @@
 """
 Tests for entity_universe.py
 """
+
 import textwrap
 from datetime import datetime
 
@@ -80,6 +81,26 @@ def item_aggregate_graph_and_node(filtered_non_time_based_feature):
         filtered_non_time_based_feature, NodeType.ITEM_GROUPBY
     )
     return graph, item_aggregate_node
+
+
+@pytest.fixture
+def window_aggregate_graph_and_node(float_feature_different_job_setting):
+    """
+    Fixture for a groupby node with entity
+    """
+    graph = float_feature_different_job_setting.graph
+    groupby_node = get_node_from_feature(float_feature_different_job_setting, NodeType.GROUPBY)
+    return graph, groupby_node
+
+
+@pytest.fixture
+def window_aggregate_no_entity_graph_and_node(feature_without_entity):
+    """
+    Fixture for a groupby node without entity
+    """
+    graph = feature_without_entity.graph
+    groupby_node = get_node_from_feature(feature_without_entity, NodeType.GROUPBY)
+    return graph, groupby_node
 
 
 @pytest.fixture
@@ -401,6 +422,68 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
         ) AS PARENT
         LEFT JOIN "sf_database"."sf_schema"."scd_table" AS CHILD
           ON PARENT."cust_id" = CHILD."col_text"
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__output_dummy_entity_universe(
+    catalog, window_aggregate_no_entity_graph_and_node
+):
+    """
+    Test combined universe should include dummy entity universe only when there are no other entity
+    universes to be combined
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=window_aggregate_no_entity_graph_and_node[0],
+                node=window_aggregate_no_entity_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          1 AS "dummy_entity"
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__exclude_dummy_entity_universe(
+    catalog, window_aggregate_graph_and_node, window_aggregate_no_entity_graph_and_node
+):
+    """
+    Test combined universe should exclude dummy entity universe only when there are other entity
+    universes to be combined
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=window_aggregate_no_entity_graph_and_node[0],
+                node=window_aggregate_no_entity_graph_and_node[1],
+                join_steps=None,
+            ),
+            EntityUniverseParams(
+                graph=window_aggregate_graph_and_node[0],
+                node=window_aggregate_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "cust_id"
+        FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+        WHERE
+          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
         """
     ).strip()
     assert universe.sql(pretty=True) == expected

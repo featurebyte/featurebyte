@@ -1,6 +1,7 @@
 """
 Utility functions for sql string related changes
 """
+
 from __future__ import annotations
 
 from featurebyte.query_graph.sql.common import quoted_identifier

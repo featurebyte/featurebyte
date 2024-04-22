@@ -1,6 +1,7 @@
 """
 ItemTable API payload schema
 """
+
 from typing import List, Literal
 
 from pydantic import Field, StrictStr, validator

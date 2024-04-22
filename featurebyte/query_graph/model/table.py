@@ -1,6 +1,7 @@
 """
 This module contains specialized table related models.
 """
+
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
@@ -639,6 +640,7 @@ class TableDetails(FeatureByteBaseModel):
     """
 
     details: Dict[str, Any] = Field(default_factory=dict)
+    fully_qualified_name: str
 
     @property
     def description(self) -> str:

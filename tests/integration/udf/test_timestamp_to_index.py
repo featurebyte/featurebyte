@@ -1,6 +1,7 @@
 """
 This module contains integration tests for F_TIMESTAMP_TO_INDEX UDF
 """
+
 import pytest
 
 from featurebyte.session.base import BaseSession

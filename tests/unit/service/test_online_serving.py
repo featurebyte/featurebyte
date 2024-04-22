@@ -1,22 +1,21 @@
 """
 Tests for OnlineServingService
 """
+
 import json
 import os
 import textwrap
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.exception import FeatureListNotOnlineEnabledError, RequiredEntityNotProvidedError
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.session.base import BaseSession
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
@@ -25,10 +24,14 @@ from tests.util.helper import (
 
 
 @pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
-def mocked_unique_identifier_generator_fixture():
+def mocked_unique_identifier_generator_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
     with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id:
         patched_object_id.return_value = ObjectId("000000000000000000000000")
         yield patched_object_id
@@ -98,28 +101,23 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
 
 
 @pytest.fixture(name="mock_session_for_online_serving")
-def mock_session_for_online_serving_fixture():
+def mock_session_for_online_serving_fixture(mock_snowflake_session):
     """Mock session for online serving"""
 
     async def mock_execute_query(query):
         _ = query
+        if "is_row_index_valid" in query:
+            return pd.DataFrame({"is_row_index_valid": [True]})
         return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]})
 
     with patch(
         "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
-        mock_session = Mock(
-            name="mock_session_for_online_serving",
-            execute_query=Mock(side_effect=mock_execute_query),
-            execute_query_long_running=Mock(side_effect=mock_execute_query),
-            database_name="my_db",
-            schema_name="my_schema",
-            generate_session_unique_id=Mock(return_value="1"),
-            source_type=SourceType.SNOWFLAKE,
-            spec=BaseSession,
-        )
-        mock_get_feature_store_session.return_value = mock_session
-        yield mock_session
+        mock_snowflake_session.execute_query = Mock(side_effect=mock_execute_query)
+        mock_snowflake_session.execute_query_long_running = Mock(side_effect=mock_execute_query)
+        mock_snowflake_session.generate_session_unique_id.return_value = "1"
+        mock_get_feature_store_session.return_value = mock_snowflake_session
+        yield mock_snowflake_session
 
 
 @pytest.fixture
@@ -152,16 +150,16 @@ def expected_online_feature_query_fixture():
             REQ."__FB_TABLE_ROW_INDEX",
             REQ."cust_id",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+            "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+                "'_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -175,15 +173,15 @@ def expected_online_feature_query_fixture():
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
@@ -191,7 +189,7 @@ def expected_online_feature_query_fixture():
         SELECT
           AGG."__FB_TABLE_ROW_INDEX",
           AGG."cust_id",
-          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
+          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
@@ -310,16 +308,16 @@ async def test_feature_list_deployed_with_batch_request_table(
           SELECT
             REQ."cust_id",
             REQ."POINT_IN_TIME",
-            "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+            "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "cust_id" AS "cust_id",
-              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+              "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
             FROM (
               SELECT
                 """cust_id""" AS "cust_id",
-                "'_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+                "'_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
               FROM (
                 SELECT
                   "cust_id",
@@ -333,22 +331,22 @@ async def test_feature_list_deployed_with_batch_request_table(
                       "AGGREGATION_RESULT_NAME",
                       "LATEST_VERSION"
                     FROM (VALUES
-                      ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+                      ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
                   INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
                 WHERE
-                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
           AGG."cust_id",
-          "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
+          CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
     ).strip()
@@ -380,6 +378,23 @@ async def test_get_online_features_multiple_queries__dataframe(
         update_fixture=update_fixtures,
     )
 
+    # REQUEST_TABLE_1 is an intermediate table that should be dropped
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+        call(table_name="REQUEST_TABLE_1", schema_name="sf_schema", database_name="sf_db"),
+    ]
+
 
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
@@ -408,3 +423,20 @@ async def test_get_online_features_multiple_queries__batch_request_table(
         "tests/fixtures/expected_get_online_features_multiple_queries_batch_request_table.sql",
         update_fixture=update_fixtures,
     )
+
+    # Only two intermediate tables in this case. Request table is already a materialized table, so
+    # it should not be dropped.
+    assert mock_session_for_online_serving.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_1",
+            if_exists=True,
+        ),
+    ]

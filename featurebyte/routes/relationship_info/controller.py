@@ -1,6 +1,7 @@
 """
 RelationshipInfo controller
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId

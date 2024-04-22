@@ -1,6 +1,7 @@
 """
 Frame class
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Tuple, TypeVar, Union
@@ -10,7 +11,7 @@ from pydantic import Field, validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
+from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -18,7 +19,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
-class BaseFrame(QueryObject, SampleMixin):
+class BaseFrame(QueryObject):
     """
     BaseFrame class
 

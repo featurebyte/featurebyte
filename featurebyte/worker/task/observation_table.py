@@ -1,6 +1,7 @@
 """
 ObservationTable creation task
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -65,6 +66,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     feature_store=feature_store,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
                     primary_entity_ids=payload.primary_entity_ids,
+                    target_namespace_id=payload.target_namespace_id,
                 )
             )
 
@@ -80,6 +82,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 purpose=payload.purpose,
                 primary_entity_ids=primary_entity_ids,
                 has_row_index=True,
+                target_namespace_id=payload.target_namespace_id,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

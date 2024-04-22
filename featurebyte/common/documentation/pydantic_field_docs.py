@@ -1,6 +1,7 @@
 """
 Docstrings for pydantic field overrides for a class.
 """
+
 from typing import Dict
 
 CATALOG_ID = "catalog_id"

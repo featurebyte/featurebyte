@@ -1,11 +1,13 @@
 """
 This module contains context related models.
 """
+
 from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import root_validator
+from pydantic import root_validator, validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -33,6 +35,11 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
+
+    # pydantic validators
+    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @root_validator(pre=True)
     @classmethod

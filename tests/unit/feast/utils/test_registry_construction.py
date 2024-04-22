@@ -1,6 +1,7 @@
 """
 Test the construction of the feast register.
 """
+
 import textwrap
 
 import pytest
@@ -87,7 +88,7 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
     odfv_spec = on_demand_feature_views[0]["spec"]
     assert odfv_spec["name"].startswith("odfv_feature_")
     assert odfv_spec["project"] == "featurebyte_project"
-    assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
+    assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "FLOAT"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
         "cat1_cust_id_30m",
@@ -204,11 +205,11 @@ def expected_feature_view_specs_fixture(feature_list):
             "features": [
                 {
                     "name": f"non_time_time_sum_amount_feature_{version}",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
             ],
         },
@@ -246,14 +247,14 @@ def expected_feature_view_specs_fixture(feature_list):
             "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
             "features": [
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"sum_1d_{version}", "valueType": "DOUBLE"},
+                {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
                     "valueType": "UNIX_TIMESTAMP",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part1",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
             ],
             "ttl": "3600s",
@@ -291,7 +292,7 @@ def expected_feature_service_spec_fixture(
             "project": "featurebyte_project",
             "features": [
                 {
-                    "featureColumns": [{"name": f"sum_1d_{version}", "valueType": "DOUBLE"}],
+                    "featureColumns": [{"name": f"sum_1d_{version}", "valueType": "FLOAT"}],
                     "featureViewName": f"odfv_sum_1d_{version.lower()}_{float_feature.id}",
                 },
                 {
@@ -302,7 +303,7 @@ def expected_feature_service_spec_fixture(
                     "featureColumns": [
                         {
                             "name": f"composite_feature_ttl_req_col_{version}",
-                            "valueType": "DOUBLE",
+                            "valueType": "FLOAT",
                         }
                     ],
                     "featureViewName": f"odfv_composite_feature_ttl_req_col_{version.lower()}_{comp_feat_id}",
@@ -311,7 +312,7 @@ def expected_feature_service_spec_fixture(
                     "featureColumns": [
                         {
                             "name": f"non_time_time_sum_amount_feature_{version}",
-                            "valueType": "DOUBLE",
+                            "valueType": "FLOAT",
                         }
                     ],
                     "featureViewName": "cat1_transaction_id_1d",

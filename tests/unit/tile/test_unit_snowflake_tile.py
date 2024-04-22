@@ -1,6 +1,7 @@
 """
 Unit test for snowflake tile
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock, Mock, call
 
@@ -178,9 +179,9 @@ async def test_generate_tiles_on_demand__progress_update(
     )
 
     assert mock_progress_callback.call_args_list == [
-        call(0, "0/4 completed"),
-        call(25, "1/4 completed"),
-        call(50, "2/4 completed"),
-        call(75, "3/4 completed"),
-        call(100, "4/4 completed"),
+        call(0, "Computing tiles on demand"),
+        call(25, "Computed 1 out of 4 tiles"),
+        call(50, "Computed 2 out of 4 tiles"),
+        call(75, "Computed 3 out of 4 tiles"),
+        call(100, "Computed 4 out of 4 tiles"),
     ]

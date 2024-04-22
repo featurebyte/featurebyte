@@ -1,6 +1,7 @@
 """
 Test vector cosine similarity
 """
+
 import numpy as np
 import pytest
 

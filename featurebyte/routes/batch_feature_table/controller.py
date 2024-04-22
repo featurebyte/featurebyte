@@ -1,6 +1,7 @@
 """
 BatchFeatureTable API route controller
 """
+
 from __future__ import annotations
 
 from bson import ObjectId
@@ -17,7 +18,7 @@ from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 
 
 class BatchFeatureTableController(
@@ -34,7 +35,7 @@ class BatchFeatureTableController(
     def __init__(
         self,
         batch_feature_table_service: BatchFeatureTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
         batch_request_table_service: BatchRequestTableService,
@@ -42,7 +43,10 @@ class BatchFeatureTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
     ):
-        super().__init__(service=batch_feature_table_service, preview_service=preview_service)
+        super().__init__(
+            service=batch_feature_table_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
+        )
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
         self.batch_request_table_service = batch_request_table_service

@@ -1,6 +1,7 @@
 """
 Util functions.
 """
+
 from typing import Any, List, Optional
 
 

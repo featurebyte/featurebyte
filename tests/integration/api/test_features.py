@@ -1,6 +1,7 @@
 """
 Tests for more features
 """
+
 import logging
 from threading import Thread
 

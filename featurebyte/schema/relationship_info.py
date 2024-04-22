@@ -1,14 +1,15 @@
 """
 Relationship Info payload schema
 """
+
 from typing import List, Optional
 
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -19,11 +20,13 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     relationship_type: RelationshipType
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
+    entity_column_name: Optional[str]
+    related_entity_column_name: Optional[str]
     enabled: bool
     updated_by: Optional[PydanticObjectId]
 

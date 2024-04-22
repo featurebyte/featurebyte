@@ -1,13 +1,14 @@
 """
 Target namespace schema
 """
+
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.common.base import (
@@ -23,7 +24,7 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     dtype: Optional[DBVarType]
     target_ids: List[PydanticObjectId] = Field(default_factory=list)
     default_target_id: Optional[PydanticObjectId]

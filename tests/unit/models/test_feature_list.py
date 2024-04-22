@@ -1,6 +1,7 @@
 """
 Tests for Feature list related models
 """
+
 import pytest
 from bson.objectid import ObjectId
 
@@ -98,6 +99,9 @@ def test_feature_list_model(feature_list_model_dict):
     loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
     assert loaded_old_feature_list.version == {"name": "V220710", "suffix": None}
     assert loaded_old_feature_list == updated_feature_list
+
+    # check that feature list store info for older record
+    assert loaded_old_feature_list.store_info.feast_enabled is False
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):

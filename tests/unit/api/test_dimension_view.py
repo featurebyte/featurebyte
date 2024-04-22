@@ -1,6 +1,7 @@
 """
 Unit tests for DimensionView class
 """
+
 import textwrap
 
 import pytest
@@ -395,38 +396,48 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             """
         WITH _FB_AGGREGATED AS (
           SELECT
-            "T0"."_fb_internal_lookup_col_float_project_1" AS "_fb_internal_lookup_col_float_project_1",
-            "T0"."_fb_internal_lookup_col_char_project_1" AS "_fb_internal_lookup_col_char_project_1",
-            "T0"."_fb_internal_lookup_col_binary_project_1" AS "_fb_internal_lookup_col_binary_project_1",
-            "T0"."_fb_internal_lookup_col_boolean_project_1" AS "_fb_internal_lookup_col_boolean_project_1"
+            "T0"."_fb_internal_cust_id_lookup_col_float_project_1" AS "_fb_internal_cust_id_lookup_col_float_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_char_project_1" AS "_fb_internal_cust_id_lookup_col_char_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_binary_project_1" AS "_fb_internal_cust_id_lookup_col_binary_project_1",
+            "T0"."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
           FROM REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
-              "col_int" AS "cust_id",
-              "col_float" AS "_fb_internal_lookup_col_float_project_1",
-              "col_char" AS "_fb_internal_lookup_col_char_project_1",
-              "col_binary" AS "_fb_internal_lookup_col_binary_project_1",
-              "col_boolean" AS "_fb_internal_lookup_col_boolean_project_1"
+              "cust_id",
+              ANY_VALUE("_fb_internal_cust_id_lookup_col_float_project_1") AS "_fb_internal_cust_id_lookup_col_float_project_1",
+              ANY_VALUE("_fb_internal_cust_id_lookup_col_char_project_1") AS "_fb_internal_cust_id_lookup_col_char_project_1",
+              ANY_VALUE("_fb_internal_cust_id_lookup_col_binary_project_1") AS "_fb_internal_cust_id_lookup_col_binary_project_1",
+              ANY_VALUE("_fb_internal_cust_id_lookup_col_boolean_project_1") AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
             FROM (
               SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "col_char" AS "col_char",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "event_timestamp" AS "event_timestamp",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."dimension_table"
+                "col_int" AS "cust_id",
+                "col_float" AS "_fb_internal_cust_id_lookup_col_float_project_1",
+                "col_char" AS "_fb_internal_cust_id_lookup_col_char_project_1",
+                "col_binary" AS "_fb_internal_cust_id_lookup_col_binary_project_1",
+                "col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+              FROM (
+                SELECT
+                  "col_int" AS "col_int",
+                  "col_float" AS "col_float",
+                  "col_char" AS "col_char",
+                  "col_text" AS "col_text",
+                  "col_binary" AS "col_binary",
+                  "col_boolean" AS "col_boolean",
+                  "event_timestamp" AS "event_timestamp",
+                  "cust_id" AS "cust_id"
+                FROM "sf_database"."sf_schema"."dimension_table"
+              )
             )
+            GROUP BY
+              "cust_id"
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
-          "_fb_internal_lookup_col_float_project_1" AS "FloatFeature",
-          "_fb_internal_lookup_col_char_project_1" AS "CharFeature",
-          "_fb_internal_lookup_col_binary_project_1" AS "BinaryFeature",
-          "_fb_internal_lookup_col_boolean_project_1" AS "BoolFeature"
+          CAST("_fb_internal_cust_id_lookup_col_float_project_1" AS DOUBLE) AS "FloatFeature",
+          "_fb_internal_cust_id_lookup_col_char_project_1" AS "CharFeature",
+          "_fb_internal_cust_id_lookup_col_binary_project_1" AS "BinaryFeature",
+          "_fb_internal_cust_id_lookup_col_boolean_project_1" AS "BoolFeature"
         FROM _FB_AGGREGATED AS AGG
         """
         ).strip()

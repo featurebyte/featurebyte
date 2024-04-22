@@ -1,6 +1,7 @@
 """
 Integration tests for SCDView
 """
+
 import json
 
 import numpy as np
@@ -9,6 +10,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     assert_preview_result_equal,
@@ -78,37 +80,63 @@ async def test_scd_join_small(session, data_source, source_type):
                     "2022-04-10 10:00:00",
                     "2022-04-15 10:00:00",
                     "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
                 ]
             ),
-            "cust_id": [1000, 1000, 1000],
-            "event_id": [1, 2, 3],
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [1, 2, 3, 4],
         }
     )
     df_scd = pd.DataFrame(
         {
-            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
-            "scd_cust_id": [1000, 1000],
-            "scd_value": [1, 2],
+            "effective_ts": pd.to_datetime(
+                [
+                    "2022-04-12 10:00:00",
+                    "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
+                ]
+            ),
+            "scd_cust_id": [1000, 1000, 1000],
+            "scd_value": [1, 2, 3],
         }
     )
+    # Insert duplicate rows to ensure it can be handled (only one row should be joined)
+    df_scd = pd.concat([df_scd, df_scd], ignore_index=True)
     df_expected = pd.DataFrame(
         {
             "ts": pd.to_datetime(
                 [
+                    pd.NaT,
                     "2022-04-10 10:00:00",
                     "2022-04-15 10:00:00",
                     "2022-04-20 10:00:00",
                 ]
             ),
-            "cust_id": [1000, 1000, 1000],
-            "event_id": [1, 2, 3],
-            "scd_value_latest": [np.nan, 1, 2],
-            "scd_value_latest_v2": [np.nan, 1, 2],
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [4, 1, 2, 3],
+            "scd_value_latest": [np.nan, np.nan, 1, 2],
+            "scd_value_latest_v2": [np.nan, np.nan, 1, 2],
         }
     )
     table_prefix = "TEST_SCD_JOIN_SMALL"
-    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+
+    def _quote(col_name) -> str:
+        return sql_to_string(quoted_identifier(col_name), source_type=session.source_type)
+
+    # Register event table
+    table_name = f"{table_prefix}_EVENT"
+    await session.register_table(table_name, df_events, temporary=False)
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
+    )
+
+    # Register scd table
+    table_name = f"{table_prefix}_SCD"
+    await session.register_table(table_name, df_scd, temporary=False)
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("effective_ts")} = NULL WHERE {_quote("scd_value")} = 3'
+    )
+
     event_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_EVENT",
         database_name=session.database_name,
@@ -286,10 +314,15 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd_dataframe):
+def test_scd_lookup_feature(
+    config, event_table, dimension_table, scd_table, item_table, scd_dataframe
+):
     """
     Test creating lookup feature from a SCDView
     """
+    # This fixture makes user id a parent of item id
+    _ = item_table
+
     # SCD lookup feature
     scd_view = scd_table.get_view()
     scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status")
@@ -337,7 +370,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert json.loads(preview_output["count_7d"]) == json.loads(
+    assert preview_output["count_7d"] == json.loads(
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
@@ -349,12 +382,15 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
-        online_result = make_online_request(config.get_client(), deployment, [params])
-        assert online_result.json()["features"] == [
+        online_params = [{"item_id": item_id}]
+        online_result = make_online_request(config.get_client(), deployment, online_params)
+        online_result_dict = online_result.json()
+        if online_result.status_code != 200:
+            raise AssertionError(f"Online request failed: {online_result_dict}")
+        assert online_result_dict["features"] == [
             {
-                "üser id": 1,
                 "item_id": "item_42",
-                "Current User Status": "STÀTUS_CODE_39",
+                "Current User Status": "STÀTUS_CODE_26",
                 "Item Name Feature": "name_42",
                 "count_7d": None,
             }

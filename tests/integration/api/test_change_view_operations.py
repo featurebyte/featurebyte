@@ -1,6 +1,7 @@
 """
 Test change view operations
 """
+
 import datetime
 from unittest.mock import patch
 

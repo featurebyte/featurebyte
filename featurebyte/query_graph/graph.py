@@ -1,6 +1,7 @@
 """
 Implement graph data structure for query graph
 """
+
 from typing import (
     Any,
     Callable,

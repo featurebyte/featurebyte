@@ -1,6 +1,7 @@
 """
 Test the date nodes in the on-demand view code generation.
 """
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -32,7 +33,7 @@ def test_date_add(odfv_config, udf_config):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == "feat1 + feat2"
+    assert odfv_expr == "pd.to_datetime(feat1) + pd.to_timedelta(feat2)"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -40,7 +41,7 @@ def test_date_add(odfv_config, udf_config):
         config=udf_config,
     )
     assert odfv_stats == []
-    assert udf_expr == "feat1 + feat2"
+    assert udf_expr == "pd.to_datetime(feat1) + pd.to_timedelta(feat2)"
 
     feat1 = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     feat2 = pd.Series([np.nan] + list(pd.Timedelta(seconds=1) * np.random.randint(0, 100, 10)))
@@ -66,7 +67,7 @@ def test_date_difference(odfv_config, udf_config):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == "feat1 - feat2"
+    assert odfv_expr == "pd.to_datetime(feat1) - pd.to_datetime(feat2)"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -74,7 +75,7 @@ def test_date_difference(odfv_config, udf_config):
         config=udf_config,
     )
     assert odfv_stats == []
-    assert udf_expr == "feat1 - feat2"
+    assert udf_expr == "pd.to_datetime(feat1) - pd.to_datetime(feat2)"
 
     feat1 = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     feat2 = pd.Series([np.nan] + pd.date_range("2020-10-01", freq="d", periods=10).to_list())
@@ -106,7 +107,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == f"feat.dt.{dt_property}"
+    assert odfv_expr == f"pd.to_datetime(feat).dt.{dt_property}"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -114,7 +115,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=udf_config,
     )
     assert udf_stats == []
-    assert udf_expr == f"feat.{dt_property}"
+    assert udf_expr == f"pd.to_datetime(feat).{dt_property}"
 
     feat = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     evaluate_and_compare_odfv_and_udf_results(
@@ -131,16 +132,16 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         var_name_generator=VariableNameGenerator(),
         config=odfv_config,
     )
-    assert odfv_stats == [("feat_dt", "feat + feat1")]
-    assert odfv_expr == f"feat_dt.dt.{dt_property}"
+    assert odfv_stats == [("feat_dt", "pd.to_datetime(feat) + pd.to_timedelta(feat1)")]
+    assert odfv_expr == f"pd.to_datetime(feat_dt).dt.{dt_property}"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=[VariableNameStr("feat"), VariableNameStr("feat1")],
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
-    assert udf_stats == [("feat", "feat + feat1")]
-    assert udf_expr == f"feat.{dt_property}"
+    assert udf_stats == [("feat", "pd.to_datetime(feat) + pd.to_timedelta(feat1)")]
+    assert udf_expr == f"pd.to_datetime(feat).{dt_property}"
 
     # offset as a timedelta
     node = DatetimeExtractNode(
@@ -155,8 +156,8 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     codes = code_gen.generate().strip()
     assert codes == (
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
-        "feat_dt = feat + tz_offset\n"
-        f"output = feat_dt.dt.{dt_property}"
+        "feat_dt = pd.to_datetime(feat) + tz_offset\n"
+        f"output = pd.to_datetime(feat_dt).dt.{dt_property}"
     )
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
@@ -168,8 +169,8 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     codes = code_gen.generate().strip()
     assert codes == (
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
-        "feat = feat + tz_offset\n"
-        f"output = feat.{dt_property}"
+        "feat = pd.to_datetime(feat) + tz_offset\n"
+        f"output = pd.to_datetime(feat).{dt_property}"
     )
 
 
@@ -178,33 +179,38 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     [
         (
             "day",
-            "feat.dt.total_seconds() // 86400",
-            "feat.total_seconds() // 86400",
+            "pd.to_timedelta(feat).dt.total_seconds() // 86400",
+            "pd.to_timedelta(feat).total_seconds() // 86400",
             [0, 0, 5],
         ),  # 86400 = 24 * 60 * 60
         (
             "hour",
-            "feat.dt.total_seconds() // 3600",
-            "feat.total_seconds() // 3600",
+            "pd.to_timedelta(feat).dt.total_seconds() // 3600",
+            "pd.to_timedelta(feat).total_seconds() // 3600",
             [0, 3, 120],
         ),  # 3600 = 60 * 60
-        ("minute", "feat.dt.total_seconds() // 60", "feat.total_seconds() // 60", [1, 180, 7219]),
+        (
+            "minute",
+            "pd.to_timedelta(feat).dt.total_seconds() // 60",
+            "pd.to_timedelta(feat).total_seconds() // 60",
+            [1, 180, 7219],
+        ),
         (
             "second",
-            "feat.dt.total_seconds()",
-            "feat.total_seconds()",
+            "pd.to_timedelta(feat).dt.total_seconds()",
+            "pd.to_timedelta(feat).total_seconds()",
             [60.123, 10800.000456, 433149],
         ),
         (
             "millisecond",
-            "1e3 * feat.dt.total_seconds()",
-            "1e3 * feat.total_seconds()",
+            "1e3 * pd.to_timedelta(feat).dt.total_seconds()",
+            "1e3 * pd.to_timedelta(feat).total_seconds()",
             [60123, 10800000.456, 433149000],
         ),
         (
             "microsecond",
-            "1e6 * feat.dt.total_seconds()",
-            "1e6 * feat.total_seconds()",
+            "1e6 * pd.to_timedelta(feat).dt.total_seconds()",
+            "1e6 * pd.to_timedelta(feat).total_seconds()",
             [60123000, 10800000456, 433149000000],
         ),
     ],

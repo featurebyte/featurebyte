@@ -1,6 +1,7 @@
 """
 Entity lookup feature table construction
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Set
@@ -31,6 +32,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @dataclass
@@ -104,7 +106,7 @@ def get_entity_lookup_feature_tables(
     for lookup_relationship in required_lookup_relationships:
         assert catalog_id is not None, "Catalog id is not set"
         lookup_step = entity_lookup_steps_mapping[lookup_relationship.id]
-        lookup_graph_result = _get_entity_lookup_graph(
+        lookup_graph_result = get_entity_lookup_graph(
             lookup_step=lookup_step,
             feature_store=feature_store,
         )
@@ -144,23 +146,30 @@ def get_entity_lookup_feature_tables(
     return out
 
 
-def _get_entity_lookup_graph(
+def get_entity_lookup_graph(
     lookup_step: EntityLookupStep,
     feature_store: FeatureStoreModel,
 ) -> EntityLookupGraphResult:
+    """
+    Create a query graph that represents the parent entity lookup operation
+
+    Parameters
+    ----------
+    lookup_step: EntityLookupStep
+        Entity lookup information
+    feature_store: FeatureStoreModel
+        Feature store
+
+    Returns
+    -------
+    EntityLookupGraphResult
+    """
     relation_table = lookup_step.table
     graph = QueryGraph()
     input_node = graph.add_operation_node(
         node=relation_table.construct_input_node(feature_store_details=feature_store),
         input_nodes=[],
     )
-
-    feature_dtype = None
-    for column_info in relation_table.columns_info:
-        if column_info.entity_id == lookup_step.parent.entity_id:
-            feature_dtype = column_info.dtype
-    assert feature_dtype is not None
-
     additional_params: Dict[str, Any]
     if relation_table.type == TableDataType.SCD_TABLE:
         assert isinstance(relation_table, SCDTableModel)
@@ -201,11 +210,18 @@ def _get_entity_lookup_graph(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[lookup_node],
     )
+    op_struct = (
+        OperationStructureExtractor(graph=graph)
+        .extract(node=feature_node)
+        .operation_structure_map[feature_node.name]
+    )
+    aggregations = op_struct.aggregations
+    assert len(aggregations) == 1
     return EntityLookupGraphResult(
         graph=graph,
         lookup_node=lookup_node,
         feature_node_name=feature_node.name,
-        feature_dtype=feature_dtype,
+        feature_dtype=aggregations[0].dtype,
         feature_job_setting=FeatureJobSettingExtractor(graph=graph).extract_from_agg_node(
             node=lookup_node
         ),

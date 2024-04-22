@@ -1,8 +1,12 @@
 """
 Tests for FeatureList route
 """
+
+import collections
+
 # pylint: disable=too-many-lines
 import os
+import textwrap
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -16,6 +20,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
+from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.session.snowflake import SnowflakeSession
@@ -95,12 +101,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
     @pytest.fixture(autouse=True)
     def always_patched_observation_table_service(
-        self, patched_observation_table_service_for_preview
+        self, patched_observation_table_service_for_preview, mock_deployment_flow
     ):
         """
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
-        _ = patched_observation_table_service_for_preview
+        _ = patched_observation_table_service_for_preview, mock_deployment_flow
 
     def setup_creation_route(self, api_client):
         """
@@ -108,6 +114,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("context", "context"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
@@ -116,6 +123,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
+
+            if api_object.endswith("_table"):
+                # tag table entity for table objects
+                self.tag_table_entity(api_client, api_object, payload)
 
     @staticmethod
     def _save_a_new_feature_version(api_client, feature_id, time_modulo_frequency=None):
@@ -667,6 +678,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 "feature_store_id": feature_store_id,
                 "graph": feature["graph"],
                 "node_names": [feature["node_name"]],
+                "feature_node_relationships_infos": [
+                    {
+                        "node_name": "project_1",
+                        "relationships_info": [],
+                        "primary_entity_ids": feature["primary_entity_ids"],
+                    }
+                ],
+                "combined_relationships_info": [],
+                "feature_node_definition_hashes": [
+                    {
+                        "node_name": "project_1",
+                        "definition_hash": "e08e2ffd6a5817b174d075895b17ee3a3bb9df38",
+                    }
+                ],
             }
         ]
 
@@ -739,7 +764,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = expected_df
+        mock_session.list_table_schema.return_value = collections.OrderedDict(
+            {
+                "cust_id": ColumnSpecWithDescription(
+                    name="cust_id",
+                    dtype=DBVarType.INT,
+                    description=None,
+                ),
+                "POINT_IN_TIME": ColumnSpecWithDescription(
+                    name="POINT_IN_TIME",
+                    dtype=DBVarType.TIMESTAMP,
+                    description=None,
+                ),
+            }
+        )
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table
@@ -791,8 +829,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
-            "FROM _FB_AGGREGATED AS AGG"
+            textwrap.dedent(
+                """
+                SELECT
+                  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
+                FROM _FB_AGGREGATED AS AGG
+                """
+            ).strip()
         )
 
     def test_feature_clusters_derived_and_stored(
@@ -1213,3 +1256,25 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 {"cust_id": "1"},
             ],
         }
+
+    @pytest.mark.asyncio
+    async def test_delete_feature_list_with_missing_remote_path(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        storage,
+    ):
+        """Test delete feature list with missing remote path"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+        feature_list_id = feature_list_doc["_id"]
+        await storage.delete(feature_list_doc["feature_clusters_path"])
+        with pytest.raises(FileNotFoundError):
+            await storage.get_text(feature_list_doc["feature_clusters_path"])
+
+        response = test_api_client.delete(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        # check that feature list is deleted
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

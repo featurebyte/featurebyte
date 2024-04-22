@@ -1,6 +1,7 @@
 """
 This model contains query graph internal model structures
 """
+
 from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from collections import defaultdict

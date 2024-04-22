@@ -1,6 +1,7 @@
 """
 Handles API requests middleware
 """
+
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
@@ -153,16 +154,16 @@ class ExecutionContext:
 # UNPROCESSABLE_ENTITY errors
 ExecutionContext.register(
     DocumentNotFoundError,
-    handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
-    if req.method == "POST"
-    else HTTPStatus.NOT_FOUND,
+    handle_status_code=lambda req, exc: (
+        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
+    ),
 )
 
 ExecutionContext.register(
     ColumnNotFoundError,
-    handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
-    if req.method == "POST"
-    else HTTPStatus.NOT_FOUND,
+    handle_status_code=lambda req, exc: (
+        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
+    ),
 )
 
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)

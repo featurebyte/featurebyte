@@ -1,6 +1,7 @@
 """
 Feature and FeatureList classes
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -911,17 +912,19 @@ class Feature(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "table_feature_job_settings": [
-                    table_feature_job_setting.dict()
-                    for table_feature_job_setting in table_feature_job_settings
-                ]
-                if table_feature_job_settings
-                else None,
-                "table_cleaning_operations": [
-                    clean_ops.dict() for clean_ops in table_cleaning_operations
-                ]
-                if table_cleaning_operations
-                else None,
+                "table_feature_job_settings": (
+                    [
+                        table_feature_job_setting.dict()
+                        for table_feature_job_setting in table_feature_job_settings
+                    ]
+                    if table_feature_job_settings
+                    else None
+                ),
+                "table_cleaning_operations": (
+                    [clean_ops.dict() for clean_ops in table_cleaning_operations]
+                    if table_cleaning_operations
+                    else None
+                ),
             },
         )
         if response.status_code != HTTPStatus.CREATED:

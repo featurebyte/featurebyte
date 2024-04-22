@@ -1,6 +1,7 @@
 """
 Utility functions for query graph node module
 """
+
 from typing import Sequence
 
 

@@ -1,6 +1,7 @@
 """
 On demand feature view (for Feast) related classes and functions.
 """
+
 from typing import Any, Dict, List, Tuple
 
 import textwrap

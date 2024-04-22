@@ -1,6 +1,7 @@
 """
 Models to construct feast online store config from featurebyte BaseOnlineStoreDetails
 """
+
 from __future__ import annotations
 
 from typing import Union, cast

@@ -1,6 +1,7 @@
 """
 FeatureListVersion class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -626,6 +627,25 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             **{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
         )
         return data.json_dict()
+
+    def list_deployments(self) -> pd.DataFrame:
+        """
+        List all deployments associated with the FeatureList object.
+
+        Returns
+        -------
+        pd.DataFrame
+            List of deployments
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.list_deployments()  # doctest: +SKIP
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.deployment import Deployment
+
+        return Deployment.list(feature_list_id=self.id)
 
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None

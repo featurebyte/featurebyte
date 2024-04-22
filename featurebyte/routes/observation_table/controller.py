@@ -1,6 +1,7 @@
 """
 ObservationTable API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List, Optional, Tuple
@@ -27,9 +28,10 @@ from featurebyte.schema.observation_table import (
 from featurebyte.schema.task import Task
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.use_case import UseCaseService
@@ -37,7 +39,7 @@ from featurebyte.service.use_case import UseCaseService
 logger = get_logger(__name__)
 
 
-class ObservationTableController(
+class ObservationTableController(  # pylint: disable=too-many-instance-attributes
     BaseMaterializedTableController[
         ObservationTableModel, ObservationTableService, ObservationTableList
     ],
@@ -48,10 +50,10 @@ class ObservationTableController(
 
     paginated_document_class = ObservationTableList
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         observation_table_service: ObservationTableService,
-        preview_service: PreviewService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
         historical_feature_table_service: HistoricalFeatureTableService,
@@ -59,8 +61,12 @@ class ObservationTableController(
         context_service: ContextService,
         task_manager: TaskManager,
         use_case_service: UseCaseService,
+        target_namespace_service: TargetNamespaceService,
     ):
-        super().__init__(service=observation_table_service, preview_service=preview_service)
+        super().__init__(
+            service=observation_table_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
+        )
         self.observation_table_service = observation_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
@@ -69,6 +75,7 @@ class ObservationTableController(
         self.context_service = context_service
         self.task_manager = task_manager
         self.use_case_service = use_case_service
+        self.target_namespace_service = target_namespace_service
 
     async def create_observation_table(
         self,
@@ -185,11 +192,19 @@ class ObservationTableController(
         feature_store = await self.feature_store_service.get_document(
             document_id=observation_table.location.feature_store_id
         )
+        if observation_table.target_namespace_id is not None:
+            target_namespace = await self.target_namespace_service.get_document(
+                document_id=observation_table.target_namespace_id
+            )
+            target_name = target_namespace.name
+        else:
+            target_name = None
         return ObservationTableInfo(
             name=observation_table.name,
             type=observation_table.request_input.type,
             feature_store_name=feature_store.name,
             table_details=observation_table.location.table_details,
+            target_name=target_name,
             created_at=observation_table.created_at,
             updated_at=observation_table.updated_at,
             description=observation_table.description,

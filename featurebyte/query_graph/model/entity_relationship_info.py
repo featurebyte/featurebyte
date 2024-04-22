@@ -1,7 +1,8 @@
 """
 This module contains entity relationship info related classes.
 """
-from typing import Dict, List, Sequence, Set
+
+from typing import Dict, List, Optional, Sequence, Set
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -27,6 +28,8 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
+    entity_column_name: Optional[str]
+    related_entity_column_name: Optional[str]
 
     def __hash__(self) -> int:
         key = (
@@ -34,6 +37,8 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
             self.entity_id,
             self.related_entity_id,
             self.relation_table_id,
+            self.entity_column_name,
+            self.related_entity_column_name,
         )
         return hash(key)
 
@@ -246,3 +251,34 @@ class EntityAncestorDescendantMapper:
             if entity_id not in all_ancestors_ids:
                 reduced_entity_ids.add(entity_id)
         return sorted(reduced_entity_ids)
+
+    def keep_related_entity_ids(
+        self,
+        entity_ids_to_filter: Sequence[ObjectId],
+        filter_by: Sequence[ObjectId],
+    ) -> List[ObjectId]:
+        """
+        Filter a list of entity ids to include only entity ids that are related to filter_by
+
+        Parameters
+        ----------
+        entity_ids_to_filter: Sequence[ObjectId]
+            List of entity ids to be filtered, e.g. a serving entity ids of a feature list
+        filter_by: Sequence[ObjectId]
+            Entity ids to filter by, e.g. the primary entity ids of an offline store feature table
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        related_entity_ids = set(filter_by)
+        for entity_id in filter_by:
+            related_entity_ids.update(self.entity_id_to_ancestor_ids[entity_id])
+            related_entity_ids.update(self.entity_id_to_descendant_ids[entity_id])
+
+        filtered_entity_ids = set()
+        for entity_id in entity_ids_to_filter:
+            if entity_id in related_entity_ids:
+                filtered_entity_ids.add(entity_id)
+
+        return sorted(filtered_entity_ids)

@@ -1,6 +1,7 @@
 """
 This module contains schema related model
 """
+
 from typing import List
 
 from pydantic import Field

@@ -1,6 +1,7 @@
 """
 Validate window parameter input.
 """
+
 from typing import Optional
 
 from featurebyte.common.model_util import parse_duration_string, validate_offset_string

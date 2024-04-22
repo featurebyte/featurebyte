@@ -1,9 +1,11 @@
 """
 Base class for storage testing
 """
+
 import filecmp
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -101,6 +103,39 @@ class BaseStorageTestSuite:
             with pytest.raises(FileNotFoundError) as exc_info:
                 await test_storage.get(Path("non/existent/path"), file_obj.name)
             assert str(exc_info.value) == "Remote file does not exist"
+
+    @pytest.mark.asyncio
+    async def test_get_with_cache_key(
+        self, test_storage: Storage, local_path: Path, remote_path: Path
+    ):
+        """
+        Test file upload
+        """
+        # clear cache
+        storage_cache = test_storage._cache
+        storage_cache.clear()
+
+        cache_key = "some_cache_key"
+        assert storage_cache.exists(cache_key) is False
+        with tempfile.NamedTemporaryFile() as file_obj:
+            # download should work
+            await test_storage.get(remote_path, file_obj.name, cache_key=cache_key)
+
+            # contents should match
+            assert filecmp.cmp(local_path, file_obj.name)
+
+            # check cache is populated
+            assert storage_cache.exists(cache_key) is True
+
+        with tempfile.NamedTemporaryFile() as file_obj:
+            with patch.object(test_storage, "_get") as mock_get:
+                await test_storage.get(remote_path, file_obj.name, cache_key=cache_key)
+
+            # check the mock was not called as cache was used
+            mock_get.assert_not_called()
+
+            # check contents should match
+            assert filecmp.cmp(local_path, file_obj.name)
 
     @pytest.mark.asyncio
     async def test_stream_file_success(

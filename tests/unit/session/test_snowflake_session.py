@@ -1,8 +1,10 @@
 """
 Unit test for snowflake session
 """
+
 import os
 import time
+from io import BytesIO
 from unittest.mock import Mock, call, patch
 
 import numpy as np
@@ -10,14 +12,16 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from pandas.testing import assert_frame_equal
+from snowflake.connector.cursor import ResultMetadataV2
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
-from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
+from featurebyte.exception import DataWarehouseConnectionError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
+from featurebyte.session.enum import SnowflakeDataType
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
 
@@ -51,7 +55,7 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
 @pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
 @pytest.mark.asyncio
 async def test_snowflake_session__credential_from_config(
-    snowflake_session_dict, snowflake_execute_query
+    snowflake_session_dict, snowflake_connector_cursor, snowflake_execute_query
 ):
     """
     Test snowflake session
@@ -60,8 +64,10 @@ async def test_snowflake_session__credential_from_config(
     await session.initialize()
 
     # check session initialization includes timezone and role specification
-    assert snowflake_execute_query.call_args_list[0][0] == ('USE ROLE "TESTING"',)
-    assert snowflake_execute_query.call_args_list[-1][0] == (
+    cursor_execute_args_list = snowflake_connector_cursor.execute.call_args_list
+    assert cursor_execute_args_list[0][0] == ('USE ROLE "TESTING"',)
+    assert cursor_execute_args_list[1][0] == ('USE SCHEMA "sf_database"."FEATUREBYTE"',)
+    assert cursor_execute_args_list[-1][0] == (
         "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'",
     )
 
@@ -140,7 +146,8 @@ async def test_snowflake_session__credential_from_config(
             "TABLE_NAME": "sf_table",
             "TABLE_TYPE": "VIEW",
             "COMMENT": None,
-        }
+        },
+        fully_qualified_name='"sf_database"."sf_schema"."sf_table"',
     )
     assert table_details.description == None
 
@@ -151,11 +158,19 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
     Fixture for a mocked connection cursor for Snowflake
     """
     with patch("featurebyte.session.snowflake.connector") as mock_connector:
-        mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
         if not is_fetch_pandas_all_available:
+            mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
             mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         else:
+            mock_cursor = Mock(
+                name="MockCursor",
+                description=[
+                    ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
+                    ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
+                    ResultMetadataV2(name="col_c", type_code=0, is_nullable=True),
+                ],
+            )
             mock_cursor.fetch_pandas_all.return_value = pd.DataFrame(
                 {
                     "col_a": [1, 4, 7],
@@ -605,10 +620,10 @@ def test_constructor__credentials_error(snowflake_connector, error_type, snowfla
     """
     Check snowflake connection exception handling
     """
-    snowflake_connector.connect.side_effect = error_type
-    with pytest.raises(CredentialsError) as exc:
+    snowflake_connector.connect.side_effect = error_type(msg="Something went wrong.")
+    with pytest.raises(DataWarehouseConnectionError) as exc:
         SnowflakeSession(**snowflake_session_dict)
-    assert "Invalid credentials provided." in str(exc.value)
+    assert "Something went wrong." in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -630,14 +645,20 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
     connection = snowflake_connector.connect.return_value
     cursor = connection.cursor.return_value
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
+    cursor.description = [
+        ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
+        ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
+    ]
 
     session = SnowflakeSession(**snowflake_session_dict)
 
     bytestream = session.get_async_query_stream("SELECT * FROM T")
-    data = b""
+    buffer = BytesIO()
     async for chunk in bytestream:
-        data += chunk
-    df = dataframe_from_arrow_stream(data)
+        buffer.write(chunk)
+    buffer.flush()
+    buffer.seek(0)
+    df = dataframe_from_arrow_stream(buffer)
 
     assert_frame_equal(df, result_data)
 
@@ -670,16 +691,12 @@ async def test_timeout(mock_fetch_query_stream_impl, snowflake_connector, snowfl
 
 
 @pytest.mark.asyncio
-async def test_exception_handling_in_thread(snowflake_connector, snowflake_session_dict):
+async def test_exception_handling_in_thread(snowflake_connector_cursor, snowflake_session_dict):
     """
     Test execute_query time out
     """
-
-    connection = snowflake_connector.connect.return_value
-    cursor = connection.cursor.return_value
-    cursor.execute.side_effect = ValueError("error occurred")
     session = SnowflakeSession(**snowflake_session_dict)
-
+    snowflake_connector_cursor.execute.side_effect = ValueError("error occurred")
     with pytest.raises(ValueError) as exc:
         await session.execute_query("SELECT * FROM T")
     assert "error occurred" in str(exc.value)
@@ -699,26 +716,16 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     session = SnowflakeSession(**snowflake_session_dict)
     result = await session.execute_query(query)
     assert result is None
-
+    # empty dataframe from mock_fetch_arrow_batches
+    cursor.description = [
+        ResultMetadataV2(name="a", type_code=1, is_nullable=True),
+        ResultMetadataV2(name="b", type_code=1, is_nullable=True),
+    ]
     empty_df = pd.DataFrame({"a": [], "b": []})
 
-    def mock_fetch_arrow_batches_empty():
-        return
-        yield
-
-    # empty dataframe, no batch data from fetch_arrow_batches
-    cursor.description = [True]
-    session = SnowflakeSession(**snowflake_session_dict)
-    cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches_empty
-    cursor.get_result_batches.return_value = [Mock(to_arrow=lambda: pa.Table.from_pandas(empty_df))]
-    result = await session.execute_query(query)
-    assert_frame_equal(result, empty_df)
-
-    # empty dataframe, with batch data from fetch_arrow_batches
     def mock_fetch_arrow_batches():
         yield pa.Table.from_pandas(empty_df)
 
-    cursor.description = [True]
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
     result = await session.execute_query(query)
     assert_frame_equal(result, empty_df)
@@ -800,3 +807,31 @@ async def test_update_feature_store_id(
     assert session.execute_query.call_args_list == [
         call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = 'feature_store_id'"),
     ]
+
+
+@pytest.mark.parametrize(
+    "snowflake_var_info, expected",
+    [
+        ({"type": SnowflakeDataType.FIXED, "scale": 0}, DBVarType.INT),
+        ({"type": SnowflakeDataType.FIXED, "scale": 2}, DBVarType.FLOAT),
+        ({"type": SnowflakeDataType.REAL, "scale": 0}, DBVarType.FLOAT),
+        ({"type": SnowflakeDataType.BINARY, "scale": 0}, DBVarType.BINARY),
+        ({"type": SnowflakeDataType.BOOLEAN, "scale": 0}, DBVarType.BOOL),
+        ({"type": SnowflakeDataType.DATE, "scale": 0}, DBVarType.DATE),
+        ({"type": SnowflakeDataType.TIME, "scale": 0}, DBVarType.TIME),
+        ({"type": SnowflakeDataType.TIMESTAMP_LTZ, "scale": 0}, DBVarType.TIMESTAMP),
+        ({"type": SnowflakeDataType.TIMESTAMP_NTZ, "scale": 0}, DBVarType.TIMESTAMP),
+        ({"type": SnowflakeDataType.TIMESTAMP_TZ, "scale": 0}, DBVarType.TIMESTAMP_TZ),
+        ({"type": SnowflakeDataType.ARRAY, "scale": 0}, DBVarType.ARRAY),
+        ({"type": SnowflakeDataType.OBJECT, "scale": 0}, DBVarType.DICT),
+        ({"type": SnowflakeDataType.TEXT, "scale": 0, "length": 10}, DBVarType.VARCHAR),
+        ({"type": SnowflakeDataType.TEXT, "scale": 0, "length": 1}, DBVarType.CHAR),
+    ],
+)
+def test_convert_to_internal_variable_type(snowflake_var_info, expected):
+    """
+    Test convert_to_internal_variable_type
+    """
+    assert (
+        SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected
+    )  # pylint: disable=protected-access

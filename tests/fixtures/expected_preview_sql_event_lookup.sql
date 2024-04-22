@@ -9,27 +9,35 @@ WITH REQUEST_TABLE AS (
     CASE
       WHEN REQ."POINT_IN_TIME" < "T0"."ts"
       THEN NULL
-      ELSE "T0"."_fb_internal_lookup_order_method_input_1"
-    END AS "_fb_internal_lookup_order_method_input_1"
+      ELSE "T0"."_fb_internal_ORDER_ID_lookup_order_method_input_1"
+    END AS "_fb_internal_ORDER_ID_lookup_order_method_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "order_id" AS "ORDER_ID",
-      "order_method" AS "_fb_internal_lookup_order_method_input_1",
-      "ts"
+      "ORDER_ID",
+      ANY_VALUE("_fb_internal_ORDER_ID_lookup_order_method_input_1") AS "_fb_internal_ORDER_ID_lookup_order_method_input_1",
+      ANY_VALUE("ts") AS "ts"
     FROM (
       SELECT
-        "ts" AS "ts",
-        "cust_id" AS "cust_id",
-        "order_id" AS "order_id",
-        "order_method" AS "order_method"
-      FROM "db"."public"."event_table"
+        "order_id" AS "ORDER_ID",
+        "order_method" AS "_fb_internal_ORDER_ID_lookup_order_method_input_1",
+        "ts"
+      FROM (
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "order_id" AS "order_id",
+          "order_method" AS "order_method"
+        FROM "db"."public"."event_table"
+      )
     )
+    GROUP BY
+      "ORDER_ID"
   ) AS T0
     ON REQ."ORDER_ID" = T0."ORDER_ID"
 )
 SELECT
   AGG."POINT_IN_TIME",
   AGG."ORDER_ID",
-  "_fb_internal_lookup_order_method_input_1" AS "Order Method"
+  "_fb_internal_ORDER_ID_lookup_order_method_input_1" AS "Order Method"
 FROM _FB_AGGREGATED AS AGG

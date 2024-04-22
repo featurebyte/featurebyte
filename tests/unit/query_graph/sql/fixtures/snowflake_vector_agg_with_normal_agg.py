@@ -1,6 +1,7 @@
 """
 Snowflake vector agg with normal agg test fixture module
 """
+
 import textwrap
 
 SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(

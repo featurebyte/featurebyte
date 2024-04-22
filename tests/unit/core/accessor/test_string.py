@@ -1,6 +1,7 @@
 """
 Unit tests for core/accessor/string.py
 """
+
 import pytest
 
 from featurebyte.enum import DBVarType

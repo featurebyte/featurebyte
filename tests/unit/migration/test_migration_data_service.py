@@ -1,6 +1,7 @@
 """
 Test migration related service(s)
 """
+
 import pytest
 
 from featurebyte.migration.model import MigrationMetadata

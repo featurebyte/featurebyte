@@ -1,6 +1,7 @@
 """
 Test feast registry service
 """
+
 import os
 from unittest.mock import patch
 
@@ -42,7 +43,10 @@ async def feast_registry_fixture(
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
-    registry = await feast_registry_service.get_feast_registry_for_catalog()
+    deployment_model = deployment.cached_model
+    registry = await feast_registry_service.get_document(
+        document_id=deployment_model.registry_info.registry_id
+    )
     assert registry is not None
 
     # check that the registry file is created
@@ -91,8 +95,11 @@ async def test_update_feast_registry(
 ):
     """Test update feast registry"""
     updated_doc = await feast_registry_service.update_document(
-        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
+        document_id=feast_registry.id,
+        data=FeastRegistryUpdate(feature_lists=[]),
+        populate_remote_attributes=True,
     )
+    assert updated_doc.deployment_id == feast_registry.deployment_id
     registry_proto = updated_doc.registry_proto()
     assert registry_proto.feature_services == []
     assert registry_proto.feature_views == []
@@ -108,7 +115,9 @@ async def test_update_feast_registry(
 
     feature_list_model = feature_list.cached_model
     updated_doc = await feast_registry_service.update_document(
-        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[feature_list_model])
+        document_id=feast_registry.id,
+        data=FeastRegistryUpdate(feature_lists=[feature_list_model]),
+        populate_remote_attributes=True,
     )
     registry_proto = updated_doc.registry_proto()
     assert {entity.spec.name for entity in registry_proto.entities} == expected_entity_names
@@ -135,7 +144,7 @@ async def test_get_feast_feature_store(
 ):
     """Test get feast feature store"""
     feast_fs = await feast_feature_store_service.get_feast_feature_store(
-        feast_registry_id=feast_registry.id
+        feast_registry=feast_registry
     )
 
     # check that assets in the registry can be retrieved

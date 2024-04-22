@@ -1,6 +1,7 @@
 """
 This module contains the Query Graph Interpreter
 """
+
 from __future__ import annotations
 
 from typing import Optional, cast
@@ -14,9 +15,8 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
-from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -240,8 +240,8 @@ class TileGenMixin(BaseGraphInterpreter):
         -------
         List[TileGenSql]
         """
-        flat_graph, flat_starting_node = self.flatten_graph(node_name=starting_node.name)
+        flat_starting_node = self.get_flattened_node(starting_node.name)
         generator = TileSQLGenerator(
-            flat_graph, is_on_demand=is_on_demand, source_type=self.source_type
+            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
         )
         return generator.construct_tile_gen_sql(flat_starting_node)

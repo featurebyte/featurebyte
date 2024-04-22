@@ -1,0 +1,384 @@
+{
+    "combined_relationships_info": [
+        {
+            "entity_column_name": "col_text",
+            "entity_id": {
+                "$oid": "63f94ed6ea1f050131379214"
+            },
+            "related_entity_column_name": "col_boolean",
+            "related_entity_id": {
+                "$oid": "65f11f1d8a03610e41399306"
+            },
+            "relation_table_id": {
+                "$oid": "6337f9651050ee7d123466cd"
+            },
+            "relationship_type": "child_parent"
+        }
+    ],
+    "feature_node_definition_hashes": null,
+    "feature_node_relationships_infos": [
+        {
+            "node_name": "alias_2",
+            "primary_entity_ids": [
+                {
+                    "$oid": "63f94ed6ea1f050131379214"
+                }
+            ],
+            "relationships_info": [
+                {
+                    "entity_column_name": "col_text",
+                    "entity_id": {
+                        "$oid": "63f94ed6ea1f050131379214"
+                    },
+                    "related_entity_column_name": "col_boolean",
+                    "related_entity_id": {
+                        "$oid": "65f11f1d8a03610e41399306"
+                    },
+                    "relation_table_id": {
+                        "$oid": "6337f9651050ee7d123466cd"
+                    },
+                    "relationship_type": "child_parent"
+                }
+            ]
+        }
+    ],
+    "feature_store_id": {
+        "$oid": "646f6c190ed28a5271fb02a1"
+    },
+    "graph": {
+        "edges": [
+            {
+                "source": "input_1",
+                "target": "graph_1"
+            },
+            {
+                "source": "graph_1",
+                "target": "lookup_1"
+            },
+            {
+                "source": "graph_1",
+                "target": "aggregate_as_at_1"
+            },
+            {
+                "source": "aggregate_as_at_1",
+                "target": "project_1"
+            },
+            {
+                "source": "project_1",
+                "target": "is_null_1"
+            },
+            {
+                "source": "project_1",
+                "target": "conditional_1"
+            },
+            {
+                "source": "is_null_1",
+                "target": "conditional_1"
+            },
+            {
+                "source": "conditional_1",
+                "target": "alias_1"
+            },
+            {
+                "source": "alias_1",
+                "target": "cast_1"
+            },
+            {
+                "source": "lookup_1",
+                "target": "project_2"
+            },
+            {
+                "source": "project_2",
+                "target": "cast_2"
+            },
+            {
+                "source": "cast_2",
+                "target": "concat_1"
+            },
+            {
+                "source": "concat_1",
+                "target": "concat_2"
+            },
+            {
+                "source": "cast_1",
+                "target": "concat_2"
+            },
+            {
+                "source": "concat_2",
+                "target": "alias_2"
+            }
+        ],
+        "nodes": [
+            {
+                "name": "input_1",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {
+                            "dtype": "INT",
+                            "name": "col_int"
+                        },
+                        {
+                            "dtype": "FLOAT",
+                            "name": "col_float"
+                        },
+                        {
+                            "dtype": "BOOL",
+                            "name": "is_active"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "col_text"
+                        },
+                        {
+                            "dtype": "BINARY",
+                            "name": "col_binary"
+                        },
+                        {
+                            "dtype": "BOOL",
+                            "name": "col_boolean"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "effective_timestamp"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "end_timestamp"
+                        },
+                        {
+                            "dtype": "TIMESTAMP",
+                            "name": "date_of_birth"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "created_at"
+                        },
+                        {
+                            "dtype": "INT",
+                            "name": "cust_id"
+                        }
+                    ],
+                    "current_flag_column": "is_active",
+                    "effective_timestamp_column": "effective_timestamp",
+                    "end_timestamp_column": "end_timestamp",
+                    "feature_store_details": {
+                        "details": null,
+                        "type": "snowflake"
+                    },
+                    "id": {
+                        "$oid": "6337f9651050ee7d123466cd"
+                    },
+                    "natural_key_column": "col_text",
+                    "surrogate_key_column": "col_int",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "scd_table"
+                    },
+                    "type": "scd_table"
+                },
+                "type": "input"
+            },
+            {
+                "name": "graph_1",
+                "output_type": "frame",
+                "parameters": {
+                    "graph": {
+                        "edges": [
+                            {
+                                "source": "proxy_input_1",
+                                "target": "project_1"
+                            }
+                        ],
+                        "nodes": [
+                            {
+                                "name": "proxy_input_1",
+                                "output_type": "frame",
+                                "parameters": {
+                                    "input_order": 0
+                                },
+                                "type": "proxy_input"
+                            },
+                            {
+                                "name": "project_1",
+                                "output_type": "frame",
+                                "parameters": {
+                                    "columns": [
+                                        "col_int",
+                                        "col_float",
+                                        "col_text",
+                                        "col_binary",
+                                        "col_boolean",
+                                        "effective_timestamp",
+                                        "end_timestamp",
+                                        "date_of_birth",
+                                        "created_at",
+                                        "cust_id"
+                                    ]
+                                },
+                                "type": "project"
+                            }
+                        ]
+                    },
+                    "metadata": {
+                        "column_cleaning_operations": [],
+                        "drop_column_names": [
+                            "is_active"
+                        ],
+                        "table_id": {
+                            "$oid": "6337f9651050ee7d123466cd"
+                        },
+                        "view_mode": "auto"
+                    },
+                    "output_node_name": "project_1",
+                    "type": "scd_view"
+                },
+                "type": "graph"
+            },
+            {
+                "name": "lookup_1",
+                "output_type": "frame",
+                "parameters": {
+                    "entity_column": "col_text",
+                    "entity_id": {
+                        "$oid": "63f94ed6ea1f050131379214"
+                    },
+                    "event_parameters": null,
+                    "feature_names": [
+                        "some_lookup_feature"
+                    ],
+                    "input_column_names": [
+                        "col_boolean"
+                    ],
+                    "scd_parameters": {
+                        "current_flag_column": "is_active",
+                        "effective_timestamp_column": "effective_timestamp",
+                        "end_timestamp_column": "end_timestamp",
+                        "natural_key_column": "col_text",
+                        "offset": null
+                    },
+                    "serving_name": "cust_id"
+                },
+                "type": "lookup"
+            },
+            {
+                "name": "aggregate_as_at_1",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "count",
+                    "backward": true,
+                    "current_flag_column": "is_active",
+                    "effective_timestamp_column": "effective_timestamp",
+                    "end_timestamp_column": "end_timestamp",
+                    "entity_ids": [
+                        {
+                            "$oid": "65f11f1d8a03610e41399306"
+                        }
+                    ],
+                    "keys": [
+                        "col_boolean"
+                    ],
+                    "name": "asat_gender_count",
+                    "natural_key_column": "col_text",
+                    "offset": null,
+                    "parent": null,
+                    "serving_names": [
+                        "gender"
+                    ],
+                    "value_by": null
+                },
+                "type": "aggregate_as_at"
+            },
+            {
+                "name": "project_1",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "asat_gender_count"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "is_null_1",
+                "output_type": "series",
+                "parameters": {},
+                "type": "is_null"
+            },
+            {
+                "name": "conditional_1",
+                "output_type": "series",
+                "parameters": {
+                    "value": 0
+                },
+                "type": "conditional"
+            },
+            {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "asat_gender_count"
+                },
+                "type": "alias"
+            },
+            {
+                "name": "cast_1",
+                "output_type": "series",
+                "parameters": {
+                    "from_dtype": "INT",
+                    "type": "str"
+                },
+                "type": "cast"
+            },
+            {
+                "name": "project_2",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "some_lookup_feature"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "cast_2",
+                "output_type": "series",
+                "parameters": {
+                    "from_dtype": "BOOL",
+                    "type": "str"
+                },
+                "type": "cast"
+            },
+            {
+                "name": "concat_1",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": "_"
+                },
+                "type": "concat"
+            },
+            {
+                "name": "concat_2",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": null
+                },
+                "type": "concat"
+            },
+            {
+                "name": "alias_2",
+                "output_type": "series",
+                "parameters": {
+                    "name": "complex_parent_child_feature_V231227"
+                },
+                "type": "alias"
+            }
+        ]
+    },
+    "node_names": [
+        "alias_2"
+    ]
+}

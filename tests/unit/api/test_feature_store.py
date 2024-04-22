@@ -1,6 +1,7 @@
 """
 Unit test for DatabaseSource
 """
+
 from unittest.mock import patch
 
 import numpy as np
@@ -66,7 +67,13 @@ def test_list_schema(snowflake_connector, snowflake_execute_query, snowflake_fea
     assert output == ["sf_schema"]
 
 
-def test_list_tables(snowflake_connector, snowflake_execute_query, snowflake_feature_store, config):
+def test_list_tables(
+    snowflake_connector,
+    snowflake_execute_query,
+    snowflake_feature_store,
+    config,
+    mock_is_featurebyte_schema,
+):
     """
     Test list_tables return expected results
     """

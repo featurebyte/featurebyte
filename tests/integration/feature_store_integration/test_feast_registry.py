@@ -1,6 +1,7 @@
 """
 Test feast registry service
 """
+
 import asyncio
 import logging
 import time

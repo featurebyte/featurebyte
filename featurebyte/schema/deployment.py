@@ -1,15 +1,16 @@
 """
 Pydantic schemas for handling API payloads for deployment routes
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
+from featurebyte.models.deployment import DeploymentModel, FeastRegistryInfo
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -19,7 +20,7 @@ class DeploymentCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
     feature_list_id: PydanticObjectId
     use_case_id: Optional[PydanticObjectId]
 
@@ -38,6 +39,14 @@ class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     enabled: Optional[bool]
+
+
+class DeploymentServiceUpdate(DeploymentUpdate):
+    """
+    Schema for deployment service update
+    """
+
+    registry_info: Optional[FeastRegistryInfo]
 
 
 class DeploymentSummary(FeatureByteBaseModel):

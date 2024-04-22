@@ -1,6 +1,7 @@
 """
 Tests functions/methods in routes/common directory
 """
+
 from typing import List
 
 from datetime import datetime

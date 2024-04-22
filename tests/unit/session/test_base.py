@@ -1,6 +1,7 @@
 """
 Unit test for base snowflake session.
 """
+
 from __future__ import annotations
 
 from typing import Any, OrderedDict
@@ -19,6 +20,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -70,7 +72,9 @@ def base_session_test_fixture():
             table_name: str | None,
             database_name: str | None = None,
             schema_name: str | None = None,
+            timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
         ) -> OrderedDict[str, ColumnSpecWithDescription]:
+            _ = timeout
             return collections.OrderedDict()
 
         async def register_table(

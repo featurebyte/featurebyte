@@ -1,6 +1,7 @@
 """
 Integration test for feature table cache
 """
+
 import time
 
 import pytest
@@ -88,6 +89,31 @@ def observation_table_fixture(event_view):
 
 
 @pytest.mark.asyncio
+async def test_definition_hashes_for_nodes_consistent(
+    feature_table_cache_service,
+    feature_service,
+    feature_list,
+):
+    """
+    Test definition_hashes_for_nodes computes definition hashes that match with saved features
+    """
+    # Compute definition hashes from scratch in feature table cache service
+    computed_hashes = await feature_table_cache_service.definition_hashes_for_nodes(
+        feature_list.cached_model.feature_clusters[0].graph,
+        feature_list.cached_model.feature_clusters[0].nodes,
+    )
+
+    # Compare with saved features
+    saved_hashes = {
+        doc.definition_hash
+        async for doc in feature_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(feature_list.feature_ids)}}
+        )
+    }
+    assert set(computed_hashes) == saved_hashes
+
+
+@pytest.mark.asyncio
 async def test_create_feature_table_cache(
     feature_store,
     session,
@@ -147,7 +173,7 @@ async def test_create_feature_table_cache(
         source_type=source_type,
     )
     df = await session.execute_query(query)
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
     assert set(df.columns.tolist()) == set(
         [InternalName.TABLE_ROW_INDEX] + observation_table_cols + cached_column_names
@@ -237,7 +263,7 @@ async def test_update_feature_table_cache(
         source_type=source_type,
     )
     df = await session.execute_query(query)
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
     assert set(df.columns.tolist()) == set(
         [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
@@ -283,7 +309,7 @@ async def test_create_view_from_cache(
         feature_names = [
             feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
         ]
-        await feature_table_cache_service.create_view_from_cache(
+        await feature_table_cache_service.create_view_or_table_from_cache(
             feature_store=feature_store_model,
             observation_table=observation_table_model,
             graph=feature_cluster.graph,
@@ -302,13 +328,16 @@ async def test_create_view_from_cache(
             source_type=source_type,
         )
         df = await session.execute_query(query)
-        assert df.shape == (50, len(set(feature_names + observation_table_cols)) + 1)
+        assert df.shape == (
+            observation_table.num_rows,
+            len(set(feature_names + observation_table_cols)) + 1,
+        )
         assert df.columns.tolist() == (
             [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names
         )
 
         # update cache table with second feature list
-        await feature_table_cache_service.create_view_from_cache(
+        await feature_table_cache_service.create_view_or_table_from_cache(
             feature_store=feature_store_model,
             observation_table=observation_table_model,
             graph=feature_cluster.graph,
@@ -327,7 +356,10 @@ async def test_create_view_from_cache(
         )
         df = await session.execute_query(query)
         assert len(feature_list.feature_names) == 9
-        assert df.shape == (50, len(set(feature_list.feature_names + observation_table_cols)) + 1)
+        assert df.shape == (
+            observation_table.num_rows,
+            len(set(feature_list.feature_names + observation_table_cols)) + 1,
+        )
         assert df.columns.tolist() == (
             [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_list.feature_names
         )
@@ -337,14 +369,12 @@ async def test_create_view_from_cache(
             schema_name=view_1.schema_name,
             database_name=view_1.database_name,
             if_exists=True,
-            is_view=True,
         )
         await session.drop_table(
             table_name=view_2.table_name,
             schema_name=view_2.schema_name,
             database_name=view_2.database_name,
             if_exists=True,
-            is_view=True,
         )
 
 
@@ -389,5 +419,5 @@ async def test_read_from_cache(
         graph=feature_cluster.graph,
         nodes=feature_cluster.nodes,
     )
-    assert df.shape[0] == 50
+    assert df.shape[0] == observation_table.num_rows
     assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)

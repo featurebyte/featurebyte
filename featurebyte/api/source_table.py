@@ -1,6 +1,7 @@
 """
 SourceTable class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -8,6 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, Ty
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
@@ -15,9 +17,14 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.mixin import SampleMixin
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.utils import dataframe_from_json
+from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
+from featurebyte.core.mixin import perf_logging
 from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
@@ -31,6 +38,7 @@ from featurebyte.query_graph.model.table import AllTableDataT, SourceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
+from featurebyte.schema.feature_store import FeatureStoreShape
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 
@@ -52,7 +60,7 @@ else:
 logger = get_logger(__name__)
 
 
-class TableDataFrame(BaseFrame):
+class TableDataFrame(BaseFrame, SampleMixin):
     """
     TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
     This class is used to construct the query graph for previewing/sampling underlying table stored at the
@@ -1001,6 +1009,7 @@ class SourceTable(AbstractTableData):
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -1029,6 +1038,10 @@ class SourceTable(AbstractTableData):
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The data type and primary entities must match the those in the target namespace.
 
         Returns
         -------
@@ -1077,6 +1090,7 @@ class SourceTable(AbstractTableData):
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
+            target_column=target_column,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()
@@ -1199,3 +1213,85 @@ class SourceTable(AbstractTableData):
             route="/static_source_table", payload=payload.json_dict()
         )
         return StaticSourceTable.get_by_id(static_source_table_doc["_id"])
+
+    @perf_logging
+    @typechecked
+    def preview(self, limit: int = 10) -> pd.DataFrame:  # pylint: disable=arguments-differ
+        """
+        Retrieve a preview of the source table / column.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed.
+
+        Examples
+        --------
+        Preview 3 rows of a source table.
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> source_table = data_source.get_source_table(
+        ...     table_name="groceryinvoice",
+        ...     database_name="spark_catalog",
+        ...     schema_name="doctest_grocery",
+        ... )
+        >>> source_table.preview(3)
+                             GroceryInvoiceGuid                   GroceryCustomerGuid           Timestamp record_available_at  Amount
+        0  4fccfb1d-02b3-4047-87ab-4e5f910ccdd1  a7ada4a3-fd92-44e6-a232-175c90b1c939 2022-01-03 12:28:58 2022-01-03 13:01:00   10.68
+        1  9cf3c416-7b38-401e-adf6-1bd26650d1d6  a7ada4a3-fd92-44e6-a232-175c90b1c939 2022-01-03 16:32:15 2022-01-03 17:01:00   38.04
+        2  0a5b99b2-9ff1-452a-a06e-669e8ed4a9fa  a7ada4a3-fd92-44e6-a232-175c90b1c939 2022-01-07 16:20:04 2022-01-07 17:01:00    1.99
+        """
+
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/table_preview?limit={limit}",
+            json=self.table_data.tabular_source.json_dict(),
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return dataframe_from_json(response.json())
+
+    @perf_logging
+    @typechecked
+    def shape(self) -> Tuple[int, int]:  # pylint: disable=arguments-differ
+        """
+        Return the shape of the source table
+
+        Returns
+        -------
+        Tuple[int, int]
+
+        Raises
+        ------
+        RecordRetrievalException
+            Shape request failed.
+
+        Examples
+        --------
+        Get the shape of a source table.
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> source_table = data_source.get_source_table(
+        ...     table_name="groceryinvoice",
+        ...     database_name="spark_catalog",
+        ...     schema_name="doctest_grocery",
+        ... )
+        >>> source_table.shape()
+        (38107, 5)
+        """
+        client = Configurations().get_client()
+        response = client.post(
+            url="/feature_store/table_shape", json=self.table_data.tabular_source.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        shape = FeatureStoreShape(**response.json())
+        return shape.num_rows, shape.num_cols

@@ -1,6 +1,7 @@
 """
 Models for the value parameter used by SingleValueNodeParameters
 """
+
 from __future__ import annotations
 
 from typing import Literal, Union, cast

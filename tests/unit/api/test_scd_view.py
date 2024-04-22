@@ -1,6 +1,7 @@
 """
 Unit tests for SCDView class
 """
+
 import pytest
 
 from featurebyte.api.scd_view import SCDView
@@ -326,8 +327,8 @@ def test_event_view_join_scd_view__feature_info(
     Test joining event view with SCD view and creating a feature
     """
     joined_view = snowflake_event_view.join(snowflake_scd_view_with_entity, rsuffix="_scd")
-    joined_view["new_col"] = joined_view["col_float"].lag("cust_id_scd")
-    feature = joined_view.groupby("cust_id_scd").aggregate_over(
+    joined_view["new_col"] = joined_view["col_float"].lag("col_boolean_scd")
+    feature = joined_view.groupby("col_boolean_scd").aggregate_over(
         value_column="new_col", method="max", feature_names=["new_col_max_feature"], windows=["3d"]
     )["new_col_max_feature"]
     feature.save()
@@ -345,7 +346,7 @@ def test_event_view_join_scd_view__feature_info(
             "column_name": "col_text",
             "semantic": "scd_natural_key_id",
         },
-        "Input3": {"data": "sf_scd_table", "column_name": "cust_id", "semantic": None},
+        "Input3": {"data": "sf_scd_table", "column_name": "col_boolean", "semantic": None},
         "Input4": {"data": "sf_event_table", "column_name": "col_float", "semantic": None},
     }
 

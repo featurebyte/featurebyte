@@ -1,6 +1,7 @@
 """
 Preview mixin for Graph Interpreter
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List, Optional
@@ -140,9 +141,9 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[expressions.Select, dict[Optional[str], DBVarType]]
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
-        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
+        flat_node = self.get_flattened_node(node_name)
         sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -156,7 +157,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply type conversions
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
+            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
         )
         if skip_conversion:
             type_conversions: dict[Optional[str], DBVarType] = {}
@@ -864,8 +865,9 @@ class PreviewMixin(BaseGraphInterpreter):
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
+        flat_node = self.get_flattened_node(node_name)
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
+            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
         )
 
         sample_sql_tree, type_conversions = self._construct_sample_sql(

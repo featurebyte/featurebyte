@@ -1,6 +1,7 @@
 """
 Utilities for SCD join / lookup
 """
+
 from __future__ import annotations
 
 from typing import Literal, Optional, cast
@@ -15,6 +16,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 # Internally used identifiers when constructing SQL
+from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
 
 TS_COL = "__FB_TS_COL"
@@ -56,7 +58,11 @@ class Table:
             return quoted_identifier(self.timestamp_column)
         return self.timestamp_column
 
-    def as_subquery(self, alias: Optional[str] = None) -> Expression:
+    def as_subquery(
+        self,
+        alias: Optional[str] = None,
+        remove_missing_timestamp_values: bool = False,
+    ) -> Expression:
         """
         Returns an expression that can be selected from (converted to subquery if required)
 
@@ -64,15 +70,42 @@ class Table:
         ----------
         alias: Optional[str]
             Table alias, if specified.
+        remove_missing_timestamp_values: bool
+            Whether to filter out missing values in timestamp column in the returned subquery
 
         Returns
         -------
         Expression
         """
         if isinstance(self.expr, str):
+            # This is when joining with tile tables. We can assume that tile index (the timestamp
+            # column) will not have any missing values, so remove_missing_timestamp_values is
+            # ignored.
             return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
         assert isinstance(self.expr, Select)
-        return cast(Expression, self.expr.subquery(alias=alias))
+        if remove_missing_timestamp_values:
+            expr = self.expr_with_non_missing_timestamp_values
+        else:
+            expr = self.expr
+        return cast(Expression, expr.subquery(alias=alias, copy=False))
+
+    @property
+    def expr_with_non_missing_timestamp_values(self) -> Select:
+        """
+        Get an expression for the table with missing timestamp values removed
+
+        Returns
+        -------
+        Select
+        """
+        assert isinstance(self.expr, Select)
+        assert isinstance(self.timestamp_column, str)
+        return self.expr.where(
+            expressions.Is(
+                this=quoted_identifier(self.timestamp_column),
+                expression=expressions.Not(this=expressions.Null()),
+            )
+        )
 
 
 def get_scd_join_expr(
@@ -158,7 +191,26 @@ def get_scd_join_expr(
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
+
+    # Ensure right table (scd side) is unique in the join columns so that the join preserve the
+    # number of rows in the left table
+    assert isinstance(right_table.timestamp_column, str)
+    if isinstance(right_table.expr, Select):
+        # right_table.expr is a Select instance if it is a user provided SCD table.
+        deduplicated_expr = get_deduplicated_expr(
+            adapter=adapter,
+            table_expr=right_table.expr_with_non_missing_timestamp_values,
+            expected_primary_keys=[right_table.timestamp_column] + right_table.join_keys,
+        )
+        right_table = Table(
+            expr=deduplicated_expr,
+            timestamp_column=right_table.timestamp_column,
+            join_keys=right_table.join_keys,
+            input_columns=right_table.input_columns,
+            output_columns=right_table.output_columns,
+        )
     right_subquery = right_table.as_subquery(alias="R")
+
     assert isinstance(right_table.timestamp_column, str)
     join_conditions = [
         expressions.EQ(
@@ -167,10 +219,11 @@ def get_scd_join_expr(
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
 
-    select_expr = select_expr.from_(left_subquery).join(
+    select_expr = select_expr.from_(left_subquery, copy=False).join(
         right_subquery,
         join_type=join_type,
         on=expressions.and_(*join_conditions),
+        copy=False,
     )
     return select_expr
 
@@ -300,7 +353,7 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
         left_view_with_ts_and_key = left_view_with_ts_and_key.select(
-            alias_(quoted_identifier(input_col), alias=output_col, quoted=True)
+            alias_(quoted_identifier(input_col), alias=output_col, quoted=True), copy=False
         )
 
     # Right table. Set up the same special columns. The ordering of the columns in the SELECT
@@ -318,12 +371,12 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
             alias=TS_TIE_BREAKER_COL,
             quoted=True,
         ),
-    ).from_(right_table.as_subquery())
+    ).from_(right_table.as_subquery(remove_missing_timestamp_values=True), copy=False)
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
         right_ts_and_key = right_ts_and_key.select(
-            alias_(expressions.NULL, alias=column, quoted=True)
+            alias_(expressions.NULL, alias=column, quoted=True), copy=False
         )
 
     # Merge the above two temporary tables into one
@@ -341,7 +394,9 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     # date, instead of a previous effective date. Vice versa for allow_exact_match=False.
     order = expressions.Order(
         expressions=[
-            expressions.Ordered(this=quoted_identifier(TS_COL)),
+            expressions.Ordered(
+                this=expressions.Column(this=quoted_identifier(TS_COL)), nulls_first=True
+            ),
             expressions.Ordered(this=quoted_identifier(TS_TIE_BREAKER_COL)),
         ]
     )
@@ -375,10 +430,10 @@ def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
             )
-            .from_(all_ts_and_key.subquery())
-            .subquery()
+            .from_(all_ts_and_key.subquery(copy=False))
+            .subquery(copy=False)
         )
-        .where(filter_original_left_view_rows)
+        .where(filter_original_left_view_rows, copy=False)
     )
 
     return left_view_with_effective_timestamp_expr

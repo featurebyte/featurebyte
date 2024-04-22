@@ -1,6 +1,7 @@
 """
 This module contains utility functions used in tests
 """
+
 from __future__ import annotations
 
 from typing import Generator
@@ -28,10 +29,10 @@ from featurebyte import FeatureList, get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -148,14 +149,18 @@ def add_groupby_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
-            "tile_id": get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
-            if override_tile_id is None
-            else override_tile_id,
-            "aggregation_id": get_aggregation_identifier(
-                graph.node_name_to_ref[input_node.name], groupby_node_params
-            )
-            if override_aggregation_id is None
-            else override_aggregation_id,
+            "tile_id": (
+                get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
+                if override_tile_id is None
+                else override_tile_id
+            ),
+            "aggregation_id": (
+                get_aggregation_identifier(
+                    graph.node_name_to_ref[input_node.name], groupby_node_params
+                )
+                if override_aggregation_id is None
+                else override_aggregation_id
+            ),
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[input_node],
@@ -359,6 +364,16 @@ def assert_preview_result_equal(df_preview, expected_dict, dict_like_columns=Non
     fb_assert_frame_equal(df_preview, df_expected, dict_like_columns=dict_like_columns)
 
 
+def assert_sql_equal(actual, expected):
+    """
+    Compare sql potentially with multiple lines. Leading and trailing spaces and newlines are
+    stripped before comparison.
+    """
+    actual = textwrap.dedent(actual).strip()
+    expected = textwrap.dedent(expected).strip()
+    assert actual == expected
+
+
 def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
     """
     Create feature to capture the entropy of inter-event interval time,
@@ -510,7 +525,7 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
     """
     Helper function to get the preview SQL for a series
     """
-    return SampleMixin.preview_sql(series_obj, *args, **kwargs)
+    return series_obj.preview_sql(*args, **kwargs)
 
 
 def check_decomposed_graph_output_node_hash(feature_model, output=None):
@@ -714,6 +729,10 @@ def check_on_demand_feature_code_generation(
         if col != "POINT_IN_TIME":
             df[f"{col}__ts"] = feat_event_ts.astype(int) // 1e9
 
+    # introduce some missing values to test null handling for datetime
+    if df.shape[0] > 1:
+        df["POINT_IN_TIME"].iloc[1] = None
+
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes
 
@@ -755,6 +774,7 @@ async def deploy_feature_list(
     feature_list_model,
     context_primary_entity_ids=None,
     deployment_name_override=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a feature list using services
@@ -774,7 +794,7 @@ async def deploy_feature_list(
     use_case_model = await app_container.use_case_service.create_document(data)
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
-        deployment_id=ObjectId(),
+        deployment_id=deployment_id,
         deployment_name=(
             feature_list_model.name
             if deployment_name_override is None
@@ -791,6 +811,7 @@ async def deploy_feature_ids(
     feature_list_name,
     feature_ids,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a list of features using services
@@ -807,6 +828,7 @@ async def deploy_feature_ids(
         app_container=app_container,
         feature_list_model=feature_list_model,
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
 
 
@@ -816,6 +838,7 @@ async def deploy_feature(
     return_type="feature",
     feature_list_name_override=None,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to create deploy a single feature using services
@@ -837,6 +860,7 @@ async def deploy_feature(
         feature_list_name,
         [feature.id],
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)
@@ -940,7 +964,7 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     async for info in app_container.relationship_info_service.list_documents_iterator(
         query_filter={"entity_id": child_entity_id, "related_entity_id": parent_entity_id}
     ):
-        return info
+        return EntityRelationshipInfo(**info.dict(by_alias=True))
     raise AssertionError("Relationship not found")
 
 
@@ -960,7 +984,7 @@ async def manage_document(doc_service, create_data, storage):
         doc = await doc_service.create_document(data=create_data)
 
         # check remote paths are created
-        for path in doc.remote_attribute_paths:
+        for path in type(doc).get_remote_attribute_paths(doc.dict(by_alias=True)):
             full_path = os.path.join(storage.base_path, path)
             assert os.path.exists(full_path), f"Remote path {full_path} not created"
 
@@ -971,6 +995,6 @@ async def manage_document(doc_service, create_data, storage):
             await doc_service.delete_document(document_id=doc.id)
 
             # check remote paths are deleted
-            for path in doc.remote_attribute_paths:
+            for path in type(doc).get_remote_attribute_paths(doc.dict(by_alias=True)):
                 full_path = os.path.join(storage.base_path, path)
                 assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"

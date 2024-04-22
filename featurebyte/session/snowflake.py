@@ -1,6 +1,7 @@
 """
 SnowflakeSession class
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, OrderedDict
@@ -14,30 +15,46 @@ import pandas as pd
 import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
-from snowflake.connector.cursor import ResultMetadata
-from snowflake.connector.errors import (
-    DatabaseError,
-    NotSupportedError,
-    OperationalError,
-    ProgrammingError,
-)
+from snowflake.connector.constants import FIELD_TYPES
+from snowflake.connector.errors import Error as SnowflakeError
+from snowflake.connector.errors import NotSupportedError, ProgrammingError
 from snowflake.connector.pandas_tools import write_pandas
 
-from featurebyte.common.utils import pa_table_to_record_batches
+from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.session.base import APPLICATION_NAME, BaseSchemaInitializer, BaseSession
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
+from featurebyte.session.base import (
+    APPLICATION_NAME,
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+)
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
 
 logging.getLogger("snowflake.connector").setLevel(logging.ERROR)
+
+
+db_vartype_mapping = {
+    SnowflakeDataType.REAL: DBVarType.FLOAT,
+    SnowflakeDataType.BINARY: DBVarType.BINARY,
+    SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
+    SnowflakeDataType.DATE: DBVarType.DATE,
+    SnowflakeDataType.TIME: DBVarType.TIME,
+    SnowflakeDataType.ARRAY: DBVarType.ARRAY,
+    SnowflakeDataType.OBJECT: DBVarType.DICT,
+}
 
 
 class SnowflakeSession(BaseSession):
@@ -61,8 +78,7 @@ class SnowflakeSession(BaseSession):
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    def _initialize_connection(self) -> None:
         try:
             self._connection = connector.connect(
                 user=self.database_credential.username,
@@ -73,18 +89,20 @@ class SnowflakeSession(BaseSession):
                 schema=self.schema_name,
                 role_name=self.role_name,
                 application=APPLICATION_NAME,
+                client_session_keep_alive=True,
             )
-        except (OperationalError, DatabaseError) as exc:
-            raise CredentialsError("Invalid credentials provided.") from exc
+        except SnowflakeError as exc:
+            raise DataWarehouseConnectionError(exc.msg) from exc
 
-    async def initialize(self) -> None:
-        # If the featurebyte schema does not exist, the self._connection can still be created
-        # without errors. Below checks whether the schema actually exists. If not, it will be
-        # created and initialized with custom functions and procedures.
-        await self.execute_query(f'USE ROLE "{self.role_name}"')
-        await super().initialize()
+        cursor = self._connection.cursor()
+        cursor.execute(f'USE ROLE "{self.role_name}"')
+        try:
+            cursor.execute(f'USE SCHEMA "{self.database_name}"."{self.schema_name}"')
+        except self._no_schema_error:
+            # the schema may not exist yet if the feature store is being created
+            pass
         # set timezone to UTC
-        await self.execute_query(
+        cursor.execute(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
 
@@ -103,10 +121,12 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query_interactive("SHOW DATABASES")
+        databases = await self.execute_query_interactive(
+            "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES"
+        )
         output = []
         if databases is not None:
-            output.extend(databases["name"])
+            output.extend(databases["DATABASE_NAME"].tolist())
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
@@ -123,36 +143,70 @@ class SnowflakeSession(BaseSession):
         list[str]
         """
         schemas = await self.execute_query_interactive(
-            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
+            f'SELECT SCHEMA_NAME FROM "{database_name}".INFORMATION_SCHEMA.SCHEMATA'
         )
         output = []
         if schemas is not None:
-            output.extend(schemas["name"])
+            output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
     async def list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
+            f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
+            f"WHERE TABLE_SCHEMA = '{schema_name}'",
+            timeout=timeout,
         )
-        views = await self.execute_query_interactive(
-            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-        )
-
         output = []
-
         if tables is not None:
-            for _, (name, comment) in tables[["name", "comment"]].iterrows():
-                output.append(TableSpec(name=name, description=comment or None))
-
-        if views is not None:
-            for _, (name, comment) in views[["name", "comment"]].iterrows():
+            for _, (name, comment) in tables[["TABLE_NAME", "COMMENT"]].iterrows():
                 output.append(TableSpec(name=name, description=comment or None))
 
         return output
+
+    def _get_schema_from_cursor(self, cursor: Any) -> pa.Schema:
+        """
+        Get schema from a cursor
+
+        Parameters
+        ----------
+        cursor: Any
+            Cursor to fetch data from
+
+        Returns
+        -------
+        pa.Schema
+
+        Raises
+        ------
+        CursorSchemaError
+            When the cursor description is not as expected
+        """
+        fields = []
+        for field in cursor.description:
+            if not hasattr(field, "type_code"):
+                raise CursorSchemaError()
+            field_type = FIELD_TYPES[field.type_code]
+            if field_type.name == "FIXED" and field.scale and field.scale > 0:
+                # DECIMAL type
+                pa_type = pa.decimal128(field.precision, field.scale)
+            else:
+                pa_type = field_type.pa_type(field)
+            db_var_type = self._convert_to_internal_variable_type(
+                {
+                    "type": field_type.name,
+                    "length": field.internal_size,
+                    "scale": field.scale,
+                }
+            )
+            fields.append(
+                pa.field(field.name, pa_type, metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type})
+            )
+        return pa.schema(fields)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         """
@@ -181,51 +235,25 @@ class SnowflakeSession(BaseSession):
                 return super().fetch_query_result_impl(cursor)
         return None
 
-    @staticmethod
-    def _get_column_name_to_db_var_type(cursor: Any) -> dict[str, DBVarType]:
-        """
-        Get DB var type of data being fetched from the snowflake cursor.
-
-        Parameters
-        ----------
-        cursor: Any
-            The connection cursor
-
-        Returns
-        -------
-        dict[str, DBVarType]
-            A dictionary mapping column names to DB var types
-        """
-        output = {}
-        # See https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#label-python-connector-type-codes
-        # for more details. We currently only map one value since that's the only one we need to do any special
-        # handling for. If we need to apply more special handling in the future, we can add more mappings here.
-        type_code_to_db_var_type_mapping: dict[int, DBVarType] = {10: DBVarType.ARRAY}
-        for metadata in cursor.description:
-            if not isinstance(metadata, ResultMetadata):
-                continue
-            type_code = metadata.type_code
-            if type_code in type_code_to_db_var_type_mapping:
-                output[metadata.name] = type_code_to_db_var_type_mapping[type_code]
-        return output
-
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
-        col_name_to_db_var_type = self._get_column_name_to_db_var_type(cursor)
         # fetch results in batches and write to the stream
+        schema = None
         try:
-            counter = 0
+            schema = self._get_schema_from_cursor(cursor)
             for table in cursor.fetch_arrow_batches():
-                for batch in pa_table_to_record_batches(table, col_name_to_db_var_type):
-                    counter += 1
+                for batch in table.cast(schema).to_batches():
                     yield batch
-            if counter == 0:
-                # Arrow batch is empty, need to return empty table with schema
-                table = cursor.get_result_batches()[0].to_arrow()
-                yield pa_table_to_record_batches(table)[0]
-        except NotSupportedError:
+            # return empty table to ensure correct schema is returned
+            yield pa.record_batch(
+                pd.DataFrame(columns=[field.name for field in schema]), schema=schema
+            )
+        except (NotSupportedError, CursorSchemaError):
             batches = super().fetch_query_stream_impl(cursor)
             async for batch in batches:
-                yield batch
+                if schema is None:
+                    yield batch
+                else:
+                    yield pa.record_batch(batch.to_pandas(), schema=schema)
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
@@ -247,17 +275,8 @@ class SnowflakeSession(BaseSession):
 
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
-        to_internal_variable_map = {
-            SnowflakeDataType.REAL: DBVarType.FLOAT,
-            SnowflakeDataType.BINARY: DBVarType.BINARY,
-            SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
-            SnowflakeDataType.DATE: DBVarType.DATE,
-            SnowflakeDataType.TIME: DBVarType.TIME,
-            SnowflakeDataType.ARRAY: DBVarType.ARRAY,
-            SnowflakeDataType.OBJECT: DBVarType.OBJECT,
-        }
-        if snowflake_var_info["type"] in to_internal_variable_map:
-            return to_internal_variable_map[snowflake_var_info["type"]]
+        if snowflake_var_info["type"] in db_vartype_mapping:
+            return db_vartype_mapping[snowflake_var_info["type"]]
         if snowflake_var_info["type"] == SnowflakeDataType.FIXED:
             # scale is defined as number of digits following the decimal point (see link in reference)
             return DBVarType.INT if snowflake_var_info["scale"] == 0 else DBVarType.FLOAT
@@ -280,9 +299,11 @@ class SnowflakeSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
+            timeout=timeout,
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
@@ -312,12 +333,20 @@ class SnowflakeSession(BaseSession):
         if details is None or details.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
         return TableDetails(
-            details=details.iloc[0].to_dict(),
+            details=json.loads(details.iloc[0].to_json(orient="index")),
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
         )
 
     @staticmethod
-    def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> list[tuple[str, str]]:
+    def get_columns_schema_from_dataframe(  # pylint: disable=too-many-branches
+        dataframe: pd.DataFrame,
+    ) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
 
         Parameters
@@ -341,6 +370,8 @@ class SnowflakeSession(BaseSession):
                     db_type = "TIMESTAMP_TZ"
                 else:
                     db_type = "TIMESTAMP_NTZ"
+            elif pd.api.types.is_bool_dtype(dtype):
+                db_type = "BOOLEAN"
             elif pd.api.types.is_float_dtype(dtype):
                 db_type = "DOUBLE"
             elif pd.api.types.is_integer_dtype(dtype):
@@ -404,7 +435,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 32
+        return 34
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'

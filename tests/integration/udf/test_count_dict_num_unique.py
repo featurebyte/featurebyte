@@ -1,6 +1,7 @@
 """
 Tests for count dict num unique UDF
 """
+
 import numpy as np
 import pytest
 

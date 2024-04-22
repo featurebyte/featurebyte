@@ -1,6 +1,9 @@
 """
 Test FeatureMaterializeService
 """
+
+# pylint: disable=too-many-lines
+
 from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import call, patch
@@ -12,12 +15,17 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
-from featurebyte.models.offline_store_feature_table import OnlineStoreLastMaterializedAt
+from featurebyte.models.offline_store_feature_table import (
+    OfflineLastMaterializedAtUpdate,
+    OnlineStoreLastMaterializedAt,
+)
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
     extract_session_executed_queries,
+    get_relationship_info,
 )
 
 
@@ -72,6 +80,8 @@ async def deployed_feature_list_fixture(
     deployment_id = ObjectId()
     with patch(
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+    ), patch(
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
     ):
         await app_container.deploy_service.create_deployment(
             feature_list_id=production_ready_feature_list.id,
@@ -125,6 +135,24 @@ async def deployed_feature_list_no_entity(
     return feature_list_model
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_list_internal_relationships(
+    app_container,
+    feature_with_internal_parent_child_relationships,
+    mock_deployment_flow,
+):
+    """
+    Fixture for a feature list with internal relationships
+    """
+    _ = mock_deployment_flow
+
+    feature_with_internal_parent_child_relationships.save()
+    feature_list_model = await deploy_feature_ids(
+        app_container, "my_list", [feature_with_internal_parent_child_relationships.id]
+    )
+    return feature_list_model
+
+
 @pytest_asyncio.fixture(name="deployed_feature")
 async def deployed_feature_fixture(feature_service, deployed_feature_list):
     """
@@ -170,12 +198,44 @@ async def offline_store_feature_table_no_entity_fixture(
         return model
 
 
+@pytest_asyncio.fixture(name="offline_store_feature_table_internal_relationships")
+async def offline_store_feature_table_internal_relationships_fixture(
+    app_container, deployed_feature_list_internal_relationships
+):
+    """
+    Fixture for offline store feature table with internal relationships
+    """
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"feature_ids": deployed_feature_list_internal_relationships.feature_ids}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_with_precomputed_lookup")
+async def offline_store_feature_table_with_precomputed_lookup_fixture(
+    app_container,
+    deployed_feature_list_requiring_parent_serving,
+    gender_entity_id,
+):
+    """
+    Fixture for offline store feature table with precomputed lookup
+    """
+    _ = deployed_feature_list_requiring_parent_serving
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"primary_entity_ids": gender_entity_id}
+    ):
+        return model
+
+
 @pytest_asyncio.fixture(name="feast_feature_store")
-async def feast_feature_store_fixture(app_container):
+async def feast_feature_store_fixture(app_container, offline_store_feature_table):
     """
     Fixture for the feast feature store
     """
-    return await app_container.feast_feature_store_service.get_feast_feature_store_for_catalog()
+    deployment_id = offline_store_feature_table.deployment_ids[0]
+    deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+    feast_store_service = app_container.feast_feature_store_service
+    return await feast_store_service.get_feast_feature_store_for_deployment(deployment=deployment)
 
 
 @pytest.fixture(name="mock_materialize_partial")
@@ -221,10 +281,15 @@ async def test_materialize_features(
     """
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table,
-    ) as materialized_features:
+    ) as materialized_features_set:
         pass
 
-    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 2
+    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 3
+
+    table_name = "cat1_cust_id_30m"
+    assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
+
+    materialized_features = materialized_features_set.all_materialized_features[table_name]
     materialized_features_dict = asdict(materialized_features)
     materialized_features_dict["materialized_table_name"], suffix = materialized_features_dict[
         "materialized_table_name"
@@ -281,7 +346,7 @@ async def test_scheduled_materialize_features(
     """
     await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
 
-    executed_queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
@@ -389,14 +454,14 @@ async def test_initialize_new_columns__table_does_not_exist(
     """
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_new_table.sql",
@@ -437,14 +502,16 @@ async def test_initialize_new_columns__table_exists(
         return {"some_existing_col": "some_info"}
 
     async def mock_execute_query(query):
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": "2022-10-15 10:00:00"}])
 
     mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_existing_table.sql",
@@ -465,6 +532,51 @@ async def test_initialize_new_columns__table_exists(
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
+async def test_initialize_new_columns__table_exists_but_empty(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    mock_materialize_partial,
+    update_fixtures,
+):
+    """
+    Test initialize_new_columns when feature table already exists but empty
+    """
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {"some_existing_col": "some_info"}
+
+    async def mock_execute_query(query):
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"RESULT": [0]})
+
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/feature_materialize/initialize_new_columns_existing_table_empty.sql",
+        update_fixtures,
+    )
+
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "cat1_cust_id_30m"
+    assert kwargs == {
+        "columns": [f"sum_30m_{get_version()}"],
+        "end_date": datetime(2022, 1, 1, 0, 0, 0),
+        "start_date": None,
+        "with_feature_timestamp": True,
+    }
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
 async def test_initialize_new_columns__databricks_unity(
     feature_materialize_service,
     mock_snowflake_session,
@@ -477,15 +589,15 @@ async def test_initialize_new_columns__databricks_unity(
     """
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_new_columns_new_table_databricks.sql",
@@ -507,7 +619,7 @@ async def test_drop_columns(
     Test drop_columns
     """
     await feature_materialize_service.drop_columns(offline_store_feature_table, ["a", "b"])
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/drop_columns.sql",
@@ -549,10 +661,14 @@ async def test_materialize_features_composite_entity(
 
     async with feature_materialize_service.materialize_features(
         feature_table_model=offline_store_feature_table_composite_entity,
-    ) as materialized_features:
+    ) as materialized_features_set:
         pass
 
+    table_name = "cat1_cust_id_another_key_30m"
+    assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
+
     # Check concatenated column generated
+    materialized_features = materialized_features_set.all_materialized_features[table_name]
     assert materialized_features.serving_names_and_column_names == [
         "cust_id",
         "another_key",
@@ -583,17 +699,17 @@ async def test_materialize_features_no_entity_databricks_unity(
     _ = mock_get_feature_store_session
 
     def mock_execute_query(query):
-        if "LIMIT 1" in query:
+        if "COUNT(*)" in query:
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     patch.stopall()  # stop the patcher on initialize_new_columns()
     await feature_materialize_service.initialize_new_columns(offline_store_feature_table_no_entity)
 
-    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/feature_materialize/initialize_features_no_entity_databricks_unity.sql",
@@ -620,7 +736,7 @@ async def test_update_online_store__never_materialized_before(
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     offline_store_feature_table.last_materialized_at = offline_last_materialized_at
     offline_store_feature_table.online_stores_last_materialized_at = []
@@ -675,7 +791,7 @@ async def test_update_online_store__materialized_before(
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
 
     offline_store_feature_table.last_materialized_at = offline_last_materialized_at
     offline_store_feature_table.online_stores_last_materialized_at = [
@@ -712,3 +828,211 @@ async def test_update_online_store__materialized_before(
             value=offline_last_materialized_at,
         )
     ]
+
+
+@pytest.mark.asyncio
+async def test_materialize_features_internal_relationships(
+    app_container,
+    offline_store_feature_table_internal_relationships,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test materialize_features for a feature table with internal relationships. The sql query should
+    be doing feature specific parent entity lookup.
+    """
+    _ = mock_get_feature_store_session
+
+    async with feature_materialize_service.materialize_features(
+        feature_table_model=offline_store_feature_table_internal_relationships,
+    ):
+        pass
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (relationship info id appears in the generated sql due to the use of
+    # frozen relationships)
+    relationship_info_id = (
+        await get_relationship_info(
+            app_container,
+            child_entity_id=cust_id_entity.id,
+            parent_entity_id=gender_entity.id,
+        )
+    ).id
+    executed_queries = executed_queries.replace(str(relationship_info_id), "0" * 24)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/materialize_features_queries_internal_relationships.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__initialize_new_columns(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test initialize_new_columns when a feature list requires parent entity serving
+    """
+    _ = mock_get_feature_store_session
+
+    def mock_execute_query(query):
+        if "COUNT(*)\nFROM" in query:
+            raise ValueError()
+
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    # stop the patcher on initialize_new_columns(), needed because
+    # offline_store_feature_table_with_precomputed_lookup's feature fixture patched it.
+    patch.stopall()
+    await feature_materialize_service.initialize_new_columns(
+        feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+    )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/initialize_new_columns_precomputed_lookup.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test scheduled_materialize_features when a feature list requires parent entity serving
+    """
+    _ = mock_get_feature_store_session
+
+    # Simulate previous materialize date
+    service = app_container.offline_store_feature_table_service
+    update_schema = OfflineLastMaterializedAtUpdate(
+        last_materialized_at=datetime(2022, 1, 5),
+    )
+    offline_store_feature_table_with_precomputed_lookup = await service.update_document(
+        document_id=offline_store_feature_table_with_precomputed_lookup.id, data=update_schema
+    )
+    async for table in service.list_precomputed_lookup_feature_tables(
+        offline_store_feature_table_with_precomputed_lookup.id
+    ):
+        await service.update_document(document_id=table.id, data=update_schema)
+
+    # Run scheduled materialize at a later date
+    with freeze_time(datetime(2022, 1, 6)):
+        await feature_materialize_service.scheduled_materialize_features(
+            feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+        )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__initialize_new_table(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    gender_entity,
+):
+    """
+    Test initialize_precomputed_lookup_feature_table
+    """
+    _ = mock_get_feature_store_session
+
+    def mock_execute_query(query):
+        if "COUNT(*)\nFROM" in query:
+            # Simulate that source feature table exists and lookup feature table doesn't
+            table_name = query.split("FROM", 1)[1].strip().replace('"', "")
+            if table_name == "cat1_gender_1d":
+                return pd.DataFrame({"RESULT": [10]})
+            raise ValueError()
+        if 'MAX("__feature_timestamp")' in query:
+            return pd.DataFrame([{"RESULT": datetime(2022, 1, 5).isoformat()}])
+        return None
+
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    service = app_container.offline_store_feature_table_service
+    source_feature_table = offline_store_feature_table_with_precomputed_lookup
+    lookup_feature_tables = [
+        doc async for doc in service.list_precomputed_lookup_feature_tables(source_feature_table.id)
+    ]
+
+    # stop the patcher on initialize_new_columns(), needed because
+    # offline_store_feature_table_with_precomputed_lookup's feature fixture patched it.
+    patch.stopall()
+    await feature_materialize_service.initialize_precomputed_lookup_feature_table(
+        source_feature_table.id, lookup_feature_tables
+    )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/initialize_precomputed_lookup_feature_table.sql",
+        update_fixtures,
+    )

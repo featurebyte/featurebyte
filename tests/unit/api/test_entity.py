@@ -1,6 +1,7 @@
 """
 Unit test for Entity class
 """
+
 from datetime import datetime
 from unittest import mock
 
@@ -274,10 +275,12 @@ def get_insert_table_helper_fixture(mongo_persistent):
     return insert
 
 
-def test_create():
+def test_create(catalog):
     """
     Test Entity.create
     """
+    _ = catalog
+
     entity_name = "random_entity"
     # Verify entity doesn't exist first
     with pytest.raises(RecordRetrievalException) as exc:
@@ -294,10 +297,12 @@ def test_create():
     assert entity_retrieved.name == entity.name
 
 
-def test_get_or_create():
+def test_get_or_create(catalog):
     """
     Test get_or_create
     """
+    _ = catalog
+
     entity_name = "random_entity"
     # Verify entity doesn't exist first
     with pytest.raises(RecordRetrievalException) as exc:

@@ -1,6 +1,7 @@
 """
 Unit test for Series
 """
+
 import textwrap
 from contextlib import contextmanager
 from unittest.mock import patch

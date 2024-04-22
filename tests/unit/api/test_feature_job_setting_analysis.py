@@ -1,6 +1,7 @@
 """
 Unit test for FeatureJobSettingAnalysis class
 """
+
 import json
 import os
 import tempfile

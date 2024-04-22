@@ -1,6 +1,7 @@
 """
 ItemTable API routes
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -126,7 +127,7 @@ class ItemTableRouter(
 
     async def create_object(self, request: Request, data: ItemTableCreate) -> ItemTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)  # type: ignore
+        return await controller.create_table(data=data)
 
     async def get_item_table_info(
         self, request: Request, item_table_id: PydanticObjectId, verbose: bool = VerboseQuery

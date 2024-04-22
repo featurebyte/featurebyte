@@ -1,6 +1,7 @@
 """
 This module contains string operation related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import List, Literal, Optional, Tuple
 
@@ -53,6 +54,9 @@ class LengthNode(BaseStringAccessorOpNode):
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.len()"
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        return f"{operand}.astype(object).str.len().astype(float)"
+
     def generate_udf_expression(self, operand: str) -> str:
         return f"len({operand})"
 
@@ -81,6 +85,16 @@ class TrimNode(BaseStringAccessorOpNode):
         if self.parameters.side == "left":
             return f"{operand}.str.lstrip(to_strip={value})"
         return f"{operand}.str.rstrip(to_strip={value})"
+
+    def generate_odfv_expression(self, operand: str) -> str:
+        value = None
+        if self.parameters.character:
+            value = ValueStr.create(self.parameters.character)
+        if self.parameters.side == "both":
+            return f"{operand}.astype(object).str.strip(to_strip={value})"
+        if self.parameters.side == "left":
+            return f"{operand}.astype(object).str.lstrip(to_strip={value})"
+        return f"{operand}.astype(object).str.rstrip(to_strip={value})"
 
     def generate_udf_expression(self, operand: str) -> str:
         value = None
@@ -113,6 +127,11 @@ class ReplaceNode(BaseStringAccessorOpNode):
         replacement = ValueStr.create(self.parameters.replacement)
         return f"{operand}.str.replace(pat={pattern}, repl={replacement})"
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        pattern = ValueStr.create(self.parameters.pattern)
+        replacement = ValueStr.create(self.parameters.replacement)
+        return f"{operand}.astype(object).str.replace(pat={pattern}, repl={replacement})"
+
     def generate_udf_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
         replacement = ValueStr.create(self.parameters.replacement)
@@ -140,6 +159,12 @@ class PadNode(BaseStringAccessorOpNode):
         side = ValueStr.create(self.parameters.side)
         fill_char = ValueStr.create(self.parameters.pad)
         return f"{operand}.str.pad(width={width}, side={side}, fillchar={fill_char})"
+
+    def generate_odfv_expression(self, operand: str) -> str:
+        width = self.parameters.length
+        side = ValueStr.create(self.parameters.side)
+        fill_char = ValueStr.create(self.parameters.pad)
+        return f"{operand}.astype(object).str.pad(width={width}, side={side}, fillchar={fill_char})"
 
     @staticmethod
     def _get_pad_string_function_name(
@@ -200,6 +225,9 @@ class StringCaseNode(BaseStringAccessorOpNode):
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.{self.parameters.case}()"
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        return f"{operand}.astype(object).str.{self.parameters.case}()"
+
     def generate_udf_expression(self, operand: str) -> str:
         if self.parameters.case == "upper":
             return f"{operand}.upper()"
@@ -224,6 +252,10 @@ class StringContainsNode(BaseStringAccessorOpNode):
     def generate_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
         return f"{operand}.str.contains(pat={pattern}, case={self.parameters.case})"
+
+    def generate_odfv_expression(self, operand: str) -> str:
+        pattern = ValueStr.create(self.parameters.pattern)
+        return f"{operand}.astype(object).str.contains(pat={pattern}, case={self.parameters.case})"
 
     def generate_udf_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
@@ -253,6 +285,12 @@ class SubStringNode(BaseStringAccessorOpNode):
             stop = self.parameters.length + (self.parameters.start or 0)
         return f"{operand}.str.slice(start={self.parameters.start}, stop={stop})"
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        stop = None
+        if self.parameters.length is not None:
+            stop = self.parameters.length + (self.parameters.start or 0)
+        return f"{operand}.astype(object).str.slice(start={self.parameters.start}, stop={stop})"
+
     def generate_udf_expression(self, operand: str) -> str:
         stop = None
         if self.parameters.length is not None:
@@ -270,4 +308,12 @@ class ConcatNode(BinaryArithmeticOpNode):
         return DBVarType.VARCHAR
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} + {right_operand}"
+
+    def generate_odfv_expression(self, left_operand: str, right_operand: str) -> str:
+        if self.parameters.value is not None:
+            return f"{left_operand}.astype(object) + {right_operand}"
+        return f"{left_operand}.astype(object) + {right_operand}.astype(object)"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"

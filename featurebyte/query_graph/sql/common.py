@@ -1,12 +1,15 @@
 """
 Common helpers and data structures for feature SQL generation
 """
+
 from __future__ import annotations
 
 from typing import Dict, Optional, Sequence, Tuple, Union
 
+from dataclasses import dataclass
 from enum import Enum
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
@@ -90,14 +93,14 @@ def get_qualified_column_identifier(
 
 
 def get_fully_qualified_table_name(
-    table_details_dict: Dict[str, str], alias: Optional[str] = None
+    table_details_dict: Union[Dict[str, str], Dict[str, str | None]], alias: Optional[str] = None
 ) -> Expression:
     """
     Get an expression for fully qualified table name
 
     Parameters
     ----------
-    table_details_dict: Dict[str, str]
+    table_details_dict: Union[Dict[str, str], Dict[str, str | None]]
         Table details dictionary
     alias: Optional[str]
         Table alias
@@ -189,3 +192,21 @@ class SQLType(Enum):
     MATERIALIZE = "materialize"
     AGGREGATION = "aggregation"
     POST_AGGREGATION = "post_aggregation"
+
+
+@dataclass
+class EventTableTimestampFilter:
+    """
+    Information about the timestamp filter to be applied when selecting from EventTable
+
+    timestamp_column_name: str
+        Name of the timestamp column
+    event_table_id: ObjectId
+        Id of the EventTable. Only EventTable matching this id should be filtered.
+    """
+
+    timestamp_column_name: str
+    event_table_id: ObjectId
+    start_timestamp_placeholder_name: Optional[str] = None
+    end_timestamp_placeholder_name: Optional[str] = None
+    to_cast_placeholders: Optional[bool] = True

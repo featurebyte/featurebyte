@@ -1,6 +1,7 @@
 """
 TileManagerService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, List, Optional, Tuple
@@ -16,6 +17,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.session_helper import run_coroutines
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
@@ -62,37 +64,61 @@ class TileManagerService:
             Optional progress callback function
         """
         num_jobs = len(tile_inputs)
-        if progress_callback:
-            await progress_callback(0, f"0/{num_jobs} completed")
+        processed = 0
 
-        for index, (tile_spec, entity_table) in enumerate(tile_inputs):
-            tic = time.time()
-            await self.generate_tiles(
-                session=session,
-                tile_spec=tile_spec,
-                tile_type=TileType.OFFLINE,
-                start_ts_str=None,
-                end_ts_str=None,
-            )
-            logger.debug(
-                "Done generating tiles",
-                extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
-            )
-
-            tic = time.time()
-            await self.update_tile_entity_tracker(
-                session=session, tile_spec=tile_spec, temp_entity_table=entity_table
-            )
-            logger.debug(
-                "Done update_tile_entity_tracker",
-                extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
-            )
-
+        async def _progress_callback() -> None:
+            nonlocal processed
+            processed += 1
             if progress_callback:
-                await progress_callback(
-                    int(100 * (index + 1) / num_jobs),
-                    f"{index+1}/{num_jobs} completed",
+                pct = int(100 * processed / num_jobs)
+                await progress_callback(pct, f"Computed {processed} out of {num_jobs} tiles")
+
+        if progress_callback:
+            await progress_callback(0, "Computing tiles on demand")
+        coroutines = []
+        for tile_spec, entity_table in tile_inputs:
+            coroutines.append(
+                self._generate_tiles_on_demand_for_tile_spec(
+                    session=session,
+                    tile_spec=tile_spec,
+                    entity_table=entity_table,
+                    progress_callback=_progress_callback,
                 )
+            )
+        await run_coroutines(coroutines)
+
+    async def _generate_tiles_on_demand_for_tile_spec(
+        self,
+        session: BaseSession,
+        tile_spec: TileSpec,
+        entity_table: str,
+        progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
+    ) -> None:
+        tic = time.time()
+        session = await session.clone_if_not_threadsafe()
+        await self.generate_tiles(
+            session=session,
+            tile_spec=tile_spec,
+            tile_type=TileType.OFFLINE,
+            start_ts_str=None,
+            end_ts_str=None,
+        )
+        logger.debug(
+            "Done generating tiles",
+            extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
+        )
+
+        tic = time.time()
+        await self.update_tile_entity_tracker(
+            session=session, tile_spec=tile_spec, temp_entity_table=entity_table
+        )
+        logger.debug(
+            "Done update_tile_entity_tracker",
+            extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
+        )
+
+        if progress_callback:
+            await progress_callback()
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
         """

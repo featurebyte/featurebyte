@@ -1,6 +1,7 @@
 """
 This graph extractor is responsible for extracting null filling values from the graph.
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd

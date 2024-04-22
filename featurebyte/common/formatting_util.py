@@ -1,6 +1,7 @@
 """
 Utility functions for formatting data in Jupyter notebooks
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Union

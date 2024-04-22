@@ -1,6 +1,7 @@
 """
 Target API object
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
@@ -38,8 +39,6 @@ from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.observation_table import TargetInput
-from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetCreate
@@ -352,25 +351,26 @@ class Target(
         """
         is_input_observation_table = isinstance(observation_table, ObservationTable)
         observation_table_id = observation_table.id if is_input_observation_table else None
-        input_type = (
-            RequestInputType.OBSERVATION_TABLE
-            if is_input_observation_table
-            else RequestInputType.DATAFRAME
-        )
+
+        if self.saved:
+            target_id = self.id
+            graph = None
+            node_names = None
+        else:
+            target_id = None
+            graph = self.graph
+            node_names = [self.node.name]
+
         target_table_create_params = TargetTableCreate(
             name=observation_table_name,
             observation_table_id=observation_table_id,
             feature_store_id=self.feature_store.id,
             serving_names_mapping=serving_names_mapping,
-            graph=self.graph,
-            node_names=[self.node.name],
-            request_input=TargetInput(
-                target_id=self.id,
-                observation_table_id=observation_table_id,
-                type=input_type,
-            ),
+            graph=graph,
+            node_names=node_names,
             context_id=observation_table.context_id if is_input_observation_table else None,
             skip_entity_validation_checks=skip_entity_validation_checks,
+            target_id=target_id,
         )
         if is_input_observation_table:
             files = None

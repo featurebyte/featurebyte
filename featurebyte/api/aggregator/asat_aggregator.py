@@ -1,24 +1,24 @@
 """
 This module contains as at aggregator related class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Type, cast
 
 from typeguard import typechecked
 
-from featurebyte.api.aggregator.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
-from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 
 
-class AsAtAggregator(BaseAggregator):
+class AsAtAggregator(BaseAsAtAggregator):
     """
     AsAtAggregator implements the aggregate_asat method for GroupBy
     """
@@ -30,6 +30,10 @@ class AsAtAggregator(BaseAggregator):
     @property
     def aggregation_method_name(self) -> str:
         return "aggregate_asat"
+
+    @property
+    def output_name_parameter(self) -> str:
+        return "feature_name"
 
     @typechecked
     def aggregate_asat(
@@ -82,7 +86,7 @@ class AsAtAggregator(BaseAggregator):
         self._validate_parameters(
             method=method,
             value_column=value_column,
-            feature_name=feature_name,
+            output_name=feature_name,
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
@@ -121,31 +125,3 @@ class AsAtAggregator(BaseAggregator):
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
         )
-
-    def _validate_parameters(
-        self,
-        method: Optional[str],
-        feature_name: Optional[str],
-        value_column: Optional[str],
-        offset: Optional[str],
-        fill_value: OptionalScalar,
-        skip_fill_na: bool,
-    ) -> None:
-        self._validate_method_and_value_column(method=method, value_column=value_column)
-        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
-
-        if method == AggFunc.LATEST:
-            raise ValueError("latest aggregation method is not supported for aggregated_asat")
-
-        if feature_name is None:
-            raise ValueError("feature_name is required")
-
-        view = cast(SCDView, self.view)
-        for key in self.keys:
-            if key == view.natural_key_column:
-                raise ValueError(
-                    "Natural key column cannot be used as a groupby key in aggregate_asat"
-                )
-
-        if offset is not None:
-            validate_offset_string(offset)

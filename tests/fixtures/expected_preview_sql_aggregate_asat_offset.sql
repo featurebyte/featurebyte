@@ -11,13 +11,13 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_as_at_count_None_membership_status_None_7d_input_1" AS "_fb_internal_as_at_count_None_membership_status_None_7d_input_1"
+    "T0"."_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1" AS "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
       REQ."MEMBERSHIP_STATUS" AS "MEMBERSHIP_STATUS",
-      COUNT(*) AS "_fb_internal_as_at_count_None_membership_status_None_7d_input_1"
+      COUNT(*) AS "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1"
     FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
     INNER JOIN (
       SELECT
@@ -49,5 +49,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_as_at_count_None_membership_status_None_7d_input_1" AS "asat_feature_offset_7d"
+  "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1" AS "asat_feature_offset_7d"
 FROM _FB_AGGREGATED AS AGG

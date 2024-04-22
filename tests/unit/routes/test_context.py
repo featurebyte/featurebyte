@@ -1,6 +1,7 @@
 """
 Tests for Context route
 """
+
 from http import HTTPStatus
 from unittest import mock
 
@@ -86,6 +87,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         """Setup for post route"""
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("event_table", "event_table"),
             ("item_table", "item_table"),
         ]
@@ -93,6 +95,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
+
+            if api_object.endswith("_table"):
+                # tag table entity for table objects
+                self.tag_table_entity(api_client, api_object, payload)
 
     def multiple_success_payload_generator(self, api_client):
         """Payload generator to create multiple success response"""
@@ -221,7 +227,9 @@ class TestContextApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         test_api_client.headers["active-catalog-id"] = str(catalog.id)
         observation_table = snowflake_database_table.create_observation_table(
-            "observation_table_from_source_table", context_name=context.name
+            "observation_table_from_source_table",
+            context_name=context.name,
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
 
         response = test_api_client.delete(f"{self.base_route}/{context.id}")

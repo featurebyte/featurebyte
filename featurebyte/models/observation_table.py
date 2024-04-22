@@ -1,6 +1,7 @@
 """
 ObservationTableModel models
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Union
@@ -9,6 +10,7 @@ from typing_extensions import Annotated, Literal
 from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
+from bson import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -44,7 +46,7 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
     observation_table_id: Optional[PydanticObjectId]
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
@@ -145,10 +147,25 @@ class ObservationTableModel(MaterializedTableModel):
     min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
     has_row_index: Optional[bool] = Field(default=False)
+    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
     _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    @property
+    def target_id(self) -> Optional[ObjectId]:
+        """
+        The target id associated with the observation table
+
+        Returns
+        -------
+        Optional[ObjectId]
+            The target id associated with the observation table
+        """
+        if isinstance(self.request_input, TargetInput):
+            return self.request_input.target_id
+        return None
 
     @validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod

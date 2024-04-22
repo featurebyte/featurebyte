@@ -1,6 +1,7 @@
 """
 Test query graph util module
 """
+
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 

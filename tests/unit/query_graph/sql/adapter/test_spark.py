@@ -1,6 +1,7 @@
 """
 Test spark adapter module
 """
+
 import pytest
 from sqlglot import expressions
 

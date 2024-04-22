@@ -1,9 +1,10 @@
 """
 StaticSourceTable class
 """
+
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from pathlib import Path
 
@@ -53,6 +54,18 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
         >>> static_source_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the static source table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+        """
+
+        return super().to_spark_df()
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """

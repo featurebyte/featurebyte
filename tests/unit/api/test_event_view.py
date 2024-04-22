@@ -849,9 +849,9 @@ def test_create_observation_table_from_event_view__no_sample(
     assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -871,9 +871,9 @@ def test_create_observation_table_from_event_view__no_sample(
         )
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -909,9 +909,9 @@ def test_create_observation_table_from_event_view__with_sample(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -938,9 +938,9 @@ def test_create_observation_table_from_event_view__with_sample(
         LIMIT 100
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT

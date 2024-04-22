@@ -1,6 +1,7 @@
 """
 This module contains common fixtures used in tests/unit/migration directory
 """
+
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
 

@@ -1,6 +1,7 @@
 """
 Session validator integration test class
 """
+
 from unittest import mock
 
 import pytest

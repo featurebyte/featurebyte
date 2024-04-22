@@ -1,6 +1,7 @@
 """
 Test AzureBlobStorage class
 """
+
 import os
 from unittest.mock import patch
 
@@ -38,5 +39,5 @@ class TestAzureBlobStorageSuite(BaseStorageTestSuite):
 
             # cleanup remote folder
             async with get_azure_storage_blob_client() as client:
-                async for blob in client.list_blobs():
+                async for blob in client.list_blobs(name_starts_with=prefix):
                     await client.delete_blob(blob.name, delete_snapshots="include")

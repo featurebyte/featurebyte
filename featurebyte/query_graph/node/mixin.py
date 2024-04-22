@@ -1,6 +1,7 @@
 """
 This module contains mixins used in node classes
 """
+
 from typing import List, Optional, Set
 
 from abc import ABC, abstractmethod
@@ -167,7 +168,11 @@ class AggregationOpStructMixin(BaseNode, ABC):
             columns = input_operation_info.columns[:1]
 
         output_category = NodeOutputCategory.FEATURE
-        if self.type in {NodeType.FORWARD_AGGREGATE, NodeType.LOOKUP_TARGET}:
+        if self.type in {
+            NodeType.FORWARD_AGGREGATE,
+            NodeType.LOOKUP_TARGET,
+            NodeType.FORWARD_AGGREGATE_AS_AT,
+        }:
             output_category = NodeOutputCategory.TARGET
 
         # prepare output variable type

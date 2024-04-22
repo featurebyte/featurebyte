@@ -1,6 +1,7 @@
 """
 Utilities for udf testing
 """
+
 import pytest
 
 import tests.integration.udf.snowflake.util as snowflake_util

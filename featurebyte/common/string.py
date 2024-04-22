@@ -1,6 +1,7 @@
 """
 String utilities.
 """
+
 import unicodedata
 
 

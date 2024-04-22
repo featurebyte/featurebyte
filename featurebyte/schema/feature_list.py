@@ -1,18 +1,24 @@
 """
 FeatureList API payload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT, ONLINE_FEATURE_REQUEST_ROW_LIMIT
 from featurebyte.enum import ConflictResolution
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import (
+    FeatureByteBaseModel,
+    NameStr,
+    PydanticObjectId,
+    VersionIdentifier,
+)
 from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
@@ -37,7 +43,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
 
 
@@ -47,7 +53,7 @@ class FeatureListCreateJob(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
     features_conflict_resolution: ConflictResolution
 
@@ -64,7 +70,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     """Feature List Creation with Batch Feature Creation mixin"""
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     conflict_resolution: ConflictResolution
     features: List[BatchFeatureItem]
     skip_batch_feature_creation: bool = Field(default=False)

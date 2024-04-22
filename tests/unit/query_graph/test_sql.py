@@ -1,6 +1,7 @@
 """
 Tests for the featurebyte.query_graph.sql module
 """
+
 import textwrap
 from unittest.mock import Mock
 
@@ -59,6 +60,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         source_type=SourceType.SNOWFLAKE,
         to_filter_scd_by_current_flag=False,
         event_table_timestamp_filter=None,
+        aggregation_specs=None,
     )
     return context
 
@@ -392,10 +394,10 @@ def test_is_in_node(input_node):
         ({"type": "int", "from_dtype": DBVarType.INT}, "CAST(val AS BIGINT)"),
         ({"type": "int", "from_dtype": DBVarType.FLOAT}, "CAST(FLOOR(val) AS BIGINT)"),
         ({"type": "int", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS BIGINT)"),
-        ({"type": "float", "from_dtype": DBVarType.BOOL}, "CAST(CAST(val AS BIGINT) AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.INT}, "CAST(val AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.FLOAT}, "CAST(val AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS FLOAT)"),
+        ({"type": "float", "from_dtype": DBVarType.BOOL}, "CAST(CAST(val AS BIGINT) AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.INT}, "CAST(val AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.FLOAT}, "CAST(val AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS DOUBLE)"),
         ({"type": "str", "from_dtype": DBVarType.BOOL}, "CAST(val AS VARCHAR)"),
         ({"type": "str", "from_dtype": DBVarType.INT}, "CAST(val AS VARCHAR)"),
         ({"type": "str", "from_dtype": DBVarType.FLOAT}, "CAST(val AS VARCHAR)"),

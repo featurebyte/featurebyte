@@ -1,6 +1,7 @@
 """
 Module for unary operations sql generation
 """
+
 from __future__ import annotations
 
 from typing import Literal, Union, cast
@@ -111,7 +112,7 @@ class CastNode(ExpressionNode):
             expr = self.expr.sql
         type_expr = {
             "int": expressions.DataType.build("BIGINT"),
-            "float": expressions.DataType.build("FLOAT"),
+            "float": expressions.DataType.build("DOUBLE"),
             "str": expressions.DataType.build("VARCHAR"),
         }[self.new_type]
         output_expr = expressions.Cast(this=expr, to=type_expr)

@@ -1,6 +1,7 @@
 """
 Tests for OnlineEnableService
 """
+
 import pytest
 import pytest_asyncio
 

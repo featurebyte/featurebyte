@@ -1,10 +1,12 @@
 """
 Models related to serving parent features
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from bson import ObjectId
 from pydantic import root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -68,7 +70,9 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @root_validator(pre=True)
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        entity_relationships_info = values["entity_relationships_info"]
+        entity_relationships_info: List[EntityRelationshipInfo] = values[
+            "entity_relationships_info"
+        ]
         entities_by_id = values["entities_by_id"]
         tables_by_id = values["tables_by_id"]
         default_entity_lookup_steps = {}
@@ -78,15 +82,19 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             parent_entity = entities_by_id[info.related_entity_id]
             child_entity = entities_by_id[info.entity_id]
 
-            child_column_name = None
-            parent_column_name = None
-            for column_info in relation_table.columns_info:
-                if column_info.entity_id == child_entity.id:
-                    child_column_name = column_info.name
-                elif column_info.entity_id == parent_entity.id:
-                    parent_column_name = column_info.name
-            assert child_column_name is not None
-            assert parent_column_name is not None
+            if info.entity_column_name is None or info.related_entity_column_name is None:
+                child_column_name = None
+                parent_column_name = None
+                for column_info in relation_table.columns_info:
+                    if column_info.entity_id == child_entity.id:
+                        child_column_name = column_info.name
+                    elif column_info.entity_id == parent_entity.id:
+                        parent_column_name = column_info.name
+                assert child_column_name is not None
+                assert parent_column_name is not None
+            else:
+                child_column_name = info.entity_column_name
+                parent_column_name = info.related_entity_column_name
 
             default_entity_lookup_steps[info.id] = EntityLookupStep(
                 id=info.id,
@@ -108,7 +116,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
     def get_entity_lookup_step(
         self,
-        relationship_info_id: PydanticObjectId,
+        relationship_info_id: ObjectId,
         child_serving_name_override: Optional[str] = None,
         parent_serving_name_override: Optional[str] = None,
     ) -> EntityLookupStep:
@@ -118,7 +126,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
         Parameters
         ----------
-        relationship_info_id: PydanticObjectId
+        relationship_info_id: ObjectId
             Id of the EntityRelationshipInfo
         child_serving_name_override: Optional[str]
             Override child entity's serving name. This is the input column name for the parent
@@ -131,6 +139,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
         -------
         EntityLookupStep
         """
+        relationship_info_id = PydanticObjectId(relationship_info_id)
         assert relationship_info_id in self.default_entity_lookup_steps
         entity_lookup_step = self.default_entity_lookup_steps[relationship_info_id]
         if child_serving_name_override is not None or parent_serving_name_override is not None:
@@ -140,6 +149,57 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             if parent_serving_name_override is not None:
                 entity_lookup_step.parent.serving_name = parent_serving_name_override
         return entity_lookup_step
+
+
+class FeatureNodeRelationshipsInfo(FeatureByteBaseModel):
+    """
+    Information about the entity relationships for a specific feature node
+    """
+
+    node_name: str
+    relationships_info: List[EntityRelationshipInfo]
+    primary_entity_ids: List[PydanticObjectId]
+
+
+class EntityRelationshipsContext(FeatureByteBaseModel):
+    """
+    Information about the entity relationships that determines feature execution plan
+    """
+
+    # Feature list level relationships info
+    feature_list_primary_entity_ids: List[PydanticObjectId]
+    feature_list_serving_names: List[str]
+    feature_list_relationships_info: List[EntityRelationshipInfo]
+
+    # Feature level relationships info
+    feature_node_relationships_infos: List[FeatureNodeRelationshipsInfo]
+    feature_node_name_to_info: Dict[str, FeatureNodeRelationshipsInfo]  # auto derived
+
+    # Helper to create EntityLookupStep
+    entity_lookup_step_creator: EntityLookupStepCreator
+
+    @root_validator(pre=True)
+    @classmethod
+    def __post_init__(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["feature_node_name_to_info"] = {
+            info.node_name: info for info in values["feature_node_relationships_infos"]
+        }
+        return values
+
+    def get_node_info(self, node_name: str) -> FeatureNodeRelationshipsInfo:
+        """
+        Get the FeatureNodeRelationshipsInfo corresponding to a node name
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+
+        Returns
+        -------
+        FeatureNodeRelationshipsInfo
+        """
+        return self.feature_node_name_to_info[node_name]
 
 
 class ParentServingPreparation(FeatureByteBaseModel):
@@ -154,3 +214,4 @@ class ParentServingPreparation(FeatureByteBaseModel):
 
     join_steps: List[EntityLookupStep]
     feature_store_details: FeatureStoreDetails
+    entity_relationships_context: Optional[EntityRelationshipsContext]

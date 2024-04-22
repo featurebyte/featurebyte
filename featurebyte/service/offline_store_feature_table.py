@@ -1,9 +1,10 @@
 """
 OfflineStoreFeatureTableService class
 """
+
 from __future__ import annotations
 
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from datetime import datetime
 from pathlib import Path
@@ -101,7 +102,7 @@ class OfflineStoreFeatureTableService(
     async def _create_document(
         self, data: OfflineStoreFeatureTableModel
     ) -> OfflineStoreFeatureTableModel:
-        if data.entity_lookup_info is None:
+        if data.entity_lookup_info is None and data.precomputed_lookup_feature_table_info is None:
             # check if name already exists
             data.name = data.get_name()
             query_filter = {"name": data.name}
@@ -114,7 +115,9 @@ class OfflineStoreFeatureTableService(
                 data.name_suffix = str(count)
                 data.name = data.get_name()
 
-        data = await self._move_feature_cluster_to_storage(data)
+        if data.feature_cluster is not None:
+            data = await self._move_feature_cluster_to_storage(data)
+
         try:
             output = await super().create_document(data)
             assert output.catalog_id == data.catalog_id
@@ -150,6 +153,7 @@ class OfflineStoreFeatureTableService(
         data: OfflineStoreFeatureTableUpdate,
         exclude_none: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> OfflineStoreFeatureTableModel:
         original_doc = await self.get_document(
             document_id=document_id, populate_remote_attributes=False
@@ -175,6 +179,7 @@ class OfflineStoreFeatureTableService(
             exclude_none=exclude_none,
             document=original_doc,
             skip_block_modification_check=skip_block_modification_check,
+            populate_remote_attributes=populate_remote_attributes,
         )
         assert output is not None
         return output
@@ -187,6 +192,7 @@ class OfflineStoreFeatureTableService(
         document: Optional[OfflineStoreFeatureTableModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[OfflineStoreFeatureTableModel]:
         if isinstance(data, FeaturesUpdate):
             with self.get_feature_cluster_storage_lock(
@@ -197,6 +203,7 @@ class OfflineStoreFeatureTableService(
                     data,
                     exclude_none=exclude_none,
                     skip_block_modification_check=skip_block_modification_check,
+                    populate_remote_attributes=populate_remote_attributes,
                 )
 
         return await self._update_offline_feature_table(
@@ -204,6 +211,7 @@ class OfflineStoreFeatureTableService(
             data,
             exclude_none=exclude_none,
             skip_block_modification_check=skip_block_modification_check,
+            populate_remote_attributes=populate_remote_attributes,
         )
 
     async def update_online_last_materialized_at(
@@ -244,3 +252,59 @@ class OfflineStoreFeatureTableService(
             update_schema,
             document=document,
         )
+
+    async def add_deployment_id(self, document_id: ObjectId, deployment_id: ObjectId) -> None:
+        """
+        Add deployment id to the offline store feature table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Offline store feature table id
+        deployment_id: ObjectId
+            Deployment id
+        """
+        await self.update_documents(
+            query_filter={"_id": document_id},
+            update={"$addToSet": {"deployment_ids": deployment_id}},
+        )
+
+    async def remove_deployment_id(self, document_id: ObjectId, deployment_id: ObjectId) -> None:
+        """
+        Remove deployment id from the offline store feature table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Offline store feature table id
+        deployment_id: ObjectId
+            Deployment id
+        """
+        await self.update_documents(
+            query_filter={"_id": document_id},
+            update={"$pull": {"deployment_ids": deployment_id}},
+        )
+
+    async def list_precomputed_lookup_feature_tables(
+        self,
+        source_feature_table_id: ObjectId,
+    ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
+        """
+        Retrieve list of precomputed lookup feature tables associated with a source feature table
+
+        Parameters
+        ----------
+        source_feature_table_id: ObjectId
+            Feature table id to search for
+
+        Yields
+        -------
+        AsyncIterator[OfflineStoreFeatureTableModel]
+            List query output
+        """
+        async for doc in self.list_documents_iterator(
+            query_filter={
+                "precomputed_lookup_feature_table_info.source_feature_table_id": source_feature_table_id
+            }
+        ):
+            yield doc

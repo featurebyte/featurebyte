@@ -1,6 +1,7 @@
 """
 UseCase API routes
 """
+
 from typing import Optional, cast
 
 from http import HTTPStatus
@@ -169,17 +170,19 @@ async def list_use_cases(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_id: Optional[PydanticObjectId] = None,
 ) -> UseCaseList:
     """
     List Use Case
     """
     controller = request.state.app_container.use_case_controller
-    doc_list: UseCaseList = await controller.list(
+    doc_list: UseCaseList = await controller.list_use_cases(
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
+        feature_list_id=feature_list_id,
     )
     return doc_list
 

@@ -1,13 +1,15 @@
 """
 Tile Registry Job Script
 """
+
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
 from featurebyte.service.tile_registry_service import TileRegistryService
-from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
 logger = get_logger(__name__)
+
+LIST_TABLE_SCHEMA_TIMEOUT_SECONDS = 10 * 60
 
 
 class TileRegistry(TileCommon):
@@ -55,7 +57,10 @@ class TileRegistry(TileCommon):
                 c.upper()
                 for c in (
                     await self._session.list_table_schema(
-                        self.table_name, self._session.database_name, self._session.schema_name
+                        self.table_name,
+                        self._session.database_name,
+                        self._session.schema_name,
+                        timeout=LIST_TABLE_SCHEMA_TIMEOUT_SECONDS,
                     )
                 ).keys()
             ]
@@ -71,4 +76,4 @@ class TileRegistry(TileCommon):
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
-                await retry_sql(self._session, tile_add_sql)
+                await self._session.retry_sql(tile_add_sql)

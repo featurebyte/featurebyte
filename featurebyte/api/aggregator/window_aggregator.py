@@ -1,6 +1,7 @@
 """
 This module contains window aggregator related class
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Type, cast

@@ -1,6 +1,7 @@
 """
 Unit tests for BatchRequestTable class
 """
+
 from typing import Any, Dict
 
 import pandas as pd
@@ -10,7 +11,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-class TestBatchRequestTable(BaseMaterializedTableApiTest[BatchRequestTable]):
+class TestBatchRequestTable(BaseMaterializedTableApiTest):
     """
     Test batch request table
     """
@@ -34,8 +35,7 @@ class TestBatchRequestTable(BaseMaterializedTableApiTest[BatchRequestTable]):
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")
-    def test_list(self, table_under_test):
-        ...
+    def test_list(self, table_under_test): ...
 
 
 def test_list(batch_request_table_from_source, batch_request_table_from_view):
@@ -50,7 +50,7 @@ def test_list(batch_request_table_from_source, batch_request_table_from_view):
                 "id": str(batch_request_table_from_view.id),
                 "name": "batch_request_table_from_event_view",
                 "type": "view",
-                "shape": (500, 1),
+                "shape": (500, 3),
                 "feature_store_name": "sf_featurestore",
                 "created_at": batch_request_table_from_view.created_at.isoformat(),
             },
@@ -58,7 +58,7 @@ def test_list(batch_request_table_from_source, batch_request_table_from_view):
                 "id": str(batch_request_table_from_source.id),
                 "name": "batch_request_table_from_source_table",
                 "type": "source_table",
-                "shape": (500, 1),
+                "shape": (500, 3),
                 "feature_store_name": "sf_featurestore",
                 "created_at": batch_request_table_from_source.created_at.isoformat(),
             },

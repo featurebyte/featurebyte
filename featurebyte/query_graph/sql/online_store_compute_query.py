@@ -1,6 +1,7 @@
 """
 SQL generation for online store compute queries
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Tuple, cast
@@ -69,10 +70,16 @@ class OnlineStorePrecomputePlan:
         Instance of BaseAdapter for engine specific sql generation
     """
 
-    def __init__(self, graph: QueryGraph, node: Node, adapter: BaseAdapter):
+    def __init__(
+        self,
+        graph: QueryGraph,
+        node: Node,
+        adapter: BaseAdapter,
+        agg_result_name_include_serving_names: bool,
+    ):
         self.adapter = adapter
         self.params_by_agg_result_name: dict[str, PrecomputeQueryParams] = {}
-        self._update(graph, node)
+        self._update(graph, node, agg_result_name_include_serving_names)
 
     def construct_online_store_precompute_queries(
         self, source_type: SourceType
@@ -257,7 +264,9 @@ class OnlineStorePrecomputePlan:
 
         return OnlineStoreUniverse(expr=expr, columns=universe_columns)
 
-    def _update(self, graph: QueryGraph, node: Node) -> None:
+    def _update(
+        self, graph: QueryGraph, node: Node, agg_result_name_include_serving_names: bool
+    ) -> None:
         """
         Update state given a query graph node
 
@@ -267,11 +276,16 @@ class OnlineStorePrecomputePlan:
             Query graph
         node: Node
             Query graph node
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
         """
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-                graph, groupby_node, self.adapter
+                graph,
+                groupby_node,
+                self.adapter,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             for agg_spec in agg_specs:
                 universe = self._construct_online_store_universe(agg_spec)
@@ -292,6 +306,7 @@ def get_online_store_precompute_queries(
     graph: QueryGraph,
     node: Node,
     source_type: SourceType,
+    agg_result_name_include_serving_names: bool,
 ) -> list[OnlineStoreComputeQueryModel]:
     """
     Construct the SQL code that can be scheduled for online store feature pre-computation
@@ -304,11 +319,18 @@ def get_online_store_precompute_queries(
         Query graph node
     source_type : SourceType
         Source type information
+    agg_result_name_include_serving_names: bool
+        Whether to include serving names in the aggregation result names
 
     Returns
     -------
     list[OnlineStoreComputeQueryModel]
     """
-    universe_plan = OnlineStorePrecomputePlan(graph, node, adapter=get_sql_adapter(source_type))
+    universe_plan = OnlineStorePrecomputePlan(
+        graph,
+        node,
+        adapter=get_sql_adapter(source_type),
+        agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+    )
     queries = universe_plan.construct_online_store_precompute_queries(source_type=source_type)
     return queries

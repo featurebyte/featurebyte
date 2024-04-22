@@ -1,6 +1,7 @@
 """
 Module for tile related sql generation
 """
+
 from __future__ import annotations
 
 from typing import cast
@@ -26,7 +27,6 @@ from featurebyte.query_graph.sql.groupby_helper import (
     _split_agg_and_snowflake_vector_aggregation_columns,
 )
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
-from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
 
 
@@ -72,7 +72,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             ),
             alias="index",
         )
-        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery())
+        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery(copy=False))
         keys = [quoted_identifier(k) for k in self.keys]
         if self.value_by is not None:
             keys.append(quoted_identifier(self.value_by))
@@ -168,6 +168,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 join_alias="R",
                 join_type="inner",
                 on=join_conditions_expr,
+                copy=False,
             )
         )
         return cast(Select, select_expr)
@@ -184,7 +185,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
     ) -> Expression:
         inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
         groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_groupby_keys]
-        original_query = select().from_(input_tiled.subquery())
+        original_query = select().from_(input_tiled.subquery(copy=False))
 
         groupby_columns = []
         for spec in self.tile_specs:
@@ -244,7 +245,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             "index",
             *keys,
             *window_exprs,
-        ).from_(input_tiled.subquery())
+        ).from_(input_tiled.subquery(copy=False), copy=False)
 
         outer_condition = expressions.EQ(
             this=quoted_identifier(self.ROW_NUMBER),
@@ -256,8 +257,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                 *keys,
                 *[spec.tile_column_name for spec in self.tile_specs],
             )
-            .from_(inner_expr.subquery())
-            .where(outer_condition)
+            .from_(inner_expr.subquery(copy=False))
+            .where(outer_condition, copy=False)
         )
 
         return tile_expr
@@ -320,35 +321,4 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             is_order_dependent=aggregator.is_order_dependent,
             adapter=context.adapter,
         )
-        return sql_node
-
-
-@dataclass
-class AggregatedTilesNode(TableNode):
-    """Node with tiles already aggregated
-
-    The purpose of this node is to allow feature SQL generation to retrieve the post-aggregation
-    feature transform expression. The columns_map of this node has the mapping from user defined
-    feature names to internal aggregated column names. The feature expression can be obtained by
-    calling get_column_expr().
-    """
-
-    query_node_type = NodeType.GROUPBY
-
-    @property
-    def sql(self) -> Expression:
-        # This will not be called anywhere
-        raise NotImplementedError()
-
-    @classmethod
-    def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
-        sql_node = None
-        if context.sql_type == SQLType.POST_AGGREGATION:
-            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-                context.graph, context.query_node, context.adapter
-            )
-            columns_map = {}
-            for agg_spec in agg_specs:
-                columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)
-            sql_node = AggregatedTilesNode(context=context, columns_map=columns_map)
         return sql_node

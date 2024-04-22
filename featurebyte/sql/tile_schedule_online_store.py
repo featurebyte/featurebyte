@@ -1,6 +1,7 @@
 """
 Tile Generate online store Job Script
 """
+
 from typing import List, Optional
 
 import textwrap
@@ -15,7 +16,7 @@ from featurebyte.models.online_store_table_version import OnlineStoreTableVersio
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
-from featurebyte.sql.common import construct_create_table_query, register_temporary_physical_table
+from featurebyte.sql.common import register_temporary_physical_table
 
 logger = get_logger(__name__)
 
@@ -98,14 +99,11 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     FROM ({f_sql})
                     """
                 )
-                create_sql = construct_create_table_query(
-                    fs_table,
-                    query,
-                    session=self._session,
-                    partition_keys=quoted_result_name_column,
+                await self._session.create_table_as(
+                    table_details=fs_table,
+                    select_expr=query,
+                    partition_keys=[InternalName.ONLINE_STORE_RESULT_NAME_COLUMN],
                 )
-                await self._session.execute_query_long_running(create_sql)
-
             else:
                 # feature store table already exists, insert records with the input feature sql
                 column_names = ", ".join(

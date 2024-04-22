@@ -1,9 +1,10 @@
 """
 FeatureByte specific BaseModel
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import json
 import re
@@ -24,6 +25,19 @@ Model = TypeVar("Model", bound="FeatureByteBaseModel")
 DEFAULT_CATALOG_ID = ObjectId("23eda344d0313fb925f7883a")
 ACTIVE_CATALOG_ID: Optional[ObjectId] = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
+
+
+if TYPE_CHECKING:
+    NameStr = str
+else:
+
+    class NameStr(StrictStr):
+        """
+        Name string type
+        """
+
+        min_length = 0
+        max_length = 255
 
 
 def get_active_catalog_id() -> Optional[ObjectId]:
@@ -267,7 +281,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     user_id: Optional[PydanticObjectId] = Field(
         default=None, allow_mutation=False, description="User identifier"
     )
-    name: Optional[StrictStr] = Field(description="Record name")
+    name: Optional[NameStr] = Field(description="Record name")
     created_at: Optional[datetime] = Field(
         default=None, allow_mutation=False, description="Record creation time"
     )
@@ -324,15 +338,21 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         """
         return cls.Settings.unique_constraints
 
-    @property
-    def remote_attribute_paths(self) -> List[Path]:
+    @classmethod
+    def get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         """
-        Remote attribute paths
+        Get remote attribute paths for a document
+
+        Parameters
+        ----------
+        document_dict: Dict[str, Any]
+            Dict representation of the document
 
         Returns
         -------
         List[Path]
         """
+        _ = document_dict
         return []
 
     class Settings:

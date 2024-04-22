@@ -5,5 +5,6 @@ COMMENT '{{sql_comment}}'
 AS $$
 {{ py_function_body }}
 
-return {{py_function_name}}({{input_arguments}})
+output = {{py_function_name}}({{input_arguments}})
+return None if pd.isnull(output) else output
 $$
