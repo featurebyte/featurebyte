@@ -104,9 +104,9 @@ class BaseEntityUniverseConstructor:
         self.adapter = get_sql_adapter(source_type)
 
     @abstractmethod
-    def get_entity_universe_template(self) -> Expression:
+    def get_entity_universe_template(self) -> List[Expression]:
         """
-        Returns a SQL expression for the universe of the entity with placeholders for current
+        Returns SQL expressions for the universe of the entity with placeholders for current
         feature timestamp and last materialization timestamp
         """
 
@@ -149,7 +149,7 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(LookupNode, self.node)
         return [node.parameters.serving_name]
 
-    def get_entity_universe_template(self) -> Expression:
+    def get_entity_universe_template(self) -> List[Expression]:
         node = cast(LookupNode, self.node)
 
         if node.parameters.scd_parameters is not None:
@@ -186,7 +186,7 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             .distinct()
             .from_(aggregate_input_expr.subquery())
         )
-        return universe_expr
+        return [universe_expr]
 
 
 class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
@@ -198,11 +198,11 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(AggregateAsAtNode, self.node)
         return node.parameters.serving_names
 
-    def get_entity_universe_template(self) -> Expression:
+    def get_entity_universe_template(self) -> List[Expression]:
         node = cast(AggregateAsAtNode, self.node)
 
         if not node.parameters.serving_names:
-            return DUMMY_ENTITY_UNIVERSE
+            return [DUMMY_ENTITY_UNIVERSE]
 
         ts_col = node.parameters.effective_timestamp_column
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
@@ -228,7 +228,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             .distinct()
             .from_(filtered_aggregate_input_expr.subquery())
         )
-        return universe_expr
+        return [universe_expr]
 
 
 class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
@@ -276,7 +276,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         )
         return event_table_timestamp_filter
 
-    def get_entity_universe_template(self) -> Expression:
+    def get_entity_universe_template(self) -> List[Expression]:
         node = cast(ItemGroupbyNode, self.node)
         universe_expr = (
             select(
@@ -290,7 +290,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             .distinct()
             .from_(self.aggregate_input_expr.subquery())
         )
-        return universe_expr
+        return [universe_expr]
 
 
 class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
@@ -302,20 +302,23 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         node = cast(GroupByNode, self.node)
         return node.parameters.serving_names
 
-    def get_entity_universe_template(self) -> Expression:
+    def get_entity_universe_template(self) -> List[Expression]:
         node = cast(GroupByNode, self.node)
 
         if not node.parameters.serving_names:
-            return DUMMY_ENTITY_UNIVERSE
+            return [DUMMY_ENTITY_UNIVERSE]
 
-        tile_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
             graph=self.graph,
             groupby_node=node,
             adapter=self.adapter,
             agg_result_name_include_serving_names=True,
         )
-        assert len(tile_specs) == 1
-        agg_spec = tile_specs[0]
+        return [self._get_universe_expr_from_agg_spec(node, agg_spec) for agg_spec in agg_specs]
+
+    def _get_universe_expr_from_agg_spec(
+        self, node: GroupByNode, agg_spec: TileBasedAggregationSpec
+    ) -> Expression:
         result_type = self.adapter.get_physical_type_from_dtype(agg_spec.dtype)
         online_store_table_name = get_online_store_table_name(
             set(agg_spec.entity_ids if agg_spec.entity_ids is not None else []),
@@ -447,22 +450,24 @@ def get_combined_universe(
         entity_universe_constructor = get_entity_universe_constructor(
             params.graph, params.node, source_type
         )
-        current_universe_expr = entity_universe_constructor.get_entity_universe_template()
-        if current_universe_expr == DUMMY_ENTITY_UNIVERSE:
-            # Add dummy entity universe later after going through all other universes
-            has_dummy_entity_universe = True
-            continue
-        if params.join_steps:
-            current_universe_expr = apply_join_steps(current_universe_expr, params.join_steps[::-1])
-        if combined_universe_expr is None:
-            combined_universe_expr = current_universe_expr
-        elif current_universe_expr not in processed_universe_exprs:
-            combined_universe_expr = expressions.Union(
-                this=current_universe_expr,
-                distinct=True,
-                expression=combined_universe_expr,
-            )
-        processed_universe_exprs.add(current_universe_expr)
+        for current_universe_expr in entity_universe_constructor.get_entity_universe_template():
+            if current_universe_expr == DUMMY_ENTITY_UNIVERSE:
+                # Add dummy entity universe later after going through all other universes
+                has_dummy_entity_universe = True
+                continue
+            if params.join_steps:
+                current_universe_expr = apply_join_steps(
+                    current_universe_expr, params.join_steps[::-1]
+                )
+            if combined_universe_expr is None:
+                combined_universe_expr = current_universe_expr
+            elif current_universe_expr not in processed_universe_exprs:
+                combined_universe_expr = expressions.Union(
+                    this=current_universe_expr,
+                    distinct=True,
+                    expression=combined_universe_expr,
+                )
+            processed_universe_exprs.add(current_universe_expr)
 
     if has_dummy_entity_universe and combined_universe_expr is None:
         # Construct dummy entity universe only when there is no other universes to union with. This
