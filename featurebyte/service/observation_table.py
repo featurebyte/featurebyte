@@ -30,6 +30,7 @@ from featurebyte.exception import (
     ObservationTableInvalidTargetNameError,
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
+    ObservationTableTargetDefinitionExistsError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -316,6 +317,13 @@ class ObservationTableService(
                     f'Target "{target_column}" does not have matching primary entity ids.'
                 )
             target_namespace_id = ObjectId(target_namespace["_id"])
+
+            # check if target namespace already has a definition
+            if target_namespace["target_ids"]:
+                raise ObservationTableTargetDefinitionExistsError(
+                    f'Target "{target_column}" already has a definition.'
+                )
+
         else:
             target_namespace_id = None
 
