@@ -2,7 +2,18 @@
 DeployService class
 """
 
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 import traceback
 
@@ -13,6 +24,7 @@ from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import (
     DeploymentModel,
     FeastIntegrationSettings,
@@ -28,7 +40,6 @@ from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
-from featurebyte.service.entity_relationship_extractor import ServingEntityEnumeration
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -193,6 +204,58 @@ class DeployFeatureManagementService:
         return updated_feature
 
 
+class DeploymentServingEntityService:
+    """DeploymentServingEntityService is responsible for determining the serving entity ids for a
+    deployment
+    """
+
+    def __init__(
+        self,
+        feature_list_service: FeatureListService,
+        use_case_service: UseCaseService,
+        context_service: ContextService,
+    ):
+        self.feature_list_service = feature_list_service
+        self.use_case_service = use_case_service
+        self.context_service = context_service
+
+    async def get_deployment_serving_entity_ids(
+        self,
+        feature_list_id: ObjectId,
+        context_id: Optional[ObjectId],
+        use_case_id: Optional[ObjectId],
+    ) -> ServingEntity:
+        """
+        Get the serving entity ids for the deployment
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Id of the feature list
+        context_id: Optional[ObjectId]
+            Id of the context associated with the deployment
+        use_case_id: Optional[ObjectId]
+            Id of the use case associated with the deployment
+
+        Returns
+        -------
+        ServingEntity
+        """
+        # Get context from use case if not directly available
+        feature_list_primary_entity_ids = (
+            await self.feature_list_service.get_document_as_dict(
+                feature_list_id, projection={"primary_entity_ids": 1}
+            )
+        )["primary_entity_ids"]
+        if context_id is None:
+            if use_case_id is None:
+                return feature_list_primary_entity_ids  # type: ignore[no-any-return]
+            use_case_model = await self.use_case_service.get_document(use_case_id)
+            context_id = use_case_model.context_id
+        context_model = await self.context_service.get_document(context_id)
+        return context_model.primary_entity_ids
+
+
 class DeployFeatureListManagementService:
     """
     DeployFeatureListManagementService class is responsible for feature list management during deployment.
@@ -204,15 +267,13 @@ class DeployFeatureListManagementService:
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_status_service: FeatureListStatusService,
         deployment_service: DeploymentService,
-        use_case_service: UseCaseService,
-        context_service: ContextService,
+        deployment_serving_entity_service: DeploymentServingEntityService,
     ):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_status_service = feature_list_status_service
         self.deployment_service = deployment_service
-        self.use_case_service = use_case_service
-        self.context_service = context_service
+        self.deployment_serving_entity_service = deployment_serving_entity_service
 
     async def get_feature_list(self, feature_list_id: ObjectId) -> FeatureListModel:
         """
@@ -331,51 +392,24 @@ class DeployFeatureListManagementService:
 
         # List of enabled serving entity ids is a subset of supported_serving_entity_ids and is
         # determined by existing deployments
-        enabled_serving_entity_ids = []
+        enabled_serving_entity_ids: Set[Tuple[PydanticObjectId, ...]] = set()
 
-        context_id_to_model = {}
-        use_case_id_to_model = {}
         async for doc in self._iterate_enabled_deployments_as_dict(
             feature_list_model.id, deployment_id, to_enable_deployment
         ):
-            context_id = doc["context_id"]
-
-            # Get context from use case if not directly available
-            if context_id is None:
-                use_case_id = doc["use_case_id"]
-                if use_case_id is None:
-                    continue
-                use_case_model = await self.use_case_service.get_document(use_case_id)
-                use_case_id_to_model[use_case_id] = use_case_model
-                context_id = use_case_model.context_id
-
-            context_model = await self.context_service.get_document(context_id)
-            context_id_to_model[context_id] = context_model
-
-            serving_entity_enumeration = ServingEntityEnumeration.create(
-                feature_list_model.relationships_info or []
-            )
-            current_enabled = set()
-            for serving_entity_ids in supported_serving_entity_ids_set:
-                combined_entity_ids = list(serving_entity_ids) + list(
-                    context_model.primary_entity_ids
+            if doc.get("serving_entity_ids") is None:
+                deployment_serving_entity_ids = (
+                    await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
+                        feature_list_id=feature_list_model.id,
+                        context_id=doc["context_id"],
+                        use_case_id=doc["use_case_id"],
+                    )
                 )
-                reduced_entity_ids = serving_entity_enumeration.reduce_entity_ids(
-                    combined_entity_ids
-                )
-                # Include if serving_entity_ids is the same or a parent of use case primary entity
-                if sorted(reduced_entity_ids) == sorted(context_model.primary_entity_ids):
-                    enabled_serving_entity_ids.append(serving_entity_ids)
-                    current_enabled.add(serving_entity_ids)
-
-            # Don't need to test again serving entity ids that were already enabled
-            supported_serving_entity_ids_set.difference_update(current_enabled)
-
-        # Feature list primary entity ids should always be included. It might not be added above if
-        # no use case or context has been configured for the deployment.
-        primary_entity_ids = tuple(feature_list_model.primary_entity_ids)
-        if primary_entity_ids not in enabled_serving_entity_ids:
-            enabled_serving_entity_ids.append(primary_entity_ids)
+            else:
+                deployment_serving_entity_ids = doc["serving_entity_ids"]
+            deployment_serving_entity_ids_tuple = tuple(deployment_serving_entity_ids)
+            assert deployment_serving_entity_ids_tuple in supported_serving_entity_ids_set
+            enabled_serving_entity_ids.add(deployment_serving_entity_ids_tuple)
 
         return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
 
@@ -605,6 +639,7 @@ class DeployService:
         deployment_service: DeploymentService,
         deploy_feature_list_management_service: DeployFeatureListManagementService,
         deploy_feature_management_service: DeployFeatureManagementService,
+        deployment_serving_entity_service: DeploymentServingEntityService,
         feast_integration_service: FeastIntegrationService,
         task_progress_updater: TaskProgressUpdater,
     ):
@@ -613,6 +648,7 @@ class DeployService:
         self.feature_management_service = deploy_feature_management_service
         self.feast_integration_service = feast_integration_service
         self.task_progress_updater = task_progress_updater
+        self.deployment_serving_entity_service = deployment_serving_entity_service
 
     async def _update_progress(self, percent: int, message: Optional[str] = None) -> None:
         await self.task_progress_updater.update_progress(percent=percent, message=message)
@@ -846,6 +882,13 @@ class DeployService:
         )
         deployment = None
         try:
+            serving_entity_ids = (
+                await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
+                    feature_list_id=feature_list_id,
+                    use_case_id=use_case_id,
+                    context_id=context_id,
+                )
+            )
             deployment = await self.deployment_service.create_document(
                 data=DeploymentModel(
                     _id=deployment_id or ObjectId(),
@@ -855,6 +898,7 @@ class DeployService:
                     enabled=False,
                     use_case_id=use_case_id,
                     context_id=context_id,
+                    serving_entity_ids=serving_entity_ids,
                 )
             )
             if to_enable_deployment:

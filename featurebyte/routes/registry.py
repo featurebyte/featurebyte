@@ -72,6 +72,7 @@ from featurebyte.service.credential import CredentialService
 from featurebyte.service.deploy import (
     DeployFeatureListManagementService,
     DeployFeatureManagementService,
+    DeploymentServingEntityService,
     DeployService,
     FeastIntegrationService,
 )
@@ -233,6 +234,7 @@ app_container_config.register_class(FeastIntegrationService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
+app_container_config.register_class(DeploymentServingEntityService)
 app_container_config.register_class(DerivePrimaryEntityHelper)
 app_container_config.register_class(DimensionTableController)
 app_container_config.register_class(DimensionTableService)

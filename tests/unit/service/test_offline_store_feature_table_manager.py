@@ -124,7 +124,6 @@ async def deployed_float_feature_list(
     app_container,
     float_feature,
     transaction_entity,
-    cust_id_entity,
     float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
@@ -140,7 +139,7 @@ async def deployed_float_feature_list(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
+    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list

@@ -140,6 +140,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "use_case_id": None,
                     "context_id": None,
                     "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
@@ -158,6 +159,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "use_case_id": None,
                     "context_id": None,
                     "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
@@ -176,6 +178,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "use_case_id": None,
                     "context_id": None,
                     "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
             ],
             "page": 1,
@@ -218,6 +221,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "use_case_id": None,
                     "user_id": response_dict["data"][0]["user_id"],
                     "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 }
             ],
             "page": 1,
