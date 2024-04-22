@@ -384,50 +384,106 @@ INT_COL_WITH_ENTITY_2 = ColumnSpecWithEntityId(
 )
 
 
+class MockTargetNamespace(Mock):
+    """
+    Mock class for target namespace
+    """
+
+    def __init__(self, name, dtype):
+        super().__init__()
+        self.name = name
+        self.dtype = dtype
+
+
 @pytest.mark.parametrize(
-    "columns_info, primary_entity_ids, skip_entity_checks, target_namespace, expected_error",
+    "columns_info, primary_entity_ids, skip_entity_checks, target_namespace, expected_error, expected_msg",
     [
-        ([POINT_IN_TIME_COL, INT_COL], [], False, None, ValueError),
-        ([POINT_IN_TIME_COL, INT_COL], [], True, None, None),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [], False, None, None),
-        ([INT_COL_WITH_ENTITY_1], [], False, None, MissingPointInTimeColumnError),
-        ([INT_POINT_IN_TIME_COL], [], False, None, UnsupportedPointInTimeColumnTypeError),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], False, None, ValueError),
-        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], True, None, None),
         (
             [POINT_IN_TIME_COL, INT_COL],
             [],
             False,
-            Mock(name=POINT_IN_TIME_COL, dtype=DBVarType.INT),
+            None,
             ValueError,
+            "At least one entity column should be provided.",
+        ),
+        ([POINT_IN_TIME_COL, INT_COL], [], True, None, None, None),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [], False, None, None, None),
+        (
+            [INT_COL_WITH_ENTITY_1],
+            [],
+            False,
+            None,
+            MissingPointInTimeColumnError,
+            "Point in time column not provided: POINT_IN_TIME",
         ),
         (
-            [POINT_IN_TIME_COL, INT_COL],
+            [INT_POINT_IN_TIME_COL],
             [],
             False,
-            Mock(name="target", dtype=DBVarType.INT),
-            ValueError,
+            None,
+            UnsupportedPointInTimeColumnTypeError,
+            "Point in time column should have timestamp type; got INT",
         ),
         (
-            [POINT_IN_TIME_COL, INT_COL],
+            [POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1],
+            [ENTITY_ID_2],
+            False,
+            None,
+            ValueError,
+            "Primary entity IDs passed in are not present in the column info:",
+        ),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], True, None, None, None),
+        (
+            [POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1],
             [],
             False,
-            Mock(name=POINT_IN_TIME_COL, dtype=DBVarType.VARCHAR),
+            MockTargetNamespace(name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.INT),
             ValueError,
+            'Target column "POINT_IN_TIME" should have dtype "INT"',
+        ),
+        (
+            [POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1],
+            [],
+            False,
+            MockTargetNamespace(name="target", dtype=DBVarType.INT),
+            ValueError,
+            'Target column "target" not found.',
+        ),
+        (
+            [POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1],
+            [],
+            False,
+            MockTargetNamespace(name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.VARCHAR),
+            ValueError,
+            'Target column "POINT_IN_TIME" should have dtype "VARCHAR"',
+        ),
+        (
+            [POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1],
+            [],
+            False,
+            MockTargetNamespace(name=str(SpecialColumnName.POINT_IN_TIME), dtype=None),
+            None,
+            None,
         ),
     ],
 )
 def test_validate_columns_info(
-    columns_info, primary_entity_ids, skip_entity_checks, target_namespace, expected_error
+    columns_info,
+    primary_entity_ids,
+    skip_entity_checks,
+    target_namespace,
+    expected_error,
+    expected_msg,
 ):
     """
     Test validate_columns_info
     """
     if expected_error is not None:
-        with pytest.raises(expected_error):
+        with pytest.raises(expected_error) as exc:
             validate_columns_info(
                 columns_info, primary_entity_ids, skip_entity_checks, target_namespace
             )
+        assert expected_msg in str(exc.value)
     else:
         validate_columns_info(
             columns_info, primary_entity_ids, skip_entity_checks, target_namespace

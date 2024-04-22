@@ -220,7 +220,10 @@ def validate_columns_info(
         if target_namespace is not None:
             if target_namespace.name not in columns_info_mapping:
                 raise ValueError(f'Target column "{target_namespace.name}" not found.')
-            if columns_info_mapping[target_namespace.name].dtype != target_namespace.dtype:
+            if (
+                target_namespace.dtype is not None
+                and columns_info_mapping[target_namespace.name].dtype != target_namespace.dtype
+            ):
                 raise ValueError(
                     f'Target column "{target_namespace.name}" should have dtype "{target_namespace.dtype}"'
                 )
