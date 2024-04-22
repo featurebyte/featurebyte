@@ -418,6 +418,12 @@ class BaseDocumentService(
             return await self._populate_remote_attributes(document=document)
         return document
 
+    @retry(
+        retry=retry_if_exception_type(DocumentDeletionError),
+        wait=wait_chain(
+            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
+        ),
+    )
     async def delete_document(
         self,
         document_id: ObjectId,

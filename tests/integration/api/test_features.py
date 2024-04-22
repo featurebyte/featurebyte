@@ -222,7 +222,7 @@ def test_delete_feature(event_table, caplog):
     # check that the feature is deleted
     assert lookup_feature.saved is False
 
-    expected_error = f"Feature (id: {lookup_feature.id}) is being modified. Please try again later."
+    expected_error = f"Feature (id: {lookup_feature.id}) is being deleted. Please try again later."
     has_expected_error = False
     for record in caplog.records:
         if expected_error in record.msg:
