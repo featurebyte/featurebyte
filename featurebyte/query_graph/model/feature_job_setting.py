@@ -78,6 +78,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
         Returns
         -------
         dict
+
+        Raises
+        ------
+        NotImplementedError
+            If execution_buffer is set (not supported)
         """
         _ = cls
         # handle backward compatibility

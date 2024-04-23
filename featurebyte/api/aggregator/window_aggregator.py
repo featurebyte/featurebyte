@@ -184,7 +184,7 @@ class WindowAggregator(BaseAggregator):
                 f"feature_job_setting is required as the {type(self.view).__name__} does not "
                 "have a default feature job setting"
             )
-        return default_setting
+        return cast(FeatureJobSetting, default_setting)
 
     def _prepare_node_parameters(
         self,
