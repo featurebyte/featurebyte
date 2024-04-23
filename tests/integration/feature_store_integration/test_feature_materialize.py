@@ -18,7 +18,7 @@ from sqlglot import parse_one
 
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -401,6 +401,7 @@ def order_use_case_fixture(order_entity):
     target = fb.TargetNamespace.create(
         "order_target",
         primary_entity=[order_entity.name],
+        dtype=DBVarType.FLOAT,
     )
     context = fb.Context.create(
         name="order_context",

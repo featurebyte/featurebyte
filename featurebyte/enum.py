@@ -117,7 +117,7 @@ class StrEnum(str, Enum):
 
 class DBVarType(StrEnum):
     """
-    The DBVarType enum class provides a way to represetn various Dababase variable types supported by FeatureByte.
+    The DBVarType enum class provides a way to represent various Database variable types supported by FeatureByte.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.enum.DBVarType")
