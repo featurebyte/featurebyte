@@ -40,7 +40,7 @@ grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     windows=["30d"],
     feature_names=["sum_item_amt_plus_one_over_30d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
 )
@@ -53,7 +53,7 @@ grouped_1 = joined_view.groupby(
     windows=["30d"],
     feature_names=["sum_item_amt_over_30d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
 )

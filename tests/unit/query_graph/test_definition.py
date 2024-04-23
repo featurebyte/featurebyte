@@ -400,8 +400,8 @@ def test_extract_definition__join_with_groupby(
         "value_by": "item_type",
         "parent": "item_id",
         "agg_func": "sum",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["aggregated_item_type_count"],

@@ -112,8 +112,8 @@ async def test_validate(
         and the input table.
         {
             'feature_job_setting': {
-                'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
-                'promoted_feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
+                'data_source': FeatureJobSetting(blind_spot='600s', period='1800s', offset='300s', execution_buffer='0s'),
+                'promoted_feature': FeatureJobSetting(blind_spot='180s', period='1800s', offset='300s', execution_buffer='0s')
             },
             'cleaning_operations': {
                 'data_source': [ColumnCleaningOperation(column_name='col_int',
@@ -242,12 +242,8 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
     # assert that there are differences
     assert differences == {
-        "data_source": FeatureJobSetting(
-            frequency="1800s", time_modulo_frequency="300s", blind_spot="600s"
-        ),
-        "promoted_feature": FeatureJobSetting(
-            frequency="1800s", time_modulo_frequency="300s", blind_spot="300s"
-        ),
+        "data_source": FeatureJobSetting(period="1800s", offset="300s", blind_spot="600s"),
+        "promoted_feature": FeatureJobSetting(period="1800s", offset="300s", blind_spot="300s"),
     }
 
 

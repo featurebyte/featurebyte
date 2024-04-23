@@ -42,7 +42,7 @@ grouped = joined_view_1.groupby(
     windows=["24h"],
     feature_names=["count_a_24h_per_col_int"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
 )
@@ -56,7 +56,7 @@ grouped_1 = joined_view_1.groupby(
     windows=["24h"],
     feature_names=["sum_a_24h"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
 )

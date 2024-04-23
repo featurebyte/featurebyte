@@ -187,13 +187,9 @@ class ProductionReadyValidator:
         groupby_node = cast(GroupByNode, node)
         parameters = groupby_node.parameters
         blind_spot_str = f"{parameters.blind_spot}s"
-        frequency_str = f"{parameters.frequency}s"
-        time_modulo_frequency_str = f"{parameters.time_modulo_frequency}s"
-        return FeatureJobSetting(
-            blind_spot=blind_spot_str,
-            frequency=frequency_str,
-            time_modulo_frequency=time_modulo_frequency_str,
-        )
+        period_str = f"{parameters.period}s"
+        offset_str = f"{parameters.offset}s"
+        return FeatureJobSetting(blind_spot=blind_spot_str, period=period_str, offset=offset_str)
 
     @staticmethod
     async def _get_feature_job_setting_diffs_table_source_vs_promoted_feature(

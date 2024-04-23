@@ -686,12 +686,22 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     windows: List[Optional[str]]
     timestamp: InColumnStr
     blind_spot: int
-    time_modulo_frequency: int
-    frequency: int
+    offset: int
+    period: int
+    execution_buffer: int = Field(default=0)
     names: List[OutColumnStr]
     tile_id: Optional[str]
     aggregation_id: Optional[str]
     tile_id_version: int = Field(default=1)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "frequency" in values:
+            values["period"] = values["frequency"]
+        if "time_modulo_frequency" in values:
+            values["offset"] = values["time_modulo_frequency"]
+        return values
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):
@@ -790,8 +800,8 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         category = ValueStr.create(self.parameters.value_by)
         feature_job_setting: ObjectClass = ClassEnum.FEATURE_JOB_SETTING(
             blind_spot=f"{self.parameters.blind_spot}s",
-            frequency=f"{self.parameters.frequency}s",
-            time_modulo_frequency=f"{self.parameters.time_modulo_frequency}s",
+            period=f"{self.parameters.period}s",
+            offset=f"{self.parameters.offset}s",
         )
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         out_var_name = var_name_generator.generate_variable_name(

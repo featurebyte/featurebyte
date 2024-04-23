@@ -194,8 +194,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         """
         payload = FeatureJobSettingAnalysisBacktest(
             feature_job_setting_analysis_id=self.id,
-            frequency=feature_job_setting.frequency_seconds,
-            job_time_modulo_frequency=feature_job_setting.time_modulo_frequency_seconds,
+            frequency=feature_job_setting.period_seconds,
+            job_time_modulo_frequency=feature_job_setting.offset_seconds,
             blind_spot=feature_job_setting.blind_spot_seconds,
         )
         backtest_results = self.post_async_task(

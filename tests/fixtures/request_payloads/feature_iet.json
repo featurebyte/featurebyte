@@ -335,20 +335,21 @@
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "frequency": 21600,
+                    "execution_buffer": 0,
                     "keys": [
                         "cust_id"
                     ],
                     "names": [
                         "sum(a * log(a))"
                     ],
+                    "offset": 10800,
                     "parent": "a * log(a)",
+                    "period": 21600,
                     "serving_names": [
                         "cust_id"
                     ],
                     "tile_id": "TILE_SUM_5075A32B3AD63EF26B142FED42003F7722022559",
                     "tile_id_version": 2,
-                    "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
                     "windows": [
@@ -386,20 +387,21 @@
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "frequency": 21600,
+                    "execution_buffer": 0,
                     "keys": [
                         "cust_id"
                     ],
                     "names": [
                         "sum(a) (24h)"
                     ],
+                    "offset": 10800,
                     "parent": "a",
+                    "period": 21600,
                     "serving_names": [
                         "cust_id"
                     ],
                     "tile_id": "TILE_SUM_FA3804C2F2AB322422FB47867A04F7AC554DCC5E",
                     "tile_id_version": 2,
-                    "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
                     "windows": [

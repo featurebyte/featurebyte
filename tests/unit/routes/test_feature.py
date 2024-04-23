@@ -210,8 +210,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                         "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": "1h",
+                            "period": "1d",
+                            "offset": "1h",
                         },
                     }
                 ],
@@ -232,8 +232,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         graph = QueryGraphModel(**response_dict["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         parameters = groupby_node.parameters.dict()
-        assert parameters["time_modulo_frequency"] == 3600
-        assert parameters["frequency"] == 86400
+        assert parameters["offset"] == 3600
+        assert parameters["period"] == 86400
         assert parameters["blind_spot"] == 86400
 
         # check that the table cleaning operations are applied
@@ -296,8 +296,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                         "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": "1h",
+                            "period": "1d",
+                            "offset": "1h",
                         },
                     }
                 ],
@@ -438,9 +438,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             "Discrepancies found between the promoted feature version you are trying to promote to "
             "PRODUCTION_READY, and the input table.\n"
             "{'feature_job_setting': {"
-            "'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'), "
+            "'data_source': FeatureJobSetting(blind_spot='600s', period='1800s', offset='300s', execution_buffer='0s'), "
             "'promoted_feature': "
-            "FeatureJobSetting(blind_spot='82800s', frequency='86400s', time_modulo_frequency='3600s')}}\n"
+            "FeatureJobSetting(blind_spot='82800s', period='86400s', offset='3600s', execution_buffer='0s')}}\n"
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
         )
         assert response.json()["detail"] == expected_error_message

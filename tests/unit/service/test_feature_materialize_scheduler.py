@@ -68,12 +68,9 @@ async def test_start_and_stop_job(service, feature_job_setting, offline_store_fe
     periodic_task = await service.get_periodic_task(offline_store_feature_table.id)
     assert periodic_task is not None
     assert periodic_task.interval == Interval(
-        every=offline_store_feature_table.feature_job_setting.frequency_seconds, period="seconds"
+        every=offline_store_feature_table.feature_job_setting.period_seconds, period="seconds"
     )
-    assert (
-        periodic_task.time_modulo_frequency_second
-        == feature_job_setting.time_modulo_frequency_seconds
-    )
+    assert periodic_task.time_modulo_frequency_second == feature_job_setting.offset_seconds
     assert periodic_task.kwargs["offline_store_feature_table_id"] == str(
         offline_store_feature_table.id
     )

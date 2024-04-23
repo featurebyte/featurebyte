@@ -143,8 +143,9 @@ def test_create_new_version_on_item_view_aggregate_over_feature(
             "table_name": "sf_event_table",
             "feature_job_setting": {
                 "blind_spot": "4500s",
-                "frequency": "1800s",
-                "time_modulo_frequency": "900s",
+                "period": "1800s",
+                "offset": "900s",
+                "execution_buffer": "0s",
             },
         }
     ]

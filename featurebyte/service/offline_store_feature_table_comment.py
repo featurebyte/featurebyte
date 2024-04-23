@@ -140,9 +140,9 @@ class OfflineStoreFeatureTableCommentService:
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
             sentences.append(
-                f"It is updated every {job_setting.frequency_seconds} second(s), with a blind spot"
+                f"It is updated every {job_setting.period_seconds} second(s), with a blind spot"
                 f" of {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of"
-                f" {job_setting.time_modulo_frequency_seconds} second(s)"
+                f" {job_setting.offset_seconds} second(s)"
             )
         comment = ". ".join(sentences) + "."
         return TableComment(table_name=feature_table_model.name, comment=comment)

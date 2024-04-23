@@ -145,8 +145,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
             inputs: pd.DataFrame,
         ) -> pd.DataFrame:
             df = pd.DataFrame()
-            feat = inputs["__complex_feature_V240201__part1"].fillna(0)
-            feat_1 = inputs["__complex_feature_V240201__part0"].fillna(0)
+            feat = inputs["__complex_feature_V240201__part0"].fillna(0)
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=3600)
             feat_ts = pd.to_datetime(
@@ -154,9 +153,10 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
             )
             mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
             inputs.loc[~mask, "__complex_feature_V240201__part0"] = np.nan
+            feat_1 = inputs["__complex_feature_V240201__part1"].fillna(0)
             feat_2 = pd.Series(
-                np.where(pd.isna(feat_1) | pd.isna(feat), np.nan, feat_1 + feat),
-                index=feat_1.index,
+                np.where(pd.isna(feat) | pd.isna(feat_1), np.nan, feat + feat_1),
+                index=feat.index,
             )
             df["complex_feature_V240201"] = feat_2
             return df

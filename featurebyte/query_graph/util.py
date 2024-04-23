@@ -114,8 +114,8 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
 
     # Feature job settings
     job_setting = (
-        parameters["frequency"],
-        parameters["time_modulo_frequency"],
+        parameters["period"],
+        parameters["offset"],
         parameters["blind_spot"],
     )
     hash_components.append(job_setting)
@@ -170,8 +170,8 @@ def get_tile_table_identifier_v1(row_index_lineage_hash: str, parameters: dict[s
 
     # Feature job settings
     job_setting = (
-        parameters["frequency"],
-        parameters["time_modulo_frequency"],
+        parameters["period"],
+        parameters["offset"],
         parameters["blind_spot"],
     )
     hash_components.append(job_setting)
@@ -182,8 +182,8 @@ def get_tile_table_identifier_v1(row_index_lineage_hash: str, parameters: dict[s
     # Readable prefix for troubleshooting
     prefix = (
         f"tile"
-        f"_f{parameters['frequency']}"
-        f"_m{parameters['time_modulo_frequency']}"
+        f"_f{parameters['period']}"
+        f"_m{parameters['offset']}"
         f"_b{parameters['blind_spot']}"
     )
 

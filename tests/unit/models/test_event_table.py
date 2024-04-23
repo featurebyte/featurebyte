@@ -84,8 +84,9 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "updated_at": None,
         "default_feature_job_setting": {
             "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
+            "period": "30m",
+            "offset": "5m",
+            "execution_buffer": "0s",
         },
         "columns_info": columns_info,
         "event_timestamp_column": "event_date",

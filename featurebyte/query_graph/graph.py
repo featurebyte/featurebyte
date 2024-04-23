@@ -316,8 +316,8 @@ class QueryGraph(QueryGraphModel):
                     table_id=table_id,
                     feature_job_setting=FeatureJobSetting(
                         blind_spot=f"{group_by_node.parameters.blind_spot}s",
-                        frequency=f"{group_by_node.parameters.frequency}s",
-                        time_modulo_frequency=f"{group_by_node.parameters.time_modulo_frequency}s",
+                        period=f"{group_by_node.parameters.period}s",
+                        offset=f"{group_by_node.parameters.offset}s",
                     ),
                 )
             )

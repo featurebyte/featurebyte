@@ -21,7 +21,7 @@ grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     windows=["30m"],
     feature_names=["sum_30m"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+        blind_spot="600s", period="1800s", offset="300s"
     ),
     skip_fill_na=True,
 )

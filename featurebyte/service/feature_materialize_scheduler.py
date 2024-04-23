@@ -65,10 +65,10 @@ class FeatureMaterializeSchedulerService:
                     name=self._get_job_id(offline_store_feature_table.id),
                     payload=payload,
                     interval=Interval(
-                        every=offline_store_feature_table.feature_job_setting.frequency_seconds,
+                        every=offline_store_feature_table.feature_job_setting.period_seconds,
                         period="seconds",
                     ),
-                    time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.time_modulo_frequency_seconds,
+                    time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.offset_seconds,
                 )
             except DuplicateDocumentError:
                 logger.warning(

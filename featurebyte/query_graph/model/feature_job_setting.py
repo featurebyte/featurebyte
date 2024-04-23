@@ -50,14 +50,19 @@ class FeatureJobSetting(FeatureByteBaseModel):
         description="Establishes the time difference between when the feature is calculated and the most recent "
         "event timestamp to be processed."
     )
-    frequency: str = Field(
+    period: str = Field(
         description="Indicates the interval at which the batch process should be executed."
     )
-    time_modulo_frequency: str = Field(
+    offset: str = Field(
         description="Specifies the offset from the end of the frequency interval to the start of the feature job. "
         "For instance, with settings frequency: 60m and time_modulo_frequency: 130s, the feature job will begin 2 "
         "minutes and 10 seconds after the start of each hour, such as 00:02:10, 01:02:10, 02:02:10, ..., 15:02:10, "
         "..., 23:02:10."
+    )
+    execution_buffer: str = Field(
+        description="Specifies the time buffer for the feature job execution. The buffer is used to account for "
+        "potential delays in the batch process execution.",
+        default="0s",
     )
 
     @root_validator(pre=True)
@@ -75,36 +80,42 @@ class FeatureJobSetting(FeatureByteBaseModel):
         dict
         """
         _ = cls
+        # handle backward compatibility
+        if "frequency" in values:
+            values["period"] = values.pop("frequency")
+        if "time_modulo_frequency" in values:
+            values["offset"] = values.pop("time_modulo_frequency")
+
         validate_job_setting_parameters(
-            frequency=values["frequency"],
-            time_modulo_frequency=values["time_modulo_frequency"],
+            period=values["period"],
+            offset=values["offset"],
             blind_spot=values["blind_spot"],
         )
         return values
 
     @property
-    def frequency_seconds(self) -> int:
+    def period_seconds(self) -> int:
         """
-        Get frequency in seconds
+        Get period in seconds
 
         Returns
         -------
         int
-            frequency in seconds
+            period in seconds
         """
-        return parse_duration_string(self.frequency, minimum_seconds=60)
+        return parse_duration_string(self.period, minimum_seconds=60)
 
     @property
-    def time_modulo_frequency_seconds(self) -> int:
+    def offset_seconds(self) -> int:
         """
-        Get time modulo frequency in seconds
+        Get offset in seconds
 
         Returns
         -------
         int
-            time modulo frequency in seconds
+            offset in seconds
         """
-        return parse_duration_string(self.time_modulo_frequency)
+        return parse_duration_string(self.offset)
 
     @property
     def blind_spot_seconds(self) -> int:
@@ -126,8 +137,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
         Dict[str, Any]
         """
         return {
-            "frequency": self.frequency_seconds,
-            "time_modulo_frequency": self.time_modulo_frequency_seconds,
+            "period": self.period_seconds,
+            "offset": self.offset_seconds,
             "blind_spot": self.blind_spot_seconds,
         }
 
@@ -140,15 +151,13 @@ class FeatureJobSetting(FeatureByteBaseModel):
         """
         fjs = self.to_seconds()
         return FeatureJobSetting(
-            frequency=f"{fjs['frequency']}s",
-            time_modulo_frequency=f"{fjs['time_modulo_frequency']}s",
+            period=f"{fjs['period']}s",
+            offset=f"{fjs['offset']}s",
             blind_spot=f"{fjs['blind_spot']}s",
         )
 
     def __hash__(self) -> int:
-        return hash(
-            f"{self.frequency_seconds}_{self.time_modulo_frequency_seconds}_{self.blind_spot_seconds}"
-        )
+        return hash(f"{self.period_seconds}_{self.offset_seconds}_{self.blind_spot_seconds}")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FeatureJobSetting):

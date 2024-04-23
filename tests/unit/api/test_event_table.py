@@ -507,8 +507,9 @@ def test_update_default_job_setting__saved_event_table(
     assert response.status_code == 200
     assert response.json()["default_feature_job_setting"] == {
         "blind_spot": "1m30s",
-        "frequency": "6m",
-        "time_modulo_frequency": "3m",
+        "period": "6m",
+        "offset": "3m",
+        "execution_buffer": "0s",
     }
 
 
@@ -731,7 +732,12 @@ def test_default_feature_job_setting_history(saved_event_table):
 
     history = saved_event_table.default_feature_job_setting_history
     expected_history_0 = {
-        "setting": {"blind_spot": "1m30s", "frequency": "10m", "time_modulo_frequency": "2m"}
+        "setting": {
+            "blind_spot": "1m30s",
+            "period": "10m",
+            "offset": "2m",
+            "execution_buffer": "0s",
+        }
     }
     assert len(history) == 2
     assert history[0].items() >= expected_history_0.items()
@@ -746,7 +752,7 @@ def test_default_feature_job_setting_history(saved_event_table):
 
     history = saved_event_table.default_feature_job_setting_history
     expected_history_1 = {
-        "setting": {"blind_spot": "1m", "frequency": "5m", "time_modulo_frequency": "2m"}
+        "setting": {"blind_spot": "1m", "period": "5m", "offset": "2m", "execution_buffer": "0s"}
     }
     assert len(history) == 3
     assert history[1].items() >= expected_history_0.items()
@@ -797,16 +803,23 @@ def test_default_feature_job_setting_history(saved_event_table):
             (
                 "UPDATE",
                 'update: "sf_event_table"',
-                "default_feature_job_setting.frequency",
+                "default_feature_job_setting.period",
                 "10m",
                 "5m",
             ),
             (
                 "UPDATE",
                 'update: "sf_event_table"',
-                "default_feature_job_setting.time_modulo_frequency",
+                "default_feature_job_setting.offset",
                 "2m",
                 "2m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_table"',
+                "default_feature_job_setting.execution_buffer",
+                "0s",
+                "0s",
             ),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
@@ -833,16 +846,23 @@ def test_default_feature_job_setting_history(saved_event_table):
             (
                 "UPDATE",
                 'update: "sf_event_table"',
-                "default_feature_job_setting.frequency",
+                "default_feature_job_setting.execution_buffer",
                 np.nan,
-                "10m",
+                "0s",
             ),
             (
                 "UPDATE",
                 'update: "sf_event_table"',
-                "default_feature_job_setting.time_modulo_frequency",
+                "default_feature_job_setting.offset",
                 np.nan,
                 "2m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_table"',
+                "default_feature_job_setting.period",
+                np.nan,
+                "10m",
             ),
             (
                 "UPDATE",

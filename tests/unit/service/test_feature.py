@@ -136,14 +136,15 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
             "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
             "blind_spot": 600,
             "entity_ids": [ObjectId(api_object_to_id["entity"])],
-            "frequency": 1800,
+            "period": 1800,
             "keys": ["cust_id"],
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
             "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
             "tile_id_version": 2,
-            "time_modulo_frequency": 300,
+            "offset": 300,
+            "execution_buffer": 0,
             "timestamp": "event_timestamp",
             "value_by": None,
             "windows": ["30m"],
@@ -213,7 +214,7 @@ def test_validate_feature(feature_service, feature, snowflake_event_table_id):
     node_params = groupby_node.dict(by_alias=True)["parameters"]
     node_params["names"] = ["sum_1w"]
     node_params["windows"] = ["1w"]
-    node_params["frequency"] = 3600
+    node_params["period"] = 3600
     another_groupby_node = query_graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params=node_params,
@@ -252,7 +253,8 @@ def test_validate_feature(feature_service, feature, snowflake_event_table_id):
 
     expected_message = (
         f"Feature job settings for table {snowflake_event_table_id} are not consistent. "
-        "Two different feature job settings are found: blind_spot='600s' frequency='1800s' "
-        "time_modulo_frequency='300s' and blind_spot='600s' frequency='3600s' time_modulo_frequency='300s'"
+        "Two different feature job settings are found: blind_spot='600s' period='1800s' "
+        "offset='300s' execution_buffer='0s' and blind_spot='600s' period='3600s' offset='300s' "
+        "execution_buffer='0s'"
     )
     assert expected_message in str(exc.value)

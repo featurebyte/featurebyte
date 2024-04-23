@@ -225,6 +225,10 @@ class QueryGraphModel(FeatureByteBaseModel):
             node_parameters["feature_store_details"].pop("details", None)
         if node.type == NodeType.GROUPBY:
             node_parameters.pop("tile_id_version", None)
+            node_parameters["frequency"] = node_parameters.pop("period")
+            node_parameters["time_modulo_frequency"] = node_parameters.pop("offset")
+            if node_parameters["execution_buffer"] == 0:
+                node_parameters.pop("execution_buffer")
         return node_parameters
 
     @classmethod

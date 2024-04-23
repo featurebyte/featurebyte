@@ -319,8 +319,9 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             },
             "recommendation": {
                 "blind_spot": "395s",
-                "frequency": "180s",
-                "time_modulo_frequency": "61s",
+                "period": "180s",
+                "offset": "61s",
+                "execution_buffer": "0s",
             },
             "catalog_name": "grocery",
         }

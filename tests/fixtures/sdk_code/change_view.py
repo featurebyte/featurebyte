@@ -7,7 +7,7 @@ scd_table = SCDTable.get_by_id(ObjectId("{table_id}"))
 change_view = scd_table.get_change_view(
     track_changes_column="col_int",
     default_feature_job_setting=FeatureJobSetting(
-        blind_spot="0", frequency="24h", time_modulo_frequency="1h"
+        blind_spot="0", period="24h", offset="1h", execution_buffer="0s"
     ),
     prefixes=(None, "_past"),
     view_mode="manual",

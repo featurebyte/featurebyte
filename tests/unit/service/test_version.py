@@ -80,7 +80,7 @@ async def test_create_new_feature_version(
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],
@@ -103,8 +103,9 @@ async def test_create_new_feature_version(
     assert parameters.dict() == {
         **expected_common_params,
         "blind_spot": 600,
-        "time_modulo_frequency": 300,
-        "frequency": 1800,
+        "offset": 300,
+        "period": 1800,
+        "execution_buffer": 0,
         "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
         "tile_id_version": 2,
         "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
@@ -114,8 +115,9 @@ async def test_create_new_feature_version(
     assert new_parameters.dict() == {
         **expected_common_params,
         "blind_spot": 86400,
-        "time_modulo_frequency": 3600,
-        "frequency": 86400,
+        "offset": 3600,
+        "period": 86400,
+        "execution_buffer": 0,
         "tile_id": "TILE_SUM_4955D583DA1636F4125D56D20D80CD6DD0A73DEC",
         "tile_id_version": 2,
         "aggregation_id": "sum_4955d583da1636f4125d56d20d80cd6dd0a73dec",
@@ -171,9 +173,7 @@ async def test_create_new_feature_version__document_error(version_service, featu
     assert expected_msg in str(exc.value)
 
     # check same feature job settings
-    same_feature_job_setting = FeatureJobSetting(
-        blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-    )
+    same_feature_job_setting = FeatureJobSetting(blind_spot="10m", period="30m", offset="5m")
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
@@ -316,7 +316,7 @@ async def test_create_new_feature_list_version__without_specifying_features_mode
                 TableFeatureJobSetting(
                     table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],
@@ -361,7 +361,7 @@ async def test_create_new_feature_list_version__specifying_features(
                 TableFeatureJobSetting(
                     table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],
@@ -639,8 +639,8 @@ async def test_create_new_feature_version_using_source_settings(
 
     group_by_params = feature.graph.get_node_by_name("groupby_1").parameters
     assert group_by_params.blind_spot == 600
-    assert group_by_params.frequency == 1800
-    assert group_by_params.time_modulo_frequency == 300
+    assert group_by_params.period == 1800
+    assert group_by_params.offset == 300
 
     # prepare event table before create new version from source settings
     columns_info_with_cdi = []
@@ -655,7 +655,7 @@ async def test_create_new_feature_version_using_source_settings(
         document_id=event_table.id,
         data=EventTableServiceUpdate(
             default_feature_job_setting=FeatureJobSetting(
-                blind_spot="1h", frequency="2h", time_modulo_frequency="30m"
+                blind_spot="1h", period="2h", offset="30m"
             ),
             columns_info=columns_info_with_cdi,
         ),
@@ -674,8 +674,8 @@ async def test_create_new_feature_version_using_source_settings(
 
     group_by_params = new_version.graph.get_node_by_name("groupby_1").parameters
     assert group_by_params.blind_spot == 3600
-    assert group_by_params.frequency == 7200
-    assert group_by_params.time_modulo_frequency == 1800
+    assert group_by_params.period == 7200
+    assert group_by_params.offset == 1800
 
 
 @pytest.mark.asyncio
@@ -722,7 +722,7 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],
@@ -776,7 +776,7 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h30s"
+                        blind_spot="1d", period="1d", offset="1h30s"
                     ),
                 )
             ],
@@ -803,7 +803,7 @@ async def test_feature_create_new_version_without_save(app_container, feature, e
                 TableFeatureJobSetting(
                     table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],

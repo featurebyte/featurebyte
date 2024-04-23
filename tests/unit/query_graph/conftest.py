@@ -315,8 +315,8 @@ def groupby_node_params_fixture(customer_entity_id):
         "value_by": None,
         "parent": "a",
         "agg_func": "avg",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_average", "a_48h_average"],
@@ -339,8 +339,8 @@ def groupby_node_params_max_agg_fixture():
         "value_by": None,
         "parent": "a",
         "agg_func": "max",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_max", "a_36h_max"],
@@ -363,8 +363,8 @@ def groupby_node_params_sum_agg_fixture():
         "value_by": None,
         "parent": "a",
         "agg_func": "sum",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_sum", "a_36h_sum"],
@@ -387,8 +387,8 @@ def groupby_node_params_different_feature_job_settings_fixture():
         "value_by": None,
         "parent": "a",
         "agg_func": "sum",
-        "time_modulo_frequency": 900,  # 15m
-        "frequency": 3600,  # 1h
+        "offset": 900,  # 15m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_sum_v2", "a_36h_sum_v2"],
@@ -559,8 +559,8 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby, business_entit
         "value_by": None,
         "parent": "a",
         "agg_func": "sum",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_7d_sum_by_business"],
@@ -717,8 +717,8 @@ def item_table_joined_event_table_feature_node_fixture(
         "value_by": "item_type",
         "parent": None,
         "agg_func": "count",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["item_type_count_30d"],
@@ -818,8 +818,8 @@ def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_joi
         "value_by": None,
         "parent": "ord_size",
         "agg_func": "avg",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["order_size_30d_avg"],
@@ -1135,8 +1135,8 @@ def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
         "value_by": None,
         "parent": "a",
         "agg_func": "latest",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_latest_value_past_90d"],
@@ -1161,8 +1161,8 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
         "value_by": None,
         "parent": "a",
         "agg_func": "latest",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_latest_value"],
@@ -1244,8 +1244,8 @@ def time_since_last_event_feature_node_fixture(global_graph, input_node):
         "value_by": None,
         "parent": "ts",
         "agg_func": "latest",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["latest_event_timestamp_90d"],
@@ -1656,8 +1656,8 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
                         "windows": ["2h"],
                         "timestamp": "ts",
                         "blind_spot": 900,
-                        "time_modulo_frequency": 1800,
-                        "frequency": 3600,
+                        "offset": 1800,
+                        "period": 3600,
                         "names": ["a_2h_average"],
                         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -1743,8 +1743,8 @@ def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
                         "windows": ["48h"],
                         "timestamp": "ts",
                         "blind_spot": 900,
-                        "time_modulo_frequency": 1800,
-                        "frequency": 3600,
+                        "offset": 1800,
+                        "period": 3600,
                         "names": ["a_48h_average"],
                         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                         "aggregation_id": f"avg_{groupby_node_aggregation_id}",

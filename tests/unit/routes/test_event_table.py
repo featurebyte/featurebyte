@@ -147,8 +147,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
         return {
             "default_feature_job_setting": {
                 "blind_spot": "12m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
+                "period": "30m",
+                "offset": "5m",
+                "execution_buffer": "0s",
             },
             "record_creation_timestamp_column": "created_at",
         }
@@ -198,7 +199,11 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert [
             record["previous_values"].get("default_feature_job_setting")
             for record in results["data"]
-        ] == [{"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"}, None, None]
+        ] == [
+            {"blind_spot": "10m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
+            None,
+            None,
+        ]
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(
@@ -207,8 +212,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["setting"] for doc in results] == [
-            {"blind_spot": "12m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
+            {"blind_spot": "12m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
+            {"blind_spot": "10m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
         ]
 
     def test_update_excludes_unsupported_fields(
@@ -317,8 +322,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
             },
             "default_feature_job_setting": {
                 "blind_spot": "10m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
+                "period": "30m",
+                "offset": "5m",
+                "execution_buffer": "0s",
             },
             "status": "PUBLIC_DRAFT",
             "entities": [

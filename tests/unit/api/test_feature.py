@@ -249,8 +249,8 @@ def test_feature_deserialization(
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
+            period="30m",
+            offset="5m",
         ),
     )
     same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
@@ -300,9 +300,7 @@ def saved_feature_fixture(
     """
     event_table_id_before = snowflake_event_table.id
     snowflake_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m")
     )
     assert snowflake_event_table.id == event_table_id_before
     feature_id_before = float_feature.id
@@ -368,8 +366,9 @@ def test_info(saved_feature):
         "table_name": "sf_event_table",
         "feature_job_setting": {
             "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
+            "period": "1800s",
+            "offset": "300s",
+            "execution_buffer": "0s",
         },
     }
     expected_info = {
@@ -587,9 +586,7 @@ def test_feature__default_version_info_retrieval(
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name=snowflake_event_table.name,
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
             )
         ],
     )
@@ -603,7 +600,7 @@ def test_feature__default_version_info_retrieval(
         TableIdFeatureJobSetting(
             table_id=snowflake_event_table.id,
             feature_job_setting=FeatureJobSetting(
-                blind_spot="2700s", frequency="1800s", time_modulo_frequency="900s"
+                blind_spot="2700s", period="1800s", offset="900s"
             ),
         )
     ]
@@ -627,9 +624,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name=snowflake_event_table.name,
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
             )
         ],
         table_cleaning_operations=None,
@@ -647,8 +642,8 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     groupby_node_params = groupby_node["parameters"]
     assert groupby_node["type"] == "groupby"
     assert groupby_node_params["blind_spot"] == 45 * 60
-    assert groupby_node_params["frequency"] == 30 * 60
-    assert groupby_node_params["time_modulo_frequency"] == 15 * 60
+    assert groupby_node_params["period"] == 30 * 60
+    assert groupby_node_params["offset"] == 15 * 60
 
     # before deletion
     _ = Feature.get_by_id(new_version.id)
@@ -693,9 +688,7 @@ def test_create_new_version__with_data_cleaning_operations(
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name=snowflake_event_table.name,
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
             )
         ],
         table_cleaning_operations=[
@@ -748,7 +741,7 @@ def test_create_new_version__error(float_feature):
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                        blind_spot="45m", period="30m", offset="15m"
                     ),
                 )
             ],
@@ -767,9 +760,7 @@ def test_feature__as_default_version(saved_feature):
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name="sf_event_table",
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="15m", period="30m", offset="15m"),
             )
         ],
         table_cleaning_operations=None,
@@ -928,8 +919,8 @@ def test_composite_features(
     event_view = snowflake_event_table_with_entity.get_view()
     feature_job_setting = FeatureJobSetting(
         blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
+        period="30m",
+        offset="5m",
     )
     feature_group_by_cust_id_30m = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
@@ -1032,9 +1023,7 @@ def test_update_readiness__fail_guardrail_checks(saved_feature):
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name="sf_event_table",
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
             )
         ],
     )
@@ -1409,8 +1398,8 @@ def feature_with_clean_column_names_fixture(saved_event_table, cust_id_entity):
         feature_names=["sum_30m"],
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
+            period="30m",
+            offset="5m",
         ),
     )["sum_30m"]
     return feature, col_names
@@ -1495,7 +1484,7 @@ def test_feature_definition(feature_with_clean_column_names):
         windows=["30m"],
         feature_names=["sum_30m"],
         feature_job_setting=FeatureJobSetting(
-            blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+            blind_spot="600s", period="1800s", offset="300s"
         ),
         skip_fill_na=True,
     )
@@ -1558,16 +1547,14 @@ def test_feature_create_new_version__multiple_event_table(
         feature_names=["count_30m"],
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
+            period="30m",
+            offset="5m",
         ),
     )["count_30m"]
     feature.save()
 
     # create new version with different feature job setting on another event table dataset
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="20m", frequency="30m", time_modulo_frequency="5m"
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="20m", period="30m", offset="5m")
     with pytest.raises(RecordCreationException) as exc:
         feature.create_new_version(
             table_feature_job_settings=[
@@ -1597,8 +1584,8 @@ def test_feature_create_new_version__multiple_event_table(
     expected_job_settings = feature_job_setting.to_seconds()
     group_by_params = pruned_graph.get_node_by_name("groupby_1").parameters
     assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
-    assert group_by_params.frequency == expected_job_settings["frequency"]
-    assert group_by_params.time_modulo_frequency == expected_job_settings["time_modulo_frequency"]
+    assert group_by_params.period == expected_job_settings["period"]
+    assert group_by_params.offset == expected_job_settings["offset"]
 
 
 def test_primary_entity__unsaved_feature(float_feature, cust_id_entity):
@@ -1892,7 +1879,7 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
         windows=["1d"],
         feature_names=["sum_1d"],
         feature_job_setting=FeatureJobSetting(
-            blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+            blind_spot="600s", period="1800s", offset="300s"
         ),
         skip_fill_na=True,
     )
@@ -1922,7 +1909,7 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
         windows=["1d"],
         feature_names=["sum_1d"],
         feature_job_setting=FeatureJobSetting(
-            blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+            blind_spot="600s", period="1800s", offset="300s"
         ),
         skip_fill_na=True,
     )
@@ -1976,8 +1963,9 @@ def test_complex_feature_with_duplicated_feature_job_setting(
         "table_id": snowflake_event_table_with_entity.id,
         "feature_job_setting": {
             "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
+            "period": "1800s",
+            "offset": "300s",
+            "execution_buffer": "0s",
         },
     }
 

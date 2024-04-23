@@ -21,7 +21,7 @@ grouped_1 = event_view.groupby(
     windows=["24h"],
     feature_names=["count_a_24h_per_col_int"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="3600s", frequency="3600s", time_modulo_frequency="1800s"
+        blind_spot="3600s", period="3600s", offset="1800s"
     ),
     skip_fill_na=True,
 )

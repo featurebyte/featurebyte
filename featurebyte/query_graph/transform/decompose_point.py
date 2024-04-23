@@ -136,8 +136,8 @@ class FeatureJobSettingExtractor:
     def _extract_group_by_node_feature_job_setting(node: GroupByNode) -> FeatureJobSetting:
         return FeatureJobSetting(
             blind_spot=f"{node.parameters.blind_spot}s",
-            frequency=f"{node.parameters.frequency}s",
-            time_modulo_frequency=f"{node.parameters.time_modulo_frequency}s",
+            period=f"{node.parameters.period}s",
+            offset=f"{node.parameters.offset}s",
         )
 
     def _extract_lookup_node_feature_job_setting(
