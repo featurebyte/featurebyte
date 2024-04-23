@@ -480,8 +480,8 @@ def invalid_query_graph_groupby_node_fixture(
         "value_by": None,
         "parent": "a",
         "agg_func": "avg",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
+        "offset": 1800,  # 30m
+        "period": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_average", "a_48h_average"],

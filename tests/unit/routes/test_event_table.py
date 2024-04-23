@@ -116,11 +116,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "event_id_column": "event_id",
             "event_timestamp_column": "event_date",
             "record_creation_timestamp_column": "created_at",
-            "default_feature_job_setting": {
-                "blind_spot": "10m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
-            },
+            "default_feature_job_setting": {"blind_spot": "10m", "period": "30m", "offset": "5m"},
             "status": "PUBLISHED",
             "user_id": str(user_id),
             "_id": ObjectId(),
@@ -279,8 +275,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 json={
                     "default_feature_job_setting": {
                         "blind_spot": blind_spot,
-                        "frequency": "30m",
-                        "time_modulo_frequency": "5m",
+                        "period": "30m",
+                        "offset": "5m",
                     },
                     "status": "PUBLIC_DRAFT",
                 },

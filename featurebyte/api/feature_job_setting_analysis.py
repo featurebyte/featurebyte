@@ -187,8 +187,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         >>> # Backtest a manual setting
         >>> manual_setting = fb.FeatureJobSetting(  # doctest: +SKIP
         ...   blind_spot="135s",
-        ...   frequency="60m",
-        ...   time_modulo_frequency="90s",
+        ...   period="60m",
+        ...   offset="90s",
         ... )
         >>> backtest_result = analysis.backtest(feature_job_setting=manual_setting)  # doctest: +SKIP
         """

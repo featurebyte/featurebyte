@@ -11,8 +11,8 @@ from featurebyte.common.model_util import (
 )
 
 
-def test_time_modulo_frequency_larger_than_frequency():
-    """Test that time modulo frequency should be larger than frequency"""
+def test_offset_larger_than_frequency():
+    """Test that offset should be larger than frequency"""
     with pytest.raises(ValueError) as exc_info:
         validate_job_setting_parameters(period="1h", offset="2h", blind_spot="5m")
     expected = "Offset (2h) should be smaller than period (1h)"

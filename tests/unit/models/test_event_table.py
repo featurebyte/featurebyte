@@ -17,11 +17,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 @pytest.fixture(name="feature_job_setting")
 def feature_job_setting_fixture():
     """Fixture for a Feature Job Setting"""
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="10m", period="30m", offset="5m")
     return feature_job_setting
 
 
@@ -119,8 +115,8 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
     "field,value",
     [
         ("blind_spot", "10something"),
-        ("frequency", "10something"),
-        ("time_modulo_frequency", "10something"),
+        ("period", "10something"),
+        ("offset", "10something"),
     ],
 )
 def test_invalid_job_setting__invalid_unit(feature_job_setting, field, value):
@@ -135,7 +131,7 @@ def test_invalid_job_setting__invalid_unit(feature_job_setting, field, value):
 def test_invalid_job_setting__too_small(feature_job_setting):
     """Test validation on invalid job settings"""
     setting_dict = feature_job_setting.dict()
-    setting_dict["frequency"] = "1s"
+    setting_dict["period"] = "1s"
     with pytest.raises(ValidationError) as exc_info:
         FeatureJobSetting(**setting_dict)
     assert "Duration specified is too small: 1s" in str(exc_info.value)

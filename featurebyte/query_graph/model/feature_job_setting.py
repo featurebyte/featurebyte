@@ -17,10 +17,10 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     The setting comprises three parameters:
 
-    - The frequency parameter specifies how often the batch process should run.
-    - The time_modulo_frequency parameter defines the timing from the end of the frequency time period to when the
-      feature job commences. For example, a feature job with the following settings (frequency 60m,
-      time_modulo_frequency: 130s) will start 2 min and 10 seconds after the beginning of each hour:
+    - The period parameter specifies how often the batch process should run.
+    - The offset parameter defines the timing from the end of the frequency time period to when the
+      feature job commences. For example, a feature job with the following settings (period 60m,
+      offset: 130s) will start 2 min and 10 seconds after the beginning of each hour:
       00:02:10, 01:02:10, 02:02:10, …, 15:02:10, …, 23:02:10.
     - The blind_spot parameter sets the time gap between feature computation and the latest event timestamp to be
     processed.
@@ -33,14 +33,14 @@ class FeatureJobSetting(FeatureByteBaseModel):
     and is usually finished within 2 minutes. Sometimes the data refresh misses the latest data, up to a maximum of the
     last 30 seconds at the end of the hour. Therefore, an appropriate feature job settings could be:
 
-    - frequency: 60m
-    = time_modulo_frequency: 10s + 2m + 5s (a safety buffer) = 135s
+    - period: 60m
+    - offset: 10s + 2m + 5s (a safety buffer) = 135s
     - blind_spot: 30s + 10s + 2m + 5s = 165s
 
     >>> feature_job_setting = fb.FeatureJobSetting(  # doctest: +SKIP
     ...  blind_spot="165s"
-    ...  frequency="60m"
-    ...  time_modulo_frequency="135s"
+    ...  period="60m"
+    ...  offset="135s"
     ... )
     """
 
@@ -54,8 +54,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
         description="Indicates the interval at which the batch process should be executed."
     )
     offset: str = Field(
-        description="Specifies the offset from the end of the frequency interval to the start of the feature job. "
-        "For instance, with settings frequency: 60m and time_modulo_frequency: 130s, the feature job will begin 2 "
+        description="Specifies the offset from the end of the period interval to the start of the feature job. "
+        "For instance, with settings period: 60m and offset: 130s, the feature job will begin 2 "
         "minutes and 10 seconds after the start of each hour, such as 00:02:10, 01:02:10, 02:02:10, ..., 15:02:10, "
         "..., 23:02:10."
     )
@@ -181,12 +181,14 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     >>> feature.info()["table_feature_job_setting"]
     {'this': [{'table_name': 'GROCERYINVOICE',
      'feature_job_setting': {'blind_spot': '0s',
-     'frequency': '3600s',
-     'time_modulo_frequency': '90s'}}],
+     'period': '3600s',
+     'offset': '90s',
+     'execution_buffer': '0s'}}],
      'default': [{'table_name': 'GROCERYINVOICE',
      'feature_job_setting': {'blind_spot': '0s',
-     'frequency': '3600s',
-     'time_modulo_frequency': '90s'}}]}
+     'period': '3600s',
+     'offset': '90s',
+     'execution_buffer': '0s'}}]}
 
 
     Create a new feature with a different feature job setting:
@@ -197,8 +199,8 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     ...       table_name="GROCERYINVOICE",
     ...       feature_job_setting=fb.FeatureJobSetting(
     ...         blind_spot="60s",
-    ...         frequency="3600s",
-    ...         time_modulo_frequency="90s",
+    ...         period="3600s",
+    ...         offset="90s",
     ...       )
     ...     )
     ...   ]

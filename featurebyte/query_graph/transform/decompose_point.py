@@ -126,11 +126,7 @@ class FeatureJobSettingExtractor:
         -------
         FeatureJobSetting
         """
-        return FeatureJobSetting(
-            frequency="1d",
-            time_modulo_frequency="0s",
-            blind_spot="0s",
-        )
+        return FeatureJobSetting(period="1d", offset="0s", blind_spot="0s")
 
     @staticmethod
     def _extract_group_by_node_feature_job_setting(node: GroupByNode) -> FeatureJobSetting:
