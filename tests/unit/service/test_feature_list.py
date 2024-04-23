@@ -332,7 +332,7 @@ async def test_feature_list__contains_relationships_info(
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                        blind_spot="1d", period="1d", offset="1h"
                     ),
                 )
             ],

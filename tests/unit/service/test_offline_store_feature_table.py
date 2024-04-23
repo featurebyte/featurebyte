@@ -37,11 +37,7 @@ def offline_store_feature_table_dict_fixture(test_dir, service, user_id):
         "entity_universe": {"query_template": {"formatted_expression": ""}},
         "feature_ids": [ObjectId()],
         "feature_cluster": feature_cluster,
-        "feature_job_setting": {
-            "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
-        },
+        "feature_job_setting": {"blind_spot": "600s", "period": "1800s", "offset": "300s"},
         "has_ttl": True,
         "entity_lookup_info": None,
         "last_materialized_at": None,

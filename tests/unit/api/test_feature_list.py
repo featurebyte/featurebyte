@@ -838,7 +838,7 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
 
     # Update feature job setting so that guardrails check will fail
     snowflake_event_table.update_default_feature_job_setting(
-        FeatureJobSetting(blind_spot="75m", frequency="30m", time_modulo_frequency="15m")
+        FeatureJobSetting(blind_spot="75m", period="30m", offset="15m")
     )
 
     # Deploy a feature list that errors due to guardrails
@@ -852,7 +852,7 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
 
     # Set ignore_guardrails to be True - verify that the feature list deploys without errors
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
-    assert deployment.enabled == False
+    assert deployment.enabled is False
     deployment.enable()
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
@@ -1408,9 +1408,7 @@ def create_feature_with_multiple_entity_relationships(event_view, feature_name):
             method="sum",
             windows=["1d"],
             feature_names=[feat_name],
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="75m", period="30m", offset="15m"),
         )[feat_name]
         feat_components.append(feat_component)
 

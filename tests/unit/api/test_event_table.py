@@ -490,17 +490,13 @@ def test_update_default_job_setting__saved_event_table(
 
     assert saved_event_table.default_feature_job_setting is None
     saved_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s",
-            frequency="6m",
-            time_modulo_frequency="3m",
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m")
     )
     assert saved_event_table.saved is True
 
     # check updated feature job settings stored at the persistent & memory
     assert saved_event_table.default_feature_job_setting == FeatureJobSetting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        blind_spot="1m30s", period="6m", offset="3m"
     )
     client = config.get_client()
     response = client.get(url=f"/event_table/{saved_event_table.id}")
@@ -527,9 +523,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
     mock_post_async_task.return_value = {"_id": ObjectId()}
     analysis = Mock()
     analysis.get_recommendation.return_value = FeatureJobSetting(
-        blind_spot="0",
-        frequency="24h",
-        time_modulo_frequency="0",
+        blind_spot="0", period="24h", offset="0"
     )
     mock_get_by_id.return_value = analysis
     saved_event_table.initialize_default_feature_job_setting()
@@ -579,7 +573,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_no_creat
 
 
 @patch("featurebyte.api.event_table.EventTable.post_async_task")
-def test_update_default_feature_job_setting__using_feature_job_analysis_high_frequency(
+def test_update_default_feature_job_setting__using_feature_job_analysis_high_period(
     mock_post_async_task,
     saved_event_table,
     config,
@@ -609,9 +603,7 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_tab
     with pytest.raises(RecordUpdateException):
         with patch("featurebyte.api.api_object.Configurations"):
             snowflake_event_table.update_default_feature_job_setting(
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="1m", frequency="2m", time_modulo_frequency="1m"
-                )
+                feature_job_setting=FeatureJobSetting(blind_spot="1m", period="2m", offset="1m")
             )
 
 
@@ -724,9 +716,7 @@ def test_default_feature_job_setting_history(saved_event_table):
     assert setting_history[0].items() > {"setting": None}.items()
     t1 = datetime.utcnow()
     saved_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="10m", offset="2m")
     )
     t2 = datetime.utcnow()
 
@@ -744,9 +734,7 @@ def test_default_feature_job_setting_history(saved_event_table):
     assert t2 >= datetime.fromisoformat(history[0]["created_at"]) >= t1
 
     saved_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m", frequency="5m", time_modulo_frequency="2m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="1m", period="5m", offset="2m")
     )
     t3 = datetime.utcnow()
 
@@ -1009,9 +997,7 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
     assert saved_event_table.timestamp_column == "event_timestamp"
 
     # check synchronization
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m")
     cloned = EventTable.get_by_id(id=saved_event_table.id)
     assert cloned.default_feature_job_setting is None
     saved_event_table.update_default_feature_job_setting(feature_job_setting=feature_job_setting)

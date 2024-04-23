@@ -1191,9 +1191,7 @@ def create_transactions_event_table_from_data_source(
         event_timestamp_timezone_offset_column="TZ_OFFSET",
     )
     event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     )
     tag_entities_for_event_table(event_table)
     return event_table

@@ -24,11 +24,7 @@ def test_extract_table_id_to_feature_job_settings_and_cleaning_operations__time_
     assert table_id_feature_job_settings == [
         TableIdFeatureJobSetting(
             table_id=snowflake_event_table_id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="600s",
-                frequency="1800s",
-                time_modulo_frequency="300s",
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="600s", period="1800s", offset="300s"),
         )
     ]
 

@@ -54,8 +54,8 @@ def service_fixture(app_container):
 @pytest.mark.parametrize(
     "feature_job_setting",
     [
-        FeatureJobSetting(frequency="1h", blind_spot="0s", time_modulo_frequency="5m"),
-        FeatureJobSetting(frequency="1d", blind_spot="0s", time_modulo_frequency="5m"),
+        FeatureJobSetting(period="1h", blind_spot="0s", offset="5m"),
+        FeatureJobSetting(period="1d", blind_spot="0s", offset="5m"),
     ],
 )
 @pytest.mark.asyncio

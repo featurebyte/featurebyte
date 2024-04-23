@@ -26,7 +26,7 @@ from tests.util.helper import (
 @pytest.fixture(name="default_feature_job_setting")
 def default_feature_job_setting_fixture():
     """Fixture for default feature job setting"""
-    return FeatureJobSetting(blind_spot="0s", frequency="1d", time_modulo_frequency="0s")
+    return FeatureJobSetting(blind_spot="0s", period="1d", offset="0s")
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -96,7 +96,7 @@ def test_feature__ttl_and_non_ttl_components(
         non_ttl_component_graph = ingest_query_graphs[0]
 
     expected_feature_job_setting = FeatureJobSetting(
-        blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+        blind_spot="600s", period="1800s", offset="300s"
     )
     assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
     assert ttl_component_graph.node_name == "mul_1"
@@ -258,7 +258,7 @@ def test_feature__multiple_non_ttl_components(
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]
     assert non_ttl_component_graph.feature_job_setting == FeatureJobSetting(
-        blind_spot="0s", frequency="1d", time_modulo_frequency="0s"
+        blind_spot="0s", period="1d", offset="0s"
     )
     assert non_ttl_component_graph.node_name == "alias_1"
     assert non_ttl_component_graph.has_ttl is False

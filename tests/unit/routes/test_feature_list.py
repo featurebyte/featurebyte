@@ -140,8 +140,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                         "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": time_modulo_frequency or "12h",
+                            "period": "1d",
+                            "offset": time_modulo_frequency or "12h",
                         },
                     }
                 ],

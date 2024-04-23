@@ -106,9 +106,7 @@ async def test_get_event_table_info(app_container, event_table):
             schema_name="sf_schema",
             table_name="sf_event_table",
         ),
-        default_feature_job_setting=FeatureJobSetting(
-            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-        ),
+        default_feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
         entities=[],
         semantics=["event_timestamp"],
         column_count=9,

@@ -137,22 +137,14 @@ async def test_data_warehouse_migration_v6(
         method="count",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_count"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="42m",
-            blind_spot="5m",
-            time_modulo_frequency="10m",
-        ),
+        feature_job_setting=FeatureJobSetting(period="42m", blind_spot="5m", offset="10m"),
     )
     features_2 = event_view.groupby("ÜSER ID").aggregate_over(
         value_column="ËVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_latest_event_time"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="42m",
-            blind_spot="5m",
-            time_modulo_frequency="10m",
-        ),
+        feature_job_setting=FeatureJobSetting(period="42m", blind_spot="5m", offset="10m"),
     )
     feature_list_1 = FeatureList([features_1], name="test_data_warehouse_migration_v6_list_1")
     feature_list_1.save()

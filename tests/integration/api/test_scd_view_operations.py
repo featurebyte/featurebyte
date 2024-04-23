@@ -250,9 +250,7 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
         "count",
         windows=["30d"],
         feature_names=["state_code_counts_30d"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
-        ),
+        feature_job_setting=FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
     )
     df_observations = pd.DataFrame(
         {"POINT_IN_TIME": ["2022-04-25 10:00:00"], "customer_id": ["c1"]}
