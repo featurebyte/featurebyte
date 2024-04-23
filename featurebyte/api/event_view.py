@@ -14,13 +14,13 @@ from pydantic import Field
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
+from featurebyte.typing import validate_type_is_feature
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature

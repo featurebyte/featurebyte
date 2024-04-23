@@ -3,8 +3,8 @@ This module contains cleaning operation related classes.
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Sequence, Set, Union
-from typing_extensions import Annotated
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
+from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
@@ -12,12 +12,12 @@ import pandas as pd
 from pydantic import Field, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import OptionalScalar, Scalar
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.sdk_code import ClassEnum, ObjectClass
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
+from featurebyte.typing import OptionalScalar, Scalar
 
 if TYPE_CHECKING:
     from featurebyte.query_graph.graph_node.base import GraphNode

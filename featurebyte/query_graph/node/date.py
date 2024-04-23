@@ -3,11 +3,11 @@ This module contains datetime operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing_extensions import Literal
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
@@ -31,6 +31,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
 class DatetimeExtractNode(BaseSeriesOutputNode):

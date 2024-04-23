@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import textwrap
 from functools import wraps
 
-from featurebyte.common.typing import Func
+from featurebyte.typing import Func
 
 
 def substitute_docstring(

@@ -109,7 +109,6 @@ tasks:
     deps:
       - task: install
     cmds:
-      - poetry run pyupgrade --py38-plus **/*.py
       - poetry run isort .
       - poetry run black .
       - poetry run toml-sort --all --in-place pyproject.toml poetry.lock

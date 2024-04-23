@@ -2,7 +2,7 @@
 Test typing module
 """
 
-from featurebyte.common.typing import get_or_default
+from featurebyte.typing import get_or_default
 
 
 def test_get_or_default():

@@ -13,7 +13,6 @@ from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar, Timestamp
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -32,6 +31,7 @@ from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext
 from featurebyte.query_graph.sql.ast.function import GenericFunctionNode as GenericFunctionSQLNode
 from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.typing import Scalar, Timestamp
 
 # supported function parameter input DBVarType to Python type mapping
 function_parameter_dtype_to_python_type = {

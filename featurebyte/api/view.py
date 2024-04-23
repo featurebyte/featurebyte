@@ -11,7 +11,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -19,6 +18,7 @@ from typing import (
     Union,
     cast,
 )
+from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -46,7 +46,6 @@ from featurebyte.common.join_utils import (
     filter_columns_info,
     is_column_name_in_columns,
 )
-from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
@@ -73,6 +72,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
+from featurebyte.typing import ScalarSequence
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy

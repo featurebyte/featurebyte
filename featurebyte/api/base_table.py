@@ -5,7 +5,8 @@ DataColumn class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing_extensions import Literal
 
 from datetime import datetime
 from http import HTTPStatus

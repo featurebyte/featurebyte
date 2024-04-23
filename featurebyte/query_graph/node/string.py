@@ -3,7 +3,8 @@ This module contains string operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Tuple
+from typing import List, Optional, Tuple
+from typing_extensions import Literal
 
 import textwrap
 from abc import ABC

@@ -13,10 +13,10 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.typing import OptionalScalar
 
 
 class ForwardAggregator(BaseAggregator):
