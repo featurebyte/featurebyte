@@ -816,11 +816,13 @@ class Feature(
         {'this': [{'table_name': 'GROCERYINVOICE',
            'feature_job_setting': {'blind_spot': '0s',
             'period': '3600s',
-            'offset': '90s'}}],
+            'offset': '90s',
+            'execution_buffer': '0s'}}],
          'default': [{'table_name': 'GROCERYINVOICE',
            'feature_job_setting': {'blind_spot': '0s',
             'period': '3600s',
-            'offset': '90s'}}]}
+            'offset': '90s',
+            'execution_buffer': '0s'}}]}
 
         Create a new feature with a different feature job setting:
 
@@ -840,11 +842,13 @@ class Feature(
         {'this': [{'table_name': 'GROCERYINVOICE',
            'feature_job_setting': {'blind_spot': '60s',
             'period': '3600s',
-            'offset': '90s'}}],
+            'offset': '90s',
+            'execution_buffer': '0s'}}],
          'default': [{'table_name': 'GROCERYINVOICE',
            'feature_job_setting': {'blind_spot': '0s',
             'period': '3600s',
-            'offset': '90s'}}]}
+            'offset': '90s',
+            'execution_buffer': '0s'}}]}
 
         Check table cleaning operation of this feature first:
 

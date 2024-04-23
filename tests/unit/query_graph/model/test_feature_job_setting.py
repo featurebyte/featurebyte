@@ -2,6 +2,7 @@
 Test module for feature job setting
 """
 
+import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
@@ -50,3 +51,12 @@ def test_table_id_feature_job_setting():
     # change table id & compare
     setting2.table_id = ObjectId()
     assert setting1 != setting2
+
+
+def test_feature_job_setting():
+    """Test feature job setting with non-zero execution buffer"""
+    with pytest.raises(NotImplementedError) as exc_info:
+        FeatureJobSetting(blind_spot="1h", period="1d", offset="1h", execution_buffer="1h")
+
+    expected_msg = "Setting execution_buffer is not supported."
+    assert expected_msg in str(exc_info.value)
