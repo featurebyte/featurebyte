@@ -90,7 +90,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
             values["period"] = values.pop("frequency")
         if "time_modulo_frequency" in values:
             values["offset"] = values.pop("time_modulo_frequency")
-        if values.get("execution_buffer"):
+        exec_buffer = values.get("execution_buffer")
+        if exec_buffer and exec_buffer != "0s":
             # block setting execution_buffer for now
             raise NotImplementedError("Setting execution_buffer is not supported.")
 
