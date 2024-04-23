@@ -133,7 +133,7 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
     def run_greenlet_task():
         """Run task in a separate greenlet"""
         try:
-            run_async(coro=async_task(state), timeout=timeout)
+            run_async(coro=async_task(state), request_id=uuid4(), timeout=timeout)
         except Exception as exc:  # pylint: disable=broad-except
             error_message = str(exc).encode("utf-8")
             for idx, byte in enumerate(error_message[:100]):
