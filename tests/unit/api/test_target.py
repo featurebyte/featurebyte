@@ -8,6 +8,7 @@ import pytest
 import featurebyte
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
+from featurebyte.enum import DBVarType
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import fb_assert_frame_equal
 
@@ -111,7 +112,10 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         float_target.save()
         # Persist a target that has no recipe.
         TargetNamespace.create(
-            name="target_without_recipe", primary_entity=[cust_id_entity.name], window="7d"
+            name="target_without_recipe",
+            primary_entity=[cust_id_entity.name],
+            dtype=DBVarType.FLOAT,
+            window="7d",
         )
 
         # List out the targets
@@ -121,7 +125,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         expected_df = pd.DataFrame(
             {
                 "name": ["float_target", "target_without_recipe"],
-                "dtype": ["FLOAT", None],
+                "dtype": ["FLOAT", "FLOAT"],
                 "entities": [["customer"], ["customer"]],
             }
         )
