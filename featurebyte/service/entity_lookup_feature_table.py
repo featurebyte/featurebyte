@@ -12,9 +12,7 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
-from featurebyte.models.precomputed_lookup_feature_table import (
-    get_precomputed_lookup_feature_tables,
-)
+from featurebyte.models.precomputed_lookup_feature_table import get_precomputed_lookup_feature_table
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -115,17 +113,18 @@ class EntityLookupFeatureTableService:
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
         )
 
-    async def get_precomputed_lookup_feature_tables(
+    async def get_precomputed_lookup_feature_table(
         self,
         primary_entity_ids: List[PydanticObjectId],
         feature_ids: List[PydanticObjectId],
-        feature_lists: List[FeatureListModel],
+        feature_list: FeatureListModel,
+        full_serving_entity_ids: List[PydanticObjectId],
         feature_table_name: str,
         feature_table_has_ttl: bool,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         feature_store_model: FeatureStoreModel,
         feature_table_id: Optional[PydanticObjectId],
-    ) -> List[OfflineStoreFeatureTableModel]:
+    ) -> Optional[OfflineStoreFeatureTableModel]:
         """
         Construct the list of precomputed lookup feature tables for a given source feature table
 
@@ -135,8 +134,10 @@ class EntityLookupFeatureTableService:
             Primary entity ids of the source feature table
         feature_ids: List[PydanticObjectId]
             List of features that references the source feature table
-        feature_lists: List[FeatureListModel]
-            List of currently online enabled feature lists
+        feature_list: FeatureListModel
+            Feature list associated with the deployment
+        full_serving_entity_ids: List[PydanticObjectId]
+            Serving entity ids of the deployment
         feature_table_name: str
             Name of the source feature table
         feature_table_has_ttl: bool
@@ -152,11 +153,12 @@ class EntityLookupFeatureTableService:
         -------
         List[OfflineStoreFeatureTableModel]
         """
-        entity_lookup_steps_mapping = await self.get_entity_lookup_steps_mapping(feature_lists)
-        return get_precomputed_lookup_feature_tables(
+        entity_lookup_steps_mapping = await self.get_entity_lookup_steps_mapping([feature_list])
+        return get_precomputed_lookup_feature_table(
             primary_entity_ids=primary_entity_ids,
             feature_ids=feature_ids,
-            feature_lists=feature_lists,
+            feature_list=feature_list,
+            full_serving_entity_ids=full_serving_entity_ids,
             feature_table_name=feature_table_name,
             feature_table_has_ttl=feature_table_has_ttl,
             entity_id_to_serving_name=entity_id_to_serving_name,

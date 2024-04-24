@@ -12,7 +12,6 @@ from collections import defaultdict
 from datetime import timedelta
 from unittest.mock import patch
 
-from bson import ObjectId
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
 from feast import FeatureStore as FeastFeatureStore
@@ -50,7 +49,7 @@ from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.precomputed_lookup_feature_table import (
     _get_feature_lists_to_relationships_info,
-    get_precomputed_lookup_feature_tables,
+    get_precomputed_lookup_feature_table,
 )
 from featurebyte.query_graph.model.entity_relationship_info import EntityAncestorDescendantMapper
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -358,8 +357,8 @@ class OfflineStoreTableBuilder:
                     precomputed_lookup_feature_table = (
                         OfflineStoreTableBuilder._get_precomputed_lookup_feature_table(
                             offline_store_table=offline_store_table,
-                            related_serving_entity_ids=related_serving_entity_ids,
-                            feature_lists=feature_lists,
+                            full_serving_entity_ids=serving_entity_ids,
+                            feature_list=feature_lists[0],
                             entity_id_to_serving_name=entity_id_to_serving_name,
                             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
                             feature_store=feature_store,
@@ -382,8 +381,8 @@ class OfflineStoreTableBuilder:
     @staticmethod
     def _get_precomputed_lookup_feature_table(
         offline_store_table: OfflineStoreTable,
-        related_serving_entity_ids: List[ObjectId],
-        feature_lists: List[FeatureListModel],
+        full_serving_entity_ids: List[PydanticObjectId],
+        feature_list: FeatureListModel,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
         feature_store: FeatureStoreModel,
@@ -399,18 +398,19 @@ class OfflineStoreTableBuilder:
         -------
         Optional[OfflineStoreTable]
         """
-        precomputed_lookup_feature_tables = get_precomputed_lookup_feature_tables(
+        precomputed_lookup_feature_table = get_precomputed_lookup_feature_table(
             primary_entity_ids=list(offline_store_table.primary_entity_ids),
             feature_ids=list(offline_table_key_to_feature_ids[offline_store_table.table_name]),
-            feature_lists=feature_lists,
+            feature_list=feature_list,
+            full_serving_entity_ids=full_serving_entity_ids,
             feature_table_name=offline_store_table.table_name,
             feature_table_has_ttl=offline_store_table.has_ttl,
             entity_id_to_serving_name=entity_id_to_serving_name,
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
             feature_store_model=feature_store,
         )
-        for precomputed_lookup_feature_table in precomputed_lookup_feature_tables:
-            lookup_offline_store_table = OfflineStoreTable(
+        if precomputed_lookup_feature_table is not None:
+            return OfflineStoreTable(
                 table_name=precomputed_lookup_feature_table.name,
                 feature_job_setting=offline_store_table.feature_job_setting,
                 has_ttl=offline_store_table.has_ttl,
@@ -429,8 +429,6 @@ class OfflineStoreTableBuilder:
                 ],
                 source_feature_table_name=offline_store_table.table_name,
             )
-            if sorted(lookup_offline_store_table.primary_entity_ids) == related_serving_entity_ids:
-                return lookup_offline_store_table
         return None
 
     @staticmethod

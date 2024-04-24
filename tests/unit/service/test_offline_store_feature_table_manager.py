@@ -541,7 +541,6 @@ async def test_feature_table_one_feature_deployed(
     document_service,
     periodic_task_service,
     deployed_float_feature,
-    deployed_float_feature_list,
     transaction_to_customer_relationship_info,
     float_feat_deployment_id,
     storage,
@@ -651,7 +650,6 @@ async def test_feature_table_one_feature_deployed(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "feature_list_ids": [deployed_float_feature_list.id],
             "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
             "source_feature_table_id": feature_table_id,
         },
@@ -1151,7 +1149,6 @@ async def test_aggregate_asat_feature(
     document_service,
     periodic_task_service,
     deployed_aggregate_asat_feature,
-    deployed_aggregate_asat_feature_list,
     customer_to_gender_relationship_info,
     aggregate_asat_deployment_id,
     expected_feast_registry_mapping,
@@ -1241,7 +1238,6 @@ async def test_aggregate_asat_feature(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "feature_list_ids": [deployed_aggregate_asat_feature_list.id],
             "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
             "source_feature_table_id": feature_table_id,
         },
