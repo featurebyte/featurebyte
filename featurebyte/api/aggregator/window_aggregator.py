@@ -15,7 +15,6 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.agg_func import construct_agg_func
@@ -23,6 +22,7 @@ from featurebyte.query_graph.transform.reconstruction import (
     GroupByNode,
     add_pruning_sensitive_operation,
 )
+from featurebyte.typing import OptionalScalar
 
 
 class WindowAggregator(BaseAggregator):

@@ -3,14 +3,13 @@ This module contains generic function related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
-from typing_extensions import Annotated
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -35,6 +34,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
+from featurebyte.typing import Scalar
 
 SDKFunctionArgument = Union[VarNameExpressionInfo, Scalar, ObjectClass]
 

@@ -513,6 +513,12 @@ class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableTargetDefinitionExistsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a target name that already has a definition
+    """
+
+
 class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
     Raise when task is not revocable

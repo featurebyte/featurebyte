@@ -16,6 +16,7 @@ from featurebyte import (
     TargetNamespace,
     UseCase,
 )
+from featurebyte.enum import DBVarType
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import tz_localize_if_needed
 
@@ -215,7 +216,9 @@ def event_use_case_fixture(event_entity):
     Fixture for an event use case. To be specified when creating deployment, so that the deployment
     can be served by providing serving_event_id
     """
-    target = TargetNamespace.create(name="dummy_target", primary_entity=[event_entity.name])
+    target = TargetNamespace.create(
+        name="dummy_target", primary_entity=[event_entity.name], dtype=DBVarType.FLOAT
+    )
     context = Context.create(name="event_context", primary_entity=[event_entity.name])
     use_case = UseCase.create(
         name="event_use_case", target_name=target.name, context_name=context.name
@@ -295,7 +298,9 @@ def test_use_case_list_filtering_by_feature_list(feature_list_with_parent_child_
 
     # create another use case with different primary entity
     entity = Entity.create(name="another_entity", serving_names=["another_serving_id"])
-    target = TargetNamespace.create(name="another_target", primary_entity=[entity.name])
+    target = TargetNamespace.create(
+        name="another_target", primary_entity=[entity.name], dtype=DBVarType.FLOAT
+    )
     context = Context.create(name="another_context", primary_entity=[entity.name])
     another_use_case = UseCase.create(
         name="another_use_case", target_name=target.name, context_name=context.name

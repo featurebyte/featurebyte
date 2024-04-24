@@ -4,13 +4,11 @@ Online store initialization task
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
-from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from featurebyte.schema.worker.task.online_store_initialize import (
     CatalogOnlineStoreInitializeTaskPayload,
@@ -57,44 +55,10 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         self.deployment_service = deployment_service
         self.task_progress_updater = task_progress_updater
 
-        # Cache feast registry by deployment id
-        self._deployment_id_to_feast_registry: Dict[
-            PydanticObjectId, Optional[FeastRegistryModel]
-        ] = {}
-
     async def get_task_description(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> str:
         if payload.online_store_id is not None:
             return f'Updating online store "{payload.online_store_id}" for catalog {payload.catalog_id}'
         return f"Disabling online store for catalog {payload.catalog_id}"
-
-    async def get_feast_registry(
-        self, deployment_id: PydanticObjectId
-    ) -> Optional[FeastRegistryModel]:
-        """
-        Get feast registry for the given deployment id
-
-        Parameters
-        ----------
-        deployment_id: PydanticObjectId
-            Deployment id
-
-        Returns
-        -------
-        Optional[FeastRegistryModel]
-            Feast registry model
-        """
-        if deployment_id in self._deployment_id_to_feast_registry:
-            return self._deployment_id_to_feast_registry[deployment_id]
-
-        deployment = await self.deployment_service.get_document(document_id=deployment_id)
-        feast_registry = None
-        if deployment.registry_info:
-            feast_registry = await self.feast_registry_service.get_document(
-                document_id=deployment.registry_info.registry_id
-            )
-
-        self._deployment_id_to_feast_registry[deployment_id] = feast_registry
-        return feast_registry
 
     async def execute(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> Any:
         logger.info(f"Starting task: {self.get_task_description(payload)}")
@@ -140,19 +104,16 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
                 )
 
             if feature_table_model.deployment_ids:
-                feast_registry = await self.get_feast_registry(
-                    deployment_id=feature_table_model.deployment_ids[0]
-                )
-                if feast_registry:
-                    feast_feature_store = (
-                        await self.feast_feature_store_service.get_feast_feature_store(
-                            feast_registry=feast_registry,
-                            online_store_id=payload.online_store_id,
-                        )
+                service = self.feast_feature_store_service
+                feast_feature_store = (
+                    await service.get_feast_feature_store_for_feature_materialization(
+                        feature_table_model=feature_table_model,
+                        online_store_id=payload.online_store_id,
                     )
-                    if feast_feature_store:
-                        await self.feature_materialize_service.update_online_store(
-                            feature_store=feast_feature_store,
-                            feature_table_model=feature_table_model,
-                            session=session,
-                        )
+                )
+                if feast_feature_store:
+                    await self.feature_materialize_service.update_online_store(
+                        feature_store=feast_feature_store,
+                        feature_table_model=feature_table_model,
+                        session=session,
+                    )

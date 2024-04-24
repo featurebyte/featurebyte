@@ -18,7 +18,7 @@ from sqlglot import parse_one
 
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -237,7 +237,27 @@ def features_fixture(
     return features
 
 
-@pytest_asyncio.fixture(name="saved_feature_list", scope="module")
+@pytest_asyncio.fixture(name="saved_first_ten_feature_list", scope="module")
+def saved_first_ten_feature_list_fixture(features):
+    """
+    Fixture for a saved feature list
+    """
+    feature_list = fb.FeatureList(features[:10], name="EXTERNAL_FS_FIRST_TEN_FEATURE_LIST")
+    feature_list.save()
+    yield feature_list
+
+
+@pytest_asyncio.fixture(name="saved_last_ten_feature_list", scope="module")
+def saved_last_ten_feature_list_fixture(features):
+    """
+    Fixture for a saved feature list
+    """
+    feature_list = fb.FeatureList(features[:10], name="EXTERNAL_FS_LAST_TEN_FEATURE_LIST")
+    feature_list.save()
+    yield feature_list
+
+
+@pytest_asyncio.fixture(name="saved_feature_list_all", scope="module")
 def saved_feature_list_fixture(features):
     """
     Fixture for a saved feature list
@@ -264,7 +284,7 @@ async def saved_feature_list_composite_entities_fixture(features):
 
 @pytest.fixture(name="removed_relationships", scope="module")
 def removed_relationships_fixture(
-    saved_feature_list,
+    saved_feature_list_all,
     saved_feature_list_composite_entities,
     event_table,
     item_table,
@@ -282,7 +302,7 @@ def removed_relationships_fixture(
     - order_id -> üser id (event table)
     - üser id -> user_status  (scd table)
     """
-    _ = saved_feature_list
+    _ = saved_feature_list_all
     _ = saved_feature_list_composite_entities
 
     def untag_entities(table):
@@ -301,15 +321,7 @@ def removed_relationships_fixture(
     tag_entities_for_scd_table(scd_table)
 
 
-@pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
-async def deployed_features_list_fixture(
-    session, saved_feature_list, removed_relationships, app_container, deployment_name
-):
-    """
-    Fixture for deployed feature list
-    """
-    _ = removed_relationships
-
+async def _deploy_feature_list(app_container, saved_feature_list, deployment_name):
     deploy_service = app_container.deploy_service
     with patch(
         "featurebyte.service.feature_manager.get_next_job_datetime",
@@ -325,17 +337,51 @@ async def deployed_features_list_fixture(
                 to_enable_deployment=True,
             )
 
-    # check that the feature list's feast_enabled attribute is set to True
-    feature_list_model = await app_container.feature_list_service.get_document(
-        saved_feature_list.id, populate_remote_attributes=False
-    )
-    assert feature_list_model.store_info.feast_enabled
+            # check that the feature list's feast_enabled attribute is set to True
+            feature_list_model = await app_container.feature_list_service.get_document(
+                saved_feature_list.id, populate_remote_attributes=False
+            )
+            assert feature_list_model.store_info.feast_enabled
+            return deployment
 
-    yield deployment
-    await deploy_service.update_deployment(
-        deployment_id=deployment.id,
-        to_enable_deployment=False,
-    )
+
+@pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
+async def deployed_features_list_fixture(
+    session,
+    saved_first_ten_feature_list,
+    saved_last_ten_feature_list,
+    saved_feature_list_all,
+    removed_relationships,
+    app_container,
+    deployment_name,
+):
+    """
+    Fixture for deployed feature list
+    """
+    _ = removed_relationships
+
+    deployments = []
+    for saved_fl in [
+        saved_first_ten_feature_list,
+        saved_last_ten_feature_list,
+        saved_feature_list_all,
+    ]:
+        deployment = await _deploy_feature_list(
+            app_container=app_container,
+            saved_feature_list=saved_fl,
+            deployment_name=(
+                deployment_name if saved_fl.name == saved_feature_list_all.name else None
+            ),
+        )
+        deployments.append(deployment)
+
+    yield deployments[-1]
+
+    for deployment in deployments:
+        await app_container.deploy_service.update_deployment(
+            deployment_id=deployment.id,
+            to_enable_deployment=False,
+        )
 
     if session.source_type == SourceType.DATABRICKS_UNITY:
         # check that on demand feature udf is dropped
@@ -355,6 +401,7 @@ def order_use_case_fixture(order_entity):
     target = fb.TargetNamespace.create(
         "order_target",
         primary_entity=[order_entity.name],
+        dtype=DBVarType.FLOAT,
     )
     context = fb.Context.create(
         name="order_context",
@@ -371,25 +418,15 @@ async def deployed_features_list_composite_entities_fixture(
     """
     Fixture for deployed feature list
     """
-    feature_list = saved_feature_list_composite_entities
-
-    deploy_service = app_container.deploy_service
-    with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
-    ):
-        deployment = feature_list.deploy()
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
-            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-            await deploy_service.update_deployment(
-                deployment_id=deployment.id,
-                to_enable_deployment=True,
-            )
+    deployment = await _deploy_feature_list(
+        app_container=app_container,
+        saved_feature_list=saved_feature_list_composite_entities,
+        deployment_name="External feature list deployment composite entities",
+    )
 
     yield deployment
-    await deploy_service.update_deployment(
+
+    await app_container.deploy_service.update_deployment(
         deployment_id=deployment.id,
         to_enable_deployment=False,
     )

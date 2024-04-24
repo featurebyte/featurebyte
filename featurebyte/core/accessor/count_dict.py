@@ -10,12 +10,12 @@ from typeguard import typechecked
 
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar
 from featurebyte.core.series import DefaultSeriesBinaryOperator
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.count_dict import GetValueFromDictionaryNode
+from featurebyte.typing import Scalar
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature

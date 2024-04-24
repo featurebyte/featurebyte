@@ -4,7 +4,8 @@ This module contains groupby related class
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union
+from typing import List, Optional, Union
+from typing_extensions import Literal
 
 import warnings
 
@@ -24,9 +25,9 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.typing import OptionalScalar
 
 
 class GroupBy:

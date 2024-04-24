@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import Feature
-from featurebyte.common.typing import is_scalar_nan
+from featurebyte.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )

@@ -12,7 +12,6 @@ from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.common.string import sanitize_identifier
-from featurebyte.common.typing import Scalar
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -36,6 +35,7 @@ from featurebyte.query_graph.transform.on_demand_function import (
 )
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+from featurebyte.typing import Scalar
 
 
 def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:

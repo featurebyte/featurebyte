@@ -4,7 +4,8 @@ SCDTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, Type, cast
+from typing_extensions import Literal
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator

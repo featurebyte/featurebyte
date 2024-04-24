@@ -3,15 +3,14 @@ This module contains datetime operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
-from typing_extensions import Annotated
+from typing import Callable, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing_extensions import Annotated, Literal
 
 import textwrap  # pylint: disable=wrong-import-order
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
@@ -35,6 +34,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT
+from featurebyte.typing import Scalar
 
 
 class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):

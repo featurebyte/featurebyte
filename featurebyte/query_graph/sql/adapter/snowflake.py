@@ -4,7 +4,8 @@ SnowflakeAdapter class for generating Snowflake specific SQL expressions
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional, cast
+from typing import List, Optional, cast
+from typing_extensions import Literal
 
 import re
 import string

@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import NodeNameMap, QueryGraphModel
@@ -18,6 +17,7 @@ from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.on_demand_function import OnDemandFeatureFunctionExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.typing import Scalar
 
 
 class NullFillingValueGlobalState(BaseModel):

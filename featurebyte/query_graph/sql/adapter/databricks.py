@@ -4,7 +4,8 @@ DatabricksAdapter class for generating Databricks specific SQL expressions
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
+from typing_extensions import Literal
 
 import re
 

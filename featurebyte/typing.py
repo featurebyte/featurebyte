@@ -2,9 +2,8 @@
 Common utilities related to typing
 """
 
-from __future__ import annotations
-
-from typing import Any, Callable, Literal, Optional, Sequence, Type, Union, cast
+from typing import Any, Callable, Optional, Sequence, Type, Union, cast
+from typing_extensions import Literal
 
 import pandas as pd
 from pandas.api.types import is_scalar

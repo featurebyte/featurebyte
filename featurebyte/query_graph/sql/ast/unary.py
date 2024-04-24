@@ -4,7 +4,8 @@ Module for unary operations sql generation
 
 from __future__ import annotations
 
-from typing import Literal, Union, cast
+from typing import Union, cast
+from typing_extensions import Literal
 
 from dataclasses import dataclass
 

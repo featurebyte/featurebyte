@@ -11,7 +11,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -19,6 +18,7 @@ from typing import (
     Union,
     cast,
 )
+from typing_extensions import Literal
 
 from http import HTTPStatus
 
@@ -1376,9 +1376,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
-    def update_status(
-        self, status: Literal[tuple(FeatureListStatus)]  # type: ignore[misc]
-    ) -> None:
+    def update_status(self, status: Literal[tuple(FeatureListStatus)]) -> None:  # type: ignore[misc]
         """
         A FeatureList can have one of five statuses:
 

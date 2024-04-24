@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.node.date import (
     DateAddNode,
     DateDifferenceNode,
@@ -19,6 +18,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VariableNameStr,
 )
+from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 

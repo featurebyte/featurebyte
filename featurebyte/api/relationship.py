@@ -2,7 +2,8 @@
 Relationships API object
 """
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Optional
+from typing_extensions import Literal
 
 import pandas as pd
 from pydantic import Field

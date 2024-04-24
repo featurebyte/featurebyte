@@ -4,19 +4,20 @@ This module contains simple aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Type
+from typing import List, Optional, Type
+from typing_extensions import Literal
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
     ItemGroupbyNode,
     add_pruning_sensitive_operation,
 )
+from featurebyte.typing import OptionalScalar
 
 
 class SimpleAggregator(BaseAggregator):

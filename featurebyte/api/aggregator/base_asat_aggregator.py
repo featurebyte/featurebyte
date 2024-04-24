@@ -12,8 +12,8 @@ from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
 from featurebyte.common.model_util import validate_offset_string
-from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
+from featurebyte.typing import OptionalScalar
 
 
 class BaseAsAtAggregator(BaseAggregator):

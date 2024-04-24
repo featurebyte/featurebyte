@@ -233,7 +233,7 @@ max-parents = 20
 max-line-length = 150
 
 [tool.pylint.main]
-disable = ["Miscellaneous"]
+disable = ["Miscellaneous","wrong-import-order"]
 extension-pkg-whitelist = ["pydantic"]
 ignored-modules = ["featurebyte_freeware"]
 jobs = 0

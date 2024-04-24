@@ -5,7 +5,8 @@ Feature and FeatureList classes
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing_extensions import Literal
 
 from http import HTTPStatus
 
@@ -42,7 +43,6 @@ from featurebyte.api.templates.feature_or_target_doc import (
 from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import ScalarSequence
 from featurebyte.common.utils import enforce_observation_set_row_order, is_server_mode
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -70,6 +70,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.typing import ScalarSequence
 
 logger = get_logger(__name__)
 
