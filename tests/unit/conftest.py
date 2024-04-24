@@ -655,8 +655,8 @@ def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
     """
     _ = snowflake_connector
 
-    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-        _ = timeout
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
@@ -1318,8 +1318,8 @@ def snowflake_execute_query_invalid_batch_request_table(snowflake_connector, sno
     """
     _ = snowflake_connector
 
-    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-        _ = timeout
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
         # By not handling the SHOW COLUMNS query specifically, the schema will be empty and
         # missing a required entity column "cust_id"
         if "COUNT(*)" in query:
@@ -1353,8 +1353,8 @@ def snowflake_execute_query_for_materialized_table_fixture(
     """
     _ = snowflake_connector
 
-    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-        _ = timeout
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
         if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"'):
             res = [
                 {
