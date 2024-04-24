@@ -97,9 +97,9 @@ class OnDemandFeatureViewConstructor:
                 sources.append(fv_source)
                 if fv_source.ttl is not None:
                     if ttl_seconds is None:
-                        ttl_seconds = fv_source.ttl.seconds
-                    elif fv_source.ttl.seconds < ttl_seconds:
-                        ttl_seconds = fv_source.ttl.seconds
+                        ttl_seconds = fv_source.ttl.total_seconds()
+                    elif fv_source.ttl.total_seconds() < ttl_seconds:
+                        ttl_seconds = fv_source.ttl.total_seconds()
 
             for request_node in feature_model.extract_request_column_nodes():
                 req_source = name_to_feast_request_source[request_node.parameters.column_name]
