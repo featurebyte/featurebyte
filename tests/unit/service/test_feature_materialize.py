@@ -261,9 +261,12 @@ def mocked_unique_identifier_generator_fixture():
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
+    mocked_object_id = ObjectId("000000000000000000000000")
     with patch("featurebyte.service.feature_materialize.ObjectId") as patched_object_id:
-        patched_object_id.return_value = ObjectId("000000000000000000000000")
-        yield patched_object_id
+        patched_object_id.return_value = mocked_object_id
+        with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id_2:
+            patched_object_id_2.return_value = mocked_object_id
+            yield
 
 
 @pytest.fixture(name="freeze_feature_timestamp", autouse=True)
