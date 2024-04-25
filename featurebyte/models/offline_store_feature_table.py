@@ -288,6 +288,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel(
                 "precomputed_lookup_feature_table_info.source_feature_table_id"
             ),
+            pymongo.operations.IndexModel("deployment_ids"),
         ]
         auditable = False
 

@@ -635,7 +635,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     async def _update_precomputed_lookup_feature_tables_disable_deployment(
         self,
         deployment_id: PydanticObjectId,
-    ):
+    ) -> None:
         service = self.offline_store_feature_table_service
         async for table in service.list_precomputed_lookup_feature_tables_for_deployment(
             deployment_id

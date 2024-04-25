@@ -20,7 +20,6 @@ from featurebyte.models.offline_store_feature_table import (
     OnlineStoreLastMaterializedAt,
     OnlineStoresLastMaterializedAtUpdate,
 )
-from featurebyte.models.persistent import QueryFilter
 from featurebyte.service.base_document import BaseDocumentService
 
 OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the lock in seconds
