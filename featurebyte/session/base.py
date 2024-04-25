@@ -493,7 +493,7 @@ class BaseSession(BaseModel):
 
         query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
-            results = await self.execute_query(query)
+            results = await self.execute_query(query, to_log_error=False)
         except self._no_schema_error:  # pylint: disable=broad-except
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
@@ -511,7 +511,10 @@ class BaseSession(BaseModel):
         }
 
     async def execute_query(
-        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self,
+        query: str,
+        timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        to_log_error: bool = True,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query
@@ -522,6 +525,8 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
+        to_log_error: bool
+            If True, log error
 
         Returns
         -------
@@ -536,6 +541,11 @@ class BaseSession(BaseModel):
         try:
             bytestream = self.get_async_query_stream(query=query, timeout=timeout)
         except Exception as exc:
+            if to_log_error:
+                logger.error(
+                    "Error executing query", extra={"query": query, "source_type": self.source_type}
+                )
+
             # remove session from cache if query fails
             if self._cache_key:
                 session_cache.pop(self._cache_key, None)
@@ -571,7 +581,10 @@ class BaseSession(BaseModel):
         return await self.execute_query(query=query, timeout=timeout)
 
     async def execute_query_long_running(
-        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self,
+        query: str,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        to_log_error: bool = True,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a long time
@@ -582,13 +595,15 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
+        to_log_error: bool
+            If True, log error
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
-        return await self.execute_query(query=query, timeout=timeout)
+        return await self.execute_query(query=query, timeout=timeout, to_log_error=to_log_error)
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
@@ -818,7 +833,9 @@ class BaseSession(BaseModel):
                 .from_(quoted_identifier(table_name.upper()))
                 .limit(1)
             )
-            await self.execute_query_long_running(sql_to_string(expr, self.source_type))
+            await self.execute_query_long_running(
+                sql_to_string(expr, self.source_type), to_log_error=False
+            )
             return True
         except self._no_schema_error:  # pylint: disable=broad-except
             pass
