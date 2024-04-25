@@ -1695,6 +1695,18 @@ def float_feature_composite_entity_fixture(
     yield feature
 
 
+@pytest.fixture(name="float_feature_composite_entity_v2")
+def float_feature_composite_entity_v2_fixture(
+    float_feature_composite_entity,
+):
+    """
+    Another feature with composite entity
+    """
+    feature = float_feature_composite_entity + 123
+    feature.name = float_feature_composite_entity.name + "_plus_123"
+    return feature
+
+
 @pytest.fixture(name="float_feature_multiple_windows")
 def float_feature_multiple_windows_fixture(feature_group):
     """

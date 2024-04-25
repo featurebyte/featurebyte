@@ -101,6 +101,7 @@ async def deployed_feature_list_fixture(
 async def deployed_feature_list_composite_entity(
     app_container,
     float_feature_composite_entity,
+    float_feature_composite_entity_v2,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -111,8 +112,14 @@ async def deployed_feature_list_composite_entity(
     _ = mock_offline_store_feature_manager_dependencies
 
     float_feature_composite_entity.save()
+    float_feature_composite_entity_v2.save()
     feature_list_model = await deploy_feature_ids(
-        app_container, "my_list", [float_feature_composite_entity.id]
+        app_container,
+        "my_list",
+        [
+            float_feature_composite_entity.id,
+            float_feature_composite_entity_v2.id,
+        ],
     )
     return feature_list_model
 
@@ -254,9 +261,12 @@ def mocked_unique_identifier_generator_fixture():
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
+    mocked_object_id = ObjectId("000000000000000000000000")
     with patch("featurebyte.service.feature_materialize.ObjectId") as patched_object_id:
-        patched_object_id.return_value = ObjectId("000000000000000000000000")
-        yield patched_object_id
+        patched_object_id.return_value = mocked_object_id
+        with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id_2:
+            patched_object_id_2.return_value = mocked_object_id
+            yield
 
 
 @pytest.fixture(name="freeze_feature_timestamp", autouse=True)
@@ -646,12 +656,14 @@ async def test_drop_table(
     )
 
 
+@pytest.mark.parametrize("use_batched_feature_query_set", [False, True])
 @pytest.mark.asyncio
 async def test_materialize_features_composite_entity(
     offline_store_feature_table_composite_entity,
     feature_materialize_service,
     mock_get_feature_store_session,
     mock_snowflake_session,
+    use_batched_feature_query_set,
     update_fixtures,
 ):
     """
@@ -659,10 +671,23 @@ async def test_materialize_features_composite_entity(
     """
     _ = mock_get_feature_store_session
 
-    async with feature_materialize_service.materialize_features(
-        feature_table_model=offline_store_feature_table_composite_entity,
-    ) as materialized_features_set:
-        pass
+    if use_batched_feature_query_set:
+        # Set to a small number to force splitting
+        num_features_per_query = 1
+        fixture_filename = "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity_batch.sql"
+    else:
+        num_features_per_query = 20
+        fixture_filename = (
+            "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql"
+        )
+
+    with patch(
+        "featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", num_features_per_query
+    ):
+        async with feature_materialize_service.materialize_features(
+            feature_table_model=offline_store_feature_table_composite_entity,
+        ) as materialized_features_set:
+            pass
 
     table_name = "cat1_cust_id_another_key_30m"
     assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
@@ -674,13 +699,14 @@ async def test_materialize_features_composite_entity(
         "another_key",
         "cust_id x another_key",
         f"composite_entity_feature_1d_{get_version()}",
+        f"composite_entity_feature_1d_plus_123_{get_version()}",
     ]
 
     # Check that executed queries are correct
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         executed_queries,
-        "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql",
+        fixture_filename,
         update_fixtures,
     )
 
