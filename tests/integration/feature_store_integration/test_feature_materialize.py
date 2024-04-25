@@ -346,7 +346,7 @@ async def _deploy_feature_list(app_container, saved_feature_list, deployment_nam
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
-async def deployed_features_list_fixture(
+async def deployed_feature_list_fixture(
     session,
     saved_first_ten_feature_list,
     saved_last_ten_feature_list,
