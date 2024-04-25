@@ -20,6 +20,7 @@ from featurebyte.models.offline_store_feature_table import (
     OnlineStoreLastMaterializedAt,
     OnlineStoresLastMaterializedAtUpdate,
 )
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.service.base_document import BaseDocumentService
 
 OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the lock in seconds
@@ -285,7 +286,7 @@ class OfflineStoreFeatureTableService(
             update={"$pull": {"deployment_ids": deployment_id}},
         )
 
-    async def list_precomputed_lookup_feature_tables(
+    async def list_precomputed_lookup_feature_tables_from_source(
         self,
         source_feature_table_id: ObjectId,
     ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
@@ -305,6 +306,30 @@ class OfflineStoreFeatureTableService(
         async for doc in self.list_documents_iterator(
             query_filter={
                 "precomputed_lookup_feature_table_info.source_feature_table_id": source_feature_table_id
+            }
+        ):
+            yield doc
+
+    async def list_precomputed_lookup_feature_tables_for_deployment(
+        self, deployment_id: ObjectId
+    ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
+        """
+        Retrieve list of precomputed lookup feature tables in the catalog
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Deployment id to search for
+
+        Yields
+        -------
+        AsyncIterator[OfflineStoreFeatureTableModel]
+            List query output
+        """
+        async for doc in self.list_documents_iterator(
+            query_filter={
+                "precomputed_lookup_feature_table_info": {"$ne": None},
+                "deployment_ids": deployment_id,
             }
         ):
             yield doc

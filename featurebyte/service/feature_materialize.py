@@ -347,7 +347,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     ) -> List[OfflineStoreFeatureTableModel]:
         return [
             doc
-            async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables(
+            async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
                 feature_table_model.id
             )
         ]

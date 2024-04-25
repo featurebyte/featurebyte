@@ -972,7 +972,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     offline_store_feature_table_with_precomputed_lookup = await service.update_document(
         document_id=offline_store_feature_table_with_precomputed_lookup.id, data=update_schema
     )
-    async for table in service.list_precomputed_lookup_feature_tables(
+    async for table in service.list_precomputed_lookup_feature_tables_from_source(
         offline_store_feature_table_with_precomputed_lookup.id
     ):
         await service.update_document(document_id=table.id, data=update_schema)
@@ -1035,7 +1035,10 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     service = app_container.offline_store_feature_table_service
     source_feature_table = offline_store_feature_table_with_precomputed_lookup
     lookup_feature_tables = [
-        doc async for doc in service.list_precomputed_lookup_feature_tables(source_feature_table.id)
+        doc
+        async for doc in service.list_precomputed_lookup_feature_tables_from_source(
+            source_feature_table.id
+        )
     ]
 
     # stop the patcher on initialize_new_columns(), needed because
