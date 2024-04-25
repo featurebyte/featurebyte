@@ -160,6 +160,13 @@ async def test_get_feast_feature_store(
     odfv_names = {odfv.name for odfv in feast_fs.list_on_demand_feature_views()}
     assert odfv_names == expected_on_demand_feature_view_names
 
+    # check all the ODFV have request source set
+    # odfv_count_1d_<version>_<id>: ttl component required to invalidate the online store view
+    # odfv_composite_feature_ttl_req_col_<version>_<id>: request column used in the composite feature
+    # odfv_sum_1d_<version>_<id>: ttl component required to invalidate the online store view
+    for odfv in feast_fs.list_on_demand_feature_views():
+        assert "POINT_IN_TIME" in odfv.source_request_sources
+
     fs_names = {feature_service.name for feature_service in feast_fs.list_feature_services()}
     assert fs_names == {f"test_feature_list_{get_version()}"}
 
