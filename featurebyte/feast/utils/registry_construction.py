@@ -12,7 +12,6 @@ from collections import defaultdict
 from datetime import timedelta
 from unittest.mock import patch
 
-import feast.errors
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
 from feast import FeatureStore as FeastFeatureStore
@@ -1018,13 +1017,9 @@ class FeastRegistryBuilder:
         }
         name_to_field_map = {}
         for feast_store in feast_stores:
-            try:
-                for feature in feast_store.get_feature_view(feature_table_name).features:
-                    if feature.name not in name_to_field_map:
-                        name_to_field_map[feature.name] = feature
-            except feast.errors.FeatureViewNotFoundException:
-                # TODO: this should not be required
-                continue
+            for feature in feast_store.get_feature_view(feature_table_name).features:
+                if feature.name not in name_to_field_map:
+                    name_to_field_map[feature.name] = feature
 
         feature_view_params["schema"] = list(name_to_field_map.values())
         repo_content.feature_views.append(FeastFeatureView(**feature_view_params))

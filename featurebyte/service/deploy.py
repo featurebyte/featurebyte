@@ -820,19 +820,24 @@ class DeployService:
             feature_list = await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list, deployment_id=deployment.id
             )
+        else:
+            # Need to call handle_online_disabled_features even if there are no features to be
+            # online disabled as there can be changes to offline store feature tables due to
+            # disabled deployment.
+            features_offline_feature_table_to_update = []
 
-            # check if feast integration is enabled for the catalog
-            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-                feast_registry = await self.feast_integration_service.get_feast_registry(deployment)
-                if feast_registry and features_offline_feature_table_to_update:
-                    await self.feast_integration_service.handle_online_disabled_features(
-                        features=features_offline_feature_table_to_update,
-                        feature_list_to_online_disable=feature_list,
-                        deployment=deployment,
-                        update_progress=get_ranged_progress_callback(
-                            self.task_progress_updater.update_progress, 72, 99
-                        ),
-                    )
+        # check if feast integration is enabled for the catalog
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+            feast_registry = await self.feast_integration_service.get_feast_registry(deployment)
+            if feast_registry:
+                await self.feast_integration_service.handle_online_disabled_features(
+                    features=features_offline_feature_table_to_update,
+                    feature_list_to_online_disable=feature_list,
+                    deployment=deployment,
+                    update_progress=get_ranged_progress_callback(
+                        self.task_progress_updater.update_progress, 72, 99
+                    ),
+                )
 
         # update deployment status
         await self.deployment_service.update_document(
