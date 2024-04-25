@@ -1018,6 +1018,11 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     """
     _ = mock_get_feature_store_session
 
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info"}
+
     def mock_execute_query(query):
         if "COUNT(*)\nFROM" in query:
             # Simulate that source feature table exists and lookup feature table doesn't
@@ -1029,6 +1034,7 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
             return pd.DataFrame([{"RESULT": datetime(2022, 1, 5).isoformat()}])
         return None
 
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 

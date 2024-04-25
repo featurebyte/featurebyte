@@ -265,6 +265,22 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                     return entry.value
         return None
 
+    def get_output_dtypes_for_columns(self, column_names: List[str]) -> List[DBVarType]:
+        """
+        Get a list DBVarType corresponding to the provided column names
+
+        Parameters
+        ----------
+        column_names: List[str]
+            Column names
+
+        Returns
+        -------
+        List[DBVarType]
+        """
+        mapping = dict(zip(self.output_column_names, self.output_dtypes))
+        return [mapping[col] for col in column_names]
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
