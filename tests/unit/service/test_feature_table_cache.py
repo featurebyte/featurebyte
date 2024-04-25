@@ -815,6 +815,7 @@ async def test_read_from_cache(
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
         nodes=feature_list.feature_clusters[0].nodes,
+        columns=["cust_id"],
     )
     assert mock_snowflake_session.execute_query_long_running.await_count == 1
 
@@ -830,6 +831,7 @@ async def test_read_from_cache(
     assert sqls[0] == (
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
+        '  "cust_id",\n'
         '  "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
