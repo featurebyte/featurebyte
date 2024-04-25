@@ -4,7 +4,7 @@ FastAPI Application
 
 from typing import Any, Callable, Coroutine, List, Optional
 
-import aioredis
+import redis.asyncio as redis
 import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
@@ -218,23 +218,15 @@ def get_app() -> FastAPI:
         user = User()
         channel = f"task_{user.id}_{task_id}_progress"
 
-        logger.debug("Listening to channel", extra={"channel": channel})
-        redis = await aioredis.from_url(REDIS_URI)
-        sub = redis.pubsub()
-        await sub.subscribe(channel)
-
-        # listen for messages
-        async for message in sub.listen():
-            if message and isinstance(message, dict):
-                data = message.get("data")
-                if isinstance(data, bytes):
-                    await websocket.send_bytes(data)
-
-        # clean up
-        logger.debug("Unsubscribing from channel", extra={"channel": channel})
-        await sub.unsubscribe(channel)
-        await sub.close()
-        redis.close()
+        async with redis.from_url(REDIS_URI) as client:
+            async with client.pubsub() as pubsub:  # type: ignore
+                logger.debug("Listening to channel", extra={"channel": channel})
+                await pubsub.subscribe(channel)
+                async for message in pubsub.listen():
+                    if message and isinstance(message, dict):
+                        data = message.get("data")
+                        if isinstance(data, bytes):
+                            await websocket.send_bytes(data)
 
     # Add exception middleware
     _app.add_middleware(ExceptionMiddleware)

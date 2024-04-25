@@ -32,12 +32,12 @@ def auto_mocks_fixture(
     """
     _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
 
-    with patch(
-        "featurebyte.service.feature_table_cache.SessionManagerService.get_feature_store_session"
-    ) as session_mock, patch(
-        "featurebyte.service.feature_table_cache.ObjectId"
-    ) as object_id_mock, patch(
-        "featurebyte.service.online_enable.FeatureManagerService.online_enable"
+    with (
+        patch(
+            "featurebyte.service.feature_table_cache.SessionManagerService.get_feature_store_session"
+        ) as session_mock,
+        patch("featurebyte.service.feature_table_cache.ObjectId") as object_id_mock,
+        patch("featurebyte.service.online_enable.FeatureManagerService.online_enable"),
     ):
         session_mock.return_value = mock_snowflake_session
         object_id_mock.return_value = "ObjectId"
