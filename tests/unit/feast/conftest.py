@@ -11,6 +11,8 @@ import pytest_asyncio
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
+from tests.util.helper import get_relationship_info
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -116,6 +118,7 @@ def feast_registry_proto_fixture(
         features=[feature.cached_model for feature in feature_list_features],
         feature_lists=[feature_list.cached_model],  # type: ignore
         entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+        serving_entity_ids=feature_list.cached_model.primary_entity_ids,
     )
     return feast_registry_proto
 
@@ -126,8 +129,28 @@ def expected_entity_names_fixture():
     return {"__dummy", "cust_id", "transaction_id"}
 
 
+@pytest_asyncio.fixture(name="expected_cust_id_via_transaction_id_table_name")
+async def expected_cust_id_via_transaction_id_table_name_fixture(
+    app_container, transaction_entity, cust_id_entity
+):
+    """
+    Fixture for the precomputed lookup feature table name that serves cust_id via transaction_id
+    """
+    transaction_to_customer_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
+    return f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
+
+
 @pytest.fixture(name="expected_data_source_names")
-def expected_data_source_names_fixture(feature_list):
+def expected_data_source_names_fixture(
+    feature_list, expected_cust_id_via_transaction_id_table_name
+):
     """Fixture for expected data source names"""
     relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
@@ -136,17 +159,21 @@ def expected_data_source_names_fixture(feature_list):
         "cat1_cust_id_30m",
         "cat1_transaction_id_1d",
         f"fb_entity_lookup_{relationship_info_id}",
+        expected_cust_id_via_transaction_id_table_name,
     }
 
 
 @pytest.fixture(name="expected_feature_view_name_to_ttl")
-def expected_feature_view_name_to_ttl_fixture(feature_list):
+def expected_feature_view_name_to_ttl_fixture(
+    feature_list, expected_cust_id_via_transaction_id_table_name
+):
     """Fixture for expected feature view name to TTL"""
     relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         "cat1_transaction_id_1d": datetime.timedelta(seconds=0),
         "cat1__no_entity_1d": datetime.timedelta(days=2),
         "cat1_cust_id_30m": datetime.timedelta(seconds=3600),
+        expected_cust_id_via_transaction_id_table_name: datetime.timedelta(seconds=3600),
         f"fb_entity_lookup_{relationship_info_id}": datetime.timedelta(seconds=0),
     }
 

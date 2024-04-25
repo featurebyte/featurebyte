@@ -50,7 +50,6 @@ class PrecomputedLookupFeatureTableInfo(BaseModel):
     """
 
     lookup_steps: List[EntityRelationshipInfo]
-    feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
     source_feature_table_id: Optional[PydanticObjectId]
 
 

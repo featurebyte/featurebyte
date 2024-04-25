@@ -262,6 +262,7 @@ class DeploymentController(
             if feast_store and feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
+                    deployment=document,
                     feast_store=feast_store,
                     request_data=data.entity_serving_names,
                 )
