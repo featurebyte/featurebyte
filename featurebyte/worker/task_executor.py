@@ -83,7 +83,7 @@ def _check_asyncio_loop() -> asyncio.AbstractEventLoop:
         logger.error("Event loop is not responsive, shutting down")
         # attempt to cancel all tasks where possible
         task_ids = set()
-        for task in asyncio.all_tasks():
+        for task in asyncio.all_tasks(loop=ASYNCIO_LOOP):
             task.cancel()
             task_ids.add(task.get_name())
         # raise exception to terminate worker
@@ -124,7 +124,7 @@ def _revoke(
     # check that asyncio loop is running and healthy
     _check_asyncio_loop()
 
-    active_tasks = asyncio.all_tasks()
+    active_tasks = asyncio.all_tasks(loop=ASYNCIO_LOOP)
     if terminate:
         logger.debug("Revoking task", extra={"task_ids": task_ids})
         for task in active_tasks:
@@ -164,10 +164,10 @@ def run_async(
         revoke.side_effect = _revoke
         logger.debug(
             "Running async function",
-            extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks())},
+            extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks(loop=ASYNCIO_LOOP))},
         )
 
-        task: Any = asyncio.create_task(coro, name=str(request_id))
+        task: Any = loop.create_task(coro, name=str(request_id))
 
         async def _run_task() -> Any:
             return await task
@@ -396,21 +396,24 @@ class CPUBoundTask(BaseCeleryTask):
         return asyncio.run(self.execute_task(self.request.id, **payload))
 
 
-def start_background_loop() -> None:
+def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
     """
     Start background event loop
+
+    Parameters
+    ----------
+    loop: asyncio.AbstractEventLoop
+        asyncio event loop
     """
 
-    global ASYNCIO_LOOP  # pylint: disable=global-statement
-    ASYNCIO_LOOP = asyncio.new_event_loop()
-    asyncio.set_event_loop(ASYNCIO_LOOP)
+    asyncio.set_event_loop(loop)
     try:
-        ASYNCIO_LOOP.run_forever()
+        loop.run_forever()
     finally:
         try:
-            ASYNCIO_LOOP.run_until_complete(ASYNCIO_LOOP.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
-            ASYNCIO_LOOP.close()
+            loop.close()
 
 
 def initialize_asyncio_event_loop() -> None:
@@ -418,5 +421,7 @@ def initialize_asyncio_event_loop() -> None:
     Initialize asyncio event loop
     """
     logger.debug("Initializing asyncio event loop")
-    thread = Thread(target=start_background_loop, daemon=True)
+    global ASYNCIO_LOOP  # pylint: disable=global-statement
+    ASYNCIO_LOOP = asyncio.new_event_loop()
+    thread = Thread(target=start_background_loop, args=(ASYNCIO_LOOP,), daemon=True)
     thread.start()
