@@ -4,7 +4,7 @@
 server = ["cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "feast", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "04cfb69b3da3fcedaa370a46cf9331bae17c23ed013b639f2853ec4a116e8b3e"
+content-hash = "3c72381824f8be8e7bbc512b15a0829ebe9bb3909e11d28cc5dab60c0307a6de"
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
 
