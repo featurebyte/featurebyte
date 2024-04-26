@@ -192,6 +192,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         default_target_id=float_target.id,
         entity_ids=[cust_id_entity.id],
         window="7d",
+        dtype=DBVarType.FLOAT,
     )
     target_table = TargetTableCreate(
         _id="646f6c1c0ed28a5271fb32da",

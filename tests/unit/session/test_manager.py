@@ -150,8 +150,8 @@ async def cached_session_setup(
     """Setup for cached session tests"""
     _ = snowflake_connector
 
-    def _side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-        _ = timeout
+    def _side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)

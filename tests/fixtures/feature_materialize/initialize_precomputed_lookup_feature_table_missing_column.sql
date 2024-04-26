@@ -1,102 +1,31 @@
-CREATE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
-SELECT DISTINCT
-  "col_boolean" AS "gender"
-FROM (
-  SELECT
-    "col_int" AS "col_int",
-    "col_float" AS "col_float",
-    "col_text" AS "col_text",
-    "col_binary" AS "col_binary",
-    "col_boolean" AS "col_boolean",
-    "effective_timestamp" AS "effective_timestamp",
-    "end_timestamp" AS "end_timestamp",
-    "date_of_birth" AS "date_of_birth",
-    "created_at" AS "created_at",
-    "cust_id" AS "cust_id"
-  FROM "sf_database"."sf_schema"."scd_table"
-  WHERE
-    "effective_timestamp" >= CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
-    AND "effective_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
-);
-
-CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
-  ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
-  *
-FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
+  COUNT(*)
+FROM "cat1_gender_1d";
+
+SELECT
+  MAX("__feature_timestamp") AS RESULT
+FROM "cat1_gender_1d";
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" AS
-WITH ONLINE_REQUEST_TABLE AS (
-  SELECT
-    REQ."gender",
-    CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME
-  FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
-), "REQUEST_TABLE_POINT_IN_TIME_gender" AS (
-  SELECT DISTINCT
-    "POINT_IN_TIME",
-    "gender"
-  FROM ONLINE_REQUEST_TABLE
-), _FB_AGGREGATED AS (
-  SELECT
-    REQ."gender",
-    REQ."POINT_IN_TIME",
-    "T0"."_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  FROM ONLINE_REQUEST_TABLE AS REQ
-  LEFT JOIN (
-    SELECT
-      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."gender" AS "gender",
-      COUNT(*) AS "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_gender" AS REQ
-    INNER JOIN (
-      SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "effective_timestamp" AS "effective_timestamp",
-        "end_timestamp" AS "end_timestamp",
-        "date_of_birth" AS "date_of_birth",
-        "created_at" AS "created_at",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."scd_table"
-    ) AS SCD
-      ON REQ."gender" = SCD."col_boolean"
-      AND (
-        SCD."effective_timestamp" <= REQ."POINT_IN_TIME"
-        AND (
-          SCD."end_timestamp" > REQ."POINT_IN_TIME" OR SCD."end_timestamp" IS NULL
-        )
-      )
-    GROUP BY
-      REQ."POINT_IN_TIME",
-      REQ."gender"
-  ) AS T0
-    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."gender" = T0."gender"
-)
 SELECT
-  AGG."gender",
-  CASE
-    WHEN (
-      "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
-    )
-    THEN 0
-    ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS "__feature_requiring_parent_serving_V220101__part1",
-  CASE
-    WHEN (
-      "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
-    )
-    THEN 0
-    ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
-FROM _FB_AGGREGATED AS AGG;
+  "__feature_timestamp",
+  "gender",
+  "__feature_requiring_parent_serving_V220101__part1"
+FROM (
+  SELECT
+    "__feature_timestamp",
+    "gender",
+    "__feature_requiring_parent_serving_V220101__part1",
+    ROW_NUMBER() OVER (PARTITION BY "gender" ORDER BY "__feature_timestamp" DESC NULLS LAST) AS "_row_number"
+  FROM "cat1_gender_1d"
+)
+WHERE
+  "_row_number" = 1;
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
 WITH ENTITY_UNIVERSE AS (
   SELECT
-    CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
     "cust_id"
   FROM (
     SELECT DISTINCT
@@ -116,8 +45,8 @@ WITH ENTITY_UNIVERSE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."scd_table"
       WHERE
-        "effective_timestamp" >= CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
-        AND "effective_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
+        "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
+        AND "effective_timestamp" < CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
     )
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
@@ -233,32 +162,18 @@ FROM JOINED_PARENTS_ENTITY_UNIVERSE;
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000" AS
 SELECT
   L."cust_id",
-  R."__feature_requiring_parent_serving_V220101__part1",
-  R."__feature_requiring_parent_serving_plus_123_V220101__part1"
+  R."__feature_requiring_parent_serving_V220101__part1"
 FROM "TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS L
-LEFT JOIN "TEMP_FEATURE_TABLE_000000000000000000000000" AS R
+LEFT JOIN "cat1_gender_1d" AS R
   ON L."gender" = R."gender";
 
-INSERT INTO "cat1_gender_1d" (
-  "__feature_timestamp",
-  "gender",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
-) SELECT
-  CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
-  "gender",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
-FROM "TEMP_FEATURE_TABLE_000000000000000000000000";
+SELECT
+  COUNT(*)
+FROM "cat1_gender_1d_via_cust_id_000000";
 
-INSERT INTO "cat1_gender_1d_via_cust_id_000000" (
-  "__feature_timestamp",
+CREATE TABLE "sf_db"."sf_schema"."cat1_gender_1d_via_cust_id_000000" AS
+SELECT
+  CAST('2022-01-05T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
   "cust_id",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
-) SELECT
-  CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
-  "cust_id",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1"
 FROM "TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000";

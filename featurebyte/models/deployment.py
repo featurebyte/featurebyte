@@ -35,6 +35,7 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     context_id: Optional[PydanticObjectId] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)
     registry_info: Optional[FeastRegistryInfo] = Field(default=None)
+    serving_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

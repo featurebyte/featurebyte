@@ -111,7 +111,9 @@ class SQLiteSession(BaseSession):
     ) -> None:
         raise NotImplementedError()
 
-    async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
+    async def execute_query(
+        self, query: str, timeout: float = 600, to_log_error: bool = True
+    ) -> pd.DataFrame | None:
         # sqlite session cannot be used in across threads
         _ = timeout
         return super().execute_query_blocking(query=query)

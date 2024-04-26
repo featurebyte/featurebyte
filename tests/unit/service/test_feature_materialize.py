@@ -101,6 +101,7 @@ async def deployed_feature_list_fixture(
 async def deployed_feature_list_composite_entity(
     app_container,
     float_feature_composite_entity,
+    float_feature_composite_entity_v2,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -111,8 +112,14 @@ async def deployed_feature_list_composite_entity(
     _ = mock_offline_store_feature_manager_dependencies
 
     float_feature_composite_entity.save()
+    float_feature_composite_entity_v2.save()
     feature_list_model = await deploy_feature_ids(
-        app_container, "my_list", [float_feature_composite_entity.id]
+        app_container,
+        "my_list",
+        [
+            float_feature_composite_entity.id,
+            float_feature_composite_entity_v2.id,
+        ],
     )
     return feature_list_model
 
@@ -254,9 +261,12 @@ def mocked_unique_identifier_generator_fixture():
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
+    mocked_object_id = ObjectId("000000000000000000000000")
     with patch("featurebyte.service.feature_materialize.ObjectId") as patched_object_id:
-        patched_object_id.return_value = ObjectId("000000000000000000000000")
-        yield patched_object_id
+        patched_object_id.return_value = mocked_object_id
+        with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id_2:
+            patched_object_id_2.return_value = mocked_object_id
+            yield
 
 
 @pytest.fixture(name="freeze_feature_timestamp", autouse=True)
@@ -646,12 +656,14 @@ async def test_drop_table(
     )
 
 
+@pytest.mark.parametrize("use_batched_feature_query_set", [False, True])
 @pytest.mark.asyncio
 async def test_materialize_features_composite_entity(
     offline_store_feature_table_composite_entity,
     feature_materialize_service,
     mock_get_feature_store_session,
     mock_snowflake_session,
+    use_batched_feature_query_set,
     update_fixtures,
 ):
     """
@@ -659,10 +671,23 @@ async def test_materialize_features_composite_entity(
     """
     _ = mock_get_feature_store_session
 
-    async with feature_materialize_service.materialize_features(
-        feature_table_model=offline_store_feature_table_composite_entity,
-    ) as materialized_features_set:
-        pass
+    if use_batched_feature_query_set:
+        # Set to a small number to force splitting
+        num_features_per_query = 1
+        fixture_filename = "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity_batch.sql"
+    else:
+        num_features_per_query = 20
+        fixture_filename = (
+            "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql"
+        )
+
+    with patch(
+        "featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", num_features_per_query
+    ):
+        async with feature_materialize_service.materialize_features(
+            feature_table_model=offline_store_feature_table_composite_entity,
+        ) as materialized_features_set:
+            pass
 
     table_name = "cat1_cust_id_another_key_30m"
     assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
@@ -674,13 +699,14 @@ async def test_materialize_features_composite_entity(
         "another_key",
         "cust_id x another_key",
         f"composite_entity_feature_1d_{get_version()}",
+        f"composite_entity_feature_1d_plus_123_{get_version()}",
     ]
 
     # Check that executed queries are correct
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         executed_queries,
-        "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql",
+        fixture_filename,
         update_fixtures,
     )
 
@@ -946,7 +972,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     offline_store_feature_table_with_precomputed_lookup = await service.update_document(
         document_id=offline_store_feature_table_with_precomputed_lookup.id, data=update_schema
     )
-    async for table in service.list_precomputed_lookup_feature_tables(
+    async for table in service.list_precomputed_lookup_feature_tables_from_source(
         offline_store_feature_table_with_precomputed_lookup.id
     ):
         await service.update_document(document_id=table.id, data=update_schema)
@@ -976,6 +1002,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     )
 
 
+@pytest.mark.parametrize("has_missing_column", [False, True])
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_table(
     app_container,
@@ -986,11 +1013,22 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     update_fixtures,
     cust_id_entity,
     gender_entity,
+    has_missing_column,
 ):
     """
     Test initialize_precomputed_lookup_feature_table
     """
     _ = mock_get_feature_store_session
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        schema = {f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info"}
+        if not has_missing_column:
+            schema[f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"] = (
+                "some_info"
+            )
+        return schema
 
     def mock_execute_query(query):
         if "COUNT(*)\nFROM" in query:
@@ -1003,13 +1041,17 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
             return pd.DataFrame([{"RESULT": datetime(2022, 1, 5).isoformat()}])
         return None
 
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     service = app_container.offline_store_feature_table_service
     source_feature_table = offline_store_feature_table_with_precomputed_lookup
     lookup_feature_tables = [
-        doc async for doc in service.list_precomputed_lookup_feature_tables(source_feature_table.id)
+        doc
+        async for doc in service.list_precomputed_lookup_feature_tables_from_source(
+            source_feature_table.id
+        )
     ]
 
     # stop the patcher on initialize_new_columns(), needed because
@@ -1031,8 +1073,16 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
     executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
 
+    if has_missing_column:
+        filename = "initialize_precomputed_lookup_feature_table_missing_column.sql"
+    else:
+        filename = "initialize_precomputed_lookup_feature_table.sql"
+
     assert_equal_with_expected_fixture(
         executed_queries,
-        "tests/fixtures/feature_materialize/initialize_precomputed_lookup_feature_table.sql",
+        f"tests/fixtures/feature_materialize/{filename}",
         update_fixtures,
     )
+
+    if has_missing_column:
+        assert "plus_123" not in executed_queries

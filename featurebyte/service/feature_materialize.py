@@ -347,7 +347,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     ) -> List[OfflineStoreFeatureTableModel]:
         return [
             doc
-            async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables(
+            async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
                 feature_table_model.id
             )
         ]
@@ -616,6 +616,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         lookup_feature_tables: List[OfflineStoreFeatureTableModel]
             Precomputed lookup feature tables to be initialized
         """
+        if not lookup_feature_tables:
+            return
+
         source_feature_table = await self.offline_store_feature_table_service.get_document(
             source_feature_table_id
         )
@@ -641,8 +644,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                         adapter=get_sql_adapter(session.source_type),
                         feature_timestamp=source_features.feature_timestamp,
                         materialized_feature_table_name=source_feature_table.name,
-                        column_names=source_feature_table.output_column_names,
-                        column_dtypes=source_feature_table.output_dtypes,
+                        column_names=source_features.column_names,
+                        column_dtypes=source_feature_table.get_output_dtypes_for_columns(
+                            source_features.column_names
+                        ),
                         use_last_materialized_timestamp=False,
                         source_feature_table_serving_names=source_feature_table.serving_names,
                         lookup_feature_table=lookup_feature_table,
@@ -672,9 +677,29 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         timestamp_cols = [quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN.value)]
         join_key_cols = [quoted_identifier(col) for col in feature_table_model.serving_names]
-        feature_name_cols = [
-            quoted_identifier(col) for col in feature_table_model.output_column_names
+
+        # Retrieve columns that are actually available in the physical table. This should be the
+        # same as feature_table_model.output_column_names most of the time.
+        column_names_not_in_warehouse = set(
+            await self._get_column_names_not_in_warehouse(
+                session=session,
+                feature_table_name=feature_table_model.name,
+                feature_table_column_names=feature_table_model.output_column_names,
+            )
+        )
+        available_column_names = [
+            col
+            for col in feature_table_model.output_column_names
+            if col not in column_names_not_in_warehouse
         ]
+        column_name_to_data_type = {
+            column_name: get_sql_adapter(session.source_type).get_physical_type_from_dtype(dtype)
+            for (column_name, dtype) in zip(
+                feature_table_model.output_column_names, feature_table_model.output_dtypes
+            )
+        }
+        feature_name_cols = [quoted_identifier(col) for col in available_column_names]
+
         row_number_expr = expressions.Window(
             this=expressions.RowNumber(),
             partition_by=join_key_cols,
@@ -715,11 +740,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             await session.create_table_as(table_details=output_table_details, select_expr=expr)
             yield MaterializedFeatures(
                 materialized_table_name=output_table_details.table_name,
-                column_names=feature_table_model.output_column_names,
-                data_types=[
-                    get_sql_adapter(session.source_type).get_physical_type_from_dtype(dtype)
-                    for dtype in feature_table_model.output_dtypes
-                ],
+                column_names=available_column_names,
+                data_types=[column_name_to_data_type[col] for col in available_column_names],
                 serving_names=feature_table_model.serving_names,
                 feature_timestamp=feature_timestamp,
                 source_type=session.source_type,
@@ -743,8 +765,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             offline_info = await self._initialize_new_columns_offline(
                 session=session,
                 feature_table_name=current_feature_table.name,
-                feature_table_column_names=source_feature_table.output_column_names,
-                feature_table_column_dtypes=source_feature_table.output_dtypes,
+                feature_table_column_names=materialized_features.column_names,
+                feature_table_column_dtypes=source_feature_table.get_output_dtypes_for_columns(
+                    materialized_features.column_names
+                ),
                 feature_table_serving_names=current_feature_table.serving_names,
                 materialized_features=materialized_features,
             )
@@ -938,10 +962,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         # noqa: DAR101
         """
         if not columns:
-            return
-        # Note: This guard is to be removed when feast registry is updated to include precomputed
-        # lookup feature tables
-        if feature_table.precomputed_lookup_feature_table_info is not None:
             return
         await materialize_partial(
             feature_store=feature_store,
@@ -1212,12 +1232,11 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             return None
 
     @classmethod
-    async def _ensure_compatible_schema(
+    async def _get_column_names_not_in_warehouse(
         cls,
         session: BaseSession,
         feature_table_name: str,
         feature_table_column_names: List[str],
-        feature_table_column_dtypes: List[DBVarType],
     ) -> List[str]:
         existing_columns = [
             c.upper()
@@ -1227,9 +1246,23 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 )
             ).keys()
         ]
-        new_columns = [
-            col for col in feature_table_column_names if col.upper() not in existing_columns
-        ]
+        return [col for col in feature_table_column_names if col.upper() not in existing_columns]
+
+    @classmethod
+    async def _ensure_compatible_schema(
+        cls,
+        session: BaseSession,
+        feature_table_name: str,
+        feature_table_column_names: List[str],
+        feature_table_column_dtypes: List[DBVarType],
+    ) -> List[str]:
+        assert len(feature_table_column_names) == len(feature_table_column_dtypes)
+
+        new_columns = await cls._get_column_names_not_in_warehouse(
+            session=session,
+            feature_table_name=feature_table_name,
+            feature_table_column_names=feature_table_column_names,
+        )
 
         if new_columns:
             adapter = get_sql_adapter(session.source_type)

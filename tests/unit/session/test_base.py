@@ -139,7 +139,8 @@ def test_get_current_working_schema_version(base_schema_initializer_test, base_s
 
 @pytest.mark.asyncio
 async def test_get_working_schema_version__no_data(base_session_test):
-    async def mocked_execute_query(self, query: str) -> pd.DataFrame | None:
+    async def mocked_execute_query(self, query, to_log_error=True) -> pd.DataFrame | None:
+        _ = self, query, to_log_error
         return None
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query):
@@ -151,7 +152,10 @@ async def test_get_working_schema_version__no_data(base_session_test):
 async def test_get_working_schema_version__with_version_set(base_session_test):
     schema_version = 2
 
-    async def mocked_execute_query_with_version(self, query: str) -> pd.DataFrame | None:
+    async def mocked_execute_query_with_version(
+        self, query, to_log_error=True
+    ) -> pd.DataFrame | None:
+        _ = self, query, to_log_error
         return pd.DataFrame(
             {
                 "WORKING_SCHEMA_VERSION": [schema_version],

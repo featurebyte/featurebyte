@@ -124,7 +124,6 @@ async def deployed_float_feature_list(
     app_container,
     float_feature,
     transaction_entity,
-    cust_id_entity,
     float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
@@ -140,7 +139,7 @@ async def deployed_float_feature_list(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
+    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
@@ -386,11 +385,19 @@ def expected_feast_registry_mapping_fixture(
     fl_version = get_version()
     return {
         float_feat_deployment_id: {
-            "feature_views": {"cat1_cust_id_30m", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_views": {
+                "cat1_cust_id_30m",
+                "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+                "fb_entity_lookup_{entity_rel_id1}",
+            },
             "feature_services": {f"sum_1d_list_{fl_version}"},
         },
         float_feat_post_processed_deployment_id: {
-            "feature_views": {"cat1_cust_id_30m", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_views": {
+                "cat1_cust_id_30m",
+                "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+                "fb_entity_lookup_{entity_rel_id1}",
+            },
             "feature_services": {f"sum_1d_plus_123_list_{fl_version}"},
         },
         float_feat_diff_fjs_deployment_id: {
@@ -406,7 +413,11 @@ def expected_feast_registry_mapping_fixture(
             "feature_services": {f"some_lookup_feature_list_{fl_version}"},
         },
         aggregate_asat_deployment_id: {
-            "feature_views": {"cat1_gender_1d", "fb_entity_lookup_{entity_rel_id1}"},
+            "feature_views": {
+                "cat1_gender_1d",
+                "cat1_gender_1d_via_cust_id_{expected_suffix}",
+                "fb_entity_lookup_{entity_rel_id1}",
+            },
             "feature_services": {f"asat_gender_count_list_{fl_version}"},
         },
         complex_feat_deployment_id: {
@@ -530,7 +541,6 @@ async def test_feature_table_one_feature_deployed(
     document_service,
     periodic_task_service,
     deployed_float_feature,
-    deployed_float_feature_list,
     transaction_to_customer_relationship_info,
     float_feat_deployment_id,
     storage,
@@ -607,6 +617,7 @@ async def test_feature_table_one_feature_deployed(
         expected_feast_registry_mapping=expected_feast_registry_mapping,
         enabled_deployment=True,
         entity_rel_id1=transaction_to_customer_relationship_info.id,
+        expected_suffix=expected_suffix,
     )
 
     # check that feature cluster file exists
@@ -640,7 +651,6 @@ async def test_feature_table_one_feature_deployed(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "feature_list_ids": [deployed_float_feature_list.id],
             "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
             "source_feature_table_id": feature_table_id,
         },
@@ -743,6 +753,7 @@ async def test_feature_table_two_features_deployed(
             expected_feast_registry_mapping=expected_feast_registry_mapping,
             enabled_deployment=True,
             entity_rel_id1=transaction_to_customer_relationship_info.id,
+            expected_suffix=expected_suffix,
         )
 
 
@@ -852,6 +863,7 @@ async def test_feature_table_undeploy(
             expected_feast_registry_mapping=expected_feast_registry_mapping,
             enabled_deployment=enabled_deployment,
             entity_rel_id1=transaction_to_customer_relationship_info.id,
+            expected_suffix=expected_suffix,
         )
 
     # Check online disabling the last feature deletes the feature table
@@ -878,6 +890,7 @@ async def test_feature_table_undeploy(
             expected_feast_registry_mapping=expected_feast_registry_mapping,
             enabled_deployment=False,
             entity_rel_id1=transaction_to_customer_relationship_info.id,
+            expected_suffix=expected_suffix,
         )
 
 
@@ -1009,6 +1022,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             expected_feast_registry_mapping=expected_feast_registry_mapping,
             enabled_deployment=True,
             entity_rel_id1=transaction_to_customer_relationship_info.id,
+            expected_suffix=expected_suffix,
         )
 
 
@@ -1142,7 +1156,6 @@ async def test_aggregate_asat_feature(
     document_service,
     periodic_task_service,
     deployed_aggregate_asat_feature,
-    deployed_aggregate_asat_feature_list,
     customer_to_gender_relationship_info,
     aggregate_asat_deployment_id,
     expected_feast_registry_mapping,
@@ -1205,6 +1218,7 @@ async def test_aggregate_asat_feature(
         expected_feast_registry_mapping=expected_feast_registry_mapping,
         enabled_deployment=True,
         entity_rel_id1=customer_to_gender_relationship_info.id,
+        expected_suffix=expected_suffix,
     )
 
     # check precomputed lookup feature table
@@ -1232,7 +1246,6 @@ async def test_aggregate_asat_feature(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "feature_list_ids": [deployed_aggregate_asat_feature_list.id],
             "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
             "source_feature_table_id": feature_table_id,
         },

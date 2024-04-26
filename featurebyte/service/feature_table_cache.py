@@ -584,6 +584,7 @@ class FeatureTableCacheService:
         observation_table: ObservationTableModel,
         graph: QueryGraph,
         nodes: List[Node],
+        columns: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
         Given the graph and set of nodes, read respective cached features from feature table cache.
@@ -598,6 +599,8 @@ class FeatureTableCacheService:
             Graph definition
         nodes: List[Node]
             Node names
+        columns: Optional[List[str]]
+            Optional list of columns to read from the cache table
 
         Returns
         -------
@@ -625,8 +628,11 @@ class FeatureTableCacheService:
         columns_expr = self._get_column_exprs(
             graph, nodes, hashes, cast(Dict[str, str], cached_features)
         )
+        additional_columns_expr = [quoted_identifier(col) for col in columns] if columns else []
         select_expr = (
-            expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+            expressions.select(
+                quoted_identifier(InternalName.TABLE_ROW_INDEX), *additional_columns_expr
+            )
             .select(*columns_expr)
             .from_(
                 get_fully_qualified_table_name(

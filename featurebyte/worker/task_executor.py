@@ -4,19 +4,22 @@ This module contains TaskExecutor class
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Optional
+from typing import Any, Coroutine, Optional, Set
 
 import asyncio
 import os
+import time
 from abc import abstractmethod
 from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
 from threading import Thread
+from unittest.mock import patch
 from uuid import UUID
 
 from bson import ObjectId
 from celery import Task
-from celery.exceptions import SoftTimeLimitExceeded
+from celery.exceptions import SoftTimeLimitExceeded, WorkerTerminate
+from celery.worker import state as worker_state
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
@@ -36,15 +39,111 @@ logger = get_logger(__name__)
 
 
 ASYNCIO_LOOP: asyncio.AbstractEventLoop | None = None
+EVENT_LOOP_HEALTH_LAST_CHECK_TIME: float | None = None
+EVENT_LOOP_HEALTH_CHECK_INTERVAL = 10  # how often to check the event loop health in seconds
+EVENT_LOOP_HEALTH_CHECK_THRESHOLD = max(
+    EVENT_LOOP_HEALTH_CHECK_INTERVAL + 5, 60
+)  # loop unhealthy threshold (must be > EVENT_LOOP_HEALTH_CHECK_INTERVAL)
 
 
-def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
+async def _loop_health_tracker() -> None:
+    """
+    Health tracker for the background loop
+    """
+    global EVENT_LOOP_HEALTH_LAST_CHECK_TIME  # pylint: disable=global-statement
+    while True:
+        EVENT_LOOP_HEALTH_LAST_CHECK_TIME = time.time()
+        await asyncio.sleep(EVENT_LOOP_HEALTH_CHECK_INTERVAL)
+
+
+def _check_asyncio_loop() -> asyncio.AbstractEventLoop:
+    """
+    Check asyncio loop and kill worker if not responsive
+
+    Returns
+    -------
+    asyncio.AbstractEventLoop
+        asyncio event loop
+
+    Raises
+    ------
+    WorkerTerminate
+        Worker is not responsive
+    """
+    global EVENT_LOOP_HEALTH_LAST_CHECK_TIME  # pylint: disable=global-statement
+    assert ASYNCIO_LOOP is not None, "async loop is not initialized"
+
+    if EVENT_LOOP_HEALTH_LAST_CHECK_TIME is None:
+        # initialize health check
+        EVENT_LOOP_HEALTH_LAST_CHECK_TIME = time.time()
+        asyncio.run_coroutine_threadsafe(_loop_health_tracker(), ASYNCIO_LOOP)
+
+    # kill worker if event loop is not responsive
+    if time.time() - EVENT_LOOP_HEALTH_LAST_CHECK_TIME > EVENT_LOOP_HEALTH_CHECK_THRESHOLD:
+        logger.error("Event loop is not responsive, shutting down")
+        # attempt to cancel all tasks where possible
+        task_ids = set()
+        for task in asyncio.all_tasks(loop=ASYNCIO_LOOP):
+            task.cancel()
+            task_ids.add(task.get_name())
+        # raise exception to terminate worker
+        raise WorkerTerminate(True)
+
+    return ASYNCIO_LOOP
+
+
+def _revoke(
+    state: Any, task_ids: Set[str], terminate: bool = False, signal: Any = None, **kwargs: Any
+) -> Set[str]:
+    """
+    Cancel tasks running on the event loop
+
+    Parameters
+    ----------
+    state: Any
+        State of the worker
+    task_ids: Set[str]
+        Task IDs
+    terminate: bool
+        Terminate flag
+    signal: Any
+        Signal
+    kwargs: Any
+        Keyword arguments
+
+    Returns
+    -------
+    Set[str]
+        Task IDs
+    """
+    _ = state, signal, kwargs
+
+    # mark task as revoked
+    worker_state.revoked.update(task_ids)
+
+    # check that asyncio loop is running and healthy
+    _check_asyncio_loop()
+
+    active_tasks = asyncio.all_tasks(loop=ASYNCIO_LOOP)
+    if terminate:
+        logger.debug("Revoking task", extra={"task_ids": task_ids})
+        for task in active_tasks:
+            if task.get_name() in task_ids:
+                task.cancel()
+    return task_ids
+
+
+def run_async(
+    coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: Optional[int] = None
+) -> Any:
     """
     Run async function in both async and non-async context
     Parameters
     ----------
-    coro: Coroutine
+    coro: Coroutine[Any, Any, Any]
         Coroutine to run
+    request_id: UUID
+        Request ID
     timeout: Optional[int]
         Timeout in seconds, default to None (no timeout)
 
@@ -58,18 +157,27 @@ def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
     SoftTimeLimitExceeded
         timeout is exceeded
     """
-    logger.debug(
-        "Running async function",
-        extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks())},
-    )
-    assert ASYNCIO_LOOP is not None, "async loop is not initialized"
-    future = asyncio.run_coroutine_threadsafe(coro, ASYNCIO_LOOP)
-    try:
-        return future.result(timeout=timeout)
-    except ConcurrentTimeoutError as exc:
-        # try to cancel the job if it has not started
-        future.cancel()
-        raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
+    # check that asyncio loop is running and healthy
+    loop = _check_asyncio_loop()
+
+    with patch("celery.worker.control._revoke") as revoke:
+        revoke.side_effect = _revoke
+        logger.debug(
+            "Running async function",
+            extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks(loop=ASYNCIO_LOOP))},
+        )
+
+        task: Any = loop.create_task(coro, name=str(request_id))
+
+        async def _run_task() -> Any:
+            return await task
+
+        future = asyncio.run_coroutine_threadsafe(_run_task(), loop)
+        try:
+            return future.result(timeout=timeout)
+        except ConcurrentTimeoutError as exc:
+            task.cancel()
+            raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
 
 
 class TaskExecutor:
@@ -229,6 +337,8 @@ class BaseCeleryTask(Task):
         -------
         Any
         """
+        command = str(payload.get("command"))
+        logger.debug(f"Executing: {command}")
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         app_container = await self.get_app_container(request_id, payload, progress)
         executor = self.executor_class(
@@ -269,7 +379,9 @@ class IOBoundTask(BaseCeleryTask):
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
         return run_async(
-            self.execute_task(self.request.id, **payload), timeout=self.request.timelimit[1]
+            self.execute_task(self.request.id, **payload),
+            request_id=self.request.id,
+            timeout=self.request.timelimit[1],
         )
 
 
@@ -284,20 +396,24 @@ class CPUBoundTask(BaseCeleryTask):
         return asyncio.run(self.execute_task(self.request.id, **payload))
 
 
-def start_background_loop() -> None:
+def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
     """
     Start background event loop
+
+    Parameters
+    ----------
+    loop: asyncio.AbstractEventLoop
+        asyncio event loop
     """
-    global ASYNCIO_LOOP  # pylint: disable=global-statement
-    ASYNCIO_LOOP = asyncio.new_event_loop()
-    asyncio.set_event_loop(ASYNCIO_LOOP)
+
+    asyncio.set_event_loop(loop)
     try:
-        ASYNCIO_LOOP.run_forever()
+        loop.run_forever()
     finally:
         try:
-            ASYNCIO_LOOP.run_until_complete(ASYNCIO_LOOP.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
-            ASYNCIO_LOOP.close()
+            loop.close()
 
 
 def initialize_asyncio_event_loop() -> None:
@@ -305,5 +421,7 @@ def initialize_asyncio_event_loop() -> None:
     Initialize asyncio event loop
     """
     logger.debug("Initializing asyncio event loop")
-    thread = Thread(target=start_background_loop, daemon=True)
+    global ASYNCIO_LOOP  # pylint: disable=global-statement
+    ASYNCIO_LOOP = asyncio.new_event_loop()
+    thread = Thread(target=start_background_loop, args=(ASYNCIO_LOOP,), daemon=True)
     thread.start()

@@ -289,6 +289,7 @@ def add_concatenated_serving_names(
     select_expr: expressions.Select,
     concatenate_serving_names: Optional[list[str]],
     source_type: SourceType,
+    serving_names_table_alias: Optional[str] = None,
 ) -> expressions.Select:
     """
     Add concatenated serving name column to the provided Select statement which is assumed to
@@ -302,6 +303,9 @@ def add_concatenated_serving_names(
         List of serving names to concatenate
     source_type: SourceType
         Source type information
+    serving_names_table_alias: Optional[str]
+        Table alias for the serving names. Serving names will not be table qualified if not
+        provided.
 
     Returns
     -------
@@ -312,7 +316,9 @@ def add_concatenated_serving_names(
     if len(concatenate_serving_names) > 1:
         updated_select_expr = select_expr.select(
             expressions.alias_(
-                get_combined_serving_names_expr(concatenate_serving_names),
+                get_combined_serving_names_expr(
+                    concatenate_serving_names, serving_names_table_alias=serving_names_table_alias
+                ),
                 alias=get_combined_serving_names(concatenate_serving_names),
                 quoted=True,
             )
@@ -452,6 +458,7 @@ def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-man
         output_expr,
         concatenate_serving_names,
         source_type,
+        serving_names_table_alias="REQ",
     )
     if output_table_details is not None:
         output_expr = get_sql_adapter(source_type).create_table_as(  # type: ignore[assignment]

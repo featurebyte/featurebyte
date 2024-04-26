@@ -2,7 +2,7 @@
 Classes to support precomputed lookup feature tables
 """
 
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Optional, cast
 
 import hashlib
 import json
@@ -83,19 +83,21 @@ def get_precomputed_lookup_feature_table_name(
     return f"{source_feature_table_name}_via_{serving_names_suffix}_{unique_identifier}"
 
 
-def get_precomputed_lookup_feature_tables(
+def get_precomputed_lookup_feature_table(
     primary_entity_ids: List[PydanticObjectId],
     feature_ids: List[PydanticObjectId],
-    feature_lists: List[FeatureListModel],
+    feature_list: FeatureListModel,
+    full_serving_entity_ids: List[PydanticObjectId],
     feature_table_name: str,
     feature_table_has_ttl: bool,
     entity_id_to_serving_name: Dict[PydanticObjectId, str],
     entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
     feature_store_model: FeatureStoreModel,
     feature_table_id: Optional[PydanticObjectId] = None,
-) -> List[OfflineStoreFeatureTableModel]:
+) -> Optional[OfflineStoreFeatureTableModel]:
     """
-    Construct the list of precomputed lookup feature tables for a given source feature table
+    Construct a precomputed lookup feature table for a given source feature table in order to
+    support a specific deployment with a predetermined serving entity ids
 
     Parameters
     ----------
@@ -103,8 +105,10 @@ def get_precomputed_lookup_feature_tables(
         Primary entity ids of the source feature table
     feature_ids: List[PydanticObjectId]
         List of features that references the source feature table
-    feature_lists: List[FeatureListModel]
-        List of currently online enabled feature lists
+    feature_list: FeatureListModel
+        Feature list associated with the deployment
+    full_serving_entity_ids: List[PydanticObjectId]
+        Serving entity ids of the deployment
     feature_table_name: str
         Name of the source feature table
     feature_table_has_ttl: bool
@@ -120,74 +124,62 @@ def get_precomputed_lookup_feature_tables(
 
     Returns
     -------
-    List[OfflineStoreFeatureTableModel]
+    Optional[OfflineStoreFeatureTableModel]
     """
+    if not set(feature_list.feature_ids).intersection(feature_ids):
+        return None
 
-    feature_ids_set = set(feature_ids)
-    feature_lists = [
-        feature_list
-        for feature_list in feature_lists
-        if set(feature_list.feature_ids).intersection(feature_ids_set)
+    feature_lists_relationships_info = _get_feature_lists_to_relationships_info([feature_list])[
+        feature_list.id
     ]
-    feature_lists_relationships_info = _get_feature_lists_to_relationships_info(feature_lists)
     primary_entity_ids = sorted(primary_entity_ids)
 
-    precomputed_lookup_feature_tables: Dict[
-        Tuple[EntityRelationshipInfo, ...], OfflineStoreFeatureTableModel
-    ] = {}
-    for feature_list in feature_lists:
-        for full_serving_entity_ids in feature_list.enabled_serving_entity_ids:
-            serving_entity_ids = EntityAncestorDescendantMapper.create(
-                feature_lists_relationships_info[feature_list.id],
-            ).keep_related_entity_ids(
-                entity_ids_to_filter=full_serving_entity_ids,
-                filter_by=primary_entity_ids,
-            )
-            lookup_steps = EntityLookupPlanner.generate_lookup_steps(
-                available_entity_ids=serving_entity_ids,
-                required_entity_ids=primary_entity_ids,
-                relationships_info=feature_lists_relationships_info[feature_list.id],
-            )
-            key = tuple(lookup_steps)
-            if not key:
-                continue
-            table = precomputed_lookup_feature_tables.get(key)
-            if table is None:
-                serving_names = [
-                    entity_id_to_serving_name[entity_id] for entity_id in serving_entity_ids  # type: ignore[index]
-                ]
-                table = OfflineStoreFeatureTableModel(
-                    name=get_precomputed_lookup_feature_table_name(
-                        feature_table_name, serving_names, lookup_steps
-                    ),
-                    feature_ids=[],
-                    primary_entity_ids=serving_entity_ids,
-                    serving_names=serving_names,
-                    entity_universe=EntityUniverseModel(
-                        query_template=SqlglotExpressionModel.create(
-                            get_child_entity_universe_template(
-                                lookup_steps=lookup_steps,
-                                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-                                feature_store=feature_store_model,
-                            )
-                        )
-                    ),
-                    precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(
-                        lookup_steps=lookup_steps,
-                        source_feature_table_id=feature_table_id,
-                    ),
-                    has_ttl=feature_table_has_ttl,
-                    output_column_names=[],
-                    output_dtypes=[],
-                    catalog_id=feature_lists[0].catalog_id,
-                    feature_store_id=feature_store_model.id,
+    relationships_mapper = EntityAncestorDescendantMapper.create(
+        feature_lists_relationships_info,
+    )
+    serving_entity_ids = relationships_mapper.keep_related_entity_ids(
+        entity_ids_to_filter=full_serving_entity_ids,
+        filter_by=primary_entity_ids,
+    )
+    lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+        available_entity_ids=serving_entity_ids,
+        required_entity_ids=primary_entity_ids,
+        relationships_info=feature_lists_relationships_info,
+    )
+    key = tuple(lookup_steps)
+    if not key:
+        return None
+    serving_names = [
+        entity_id_to_serving_name[entity_id] for entity_id in serving_entity_ids  # type: ignore[index]
+    ]
+    table = OfflineStoreFeatureTableModel(
+        name=get_precomputed_lookup_feature_table_name(
+            feature_table_name, serving_names, lookup_steps
+        ),
+        feature_ids=[],
+        primary_entity_ids=serving_entity_ids,
+        serving_names=serving_names,
+        entity_universe=EntityUniverseModel(
+            query_template=SqlglotExpressionModel.create(
+                get_child_entity_universe_template(
+                    lookup_steps=lookup_steps,
+                    entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+                    feature_store=feature_store_model,
                 )
-            assert table.precomputed_lookup_feature_table_info is not None
-            if feature_list.id not in table.precomputed_lookup_feature_table_info.feature_list_ids:
-                table.precomputed_lookup_feature_table_info.feature_list_ids.append(feature_list.id)
-            precomputed_lookup_feature_tables[key] = table
-
-    return list(precomputed_lookup_feature_tables.values())
+            )
+        ),
+        precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(
+            lookup_steps=lookup_steps,
+            source_feature_table_id=feature_table_id,
+        ),
+        has_ttl=feature_table_has_ttl,
+        output_column_names=[],
+        output_dtypes=[],
+        catalog_id=feature_list.catalog_id,
+        feature_store_id=feature_store_model.id,
+    )
+    assert table.precomputed_lookup_feature_table_info is not None
+    return table
 
 
 def get_child_entity_universe_template(
