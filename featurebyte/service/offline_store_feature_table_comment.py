@@ -122,16 +122,7 @@ class OfflineStoreFeatureTableCommentService:
             return f"{entity_model.name} (serving name: {entity_model.serving_names[0]})"
 
         primary_entities_info = ", ".join([_format_entity(entity) for entity in primary_entities])
-        if feature_table_model.entity_lookup_info is not None:
-            parent_entity = await self.entity_service.get_document(
-                feature_table_model.entity_lookup_info.related_entity_id
-            )
-            sentences = [
-                f"This feature table is used to lookup the entity {_format_entity(parent_entity)}"
-                f" using the entity {primary_entities_info} based on their parent-child"
-                f" relationship"
-            ]
-        elif feature_table_model.primary_entity_ids:
+        if feature_table_model.primary_entity_ids:
             sentences = [
                 f"This feature table consists of features for primary entity {primary_entities_info}"
             ]
