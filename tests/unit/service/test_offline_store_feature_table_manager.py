@@ -16,6 +16,8 @@ from featurebyte.common.model_util import get_version
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
+from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -532,6 +534,34 @@ async def customer_to_gender_relationship_info(
     )
 
 
+@pytest_asyncio.fixture
+async def deprecated_entity_lookup_feature_tables(app_container):
+    """
+    Fixture for a deprecated entity lookup feature table
+    """
+    table_id = ObjectId()
+    model = OfflineStoreFeatureTableModel(
+        _id=table_id,
+        name="entity_lookup_table_name",
+        feature_ids=[],
+        primary_entity_ids=[ObjectId()],
+        serving_names=["customer_id"],
+        has_ttl=False,
+        output_column_names=["city_id"],
+        output_dtypes=["VARCHAR"],
+        entity_lookup_info=EntityRelationshipInfo(
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=ObjectId(),
+            related_entity_id=ObjectId(),
+            relation_table_id=ObjectId(),
+        ),
+        catalog_id=app_container.catalog_id,
+    )
+    doc = await app_container.offline_store_feature_table_service.create_document(model)
+    return doc
+
+
+@pytest.mark.usefixtures("deprecated_entity_lookup_feature_tables")
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     app_container,

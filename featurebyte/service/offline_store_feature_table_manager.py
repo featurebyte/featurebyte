@@ -193,6 +193,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
+        await self._delete_deprecated_entity_lookup_feature_tables()
+
         ingest_graph_container = await OfflineIngestGraphContainer.build(features)
         feature_lists = await self._get_online_enabled_feature_lists(
             feature_list_to_online_enable=feature_list_to_online_enable
@@ -303,6 +305,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
             Optional callback to update progress
         """
+        await self._delete_deprecated_entity_lookup_feature_tables()
+
         feature_ids_to_remove = {feature.id for feature in features}
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
@@ -640,6 +644,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             )
             if len(updated_table_dict.get("deployment_ids", [])) == 0:
                 await self._delete_offline_store_feature_table(table.id)
+
+    async def _delete_deprecated_entity_lookup_feature_tables(self) -> None:
+        # Clean up dynamic entity lookup feature tables which are no longer used
+        service = self.offline_store_feature_table_service
+        async for doc in service.list_deprecated_entity_lookup_feature_tables_as_dict():
+            await self._delete_offline_store_feature_table(doc["_id"])
 
     async def _delete_offline_store_feature_table(self, feature_table_id: ObjectId) -> None:
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
