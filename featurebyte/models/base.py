@@ -339,7 +339,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         return cls.Settings.unique_constraints
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         """
         Get remote attribute paths for a document
 

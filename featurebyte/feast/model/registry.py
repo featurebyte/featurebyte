@@ -29,7 +29,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     deployment_id: Optional[PydanticObjectId] = Field(default=None)
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
         registry_path = document_dict.get("registry_path")
         if registry_path:

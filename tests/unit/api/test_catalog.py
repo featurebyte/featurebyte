@@ -192,6 +192,7 @@ def test_all_relevant_methods_are_in_list():
         "get_view",
         "get_view_by_table_id",
         "get_data_source_by_feature_store_id",
+        "get_remote_attribute_paths",
     }
     assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
     for method in catalog_get_methods_to_test_list():

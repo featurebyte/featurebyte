@@ -67,8 +67,15 @@ class NonAuditableDocumentService(BaseDocumentService):
     document_class = NonAuditableDocument
 
 
+@pytest.fixture(name="redis")
+def redis_fixture():
+    """Fixture for redis"""
+    redis_mock = Mock()
+    return redis_mock
+
+
 @pytest.fixture(name="document_service")
-def document_service_fixture(user, persistent, storage):
+def document_service_fixture(user, persistent, storage, redis):
     """Fixture for DocumentService"""
     return DocumentService(
         user=user,
@@ -76,12 +83,12 @@ def document_service_fixture(user, persistent, storage):
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
         storage=storage,
-        redis=Mock(),
+        redis=redis,
     )
 
 
 @pytest.fixture(name="non_auditable_document_service")
-def non_auditable_document_service_fixture(user, persistent, storage):
+def non_auditable_document_service_fixture(user, persistent, storage, redis):
     """Fixture for NonAuditableDocumentService"""
     return NonAuditableDocumentService(
         user=user,
@@ -89,7 +96,7 @@ def non_auditable_document_service_fixture(user, persistent, storage):
         catalog_id=None,
         block_modification_handler=BlockModificationHandler(),
         storage=storage,
-        redis=Mock(),
+        redis=redis,
     )
 
 

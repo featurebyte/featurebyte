@@ -102,7 +102,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         return values
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
         feature_cluster_path = document_dict.get("feature_cluster_path")
         if feature_cluster_path:
