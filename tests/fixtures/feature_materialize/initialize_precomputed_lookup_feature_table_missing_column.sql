@@ -10,14 +10,12 @@ CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" A
 SELECT
   "__feature_timestamp",
   "gender",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1"
 FROM (
   SELECT
     "__feature_timestamp",
     "gender",
     "__feature_requiring_parent_serving_V220101__part1",
-    "__feature_requiring_parent_serving_plus_123_V220101__part1",
     ROW_NUMBER() OVER (PARTITION BY "gender" ORDER BY "__feature_timestamp" DESC NULLS LAST) AS "_row_number"
   FROM "cat1_gender_1d"
 )
@@ -164,8 +162,7 @@ FROM JOINED_PARENTS_ENTITY_UNIVERSE;
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000" AS
 SELECT
   L."cust_id",
-  R."__feature_requiring_parent_serving_V220101__part1",
-  R."__feature_requiring_parent_serving_plus_123_V220101__part1"
+  R."__feature_requiring_parent_serving_V220101__part1"
 FROM "TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS L
 LEFT JOIN "cat1_gender_1d" AS R
   ON L."gender" = R."gender";
@@ -178,6 +175,5 @@ CREATE TABLE "sf_db"."sf_schema"."cat1_gender_1d_via_cust_id_000000" AS
 SELECT
   CAST('2022-01-05T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
   "cust_id",
-  "__feature_requiring_parent_serving_V220101__part1",
-  "__feature_requiring_parent_serving_plus_123_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1"
 FROM "TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000";

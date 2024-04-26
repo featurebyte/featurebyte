@@ -44,7 +44,7 @@ from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.utils.messaging import REDIS_URI
-from tests.util.helper import deploy_feature, get_relationship_info, manage_document
+from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
 
 
 @pytest.fixture(name="get_credential")
@@ -1115,21 +1115,34 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     """
     Fixture a deployed feature list that require serving parent features
 
-    float_feature: customer entity feature
-    aggregate_asat_feature: gender entity feature
+    float_feature: customer entity feature (ttl)
+    aggregate_asat_feature: gender entity feature (non-ttl)
 
     Gender is a parent of customer.
 
     Primary entity of the combined feature is customer.
+
+    Combined feature requires serving two feature tables (one customer, one gender) using customer
+    as the serving entity.
     """
     _ = mock_offline_store_feature_manager_dependencies
     _ = mock_update_data_warehouse
+
     new_feature = float_feature + aggregate_asat_feature
     new_feature.name = "feature_requiring_parent_serving"
-    feature_list = await deploy_feature(
+    new_feature.save()
+
+    new_feature_2 = new_feature + 123
+    new_feature_2.name = new_feature.name + "_plus_123"
+    new_feature_2.save()
+
+    feature_list = await deploy_feature_ids(
         app_container,
-        new_feature,
-        return_type="feature_list",
+        feature_list_name="fl_requiring_parent_serving",
+        feature_ids=[
+            new_feature.id,
+            new_feature_2.id,
+        ],
         deployment_id=fl_requiring_parent_serving_deployment_id,
     )
 
@@ -1145,7 +1158,14 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
             feature_internal_entity_join_steps=[
                 EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
             ],
-        )
+        ),
+        FeatureEntityLookupInfo(
+            feature_id=new_feature_2.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
     ]
 
     return feature_list
