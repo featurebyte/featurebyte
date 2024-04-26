@@ -225,11 +225,35 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
     gender_entity_id,
 ):
     """
-    Fixture for offline store feature table with precomputed lookup
+    Fixture for offline store feature table that requires precomputed lookup (this returns the
+    source feature table)
     """
     _ = deployed_feature_list_requiring_parent_serving
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"primary_entity_ids": gender_entity_id}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_with_precomputed_lookup_ttl")
+async def offline_store_feature_table_with_precomputed_lookup_fixture(
+    app_container,
+    deployed_feature_list_requiring_parent_serving_ttl,
+    cust_id_entity,
+):
+    """
+    Fixture for offline store feature table that requires precomputed lookup (this returns the
+    source feature table)
+    """
+    models = []
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={}
+    ):
+        models.append(model)
+
+    _ = deployed_feature_list_requiring_parent_serving_ttl
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"primary_entity_ids": cust_id_entity.id}
     ):
         return model
 
@@ -998,6 +1022,63 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__scheduled_materialize_features_ttl(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup_ttl,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    transaction_entity,
+):
+    """
+    Test scheduled_materialize_features when a feature list requires parent entity serving where the
+    parent feature has ttl. In this case, the lookup entity universe should not be using last materialized
+    timestamp.
+    """
+    _ = mock_get_feature_store_session
+
+    # Simulate previous materialize date
+    service = app_container.offline_store_feature_table_service
+    update_schema = OfflineLastMaterializedAtUpdate(
+        last_materialized_at=datetime(2022, 1, 5),
+    )
+    offline_store_feature_table_with_precomputed_lookup = await service.update_document(
+        document_id=offline_store_feature_table_with_precomputed_lookup_ttl.id, data=update_schema
+    )
+    async for table in service.list_precomputed_lookup_feature_tables_from_source(
+        offline_store_feature_table_with_precomputed_lookup.id
+    ):
+        await service.update_document(document_id=table.id, data=update_schema)
+
+    # Run scheduled materialize at a later date
+    with freeze_time(datetime(2022, 1, 6)):
+        await feature_materialize_service.scheduled_materialize_features(
+            feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+        )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    # The start date should not be of the lookup entity universe should not be datetime(2022, 1, 5)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup_ttl.sql",
         update_fixtures,
     )
 
