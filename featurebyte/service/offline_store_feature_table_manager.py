@@ -263,22 +263,13 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     f"Materializing features to online store for table {offline_store_table_name} "
                     f"({idx + 1} / {offline_table_count} tables)"
                 )
-                await update_progress(int((idx + 1) / offline_table_count * 60), message)
+                await update_progress(int((idx + 1) / offline_table_count * 90), message)
 
             if feature_table_model is not None:
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
-
-        new_tables.extend(
-            await self._create_or_update_entity_lookup_feature_tables(
-                feature_lists,
-                feature_store_model,
-                deployment.id,
-                get_ranged_progress_callback(update_progress, 60, 90) if update_progress else None,
-            )
-        )
 
         # Add comments to newly created tables and columns
         await self._update_table_and_column_comments(
@@ -320,7 +311,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             feature_list_to_online_disable=feature_list_to_online_disable
         )
         offline_table_count = len(feature_table_data["data"])
-        feature_store_model = await self._get_feature_store_model()
 
         # Update precomputed lookup feature tables based on the deployment that is being disabled
         await self._update_precomputed_lookup_feature_tables_disable_deployment(
@@ -370,7 +360,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             deployment=deployment,
             to_enable=False,
         )
-        await self._delete_entity_lookup_feature_tables(feature_lists, feature_store_model)
         if update_progress:
             await update_progress(100, "Updated entity lookup feature tables")
 
@@ -651,107 +640,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             )
             if len(updated_table_dict.get("deployment_ids", [])) == 0:
                 await self._delete_offline_store_feature_table(table.id)
-
-    async def _create_or_update_entity_lookup_feature_tables(
-        self,
-        feature_lists: List[FeatureListModel],
-        feature_store_model: FeatureStoreModel,
-        deployment_id: ObjectId,
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> List[OfflineStoreFeatureTableModel]:
-        """
-        Create or update feature tables to support parent entities lookup for a specific offline
-        feature table. This should be called when online enabling features.
-
-        Parameters
-        ----------
-        feature_lists: List[FeatureListModel]
-            Currently online enabled feature lists
-        feature_store_model: FeatureStoreModel
-            Feature store model
-        deployment_id: ObjectId
-            Deployment ID
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]
-            Optional callback to update progress
-
-        Returns
-        -------
-        List[OfflineStoreFeatureTableModel]
-        """
-        # Get list of entity lookup feature tables that are currently required
-        service = self.entity_lookup_feature_table_service
-        entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
-            feature_lists, feature_store_model
-        )
-        if entity_lookup_feature_table_models is None:
-            entity_lookup_feature_table_models = []
-
-        # Commission tables that should exist if they don't already exist
-        existing_lookup_feature_tables = {
-            feature_table_dict["name"]: feature_table_dict
-            async for feature_table_dict in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-                query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
-            )
-        }
-        new_tables = []
-        for idx, entity_lookup_feature_table in enumerate(entity_lookup_feature_table_models):
-            if update_progress:
-                await update_progress(
-                    int(idx / len(entity_lookup_feature_table_models) * 100),
-                    f"Materializing entity look up table {entity_lookup_feature_table.name}",
-                )
-
-            if entity_lookup_feature_table.name not in existing_lookup_feature_tables:
-                entity_lookup_feature_table = (
-                    await self.offline_store_feature_table_service.create_document(
-                        entity_lookup_feature_table
-                    )
-                )
-                await self.offline_store_feature_table_service.add_deployment_id(
-                    document_id=entity_lookup_feature_table.id, deployment_id=deployment_id
-                )
-                await self.feature_materialize_service.initialize_new_columns(
-                    entity_lookup_feature_table
-                )
-                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
-                    entity_lookup_feature_table
-                )
-                new_tables.append(entity_lookup_feature_table)
-
-        return new_tables
-
-    async def _delete_entity_lookup_feature_tables(
-        self, feature_lists: List[FeatureListModel], feature_store_model: FeatureStoreModel
-    ) -> None:
-        """
-        Delete offline store feature tables that were created for entity lookup purpose but are not
-        no longer required. This should be called when online disabling features.
-
-        Parameters
-        ----------
-        feature_lists: List[FeatureListModel]
-            Currently online enabled feature lists
-        feature_store_model: FeatureStoreModel
-            Feature store
-        """
-        # Get list of entity lookup feature tables that are currently required
-        current_active_table_names = set()
-        service = self.entity_lookup_feature_table_service
-        entity_lookup_feature_table_models = await service.get_entity_lookup_feature_tables(
-            feature_lists, feature_store_model
-        )
-        if entity_lookup_feature_table_models is not None:
-            for table in entity_lookup_feature_table_models:
-                current_active_table_names.add(table.name)
-
-        # Decommission tables that should no longer exist
-        async for (
-            feature_table_dict
-        ) in self.offline_store_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"entity_lookup_info": {"$ne": None}}, projection={"_id": 1, "name": 1}
-        ):
-            if feature_table_dict["name"] not in current_active_table_names:
-                await self._delete_offline_store_feature_table(feature_table_dict["_id"])
 
     async def _delete_offline_store_feature_table(self, feature_table_id: ObjectId) -> None:
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(

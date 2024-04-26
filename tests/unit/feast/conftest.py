@@ -148,33 +148,25 @@ async def expected_cust_id_via_transaction_id_table_name_fixture(
 
 
 @pytest.fixture(name="expected_data_source_names")
-def expected_data_source_names_fixture(
-    feature_list, expected_cust_id_via_transaction_id_table_name
-):
+def expected_data_source_names_fixture(expected_cust_id_via_transaction_id_table_name):
     """Fixture for expected data source names"""
-    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         "POINT_IN_TIME",
         "cat1__no_entity_1d",
         "cat1_cust_id_30m",
         "cat1_transaction_id_1d",
-        f"fb_entity_lookup_{relationship_info_id}",
         expected_cust_id_via_transaction_id_table_name,
     }
 
 
 @pytest.fixture(name="expected_feature_view_name_to_ttl")
-def expected_feature_view_name_to_ttl_fixture(
-    feature_list, expected_cust_id_via_transaction_id_table_name
-):
+def expected_feature_view_name_to_ttl_fixture(expected_cust_id_via_transaction_id_table_name):
     """Fixture for expected feature view name to TTL"""
-    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     return {
         "cat1_transaction_id_1d": datetime.timedelta(seconds=0),
         "cat1__no_entity_1d": datetime.timedelta(days=2),
         "cat1_cust_id_30m": datetime.timedelta(seconds=3600),
         expected_cust_id_via_transaction_id_table_name: datetime.timedelta(seconds=3600),
-        f"fb_entity_lookup_{relationship_info_id}": datetime.timedelta(seconds=0),
     }
 
 

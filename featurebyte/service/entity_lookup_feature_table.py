@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_feature_tables
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
@@ -86,32 +85,6 @@ class EntityLookupFeatureTableService:
             list(all_relationships_info)
         )
         return entity_lookup_steps_mapping
-
-    async def get_entity_lookup_feature_tables(
-        self,
-        feature_lists: List[FeatureListModel],
-        feature_store_model: FeatureStoreModel,
-    ) -> Optional[List[OfflineStoreFeatureTableModel]]:
-        """
-        Get list of internal offline store feature tables for parent entity lookup purpose
-
-        Parameters
-        ----------
-        feature_lists: List[FeatureListModel]
-            Currently online enabled feature lists
-        feature_store_model: FeatureStoreModel
-            Feature store document
-
-        Returns
-        -------
-        Optional[List[OfflineStoreFeatureTableModel]]
-        """
-        entity_lookup_steps_mapping = await self.get_entity_lookup_steps_mapping(feature_lists)
-        return get_entity_lookup_feature_tables(
-            feature_lists=feature_lists,
-            feature_store=feature_store_model,
-            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-        )
 
     async def get_precomputed_lookup_feature_table(
         self,

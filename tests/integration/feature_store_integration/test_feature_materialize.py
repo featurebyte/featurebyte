@@ -534,40 +534,8 @@ def get_relationship_info(feature_list_model, child_entity, parent_entity):
     )
 
 
-@pytest_asyncio.fixture(name="expected_entity_lookup_feature_table_names")
-async def expected_entity_lookup_feature_table_names_fixture(
-    app_container,
-    deployed_feature_list,
-    order_entity,
-    product_action_entity,
-    customer_entity,
-    user_entity,
-    status_entity,
-):
-    """
-    Fixture for expected entity lookup feature table names
-    """
-    expected = []
-    feature_list_model = await app_container.feature_list_service.get_document(
-        deployed_feature_list.feature_list_id
-    )
-
-    def _get_relationship_info(child_entity, parent_entity):
-        return get_relationship_info(feature_list_model, child_entity, parent_entity)
-
-    for info in [
-        _get_relationship_info(order_entity, customer_entity),
-        _get_relationship_info(order_entity, product_action_entity),
-        _get_relationship_info(order_entity, user_entity),
-        _get_relationship_info(user_entity, status_entity),
-    ]:
-        expected.append(f"fb_entity_lookup_{info.id}")
-
-    return set(expected)
-
-
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_names):
+def expected_feature_table_names_fixture():
     """
     Fixture for expected feature table names
     """
@@ -581,7 +549,6 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
         "cat1_order_id_1d",
         "cat1_userid_product_action_1h",
     }
-    expected.update(expected_entity_lookup_feature_table_names)
     return expected
 
 
