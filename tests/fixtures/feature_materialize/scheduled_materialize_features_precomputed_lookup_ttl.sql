@@ -83,7 +83,7 @@ WITH ENTITY_UNIVERSE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
+        "event_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
         AND "event_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
     )
   )

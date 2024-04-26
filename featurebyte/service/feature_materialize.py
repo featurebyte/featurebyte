@@ -376,7 +376,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 column_names=column_names,
                 column_dtypes=column_dtypes,
                 source_feature_table_serving_names=feature_table_model.serving_names,
-                use_last_materialized_timestamp=use_last_materialized_timestamp,
+                use_last_materialized_timestamp=(
+                    use_last_materialized_timestamp and not feature_table_model.has_ttl
+                ),
                 lookup_feature_table=lookup_feature_table,
             )
             result.append((lookup_feature_table, lookup_materialized_features))

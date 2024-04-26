@@ -236,7 +236,7 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_table_with_precomputed_lookup_ttl")
-async def offline_store_feature_table_with_precomputed_lookup_fixture(
+async def offline_store_feature_table_with_precomputed_lookup_ttl_fixture(
     app_container,
     deployed_feature_list_requiring_parent_serving_ttl,
     cust_id_entity,
@@ -245,12 +245,6 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
     Fixture for offline store feature table that requires precomputed lookup (this returns the
     source feature table)
     """
-    models = []
-    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
-        query_filter={}
-    ):
-        models.append(model)
-
     _ = deployed_feature_list_requiring_parent_serving_ttl
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"primary_entity_ids": cust_id_entity.id}
