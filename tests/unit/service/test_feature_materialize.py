@@ -972,7 +972,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     offline_store_feature_table_with_precomputed_lookup = await service.update_document(
         document_id=offline_store_feature_table_with_precomputed_lookup.id, data=update_schema
     )
-    async for table in service.list_precomputed_lookup_feature_tables(
+    async for table in service.list_precomputed_lookup_feature_tables_from_source(
         offline_store_feature_table_with_precomputed_lookup.id
     ):
         await service.update_document(document_id=table.id, data=update_schema)
@@ -1002,6 +1002,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     )
 
 
+@pytest.mark.parametrize("has_missing_column", [False, True])
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_table(
     app_container,
@@ -1012,11 +1013,22 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     update_fixtures,
     cust_id_entity,
     gender_entity,
+    has_missing_column,
 ):
     """
     Test initialize_precomputed_lookup_feature_table
     """
     _ = mock_get_feature_store_session
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        schema = {f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info"}
+        if not has_missing_column:
+            schema[f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"] = (
+                "some_info"
+            )
+        return schema
 
     def mock_execute_query(query):
         if "COUNT(*)\nFROM" in query:
@@ -1029,13 +1041,17 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
             return pd.DataFrame([{"RESULT": datetime(2022, 1, 5).isoformat()}])
         return None
 
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
     service = app_container.offline_store_feature_table_service
     source_feature_table = offline_store_feature_table_with_precomputed_lookup
     lookup_feature_tables = [
-        doc async for doc in service.list_precomputed_lookup_feature_tables(source_feature_table.id)
+        doc
+        async for doc in service.list_precomputed_lookup_feature_tables_from_source(
+            source_feature_table.id
+        )
     ]
 
     # stop the patcher on initialize_new_columns(), needed because
@@ -1057,8 +1073,16 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
     executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
 
+    if has_missing_column:
+        filename = "initialize_precomputed_lookup_feature_table_missing_column.sql"
+    else:
+        filename = "initialize_precomputed_lookup_feature_table.sql"
+
     assert_equal_with_expected_fixture(
         executed_queries,
-        "tests/fixtures/feature_materialize/initialize_precomputed_lookup_feature_table.sql",
+        f"tests/fixtures/feature_materialize/{filename}",
         update_fixtures,
     )
+
+    if has_missing_column:
+        assert "plus_123" not in executed_queries

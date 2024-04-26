@@ -209,11 +209,10 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_store_model = await self._get_feature_store_model()
 
         # Update precomputed lookup feature tables for existing features
-        await self._update_precomputed_lookup_feature_tables_all(
+        await self._update_precomputed_lookup_feature_tables_enable_deployment(
             feature_list_to_online_enable,
             feature_store_model,
             deployment,
-            to_enable=True,
         )
 
         new_tables = []
@@ -238,13 +237,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_ids.append(feature.id)
 
             # Initialize precomputed lookup feature tables using updated feature_ids
-            await self._update_precomputed_lookup_feature_tables(
+            await self._update_precomputed_lookup_feature_table_enable_deployment(
                 feature_table_dict["_id"],
                 feature_ids,
                 feature_list_to_online_enable,
                 feature_store_model,
                 deployment,
-                to_enable=True,
             )
             await self.offline_store_feature_table_service.add_deployment_id(
                 document_id=feature_table_dict["_id"], deployment_id=deployment.id
@@ -325,11 +323,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_store_model = await self._get_feature_store_model()
 
         # Update precomputed lookup feature tables based on the deployment that is being disabled
-        await self._update_precomputed_lookup_feature_tables_all(
-            feature_list_to_online_disable,
-            feature_store_model,
-            deployment,
-            to_enable=False,
+        await self._update_precomputed_lookup_feature_tables_disable_deployment(
+            deployment.id,
         )
 
         for idx, feature_table_dict in enumerate(feature_table_data["data"]):
@@ -353,7 +348,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 )
                 async for (
                     lookup_feature_table
-                ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables(
+                ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
                     feature_table_dict["_id"]
                 ):
                     await self.feature_materialize_service.drop_columns(
@@ -546,12 +541,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
         return output
 
-    async def _update_precomputed_lookup_feature_tables_all(
+    async def _update_precomputed_lookup_feature_tables_enable_deployment(
         self,
         active_feature_list: FeatureListModel,
         feature_store_model: FeatureStoreModel,
         deployment: DeploymentModel,
-        to_enable: bool,
     ) -> None:
         async for (
             feature_table_dict
@@ -560,23 +554,21 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             projection={"_id": 1, "feature_ids": 1},
         ):
             feature_ids = feature_table_dict["feature_ids"]
-            await self._update_precomputed_lookup_feature_tables(
+            await self._update_precomputed_lookup_feature_table_enable_deployment(
                 feature_table_dict["_id"],
                 feature_ids,
                 active_feature_list,
                 feature_store_model,
                 deployment,
-                to_enable=to_enable,
             )
 
-    async def _update_precomputed_lookup_feature_tables(
+    async def _update_precomputed_lookup_feature_table_enable_deployment(
         self,
         feature_table_id: PydanticObjectId,
         feature_ids: List[PydanticObjectId],
         active_feature_list: FeatureListModel,
         feature_store_model: FeatureStoreModel,
         deployment: DeploymentModel,
-        to_enable: bool,
     ) -> None:
         # Reload feature table to get the most updated state of the feature table document
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
@@ -619,6 +611,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         ):
             existing_table = doc
             break
+
         if existing_table is None:
             created_table = await self.offline_store_feature_table_service.create_document(
                 precomputed_lookup_feature_table
@@ -629,14 +622,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             table_id = existing_table.id
 
         # Update deployment_ids references
-        if to_enable:
-            await self.offline_store_feature_table_service.add_deployment_id(
-                document_id=table_id, deployment_id=deployment.id
-            )
-        else:
-            await self.offline_store_feature_table_service.remove_deployment_id(
-                document_id=table_id, deployment_id=deployment.id
-            )
+        await self.offline_store_feature_table_service.add_deployment_id(
+            document_id=table_id, deployment_id=deployment.id
+        )
 
         # Initialize the table if necessary. This has to be done after deployment_ids is updated.
         if created_table is not None:
@@ -644,13 +632,25 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_table_id, [created_table]
             )
 
-        # Delete the table if it's no longer needed (not used by any deployment)
-        updated_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
-            table_id,
-            projection={"deployment_ids": 1},
-        )
-        if len(updated_table_dict.get("deployment_ids", [])) == 0:
-            await self._delete_offline_store_feature_table(table_id)
+    async def _update_precomputed_lookup_feature_tables_disable_deployment(
+        self,
+        deployment_id: PydanticObjectId,
+    ) -> None:
+        service = self.offline_store_feature_table_service
+        async for table in service.list_precomputed_lookup_feature_tables_for_deployment(
+            deployment_id
+        ):
+            await self.offline_store_feature_table_service.remove_deployment_id(
+                document_id=table.id, deployment_id=deployment_id
+            )
+            updated_table_dict = (
+                await self.offline_store_feature_table_service.get_document_as_dict(
+                    table.id,
+                    projection={"deployment_ids": 1},
+                )
+            )
+            if len(updated_table_dict.get("deployment_ids", [])) == 0:
+                await self._delete_offline_store_feature_table(table.id)
 
     async def _create_or_update_entity_lookup_feature_tables(
         self,
