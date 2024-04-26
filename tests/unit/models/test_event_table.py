@@ -79,9 +79,9 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "created_at": datetime.datetime(2022, 2, 1, 0, 0),
         "updated_at": None,
         "default_feature_job_setting": {
-            "blind_spot": "10m",
-            "period": "30m",
-            "offset": "5m",
+            "blind_spot": "600s",
+            "period": "1800s",
+            "offset": "300s",
             "execution_buffer": "0s",
         },
         "columns_info": columns_info,

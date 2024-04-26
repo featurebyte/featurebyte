@@ -160,14 +160,6 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
-            lookup_key=["transaction_id"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__feature_V240103__part1"],
-            rename_outputs={},
-        ),
-        FeatureLookup(
             table_name="feature_engineering.some_schema.cat1_cust_id_30m",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
@@ -175,11 +167,19 @@ def test_databricks_specs(
             feature_names=["__feature_V240103__part0"],
             rename_outputs={},
         ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part1"],
+            rename_outputs={},
+        ),
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "x_1": "__feature_V240103__part0",
-                "x_2": "__feature_V240103__part1",
+                "x_1": "__feature_V240103__part1",
+                "x_2": "__feature_V240103__part0",
             },
             output_name="feature",
         ),

@@ -100,6 +100,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
             offset=values["offset"],
             blind_spot=values["blind_spot"],
         )
+
+        # normalize and convert to seconds
+        values["period"] = f'{parse_duration_string(values["period"])}s'
+        values["offset"] = f'{parse_duration_string(values["offset"])}s'
+        values["blind_spot"] = f'{parse_duration_string(values["blind_spot"])}s'
         return values
 
     @property

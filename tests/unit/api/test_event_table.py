@@ -502,9 +502,9 @@ def test_update_default_job_setting__saved_event_table(
     response = client.get(url=f"/event_table/{saved_event_table.id}")
     assert response.status_code == 200
     assert response.json()["default_feature_job_setting"] == {
-        "blind_spot": "1m30s",
-        "period": "6m",
-        "offset": "3m",
+        "blind_spot": "90s",
+        "period": "360s",
+        "offset": "180s",
         "execution_buffer": "0s",
     }
 
@@ -723,9 +723,9 @@ def test_default_feature_job_setting_history(saved_event_table):
     history = saved_event_table.default_feature_job_setting_history
     expected_history_0 = {
         "setting": {
-            "blind_spot": "1m30s",
-            "period": "10m",
-            "offset": "2m",
+            "blind_spot": "90s",
+            "period": "600s",
+            "offset": "120s",
             "execution_buffer": "0s",
         }
     }
@@ -740,7 +740,12 @@ def test_default_feature_job_setting_history(saved_event_table):
 
     history = saved_event_table.default_feature_job_setting_history
     expected_history_1 = {
-        "setting": {"blind_spot": "1m", "period": "5m", "offset": "2m", "execution_buffer": "0s"}
+        "setting": {
+            "blind_spot": "60s",
+            "period": "300s",
+            "offset": "120s",
+            "execution_buffer": "0s",
+        }
     }
     assert len(history) == 3
     assert history[1].items() >= expected_history_0.items()
@@ -785,22 +790,22 @@ def test_default_feature_job_setting_history(saved_event_table):
                 "UPDATE",
                 'update: "sf_event_table"',
                 "default_feature_job_setting.blind_spot",
-                "1m30s",
-                "1m",
+                "90s",
+                "60s",
             ),
             (
                 "UPDATE",
                 'update: "sf_event_table"',
                 "default_feature_job_setting.period",
-                "10m",
-                "5m",
+                "600s",
+                "300s",
             ),
             (
                 "UPDATE",
                 'update: "sf_event_table"',
                 "default_feature_job_setting.offset",
-                "2m",
-                "2m",
+                "120s",
+                "120s",
             ),
             (
                 "UPDATE",
@@ -829,7 +834,7 @@ def test_default_feature_job_setting_history(saved_event_table):
                 'update: "sf_event_table"',
                 "default_feature_job_setting.blind_spot",
                 np.nan,
-                "1m30s",
+                "90s",
             ),
             (
                 "UPDATE",
@@ -843,14 +848,14 @@ def test_default_feature_job_setting_history(saved_event_table):
                 'update: "sf_event_table"',
                 "default_feature_job_setting.offset",
                 np.nan,
-                "2m",
+                "120s",
             ),
             (
                 "UPDATE",
                 'update: "sf_event_table"',
                 "default_feature_job_setting.period",
                 np.nan,
-                "10m",
+                "600s",
             ),
             (
                 "UPDATE",

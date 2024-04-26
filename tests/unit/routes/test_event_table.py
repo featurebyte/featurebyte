@@ -142,9 +142,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
         """
         return {
             "default_feature_job_setting": {
-                "blind_spot": "12m",
-                "period": "30m",
-                "offset": "5m",
+                "blind_spot": "720s",
+                "period": "1800s",
+                "offset": "300s",
                 "execution_buffer": "0s",
             },
             "record_creation_timestamp_column": "created_at",
@@ -196,7 +196,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             record["previous_values"].get("default_feature_job_setting")
             for record in results["data"]
         ] == [
-            {"blind_spot": "10m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
+            {"blind_spot": "600s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
             None,
             None,
         ]
@@ -208,8 +208,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["setting"] for doc in results] == [
-            {"blind_spot": "12m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
-            {"blind_spot": "10m", "period": "30m", "offset": "5m", "execution_buffer": "0s"},
+            {"blind_spot": "720s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
+            {"blind_spot": "600s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
         ]
 
     def test_update_excludes_unsupported_fields(
@@ -317,9 +317,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "table_name": "sf_table",
             },
             "default_feature_job_setting": {
-                "blind_spot": "10m",
-                "period": "30m",
-                "offset": "5m",
+                "blind_spot": "600s",
+                "period": "1800s",
+                "offset": "300s",
                 "execution_buffer": "0s",
             },
             "status": "PUBLIC_DRAFT",

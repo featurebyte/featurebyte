@@ -79,8 +79,8 @@ def test_feature_binary_operation_validation__feature_job_settings(
     feature_sum_30m = feature_group["sum_30m"]
 
     # construct a feature with different feature job setting
-    assert feature_group_feature_job_setting.period == "30m"
-    feature_group_feature_job_setting.period = "1h"
+    assert feature_group_feature_job_setting.period == "1800s"
+    feature_group_feature_job_setting.period = "3600s"
     feature_sum_1w = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
