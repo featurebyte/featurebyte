@@ -83,7 +83,14 @@ SELECT
     )
     THEN 0
     ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS "__feature_requiring_parent_serving_V220101__part1"
+  END AS "__feature_requiring_parent_serving_V220101__part1",
+  CASE
+    WHEN (
+      "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
+    )
+    THEN 0
+    ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
+  END AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
@@ -226,7 +233,8 @@ FROM JOINED_PARENTS_ENTITY_UNIVERSE;
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000" AS
 SELECT
   L."cust_id",
-  R."__feature_requiring_parent_serving_V220101__part1"
+  R."__feature_requiring_parent_serving_V220101__part1",
+  R."__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM "TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS L
 LEFT JOIN "TEMP_FEATURE_TABLE_000000000000000000000000" AS R
   ON L."gender" = R."gender";
@@ -234,19 +242,23 @@ LEFT JOIN "TEMP_FEATURE_TABLE_000000000000000000000000" AS R
 INSERT INTO "cat1_gender_1d" (
   "__feature_timestamp",
   "gender",
-  "__feature_requiring_parent_serving_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1",
+  "__feature_requiring_parent_serving_plus_123_V220101__part1"
 ) SELECT
   CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
   "gender",
-  "__feature_requiring_parent_serving_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1",
+  "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM "TEMP_FEATURE_TABLE_000000000000000000000000";
 
 INSERT INTO "cat1_gender_1d_via_cust_id_000000" (
   "__feature_timestamp",
   "cust_id",
-  "__feature_requiring_parent_serving_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1",
+  "__feature_requiring_parent_serving_plus_123_V220101__part1"
 ) SELECT
   CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
   "cust_id",
-  "__feature_requiring_parent_serving_V220101__part1"
+  "__feature_requiring_parent_serving_V220101__part1",
+  "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM "TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000";

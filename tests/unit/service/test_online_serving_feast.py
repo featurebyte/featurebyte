@@ -206,5 +206,11 @@ async def test_feature_requiring_parent_serving(
         request_data,
     )
     assert result.dict() == {
-        "features": [{"cust_id": "a", "feature_requiring_parent_serving": None}]
+        "features": [
+            {
+                "cust_id": "a",
+                "feature_requiring_parent_serving_plus_123": None,
+                "feature_requiring_parent_serving": None,
+            }
+        ]
     }
