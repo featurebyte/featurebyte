@@ -36,7 +36,6 @@ from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_feature_tables
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -368,15 +367,7 @@ class OfflineStoreTableBuilder:
                     assert precomputed_lookup_feature_table is not None
                     offline_store_tables.append(precomputed_lookup_feature_table)
 
-        offline_store_tables_for_entity_lookup = (
-            OfflineStoreTableBuilder.create_offline_store_tables_for_entity_lookup(
-                feature_lists=feature_lists,
-                feature_store=feature_store,
-                entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-            )
-        )
-
-        return offline_store_tables + offline_store_tables_for_entity_lookup
+        return offline_store_tables
 
     @staticmethod
     def _get_precomputed_lookup_feature_table(
@@ -430,60 +421,6 @@ class OfflineStoreTableBuilder:
                 source_feature_table_name=offline_store_table.table_name,
             )
         return None
-
-    @staticmethod
-    def create_offline_store_tables_for_entity_lookup(
-        feature_lists: List[FeatureListModel],
-        feature_store: FeatureStoreModel,
-        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
-    ) -> List[OfflineStoreTable]:
-        """
-        Create offline store tables for entity lookup purpose
-
-        Parameters
-        ----------
-        feature_lists: List[FeatureListModel]
-            List of feature lists
-        feature_store: FeatureStoreModel
-            Feature store model
-        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep]
-            Entity lookup steps mapping derived from feature lists
-
-        Returns
-        -------
-        List[OfflineStoreTable]
-        """
-
-        lookup_tables = get_entity_lookup_feature_tables(
-            feature_lists=feature_lists,
-            feature_store=feature_store,
-            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-        )
-        if lookup_tables is None:
-            return []
-
-        entity_lookup_feature_tables = []
-        for lookup_table in lookup_tables:
-            entity_lookup_feature_tables.append(
-                OfflineStoreTable(
-                    table_name=lookup_table.name,
-                    feature_job_setting=lookup_table.feature_job_setting,
-                    has_ttl=lookup_table.has_ttl,
-                    output_column_names=lookup_table.output_column_names,
-                    output_dtypes=lookup_table.output_dtypes,
-                    primary_entity_info=[
-                        OfflineStoreEntityInfo(
-                            id=entity_id,
-                            name=serving_name,
-                            dtype=DBVarType.VARCHAR,
-                        )
-                        for (entity_id, serving_name) in zip(
-                            lookup_table.primary_entity_ids, lookup_table.serving_names
-                        )
-                    ],
-                )
-            )
-        return entity_lookup_feature_tables
 
 
 class FeastAssetCreator:

@@ -4,7 +4,7 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
-from typing import AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from datetime import datetime
 from pathlib import Path
@@ -284,6 +284,23 @@ class OfflineStoreFeatureTableService(
             query_filter={"_id": document_id},
             update={"$pull": {"deployment_ids": deployment_id}},
         )
+
+    async def list_deprecated_entity_lookup_feature_tables_as_dict(
+        self,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        Retrieve entity lookup feature tables that deprecated for clean up purpose
+
+        Yields
+        -------
+        AsyncIterator[OfflineStoreFeatureTableModel]
+            List query output
+        """
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter={"entity_lookup_info": {"$ne": None}},
+            projection={"_id": 1, "name": 1},
+        ):
+            yield doc
 
     async def list_precomputed_lookup_feature_tables_from_source(
         self,

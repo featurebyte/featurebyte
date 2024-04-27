@@ -77,7 +77,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
-    entity_lookup_info: Optional[EntityRelationshipInfo]
+    entity_lookup_info: Optional[EntityRelationshipInfo]  # Note: deprecated
     precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
     deployment_ids: List[PydanticObjectId] = Field(default_factory=list)

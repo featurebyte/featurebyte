@@ -117,19 +117,6 @@ async def offline_feature_table_no_primary_entity(app_container, deployed_featur
     raise AssertionError("Feature table not found")
 
 
-@pytest_asyncio.fixture
-async def offline_feature_table_entity_lookup(app_container, deployed_features):
-    """
-    Fixture for a offline feature table for entity lookup
-    """
-    _ = deployed_features
-    service = app_container.offline_store_feature_table_service
-    async for feature_table in service.list_documents_iterator(query_filter={}):
-        if feature_table.entity_lookup_info is not None:
-            return feature_table
-    raise AssertionError("Feature table not found")
-
-
 @pytest.mark.asyncio
 async def test_apply_comments(service, mock_snowflake_session):
     """
@@ -207,11 +194,12 @@ async def test_table_comment(
     deployed_features,
     offline_feature_table,
     offline_feature_table_no_primary_entity,
-    offline_feature_table_entity_lookup,
 ):
     """
     Test comments for offline feature tables
     """
+    _ = deployed_features
+
     # Regular offline feature tables
     comment = await service.generate_table_comment(offline_feature_table)
     expected = TableComment(
@@ -227,15 +215,6 @@ async def test_table_comment(
         comment="This feature table consists of features without a primary entity. It is updated every 86400 second(s), with a blind spot of 7200 second(s) and a time modulo frequency of 3600 second(s).",
     )
     assert comment == expected
-
-    # Entity lookup feature table
-    feature_list = deployed_features["feature_list"]
-    relationship_info_id = feature_list.relationships_info[0].id
-    comment = await service.generate_table_comment(offline_feature_table_entity_lookup)
-    assert comment == TableComment(
-        table_name=f"fb_entity_lookup_{relationship_info_id}",
-        comment="This feature table is used to lookup the entity customer (serving name: cust_id) using the entity transaction (serving name: transaction_id) based on their parent-child relationship. It is updated every 86400 second(s), with a blind spot of 0 second(s) and a time modulo frequency of 0 second(s).",
-    )
 
 
 @pytest.mark.asyncio
@@ -277,15 +256,6 @@ async def test_column_comment(service, deployed_features):
             ),
         ),
     ]
-
-
-@pytest.mark.asyncio
-async def test_lookup_table_retrieval(app_container, offline_feature_table_entity_lookup):
-    """Test lookup table retrieval"""
-    offline_table_service = app_container.offline_store_feature_table_service
-    table = await offline_table_service.get_or_create_document(offline_feature_table_entity_lookup)
-    assert table.id == offline_feature_table_entity_lookup.id
-    assert table.name == offline_feature_table_entity_lookup.name
 
 
 @pytest.mark.asyncio

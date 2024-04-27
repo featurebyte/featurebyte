@@ -16,6 +16,8 @@ from featurebyte.common.model_util import get_version
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
+from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -140,7 +142,7 @@ async def deployed_float_feature_list(
         deployment_id=float_feat_deployment_id,
     )
     assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id]]
-    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
+    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
 
@@ -388,7 +390,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_cust_id_30m",
                 "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"sum_1d_list_{fl_version}"},
         },
@@ -396,7 +397,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_cust_id_30m",
                 "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"sum_1d_plus_123_list_{fl_version}"},
         },
@@ -416,7 +416,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_gender_1d",
                 "cat1_gender_1d_via_cust_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"asat_gender_count_list_{fl_version}"},
         },
@@ -535,6 +534,34 @@ async def customer_to_gender_relationship_info(
     )
 
 
+@pytest_asyncio.fixture
+async def deprecated_entity_lookup_feature_tables(app_container):
+    """
+    Fixture for a deprecated entity lookup feature table
+    """
+    table_id = ObjectId()
+    model = OfflineStoreFeatureTableModel(
+        _id=table_id,
+        name="entity_lookup_table_name",
+        feature_ids=[],
+        primary_entity_ids=[ObjectId()],
+        serving_names=["customer_id"],
+        has_ttl=False,
+        output_column_names=["city_id"],
+        output_dtypes=["VARCHAR"],
+        entity_lookup_info=EntityRelationshipInfo(
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=ObjectId(),
+            related_entity_id=ObjectId(),
+            relation_table_id=ObjectId(),
+        ),
+        catalog_id=app_container.catalog_id,
+    )
+    doc = await app_container.offline_store_feature_table_service.create_document(model)
+    return doc
+
+
+@pytest.mark.usefixtures("deprecated_entity_lookup_feature_tables")
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     app_container,
@@ -556,7 +583,6 @@ async def test_feature_table_one_feature_deployed(
         [transaction_to_customer_relationship_info]
     )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
@@ -688,7 +714,6 @@ async def test_feature_table_two_features_deployed(
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -783,7 +808,6 @@ async def test_feature_table_undeploy(
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -876,7 +900,6 @@ async def test_feature_table_undeploy(
     assert {c.args[0].name for c in drop_table_calls} == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
 
     # Check feast registry after both undeploy
@@ -916,7 +939,6 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "cat1_cust_id_30m",
         "cat1_cust_id_3h",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
 
     # Check customer entity feature table
@@ -1162,7 +1184,6 @@ async def test_aggregate_asat_feature(
     assert set(feature_tables.keys()) == {
         "cat1_gender_1d",
         f"cat1_gender_1d_via_cust_id_{expected_suffix}",
-        f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_gender_1d"]
 
@@ -1364,7 +1385,6 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
         [transaction_to_customer_relationship_info]
     )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
