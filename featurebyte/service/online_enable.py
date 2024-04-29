@@ -96,6 +96,7 @@ class OnlineEnableService:
         session: Optional[BaseSession],
         feature_manager_service: FeatureManagerService,
         feature: FeatureModel,
+        target_online_enabled: bool,
         is_recreating_schema: bool = False,
     ) -> None:
         """
@@ -109,7 +110,9 @@ class OnlineEnableService:
         feature_manager_service: FeatureManagerService
             An instance of FeatureManagerService to handle materialization of features and tiles
         feature: FeatureModel
-            Updated Feature object
+            Feature used to update the data warehouse
+        target_online_enabled: bool
+            Target online enabled status
         is_recreating_schema: bool
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
@@ -117,7 +120,7 @@ class OnlineEnableService:
         extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
 
-        if feature.online_enabled:
+        if target_online_enabled:
             assert session is not None
             await feature_manager_service.online_enable(
                 session, online_feature_spec, is_recreating_schema=is_recreating_schema
@@ -126,7 +129,7 @@ class OnlineEnableService:
             await feature_manager_service.online_disable(session, online_feature_spec)
 
     async def update_data_warehouse(
-        self, updated_feature: FeatureModel, online_enabled_before_update: bool
+        self, feature: FeatureModel, target_online_enabled: bool
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -134,30 +137,25 @@ class OnlineEnableService:
 
         Parameters
         ----------
-        updated_feature: FeatureModel
-            Updated Feature
-        online_enabled_before_update: bool
-            Online enabled status
+        feature: FeatureModel
+            Feature used to update the data warehouse
+        target_online_enabled: bool
+            Target online enabled status
 
         Raises
         ------
         DataWarehouseConnectionError
             If data warehouse session cannot be created
         """
-        if updated_feature.online_enabled == online_enabled_before_update:
-            # updated_feature has the same online_enabled status as the original one
-            # no need to update
-            return
-
         feature_store_model = await self.feature_store_service.get_document(
-            document_id=updated_feature.tabular_source.feature_store_id
+            document_id=feature.tabular_source.feature_store_id
         )
         try:
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store_model
             )
         except DataWarehouseConnectionError as exc:
-            if updated_feature.online_enabled:
+            if target_online_enabled:
                 raise exc
             # This could happen if the data warehouse is defunct and no session can be established.
             # In case of disabling a feature, we still want to be able to proceed and disable the
@@ -167,7 +165,8 @@ class OnlineEnableService:
         await self.update_data_warehouse_with_session(
             session=session,
             feature_manager_service=self.feature_manager_service,
-            feature=updated_feature,
+            feature=feature,
+            target_online_enabled=target_online_enabled,
         )
 
     async def update_feature(

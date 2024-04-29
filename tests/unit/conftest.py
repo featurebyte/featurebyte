@@ -2351,12 +2351,13 @@ def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id)
 def mock_update_data_warehouse(app_container):
     """Mock update data warehouse method"""
 
-    async def mock_func(updated_feature, online_enabled_before_update):
-        _ = online_enabled_before_update
-        extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
+    async def mock_func(feature, target_online_enabled):
+        _ = target_online_enabled
+        extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-        for query in online_feature_spec.precompute_queries:
-            await app_container.online_store_compute_query_service.create_document(query)
+        if target_online_enabled:
+            for query in online_feature_spec.precompute_queries:
+                await app_container.online_store_compute_query_service.create_document(query)
 
     with patch(
         "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",
