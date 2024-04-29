@@ -378,41 +378,6 @@ class DeployFeatureListManagementService:
         if to_enable_deployment:
             yield await self.deployment_service.get_document_as_dict(deployment_id)
 
-    async def _get_enabled_serving_entity_ids(
-        self,
-        feature_list_model: FeatureListModel,
-        deployment_id: ObjectId,
-        to_enable_deployment: bool,
-    ) -> List[ServingEntity]:
-        # List of all possible serving entity ids for the feature list
-        supported_serving_entity_ids_set = {
-            tuple(serving_entity_ids)
-            for serving_entity_ids in feature_list_model.supported_serving_entity_ids
-        }
-
-        # List of enabled serving entity ids is a subset of supported_serving_entity_ids and is
-        # determined by existing deployments
-        enabled_serving_entity_ids: Set[Tuple[PydanticObjectId, ...]] = set()
-
-        async for doc in self._iterate_enabled_deployments_as_dict(
-            feature_list_model.id, deployment_id, to_enable_deployment
-        ):
-            if doc.get("serving_entity_ids") is None:
-                deployment_serving_entity_ids = (
-                    await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
-                        feature_list_id=feature_list_model.id,
-                        context_id=doc["context_id"],
-                        use_case_id=doc["use_case_id"],
-                    )
-                )
-            else:
-                deployment_serving_entity_ids = doc["serving_entity_ids"]
-            deployment_serving_entity_ids_tuple = tuple(deployment_serving_entity_ids)
-            assert deployment_serving_entity_ids_tuple in supported_serving_entity_ids_set
-            enabled_serving_entity_ids.add(deployment_serving_entity_ids_tuple)
-
-        return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
-
     async def deploy_feature_list(
         self, feature_list: FeatureListModel, deployment_id: ObjectId
     ) -> FeatureListModel:
@@ -430,16 +395,10 @@ class DeployFeatureListManagementService:
         -------
         FeatureListModel
         """
-        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
-            feature_list_model=feature_list,
-            deployment_id=deployment_id,
-            to_enable_deployment=True,
-        )
         updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=True,
-                enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
         )
@@ -469,16 +428,10 @@ class DeployFeatureListManagementService:
         -------
         FeatureListModel
         """
-        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
-            feature_list_model=feature_list,
-            deployment_id=deployment_id,
-            to_enable_deployment=False,
-        )
         updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=False,
-                enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
         )

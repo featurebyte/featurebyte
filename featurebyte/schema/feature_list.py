@@ -188,7 +188,6 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     deployed: Optional[bool]
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
-    enabled_serving_entity_ids: Optional[List[ServingEntity]]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

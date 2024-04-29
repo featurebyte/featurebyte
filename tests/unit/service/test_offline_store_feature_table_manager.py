@@ -141,7 +141,6 @@ async def deployed_float_feature_list(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
@@ -177,7 +176,6 @@ async def deployed_float_feature_list_cust_id_use_case(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
@@ -251,7 +249,6 @@ async def deployed_scd_lookup_feature(
         return_type="feature_list",
         deployment_id=scd_lookup_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [feature_list.primary_entity_ids]
     feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
     return feature
 
@@ -1352,7 +1349,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
 
 
 @pytest.mark.asyncio
-async def test_enabled_serving_entity_ids_updated_no_op_deploy(
+async def test_new_deployment_on_already_enabled_feature_list(
     app_container,
     document_service,
     deployed_float_feature_list_cust_id_use_case,
@@ -1361,7 +1358,7 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
     transaction_to_customer_relationship_info,
 ):
     """
-    Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
+    Test precomputed lookup feature table is created for a no-op deployment request (when all the
     underlying features are already online enabled)
     """
     feature_tables = await get_all_feature_tables(document_service)
@@ -1378,8 +1375,7 @@ async def test_enabled_serving_entity_ids_updated_no_op_deploy(
         deployment_name_override="another_deployment_same_feature_list",
     )
 
-    # Check enabled_serving_entity_ids and offline feature tables
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
+    # Check offline feature tables
     feature_tables = await get_all_feature_tables(document_service)
     expected_suffix = get_lookup_steps_unique_identifier(
         [transaction_to_customer_relationship_info]
