@@ -49,14 +49,6 @@ def mock_get_feature_store_session_fixture(mock_snowflake_session):
         yield patched_get_feature_store_session
 
 
-@pytest.fixture(name="is_online_store_registered_for_catalog")
-def is_online_store_registered_for_catalog_fixture():
-    """
-    Fixture to determine if catalog is configured with an online store
-    """
-    return True
-
-
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
     app_container,
@@ -462,6 +454,82 @@ async def test_scheduled_materialize_features_if_materialized_before(
 
     # Check online last materialization timestamp updated
     offline_store_feature_table.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 2, 0, 0),
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_scheduled_materialize_features_batch_columns(
+    app_container,
+    feature_materialize_service,
+    offline_store_feature_table_with_precomputed_lookup,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    online_store,
+    mock_materialize_partial,
+):
+    """
+    Test calls to materialize_partial are batched
+    """
+    _ = mock_get_feature_store_session
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        schema = {
+            f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info",
+            f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1": "some_info",
+        }
+        return schema
+
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
+
+    offline_store_feature_table_with_precomputed_lookup.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 1, 0, 0),
+        )
+    ]
+
+    with freeze_time("2022-01-02 00:00:00"):
+        with patch("featurebyte.service.feature_materialize.NUM_COLUMNS_PER_MATERIALIZE", 1):
+            await feature_materialize_service.scheduled_materialize_features(
+                offline_store_feature_table_with_precomputed_lookup
+            )
+
+    # Check online materialization for a feature view
+    call_args_list = [
+        arg
+        for arg in mock_materialize_partial.call_args_list
+        if arg[1]["feature_view"].name == "cat1_gender_1d"
+    ]
+    assert len(call_args_list) == 2
+
+    expected_columns = [
+        [f"__feature_requiring_parent_serving_{get_version()}__part1"],
+        [f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"],
+    ]
+    for (_, kwargs), columns in zip(call_args_list, expected_columns):
+        _ = kwargs.pop("feature_store")
+        kwargs.pop("feature_view")
+        assert kwargs == {
+            "columns": columns,
+            "start_date": datetime(2022, 1, 1, 0, 0),
+            "end_date": datetime(2022, 1, 2, 0, 0),
+            "with_feature_timestamp": False,
+        }
+
+    # Check offline last materialization timestamp updated
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table_with_precomputed_lookup.id
+    )
+    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
+
+    # Check online last materialization timestamp updated
+    offline_store_feature_table_with_precomputed_lookup.online_stores_last_materialized_at = [
         OnlineStoreLastMaterializedAt(
             online_store_id=online_store.id,
             value=datetime(2022, 1, 2, 0, 0),
@@ -920,6 +988,7 @@ async def test_materialize_features_internal_relationships(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_columns(
     app_container,
@@ -969,6 +1038,7 @@ async def test_precomputed_lookup_feature_table__initialize_new_columns(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     app_container,
@@ -1023,6 +1093,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__scheduled_materialize_features_ttl(
     app_container,
@@ -1080,6 +1151,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features_
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.parametrize("has_missing_column", [False, True])
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_table(
