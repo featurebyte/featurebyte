@@ -661,7 +661,10 @@ class FeastRegistryBuilder:
         -------
         RepoConfig
         """
-        repo_config_kwargs = {"online_store": online_store_config}
+        repo_config_kwargs = {
+            "online_store": online_store_config,
+            "entity_key_serialization_version": 2,
+        }
         if offline_store_config:
             repo_config_kwargs["offline_store"] = offline_store_config
 
