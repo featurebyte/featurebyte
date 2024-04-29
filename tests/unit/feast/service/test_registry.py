@@ -146,6 +146,7 @@ async def test_get_feast_feature_store(
     feast_fs = await feast_feature_store_service.get_feast_feature_store(
         feast_registry=feast_registry
     )
+    assert feast_fs.config.entity_key_serialization_version == 2
 
     # check that assets in the registry can be retrieved
     entity_names = {entity.name for entity in feast_fs.list_entities()}
