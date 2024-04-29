@@ -110,8 +110,9 @@ async def materialize_partial(
     # table's stored feature timestamp is always up-to-date except on the first materialization run.
     # Patching this effectively skips the check, but a better solution might be to override the
     # implementation of RedisOnlineStore.online_write_batch().
-    with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"), patch(
-        "feast.infra.utils.snowflake.snowflake_utils._cache", snowflake_session_cache
+    with (
+        patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"),
+        patch("feast.infra.utils.snowflake.snowflake_utils._cache", snowflake_session_cache),
     ):
         try:
             await to_thread(

@@ -2261,9 +2261,10 @@ def mock_task_manager(request, persistent, storage, temp_storage):
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
-                "featurebyte.worker.task_executor.get_celery"
-            ) as mock_get_celery_worker:
+            with (
+                patch("featurebyte.app.get_celery") as mock_get_celery,
+                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
+            ):
 
                 def get_task(task_id):
                     status = task_status.get(task_id)

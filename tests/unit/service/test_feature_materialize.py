@@ -78,10 +78,13 @@ async def deployed_feature_list_fixture(
 
     # TODO: use deploy_feature() helper
     deployment_id = ObjectId()
-    with patch(
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
-    ), patch(
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
+    with (
+        patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+        ),
+        patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
+        ),
     ):
         await app_container.deploy_service.create_deployment(
             feature_list_id=production_ready_feature_list.id,

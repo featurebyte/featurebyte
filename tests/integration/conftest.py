@@ -317,9 +317,10 @@ def mock_get_persistent_fixture(persistent):
     """
     Mock get_persistent in featurebyte/app.py
     """
-    with mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent, mock.patch(
-        "featurebyte.worker.task_executor.MongoDBImpl"
-    ) as mock_persistent_worker:
+    with (
+        mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent,
+        mock.patch("featurebyte.worker.task_executor.MongoDBImpl") as mock_persistent_worker,
+    ):
         mock_persistent.return_value = persistent
         mock_persistent_worker.return_value = persistent
         yield
@@ -1480,9 +1481,10 @@ def mock_task_manager(request, persistent, storage):
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
-                "featurebyte.worker.task_executor.get_celery"
-            ) as mock_get_celery_worker:
+            with (
+                patch("featurebyte.app.get_celery") as mock_get_celery,
+                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
+            ):
 
                 def get_task(task_id):
                     status = task_status.get(task_id)

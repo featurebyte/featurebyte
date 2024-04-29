@@ -24,14 +24,16 @@ class TestS3StorageSuite(BaseStorageTestSuite):
         Storage object fixture
         """
 
-        with patch(
-            "featurebyte.utils.storage.S3_URL", "https://s3.ap-southeast-1.amazonaws.com"
-        ), patch(
-            "featurebyte.utils.storage.S3_ACCESS_KEY_ID",
-            os.environ["S3_ACCESS_KEY"],
-        ), patch(
-            "featurebyte.utils.storage.S3_SECRET_ACCESS_KEY",
-            os.environ["S3_SECRET_KEY"],
+        with (
+            patch("featurebyte.utils.storage.S3_URL", "https://s3.ap-southeast-1.amazonaws.com"),
+            patch(
+                "featurebyte.utils.storage.S3_ACCESS_KEY_ID",
+                os.environ["S3_ACCESS_KEY"],
+            ),
+            patch(
+                "featurebyte.utils.storage.S3_SECRET_ACCESS_KEY",
+                os.environ["S3_SECRET_KEY"],
+            ),
         ):
             bucket_name = "featurebyte-cicd"
             prefix = str(ObjectId())
