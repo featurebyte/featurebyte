@@ -2,18 +2,7 @@
 DeployService class
 """
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Coroutine,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-)
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
 import traceback
 
@@ -24,7 +13,6 @@ from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import (
     DeploymentModel,
     FeastIntegrationSettings,
@@ -389,44 +377,7 @@ class DeployFeatureListManagementService:
         if to_enable_deployment:
             yield await self.deployment_service.get_document_as_dict(deployment_id)
 
-    async def _get_enabled_serving_entity_ids(
-        self,
-        feature_list_model: FeatureListModel,
-        deployment_id: ObjectId,
-        to_enable_deployment: bool,
-    ) -> List[ServingEntity]:
-        # List of all possible serving entity ids for the feature list
-        supported_serving_entity_ids_set = {
-            tuple(serving_entity_ids)
-            for serving_entity_ids in feature_list_model.supported_serving_entity_ids
-        }
-
-        # List of enabled serving entity ids is a subset of supported_serving_entity_ids and is
-        # determined by existing deployments
-        enabled_serving_entity_ids: Set[Tuple[PydanticObjectId, ...]] = set()
-
-        async for doc in self._iterate_enabled_deployments_as_dict(
-            feature_list_model.id, deployment_id, to_enable_deployment
-        ):
-            if doc.get("serving_entity_ids") is None:
-                deployment_serving_entity_ids = (
-                    await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
-                        feature_list_id=feature_list_model.id,
-                        context_id=doc["context_id"],
-                        use_case_id=doc["use_case_id"],
-                    )
-                )
-            else:
-                deployment_serving_entity_ids = doc["serving_entity_ids"]
-            deployment_serving_entity_ids_tuple = tuple(deployment_serving_entity_ids)
-            assert deployment_serving_entity_ids_tuple in supported_serving_entity_ids_set
-            enabled_serving_entity_ids.add(deployment_serving_entity_ids_tuple)
-
-        return [list(serving_entity_ids) for serving_entity_ids in enabled_serving_entity_ids]
-
-    async def deploy_feature_list(
-        self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> FeatureListModel:
+    async def deploy_feature_list(self, feature_list: FeatureListModel) -> FeatureListModel:
         """
         Deploy feature list
 
@@ -434,23 +385,15 @@ class DeployFeatureListManagementService:
         ----------
         feature_list: FeatureListModel
             Target feature list
-        deployment_id: ObjectId
-            Deployment ID
 
         Returns
         -------
         FeatureListModel
         """
-        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
-            feature_list_model=feature_list,
-            deployment_id=deployment_id,
-            to_enable_deployment=True,
-        )
         updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=True,
-                enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
         )
@@ -463,9 +406,7 @@ class DeployFeatureListManagementService:
         assert updated_feature_list is not None
         return updated_feature_list
 
-    async def undeploy_feature_list(
-        self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> FeatureListModel:
+    async def undeploy_feature_list(self, feature_list: FeatureListModel) -> FeatureListModel:
         """
         Undeploy feature list
 
@@ -473,23 +414,15 @@ class DeployFeatureListManagementService:
         ----------
         feature_list: FeatureListModel
             Target feature list
-        deployment_id: ObjectId
-            Deployment ID
 
         Returns
         -------
         FeatureListModel
         """
-        enabled_serving_entity_ids = await self._get_enabled_serving_entity_ids(
-            feature_list_model=feature_list,
-            deployment_id=deployment_id,
-            to_enable_deployment=False,
-        )
         updated_feature_list = await self.feature_list_service.update_document(
             document_id=feature_list.id,
             data=FeatureListServiceUpdate(
                 deployed=False,
-                enabled_serving_entity_ids=enabled_serving_entity_ids,
             ),
             document=feature_list,
         )
@@ -741,9 +674,7 @@ class DeployService:
 
         # deploy feature list
         await self._update_progress(71, f"Deploying feature list ({feature_list.name}) ...")
-        await self.feature_list_management_service.deploy_feature_list(
-            feature_list=feature_list, deployment_id=deployment.id
-        )
+        await self.feature_list_management_service.deploy_feature_list(feature_list=feature_list)
 
         # update deployment status
         await self.deployment_service.update_document(
@@ -841,7 +772,7 @@ class DeployService:
             # undeploy feature list if not used in other deployment
             await self._update_progress(71, f"Undeploying feature list ({feature_list.name}) ...")
             feature_list = await self.feature_list_management_service.undeploy_feature_list(
-                feature_list=feature_list, deployment_id=deployment.id
+                feature_list=feature_list,
             )
         else:
             # Need to call handle_online_disabled_features even if there are no features to be
@@ -933,7 +864,7 @@ class DeployService:
                 await self.enable_deployment(deployment, feature_list)
         except Exception as exc:
             if deployment:
-                await self.deployment_service.delete_document(document_id=deployment_id)
+                await self.deployment_service.delete_document(document_id=deployment.id)
             raise DocumentCreationError("Failed to create deployment") from exc
 
     async def update_deployment(

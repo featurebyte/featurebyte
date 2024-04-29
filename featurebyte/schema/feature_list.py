@@ -23,7 +23,6 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureReadinessDistribution,
-    ServingEntity,
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -188,7 +187,6 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     deployed: Optional[bool]
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
-    enabled_serving_entity_ids: Optional[List[ServingEntity]]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):
