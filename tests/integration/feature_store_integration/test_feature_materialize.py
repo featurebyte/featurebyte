@@ -1004,7 +1004,7 @@ def test_online_features__primary_entity_ids(
 def test_online_features__invalid_child_entity(config, deployed_feature_list):
     """
     Check online features using a child entity that is a feature list's supported_serving_entity_ids
-    but not enabled_serving_entity_ids
+    but not the deployment's expected serving entity
     """
     client = config.get_client()
     deployment = deployed_feature_list
