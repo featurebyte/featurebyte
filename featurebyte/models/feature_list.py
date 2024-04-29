@@ -328,6 +328,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     supported_serving_entity_ids: List[ServingEntity] = Field(
         allow_mutation=False, default_factory=list
     )
+    enabled_serving_entity_ids: List[ServingEntity] = Field(  # TODO: to be removed
+        allow_mutation=False, default_factory=list
+    )
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
