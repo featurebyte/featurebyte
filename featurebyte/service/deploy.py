@@ -2,18 +2,7 @@
 DeployService class
 """
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Coroutine,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-)
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
 import traceback
 
@@ -24,7 +13,6 @@ from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import (
     DeploymentModel,
     FeastIntegrationSettings,
@@ -378,9 +366,7 @@ class DeployFeatureListManagementService:
         if to_enable_deployment:
             yield await self.deployment_service.get_document_as_dict(deployment_id)
 
-    async def deploy_feature_list(
-        self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> FeatureListModel:
+    async def deploy_feature_list(self, feature_list: FeatureListModel) -> FeatureListModel:
         """
         Deploy feature list
 
@@ -388,8 +374,6 @@ class DeployFeatureListManagementService:
         ----------
         feature_list: FeatureListModel
             Target feature list
-        deployment_id: ObjectId
-            Deployment ID
 
         Returns
         -------
@@ -411,9 +395,7 @@ class DeployFeatureListManagementService:
         assert updated_feature_list is not None
         return updated_feature_list
 
-    async def undeploy_feature_list(
-        self, feature_list: FeatureListModel, deployment_id: ObjectId
-    ) -> FeatureListModel:
+    async def undeploy_feature_list(self, feature_list: FeatureListModel) -> FeatureListModel:
         """
         Undeploy feature list
 
@@ -421,8 +403,6 @@ class DeployFeatureListManagementService:
         ----------
         feature_list: FeatureListModel
             Target feature list
-        deployment_id: ObjectId
-            Deployment ID
 
         Returns
         -------
@@ -656,7 +636,7 @@ class DeployService:
         # deploy feature list
         await self._update_progress(71, f"Deploying feature list ({feature_list.name}) ...")
         feature_list = await self.feature_list_management_service.deploy_feature_list(
-            feature_list=feature_list, deployment_id=deployment.id
+            feature_list=feature_list,
         )
 
         if feast_registry:
@@ -771,7 +751,7 @@ class DeployService:
             # undeploy feature list if not used in other deployment
             await self._update_progress(71, f"Undeploying feature list ({feature_list.name}) ...")
             feature_list = await self.feature_list_management_service.undeploy_feature_list(
-                feature_list=feature_list, deployment_id=deployment.id
+                feature_list=feature_list,
             )
         else:
             # Need to call handle_online_disabled_features even if there are no features to be

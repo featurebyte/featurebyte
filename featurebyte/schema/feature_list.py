@@ -23,7 +23,6 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureReadinessDistribution,
-    ServingEntity,
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin

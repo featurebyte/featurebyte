@@ -161,7 +161,6 @@ async def deployed_float_feature(app_container, deployed_float_feature_list):
 async def deployed_float_feature_list_cust_id_use_case(
     app_container,
     float_feature,
-    cust_id_entity,
     float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
@@ -1354,7 +1353,6 @@ async def test_new_deployment_on_already_enabled_feature_list(
     document_service,
     deployed_float_feature_list_cust_id_use_case,
     transaction_entity,
-    cust_id_entity,
     transaction_to_customer_relationship_info,
 ):
     """
@@ -1368,7 +1366,7 @@ async def test_new_deployment_on_already_enabled_feature_list(
 
     # Make a new deployment with transaction use case. Now we need to be able to serve this feature
     # list using child entity transaction.
-    feature_list = await deploy_feature_list(
+    _ = await deploy_feature_list(
         app_container,
         deployed_float_feature_list_cust_id_use_case,
         context_primary_entity_ids=[transaction_entity.id],
