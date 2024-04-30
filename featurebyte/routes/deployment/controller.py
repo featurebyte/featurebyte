@@ -51,7 +51,7 @@ from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.use_case import UseCaseService
 
 
-class DeploymentController(
+class DeploymentController(  # pylint: disable=too-many-instance-attributes, too-many-arguments
     BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]
 ):
     """
@@ -337,11 +337,13 @@ class DeploymentController(
             Sample entity serving names
         """
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
-        entity_serving_names = (
-            await self.entity_serving_names_service.get_sample_entity_serving_names(
-                entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+        entity_serving_names = []
+        if deployment.serving_entity_ids:
+            entity_serving_names = (
+                await self.entity_serving_names_service.get_sample_entity_serving_names(
+                    entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+                )
             )
-        )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
 
 
