@@ -1101,6 +1101,14 @@ def fl_requiring_parent_serving_deployment_id_fixture():
     return ObjectId()
 
 
+@pytest.fixture(name="is_online_store_registered_for_catalog")
+def is_online_store_registered_for_catalog_fixture():
+    """
+    Fixture to determine if catalog is configured with an online store
+    """
+    return True
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
 async def deployed_feature_list_requiring_parent_serving_fixture(
     app_container,
@@ -1111,6 +1119,8 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     fl_requiring_parent_serving_deployment_id,
     mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
 ):
     """
     Fixture a deployed feature list that require serving parent features
@@ -1135,6 +1145,12 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     new_feature_2 = new_feature + 123
     new_feature_2.name = new_feature.name + "_plus_123"
     new_feature_2.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
 
     feature_list = await deploy_feature_ids(
         app_container,
