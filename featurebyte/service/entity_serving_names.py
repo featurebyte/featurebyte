@@ -75,7 +75,7 @@ class EntityServingNamesService:
         return unique_values
 
     async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
-        self, entity_ids: Sequence[ObjectId], table_ids: Sequence[ObjectId], count: int
+        self, entity_ids: Sequence[ObjectId], table_ids: Optional[Sequence[ObjectId]], count: int
     ) -> List[Dict[str, str]]:
         """
         Get sample entity serving names for a list of entities and tables
@@ -84,7 +84,7 @@ class EntityServingNamesService:
         ----------
         entity_ids: Sequence[ObjectId]
             List of entity ids
-        table_ids: Sequence[ObjectId]
+        table_ids: Optional[Sequence[ObjectId]]
             List of table ids
         count: int
             Number of sample entity serving names to return
@@ -104,6 +104,14 @@ class EntityServingNamesService:
         entities: Dict[ObjectId, Dict[str, List[str]]] = {
             entity.id: {"serving_name": entity.serving_names} for entity in primary_entity
         }
+        if table_ids is None:
+            table_ids = []
+            for entity in primary_entity:
+                if entity.primary_table_ids:
+                    table_ids.append(entity.primary_table_ids[0])
+                else:
+                    table_ids.append(entity.table_ids[0])
+
         tables = self.table_service.list_documents_iterator(
             query_filter={"_id": {"$in": table_ids}}
         )
