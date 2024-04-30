@@ -44,6 +44,7 @@ from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
@@ -70,6 +71,7 @@ class DeploymentController(
         use_case_service: UseCaseService,
         batch_feature_table_service: BatchFeatureTableService,
         feast_feature_store_service: FeastFeatureStoreService,
+        entity_serving_names_service: EntityServingNamesService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -80,6 +82,7 @@ class DeploymentController(
         self.use_case_service = use_case_service
         self.batch_feature_table_service = batch_feature_table_service
         self.feast_feature_store_service = feast_feature_store_service
+        self.entity_serving_names_service = entity_serving_names_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -334,8 +337,10 @@ class DeploymentController(
             Sample entity serving names
         """
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
-        entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
-            feature_list_id=deployment.feature_list_id, count=count
+        entity_serving_names = (
+            await self.entity_serving_names_service.get_sample_entity_serving_names(
+                entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+            )
         )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
 
