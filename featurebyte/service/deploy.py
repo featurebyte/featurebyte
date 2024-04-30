@@ -190,16 +190,17 @@ class DeployFeatureManagementService:
         -------
         FeatureModel
         """
-        # update data warehouse and backward-fill tiles
-        await self.online_enable_service.update_data_warehouse(
-            feature=feature,
-            target_online_enabled=False,
-        )
-
         # update feature mongo record
         updated_feature = await self.update_feature_online_enabled_status(
             feature_id=feature.id, feature_list_id=feature_list.id, feature_list_to_deploy=False
         )
+
+        if not updated_feature.online_enabled:
+            # update data warehouse and backward-fill tiles
+            await self.online_enable_service.update_data_warehouse(
+                feature=feature, target_online_enabled=False
+            )
+
         return updated_feature
 
 
