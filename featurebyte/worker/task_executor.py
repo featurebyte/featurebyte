@@ -52,6 +52,7 @@ async def _loop_health_tracker() -> None:
     """
     global EVENT_LOOP_HEALTH_LAST_CHECK_TIME  # pylint: disable=global-statement
     while True:
+        logger.debug("Health check for asyncio loop is running")
         EVENT_LOOP_HEALTH_LAST_CHECK_TIME = time.time()
         await asyncio.sleep(EVENT_LOOP_HEALTH_CHECK_INTERVAL)
 
@@ -75,11 +76,13 @@ def _check_asyncio_loop() -> asyncio.AbstractEventLoop:
 
     if EVENT_LOOP_HEALTH_LAST_CHECK_TIME is None:
         # initialize health check
+        logger.debug("Initializing asyncio loop health tracker")
         EVENT_LOOP_HEALTH_LAST_CHECK_TIME = time.time()
         asyncio.run_coroutine_threadsafe(_loop_health_tracker(), ASYNCIO_LOOP)
 
     # kill worker if event loop is not responsive
-    if time.time() - EVENT_LOOP_HEALTH_LAST_CHECK_TIME > EVENT_LOOP_HEALTH_CHECK_THRESHOLD:
+    time_since_last_update = time.time() - EVENT_LOOP_HEALTH_LAST_CHECK_TIME
+    if time_since_last_update > EVENT_LOOP_HEALTH_CHECK_THRESHOLD:
         logger.error("Event loop is not responsive, shutting down")
         # attempt to cancel all tasks where possible
         task_ids = set()
@@ -89,6 +92,9 @@ def _check_asyncio_loop() -> asyncio.AbstractEventLoop:
         # raise exception to terminate worker
         raise WorkerTerminate(True)
 
+    logger.debug(
+        "Event loop is responsive", extra={"time_since_last_update": time_since_last_update}
+    )
     return ASYNCIO_LOOP
 
 
