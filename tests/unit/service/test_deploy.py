@@ -185,6 +185,7 @@ async def test_update_deployment(
     )
     mock_update_data_warehouse.assert_called_once()
     assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is False
+    assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is True
 
     assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
@@ -206,6 +207,7 @@ async def test_update_deployment(
     )
     assert mock_update_data_warehouse.call_count == 2
     assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is True
+    assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is False
 
     assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
