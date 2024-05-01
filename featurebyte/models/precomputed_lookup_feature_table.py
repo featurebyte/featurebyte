@@ -24,6 +24,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     PrecomputedLookupFeatureTableInfo,
+    PrecomputedLookupMapping,
 )
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
@@ -141,11 +142,29 @@ def get_precomputed_lookup_feature_table(
         entity_ids_to_filter=full_serving_entity_ids,
         filter_by=primary_entity_ids,
     )
-    lookup_steps = EntityLookupPlanner.generate_lookup_steps(
-        available_entity_ids=serving_entity_ids,
-        required_entity_ids=primary_entity_ids,
-        relationships_info=feature_lists_relationships_info,
-    )
+    lookup_steps = []
+    lookup_mapping = []
+    for primary_entity_id in primary_entity_ids:
+        current_lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+            available_entity_ids=serving_entity_ids,
+            required_entity_ids=[primary_entity_id],
+            relationships_info=feature_lists_relationships_info,
+        )
+        for lookup_step in current_lookup_steps:
+            if lookup_step not in lookup_steps:
+                lookup_steps.append(lookup_step)
+                if lookup_step.entity_id in serving_entity_ids:
+                    lookup_mapping.append(
+                        PrecomputedLookupMapping(
+                            lookup_feature_table_serving_name=entity_id_to_serving_name[
+                                lookup_step.entity_id
+                            ],
+                            source_feature_table_serving_name=entity_id_to_serving_name[
+                                primary_entity_id
+                            ],
+                        )
+                    )
+
     key = tuple(lookup_steps)
     if not key:
         return None
@@ -171,6 +190,7 @@ def get_precomputed_lookup_feature_table(
         precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(
             lookup_steps=lookup_steps,
             source_feature_table_id=feature_table_id,
+            lookup_mapping=lookup_mapping,
         ),
         has_ttl=feature_table_has_ttl,
         output_column_names=[],

@@ -43,6 +43,15 @@ class OnlineStoreLastMaterializedAt(BaseModel):
     value: datetime
 
 
+class PrecomputedLookupMapping(BaseModel):
+    """
+    Track entities before and after lookup
+    """
+
+    lookup_feature_table_serving_name: str
+    source_feature_table_serving_name: str
+
+
 class PrecomputedLookupFeatureTableInfo(BaseModel):
     """
     Metadata for a feature table that is derived from a source feature table in order to support
@@ -51,6 +60,29 @@ class PrecomputedLookupFeatureTableInfo(BaseModel):
 
     lookup_steps: List[EntityRelationshipInfo]
     source_feature_table_id: Optional[PydanticObjectId]
+    lookup_mapping: Optional[List[PrecomputedLookupMapping]]
+
+    def get_lookup_feature_table_serving_name(
+        self, source_feature_table_serving_name: str
+    ) -> Optional[str]:
+        """
+        Returns the corresponding serving name in the precomputed lookup feature table given a
+        serving name in the source feature table, if available.
+
+        Parameters
+        ----------
+        source_feature_table_serving_name: str
+            Source feature table serving name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        mapping = {
+            entry.source_feature_table_serving_name: entry.lookup_feature_table_serving_name
+            for entry in (self.lookup_mapping or {})
+        }
+        return mapping.get(source_feature_table_serving_name)
 
 
 class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):

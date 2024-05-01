@@ -36,7 +36,11 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, get_combined_serving_names
+from featurebyte.query_graph.sql.entity import (
+    DUMMY_ENTITY_COLUMN_NAME,
+    get_combined_serving_names,
+    get_combined_serving_names_expr,
+)
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
@@ -397,6 +401,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         source_feature_table_serving_names: List[str],
         lookup_feature_table: OfflineStoreFeatureTableModel,
     ) -> MaterializedFeatures:
+
+        # Construct a lookup universe table with both the child and parent entities to be joined
+        # with the source feature table
         unique_id = ObjectId()
         lookup_universe_table_details = TableDetails(
             database_name=session.database_name,
@@ -423,15 +430,58 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             schema_name=session.schema_name,
             table_name=f"TEMP_LOOKUP_FEATURE_TABLE_{unique_id}".upper(),
         )
+
+        # Handle serving names and join conditions
+        lookup_info = lookup_feature_table.precomputed_lookup_feature_table_info
+        assert lookup_info is not None
+
+        serving_name_exprs = {}
+        join_conditions = []
+        for source_serving_name in source_feature_table_serving_names:
+            lookup_serving_name: Optional[str]
+            if lookup_info.lookup_mapping is None:
+                lookup_serving_name = source_serving_name  # backward compatibility
+            else:
+                lookup_serving_name = lookup_info.get_lookup_feature_table_serving_name(
+                    source_serving_name
+                )
+            if lookup_serving_name is None:
+                # source_serving_name is not part of the entity lookup, so it won't appear in the
+                # entity universe. This can happen in composite entity where only one of the
+                # entities are looked up in the precomputed lookup feature table.
+                serving_name_exprs[source_serving_name] = get_qualified_column_identifier(
+                    source_serving_name, "R"
+                )
+            else:
+                serving_name_exprs[lookup_serving_name] = get_qualified_column_identifier(
+                    lookup_serving_name, "L"
+                )
+                join_conditions.append(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(source_serving_name, "L"),
+                        expression=get_qualified_column_identifier(source_serving_name, "R"),
+                    )
+                )
+
+        if len(lookup_feature_table.serving_names) > 1:
+            combined_serving_names = get_combined_serving_names(lookup_feature_table.serving_names)
+            serving_name_exprs[combined_serving_names] = expressions.alias_(
+                get_combined_serving_names_expr(
+                    [
+                        serving_name_exprs[serving_name]
+                        for serving_name in lookup_feature_table.serving_names
+                    ]
+                ),
+                alias=combined_serving_names,
+            )
+
+        # Create the lookup feature table by joining the entity table with the source feature table
         create_lookup_feature_table_query = sql_to_string(
             adapter.create_table_as(
                 table_details=lookup_feature_table_details,
                 select_expr=expressions.select(
                     *(
-                        [
-                            get_qualified_column_identifier(column_name, "L")
-                            for column_name in lookup_feature_table.serving_names
-                        ]
+                        list(serving_name_exprs.values())
                         + [
                             get_qualified_column_identifier(column_name, "R")
                             for column_name in column_names
@@ -450,15 +500,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                         alias=expressions.TableAlias(this="R"),
                     ),
                     join_type="left",
-                    on=expressions.and_(
-                        *[
-                            expressions.EQ(
-                                this=get_qualified_column_identifier(serving_name, "L"),
-                                expression=get_qualified_column_identifier(serving_name, "R"),
-                            )
-                            for serving_name in source_feature_table_serving_names
-                        ]
-                    ),
+                    on=expressions.and_(*join_conditions),
                 ),
             ),
             source_type=session.source_type,

@@ -99,7 +99,8 @@ class EntityLookupFeatureTableService:
         feature_table_id: Optional[PydanticObjectId],
     ) -> Optional[OfflineStoreFeatureTableModel]:
         """
-        Construct the list of precomputed lookup feature tables for a given source feature table
+        Construct a precomputed lookup feature table for a given source feature table in order to
+        support a specific deployment with a predetermined serving entity ids
 
         Parameters
         ----------
