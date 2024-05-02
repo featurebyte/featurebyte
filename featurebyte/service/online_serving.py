@@ -307,8 +307,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         # Get required serving names and composite serving names that need further processing
         offline_store_table_docs = (
             await self.offline_store_feature_table_service.list_documents_as_dict(
-                query_filter={"feature_ids": {"$in": list(feature_id_to_versioned_name.keys())}},
-                project_name={"serving_names"},
+                query_filter={},
+                projection={"serving_names": 1},
             )
         )
         composite_serving_names = set()
