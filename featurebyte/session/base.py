@@ -104,7 +104,9 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     try:
         return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
     except asyncio.exceptions.TimeoutError:
-        _raise_timeout_exception_in_thread(thread_info["tid"])
+        tid = thread_info.get("tid")
+        if tid:
+            _raise_timeout_exception_in_thread(thread_info["tid"])
         raise
 
 
