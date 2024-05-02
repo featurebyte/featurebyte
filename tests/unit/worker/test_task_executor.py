@@ -12,9 +12,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType
+from featurebyte.worker import initialize_asyncio_event_loop
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
-from featurebyte.worker.task_executor import initialize_asyncio_event_loop, run_async
+from featurebyte.worker.task_executor import run_async
 from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
 
 

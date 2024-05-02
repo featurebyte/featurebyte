@@ -144,6 +144,7 @@ class TaskManager:
             query_filter={"_id": task_id},
             update={"$set": {"task_result": result}},
             user_id=self.user.id,
+            disable_audit=True,
         )
 
     async def get_task_result(self, task_id: str) -> Any:
