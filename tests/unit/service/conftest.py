@@ -1269,8 +1269,9 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
 
     Primary entity of the combined feature is group X another_entity.
 
-    Combined feature requires serving two feature tables (1. customer, 2. gender X another_entity
-    via group X another_entity) using group X another_entity as the serving entity.
+    Combined feature requires serving two feature tables (1. group entity, 2. gender entity X
+    another_entity via group X another_entity) using group entity X another_entity as the serving
+    entity.
     """
     _ = mock_offline_store_feature_manager_dependencies
     _ = mock_update_data_warehouse
