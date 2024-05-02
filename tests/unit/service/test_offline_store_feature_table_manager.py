@@ -673,6 +673,12 @@ async def test_feature_table_one_feature_deployed(
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
             "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
+            "lookup_mapping": [
+                {
+                    "lookup_feature_table_serving_name": "transaction_id",
+                    "source_feature_table_serving_name": "cust_id",
+                }
+            ],
             "source_feature_table_id": feature_table_id,
         },
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
@@ -1256,6 +1262,12 @@ async def test_aggregate_asat_feature(
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
             "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
+            "lookup_mapping": [
+                {
+                    "lookup_feature_table_serving_name": "cust_id",
+                    "source_feature_table_serving_name": "gender",
+                }
+            ],
             "source_feature_table_id": feature_table_id,
         },
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],

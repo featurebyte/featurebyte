@@ -4,7 +4,7 @@ Entity related helpers
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence, Union
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -34,7 +34,7 @@ def get_combined_serving_names(serving_names: List[str]) -> str:
 
 
 def get_combined_serving_names_expr(
-    serving_names: List[str],
+    serving_names: Sequence[Union[str, Expression]],
     serving_names_table_alias: Optional[str] = None,
 ) -> Expression:
     """
@@ -55,12 +55,15 @@ def get_combined_serving_names_expr(
     assert len(serving_names) > 0
     parts: List[Expression] = []
     for serving_name in serving_names:
-        if serving_names_table_alias is not None:
-            serving_name_expr = get_qualified_column_identifier(
-                serving_name, serving_names_table_alias
-            )
+        if isinstance(serving_name, str):
+            if serving_names_table_alias is not None:
+                serving_name_expr = get_qualified_column_identifier(
+                    serving_name, serving_names_table_alias
+                )
+            else:
+                serving_name_expr = quoted_identifier(serving_name)
         else:
-            serving_name_expr = quoted_identifier(serving_name)
+            serving_name_expr = serving_name
         expr = expressions.Cast(this=serving_name_expr, to=expressions.DataType.build("VARCHAR"))
         parts.append(expr)
         parts.append(make_literal_value("::"))

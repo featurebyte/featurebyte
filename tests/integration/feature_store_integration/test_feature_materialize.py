@@ -1068,7 +1068,44 @@ def test_online_features__non_existing_order_id(
 
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__composite_entities(
+def test_online_features__composite_entities(config, deployed_feature_list_composite_entities):
+    """
+    Check online features when the feature list only has a feature with composite entities
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list_composite_entities
+
+    entity_serving_names = [
+        {
+            "PRODUCT_ACTION": "detail",
+            "üser id": 7,
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+
+    feat_dict = res.json()["features"][0]
+    expected = {
+        "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
+        "PRODUCT_ACTION": "detail",
+        "üser id": 7,
+    }
+    assert_dict_approx_equal(feat_dict, expected)
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__composite_entities_via_order_id(
     config, deployed_feature_list_composite_entities_order_use_case
 ):
     """
