@@ -214,3 +214,37 @@ async def test_feature_requiring_parent_serving(
             }
         ]
     }
+
+
+@pytest.mark.asyncio
+async def test_feature_requiring_parent_serving_composite_entity(
+    app_container,
+    online_serving_service,
+    deployed_feature_list_requiring_parent_serving_composite_entity,
+    fl_requiring_parent_serving_deployment_id,
+):
+    """
+    Test online serving feast with feature requiring parent serving
+    """
+    feast_feature_store = await get_feast_feature_store(
+        app_container, fl_requiring_parent_serving_deployment_id
+    )
+    request_data = [{"another_key": "a", "group_key": "b"}]
+    deployment = await get_deployment_from_feature_list(
+        app_container, deployed_feature_list_requiring_parent_serving_composite_entity.id
+    )
+    result = await online_serving_service.get_online_features_by_feast(
+        deployed_feature_list_requiring_parent_serving_composite_entity,
+        deployment,
+        feast_feature_store,
+        request_data,
+    )
+    assert result.dict() == {
+        "features": [
+            {
+                "another_key": "a",
+                "group_key": "b",
+                "feature_requiring_parent_serving": None,
+            }
+        ]
+    }

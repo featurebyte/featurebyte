@@ -1243,3 +1243,67 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
     ]
 
     return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_composite_entity")
+async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(
+    app_container,
+    descendant_of_gender_feature,
+    aggregate_asat_composite_entity_feature,
+    group_entity,
+    gender_entity,
+    another_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
+):
+    """
+    Fixture a deployed feature list that require serving parent features with composite entities
+
+    descendant_of_gender_feature: group entity feature (non-ttl)
+    aggregate_asat_composite_entity_feature: gender X another_entity feature (non-ttl)
+
+    Group is a parent of gender.
+
+    Primary entity of the combined feature is group X another_entity.
+
+    Combined feature requires serving two feature tables (1. customer, 2. gender X another_entity
+    via group X another_entity) using group X another_entity as the serving entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = descendant_of_gender_feature + aggregate_asat_composite_entity_feature
+    new_feature.name = "feature_requiring_parent_serving"
+    new_feature.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving",
+        feature_ids=[new_feature.id],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+    assert feature_list.primary_entity_ids == [another_entity.id, group_entity.id]
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=group_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
+    return feature_list
