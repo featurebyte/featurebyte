@@ -265,7 +265,8 @@ class BaseCeleryTask(Task):
             f"Running: {command}"
         )  # Add temporary print statement to confirm logging not causing freezing issue
         logger.debug(f"Executing: {command}")
-        PENDING_TASKS.remove(request_id)
+        if request_id in PENDING_TASKS:
+            PENDING_TASKS.remove(request_id)
 
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         app_container = await self.get_app_container(request_id, payload, progress)
