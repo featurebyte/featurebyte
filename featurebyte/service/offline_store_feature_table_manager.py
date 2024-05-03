@@ -246,9 +246,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_store_model,
                 deployment,
             )
-            await self.offline_store_feature_table_service.add_deployment_id(
-                document_id=feature_table_dict["_id"], deployment_id=deployment.id
-            )
 
             if feature_ids != feature_table_dict["feature_ids"]:
                 feature_table_model = await self._update_offline_store_feature_table(
@@ -327,9 +324,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 for feature_id in feature_table_dict["feature_ids"]
                 if feature_id not in feature_ids_to_remove
             ]
-            await self.offline_store_feature_table_service.remove_deployment_id(
-                document_id=feature_table_dict["_id"], deployment_id=deployment.id
-            )
 
             if updated_feature_ids:
                 updated_feature_table = await self._update_offline_store_feature_table(
@@ -694,4 +688,29 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
         await self.offline_store_feature_table_comment_service.apply_comments(
             feature_store_model, comments, update_progress
+        )
+
+    async def update_table_deployment_reference(
+        self, feature_id: ObjectId, deployment_id: ObjectId, to_enable: bool
+    ) -> None:
+        """
+        Update deployment reference in offline store feature tables
+
+        Parameters
+        ----------
+        feature_id: ObjectId
+            Feature to update
+        deployment_id: ObjectId
+            Deployment to update
+        to_enable: bool
+            Whether to enable or disable the deployment
+        """
+        if to_enable:
+            update = {"$addToSet": {"deployment_ids": deployment_id}}
+        else:
+            update = {"$pull": {"deployment_ids": deployment_id}}
+
+        await self.offline_store_feature_table_service.update_documents(
+            query_filter={"feature_ids": feature_id},
+            update=update,
         )
