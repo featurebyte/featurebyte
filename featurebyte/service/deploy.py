@@ -2,6 +2,8 @@
 DeployService class
 """
 
+# pylint: disable=too-many-lines
+
 from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
 import traceback
