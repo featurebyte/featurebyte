@@ -307,7 +307,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         """
         await self._delete_deprecated_entity_lookup_feature_tables()
 
-        feature_ids_to_remove = {feature.id for feature in features}
+        feature_ids_to_remove = await self.feature_service.get_online_disabled_feature_ids()
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
@@ -655,16 +655,27 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
             feature_table_id, projection={"_id": 1, "precomputed_lookup_feature_table_info": 1}
         )
+        if feature_table_dict.get("precomputed_lookup_feature_table_info") is None:
+            await self.feature_materialize_scheduler_service.stop_job(
+                feature_table_id,
+            )
         await self.feature_materialize_service.drop_table(
             await self.offline_store_feature_table_service.get_document(
                 feature_table_id,
             )
         )
-        if feature_table_dict.get("precomputed_lookup_feature_table_info") is None:
-            await self.feature_materialize_scheduler_service.stop_job(
-                feature_table_id,
-            )
         await self.offline_store_feature_table_service.delete_document(feature_table_id)
+
+        # Clean up precomputed lookup feature tables. Usually this is a no-op since those tables
+        # would have been cleaned up by _update_precomputed_lookup_feature_tables_disable_deployment
+        # already. The cleanup here is useful for handling bad state.
+        async for (
+            lookup_feature_table
+        ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
+            source_feature_table_id=feature_table_id,
+        ):
+            await self.feature_materialize_service.drop_table(lookup_feature_table)
+            await self.offline_store_feature_table_service.delete_document(lookup_feature_table.id)
 
     async def _get_feature_store_model(self) -> FeatureStoreModel:
         catalog_model = await self.catalog_service.get_document(self.catalog_id)

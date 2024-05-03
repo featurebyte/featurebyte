@@ -6,7 +6,7 @@ Test FeatureMaterializeService
 
 from dataclasses import asdict
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
@@ -1236,3 +1236,35 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
 
     if has_missing_column:
         assert "plus_123" not in executed_queries
+
+
+@pytest.mark.asyncio
+async def test_cleanup_error__drop_columns(feature_materialize_service, caplog):
+    """
+    Test drop_columns error is handled and logged
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.FeatureMaterializeService._get_session",
+        side_effect=RuntimeError("Cannot obtain a valid session"),
+    ):
+        await feature_materialize_service.drop_columns(
+            Mock(name="mock_feature_table"), ["a", "b", "c"]
+        )
+    lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
+    assert len(lines) == 1
+    assert lines[0] == "Unexpected error when attempting to modify offline store feature table"
+
+
+@pytest.mark.asyncio
+async def test_cleanup_error__drop_table(feature_materialize_service, caplog):
+    """
+    Test drop_table error is handled and logged
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.FeatureMaterializeService._get_session",
+        side_effect=RuntimeError("Cannot obtain a valid session"),
+    ):
+        await feature_materialize_service.drop_table(Mock(name="mock_feature_table"))
+    lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
+    assert len(lines) == 1
+    assert lines[0] == "Unexpected error when attempting to modify offline store feature table"

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, cast
 
 import textwrap
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -23,6 +23,7 @@ from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.offline_store_feature_table import (
     OfflineLastMaterializedAtUpdate,
@@ -57,6 +58,8 @@ from featurebyte.session.base import BaseSession
 
 OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
 NUM_COLUMNS_PER_MATERIALIZE = 50
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -961,20 +964,21 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         column_names: List[str]
             List of column names to drop
         """
-        session = await self._get_session(feature_table_model)
-        for column_name in column_names:
-            query = sql_to_string(
-                expressions.AlterTable(
-                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                    actions=[
-                        expressions.Drop(
-                            this=quoted_identifier(column_name), kind="COLUMN", exists=True
-                        )
-                    ],
-                ),
-                source_type=session.source_type,
-            )
-            await session.execute_query_long_running(query)
+        with self._must_not_fail(feature_table_model, "drop_columns"):
+            session = await self._get_session(feature_table_model)
+            for column_name in column_names:
+                query = sql_to_string(
+                    expressions.AlterTable(
+                        this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                        actions=[
+                            expressions.Drop(
+                                this=quoted_identifier(column_name), kind="COLUMN", exists=True
+                            )
+                        ],
+                    ),
+                    source_type=session.source_type,
+                )
+                await session.execute_query_long_running(query)
 
     async def drop_table(self, feature_table_model: OfflineStoreFeatureTableModel) -> None:
         """
@@ -985,13 +989,14 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
-        session = await self._get_session(feature_table_model)
-        await session.drop_table(
-            feature_table_model.name,
-            schema_name=session.schema_name,
-            database_name=session.database_name,
-            if_exists=True,
-        )
+        with self._must_not_fail(feature_table_model, "drop_table"):
+            session = await self._get_session(feature_table_model)
+            await session.drop_table(
+                feature_table_model.name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+                if_exists=True,
+            )
 
     async def _materialize_online(
         self,
@@ -1049,6 +1054,20 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         return session
+
+    @contextmanager
+    def _must_not_fail(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        method_name: str,
+    ) -> Iterator[None]:
+        try:
+            yield
+        except BaseException:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "Unexpected error when attempting to modify offline store feature table",
+                extra={"method_name": method_name, "feature_table_id": str(feature_table_model.id)},
+            )
 
     @classmethod
     async def _create_feature_table(
