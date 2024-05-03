@@ -246,6 +246,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 feature_store_model,
                 deployment,
             )
+            await self.offline_store_feature_table_service.add_deployment_id(
+                document_id=feature_table_dict["_id"], deployment_id=deployment.id
+            )
 
             if feature_ids != feature_table_dict["feature_ids"]:
                 feature_table_model = await self._update_offline_store_feature_table(
@@ -324,6 +327,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 for feature_id in feature_table_dict["feature_ids"]
                 if feature_id not in feature_ids_to_remove
             ]
+            await self.offline_store_feature_table_service.remove_deployment_id(
+                document_id=feature_table_dict["_id"], deployment_id=deployment.id
+            )
 
             if updated_feature_ids:
                 updated_feature_table = await self._update_offline_store_feature_table(
