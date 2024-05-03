@@ -9,6 +9,7 @@ import pytest
 from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -142,8 +143,8 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[RELATIONSHIP_ID]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["sum_1d_V240103"],
@@ -168,8 +169,8 @@ def test_databricks_specs(
             rename_outputs={},
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[RELATIONSHIP_ID]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["__feature_V240103__part0"],
@@ -184,8 +185,8 @@ def test_databricks_specs(
             output_name="feature",
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[RELATIONSHIP_ID]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["__req_col_feature_V240103__part0"],
@@ -220,7 +221,6 @@ def test_databricks_specs(
         "__feature_V240103__part1",
         "__featurebyte_dummy_entity",
         "__req_col_feature_V240103__part0",
-        "cust_id",
         "transaction_id",
     ]
 
@@ -233,7 +233,6 @@ def test_databricks_specs(
             StructField(target_column, DoubleType()),
             StructField("__featurebyte_dummy_entity", StringType()),
             StructField("transaction_id", LongType()),
-            StructField("cust_id", LongType()),
             StructField("POINT_IN_TIME", TimestampType()),
         ]
     )
@@ -254,9 +253,12 @@ def test_databricks_specs(
         registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
     )
     """
+    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
+    assert len(relationships_info) == 1
     replace_pairs = [
         ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_day_diff_feature.cached_model.id)),
+        ("[RELATIONSHIP_ID]", get_lookup_steps_unique_identifier(relationships_info)),
     ]
     for replace_pair in replace_pairs:
         expected = expected.replace(*replace_pair)

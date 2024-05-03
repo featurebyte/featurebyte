@@ -9,10 +9,12 @@ import traceback
 from bson import ObjectId
 
 from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.logging import get_logger
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import (
     DeploymentModel,
     FeastIntegrationSettings,
@@ -22,21 +24,25 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, ServingEntity
 from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.table import TableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -212,12 +218,61 @@ class DeploymentServingEntityService:
     def __init__(
         self,
         feature_list_service: FeatureListService,
+        entity_service: EntityService,
+        table_service: TableService,
         use_case_service: UseCaseService,
         context_service: ContextService,
     ):
         self.feature_list_service = feature_list_service
+        self.entity_service = entity_service
+        self.table_service = table_service
         self.use_case_service = use_case_service
         self.context_service = context_service
+
+    async def get_serving_entity_specs(
+        self, serving_entity_ids: List[PydanticObjectId]
+    ) -> List[ColumnSpec]:
+        """
+        Get serving entity name & dtype for the given serving entity ids
+
+        Parameters
+        ----------
+        serving_entity_ids: List[PydanticObjectId]
+            Serving entity ids
+
+        Returns
+        -------
+        List[ColumnSpec]
+        """
+        entity_id_to_entity = {}
+        entity_id_to_table_id = {}
+        async for entity in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": serving_entity_ids}}
+        ):
+            entity_id_to_entity[entity.id] = entity
+            if entity.primary_table_ids:
+                entity_id_to_table_id[entity.id] = entity.primary_table_ids[0]
+            elif entity.table_ids:
+                entity_id_to_table_id[entity.id] = entity.table_ids[0]
+
+        table_id_to_table = {}
+        async for table in self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(entity_id_to_table_id.values())}}
+        ):
+            table_id_to_table[table.id] = table
+
+        entity_specs = []
+        for entity_id in serving_entity_ids:
+            serving_name = entity_id_to_entity[entity_id].serving_names[0]
+            serving_dtype = DBVarType.VARCHAR
+            if entity_id in entity_id_to_table_id:
+                table = table_id_to_table[entity_id_to_table_id[entity_id]]
+                for column in table.columns_info:
+                    if column.entity_id == entity_id:
+                        serving_dtype = column.dtype
+                        break
+            entity_specs.append(ColumnSpec(name=serving_name, dtype=serving_dtype))
+        return entity_specs
 
     async def get_deployment_serving_entity_ids(
         self,
@@ -446,15 +501,19 @@ class FeastIntegrationService:
         self,
         feast_registry_service: FeastRegistryService,
         feature_list_service: FeatureListService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
         deployment_service: DeploymentService,
+        deployment_serving_entity_service: DeploymentServingEntityService,
     ):
         self.feast_registry_service = feast_registry_service
         self.feature_list_service = feature_list_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
         self.offline_store_feature_table_manager_service = (
             offline_store_feature_table_manager_service
         )
         self.deployment_service = deployment_service
+        self.deployment_serving_entity_service = deployment_serving_entity_service
 
     async def get_or_create_feast_registry(self, deployment: DeploymentModel) -> FeastRegistryModel:
         """
@@ -558,6 +617,7 @@ class FeastIntegrationService:
 
     async def handle_deployed_feature_list(
         self,
+        deployment: DeploymentModel,
         feature_list: FeatureListModel,
         online_enabled_features: List[FeatureModel],
     ) -> None:
@@ -566,13 +626,51 @@ class FeastIntegrationService:
 
         Parameters
         ----------
+        deployment: DeploymentModel
+            Target deployment
         feature_list: FeatureListModel
             Target feature list
         online_enabled_features: List[FeatureModel]
             List of online enabled features
         """
+        serving_entity_specs: Optional[List[ColumnSpec]] = None
+        serving_names = set()
+        if deployment.serving_entity_ids:
+            serving_entity_specs = (
+                await self.deployment_serving_entity_service.get_serving_entity_specs(
+                    serving_entity_ids=deployment.serving_entity_ids
+                )
+            )
+            serving_names = set(
+                entity_serving_spec.name for entity_serving_spec in serving_entity_specs
+            )
+
+        feature_table_map = {}
+        feat_table_service = self.offline_store_feature_table_service
+        async for (
+            source_table
+        ) in feat_table_service.list_source_lookup_feature_tables_for_deployment(
+            deployment_id=deployment.id
+        ):
+            if serving_names:
+                if set(source_table.serving_names).issubset(serving_names):
+                    feature_table_map[source_table.name] = source_table
+                else:
+                    async for (
+                        precomputed_table
+                    ) in feat_table_service.list_precomputed_lookup_feature_tables_from_source(
+                        source_feature_table_id=source_table.id
+                    ):
+                        if set(precomputed_table.serving_names).issubset(serving_names):
+                            feature_table_map[source_table.name] = precomputed_table
+            else:
+                feature_table_map[source_table.name] = source_table
+
         await self.feature_list_service.update_store_info(
-            document_id=feature_list.id, features=online_enabled_features
+            document_id=feature_list.id,
+            features=online_enabled_features,
+            feature_table_map=feature_table_map,
+            serving_entity_specs=serving_entity_specs,
         )
 
 
@@ -670,7 +768,7 @@ class DeployService:
                 70, f"Updating deployed feature list ({feature_list.name}) ..."
             )
             await self.feast_integration_service.handle_deployed_feature_list(
-                feature_list=feature_list, online_enabled_features=features
+                deployment=deployment, feature_list=feature_list, online_enabled_features=features
             )
 
         # deploy feature list
