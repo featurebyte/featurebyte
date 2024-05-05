@@ -150,7 +150,7 @@ class DeployFeatureManagementService:
 
     async def update_offline_feature_table_deployment_reference(
         self,
-        feature_ids: List[ObjectId],
+        feature_ids: List[PydanticObjectId],
         deployment_id: ObjectId,
         to_enable: bool,
     ) -> None:
@@ -159,7 +159,7 @@ class DeployFeatureManagementService:
 
         Parameters
         ----------
-        feature_ids: List[ObjectId]
+        feature_ids: List[PydanticObjectId]
             Target feature IDs
         deployment_id: ObjectId
             Target deployment ID

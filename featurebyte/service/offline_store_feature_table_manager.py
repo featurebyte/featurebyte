@@ -708,14 +708,14 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
 
     async def update_table_deployment_reference(
-        self, feature_ids: List[ObjectId], deployment_id: ObjectId, to_enable: bool
+        self, feature_ids: List[PydanticObjectId], deployment_id: ObjectId, to_enable: bool
     ) -> None:
         """
         Update deployment reference in offline store feature tables
 
         Parameters
         ----------
-        feature_ids: List[ObjectId]
+        feature_ids: List[PydanticObjectId]
             Features IDs used to find offline store feature tables
         deployment_id: ObjectId
             Deployment to update
