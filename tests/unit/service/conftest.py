@@ -1265,7 +1265,7 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
     descendant_of_gender_feature: group entity feature (non-ttl)
     aggregate_asat_composite_entity_feature: gender X another_entity feature (non-ttl)
 
-    Group is a parent of gender.
+    Gender is a parent of Group.
 
     Primary entity of the combined feature is group X another_entity.
 
