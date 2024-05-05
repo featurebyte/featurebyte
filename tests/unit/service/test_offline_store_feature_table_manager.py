@@ -1375,14 +1375,17 @@ async def test_new_deployment_on_already_enabled_feature_list(
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
     }
+    deployment_ids_before = feature_tables["cat1_cust_id_30m"].deployment_ids
 
     # Make a new deployment with transaction use case. Now we need to be able to serve this feature
     # list using child entity transaction.
+    deployment_id = ObjectId()
     _ = await deploy_feature_list(
         app_container,
         deployed_float_feature_list_cust_id_use_case,
         context_primary_entity_ids=[transaction_entity.id],
         deployment_name_override="another_deployment_same_feature_list",
+        deployment_id=deployment_id,
     )
 
     # Check offline feature tables
@@ -1394,6 +1397,11 @@ async def test_new_deployment_on_already_enabled_feature_list(
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
+    deployment_ids_after = feature_tables["cat1_cust_id_30m"].deployment_ids
+    assert set(deployment_ids_after) == set(deployment_ids_before + [deployment_id])
+    assert feature_tables[
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
+    ].deployment_ids == [deployment_id]
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@ This module contains Feature list store info related models
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import Field
@@ -41,7 +41,11 @@ class BaseStoreInfo(FeatureByteBaseModel):
 
     @classmethod
     def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+        cls,
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        serving_entity_specs: Optional[List[ColumnSpec]],
     ) -> BaseStoreInfo:
         """
         Create store info for a feature list
@@ -52,12 +56,16 @@ class BaseStoreInfo(FeatureByteBaseModel):
             List of features
         feature_store: FeatureStoreModel
             Feature store model used by the features & feature list
+        feature_table_map: Dict[str, Any]
+            Feature table map
+        serving_entity_specs: Optional[List[ColumnSpec]]
+            Serving entity specs
 
         Returns
         -------
         StoreInfo
         """
-        _ = features, feature_store
+        _ = features, feature_store, feature_table_map, serving_entity_specs
         return cls(feast_enabled=True)
 
 
@@ -70,7 +78,11 @@ class UninitializedStoreInfo(BaseStoreInfo):
 
     @classmethod
     def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+        cls,
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        serving_entity_specs: Optional[List[ColumnSpec]],
     ) -> UninitializedStoreInfo:
         return cls(feast_enabled=False)
 
@@ -290,28 +302,24 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
 
     @classmethod
     def _derive_feature_specs(
-        cls, feature: FeatureModel, schema_name: str, output_column_names: Set[str]
+        cls,
+        feature: FeatureModel,
+        feature_table_map: Dict[str, Any],
+        schema_name: str,
+        output_column_names: Set[str],
     ) -> List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]:
         output: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = []
         table_name_to_feature_lookup = {}
         offline_store_info = feature.offline_store_info
-        entity_id_to_serving_name = {
-            info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
-        }
+        timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
         for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
-            table_name = ingest_query.offline_store_table_name
-            timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
-
-            if table_name not in table_name_to_feature_lookup:
-                if len(ingest_query.primary_entity_ids) > 0:
-                    lookup_key = [
-                        entity_id_to_serving_name[entity_id]
-                        for entity_id in ingest_query.primary_entity_ids
-                    ]
-                else:
+            table = feature_table_map[ingest_query.offline_store_table_name]
+            if table.name not in table_name_to_feature_lookup:
+                lookup_key = table.serving_names
+                if not lookup_key:
                     lookup_key = [DUMMY_ENTITY_COLUMN_NAME]
-                table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
-                    table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
+                table_name_to_feature_lookup[table.name] = DataBricksFeatureLookup(
+                    table_name=f"{schema_name}.{table.name}",
                     lookup_key=lookup_key,
                     timestamp_lookup_key=timestamp_lookup_key,
                     lookback_window=None,
@@ -320,7 +328,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                 )
 
             column_name = ingest_query.output_column_name
-            feature_lookup = table_name_to_feature_lookup[table_name]
+            feature_lookup = table_name_to_feature_lookup[table.name]
             output_column_name = column_name
             if not offline_store_info.udf_info:
                 assert feature.name is not None, "Feature does not have a name"
@@ -360,6 +368,8 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         request_column_name_to_dtype: Dict[str, DBVarType],
         features: List[FeatureModel],
         feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        entity_serving_specs: Optional[List[ColumnSpec]],
     ) -> Tuple[
         List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]
     ]:
@@ -369,7 +379,12 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         feature_specs = []
         for feature in features:
             feature_specs.extend(
-                cls._derive_feature_specs(feature, fully_qualified_schema_name, output_column_names)
+                cls._derive_feature_specs(
+                    feature=feature,
+                    feature_table_map=feature_table_map,
+                    schema_name=fully_qualified_schema_name,
+                    output_column_names=output_column_names,
+                )
             )
 
         base_dataframe_specs = []
@@ -383,10 +398,16 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
                 exclude_columns.add(DUMMY_ENTITY_COLUMN_NAME)
                 break
 
+        if entity_serving_specs:
+            for column_spec in entity_serving_specs:
+                base_dataframe_specs.append(column_spec)
+                exclude_columns.add(column_spec.name)
+        else:
+            for entity_id in sorted(entity_id_to_column_spec.keys()):
+                base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
+                exclude_columns.add(entity_id_to_column_spec[entity_id].name)
+
         has_point_in_time = False
-        for entity_id in sorted(entity_id_to_column_spec.keys()):
-            base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
-            exclude_columns.add(entity_id_to_column_spec[entity_id].name)
         for column_name in sorted(request_column_name_to_dtype.keys()):
             base_dataframe_specs.append(
                 ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name])
@@ -403,14 +424,23 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
 
     @classmethod
     def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+        cls,
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        serving_entity_specs: Optional[List[ColumnSpec]],
     ) -> DataBricksUnityStoreInfo:
         entity_id_to_column_spec, request_column_name_to_dtype, exclude_cols = (
             cls._derive_entity_request_column_info_from_features(features)
         )
         base_dataframe_specs, feature_specs, more_exclude_cols = (
             cls._derive_base_dataframe_and_feature_specs(
-                entity_id_to_column_spec, request_column_name_to_dtype, features, feature_store
+                entity_id_to_column_spec=entity_id_to_column_spec,
+                request_column_name_to_dtype=request_column_name_to_dtype,
+                features=features,
+                feature_store=feature_store,
+                feature_table_map=feature_table_map,
+                entity_serving_specs=serving_entity_specs,
             )
         )
         return cls(

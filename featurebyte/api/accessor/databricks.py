@@ -5,7 +5,7 @@ This module contains DataBricks accessor class
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import os
 
@@ -13,7 +13,10 @@ import pandas as pd
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.exception import NotInDataBricksEnvironmentError
-from featurebyte.models.feature_list_store_info import DataBricksUnityStoreInfo
+from featurebyte.models.feature_list_store_info import (
+    DataBricksFeatureLookup,
+    DataBricksUnityStoreInfo,
+)
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, DUMMY_ENTITY_VALUE
 
@@ -76,6 +79,21 @@ class DataBricksAccessor:
         self._store_info = store_info
         self._target_name = target_name
         self._target_dtype = target_dtype
+
+    def list_feature_table_names(self) -> List[str]:
+        """
+        List feature table names used by this deployment.
+
+        Returns
+        -------
+        List[str]
+            List of feature table names
+        """
+        output = set()
+        for feature_spec in self._store_info.feature_specs:
+            if isinstance(feature_spec, DataBricksFeatureLookup):
+                output.add(feature_spec.table_name)
+        return sorted(output)
 
     def get_feature_specs_definition(self, include_log_model: bool = True) -> str:
         """

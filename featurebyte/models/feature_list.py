@@ -42,6 +42,7 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     FeatureEntityLookupInfo,
 )
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 
 
@@ -568,7 +569,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
 
     def initialize_store_info(
-        self, features: List[FeatureModel], feature_store: FeatureStoreModel
+        self,
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        serving_entity_specs: Optional[List[ColumnSpec]],
     ) -> None:
         """
         Initialize store info for a feature list
@@ -579,6 +584,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             List of features
         feature_store: FeatureStoreModel
             Feature store model
+        feature_table_map: Dict[str, Any]
+            List of offline feature table map from source table name to actual feature table
+            (could be a source table or a precomputed lookup table)
+        serving_entity_specs: Optional[List[ColumnSpec]]
+            List of serving entity specs
         """
         store_type_to_store_info_class = {
             SourceType.SNOWFLAKE: SnowflakeStoreInfo,
@@ -588,7 +598,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]
-            store_info = store_info_class.create(features=features, feature_store=feature_store)
+            store_info = store_info_class.create(
+                features=features,
+                feature_store=feature_store,
+                feature_table_map=feature_table_map,
+                serving_entity_specs=serving_entity_specs,
+            )
             self.internal_store_info = store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):

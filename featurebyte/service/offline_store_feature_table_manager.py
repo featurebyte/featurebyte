@@ -706,3 +706,28 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         await self.offline_store_feature_table_comment_service.apply_comments(
             feature_store_model, comments, update_progress
         )
+
+    async def update_table_deployment_reference(
+        self, feature_ids: List[PydanticObjectId], deployment_id: ObjectId, to_enable: bool
+    ) -> None:
+        """
+        Update deployment reference in offline store feature tables
+
+        Parameters
+        ----------
+        feature_ids: List[PydanticObjectId]
+            Features IDs used to find offline store feature tables
+        deployment_id: ObjectId
+            Deployment to update
+        to_enable: bool
+            Whether to enable or disable the deployment
+        """
+        if to_enable:
+            update = {"$addToSet": {"deployment_ids": deployment_id}}
+        else:
+            update = {"$pull": {"deployment_ids": deployment_id}}
+
+        await self.offline_store_feature_table_service.update_documents(
+            query_filter={"feature_ids": {"$in": feature_ids}},
+            update=update,
+        )
