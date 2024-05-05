@@ -697,15 +697,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         )
 
     async def update_table_deployment_reference(
-        self, feature_id: ObjectId, deployment_id: ObjectId, to_enable: bool
+        self, feature_ids: List[ObjectId], deployment_id: ObjectId, to_enable: bool
     ) -> None:
         """
         Update deployment reference in offline store feature tables
 
         Parameters
         ----------
-        feature_id: ObjectId
-            Feature to update
+        feature_ids: List[ObjectId]
+            Features IDs used to find offline store feature tables
         deployment_id: ObjectId
             Deployment to update
         to_enable: bool
@@ -717,6 +717,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             update = {"$pull": {"deployment_ids": deployment_id}}
 
         await self.offline_store_feature_table_service.update_documents(
-            query_filter={"feature_ids": feature_id},
+            query_filter={"feature_ids": {"$in": feature_ids}},
             update=update,
         )

@@ -108,7 +108,6 @@ class DeployFeatureManagementService:
         self,
         feature_id: ObjectId,
         feature_list_id: ObjectId,
-        deployment_id: ObjectId,
         feature_list_to_deploy: bool,
     ) -> FeatureModel:
         """
@@ -120,8 +119,6 @@ class DeployFeatureManagementService:
             Target feature ID
         feature_list_id: ObjectId
             Target feature list ID
-        deployment_id: ObjectId
-            Target deployment ID
         feature_list_to_deploy: bool
             Whether to deploy the feature list
 
@@ -130,13 +127,6 @@ class DeployFeatureManagementService:
         FeatureModel
             Updated feature model
         """
-        # update offline table deployment reference
-        await self.offline_store_feature_table_manager_service.update_table_deployment_reference(
-            feature_id=feature_id,
-            deployment_id=deployment_id,
-            to_enable=feature_list_to_deploy,
-        )
-
         document = await self.feature_service.get_document(document_id=feature_id)
         deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
@@ -157,6 +147,30 @@ class DeployFeatureManagementService:
             return_document=False,
         )
         return await self.feature_service.get_document(document_id=feature_id)
+
+    async def update_offline_feature_table_deployment_reference(
+        self,
+        feature_ids: List[ObjectId],
+        deployment_id: ObjectId,
+        to_enable: bool,
+    ) -> None:
+        """
+        Update offline feature table deployment reference
+
+        Parameters
+        ----------
+        feature_ids: List[ObjectId]
+            Target feature IDs
+        deployment_id: ObjectId
+            Target deployment ID
+        to_enable: bool
+            Whether to enable the feature list
+        """
+        await self.offline_store_feature_table_manager_service.update_table_deployment_reference(
+            feature_ids=feature_ids,
+            deployment_id=deployment_id,
+            to_enable=to_enable,
+        )
 
     async def online_enable_feature(
         self,
@@ -193,10 +207,7 @@ class DeployFeatureManagementService:
         return feature
 
     async def online_disable_feature(
-        self,
-        feature: FeatureModel,
-        feature_list: FeatureListModel,
-        deployment: DeploymentModel,
+        self, feature: FeatureModel, feature_list: FeatureListModel
     ) -> FeatureModel:
         """
         Disable feature online
@@ -207,8 +218,6 @@ class DeployFeatureManagementService:
             Target feature
         feature_list: FeatureListModel
             Target feature list
-        deployment: DeploymentModel
-            Target deployment
 
         Returns
         -------
@@ -218,7 +227,6 @@ class DeployFeatureManagementService:
         updated_feature = await self.update_feature_online_enabled_status(
             feature_id=feature.id,
             feature_list_id=feature_list.id,
-            deployment_id=deployment.id,
             feature_list_to_deploy=False,
         )
 
@@ -779,11 +787,17 @@ class DeployService:
                 await self.feature_management_service.update_feature_online_enabled_status(
                     feature_id=feature_id,
                     feature_list_id=feature_list.id,
-                    deployment_id=deployment.id,
                     feature_list_to_deploy=True,
                 )
             )
             features.append(updated_feature)
+
+        # update offline feature table deployment reference
+        await self.feature_management_service.update_offline_feature_table_deployment_reference(
+            feature_ids=feature_list.feature_ids,
+            deployment_id=deployment.id,
+            to_enable=True,
+        )
 
         if feast_registry:
             await self._update_progress(
@@ -881,7 +895,6 @@ class DeployService:
                 updated_feature = await self.feature_management_service.online_disable_feature(
                     feature=feature,
                     feature_list=feature_list,
-                    deployment=deployment,
                 )
                 if feature.online_enabled != updated_feature.online_enabled:
                     features_offline_feature_table_to_update.append(updated_feature)
@@ -890,6 +903,13 @@ class DeployService:
                     int(len(features) / len(feature_list.feature_ids) * 100),
                     f"Disabling features online ({feature.name}) ...",
                 )
+
+            # update offline feature table deployment reference
+            await self.feature_management_service.update_offline_feature_table_deployment_reference(
+                feature_ids=feature_list.feature_ids,
+                deployment_id=deployment.id,
+                to_enable=False,
+            )
 
             # undeploy feature list if not used in other deployment
             await self._update_progress(71, f"Undeploying feature list ({feature_list.name}) ...")
