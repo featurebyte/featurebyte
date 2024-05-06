@@ -4,7 +4,7 @@
 server = ["cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "feast", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "39307da1f8e74f1826d257565bea2fd9d8ddd2dc99bea0038473c48bc0389629"
+content-hash = "47de541ec84400504d09e98e8f9e2e42400eab6f869a52a1c5632fe930ffb43d"
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
 
@@ -5874,7 +5874,7 @@ files = [
     {file = "pyOpenSSL-24.1.0.tar.gz", hash = "sha256:cabed4bfaa5df9f1a16c0ef64a0cb65318b5cd077a7eda7d6970131ca2f41a6f"},
 ]
 name = "pyopenssl"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "24.1.0"
 
