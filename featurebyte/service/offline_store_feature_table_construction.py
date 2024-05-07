@@ -153,6 +153,11 @@ class OfflineStoreFeatureTableConstructionService:
         Returns
         -------
         OfflineStoreFeatureTableModel
+
+        Raises
+        ------
+        AssertionError
+            If the entity universe cannot be determined
         """
         ingest_graph_metadata = get_combined_ingest_graph(
             features=features,
