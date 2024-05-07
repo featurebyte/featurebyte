@@ -618,7 +618,6 @@ class FeastIntegrationService:
 
     async def handle_online_disabled_features(
         self,
-        features: List[FeatureModel],
         feature_list_to_online_disable: FeatureListModel,
         deployment: DeploymentModel,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
@@ -628,8 +627,6 @@ class FeastIntegrationService:
 
         Parameters
         ----------
-        features: List[FeatureModel]
-            List of features to be disabled online
         feature_list_to_online_disable: FeatureListModel
             Target feature list not to deploy (online disable)
         deployment: DeploymentModel
@@ -638,7 +635,6 @@ class FeastIntegrationService:
             Optional progress update callback
         """
         await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
-            features=features,
             feature_list_to_online_disable=feature_list_to_online_disable,
             deployment=deployment,
             update_progress=update_progress,
@@ -860,6 +856,10 @@ class DeployService:
                 f"Failed to enable deployment {deployment.id}: {exc}. {exc_traceback}",
                 exc_info=True,
             )
+            # Get the possibly updated deployment document
+            deployment = await self.deployment_service.get_document(
+                document_id=deployment.id, populate_remote_attributes=True
+            )
             await self.disable_deployment(deployment, feature_list)
             raise DocumentUpdateError("Failed to enable deployment") from exc
 
@@ -887,7 +887,6 @@ class DeployService:
                 self.task_progress_updater.update_progress, 0, 70
             )
             features = []
-            features_offline_feature_table_to_update = []
             for feature_id in feature_list.feature_ids:
                 feature = await self.feature_management_service.feature_service.get_document(
                     document_id=feature_id
@@ -896,8 +895,6 @@ class DeployService:
                     feature=feature,
                     feature_list=feature_list,
                 )
-                if feature.online_enabled != updated_feature.online_enabled:
-                    features_offline_feature_table_to_update.append(updated_feature)
                 features.append(updated_feature)
                 await feature_update_progress(
                     int(len(features) / len(feature_list.feature_ids) * 100),
@@ -916,18 +913,12 @@ class DeployService:
             feature_list = await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list,
             )
-        else:
-            # Need to call handle_online_disabled_features even if there are no features to be
-            # online disabled as there can be changes to offline store feature tables due to
-            # disabled deployment.
-            features_offline_feature_table_to_update = []
 
         # check if feast integration is enabled for the catalog
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
             feast_registry = await self.feast_integration_service.get_feast_registry(deployment)
             if feast_registry:
                 await self.feast_integration_service.handle_online_disabled_features(
-                    features=features_offline_feature_table_to_update,
                     feature_list_to_online_disable=feature_list,
                     deployment=deployment,
                     update_progress=get_ranged_progress_callback(

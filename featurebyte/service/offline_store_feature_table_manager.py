@@ -285,7 +285,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
     async def handle_online_disabled_features(
         self,
-        features: List[FeatureModel],
         feature_list_to_online_disable: FeatureListModel,
         deployment: DeploymentModel,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
@@ -296,8 +295,6 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         Parameters
         ----------
-        features: FeatureModel
-            Model of the feature to be disabled for online serving
         feature_list_to_online_disable: FeatureListModel
             Feature list model to not deploy (may not be disabled yet)
         deployment: DeploymentModel
@@ -336,7 +333,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_dict,
                     updated_feature_ids,
                 )
-                columns_to_drop = self._get_offline_store_feature_table_columns(features)
+                removed_feature_ids = list(
+                    set(feature_table_dict["feature_ids"]) - set(updated_feature_ids)
+                )
+                removed_features = []
+                async for feature in self.feature_service.list_documents_iterator(
+                    {"_id": {"$in": removed_feature_ids}}
+                ):
+                    removed_features.append(feature)
+                columns_to_drop = self._get_offline_store_feature_table_columns(removed_features)
                 await self.feature_materialize_service.drop_columns(
                     updated_feature_table, columns_to_drop
                 )
