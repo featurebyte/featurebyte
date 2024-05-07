@@ -1551,7 +1551,7 @@ async def test_deployment_failure_cleanup(
 
 
 @pytest.mark.asyncio
-async def test_entity_universe_dump(
+async def test_entity_universe_debug_info_dump(
     app_container,
     float_feature,
     transaction_entity,
@@ -1566,6 +1566,7 @@ async def test_entity_universe_dump(
     Test entity universe dump during deployment error for troubleshooting
     """
     _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
 
     with patch(
         "featurebyte.service.offline_store_feature_table_construction.get_combined_universe",

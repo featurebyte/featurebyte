@@ -4,7 +4,7 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from datetime import datetime
 from pathlib import Path
