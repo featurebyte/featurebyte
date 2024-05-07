@@ -13,6 +13,7 @@ import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte.common.model_util import get_version
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
@@ -448,13 +449,23 @@ async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeat
     return feature_tables
 
 
+async def get_all_scheduled_tasks(periodic_task_service):
+    """
+    Helper function to check if there is a scheduled task
+    """
+    tasks = {}
+    async for periodic_task in periodic_task_service.list_documents_iterator(
+        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
+    ):
+        tasks[periodic_task.id] = periodic_task
+    return tasks
+
+
 async def has_scheduled_task(periodic_task_service, feature_table):
     """
     Helper function to check if there is a scheduled task
     """
-    async for periodic_task in periodic_task_service.list_documents_iterator(
-        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
-    ):
+    for periodic_task in (await get_all_scheduled_tasks(periodic_task_service)).values():
         if periodic_task.kwargs["offline_store_feature_table_id"] == str(feature_table.id):
             return True
     return False
@@ -1496,3 +1507,41 @@ async def test_feature_with_internal_parent_child_relationships(
         "tests/fixtures/offline_store_feature_table/feature_cluster_with_internal_relationships.json",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_deployment_failure_cleanup(
+    app_container,
+    float_feature,
+    transaction_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    document_service,
+    periodic_task_service,
+):
+    """
+    Test failure during deployment should perform necessary cleanups
+    """
+    _ = mock_update_data_warehouse
+
+    # Simulate a failure during deployment in handle_online_enabled_features() after feature tables
+    # are created and feature materialize tasks are scheduled
+    mock_offline_store_feature_manager_dependencies["apply_comments"].side_effect = ValueError(
+        "Failing on purpose"
+    )
+    with pytest.raises(DocumentCreationError) as exc_info:
+        await deploy_feature(
+            app_container,
+            float_feature,
+            context_primary_entity_ids=[transaction_entity.id],
+            return_type="feature_list",
+            deployment_id=float_feat_deployment_id,
+        )
+    assert str(exc_info.value) == "Failed to create deployment"
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())
