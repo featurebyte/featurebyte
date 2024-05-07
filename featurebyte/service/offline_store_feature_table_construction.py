@@ -161,11 +161,32 @@ class OfflineStoreFeatureTableConstructionService:
             feature_job_setting=feature_job_setting,
         )
 
-        entity_universe = await self.get_entity_universe_model(
-            offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
-            source_type=source_type,
-            feature_table_name=feature_table_name,
-        )
+        try:
+            entity_universe = await self.get_entity_universe_model(
+                offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
+                source_type=source_type,
+                feature_table_name=feature_table_name,
+            )
+        except AssertionError:
+            # Temporarily save the offline ingest graphs and other information to a file for
+            # troubleshooting
+            debug_info = {
+                "feature_ids": [feature.id for feature in features],
+                "primary_entities": primary_entities,
+                "has_ttl": has_ttl,
+                "feature_job_setting": feature_job_setting,
+                "feature_table_name": feature_table_name,
+                "offline_ingest_graphs": ingest_graph_metadata.offline_ingest_graphs,
+            }
+            path = self.offline_store_feature_table_service.get_full_remote_file_path(
+                f"offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+            )
+            async with aiofiles.tempfile.TemporaryDirectory() as tempdir_path:
+                file_path = os.path.join(tempdir_path, "data.pickle")
+                with open(file_path, "wb") as file_obj:
+                    pickle.dump(debug_info, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
+                await self.storage.put(Path(file_path), Path(path))
+            raise
 
         return OfflineStoreFeatureTableModel(
             name=feature_table_name,
@@ -204,6 +225,11 @@ class OfflineStoreFeatureTableConstructionService:
         Returns
         -------
         EntityUniverse
+
+        Raises
+        ------
+        AssertionError
+            If the entity universe cannot be determined
         """
         params = []
         for offline_ingest_graph, relationships_info in offline_ingest_graphs:
@@ -243,15 +269,6 @@ class OfflineStoreFeatureTableConstructionService:
         universe_expr = get_combined_universe(params, source_type)
 
         if universe_expr is None:
-            # Temporarily save the offline ingest graphs to a file for troubleshooting
-            path = self.offline_store_feature_table_service.get_full_remote_file_path(
-                f"offline_store_feature_table/{feature_table_name}/offline_ingest_graphs.pickle"
-            )
-            async with aiofiles.tempfile.TemporaryDirectory() as tempdir_path:
-                file_path = os.path.join(tempdir_path, "offline_ingest_graphs.pickle")
-                with open(file_path, "wb") as file_obj:
-                    pickle.dump(offline_ingest_graphs, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
-                await self.storage.put(Path(file_path), Path(path))
             raise AssertionError(
                 f"Failed to create entity universe for offline store feature table {feature_table_name}"
             )

@@ -1583,9 +1583,11 @@ async def test_entity_universe_dump(
 
     # Check ingest graphs dump for troubleshooting
     feature_table_name = "cat1_cust_id_30m"
-    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/offline_ingest_graphs.pickle"
-    ingest_graphs_dump_bytes = await storage.get_bytes(path)
-    ingest_graphs_dump = pickle.loads(ingest_graphs_dump_bytes)
+    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+    debug_info_bytes = await storage.get_bytes(path)
+    debug_info = pickle.loads(debug_info_bytes)
+    assert isinstance(debug_info, dict)
+    ingest_graphs_dump = debug_info["offline_ingest_graphs"]
     assert len(ingest_graphs_dump) == 1
     assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
 
