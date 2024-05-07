@@ -13,6 +13,7 @@ import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte.common.model_util import get_version
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
@@ -1496,3 +1497,32 @@ async def test_feature_with_internal_parent_child_relationships(
         "tests/fixtures/offline_store_feature_table/feature_cluster_with_internal_relationships.json",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_deployment_failure_cleanup(
+    app_container,
+    float_feature,
+    transaction_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Test failure during deployment should perform necessary cleanups
+    """
+    _ = mock_update_data_warehouse
+    mock_offline_store_feature_manager_dependencies["apply_comments"].side_effect = ValueError(
+        "Failing on purpose"
+    )
+    with pytest.raises(DocumentCreationError) as exc_info:
+        await deploy_feature(
+            app_container,
+            float_feature,
+            context_primary_entity_ids=[transaction_entity.id],
+            return_type="feature_list",
+            deployment_id=float_feat_deployment_id,
+        )
+    assert str(exc_info.value) == "Failed to create deployment"
+    feature_tables = await get_all_feature_tables(app_container.offline_store_feature_table_service)
+    assert list(feature_tables.keys()) == []
