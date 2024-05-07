@@ -672,9 +672,7 @@ class FeastIntegrationService:
 
         feature_table_map = {}
         feat_table_service = self.offline_store_feature_table_service
-        async for (
-            source_table
-        ) in feat_table_service.list_source_lookup_feature_tables_for_deployment(
+        async for source_table in feat_table_service.list_source_feature_tables_for_deployment(
             deployment_id=deployment.id
         ):
             if serving_names:

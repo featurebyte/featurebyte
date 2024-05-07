@@ -4,7 +4,7 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from datetime import datetime
 from pathlib import Path
@@ -302,11 +302,11 @@ class OfflineStoreFeatureTableService(
         ):
             yield doc
 
-    async def list_source_lookup_feature_tables_for_deployment(
+    async def list_source_feature_tables_for_deployment(
         self, deployment_id: ObjectId
     ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
         """
-        Retrieve list of source lookup feature tables in the catalog
+        Retrieve list of source feature tables in the catalog
 
         Parameters
         ----------
