@@ -1163,9 +1163,9 @@ class LookupTargetNode(BaseLookupNode):
         )
         feature_names = self.parameters.feature_names
         offset = self.parameters.offset
-        input_column_names = self.parameters.input_column_names
+        input_column_name = ValueStr.create(self.parameters.input_column_names[0])
         lookup_target_str = (
-            f"{var_name}.{input_column_names[0]}.as_target(target_name={ValueStr.create(feature_names[0])}, "
+            f"{var_name}[{input_column_name}].as_target(target_name={ValueStr.create(feature_names[0])}, "
             f"offset={ValueStr.create(offset)})"
         )
         return statements, ExpressionStr(lookup_target_str)
