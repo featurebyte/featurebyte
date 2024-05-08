@@ -211,7 +211,7 @@ def test_lookup_target_node():
         config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
-    assert info == 'view.target_col.as_target(target_name="target", offset="7d")'
+    assert info == 'view["target_col"].as_target(target_name="target", offset="7d")'
     assert statements == []
 
 

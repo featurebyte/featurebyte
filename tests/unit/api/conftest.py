@@ -261,6 +261,8 @@ def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item
     """
     Saved ItemTable fixture
     """
+    _ = snowflake_feature_store
+
     previous_id = snowflake_item_table.id
     assert snowflake_item_table.saved
     assert snowflake_item_table.id == previous_id

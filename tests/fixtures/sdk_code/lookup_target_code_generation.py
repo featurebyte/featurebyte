@@ -8,5 +8,7 @@ event_view = event_table.get_view(
     drop_column_names=["created_at"],
     column_cleaning_operations=[],
 )
-target = event_view.col_int.as_target(target_name="lookup_target", offset=None)
+target = event_view["col_int"].as_target(
+    target_name="lookup_target", offset=None
+)
 output = target

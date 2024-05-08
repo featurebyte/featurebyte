@@ -642,3 +642,24 @@ def test_timestamp_filtering_sdk_code_generation(
         update_fixtures=update_fixtures,
         table_id=snowflake_event_table_with_entity.id,
     )
+
+
+def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, update_fixtures):
+    """Test SDK code generation for target lookup feature"""
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+
+    view = snowflake_scd_table.get_view()
+    view['"quote column"'] = view["col_float"] * 2
+    target = view['"quote column"'].as_target(target_name="Target name with special characters")
+
+    # check that the feature can be saved without throwing error
+    target.save()
+
+    check_sdk_code_generation(
+        target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/target_scd_lookup.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_scd_table.id,
+    )
