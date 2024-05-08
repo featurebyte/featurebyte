@@ -307,16 +307,22 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_ids_to_remove = await self.feature_service.get_online_disabled_feature_ids()
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={
-                "$or": [
-                    {"feature_ids": {"$in": list(feature_ids_to_remove)}},
-                    {"feature_ids": {"$size": 0}},
-                ],
-                # Filter out precomputed lookup feature tables since those always have empty
-                # feature_ids
-                "$or": [
-                    {"precomputed_lookup_feature_table_info": None},
-                    {"precomputed_lookup_feature_table_info": {"$exists": False}},
-                ],
+                "$and": [
+                    {
+                        "$or": [
+                            {"feature_ids": {"$in": list(feature_ids_to_remove)}},
+                            {"feature_ids": {"$size": 0}},
+                        ]
+                    },
+                    {
+                        # Filter out precomputed lookup feature tables since those always have empty
+                        # feature_ids
+                        "$or": [
+                            {"precomputed_lookup_feature_table_info": None},
+                            {"precomputed_lookup_feature_table_info": {"$exists": False}},
+                        ],
+                    },
+                ]
             },
         )
         feature_lists = await self._get_online_enabled_feature_lists(
