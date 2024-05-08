@@ -311,7 +311,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     {"feature_ids": {"$in": list(feature_ids_to_remove)}},
                     {"feature_ids": {"$size": 0}},
                 ],
-                "precomputed_lookup_feature_table_info": None,
+                # Filter out precomputed lookup feature tables since those always have empty
+                # feature_ids
+                "$or": [
+                    {"precomputed_lookup_feature_table_info": None},
+                    {"precomputed_lookup_feature_table_info": {"$exists": False}},
+                ],
             },
         )
         feature_lists = await self._get_online_enabled_feature_lists(
