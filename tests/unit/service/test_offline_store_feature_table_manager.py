@@ -2,10 +2,12 @@
 Tests for OfflineStoreFeatureTableManagerService
 """
 
-# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 from typing import Dict
 
 import os
+
+# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
+import pickle
 from unittest.mock import patch
 
 import pytest
@@ -16,6 +18,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentCreationError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -1539,6 +1542,55 @@ async def test_deployment_failure_cleanup(
             deployment_id=float_feat_deployment_id,
         )
     assert str(exc_info.value) == "Failed to create deployment"
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())
+
+
+@pytest.mark.asyncio
+async def test_entity_universe_debug_info_dump(
+    app_container,
+    float_feature,
+    transaction_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    document_service,
+    periodic_task_service,
+    storage,
+):
+    """
+    Test entity universe dump during deployment error for troubleshooting
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+
+    with patch(
+        "featurebyte.service.offline_store_feature_table_construction.get_combined_universe",
+        return_value=None,
+    ):
+        with pytest.raises(DocumentCreationError) as exc_info:
+            await deploy_feature(
+                app_container,
+                float_feature,
+                context_primary_entity_ids=[transaction_entity.id],
+                return_type="feature_list",
+                deployment_id=float_feat_deployment_id,
+            )
+    assert str(exc_info.value) == "Failed to create deployment"
+
+    # Check ingest graphs dump for troubleshooting
+    feature_table_name = "cat1_cust_id_30m"
+    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+    debug_info_bytes = await storage.get_bytes(path)
+    debug_info = pickle.loads(debug_info_bytes)
+    assert isinstance(debug_info, dict)
+    ingest_graphs_dump = debug_info["offline_ingest_graphs"]
+    assert len(ingest_graphs_dump) == 1
+    assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
 
     # Check that feature tables and tasks are cleaned up
     feature_tables = await get_all_feature_tables(document_service)

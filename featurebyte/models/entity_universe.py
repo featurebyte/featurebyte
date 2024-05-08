@@ -427,7 +427,7 @@ def apply_join_steps(universe_expr: Expression, join_steps: List[EntityLookupSte
 def get_combined_universe(
     entity_universe_params: List[EntityUniverseParams],
     source_type: SourceType,
-) -> Expression:
+) -> Optional[Expression]:
     """
     Returns the combined entity universe expression
 
@@ -440,7 +440,7 @@ def get_combined_universe(
 
     Returns
     -------
-    Expression
+    Optional[Expression]
     """
     combined_universe_expr: Optional[Expression] = None
     processed_universe_exprs = set()
@@ -476,7 +476,6 @@ def get_combined_universe(
         # ignored.
         combined_universe_expr = DUMMY_ENTITY_UNIVERSE
 
-    assert combined_universe_expr is not None
     return combined_universe_expr
 
 
