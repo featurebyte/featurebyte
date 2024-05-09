@@ -593,7 +593,7 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
     assert original_out_hash == decom_out_hash
 
 
-def generate_column_data(var_type, row_number=10):
+def generate_column_data(var_type, row_number=10, databricks_udf_input=False):
     """Generate data for a given var_type"""
     if var_type in DBVarType.supported_timestamp_types():
         return pd.date_range("2020-01-01", freq="1h", periods=row_number).astype(str)
@@ -609,10 +609,14 @@ def generate_column_data(var_type, row_number=10):
         selections = [
             None,
             np.nan,
-            json.dumps({}),
-            json.dumps({"foo": 1, "bar": 2}),
-            json.dumps({"你好": 1, "世界": 2}),
-            json.dumps({"foo": 1, "bar": 2, "baz": 3}),
+            {} if databricks_udf_input else json.dumps({}),
+            {"foo": 1, "bar": 2} if databricks_udf_input else json.dumps({"foo": 1, "bar": 2}),
+            {"你好": 1, "世界": 2} if databricks_udf_input else json.dumps({"你好": 1, "世界": 2}),
+            (
+                {"foo": 1, "bar": 2, "baz": 3}
+                if databricks_udf_input
+                else json.dumps({"foo": 1, "bar": 2, "baz": 3})
+            ),
         ]
         return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
@@ -704,6 +708,7 @@ def check_on_demand_feature_code_generation(
     df = pd.DataFrame()
     decomposed_graph = offline_store_info.graph
     target_node = decomposed_graph.get_node_by_name(offline_store_info.node_name)
+    databricks_specific_inputs = set()
     for graph_node in decomposed_graph.iterate_nodes(
         target_node=target_node, node_type=NodeType.GRAPH
     ):
@@ -711,6 +716,8 @@ def check_on_demand_feature_code_generation(
         df[graph_node.parameters.output_column_name] = generate_column_data(
             graph_node.parameters.output_dtype
         )
+        if graph_node.parameters.output_dtype in DBVarType.dictionary_types():
+            databricks_specific_inputs.add(graph_node.parameters.output_column_name)
 
     for node in decomposed_graph.iterate_nodes(
         target_node=target_node, node_type=NodeType.REQUEST_COLUMN
@@ -748,6 +755,8 @@ def check_on_demand_feature_code_generation(
     )
 
     # check the generated code can be executed successfully
+    for col in databricks_specific_inputs:
+        df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
     udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
 
     # check the consistency between on demand feature view & on demand feature function

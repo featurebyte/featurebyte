@@ -44,12 +44,34 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
     return use_case
 
 
+@pytest.fixture(name="relative_freq_feature")
+def relative_freq_feature_fixture(
+    snowflake_event_view_with_entity, snowflake_scd_view, arbitrary_default_feature_job_setting
+):
+    """Test count dict feature udf"""
+    event_view = snowflake_event_view_with_entity
+    scd_view = snowflake_scd_view
+    joined_view = event_view.join(scd_view, on="col_int", rprefix="scd_")
+    feat = joined_view["col_boolean"].as_feature("col_boolean")
+    feat1 = event_view.groupby(by_keys=[], category="col_boolean").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["4w"],
+        feature_names=["overall_count_of_col_text"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["overall_count_of_col_text"]
+    feat_rel_freq = feat1.cd.get_relative_frequency(key=feat)
+    feat_rel_freq.name = "relative_frequency"
+    return feat_rel_freq
+
+
 @pytest.fixture(name="databricks_deployment")
 def databricks_deployment_fixture(
     float_feature,
     non_time_based_feature,
     ttl_non_ttl_composite_feature,
     latest_event_timestamp_overall_feature,
+    relative_freq_feature,
     req_col_day_diff_feature,
     databricks_use_case,
 ):
@@ -61,6 +83,7 @@ def databricks_deployment_fixture(
         ttl_non_ttl_composite_feature,
         req_col_day_diff_feature,
         latest_event_timestamp_overall_feature,
+        relative_freq_feature,
     ]
     for feature in features:
         with freezegun.freeze_time("2024-01-03"):
@@ -122,6 +145,7 @@ def test_databricks_accessor__with_non_databricks_unity_feature_store(deployment
 def test_databricks_specs(
     ttl_non_ttl_composite_feature,
     req_col_day_diff_feature,
+    relative_freq_feature,
     databricks_deployment,
     cust_id_30m_suffix,
 ):
@@ -220,6 +244,30 @@ def test_databricks_specs(
                 "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
             },
         ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_6m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_relative_frequency_v240103_[FEATURE_ID3]",
+            input_bindings={
+                "x_1": "__relative_frequency_V240103__part1",
+                "x_2": "__relative_frequency_V240103__part0",
+            },
+            output_name="relative_frequency",
+        ),
     ]
 
     # List of columns to exclude from the training set
@@ -230,6 +278,8 @@ def test_databricks_specs(
         "__feature_V240103__part0",
         "__feature_V240103__part1",
         "__featurebyte_dummy_entity",
+        "__relative_frequency_V240103__part0",
+        "__relative_frequency_V240103__part1",
         "__req_col_feature_V240103__part0",
         "transaction_id",
     ]
@@ -268,6 +318,7 @@ def test_databricks_specs(
     replace_pairs = [
         ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_day_diff_feature.cached_model.id)),
+        ("[FEATURE_ID3]", str(relative_freq_feature.cached_model.id)),
         ("[TABLE_SUFFIX]", cust_id_30m_suffix),
     ]
     for replace_pair in replace_pairs:
@@ -311,6 +362,7 @@ def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
     output = databricks_deployment.databricks.list_feature_table_names()
     assert output == [
         "feature_engineering.some_schema.cat1__no_entity_30m",
+        "feature_engineering.some_schema.cat1__no_entity_6m",
         f"feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_{cust_id_30m_suffix}",
         "feature_engineering.some_schema.cat1_transaction_id_1d",
     ]

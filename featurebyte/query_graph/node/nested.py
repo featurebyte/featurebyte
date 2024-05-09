@@ -804,7 +804,7 @@ class BaseGraphNode(BasePrunableNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name,
             json_conversion_func=lambda expr: ExpressionStr(
-                f"np.nan if pd.isna({expr}) else json.loads({expr})"
+                f"np.nan if pd.isna({expr}) else {expr}"
             ),
             null_filling_func=lambda expr, val: ExpressionStr(
                 f"{val.as_input()} if pd.isna({expr}) else {expr}"
