@@ -65,9 +65,22 @@ def relative_freq_feature_fixture(
     return feat_rel_freq
 
 
+@pytest.fixture(name="count_feature")
+def count_feature_fixture(grouped_event_view, feature_group_feature_job_setting):
+    """Count feature fixture"""
+    grouped = grouped_event_view.aggregate_over(
+        method="count",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["count_feature"],
+    )
+    return grouped["count_feature"]
+
+
 @pytest.fixture(name="databricks_deployment")
 def databricks_deployment_fixture(
     float_feature,
+    count_feature,
     non_time_based_feature,
     ttl_non_ttl_composite_feature,
     latest_event_timestamp_overall_feature,
@@ -79,6 +92,7 @@ def databricks_deployment_fixture(
     use_case = databricks_use_case
     features = [
         float_feature,
+        count_feature,
         non_time_based_feature,
         ttl_non_ttl_composite_feature,
         req_col_day_diff_feature,
@@ -143,6 +157,7 @@ def test_databricks_accessor__with_non_databricks_unity_feature_store(deployment
 
 
 def test_databricks_specs(
+    count_feature,
     ttl_non_ttl_composite_feature,
     req_col_day_diff_feature,
     relative_freq_feature,
@@ -183,6 +198,19 @@ def test_databricks_specs(
             lookback_window=None,
             feature_names=["sum_1d_V240103"],
             rename_outputs={"sum_1d_V240103": "sum_1d"},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["count_feature_V240103"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_count_feature_v240103_[FEATURE_ID0]",
+            input_bindings={"x_1": "count_feature_V240103"},
+            output_name="count_feature",
         ),
         FeatureLookup(
             table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
@@ -281,6 +309,7 @@ def test_databricks_specs(
         "__relative_frequency_V240103__part0",
         "__relative_frequency_V240103__part1",
         "__req_col_feature_V240103__part0",
+        "count_feature_V240103",
         "transaction_id",
     ]
 
@@ -316,6 +345,7 @@ def test_databricks_specs(
     relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
     assert len(relationships_info) == 1
     replace_pairs = [
+        ("[FEATURE_ID0]", str(count_feature.cached_model.id)),
         ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_day_diff_feature.cached_model.id)),
         ("[FEATURE_ID3]", str(relative_freq_feature.cached_model.id)),
@@ -366,3 +396,37 @@ def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
         f"feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_{cust_id_30m_suffix}",
         "feature_engineering.some_schema.cat1_transaction_id_1d",
     ]
+
+
+def test_null_filling_udf(databricks_deployment, count_feature):
+    """Test null filling UDF"""
+    expected = """
+    CREATE FUNCTION udf_count_feature_[VERSION]_[FEATURE_ID](x_1 BIGINT)
+    RETURNS BIGINT
+    LANGUAGE PYTHON
+    COMMENT ''
+    AS $$
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def user_defined_function(col_1: int) -> int:
+        # col_1: count_feature_V240103
+        return 0 if pd.isnull(col_1) else col_1
+
+    output = user_defined_function(x_1)
+    return None if pd.isnull(output) else output
+    $$
+    """
+    replace_pairs = [
+        ("[VERSION]", count_feature.version.lower()),
+        ("[FEATURE_ID]", str(count_feature.cached_model.id)),
+    ]
+    for replace_pair in replace_pairs:
+        expected = expected.replace(*replace_pair)
+
+    udf_info = count_feature.cached_model.offline_store_info.udf_info
+    assert udf_info.codes.strip() == textwrap.dedent(expected).strip()
