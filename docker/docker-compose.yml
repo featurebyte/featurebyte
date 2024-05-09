@@ -1,42 +1,42 @@
 services:
-  mongo-testrs:
-    hostname: mongo-testrs
-    container_name: mongo-testrs
-    image: "featurebyte/mongo:latest"
+  mongodb:
+    image: "mongo:6"
     ports:
       - 27017:27017  # Expose MongoDB port
-    entrypoint: []
-    healthcheck:
-      test: mongosh 'mongodb://localhost/admin?replicaSet=rs0' --quiet --eval "exit" 2>/dev/null
     command:
       - /bin/bash
       - -c
       - |
-        set -em
+        # Enable job control
+        set -m
 
-        # Creating Database
-        /usr/bin/mongod --quiet --dbpath=/tmp --bind_ip_all --replSet rs0 &
-        while ! mongosh --quiet --eval "exit" 2>/dev/null; do sleep 1; done; echo "mongodb started"
+        # Start mongodb in the background
+        mongod --dbpath /data/db --replSet rs0 --bind_ip_all &
 
-        # If not bootstrapped, bootstrap
-        if ! mongosh --quiet --eval "rs.status()" 1>/dev/null 2>&1; then
-          mongosh --quiet <<EOF
-            var config = { "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "localhost", "priority": 1 }]};
-            rs.initiate(config, { force: true });
-        EOF
+        until mongosh --eval 'db.runCommand("ping").ok' --quiet; do
+          echo "Waiting for mongodb to be listening"
+          sleep 1
+        done
+
+        # Bootstrap if not already bootstrapped
+        if ! mongosh --eval "rs.status()" 1>/dev/null 2>&1; then
+          mongosh --eval 'rs.initiate({ "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "127.0.0.1", "priority": 1}]})'
         fi
 
-        fg  # Reconnect to mongod proc
+        # Attach back to session
+        fg
+    healthcheck:
+      test: mongosh --eval 'db.runCommand("ping").ok' --quiet
+      interval: 60s
+      timeout: 10s
+      start_period: 5s
+
   redis:
-    hostname: redis-test
-    container_name: redis-test
     image: "redis:6.2.5"
     ports:
       - 6379:6379
 
   spark-thrift:
-    hostname: spark-thrift
-    container_name: spark-thrift-test
     image: featurebyte/cluster-apache-spark:${SPARK_VERSION}
     ports:
       - "10009:10000"
@@ -48,12 +48,6 @@ services:
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
       - ~/.spark/data/staging:/opt/spark/data/derby/staging
-    healthcheck:
-      test: netstat -ltn | grep -c 10000
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     command:
       - /bin/sh
       - -c
@@ -72,3 +66,9 @@ services:
         --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
         --conf spark.sql.hive.thriftServer.singleSession=false \
         --conf spark.hadoop.metastore.catalog.default=spark
+    healthcheck:
+      test: netstat -ltn | grep -c 10000
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
