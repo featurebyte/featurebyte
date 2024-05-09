@@ -64,6 +64,7 @@ class TileSpec(FeatureByteBaseModel):
     category_column_name: Optional[str]
     feature_store_id: Optional[ObjectId]
     entity_tracker_table_name: str
+    windows: List[Optional[str]]
 
     class Config:
         """

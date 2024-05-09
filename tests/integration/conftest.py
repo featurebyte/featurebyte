@@ -948,6 +948,10 @@ def create_generic_tile_spec():
         tile_id=tile_id,
         aggregation_id=aggregation_id,
         feature_store_id=ObjectId(),
+        # Set a large windows since many tests assume that all the tiles in the tile_data.csv will
+        # be selected, but this is now not necessarily the case since we will only select the tiles
+        # that are within the window.
+        windows=["3650d"],
     )
 
 

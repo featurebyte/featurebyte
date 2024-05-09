@@ -44,6 +44,16 @@ class LastRunMetadata(BaseModel):
     index: int
 
 
+class BackfillMetadata(BaseModel):
+    """
+    BackfillMetadata class
+
+    Metadata of the tile backfill process when enabling a deployment
+    """
+
+    start_date: datetime
+
+
 class TileModel(FeatureByteCatalogBaseDocumentModel):
     """
     TileModel document
@@ -64,6 +74,7 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
 
     last_run_metadata_online: Optional[LastRunMetadata]
     last_run_metadata_offline: Optional[LastRunMetadata]
+    backfill_metadata: Optional[BackfillMetadata]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -102,3 +113,4 @@ class TileUpdate(BaseDocumentServiceUpdateSchema):
 
     last_run_metadata_online: Optional[LastRunMetadata]
     last_run_metadata_offline: Optional[LastRunMetadata]
+    backfill_metadata: Optional[BackfillMetadata]

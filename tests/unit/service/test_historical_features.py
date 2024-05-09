@@ -64,8 +64,6 @@ async def test_get_historical_features__feature_list_not_deployed(
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
-    call_args = mock_get_historical_features.call_args
-    assert call_args[1]["is_feature_list_deployed"] is False
 
 
 @pytest.mark.asyncio
@@ -93,8 +91,6 @@ async def test_get_historical_features__feature_list_not_saved(
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
-    call_args = mock_get_historical_features.call_args
-    assert call_args[1]["is_feature_list_deployed"] is False
 
 
 @pytest.mark.asyncio
@@ -119,8 +115,6 @@ async def test_get_historical_features__feature_list_deployed(
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
-    call_args = mock_get_historical_features.call_args
-    assert call_args[1]["is_feature_list_deployed"] is True
 
 
 @pytest.mark.asyncio
@@ -144,8 +138,6 @@ async def test_get_historical_features__feature_clusters_not_set(
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
-    call_args = mock_get_historical_features.call_args
-    assert call_args[1]["is_feature_list_deployed"] is True
 
 
 @pytest.mark.asyncio
@@ -252,38 +244,6 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     assert df_observation_set_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
 
     mocked_compute_tiles_on_demand.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__skip_tile_cache_if_deployed(
-    float_feature,
-    mock_snowflake_session,
-    mocked_compute_tiles_on_demand,
-    output_table_details,
-    tile_cache_service,
-    snowflake_feature_store,
-):
-    """
-    Test that for with is_feature_list_deployed=True on demand tile computation is skipped
-    """
-    df_request = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-            "cust_id": ["C1", "C2"],
-        }
-    )
-    mock_snowflake_session.generate_session_unique_id.return_value = "1"
-    await get_historical_features(
-        session=mock_snowflake_session,
-        tile_cache_service=tile_cache_service,
-        graph=float_feature.graph,
-        nodes=[float_feature.node],
-        observation_set=df_request,
-        feature_store=snowflake_feature_store,
-        is_feature_list_deployed=True,
-        output_table_details=output_table_details,
-    )
-    mocked_compute_tiles_on_demand.assert_not_called()
 
 
 @pytest.mark.asyncio

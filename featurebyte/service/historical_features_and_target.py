@@ -126,7 +126,6 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
-    is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> None:
@@ -149,10 +148,6 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the observations set has different serving name columns
         than those defined in Entities
-    is_feature_list_deployed : bool
-        Whether the feature list that triggered this historical request is deployed. If so, tile
-        tables would have already been back-filled and there is no need to check and calculate tiles
-        on demand.
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     output_table_details: TableDetails
@@ -183,35 +178,34 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
 
     try:
         # Compute tiles on demand if required
-        if not is_feature_list_deployed:
-            tile_cache_progress_callback = (
-                get_ranged_progress_callback(
-                    progress_callback,
-                    0,
-                    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-                )
-                if progress_callback
-                else None
+        tile_cache_progress_callback = (
+            get_ranged_progress_callback(
+                progress_callback,
+                0,
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
             )
-            tic = time.time()
-            await compute_tiles_on_demand(
-                session=session,
-                tile_cache_service=tile_cache_service,
-                graph=graph,
-                nodes=nodes,
-                request_id=request_id,
-                request_table_name=request_table_name,
-                request_table_columns=request_table_columns,
-                feature_store_id=feature_store.id,
-                serving_names_mapping=serving_names_mapping,
-                parent_serving_preparation=parent_serving_preparation,
-                progress_callback=(
-                    tile_cache_progress_callback if tile_cache_progress_callback else None
-                ),
-            )
+            if progress_callback
+            else None
+        )
+        tic = time.time()
+        await compute_tiles_on_demand(
+            session=session,
+            tile_cache_service=tile_cache_service,
+            graph=graph,
+            nodes=nodes,
+            request_id=request_id,
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            feature_store_id=feature_store.id,
+            serving_names_mapping=serving_names_mapping,
+            parent_serving_preparation=parent_serving_preparation,
+            progress_callback=(
+                tile_cache_progress_callback if tile_cache_progress_callback else None
+            ),
+        )
 
-            elapsed = time.time() - tic
-            logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
+        elapsed = time.time() - tic
+        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
         if progress_callback:
             await progress_callback(

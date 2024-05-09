@@ -192,6 +192,7 @@ class OnDemandTileComputeRequest:
             category_column_name=self.tile_gen_info.value_by_column,
             feature_store_id=feature_store_id,
             entity_tracker_table_name=self.tile_info_key.get_entity_tracker_table_name(),
+            windows=self.tile_gen_info.windows,
         )
         return tile_spec, self.tracker_sql
 
