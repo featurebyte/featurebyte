@@ -2,6 +2,7 @@
 This module contains utility functions used in tests
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Generator
