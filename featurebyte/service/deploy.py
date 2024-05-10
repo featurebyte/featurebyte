@@ -770,7 +770,7 @@ class DeployService:
                 feature_list_to_online_enable=feature_list,
                 deployment=deployment,
                 update_progress=get_ranged_progress_callback(
-                    self.task_progress_updater.update_progress, 72, 98
+                    self.task_progress_updater.update_progress, 72, 95
                 ),
             )
 
@@ -795,14 +795,14 @@ class DeployService:
 
         if feast_registry:
             await self._update_progress(
-                70, f"Updating deployed feature list ({feature_list.name}) ..."
+                96, f"Updating deployed feature list ({feature_list.name}) ..."
             )
             await self.feast_integration_service.handle_deployed_feature_list(
                 deployment=deployment, feature_list=feature_list, online_enabled_features=features
             )
 
         # deploy feature list
-        await self._update_progress(71, f"Deploying feature list ({feature_list.name}) ...")
+        await self._update_progress(97, f"Deploying feature list ({feature_list.name}) ...")
         await self.feature_list_management_service.deploy_feature_list(feature_list=feature_list)
 
         # update deployment status

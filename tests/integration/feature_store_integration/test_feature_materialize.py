@@ -639,7 +639,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
     assert len(all_udfs) > 0
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
     if source_type == SourceType.DATABRICKS_UNITY:
-        assert len(udfs_for_on_demand_func) == 2
+        assert len(udfs_for_on_demand_func) == 5
     else:
         assert len(udfs_for_on_demand_func) == 0
 
