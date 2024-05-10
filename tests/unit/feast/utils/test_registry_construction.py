@@ -182,11 +182,8 @@ def expected_data_sources_fixture(expected_data_source_names):
 
 
 @pytest.fixture(name="expected_feature_view_specs")
-def expected_feature_view_specs_fixture(
-    feature_list, expected_cust_id_via_transaction_id_table_name
-):
+def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_table_name):
     """Expected feature view specs"""
-    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
     common_batch_source = {
         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
@@ -292,23 +289,6 @@ def expected_feature_view_specs_fixture(
                 },
             ],
             "ttl": "3600s",
-        },
-        {
-            **common_params,
-            "name": f"fb_entity_lookup_{relationship_info_id}",
-            "batchSource": {
-                **common_batch_source,
-                "name": f"fb_entity_lookup_{relationship_info_id}",
-                "snowflakeOptions": {
-                    **common_snowflake_options,
-                    "table": f"fb_entity_lookup_{relationship_info_id}",
-                },
-                "timestampField": "__feature_timestamp",
-                "type": "BATCH_SNOWFLAKE",
-            },
-            "entities": ["transaction_id"],
-            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
-            "features": [{"name": "cust_id", "valueType": "INT64"}],
         },
     ]
 

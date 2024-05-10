@@ -1010,12 +1010,15 @@ def snowflake_scd_table_state_map_fixture(snowflake_data_source):
 
 
 @pytest.fixture(name="snowflake_scd_table_with_entity")
-def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity, gender_entity):
+def snowflake_scd_table_with_entity_fixture(
+    snowflake_scd_table, cust_id_entity, gender_entity, another_entity
+):
     """
     Fixture for an SCD table with entity
     """
-    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)  # natural key column
     snowflake_scd_table["col_boolean"].as_entity(gender_entity.name)
+    snowflake_scd_table["col_binary"].as_entity(another_entity.name)
     return snowflake_scd_table
 
 
@@ -1129,6 +1132,19 @@ def another_entity_fixture(catalog):
     _ = catalog
     entity = Entity(
         name="another", serving_names=["another_key"], _id=ObjectId("65b123107011cad326ada330")
+    )
+    entity.save()
+    yield entity
+
+
+@pytest.fixture(name="group_entity")
+def group_entity_fixture(catalog):
+    """
+    Another entity to support creating test cases
+    """
+    _ = catalog
+    entity = Entity(
+        name="group", serving_names=["group_key"], _id=ObjectId("66334f9527378f612b42067a")
     )
     entity.save()
     yield entity
@@ -1876,6 +1892,33 @@ def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
     return feature
 
 
+@pytest.fixture(name="aggregate_asat_composite_entity_feature")
+def aggregate_asat_composite_entity_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get an aggregate asat feature with composite entities from SCD table
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby(["col_boolean", "col_binary"]).aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_x_other_count",
+    )
+    return feature
+
+
+@pytest.fixture(name="descendant_of_gender_feature")
+def descendant_of_gender_feature(snowflake_dimension_table, group_entity, gender_entity):
+    """
+    Fixture that has a primary entity that is the descendant of gender entity
+    """
+    # Create parent child relationship between group (child) and gender (parent)
+    snowflake_dimension_table["col_int"].as_entity(group_entity.name)  # dimension id
+    snowflake_dimension_table["col_boolean"].as_entity(gender_entity.name)
+    view = snowflake_dimension_table.get_view()
+    feature = view["col_float"].as_feature("descendant_of_gender_feature")
+    return feature
+
+
 @pytest.fixture(name="feature_with_internal_parent_child_relationships")
 def feature_with_internal_parent_child_relationships_fixture(
     scd_lookup_feature, aggregate_asat_feature
@@ -2233,9 +2276,10 @@ def mock_task_manager(request, persistent, storage, temp_storage):
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
-                "featurebyte.worker.task_executor.get_celery"
-            ) as mock_get_celery_worker:
+            with (
+                patch("featurebyte.app.get_celery") as mock_get_celery,
+                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
+            ):
 
                 def get_task(task_id):
                     status = task_status.get(task_id)
@@ -2322,12 +2366,13 @@ def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id)
 def mock_update_data_warehouse(app_container):
     """Mock update data warehouse method"""
 
-    async def mock_func(updated_feature, online_enabled_before_update):
-        _ = online_enabled_before_update
-        extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
+    async def mock_func(feature, target_online_enabled):
+        _ = target_online_enabled
+        extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-        for query in online_feature_spec.precompute_queries:
-            await app_container.online_store_compute_query_service.create_document(query)
+        if target_online_enabled:
+            for query in online_feature_spec.precompute_queries:
+                await app_container.online_store_compute_query_service.create_document(query)
 
     with patch(
         "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",

@@ -534,40 +534,8 @@ def get_relationship_info(feature_list_model, child_entity, parent_entity):
     )
 
 
-@pytest_asyncio.fixture(name="expected_entity_lookup_feature_table_names")
-async def expected_entity_lookup_feature_table_names_fixture(
-    app_container,
-    deployed_feature_list,
-    order_entity,
-    product_action_entity,
-    customer_entity,
-    user_entity,
-    status_entity,
-):
-    """
-    Fixture for expected entity lookup feature table names
-    """
-    expected = []
-    feature_list_model = await app_container.feature_list_service.get_document(
-        deployed_feature_list.feature_list_id
-    )
-
-    def _get_relationship_info(child_entity, parent_entity):
-        return get_relationship_info(feature_list_model, child_entity, parent_entity)
-
-    for info in [
-        _get_relationship_info(order_entity, customer_entity),
-        _get_relationship_info(order_entity, product_action_entity),
-        _get_relationship_info(order_entity, user_entity),
-        _get_relationship_info(user_entity, status_entity),
-    ]:
-        expected.append(f"fb_entity_lookup_{info.id}")
-
-    return set(expected)
-
-
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_names):
+def expected_feature_table_names_fixture():
     """
     Fixture for expected feature table names
     """
@@ -581,7 +549,6 @@ def expected_feature_table_names_fixture(expected_entity_lookup_feature_table_na
         "cat1_order_id_1d",
         "cat1_userid_product_action_1h",
     }
-    expected.update(expected_entity_lookup_feature_table_names)
     return expected
 
 
@@ -672,7 +639,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
     assert len(all_udfs) > 0
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
     if source_type == SourceType.DATABRICKS_UNITY:
-        assert len(udfs_for_on_demand_func) == 2
+        assert len(udfs_for_on_demand_func) == 5
     else:
         assert len(udfs_for_on_demand_func) == 0
 
@@ -1037,7 +1004,7 @@ def test_online_features__primary_entity_ids(
 def test_online_features__invalid_child_entity(config, deployed_feature_list):
     """
     Check online features using a child entity that is a feature list's supported_serving_entity_ids
-    but not enabled_serving_entity_ids
+    but not the deployment's expected serving entity
     """
     client = config.get_client()
     deployment = deployed_feature_list
@@ -1101,7 +1068,44 @@ def test_online_features__non_existing_order_id(
 
 @pytest.mark.order(6)
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
-def test_online_features__composite_entities(
+def test_online_features__composite_entities(config, deployed_feature_list_composite_entities):
+    """
+    Check online features when the feature list only has a feature with composite entities
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list_composite_entities
+
+    entity_serving_names = [
+        {
+            "PRODUCT_ACTION": "detail",
+            "üser id": 7,
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+
+    feat_dict = res.json()["features"][0]
+    expected = {
+        "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
+        "PRODUCT_ACTION": "detail",
+        "üser id": 7,
+    }
+    assert_dict_approx_equal(feat_dict, expected)
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+def test_online_features__composite_entities_via_order_id(
     config, deployed_feature_list_composite_entities_order_use_case
 ):
     """

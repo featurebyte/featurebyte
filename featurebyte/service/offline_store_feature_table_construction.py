@@ -6,6 +6,11 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Sequence, Tuple
 
+import os
+import pickle
+from pathlib import Path
+
+import aiofiles
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting, SourceType
@@ -32,7 +37,9 @@ from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.parent_serving import ParentEntityLookupService
+from featurebyte.storage import Storage
 
 
 class OfflineStoreFeatureTableConstructionService:
@@ -45,10 +52,14 @@ class OfflineStoreFeatureTableConstructionService:
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
         entity_serving_names_service: EntityServingNamesService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        storage: Storage,
     ):
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
         self.entity_serving_names_service = entity_serving_names_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.storage = storage
 
     async def get_dummy_offline_store_feature_table_model(
         self,
@@ -142,6 +153,11 @@ class OfflineStoreFeatureTableConstructionService:
         Returns
         -------
         OfflineStoreFeatureTableModel
+
+        Raises
+        ------
+        AssertionError
+            If the entity universe cannot be determined
         """
         ingest_graph_metadata = get_combined_ingest_graph(
             features=features,
@@ -150,10 +166,32 @@ class OfflineStoreFeatureTableConstructionService:
             feature_job_setting=feature_job_setting,
         )
 
-        entity_universe = await self.get_entity_universe_model(
-            offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
-            source_type=source_type,
-        )
+        try:
+            entity_universe = await self.get_entity_universe_model(
+                offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
+                source_type=source_type,
+                feature_table_name=feature_table_name,
+            )
+        except AssertionError:
+            # Temporarily save the offline ingest graphs and other information to a file for
+            # troubleshooting
+            debug_info = {
+                "feature_ids": [feature.id for feature in features],
+                "primary_entities": primary_entities,
+                "has_ttl": has_ttl,
+                "feature_job_setting": feature_job_setting,
+                "feature_table_name": feature_table_name,
+                "offline_ingest_graphs": ingest_graph_metadata.offline_ingest_graphs,
+            }
+            path = self.offline_store_feature_table_service.get_full_remote_file_path(
+                f"offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+            )
+            async with aiofiles.tempfile.TemporaryDirectory() as tempdir_path:
+                file_path = os.path.join(tempdir_path, "data.pickle")
+                with open(file_path, "wb") as file_obj:
+                    pickle.dump(debug_info, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
+                await self.storage.put(Path(file_path), Path(path))
+            raise
 
         return OfflineStoreFeatureTableModel(
             name=feature_table_name,
@@ -175,6 +213,7 @@ class OfflineStoreFeatureTableConstructionService:
             Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
         ],
         source_type: SourceType,
+        feature_table_name: str,
     ) -> EntityUniverseModel:
         """
         Create a new EntityUniverseModel object
@@ -185,10 +224,17 @@ class OfflineStoreFeatureTableConstructionService:
             The offline ingest graphs that the entity universe is to be constructed from
         source_type: SourceType
             Source type information
+        feature_table_name: str
+            Name of the offline store feature table which the entity universe is for
 
         Returns
         -------
         EntityUniverse
+
+        Raises
+        ------
+        AssertionError
+            If the entity universe cannot be determined
         """
         params = []
         for offline_ingest_graph, relationships_info in offline_ingest_graphs:
@@ -226,6 +272,12 @@ class OfflineStoreFeatureTableConstructionService:
                     )
                 )
         universe_expr = get_combined_universe(params, source_type)
+
+        if universe_expr is None:
+            raise AssertionError(
+                f"Failed to create entity universe for offline store feature table {feature_table_name}"
+            )
+
         return EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe_expr))
 
     @staticmethod

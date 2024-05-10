@@ -372,3 +372,19 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             table_ids=feature.table_ids,
             count=count,
         )
+
+    async def get_online_disabled_feature_ids(self) -> List[ObjectId]:
+        """
+        Get the ids of the features that are online disabled
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        disabled_feature_ids = []
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter={"online_enabled": False},
+            projection={"_id": 1},
+        ):
+            disabled_feature_ids.append(doc["_id"])
+        return disabled_feature_ids

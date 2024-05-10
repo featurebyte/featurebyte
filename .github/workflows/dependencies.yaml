@@ -20,10 +20,10 @@ permissions:
   pull-requests: write
   repository-projects: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: "${{ github.workflow }}-${{ github.head_ref }}"
   cancel-in-progress: true
 jobs:
-  diff-deps:
+  diff-client-deps:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -86,3 +86,24 @@ jobs:
       - name: Check failure if not labelled as dependencies
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
         run: diff -u main.PKG-INFO branch.PKG-INFO
+
+  diff-all-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: "1.8.2"
+      - uses: bushwhackr/poetry-diff@v1
+        id: poetry-diff
+      - uses: mshick/add-pr-comment@v2
+        if: ${{ steps.poetry-diff.outputs.diff_present != '0' }}
+        with:
+          message: |-
+            ${{ steps.poetry-diff.outputs.diff_content }}

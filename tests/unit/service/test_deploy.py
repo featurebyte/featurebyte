@@ -10,8 +10,10 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentError, DocumentNotFoundError, DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.feature_list import FeatureListCreate
 
 
@@ -184,7 +186,8 @@ async def test_update_deployment(
         document_id=deployment.feature_list_id
     )
     mock_update_data_warehouse.assert_called_once()
-    assert mock_update_data_warehouse.call_args[1]["updated_feature"].online_enabled is True
+    assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is False
+    assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is True
 
     assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
@@ -205,7 +208,8 @@ async def test_update_deployment(
         document_id=deployment.feature_list_id
     )
     assert mock_update_data_warehouse.call_count == 2
-    assert mock_update_data_warehouse.call_args[1]["updated_feature"].online_enabled is False
+    assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is True
+    assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is False
 
     assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
@@ -544,3 +548,25 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
         document_id=deployment.feature_list_id
     )
     assert feature_list.store_info.feast_enabled
+
+
+@pytest.mark.asyncio
+async def test_get_serving_entity_specs(
+    app_container,
+    deployed_feature_list_requiring_parent_serving_composite_entity,
+    group_entity,
+    another_entity,
+):
+    """Test get serving entity specs"""
+    feature_list = deployed_feature_list_requiring_parent_serving_composite_entity
+    serving_entity_ids = feature_list.primary_entity_ids
+    serving_entity_specs = (
+        await app_container.deployment_serving_entity_service.get_serving_entity_specs(
+            serving_entity_ids=serving_entity_ids
+        )
+    )
+    expected = {
+        group_entity.id: ColumnSpec(name=group_entity.serving_names[0], dtype=DBVarType.INT),
+        another_entity.id: ColumnSpec(name=another_entity.serving_names[0], dtype=DBVarType.BINARY),
+    }
+    assert serving_entity_specs == [expected[entity_id] for entity_id in serving_entity_ids]

@@ -2,10 +2,12 @@
 Tests for OfflineStoreFeatureTableManagerService
 """
 
-# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 from typing import Dict
 
 import os
+
+# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
+import pickle
 from unittest.mock import patch
 
 import pytest
@@ -13,9 +15,13 @@ import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte.common.model_util import get_version
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
+from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -139,8 +145,7 @@ async def deployed_float_feature_list(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id]]
-    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 2
+    assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
 
@@ -160,7 +165,6 @@ async def deployed_float_feature(app_container, deployed_float_feature_list):
 async def deployed_float_feature_list_cust_id_use_case(
     app_container,
     float_feature,
-    cust_id_entity,
     float_feat_deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
@@ -175,7 +179,6 @@ async def deployed_float_feature_list_cust_id_use_case(
         return_type="feature_list",
         deployment_id=float_feat_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [[cust_id_entity.id]]
     assert mock_offline_store_feature_manager_dependencies["initialize_new_columns"].call_count == 1
     assert mock_offline_store_feature_manager_dependencies["apply_comments"].call_count == 1
     return feature_list
@@ -249,7 +252,6 @@ async def deployed_scd_lookup_feature(
         return_type="feature_list",
         deployment_id=scd_lookup_deployment_id,
     )
-    assert feature_list.enabled_serving_entity_ids == [feature_list.primary_entity_ids]
     feature = await app_container.feature_service.get_document(feature_list.feature_ids[0])
     return feature
 
@@ -388,7 +390,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_cust_id_30m",
                 "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"sum_1d_list_{fl_version}"},
         },
@@ -396,7 +397,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_cust_id_30m",
                 "cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"sum_1d_plus_123_list_{fl_version}"},
         },
@@ -416,7 +416,6 @@ def expected_feast_registry_mapping_fixture(
             "feature_views": {
                 "cat1_gender_1d",
                 "cat1_gender_1d_via_cust_id_{expected_suffix}",
-                "fb_entity_lookup_{entity_rel_id1}",
             },
             "feature_services": {f"asat_gender_count_list_{fl_version}"},
         },
@@ -453,13 +452,23 @@ async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeat
     return feature_tables
 
 
+async def get_all_scheduled_tasks(periodic_task_service):
+    """
+    Helper function to check if there is a scheduled task
+    """
+    tasks = {}
+    async for periodic_task in periodic_task_service.list_documents_iterator(
+        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
+    ):
+        tasks[periodic_task.id] = periodic_task
+    return tasks
+
+
 async def has_scheduled_task(periodic_task_service, feature_table):
     """
     Helper function to check if there is a scheduled task
     """
-    async for periodic_task in periodic_task_service.list_documents_iterator(
-        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
-    ):
+    for periodic_task in (await get_all_scheduled_tasks(periodic_task_service)).values():
         if periodic_task.kwargs["offline_store_feature_table_id"] == str(feature_table.id):
             return True
     return False
@@ -535,6 +544,34 @@ async def customer_to_gender_relationship_info(
     )
 
 
+@pytest_asyncio.fixture
+async def deprecated_entity_lookup_feature_tables(app_container):
+    """
+    Fixture for a deprecated entity lookup feature table
+    """
+    table_id = ObjectId()
+    model = OfflineStoreFeatureTableModel(
+        _id=table_id,
+        name="entity_lookup_table_name",
+        feature_ids=[],
+        primary_entity_ids=[ObjectId()],
+        serving_names=["customer_id"],
+        has_ttl=False,
+        output_column_names=["city_id"],
+        output_dtypes=["VARCHAR"],
+        entity_lookup_info=EntityRelationshipInfo(
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=ObjectId(),
+            related_entity_id=ObjectId(),
+            relation_table_id=ObjectId(),
+        ),
+        catalog_id=app_container.catalog_id,
+    )
+    doc = await app_container.offline_store_feature_table_service.create_document(model)
+    return doc
+
+
+@pytest.mark.usefixtures("deprecated_entity_lookup_feature_tables")
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     app_container,
@@ -556,7 +593,6 @@ async def test_feature_table_one_feature_deployed(
         [transaction_to_customer_relationship_info]
     )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
@@ -652,6 +688,12 @@ async def test_feature_table_one_feature_deployed(
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
             "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
+            "lookup_mapping": [
+                {
+                    "lookup_feature_table_serving_name": "transaction_id",
+                    "source_feature_table_serving_name": "cust_id",
+                }
+            ],
             "source_feature_table_id": feature_table_id,
         },
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
@@ -689,7 +731,6 @@ async def test_feature_table_two_features_deployed(
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -785,7 +826,6 @@ async def test_feature_table_undeploy(
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
@@ -879,7 +919,6 @@ async def test_feature_table_undeploy(
     assert {c.args[0].name for c in drop_table_calls} == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
 
     # Check feast registry after both undeploy
@@ -919,7 +958,6 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "cat1_cust_id_30m",
         "cat1_cust_id_3h",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
     }
 
     # Check customer entity feature table
@@ -1169,7 +1207,6 @@ async def test_aggregate_asat_feature(
     assert set(feature_tables.keys()) == {
         "cat1_gender_1d",
         f"cat1_gender_1d_via_cust_id_{expected_suffix}",
-        f"fb_entity_lookup_{customer_to_gender_relationship_info.id}",
     }
     feature_table = feature_tables["cat1_gender_1d"]
 
@@ -1247,6 +1284,12 @@ async def test_aggregate_asat_feature(
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
             "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
+            "lookup_mapping": [
+                {
+                    "lookup_feature_table_serving_name": "cust_id",
+                    "source_feature_table_serving_name": "gender",
+                }
+            ],
             "source_feature_table_id": feature_table_id,
         },
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -1339,43 +1382,48 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
 
 
 @pytest.mark.asyncio
-async def test_enabled_serving_entity_ids_updated_no_op_deploy(
+async def test_new_deployment_on_already_enabled_feature_list(
     app_container,
     document_service,
     deployed_float_feature_list_cust_id_use_case,
     transaction_entity,
-    cust_id_entity,
     transaction_to_customer_relationship_info,
 ):
     """
-    Test enabled_serving_entity_ids is updated even for a no-op deployment request (when all the
+    Test precomputed lookup feature table is created for a no-op deployment request (when all the
     underlying features are already online enabled)
     """
     feature_tables = await get_all_feature_tables(document_service)
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
     }
+    deployment_ids_before = feature_tables["cat1_cust_id_30m"].deployment_ids
 
     # Make a new deployment with transaction use case. Now we need to be able to serve this feature
     # list using child entity transaction.
-    feature_list = await deploy_feature_list(
+    deployment_id = ObjectId()
+    _ = await deploy_feature_list(
         app_container,
         deployed_float_feature_list_cust_id_use_case,
         context_primary_entity_ids=[transaction_entity.id],
         deployment_name_override="another_deployment_same_feature_list",
+        deployment_id=deployment_id,
     )
 
-    # Check enabled_serving_entity_ids and offline feature tables
-    assert feature_list.enabled_serving_entity_ids == [[transaction_entity.id], [cust_id_entity.id]]
+    # Check offline feature tables
     feature_tables = await get_all_feature_tables(document_service)
     expected_suffix = get_lookup_steps_unique_identifier(
         [transaction_to_customer_relationship_info]
     )
     assert set(feature_tables.keys()) == {
-        f"fb_entity_lookup_{transaction_to_customer_relationship_info.id}",
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
+    deployment_ids_after = feature_tables["cat1_cust_id_30m"].deployment_ids
+    assert set(deployment_ids_after) == set(deployment_ids_before + [deployment_id])
+    assert feature_tables[
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
+    ].deployment_ids == [deployment_id]
 
 
 @pytest.mark.asyncio
@@ -1471,3 +1519,90 @@ async def test_feature_with_internal_parent_child_relationships(
         "tests/fixtures/offline_store_feature_table/feature_cluster_with_internal_relationships.json",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_deployment_failure_cleanup(
+    app_container,
+    float_feature,
+    transaction_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    document_service,
+    periodic_task_service,
+):
+    """
+    Test failure during deployment should perform necessary cleanups
+    """
+    _ = mock_update_data_warehouse
+
+    # Simulate a failure during deployment in handle_online_enabled_features() after feature tables
+    # are created and feature materialize tasks are scheduled
+    mock_offline_store_feature_manager_dependencies["apply_comments"].side_effect = ValueError(
+        "Failing on purpose"
+    )
+    with pytest.raises(DocumentCreationError) as exc_info:
+        await deploy_feature(
+            app_container,
+            float_feature,
+            context_primary_entity_ids=[transaction_entity.id],
+            return_type="feature_list",
+            deployment_id=float_feat_deployment_id,
+        )
+    assert str(exc_info.value) == "Failed to create deployment"
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())
+
+
+@pytest.mark.asyncio
+async def test_entity_universe_debug_info_dump(
+    app_container,
+    float_feature,
+    transaction_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    document_service,
+    periodic_task_service,
+    storage,
+):
+    """
+    Test entity universe dump during deployment error for troubleshooting
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+
+    with patch(
+        "featurebyte.service.offline_store_feature_table_construction.get_combined_universe",
+        return_value=None,
+    ):
+        with pytest.raises(DocumentCreationError) as exc_info:
+            await deploy_feature(
+                app_container,
+                float_feature,
+                context_primary_entity_ids=[transaction_entity.id],
+                return_type="feature_list",
+                deployment_id=float_feat_deployment_id,
+            )
+    assert str(exc_info.value) == "Failed to create deployment"
+
+    # Check ingest graphs dump for troubleshooting
+    feature_table_name = "cat1_cust_id_30m"
+    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+    debug_info_bytes = await storage.get_bytes(path)
+    debug_info = pickle.loads(debug_info_bytes)
+    assert isinstance(debug_info, dict)
+    ingest_graphs_dump = debug_info["offline_ingest_graphs"]
+    assert len(ingest_graphs_dump) == 1
+    assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())

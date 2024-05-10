@@ -475,7 +475,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         if: ${{ env.CHANNEL_ID != '' }}
         name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.CHANNEL_ID }}
           payload: |-
@@ -502,7 +502,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
         name: Send Slack notification to developer channel
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: C03D81HC6Q5
           payload: |-

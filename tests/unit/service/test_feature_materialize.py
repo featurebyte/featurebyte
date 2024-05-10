@@ -6,7 +6,7 @@ Test FeatureMaterializeService
 
 from dataclasses import asdict
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
@@ -49,14 +49,6 @@ def mock_get_feature_store_session_fixture(mock_snowflake_session):
         yield patched_get_feature_store_session
 
 
-@pytest.fixture(name="is_online_store_registered_for_catalog")
-def is_online_store_registered_for_catalog_fixture():
-    """
-    Fixture to determine if catalog is configured with an online store
-    """
-    return True
-
-
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
     app_container,
@@ -78,10 +70,13 @@ async def deployed_feature_list_fixture(
 
     # TODO: use deploy_feature() helper
     deployment_id = ObjectId()
-    with patch(
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
-    ), patch(
-        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
+    with (
+        patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+        ),
+        patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_precomputed_lookup_feature_table"
+        ),
     ):
         await app_container.deploy_service.create_deployment(
             feature_list_id=production_ready_feature_list.id,
@@ -225,11 +220,29 @@ async def offline_store_feature_table_with_precomputed_lookup_fixture(
     gender_entity_id,
 ):
     """
-    Fixture for offline store feature table with precomputed lookup
+    Fixture for offline store feature table that requires precomputed lookup (this returns the
+    source feature table)
     """
     _ = deployed_feature_list_requiring_parent_serving
     async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"primary_entity_ids": gender_entity_id}
+    ):
+        return model
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table_with_precomputed_lookup_ttl")
+async def offline_store_feature_table_with_precomputed_lookup_ttl_fixture(
+    app_container,
+    deployed_feature_list_requiring_parent_serving_ttl,
+    cust_id_entity,
+):
+    """
+    Fixture for offline store feature table that requires precomputed lookup (this returns the
+    source feature table)
+    """
+    _ = deployed_feature_list_requiring_parent_serving_ttl
+    async for model in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={"primary_entity_ids": cust_id_entity.id}
     ):
         return model
 
@@ -441,6 +454,82 @@ async def test_scheduled_materialize_features_if_materialized_before(
 
     # Check online last materialization timestamp updated
     offline_store_feature_table.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 2, 0, 0),
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_scheduled_materialize_features_batch_columns(
+    app_container,
+    feature_materialize_service,
+    offline_store_feature_table_with_precomputed_lookup,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    online_store,
+    mock_materialize_partial,
+):
+    """
+    Test calls to materialize_partial are batched
+    """
+    _ = mock_get_feature_store_session
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        schema = {
+            f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info",
+            f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1": "some_info",
+        }
+        return schema
+
+    mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
+
+    offline_store_feature_table_with_precomputed_lookup.online_stores_last_materialized_at = [
+        OnlineStoreLastMaterializedAt(
+            online_store_id=online_store.id,
+            value=datetime(2022, 1, 1, 0, 0),
+        )
+    ]
+
+    with freeze_time("2022-01-02 00:00:00"):
+        with patch("featurebyte.service.feature_materialize.NUM_COLUMNS_PER_MATERIALIZE", 1):
+            await feature_materialize_service.scheduled_materialize_features(
+                offline_store_feature_table_with_precomputed_lookup
+            )
+
+    # Check online materialization for a feature view
+    call_args_list = [
+        arg
+        for arg in mock_materialize_partial.call_args_list
+        if arg[1]["feature_view"].name == "cat1_gender_1d"
+    ]
+    assert len(call_args_list) == 2
+
+    expected_columns = [
+        [f"__feature_requiring_parent_serving_{get_version()}__part1"],
+        [f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"],
+    ]
+    for (_, kwargs), columns in zip(call_args_list, expected_columns):
+        _ = kwargs.pop("feature_store")
+        kwargs.pop("feature_view")
+        assert kwargs == {
+            "columns": columns,
+            "start_date": datetime(2022, 1, 1, 0, 0),
+            "end_date": datetime(2022, 1, 2, 0, 0),
+            "with_feature_timestamp": False,
+        }
+
+    # Check offline last materialization timestamp updated
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table_with_precomputed_lookup.id
+    )
+    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
+
+    # Check online last materialization timestamp updated
+    offline_store_feature_table_with_precomputed_lookup.online_stores_last_materialized_at = [
         OnlineStoreLastMaterializedAt(
             online_store_id=online_store.id,
             value=datetime(2022, 1, 2, 0, 0),
@@ -899,6 +988,7 @@ async def test_materialize_features_internal_relationships(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_columns(
     app_container,
@@ -948,6 +1038,7 @@ async def test_precomputed_lookup_feature_table__initialize_new_columns(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     app_container,
@@ -1002,6 +1093,65 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
     )
 
 
+@pytest.mark.usefixtures("mock_materialize_partial")
+@pytest.mark.asyncio
+async def test_precomputed_lookup_feature_table__scheduled_materialize_features_ttl(
+    app_container,
+    offline_store_feature_table_with_precomputed_lookup_ttl,
+    feature_materialize_service,
+    mock_get_feature_store_session,
+    mock_snowflake_session,
+    update_fixtures,
+    cust_id_entity,
+    transaction_entity,
+):
+    """
+    Test scheduled_materialize_features when a feature list requires parent entity serving where the
+    parent feature has ttl. In this case, the lookup entity universe should not be using last materialized
+    timestamp.
+    """
+    _ = mock_get_feature_store_session
+
+    # Simulate previous materialize date
+    service = app_container.offline_store_feature_table_service
+    update_schema = OfflineLastMaterializedAtUpdate(
+        last_materialized_at=datetime(2022, 1, 5),
+    )
+    offline_store_feature_table_with_precomputed_lookup = await service.update_document(
+        document_id=offline_store_feature_table_with_precomputed_lookup_ttl.id, data=update_schema
+    )
+    async for table in service.list_precomputed_lookup_feature_tables_from_source(
+        offline_store_feature_table_with_precomputed_lookup.id
+    ):
+        await service.update_document(document_id=table.id, data=update_schema)
+
+    # Run scheduled materialize at a later date
+    with freeze_time(datetime(2022, 1, 6)):
+        await feature_materialize_service.scheduled_materialize_features(
+            feature_table_model=offline_store_feature_table_with_precomputed_lookup,
+        )
+
+    # Check that executed queries are correct
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+
+    # Remove dynamic fields (appears in the name of the precomputed lookup feature table)
+    relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
+    expected_suffix = get_lookup_steps_unique_identifier([relationship_info])
+    executed_queries = executed_queries.replace(expected_suffix, "0" * 6)
+
+    # The start date should not be of the lookup entity universe should not be datetime(2022, 1, 5)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_materialize/scheduled_materialize_features_precomputed_lookup_ttl.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.usefixtures("mock_materialize_partial")
 @pytest.mark.parametrize("has_missing_column", [False, True])
 @pytest.mark.asyncio
 async def test_precomputed_lookup_feature_table__initialize_new_table(
@@ -1086,3 +1236,35 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
 
     if has_missing_column:
         assert "plus_123" not in executed_queries
+
+
+@pytest.mark.asyncio
+async def test_cleanup_error__drop_columns(feature_materialize_service, caplog):
+    """
+    Test drop_columns error is handled and logged
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.FeatureMaterializeService._get_session",
+        side_effect=RuntimeError("Cannot obtain a valid session"),
+    ):
+        await feature_materialize_service.drop_columns(
+            Mock(name="mock_feature_table"), ["a", "b", "c"]
+        )
+    lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
+    assert len(lines) == 1
+    assert lines[0] == "Unexpected error when attempting to modify offline store feature table"
+
+
+@pytest.mark.asyncio
+async def test_cleanup_error__drop_table(feature_materialize_service, caplog):
+    """
+    Test drop_table error is handled and logged
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.FeatureMaterializeService._get_session",
+        side_effect=RuntimeError("Cannot obtain a valid session"),
+    ):
+        await feature_materialize_service.drop_table(Mock(name="mock_feature_table"))
+    lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
+    assert len(lines) == 1
+    assert lines[0] == "Unexpected error when attempting to modify offline store feature table"

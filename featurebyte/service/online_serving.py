@@ -215,7 +215,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         provided_entities = await self.entity_service.get_entities_with_serving_names(
             request_column_names,
         )
-        provided_entities_mapping = {entity.id: entity for entity in provided_entities}
         provided_entity_ids = {entity.id for entity in provided_entities}
         if not provided_entity_ids.issuperset([entity.id for entity in required_entities]):
             # Provided entities cannot be served, raise an error message with information
@@ -255,10 +254,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             feature_id_to_versioned_name=feature_id_to_versioned_name,
             point_in_time_value=point_in_time_value,
             request_data=request_data,
-            required_serving_names=[
-                provided_entities_mapping[entity.id].serving_names[0]
-                for entity in required_entities
-            ],
         )
         df_features.append(df_feast_online_features)
         logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
@@ -276,7 +271,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         feature_id_to_versioned_name: Dict[PydanticObjectId, str],
         request_data: List[Dict[str, Any]],
         point_in_time_value: Optional[str],
-        required_serving_names: List[str],
     ) -> pd.DataFrame:
         """
         Perform additional handling on the request data:
@@ -300,8 +294,6 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             Mapping from feature id to feature's versioned name
         point_in_time_value: Optional[str]
             Point in time value to use if the feature service requires point in time request column
-        required_serving_names: List[str]
-            List of serving names that must be provided in the request data
 
         Returns
         -------
@@ -315,8 +307,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         # Get required serving names and composite serving names that need further processing
         offline_store_table_docs = (
             await self.offline_store_feature_table_service.list_documents_as_dict(
-                query_filter={"feature_ids": {"$in": list(feature_id_to_versioned_name.keys())}},
-                project_name={"serving_names"},
+                query_filter={},
+                projection={"serving_names": 1},
             )
         )
         composite_serving_names = set()
@@ -328,18 +320,20 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 composite_serving_names.add(serving_names)
 
         # Add concatenated composite serving names
+        required_feast_entity_columns = {entity.name for entity in feast_store.list_entities()}
         added_column_names = []
         if composite_serving_names:
             for serving_names in composite_serving_names:
                 combined_serving_names_col = get_combined_serving_names(list(serving_names))
-                for row in request_data:
-                    row[combined_serving_names_col] = get_combined_serving_names_python(
-                        [row[serving_name] for serving_name in serving_names]
-                    )
-                added_column_names.append(combined_serving_names_col)
+                if combined_serving_names_col in required_feast_entity_columns:
+                    for row in request_data:
+                        row[combined_serving_names_col] = get_combined_serving_names_python(
+                            [row[serving_name] for serving_name in serving_names]
+                        )
+                    added_column_names.append(combined_serving_names_col)
 
         # Get exactly the columns that are required by feast
-        needed_columns = list(required_serving_names) + added_column_names
+        needed_columns = list(required_feast_entity_columns) + added_column_names
         if point_in_time_value:
             needed_columns.append(SpecialColumnName.POINT_IN_TIME.value)
 

@@ -2,7 +2,7 @@
 Classes to support precomputed lookup feature tables
 """
 
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional, Tuple, cast
 
 import hashlib
 import json
@@ -24,6 +24,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     PrecomputedLookupFeatureTableInfo,
+    PrecomputedLookupMapping,
 )
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
@@ -137,21 +138,23 @@ def get_precomputed_lookup_feature_table(
     relationships_mapper = EntityAncestorDescendantMapper.create(
         feature_lists_relationships_info,
     )
-    serving_entity_ids = relationships_mapper.keep_related_entity_ids(
-        entity_ids_to_filter=full_serving_entity_ids,
-        filter_by=primary_entity_ids,
-    )
-    lookup_steps = EntityLookupPlanner.generate_lookup_steps(
-        available_entity_ids=serving_entity_ids,
-        required_entity_ids=primary_entity_ids,
+    serving_entity_ids = [
+        PydanticObjectId(_id)
+        for _id in relationships_mapper.keep_related_entity_ids(
+            entity_ids_to_filter=full_serving_entity_ids,
+            filter_by=primary_entity_ids,
+        )
+    ]
+    lookup_steps, lookup_mapping = _get_lookup_steps_and_mapping(
+        primary_entity_ids=primary_entity_ids,
+        serving_entity_ids=serving_entity_ids,
+        entity_id_to_serving_name=entity_id_to_serving_name,
         relationships_info=feature_lists_relationships_info,
     )
     key = tuple(lookup_steps)
     if not key:
         return None
-    serving_names = [
-        entity_id_to_serving_name[entity_id] for entity_id in serving_entity_ids  # type: ignore[index]
-    ]
+    serving_names = [entity_id_to_serving_name[entity_id] for entity_id in serving_entity_ids]
     table = OfflineStoreFeatureTableModel(
         name=get_precomputed_lookup_feature_table_name(
             feature_table_name, serving_names, lookup_steps
@@ -171,6 +174,7 @@ def get_precomputed_lookup_feature_table(
         precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(
             lookup_steps=lookup_steps,
             source_feature_table_id=feature_table_id,
+            lookup_mapping=lookup_mapping,
         ),
         has_ttl=feature_table_has_ttl,
         output_column_names=[],
@@ -180,6 +184,56 @@ def get_precomputed_lookup_feature_table(
     )
     assert table.precomputed_lookup_feature_table_info is not None
     return table
+
+
+def _get_lookup_steps_and_mapping(
+    primary_entity_ids: List[PydanticObjectId],
+    serving_entity_ids: List[PydanticObjectId],
+    entity_id_to_serving_name: Dict[PydanticObjectId, str],
+    relationships_info: List[EntityRelationshipInfo],
+) -> Tuple[List[EntityRelationshipInfo], List[PrecomputedLookupMapping]]:
+    """
+    Get the entity lookup steps information required to map a serving_entity_ids to
+    primary_entity_ids using available relationships
+
+    Parameters
+    ----------
+    primary_entity_ids: List[PydanticObjectId]
+        Primary entity ids of the source feature table
+    serving_entity_ids: List[PydanticObjectId]
+        Serving entity ids
+    entity_id_to_serving_name: Dict[PydanticObjectId, str]
+        Mapping from entity id to serving name
+    relationships_info: List[EntityRelationshipInfo]
+        Relationships info
+
+    Returns
+    -------
+    Tuple[List[EntityRelationshipInfo], List[PrecomputedLookupMapping]]
+    """
+    lookup_steps = []
+    lookup_mapping = []
+    for primary_entity_id in primary_entity_ids:
+        current_lookup_steps = EntityLookupPlanner.generate_lookup_steps(
+            available_entity_ids=serving_entity_ids,
+            required_entity_ids=[primary_entity_id],
+            relationships_info=relationships_info,
+        )
+        for lookup_step in current_lookup_steps:
+            if lookup_step not in lookup_steps:
+                lookup_steps.append(lookup_step)
+                if lookup_step.entity_id in serving_entity_ids:
+                    lookup_mapping.append(
+                        PrecomputedLookupMapping(
+                            lookup_feature_table_serving_name=entity_id_to_serving_name[
+                                lookup_step.entity_id
+                            ],
+                            source_feature_table_serving_name=entity_id_to_serving_name[
+                                primary_entity_id
+                            ],
+                        )
+                    )
+    return lookup_steps, lookup_mapping
 
 
 def get_child_entity_universe_template(

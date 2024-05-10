@@ -117,7 +117,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             ).to_list()
             plt.hist(_strip_nulls(self.job_session_logs.COMPLETED), bins=bins, rwidth=0.7)
             plt.title(f"Job distribution over time (bin size: {bin_size})")
-            plt.axvline(x=self.request_date, color="red")
+            plt.axvline(x=self.request_date, color="red")  # type: ignore
             buffer = BytesIO()
             fig.savefig(buffer, format="png", metadata={"Software": None})
             image_1 = base64.b64encode(buffer.getvalue()).decode("utf-8")

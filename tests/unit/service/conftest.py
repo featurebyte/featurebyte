@@ -1101,6 +1101,14 @@ def fl_requiring_parent_serving_deployment_id_fixture():
     return ObjectId()
 
 
+@pytest.fixture(name="is_online_store_registered_for_catalog")
+def is_online_store_registered_for_catalog_fixture():
+    """
+    Fixture to determine if catalog is configured with an online store
+    """
+    return True
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
 async def deployed_feature_list_requiring_parent_serving_fixture(
     app_container,
@@ -1111,6 +1119,8 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     fl_requiring_parent_serving_deployment_id,
     mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
 ):
     """
     Fixture a deployed feature list that require serving parent features
@@ -1135,6 +1145,12 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
     new_feature_2 = new_feature + 123
     new_feature_2.name = new_feature.name + "_plus_123"
     new_feature_2.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
 
     feature_list = await deploy_feature_ids(
         app_container,
@@ -1168,4 +1184,127 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
         ),
     ]
 
+    return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_ttl")
+async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
+    app_container,
+    float_feature,
+    non_time_based_feature,
+    cust_id_entity,
+    transaction_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+):
+    """
+    Fixture a deployed feature list that require serving parent features with ttl
+
+    float_feature: customer entity feature (ttl)
+    non_time_based_feature: transaction entity feature (non-ttl)
+
+    Customer is a parent of transaction.
+
+    Primary entity of the combined feature is transaction.
+
+    Combined feature requires serving two feature tables (one transaction, one customer) using
+    transaction as the serving entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = float_feature + non_time_based_feature
+    new_feature.name = "feature_requiring_parent_serving_ttl"
+    new_feature.save()
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving_ttl",
+        feature_ids=[
+            new_feature.id,
+        ],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
+
+    return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_composite_entity")
+async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(  # pylint: disable=too-many-arguments
+    app_container,
+    descendant_of_gender_feature,
+    aggregate_asat_composite_entity_feature,
+    group_entity,
+    gender_entity,
+    another_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
+):
+    """
+    Fixture a deployed feature list that require serving parent features with composite entities
+
+    descendant_of_gender_feature: group entity feature (non-ttl)
+    aggregate_asat_composite_entity_feature: gender X another_entity feature (non-ttl)
+
+    Gender is a parent of Group.
+
+    Primary entity of the combined feature is group X another_entity.
+
+    Combined feature requires serving two feature tables (1. group entity, 2. gender entity X
+    another_entity via group X another_entity) using group entity X another_entity as the serving
+    entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = descendant_of_gender_feature + aggregate_asat_composite_entity_feature
+    new_feature.name = "feature_requiring_parent_serving"
+    new_feature.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving",
+        feature_ids=[new_feature.id],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+    assert feature_list.primary_entity_ids == [another_entity.id, group_entity.id]
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=group_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
     return feature_list

@@ -425,7 +425,7 @@ class FeatureManagerService:
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+        if offline_store_info and offline_store_info.udf_info and offline_store_info.udf_info.codes:
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Registering Databricks UDF for on-demand feature",
@@ -453,7 +453,11 @@ class FeatureManagerService:
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+        if (
+            offline_store_info
+            and offline_store_info.udf_info
+            and offline_store_info.udf_info.sql_function_name
+        ):
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Removing Databricks UDF for on-demand feature",

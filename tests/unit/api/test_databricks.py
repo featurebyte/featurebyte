@@ -9,6 +9,7 @@ import pytest
 from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -43,12 +44,47 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
     return use_case
 
 
+@pytest.fixture(name="relative_freq_feature")
+def relative_freq_feature_fixture(
+    snowflake_event_view_with_entity, snowflake_scd_view, arbitrary_default_feature_job_setting
+):
+    """Test count dict feature udf"""
+    event_view = snowflake_event_view_with_entity
+    scd_view = snowflake_scd_view
+    joined_view = event_view.join(scd_view, on="col_int", rprefix="scd_")
+    feat = joined_view["col_boolean"].as_feature("col_boolean")
+    feat1 = event_view.groupby(by_keys=[], category="col_boolean").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["4w"],
+        feature_names=["overall_count_of_col_text"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["overall_count_of_col_text"]
+    feat_rel_freq = feat1.cd.get_relative_frequency(key=feat)
+    feat_rel_freq.name = "relative_frequency"
+    return feat_rel_freq
+
+
+@pytest.fixture(name="count_feature")
+def count_feature_fixture(grouped_event_view, feature_group_feature_job_setting):
+    """Count feature fixture"""
+    grouped = grouped_event_view.aggregate_over(
+        method="count",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["count_feature"],
+    )
+    return grouped["count_feature"]
+
+
 @pytest.fixture(name="databricks_deployment")
 def databricks_deployment_fixture(
     float_feature,
+    count_feature,
     non_time_based_feature,
     ttl_non_ttl_composite_feature,
     latest_event_timestamp_overall_feature,
+    relative_freq_feature,
     req_col_day_diff_feature,
     databricks_use_case,
 ):
@@ -56,10 +92,12 @@ def databricks_deployment_fixture(
     use_case = databricks_use_case
     features = [
         float_feature,
+        count_feature,
         non_time_based_feature,
         ttl_non_ttl_composite_feature,
         req_col_day_diff_feature,
         latest_event_timestamp_overall_feature,
+        relative_freq_feature,
     ]
     for feature in features:
         with freezegun.freeze_time("2024-01-03"):
@@ -90,6 +128,13 @@ def databricks_deployment_fixture(
         yield deployment
 
 
+@pytest.fixture(name="cust_id_30m_suffix")
+def cust_id_30m_suffix_fixture(databricks_deployment):
+    """Offset table suffix fixture"""
+    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
+    return get_lookup_steps_unique_identifier(relationships_info)
+
+
 @pytest.fixture(name="mock_is_databricks_env")
 def mock_is_databricks_env_fixture():
     """Mock is_databricks_environment"""
@@ -112,7 +157,12 @@ def test_databricks_accessor__with_non_databricks_unity_feature_store(deployment
 
 
 def test_databricks_specs(
-    ttl_non_ttl_composite_feature, req_col_day_diff_feature, databricks_deployment
+    count_feature,
+    ttl_non_ttl_composite_feature,
+    req_col_day_diff_feature,
+    relative_freq_feature,
+    databricks_deployment,
+    cust_id_30m_suffix,
 ):
     """Test databricks specs"""
     expected = """
@@ -142,12 +192,25 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["sum_1d_V240103"],
             rename_outputs={"sum_1d_V240103": "sum_1d"},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["count_feature_V240103"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_count_feature_v240103_[FEATURE_ID0]",
+            input_bindings={"x_1": "count_feature_V240103"},
+            output_name="count_feature",
         ),
         FeatureLookup(
             table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
@@ -160,8 +223,8 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["__feature_V240103__part0"],
@@ -184,8 +247,8 @@ def test_databricks_specs(
             output_name="feature",
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1_cust_id_30m",
-            lookup_key=["cust_id"],
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["__req_col_feature_V240103__part0"],
@@ -209,6 +272,30 @@ def test_databricks_specs(
                 "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
             },
         ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_6m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_relative_frequency_v240103_[FEATURE_ID3]",
+            input_bindings={
+                "x_1": "__relative_frequency_V240103__part1",
+                "x_2": "__relative_frequency_V240103__part0",
+            },
+            output_name="relative_frequency",
+        ),
     ]
 
     # List of columns to exclude from the training set
@@ -219,8 +306,10 @@ def test_databricks_specs(
         "__feature_V240103__part0",
         "__feature_V240103__part1",
         "__featurebyte_dummy_entity",
+        "__relative_frequency_V240103__part0",
+        "__relative_frequency_V240103__part1",
         "__req_col_feature_V240103__part0",
-        "cust_id",
+        "count_feature_V240103",
         "transaction_id",
     ]
 
@@ -233,7 +322,6 @@ def test_databricks_specs(
             StructField(target_column, DoubleType()),
             StructField("__featurebyte_dummy_entity", StringType()),
             StructField("transaction_id", LongType()),
-            StructField("cust_id", LongType()),
             StructField("POINT_IN_TIME", TimestampType()),
         ]
     )
@@ -254,9 +342,14 @@ def test_databricks_specs(
         registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
     )
     """
+    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
+    assert len(relationships_info) == 1
     replace_pairs = [
+        ("[FEATURE_ID0]", str(count_feature.cached_model.id)),
         ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
         ("[FEATURE_ID2]", str(req_col_day_diff_feature.cached_model.id)),
+        ("[FEATURE_ID3]", str(relative_freq_feature.cached_model.id)),
+        ("[TABLE_SUFFIX]", cust_id_30m_suffix),
     ]
     for replace_pair in replace_pairs:
         expected = expected.replace(*replace_pair)
@@ -292,3 +385,48 @@ def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_
 
     with pytest.raises(ImportError, match=expected):
         _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+
+
+def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
+    """Test list feature table names"""
+    output = databricks_deployment.databricks.list_feature_table_names()
+    assert output == [
+        "feature_engineering.some_schema.cat1__no_entity_30m",
+        "feature_engineering.some_schema.cat1__no_entity_6m",
+        f"feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_{cust_id_30m_suffix}",
+        "feature_engineering.some_schema.cat1_transaction_id_1d",
+    ]
+
+
+def test_null_filling_udf(databricks_deployment, count_feature):
+    """Test null filling UDF"""
+    expected = """
+    CREATE FUNCTION udf_count_feature_[VERSION]_[FEATURE_ID](x_1 BIGINT)
+    RETURNS BIGINT
+    LANGUAGE PYTHON
+    COMMENT ''
+    AS $$
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def user_defined_function(col_1: int) -> int:
+        # col_1: count_feature_V240103
+        return 0 if pd.isnull(col_1) else col_1
+
+    output = user_defined_function(x_1)
+    return None if pd.isnull(output) else output
+    $$
+    """
+    replace_pairs = [
+        ("[VERSION]", count_feature.version.lower()),
+        ("[FEATURE_ID]", str(count_feature.cached_model.id)),
+    ]
+    for replace_pair in replace_pairs:
+        expected = expected.replace(*replace_pair)
+
+    udf_info = count_feature.cached_model.offline_store_info.udf_info
+    assert udf_info.codes.strip() == textwrap.dedent(expected).strip()

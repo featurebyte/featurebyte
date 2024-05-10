@@ -220,9 +220,11 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     with patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        with patch("featurebyte.session.databricks.WorkspaceClient"), patch(
-            "featurebyte.session.databricks.DbfsExt"
-        ), patch("featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True):
+        with (
+            patch("featurebyte.session.databricks.WorkspaceClient"),
+            patch("featurebyte.session.databricks.DbfsExt"),
+            patch("featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True),
+        ):
             session = DatabricksSession(**databricks_session_dict)
             df = pd.DataFrame(
                 {
