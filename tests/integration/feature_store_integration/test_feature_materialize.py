@@ -626,12 +626,35 @@ async def test_feature_tables_populated(session, offline_store_feature_tables_al
             assert (df[DUMMY_ENTITY_COLUMN_NAME] == DUMMY_ENTITY_VALUE).all()
 
 
+async def _check_udf_with_container_input(
+    session, udfs_for_on_demand_func, offline_store_feature_tables
+):
+    """Test that udf is created in databricks"""
+    # check UDF taking count dictionary input as input
+    table_name = "cat1_cust_id_1h"
+    cos_sim_udf = next(
+        udf
+        for udf in udfs_for_on_demand_func
+        if udf.startswith("udf_external_fs_cosine_similarity_")
+    )
+    schema_name = session.schema_name
+    table = offline_store_feature_tables[table_name]
+    assert len(table.output_column_names) == 1
+    col_name = table.output_column_names[0]
+    query = f"""
+    SELECT {cos_sim_udf}({col_name}, {col_name}) AS cos_sim
+    FROM {schema_name}.{table_name}
+    """
+    df = await session.execute_query(query)
+    assert df.shape[0] > 0
+    assert sorted(df.cos_sim.unique()) == [0.0, 1.0]
+
+
 @pytest.mark.order(3)
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_databricks_udf_created(session, offline_store_feature_tables, source_type):
     """Test that udf is created in databricks"""
-    _ = offline_store_feature_tables
     df = await session.execute_query(
         sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type)
     )
@@ -640,6 +663,9 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
     if source_type == SourceType.DATABRICKS_UNITY:
         assert len(udfs_for_on_demand_func) == 5
+        await _check_udf_with_container_input(
+            session, udfs_for_on_demand_func, offline_store_feature_tables
+        )
     else:
         assert len(udfs_for_on_demand_func) == 0
 
