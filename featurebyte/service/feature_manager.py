@@ -243,11 +243,10 @@ class FeatureManagerService:
         """
         Backfill tiles required to populate internal online store
 
-        This will determine the start and end tile timestamps based on the recorded backfill start
-        date (tiles are already available back to this date due to previous backfills) and latest
-        scheduled task's computed tiles.
-
-        Example:
+        This will determine the tiles that need to be backfilled using information stored in the
+        tile registry collection. Tiles between backfill_start_date and last_run_tile_end_date can
+        be assumed to be available because of previous backfills and on going scheduled tile tasks.
+        See an example below.
 
         Feature: Amount Sum over 48 hours
 
@@ -263,11 +262,11 @@ class FeatureManagerService:
 
         Notes:
 
-        * start_ts: start timestamp of the tile that needs to be computed. This is determined by
+        * start_ts: start timestamp of the tiles that need to be computed. This is determined by
           end_ts and the largest feature derivation window of the feature.
 
-        * end_ts: to the end timestamp of the tile that needs to be computed. This is determined by
-          the feature job settings and the deployment time.
+        * end_ts: end timestamp of the tiles that need to be computed. This is determined by the
+          feature job settings and the deployment time.
 
         * backfill_start_date: start timestamp of the tile that was last backfilled. This is updated
           by tile backfill process during deployment.
