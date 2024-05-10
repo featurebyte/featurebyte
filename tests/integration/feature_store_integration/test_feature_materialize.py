@@ -639,8 +639,11 @@ async def _check_udf_with_container_input(
     )
     schema_name = session.schema_name
     table = offline_store_feature_tables[table_name]
-    assert len(table.output_column_names) == 1
-    col_name = table.output_column_names[0]
+    col_name = next(
+        colname
+        for colname in table.output_column_names
+        if colname.startswith("__EXTERNAL_FS_COSINE_SIMILARITY_")
+    )
     query = f"""
     SELECT {cos_sim_udf}({col_name}, {col_name}) AS cos_sim
     FROM {schema_name}.{table_name}
