@@ -4,11 +4,10 @@ Tests for more features
 
 import numpy as np
 import pandas as pd
-import pytest
 from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
-from tests.util.helper import tz_localize_if_needed
+from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
 
 
 def test_features_without_entity(event_table):
@@ -191,3 +190,43 @@ def test_relative_frequency_with_filter(event_table, scd_table):
         }
     ]
     assert df.to_dict("records") == expected
+
+
+def test_relative_frequency_with_non_string_keys(event_table, scd_table):
+    """
+    Test relative frequency with non-string keys
+    """
+    event_view = event_table.get_view()
+    scd_view = scd_table.get_view()
+
+    event_view["non_string_key"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
+    scd_view["non_string_key"] = scd_view["Effective Timestamp"].dt.day_of_week
+
+    dict_feature = event_view.groupby("ÜSER ID", category="non_string_key").aggregate_over(
+        method="count",
+        windows=["7d"],
+        feature_names=["dict_feature"],
+    )["dict_feature"]
+    key_feature = scd_view["non_string_key"].as_feature("non_string_key_feature")
+    feature = dict_feature.cd.get_relative_frequency(key_feature)
+    feature.name = "final_feature"
+    feature_list = FeatureList([dict_feature, key_feature, feature], name="feature_list")
+
+    preview_param = {
+        "POINT_IN_TIME": "2002-01-02 10:00:00",
+        "üser id": 1,
+    }
+    observations_set = pd.DataFrame([preview_param])
+    df = feature_list.compute_historical_features(observations_set)
+    expected = pd.DataFrame(
+        [
+            {
+                "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
+                "üser id": 1,
+                "dict_feature": {"0": 3, "1": 2, "2": 2, "3": 1, "4": 1, "5": 2},
+                "non_string_key_feature": 1,
+                "final_feature": 0.181818,
+            }
+        ]
+    )
+    fb_assert_frame_equal(df, expected, dict_like_columns=["dict_feature"])
