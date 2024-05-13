@@ -33,6 +33,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
+from featurebyte.service.exception import OfflineStoreFeatureTableBadStateError
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
@@ -346,10 +347,19 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             )
 
             if updated_feature_ids:
-                updated_feature_table = await self._update_offline_store_feature_table(
-                    feature_table_dict,
-                    updated_feature_ids,
-                )
+                try:
+                    updated_feature_table = await self._update_offline_store_feature_table(
+                        feature_table_dict,
+                        updated_feature_ids,
+                    )
+                except OfflineStoreFeatureTableBadStateError:
+                    logger.error(
+                        "Failed to update offline store feature table when disabling a deployment",
+                        exc_info=True,
+                        extra={"table_name": feature_table_dict["name"]},
+                    )
+                    await self._delete_offline_store_feature_table(feature_table_dict["_id"])
+                    continue
                 removed_feature_ids = list(
                     set(feature_table_dict["feature_ids"]) - set(updated_feature_ids)
                 )

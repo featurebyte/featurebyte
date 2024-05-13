@@ -37,6 +37,7 @@ from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.exception import OfflineStoreFeatureTableBadStateError
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.storage import Storage
@@ -156,7 +157,7 @@ class OfflineStoreFeatureTableConstructionService:
 
         Raises
         ------
-        AssertionError
+        OfflineStoreFeatureTableBadStateError
             If the entity universe cannot be determined
         """
         ingest_graph_metadata = get_combined_ingest_graph(
@@ -172,7 +173,7 @@ class OfflineStoreFeatureTableConstructionService:
                 source_type=source_type,
                 feature_table_name=feature_table_name,
             )
-        except AssertionError:
+        except OfflineStoreFeatureTableBadStateError:
             # Temporarily save the offline ingest graphs and other information to a file for
             # troubleshooting
             debug_info = {
@@ -237,7 +238,7 @@ class OfflineStoreFeatureTableConstructionService:
 
         Raises
         ------
-        AssertionError
+        OfflineStoreFeatureTableBadStateError
             If the entity universe cannot be determined
         """
         params = []
@@ -278,7 +279,7 @@ class OfflineStoreFeatureTableConstructionService:
         universe_expr = get_combined_universe(params, source_type)
 
         if universe_expr is None:
-            raise AssertionError(
+            raise OfflineStoreFeatureTableBadStateError(
                 f"Failed to create entity universe for offline store feature table {feature_table_name}"
             )
 
