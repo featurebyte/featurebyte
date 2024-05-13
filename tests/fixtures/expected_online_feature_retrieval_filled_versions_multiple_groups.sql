@@ -102,7 +102,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."CUSTOMER_ID",
   AGG."order_id",
-  "_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "order_size"
+  CAST("_fb_internal_order_id_item_count_None_order_id_None_input_2" AS BIGINT) AS "order_size"
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT
