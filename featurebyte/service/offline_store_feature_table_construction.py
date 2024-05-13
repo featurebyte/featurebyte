@@ -186,6 +186,10 @@ class OfflineStoreFeatureTableConstructionService:
             path = self.offline_store_feature_table_service.get_full_remote_file_path(
                 f"offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
             )
+            try:
+                await self.storage.delete(Path(path))
+            except FileNotFoundError:
+                pass
             async with aiofiles.tempfile.TemporaryDirectory() as tempdir_path:
                 file_path = os.path.join(tempdir_path, "data.pickle")
                 with open(file_path, "wb") as file_obj:
