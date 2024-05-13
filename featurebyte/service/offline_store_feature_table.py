@@ -104,8 +104,13 @@ class OfflineStoreFeatureTableService(
     ) -> OfflineStoreFeatureTableModel:
         if data.entity_lookup_info is None and data.precomputed_lookup_feature_table_info is None:
             # check if name already exists
+            data.base_name = data.get_basename()
             data.name = data.get_name()
-            query_filter = {"name": data.name}
+            query_filter = {
+                "name_prefix": data.name_prefix,
+                "base_name": data.base_name,
+                "precomputed_lookup_feature_table_info": None,
+            }
             query_result = await self.list_documents_as_dict(query_filter=query_filter, page_size=1)
 
             count = query_result["total"]

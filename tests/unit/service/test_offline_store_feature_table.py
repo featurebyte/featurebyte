@@ -77,6 +77,24 @@ async def offline_store_feature_table_fixture(service, offline_store_feature_tab
 
 
 @pytest.mark.asyncio
+async def test_create_multiple_documents(service, offline_store_feature_table_dict):
+    """Test create multiple documents"""
+    tables = []
+    for _ in range(3):
+        data = OfflineStoreFeatureTableModel(**offline_store_feature_table_dict)
+        tables.append(await service.create_document(data=data))
+
+    table_names = [table.name for table in tables]
+    table_base_names = {table.base_name for table in tables}
+    assert table_names == [
+        "cat1_cust_id_30m",
+        "cat1_cust_id_30m_1",
+        "cat1_cust_id_30m_2",
+    ]
+    assert table_base_names == {"cust_id_30m"}
+
+
+@pytest.mark.asyncio
 async def test_create_document(service, offline_store_feature_table, storage):
     """Test create_document"""
     # check the feature cluster path is set
