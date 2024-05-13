@@ -57,6 +57,7 @@ class ExtendedFeatureModel(FeatureModel):
                 parent_column_name=info.parent,
                 category_column_name=info.value_by_column,
                 feature_store_id=self.tabular_source.feature_store_id,
+                windows=info.windows,
             )
             out.append(tile_spec)
         return out

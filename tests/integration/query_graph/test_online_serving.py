@@ -14,7 +14,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureList
-from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.enum import InternalName
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -104,23 +103,17 @@ async def test_online_serving_sql(
     """
     # pylint: disable=too-many-locals
 
-    point_in_time = "2001-01-02 12:00:00"
-    frequency = pd.Timedelta("1h").total_seconds()
-    time_modulo_frequency = pd.Timedelta("30m").total_seconds()
-    next_job_datetime = get_next_job_datetime(
-        pd.Timestamp(point_in_time).to_pydatetime(),
-        int(frequency // 60),
-        time_modulo_frequency_seconds=int(time_modulo_frequency),
-    )
+    # Simulate enabling the deployment at 2001-01-02 13:15:00. Based on the feature job settings
+    # (frequency 1h, time modulo frequency 30m), the backfill process would compute online features
+    # as at the expected previous job time (2001-01-02 12:30:00)
+    schedule_time = "2001-01-02 13:15:00"
+    point_in_time = "2001-01-02 12:30:00"
 
     feature_list = FeatureList(features, name="My Online Serving Featurelist")
     columns = ["üser id"] + [feature.name for feature in features]
-    # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
-    with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=next_job_datetime,
-    ):
+    with patch("featurebyte.service.feature_manager.datetime") as patched_datetime:
+        patched_datetime.utcnow.return_value = pd.Timestamp(schedule_time).to_pydatetime()
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
         time.sleep(1)  # sleep 1s to invalidate cache
@@ -128,6 +121,8 @@ async def test_online_serving_sql(
 
     await sanity_check_online_store_tables(session, feature_list)
 
+    # We can compute the historical features using the expected previous job time as point in time.
+    # The historical feature values should match with the online feature values.
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
@@ -173,7 +168,7 @@ async def test_online_serving_sql(
         await check_concurrent_online_store_table_updates(
             get_session_callback,
             feature_list,
-            next_job_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+            pd.Timestamp(schedule_time).strftime("%Y-%m-%d %H:%M:%S"),
             online_store_table_version_service_factory,
         )
     finally:
