@@ -224,6 +224,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         return name
 
     def get_basename(self) -> str:
+        """
+        Get the base name of the feature table (exclude prefix and suffix)
+
+        Returns
+        -------
+        str
+        """
         # max length of feature table name is 64
         # reserving 8 characters for prefix (catalog name, `<project_name>_`, which is 7 hex digits)
         # need to the same prefix for project name (same as catalog prefix)

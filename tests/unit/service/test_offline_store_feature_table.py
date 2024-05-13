@@ -85,7 +85,7 @@ async def test_create_multiple_documents(service, offline_store_feature_table_di
         tables.append(await service.create_document(data=data))
 
     table_names = [table.name for table in tables]
-    table_base_names = set([table.base_name for table in tables])
+    table_base_names = {table.base_name for table in tables}
     assert table_names == [
         "cat1_cust_id_30m",
         "cat1_cust_id_30m_1",
