@@ -150,6 +150,10 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        _ = inputs
+        return DBVarType.FLOAT
+
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
 

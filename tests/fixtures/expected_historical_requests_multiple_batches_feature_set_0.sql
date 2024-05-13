@@ -70,6 +70,6 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_input_3" AS "asat_feature",
-  "_fb_internal_order_id_item_count_None_order_id_None_input_4" AS "order_size"
+  CAST("_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_input_3" AS BIGINT) AS "asat_feature",
+  CAST("_fb_internal_order_id_item_count_None_order_id_None_input_4" AS BIGINT) AS "order_size"
 FROM _FB_AGGREGATED AS AGG

@@ -438,14 +438,9 @@ class FeatureExecutionPlan:
         else:
             for feature_spec in self.feature_specs.values():
                 feature_expr = feature_spec.feature_expr
-                if (
-                    self.feature_name_dtype_mapping.get(feature_spec.feature_name)
-                    == DBVarType.FLOAT
-                ):
-                    feature_expr = expressions.Cast(
-                        this=feature_expr,
-                        to=expressions.DataType.build("DOUBLE"),
-                    )
+                feature_dtype = self.feature_name_dtype_mapping.get(feature_spec.feature_name)
+                if feature_dtype is not None:
+                    feature_expr = self._cast_output_column_by_dtype(feature_expr, feature_dtype)
                 feature_alias = expressions.alias_(
                     feature_expr, alias=feature_spec.feature_name, quoted=True
                 )
@@ -464,6 +459,22 @@ class FeatureExecutionPlan:
             f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
         return table_expr
+
+    @staticmethod
+    def _cast_output_column_by_dtype(
+        feature_expr: expressions.Expression, dtype: DBVarType
+    ) -> expressions.Expression:
+        if dtype == DBVarType.FLOAT:
+            return expressions.Cast(
+                this=feature_expr,
+                to=expressions.DataType.build("DOUBLE"),
+            )
+        if dtype == DBVarType.INT:
+            return expressions.Cast(
+                this=feature_expr,
+                to=expressions.DataType.build("BIGINT"),
+            )
+        return feature_expr
 
     def get_overall_entity_lookup_steps(self) -> list[EntityLookupStep]:
         """

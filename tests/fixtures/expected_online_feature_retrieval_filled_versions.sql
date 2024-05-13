@@ -76,5 +76,5 @@ SELECT
   AGG."CUSTOMER_ID",
   AGG."order_id",
   CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average",
-  "_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "order_size"
+  CAST("_fb_internal_order_id_item_count_None_order_id_None_input_2" AS BIGINT) AS "order_size"
 FROM _FB_AGGREGATED AS AGG

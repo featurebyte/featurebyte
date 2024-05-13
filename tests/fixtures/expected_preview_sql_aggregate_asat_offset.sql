@@ -49,5 +49,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1" AS "asat_feature_offset_7d"
+  CAST("_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_7d_input_1" AS BIGINT) AS "asat_feature_offset_7d"
 FROM _FB_AGGREGATED AS AGG
