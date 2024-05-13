@@ -75,6 +75,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = None
+    expected_special_columns = ["col_int", "created_at"]
 
 
 @pytest.fixture(name="dimension_table_dict")

@@ -64,6 +64,18 @@ class SCDTableModel(SCDTableData, TableModel):
     def primary_key_columns(self) -> List[str]:
         return [self.natural_key_column]
 
+    @property
+    def special_columns(self) -> List[str]:
+        cols = [
+            self.natural_key_column,
+            self.surrogate_key_column,
+            self.effective_timestamp_column,
+            self.end_timestamp_column,
+            self.current_flag_column,
+            self.record_creation_timestamp_column,
+        ]
+        return [col for col in cols if col]
+
     def create_view_graph_node(
         self,
         input_node: InputNode,

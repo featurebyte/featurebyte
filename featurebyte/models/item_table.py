@@ -62,6 +62,15 @@ class ItemTableModel(ItemTableData, TableModel):
     def primary_key_columns(self) -> List[str]:
         return [self.item_id_column]
 
+    @property
+    def special_columns(self) -> List[str]:
+        cols = [
+            self.item_id_column,
+            self.event_id_column,
+            self.record_creation_timestamp_column,
+        ]
+        return [col for col in cols if col]
+
     def create_view_graph_node(
         self,
         input_node: InputNode,

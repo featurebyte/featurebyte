@@ -190,6 +190,17 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         List[str]
         """
 
+    @property
+    @abstractmethod
+    def special_columns(self) -> List[str]:
+        """
+        Special columns is a list of columns that have special meaning in the table
+
+        Returns
+        -------
+        List[str]
+        """
+
     @abstractmethod
     def create_view_graph_node(
         self, input_node: InputNode, metadata: Any, **kwargs: Any
