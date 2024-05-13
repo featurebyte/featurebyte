@@ -35,6 +35,7 @@
   "has_ttl": true,
   "last_materialized_at": null,
   "online_stores_last_materialized_at": [],
+  "feature_cluster_path": "catalog/64708919ea4c4876a77d2b80/offline_store_feature_table/6630069292a0a095bdf3fd5a/feature_cluster.json",
   "feature_cluster": null,
   "output_column_names": [],
   "output_dtypes": [],
