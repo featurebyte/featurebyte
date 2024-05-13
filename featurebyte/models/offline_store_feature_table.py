@@ -91,6 +91,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     name: str
+    base_name: Optional[str] = Field(default=None)
     name_prefix: Optional[str] = Field(default=None)
     name_suffix: Optional[str] = Field(default=None)
     feature_ids: List[PydanticObjectId]
@@ -222,7 +223,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         ).strip("_")
         return name
 
-    def _get_basename(self) -> str:
+    def get_basename(self) -> str:
         # max length of feature table name is 64
         # reserving 8 characters for prefix (catalog name, `<project_name>_`, which is 7 hex digits)
         # need to the same prefix for project name (same as catalog prefix)
@@ -269,7 +270,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if self.name_prefix:
             full_name += self.name_prefix + "_"
 
-        full_name += self._get_basename()
+        full_name += self.get_basename()
 
         if self.name_suffix:
             full_name += "_" + self.name_suffix
