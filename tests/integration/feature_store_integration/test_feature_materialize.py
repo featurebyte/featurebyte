@@ -209,6 +209,18 @@ def features_fixture(
         feature_names=["Amount Sum by Customer x Product Action 24d"],
     )["Amount Sum by Customer x Product Action 24d"]
 
+    # Add hour feature
+    event_view["non_string_key"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
+    scd_view["non_string_key"] = scd_view["Effective Timestamp"].dt.day_of_week
+    dict_feature = event_view.groupby("ÜSER ID", category="non_string_key").aggregate_over(
+        method="count",
+        windows=["7d"],
+        feature_names=["dict_feature"],
+    )["dict_feature"]
+    key_feature = scd_view["non_string_key"].as_feature("non_string_key_feature")
+    feature_15 = dict_feature.cd.get_relative_frequency(key_feature)
+    feature_15.name = "Relative Frequency 7d"
+
     # Save all features to be deployed
     features = [
         feature
@@ -227,6 +239,7 @@ def features_fixture(
             feature_12,
             feature_13,
             feature_14,
+            feature_15,
         ]
         if feature is not None
     ]
@@ -783,6 +796,7 @@ async def test_feast_registry(
         f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
+        f"Relative Frequency 7d_{version}": [0.5652173757553101],
         "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
@@ -808,6 +822,7 @@ async def test_feast_registry(
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Current Number of Users With This Status_{version}": [1],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
+        f"Relative Frequency 7d_{version}": [None],
         f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
@@ -915,6 +930,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": None,
         "EXTERNAL_FS_COUNT_OVERALL_7d": 149,
         "Most Frequent Item Type by Order": "type_12",
+        "Relative Frequency 7d": None,
         "PRODUCT_ACTION": "detail",
         "User Status Feature": None,
         "cust_id": 761,
@@ -966,6 +982,7 @@ def expected_features_order_id_T3850(source_type):
         "Most Frequent Item Type by Order": "type_24",
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
+        "Relative Frequency 7d": 0.5652173757553101,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
@@ -1191,27 +1208,20 @@ async def test_simulated_materialize__ttl_feature_table(
         ),
     )
     version = get_version()
+    expected = [
+        "__feature_timestamp",
+        "üser id",
+        f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+        f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
+        f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
+        f"__Relative Frequency 7d_{version}__part0",
+    ]
     if source_type != SourceType.DATABRICKS_UNITY:
-        expected = [
-            "__feature_timestamp",
-            "üser id",
-            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
-            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
-            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+        expected += [
             f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}",
-            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
             f"__EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}__part0",
-            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
-        ]
-    else:
-        expected = [
-            "__feature_timestamp",
-            "üser id",
-            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
-            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
-            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
-            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
-            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
         ]
 
     assert set(df.columns.tolist()) == set(expected)
@@ -1283,6 +1293,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
         "üser id",
         f"User Status Feature_{version}",
         f"Complex Feature by User_{version}",
+        f"__Relative Frequency 7d_{version}__part1",
     ]
     assert df_0.shape[0] == 9
     assert df_0["__feature_timestamp"].nunique() == 1
