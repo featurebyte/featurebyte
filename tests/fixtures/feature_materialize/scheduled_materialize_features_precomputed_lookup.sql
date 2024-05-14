@@ -17,7 +17,9 @@ FROM (
   WHERE
     "effective_timestamp" >= CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
     AND "effective_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
-);
+)
+WHERE
+  NOT "col_boolean" IS NULL;
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
@@ -119,6 +121,8 @@ WITH ENTITY_UNIVERSE AS (
         "effective_timestamp" >= CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
         AND "effective_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
     )
+    WHERE
+      NOT "col_text" IS NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT

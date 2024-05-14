@@ -179,6 +179,8 @@ def test_lookup_feature(catalog, lookup_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
@@ -212,6 +214,8 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_boolean" IS NOT NULL
         """
     ).strip()
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
@@ -284,6 +288,8 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
               L."item_amount" > 10
             )
         )
+        WHERE
+          "event_id_col" IS NOT NULL
         """
     ).strip()
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
@@ -332,6 +338,8 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_boolean" IS NOT NULL
         UNION
         SELECT DISTINCT
           "col_text" AS "cust_id"
@@ -352,6 +360,8 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -400,6 +410,8 @@ def test_combined_universe_deduplicate(
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -444,6 +456,8 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
               "effective_timestamp" >= __fb_last_materialized_timestamp
               AND "effective_timestamp" < __fb_current_feature_timestamp
           )
+          WHERE
+            "col_text" IS NOT NULL
         ) AS PARENT
         LEFT JOIN "sf_database"."sf_schema"."scd_table" AS CHILD
           ON PARENT."cust_id" = CHILD."col_text"
@@ -509,6 +523,7 @@ def test_combined_universe__exclude_dummy_entity_universe(
         FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
         WHERE
           "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
+          AND "cust_id" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -548,18 +563,21 @@ def test_combined_universe__window_aggregate_multiple_windows(
         FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
         WHERE
           "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+          AND "cust_id" IS NOT NULL
         UNION
         SELECT DISTINCT
           "cust_id"
         FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
         WHERE
           "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+          AND "cust_id" IS NOT NULL
         UNION
         SELECT DISTINCT
           "cust_id"
         FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
         WHERE
           "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
+          AND "cust_id" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -597,6 +615,8 @@ def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_an
             "effective_timestamp" >= CAST('2022-10-15 09:00:00' AS TIMESTAMP)
             AND "effective_timestamp" < CAST('2022-10-15 10:00:00' AS TIMESTAMP)
         )
+        WHERE
+          NOT "col_text" IS NULL
         """
     ).strip()
     actual = entity_universe_model.get_entity_universe_expr(

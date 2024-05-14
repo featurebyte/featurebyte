@@ -3,7 +3,8 @@ SELECT DISTINCT
   "cust_id"
 FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
 WHERE
-  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295';
+  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+  AND NOT "cust_id" IS NULL;
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
@@ -86,6 +87,8 @@ WITH ENTITY_UNIVERSE AS (
         "event_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
         AND "event_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
     )
+    WHERE
+      NOT "col_int" IS NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT
