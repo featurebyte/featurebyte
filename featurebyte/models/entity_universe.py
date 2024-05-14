@@ -4,7 +4,7 @@ This module contains the logic to construct the entity universe for a given node
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import List, Optional, Sequence, cast
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -47,7 +47,7 @@ CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
 LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER = "__fb_last_materialized_timestamp"
 
 
-def columns_not_null(columns: List[str]) -> Expression:
+def columns_not_null(columns: Sequence[str]) -> Expression:
     """
     Returns an expression for a boolean condition that evaluates to true if none of the columns are
     null. To be used to filter out rows with missing entity values in the entity universe.
