@@ -21,6 +21,8 @@ WITH ENTITY_UNIVERSE AS (
         "event_timestamp" >= __fb_last_materialized_timestamp
         AND "event_timestamp" < __fb_current_feature_timestamp
     )
+    WHERE
+      "col_int" IS NOT NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT

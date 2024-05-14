@@ -21,6 +21,8 @@ FROM (
       "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
       AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
   )
+  WHERE
+    NOT "col_boolean" IS NULL
 ) AS PARENT
 LEFT JOIN "sf_database"."sf_schema"."scd_table" AS CHILD
   ON PARENT."gender" = CHILD."col_boolean"
@@ -43,7 +45,9 @@ FROM (
   WHERE
     "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
     AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
-);
+)
+WHERE
+  NOT "col_text" IS NULL;
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT

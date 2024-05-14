@@ -118,8 +118,7 @@ def features_fixture(
     feature_2.name = feature_1.name + "_TIMES_100"
 
     # Feature with a different entity
-    filtered_event_view = event_view[event_view["PRODUCT_ACTION"].notnull()]
-    feature_3 = filtered_event_view.groupby("PRODUCT_ACTION").aggregate_over(
+    feature_3 = event_view.groupby("PRODUCT_ACTION").aggregate_over(
         None,
         method="count",
         windows=["7d"],
@@ -131,7 +130,7 @@ def features_fixture(
     feature_4.name = "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE"
 
     # Feature without entity
-    feature_5 = filtered_event_view.groupby([]).aggregate_over(
+    feature_5 = event_view.groupby([]).aggregate_over(
         None,
         method="count",
         windows=["7d"],
@@ -200,7 +199,7 @@ def features_fixture(
     assert feature_13.primary_entity_ids == feature_10.primary_entity_ids
     feature_13.name = "Complex Feature by User"
 
-    feature_14 = filtered_event_view.groupby(
+    feature_14 = event_view.groupby(
         ["ÜSER ID", "PRODUCT_ACTION"],
     ).aggregate_over(
         "ÀMOUNT",
@@ -779,7 +778,7 @@ async def test_feast_registry(
         f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [0.0],
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.9171356558799744],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43],
-        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [149],
+        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [194],
         f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
@@ -913,7 +912,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.895897626876831,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": None,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 149,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 194,
         "Most Frequent Item Type by Order": "type_12",
         "PRODUCT_ACTION": "detail",
         "User Status Feature": None,
@@ -962,7 +961,7 @@ def expected_features_order_id_T3850(source_type):
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.9171356659119657,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 149,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 194,
         "Most Frequent Item Type by Order": "type_24",
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
@@ -1088,7 +1087,7 @@ def test_online_features__non_existing_order_id(
             if feature_name != "order_id"
         }
     )
-    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 149
+    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 194
     if source_type != SourceType.DATABRICKS_UNITY:
         expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)

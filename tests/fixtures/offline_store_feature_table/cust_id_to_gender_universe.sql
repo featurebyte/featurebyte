@@ -23,6 +23,8 @@ WITH ENTITY_UNIVERSE AS (
         "effective_timestamp" >= __fb_last_materialized_timestamp
         AND "effective_timestamp" < __fb_current_feature_timestamp
     )
+    WHERE
+      "col_text" IS NOT NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT
