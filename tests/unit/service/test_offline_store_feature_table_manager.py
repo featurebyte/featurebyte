@@ -1608,3 +1608,50 @@ async def test_entity_universe_debug_info_dump(
     scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
     assert not list(feature_tables.keys())
     assert not list(scheduled_tasks.keys())
+
+
+@pytest.mark.asyncio
+async def test_undeploy_bad_state_error_handling(
+    app_container,
+    deployed_float_feature,
+    deployed_float_feature_post_processed,
+    document_service,
+    periodic_task_service,
+    storage,
+    caplog,
+):
+    """
+    Test OfflineStoreFeatureTableBadStateError is handled when disabling a deployment
+    """
+    _ = deployed_float_feature_post_processed
+
+    # Simulate OfflineStoreFeatureTableBadStateError during undeployment
+    with patch(
+        "featurebyte.service.offline_store_feature_table_construction.get_combined_universe",
+        return_value=None,
+    ):
+        await undeploy_feature_async(deployed_float_feature, app_container)
+
+    # Check ingest graphs dump for troubleshooting
+    feature_table_name = "cat1_cust_id_30m"
+    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+    debug_info_bytes = await storage.get_bytes(path)
+    debug_info = pickle.loads(debug_info_bytes)
+    assert isinstance(debug_info, dict)
+    ingest_graphs_dump = debug_info["offline_ingest_graphs"]
+    assert len(ingest_graphs_dump) == 1
+    assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
+
+    # Check error logged
+    logs = [
+        record
+        for record in caplog.records
+        if record.msg == "Failed to update offline store feature table when disabling a deployment"
+    ]
+    assert len(logs) == 1
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())
