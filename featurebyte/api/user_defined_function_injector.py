@@ -4,7 +4,7 @@ This module contains generic function construction logic for user defined functi
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import inspect
 import textwrap
@@ -15,6 +15,7 @@ from typeguard import check_type
 from featurebyte.api.feature import Feature
 from featurebyte.api.view import ViewColumn
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import (
     FunctionParameter,
@@ -24,6 +25,7 @@ from featurebyte.models.user_defined_function import (
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.function import (
     ColumnFunctionParameterInput,
@@ -109,7 +111,44 @@ class FunctionParameterProcessor:
         return value, kwargs
 
     @staticmethod
-    def _validate_series_inputs(series_inputs: FuncInputSeriesList) -> None:
+    def _validate_feature_inputs(feature_inputs: List[Feature]) -> None:
+        first_feat_name = None
+        first_table_id_to_fjs: Optional[Dict[PydanticObjectId, FeatureJobSetting]] = None
+        first_primary_entity_ids: Optional[List[PydanticObjectId]] = None
+        for index, feat in enumerate(feature_inputs, start=1):
+            if feat.used_request_column:
+                raise ValueError(
+                    f'Error in feature #{index} ("{feat.name}"): This feature was created with a request column '
+                    "and cannot be used as an input to this function. Please change the feature and try again."
+                )
+
+            if first_feat_name is None:
+                first_feat_name = feat.name
+
+            table_id_to_fjs = {
+                item.table_id: item.feature_job_setting
+                for item in feat.table_id_feature_job_settings
+            }
+            if first_table_id_to_fjs is None:
+                first_table_id_to_fjs = table_id_to_fjs
+            elif first_table_id_to_fjs != table_id_to_fjs:
+                raise ValueError(
+                    f'Error in feature #{index} ("{feat.name}"): This feature has different table feature job settings '
+                    f'than the first input feature ("{first_feat_name}"). Please ensure all features have the same '
+                    f"table feature job settings."
+                )
+
+            if first_primary_entity_ids is None:
+                first_primary_entity_ids = feat.primary_entity_ids
+            elif first_primary_entity_ids != feat.primary_entity_ids:
+                raise ValueError(
+                    f'Error in feature #{index} ("{feat.name}"): This feature has different primary entity IDs than '
+                    f'the first input feature ("{first_feat_name}"). Please make sure all features have the same '
+                    "primary entity IDs."
+                )
+
+    @classmethod
+    def _validate_series_inputs(cls, series_inputs: FuncInputSeriesList) -> None:
         expected_row_index_lineage = series_inputs[0].row_index_lineage
         check_row_index_lineage = not isinstance(series_inputs[0], Feature)
         expected_series_type = Feature if isinstance(series_inputs[0], Feature) else ViewColumn
@@ -130,6 +169,9 @@ class FunctionParameterProcessor:
                     f'The row of the input ViewColumns "{series_inputs[0].name}" does not match '
                     f'the row of the input ViewColumns "{series_input.name}".'
                 )
+
+        if expected_series_type is Feature:
+            cls._validate_feature_inputs(series_inputs)  # type: ignore
 
     def _extract_node_parameters(
         self, *args: Any, **kwargs: Any
