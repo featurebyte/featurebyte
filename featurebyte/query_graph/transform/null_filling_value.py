@@ -133,6 +133,7 @@ class NullFillingValueExtractor(
             input_var_prefix="",
             request_input_var_prefix="agg_col",
             output_dtype=DBVarType.FLOAT,
+            to_generate_null_filling_function=True,
         )
         input_values = []
         for sql_input_info in code_state.sql_inputs_info:
