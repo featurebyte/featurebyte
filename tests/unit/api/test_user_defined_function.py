@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from featurebyte.api.catalog import Catalog
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import (
     RecordCreationException,
@@ -368,3 +369,36 @@ def test_update_description(cos_udf):
     cos_udf.update_description(None)
     assert cos_udf.description is None
     assert cos_udf.info()["description"] is None
+
+
+def test_deployment_enablement_for_udf_feat(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    snowflake_scd_view_with_entity,
+    cos_udf,
+    power_udf,
+    date_sub_udf,
+    mock_api_object_cache,
+):
+    """Test deployment enablement for feature with UDF"""
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    _ = cos_udf, power_udf
+    _ = mock_api_object_cache
+    float_feat = snowflake_scd_view_with_entity.col_float.as_feature("float_feat")
+    cos_feat = UDF.cos_func(float_feat)
+
+    ts_feat = snowflake_scd_view_with_entity.end_timestamp.as_feature("ts_feat")
+    date_sub_feat = UDF.date_sub_func(ts_feat, 10)
+    date_sub_feat.name = "date_sub_feat"
+
+    power_cos_feat = UDF.power_func(cos_feat, 2)
+    power_cos_feat.name = "power_cos_feat"
+
+    feature_list = FeatureList([power_cos_feat, date_sub_feat], name="my_feature_list")
+    feature_list.save()
+
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+
+    # check deployment is enabled
+    assert deployment.enabled is True
