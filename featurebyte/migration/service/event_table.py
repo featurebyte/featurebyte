@@ -1,21 +1,21 @@
 """
-Offline store feature table migration service
+Event table migration service
 """
 
 from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import BaseDocumentServiceT, BaseMongoCollectionMigration
 from featurebyte.persistent import Persistent
-from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.event_table import EventTableService
 
 logger = get_logger(__name__)
 
 
-class OfflineStoreFeatureTableMigrationServiceV9(BaseMongoCollectionMigration):
+class EventTableMigrationServiceV12(BaseMongoCollectionMigration):
     """
-    OfflineStoreFeatureTableMigrationService class
+    EventTableMigrationService class
 
-    This class is used to migrate the offline store feature table records to add base_name field.
+    This class is used to migrate the event table records.
     """
 
     # skip audit migration for this migration
@@ -24,34 +24,18 @@ class OfflineStoreFeatureTableMigrationServiceV9(BaseMongoCollectionMigration):
     def __init__(
         self,
         persistent: Persistent,
-        offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        event_table_service: EventTableService,
     ):
         super().__init__(persistent)
-        self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.event_table_service = event_table_service
 
     @property
     def delegate_service(self) -> BaseDocumentServiceT:
-        return self.offline_store_feature_table_service  # type: ignore[return-value]
-
-    @migrate(version=9, description="Add base_name to offline store feature table records")
-    async def add_base_name_to_offline_store_feature_table_records(self) -> None:
-        """Add base_name to offline store feature table records"""
-        query_filter = {"precomputed_lookup_feature_table_info": None}
-        async for table in self.offline_store_feature_table_service.list_documents_iterator(
-            query_filter=query_filter, populate_remote_attributes=False
-        ):
-            await self.offline_store_feature_table_service.update_documents(
-                query_filter={"_id": table.id},
-                update={"$set": {"base_name": table.get_basename()}},
-            )
-            updated_table = await self.offline_store_feature_table_service.get_document(
-                table.id, populate_remote_attributes=False
-            )
-            assert updated_table.base_name is not None
+        return self.event_table_service  # type: ignore[return-value]
 
     @migrate(
-        version=11,
-        description="Migrate feature job settings to new format (offline_store_feature_table collection).",
+        version=12,
+        description="Migrate feature job settings to new format (event_table collection).",
     )
     async def migrate_feature_job_setting_to_new_format(self) -> None:
         """Migrate feature job settings to new format"""
@@ -72,7 +56,7 @@ class OfflineStoreFeatureTableMigrationServiceV9(BaseMongoCollectionMigration):
         )
         assert total_before == total_after, (total_before, total_after)
         for doc in sample_docs_after:
-            fjs = doc.get("feature_job_setting")
+            fjs = doc.get("default_feature_job_setting")
             if fjs:
                 assert "blind_spot" in fjs, fjs
                 assert "period" in fjs, fjs
