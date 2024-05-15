@@ -66,7 +66,6 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
-from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
@@ -74,6 +73,7 @@ from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
 MONGO_CONNECTION = "mongodb://localhost:27017/?replicaSet=rs0"
+TEST_REDIS_URI = "redis://localhost:36379"
 
 
 logger = get_logger(__name__)
@@ -1442,7 +1442,7 @@ def mock_task_manager(request, persistent, storage):
                     "user": user,
                     "persistent": persistent,
                     "celery": Mock(),
-                    "redis": redis.from_url(REDIS_URI),
+                    "redis": redis.from_url(TEST_REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
@@ -1546,7 +1546,7 @@ def task_manager_fixture(persistent, user, catalog, storage):
         celery=get_celery(),
         catalog_id=catalog.id,
         storage=storage,
-        redis=redis.from_url(REDIS_URI),
+        redis=redis.from_url(TEST_REDIS_URI),
     )
     return task_manager
 
@@ -1562,7 +1562,7 @@ def app_container_fixture(persistent, user, catalog, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": catalog.id,
-        "redis": redis.from_url(REDIS_URI),
+        "redis": redis.from_url(TEST_REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1578,7 +1578,7 @@ def app_container_no_catalog_fixture(persistent, user, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "redis": redis.from_url(REDIS_URI),
+        "redis": redis.from_url(TEST_REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1660,7 +1660,7 @@ def online_store_fixture():
         name="My Online Store",
         details=RedisOnlineStoreDetails(
             redis_type="redis",
-            connection_string=REDIS_URI.replace("redis://", ""),
+            connection_string=TEST_REDIS_URI.replace("redis://", ""),
         ),
     )
 

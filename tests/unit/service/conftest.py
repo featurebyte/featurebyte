@@ -43,8 +43,9 @@ from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
-from featurebyte.utils.messaging import REDIS_URI
 from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
+
+TEST_REDIS_URI = "redis://localhost:36379"
 
 
 @pytest.fixture(name="get_credential")
@@ -73,7 +74,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
         "catalog_id": catalog.id,
         "user_id": user.id,
         "task_id": uuid4(),
-        "redis_uri": REDIS_URI,
+        "redis_uri": TEST_REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 

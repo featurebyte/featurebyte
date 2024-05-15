@@ -34,7 +34,7 @@ services:
   redis:
     image: "redis:6.2.5"
     ports:
-      - 6379:6379
+      - 36379:6379
 
   spark-thrift:
     image: featurebyte/cluster-apache-spark:${SPARK_VERSION}

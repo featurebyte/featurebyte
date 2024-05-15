@@ -29,9 +29,9 @@ from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
-from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from tests.integration.conftest import (
+    TEST_REDIS_URI,
     tag_entities_for_event_table,
     tag_entities_for_item_table,
     tag_entities_for_scd_table,
@@ -82,8 +82,8 @@ def app_container_fixture(persistent, user, catalog, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": catalog.id,
-        "redis": redis.from_url(REDIS_URI),
-        "redis_uri": REDIS_URI,
+        "redis": redis.from_url(TEST_REDIS_URI),
+        "redis_uri": TEST_REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
