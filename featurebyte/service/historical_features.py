@@ -86,7 +86,6 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 observation_set=executor_params.observation_set,
                 serving_names_mapping=executor_params.serving_names_mapping,
                 feature_store=executor_params.feature_store,
-                is_feature_list_deployed=executor_params.is_feature_list_deployed,
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 output_table_details=executor_params.output_table_details,
                 progress_callback=executor_params.progress_callback,

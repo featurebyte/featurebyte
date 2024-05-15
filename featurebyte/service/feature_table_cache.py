@@ -11,7 +11,6 @@ from sqlglot import expressions
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
-from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -219,7 +218,6 @@ class FeatureTableCacheService:
         nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -261,7 +259,6 @@ class FeatureTableCacheService:
                 feature_store=feature_store,
                 output_table_details=output_table_details,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
             )
@@ -276,7 +273,6 @@ class FeatureTableCacheService:
         nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -294,7 +290,6 @@ class FeatureTableCacheService:
                 nodes=nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 progress_callback=progress_callback,
             )
 
@@ -339,7 +334,6 @@ class FeatureTableCacheService:
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -362,7 +356,6 @@ class FeatureTableCacheService:
                 nodes=non_cached_nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 progress_callback=progress_callback,
             )
 
@@ -534,14 +527,6 @@ class FeatureTableCacheService:
             remaining_progress_callback = None
 
         if non_cached_nodes:
-            is_feature_list_deployed = False
-            if feature_list_id:
-                try:
-                    feature_list = await self.feature_list_service.get_document(feature_list_id)
-                    is_feature_list_deployed = feature_list.deployed
-                except DocumentNotFoundError:
-                    is_feature_list_deployed = False
-
             if feature_table_cache_exists:
                 # if feature table cache exists - update existing table with new features
                 await self._update_table(
@@ -553,7 +538,6 @@ class FeatureTableCacheService:
                     non_cached_nodes=non_cached_nodes,
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
-                    is_feature_list_deployed=is_feature_list_deployed,
                     progress_callback=remaining_progress_callback,
                 )
             else:
@@ -567,7 +551,6 @@ class FeatureTableCacheService:
                     nodes=non_cached_nodes,
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
-                    is_feature_list_deployed=is_feature_list_deployed,
                     progress_callback=remaining_progress_callback,
                 )
 

@@ -597,12 +597,12 @@ SELECT
   AGG."CUSTOMER_ID",
   CAST("_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_2h_average",
   CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average",
-  "_fb_internal_order_id_item_count_None_order_id_None_input_4" AS "order_size",
+  CAST("_fb_internal_order_id_item_count_None_order_id_None_input_4" AS BIGINT) AS "order_size",
   CAST((
     "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
   ) AS DOUBLE) AS "MY FEATURE",
   "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_3" AS "Current Membership Status",
   CAST("_fb_internal_CUSTOMER_ID_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS DOUBLE) AS "a_latest_value_past_90d",
   CAST("_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS DOUBLE) AS "a_latest_value",
-  "_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_input_3" AS "asat_feature"
+  CAST("_fb_internal_MEMBERSHIP_STATUS_as_at_count_None_membership_status_None_input_3" AS BIGINT) AS "asat_feature"
 FROM _FB_AGGREGATED AS AGG

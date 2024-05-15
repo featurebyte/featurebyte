@@ -309,6 +309,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = "event_timestamp"
+    expected_special_columns = ["event_timestamp", "col_int", "created_at"]
 
     def test_delete(self, table_under_test):
         """Test delete"""

@@ -50,6 +50,8 @@ WITH ENTITY_UNIVERSE AS (
         "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
         AND "effective_timestamp" < CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
     )
+    WHERE
+      NOT "col_text" IS NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT

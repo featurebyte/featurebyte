@@ -4,7 +4,10 @@ SELECT DISTINCT
   "another_key"
 FROM online_store_39866085bbe5ca4054c0978e965930d2f26cc229
 WHERE
-  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c';
+  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c'
+  AND (
+    NOT "cust_id" IS NULL AND NOT "another_key" IS NULL
+  );
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT

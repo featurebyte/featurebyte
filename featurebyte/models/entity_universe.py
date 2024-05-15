@@ -4,7 +4,7 @@ This module contains the logic to construct the entity universe for a given node
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import List, Optional, Sequence, cast
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -45,6 +45,31 @@ from featurebyte.query_graph.transform.flattening import GraphFlatteningTransfor
 
 CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
 LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER = "__fb_last_materialized_timestamp"
+
+
+def columns_not_null(columns: Sequence[str]) -> Expression:
+    """
+    Returns an expression for a boolean condition that evaluates to true if none of the columns are
+    null. To be used to filter out rows with missing entity values in the entity universe.
+
+    Parameters
+    ----------
+    columns: List[str]
+        List of column names to check
+
+    Returns
+    -------
+    Expression
+    """
+    return expressions.and_(
+        *[
+            expressions.Is(
+                this=quoted_identifier(column),
+                expression=expressions.Not(this=expressions.Null()),
+            )
+            for column in columns
+        ]
+    )
 
 
 def get_dummy_entity_universe() -> Select:
@@ -185,6 +210,7 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             )
             .distinct()
             .from_(aggregate_input_expr.subquery())
+            .where(columns_not_null([node.parameters.entity_column]))
         )
         return [universe_expr]
 
@@ -227,6 +253,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             )
             .distinct()
             .from_(filtered_aggregate_input_expr.subquery())
+            .where(columns_not_null(node.parameters.keys))
         )
         return [universe_expr]
 
@@ -289,6 +316,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             )
             .distinct()
             .from_(self.aggregate_input_expr.subquery())
+            .where(columns_not_null(node.parameters.keys))
         )
         return [universe_expr]
 
@@ -334,7 +362,11 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             )
             .distinct()
             .from_(expressions.Table(this=online_store_table_name))
-            .where(online_store_table_condition)
+            .where(
+                expressions.and_(
+                    online_store_table_condition, columns_not_null(node.parameters.serving_names)
+                )
+            )
         )
         return universe_expr
 

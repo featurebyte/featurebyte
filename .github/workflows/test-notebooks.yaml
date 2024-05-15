@@ -54,7 +54,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: task docker-tag-featurebyte-version
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
       - name: Run notebook tests
         run: task test-deep-dive-notebooks
     timeout-minutes: 30
@@ -95,7 +95,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: task docker-tag-featurebyte-version
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
       - name: Run notebook tests
         run: task test-quick-start-notebooks
     timeout-minutes: 45
@@ -136,7 +136,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: task docker-tag-featurebyte-version
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
       - name: Run notebook tests
         run: task test-playground-notebooks
     timeout-minutes: 30

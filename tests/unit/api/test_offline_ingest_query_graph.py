@@ -668,7 +668,14 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         feat_1 = np.nan if pd.isna(col_2) else col_2
 
         def get_relative_frequency(input_dict, key):
-            if pd.isna(input_dict) or key not in input_dict:
+            if pd.isna(input_dict) or pd.isna(key):
+                return np.nan
+            key = (
+                str(int(key))
+                if isinstance(key, (int, float, np.integer, np.floating))
+                else key
+            )
+            if key not in input_dict:
                 return np.nan
             total_count = sum(input_dict.values())
             if total_count == 0:
@@ -727,7 +734,14 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
-            if pd.isna(input_dict) or key not in input_dict:
+            if pd.isna(input_dict) or pd.isna(key):
+                return np.nan
+            key = (
+                str(int(key))
+                if isinstance(key, (int, float, np.integer, np.floating))
+                else key
+            )
+            if key not in input_dict:
                 return np.nan
             total_count = sum(input_dict.values())
             if total_count == 0:

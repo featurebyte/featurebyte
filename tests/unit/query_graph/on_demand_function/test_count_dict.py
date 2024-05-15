@@ -30,6 +30,8 @@ def fixture_count_dict_feature1():
             {},
             {"a": 1, "b": 1, "c": 1},
             {"a": 1, "b": 2, "c": 3, "__MISSING__": 4},
+            {"0": 0.5, "1": 1, "2": 2, "3": 3},
+            {"0": 1, "1": 2, "2": 3, "3": 4},
         ]
     )
 
@@ -44,6 +46,8 @@ def fixture_count_dict_feature2():
             {"b": 1},
             {"a": 1, "b": 1, "c": 1},
             {"a": 1, "b": 2},
+            {"0": 1, "1": 1.5, "2": 2.5},
+            {"0": 1.5, "1": 1, "2": 3},
         ]
     )
 
@@ -60,6 +64,8 @@ def fixture_rank_feat():
             {"a": 1, "b": 1, "c": 1},
             {"a": 1, "b": 2},
             {"a": 1, "b": 2},
+            {"0": 0.5, "1": 1, "2": 2},
+            {"0": 1, "1": 2, "2": 3},
         ]
     )
 
@@ -74,6 +80,8 @@ def fixture_item_feature():
             "a",
             "b",
             "d",
+            "0",
+            None,
         ]
     )
 
@@ -90,6 +98,8 @@ def fixture_rank_key_feat():
             "b",
             "a",
             "b",
+            "1",
+            None,
         ]
     )
 
@@ -99,27 +109,27 @@ def fixture_rank_key_feat():
     [
         (
             {"parameters": {"transform_type": "entropy"}},
-            pd.Series([np.nan, 0, 0, 1.098612, 1.279854]),
+            pd.Series([np.nan, 0, 0, 1.098612, 1.279854, 1.204793, 1.279854]),
         ),
         (
             {"parameters": {"transform_type": "most_frequent"}},
-            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__"]),
+            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__", "3", "3"]),
         ),
         (
             {"parameters": {"transform_type": "key_with_highest_value"}},
-            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__"]),
+            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__", "3", "3"]),
         ),
         (
             {"parameters": {"transform_type": "key_with_lowest_value"}},
-            pd.Series([np.nan, "a", np.nan, "a", "a"]),
+            pd.Series([np.nan, "a", np.nan, "a", "a", "0", "0"]),
         ),
         (
             {"parameters": {"transform_type": "unique_count", "include_missing": True}},
-            pd.Series([np.nan, 1, 0, 3, 4]),
+            pd.Series([np.nan, 1, 0, 3, 4, 4, 4]),
         ),
         (
             {"parameters": {"transform_type": "unique_count", "include_missing": False}},
-            pd.Series([np.nan, 1, 0, 3, 3]),
+            pd.Series([np.nan, 1, 0, 3, 3, 4, 4]),
         ),
     ],
 )
@@ -177,7 +187,7 @@ def test_derive_on_demand_view_code__cosine_similarity(
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
-        expected_output=pd.Series([np.nan, np.nan, 0.0, 1.0, 0.408248]),
+        expected_output=pd.Series([np.nan, np.nan, 0.0, 1.0, 0.408248, 0.601629, 0.652051]),
     )
 
 
@@ -205,7 +215,15 @@ def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_c
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
         expected_output=pd.Series(
-            [np.nan, ["a"], [], ["a", "b", "c"], ["a", "b", "c", "__MISSING__"]]
+            [
+                np.nan,
+                ["a"],
+                [],
+                ["a", "b", "c"],
+                ["a", "b", "c", "__MISSING__"],
+                ["0", "1", "2", "3"],
+                ["0", "1", "2", "3"],
+            ]
         ),
     )
 
@@ -236,7 +254,7 @@ def test_derive_on_demand_view_code__dictionary_get_value(
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
-        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, np.nan]),
+        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, np.nan, 0.5, np.nan]),
     )
 
     # test on one operand & one scalar value
@@ -260,7 +278,7 @@ def test_derive_on_demand_view_code__dictionary_get_value(
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
-        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, 2.0]),
+        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, 2.0, np.nan, np.nan]),
     )
 
 
@@ -270,20 +288,24 @@ def test_derive_on_demand_view_code__dictionary_get_value(
         (
             GetRankFromDictionaryNode,
             {"descending": False},
-            pd.Series([np.nan, np.nan, np.nan, 1, 1, 1, 2]),
-            pd.Series([np.nan, np.nan, 1, 1, 1, 2, 2]),
+            pd.Series([np.nan, np.nan, np.nan, 1, 1, 1, 2, 2, np.nan]),
+            pd.Series([np.nan, np.nan, 1, 1, 1, 2, 2, np.nan, np.nan]),
         ),
         (
             GetRankFromDictionaryNode,
             {"descending": True},
-            pd.Series([np.nan, np.nan, np.nan, 1, 1, 2, 1]),
-            pd.Series([np.nan, np.nan, 1, 1, 1, 1, 1]),
+            pd.Series([np.nan, np.nan, np.nan, 1, 1, 2, 1, 2, np.nan]),
+            pd.Series([np.nan, np.nan, 1, 1, 1, 1, 1, np.nan, np.nan]),
         ),
         (
             GetRelativeFrequencyFromDictionaryNode,
             {},
-            pd.Series([np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3]),
-            pd.Series([np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3]),
+            pd.Series(
+                [np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 1.0 / 3.5, np.nan]
+            ),
+            pd.Series(
+                [np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3, np.nan, np.nan]
+            ),
         ),
     ],
 )

@@ -21,7 +21,9 @@ FROM (
   WHERE
     "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
     AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
-);
+)
+WHERE
+  NOT "col_boolean" IS NULL;
 
 CREATE OR REPLACE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT
@@ -81,20 +83,20 @@ WITH ONLINE_REQUEST_TABLE AS (
 )
 SELECT
   AGG."gender",
-  CASE
+  CAST(CASE
     WHEN (
       "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
     )
     THEN 0
     ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS "__feature_requiring_parent_serving_V220101__part1",
-  CASE
+  END AS BIGINT) AS "__feature_requiring_parent_serving_V220101__part1",
+  CAST(CASE
     WHEN (
       "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
     )
     THEN 0
     ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
+  END AS BIGINT) AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
@@ -123,6 +125,8 @@ WITH ENTITY_UNIVERSE AS (
         "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
         AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
     )
+    WHERE
+      NOT "col_text" IS NULL
   )
 ), JOINED_PARENTS_ENTITY_UNIVERSE AS (
   SELECT

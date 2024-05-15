@@ -270,7 +270,6 @@ async def test_create_feature_table_cache(
     assert params["output_table_details"].database_name == "sf_db"
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
-    assert params["is_feature_list_deployed"] == feature_list.deployed
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 2
 
@@ -366,7 +365,6 @@ async def test_update_feature_table_cache(
     assert params["output_table_details"].database_name == "sf_db"
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
-    assert params["is_feature_list_deployed"] == feature_list.deployed
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
 
@@ -453,7 +451,6 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
     assert params["output_table_details"].database_name == "sf_db"
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
-    assert params["is_feature_list_deployed"] == feature_list.deployed
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
 

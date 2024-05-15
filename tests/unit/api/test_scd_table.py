@@ -82,6 +82,13 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = "effective_timestamp"
+    expected_special_columns = [
+        "col_text",
+        "col_int",
+        "effective_timestamp",
+        "end_timestamp",
+        "is_active",
+    ]
 
 
 @pytest.fixture(name="scd_table_dict")

@@ -8,6 +8,7 @@ import os
 
 # pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 import pickle
+import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -607,12 +608,16 @@ async def test_feature_table_one_feature_deployed(
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT "
-                "DISTINCT\n"
-                '  "cust_id"\n'
-                "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
-                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "cust_id"
+                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+                      AND "cust_id" IS NOT NULL
+                    """
+                ).strip()
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -626,6 +631,7 @@ async def test_feature_table_one_feature_deployed(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_30m",
+        "base_name": "cust_id_30m",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -681,6 +687,7 @@ async def test_feature_table_one_feature_deployed(
         "has_ttl": True,
         "last_materialized_at": None,
         "name": f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
+        "base_name": None,
         "name_prefix": None,
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -744,12 +751,16 @@ async def test_feature_table_two_features_deployed(
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT "
-                "DISTINCT\n"
-                '  "cust_id"\n'
-                "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
-                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "cust_id"
+                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+                      AND "cust_id" IS NOT NULL
+                    """
+                ).strip()
             }
         },
         "feature_ids": [deployed_float_feature.id, deployed_float_feature_post_processed.id],
@@ -763,6 +774,7 @@ async def test_feature_table_two_features_deployed(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_30m",
+        "base_name": "cust_id_30m",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -839,12 +851,16 @@ async def test_feature_table_undeploy(
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT "
-                "DISTINCT\n"
-                '  "cust_id"\n'
-                "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
-                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "cust_id"
+                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+                      AND "cust_id" IS NOT NULL
+                    """
+                ).strip()
             }
         },
         "feature_ids": [deployed_float_feature_post_processed.id],
@@ -858,6 +874,7 @@ async def test_feature_table_undeploy(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_30m",
+        "base_name": "cust_id_30m",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -972,12 +989,16 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT "
-                "DISTINCT\n"
-                '  "cust_id"\n'
-                "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
-                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'"
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "cust_id"
+                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+                      AND "cust_id" IS NOT NULL
+                    """
+                ).strip()
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -991,6 +1012,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_30m",
+        "base_name": "cust_id_30m",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1018,12 +1040,16 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT "
-                "DISTINCT\n"
-                '  "cust_id"\n'
-                "FROM "
-                "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c\n"
-                "WHERE\n  \"AGGREGATION_RESULT_NAME\" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'"
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "cust_id"
+                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
+                      AND "cust_id" IS NOT NULL
+                    """
+                ).strip()
             }
         },
         "feature_ids": [deployed_float_feature_different_job_setting.id],
@@ -1037,6 +1063,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_3h",
+        "base_name": "cust_id_3h",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1102,6 +1129,7 @@ async def test_feature_table_without_entity(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1__no_entity_1d",
+        "base_name": "_no_entity_1d",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1166,6 +1194,7 @@ async def test_lookup_feature(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_cust_id_1d",
+        "base_name": "cust_id_1d",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1235,6 +1264,7 @@ async def test_aggregate_asat_feature(
         "entity_lookup_info": None,
         "last_materialized_at": None,
         "name": "cat1_gender_1d",
+        "base_name": "gender_1d",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1277,6 +1307,7 @@ async def test_aggregate_asat_feature(
         "has_ttl": False,
         "last_materialized_at": None,
         "name": f"cat1_gender_1d_via_cust_id_{expected_suffix}",
+        "base_name": None,
         "name_prefix": None,
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1503,6 +1534,7 @@ async def test_feature_with_internal_parent_child_relationships(
         "has_ttl": False,
         "last_materialized_at": None,
         "name": "cat1_cust_id_1d",
+        "base_name": "cust_id_1d",
         "name_prefix": "cat1",
         "name_suffix": None,
         "online_stores_last_materialized_at": [],
@@ -1600,6 +1632,53 @@ async def test_entity_universe_debug_info_dump(
     ingest_graphs_dump = debug_info["offline_ingest_graphs"]
     assert len(ingest_graphs_dump) == 1
     assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
+
+    # Check that feature tables and tasks are cleaned up
+    feature_tables = await get_all_feature_tables(document_service)
+    scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
+    assert not list(feature_tables.keys())
+    assert not list(scheduled_tasks.keys())
+
+
+@pytest.mark.asyncio
+async def test_undeploy_bad_state_error_handling(
+    app_container,
+    deployed_float_feature,
+    deployed_float_feature_post_processed,
+    document_service,
+    periodic_task_service,
+    storage,
+    caplog,
+):
+    """
+    Test OfflineStoreFeatureTableBadStateError is handled when disabling a deployment
+    """
+    _ = deployed_float_feature_post_processed
+
+    # Simulate OfflineStoreFeatureTableBadStateError during undeployment
+    with patch(
+        "featurebyte.service.offline_store_feature_table_construction.get_combined_universe",
+        return_value=None,
+    ):
+        await undeploy_feature_async(deployed_float_feature, app_container)
+
+    # Check ingest graphs dump for troubleshooting
+    feature_table_name = "cat1_cust_id_30m"
+    path = f"catalog/{app_container.catalog_id}/offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+    debug_info_bytes = await storage.get_bytes(path)
+    debug_info = pickle.loads(debug_info_bytes)
+    assert isinstance(debug_info, dict)
+    ingest_graphs_dump = debug_info["offline_ingest_graphs"]
+    assert len(ingest_graphs_dump) == 1
+    assert isinstance(ingest_graphs_dump[0][0], OfflineStoreIngestQueryGraph)
+
+    # Check error logged
+    logs = [
+        record
+        for record in caplog.records
+        if record.msg == "Failed to update offline store feature table when disabling a deployment"
+    ]
+    assert len(logs) == 1
 
     # Check that feature tables and tasks are cleaned up
     feature_tables = await get_all_feature_tables(document_service)

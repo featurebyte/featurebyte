@@ -1961,6 +1961,7 @@ def mock_snowflake_session_fixture():
     )
     session.clone_if_not_threadsafe.return_value = session
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
+    session.retry_sql = partial(SnowflakeSession.retry_sql, session)
     return session
 
 
@@ -1986,6 +1987,7 @@ def mock_snowflake_tile():
         value_column_types=["FLOAT"],
         entity_column_names=["col1"],
         feature_store_id=ObjectId(),
+        windows=["1d"],
     )
 
     return tile_spec

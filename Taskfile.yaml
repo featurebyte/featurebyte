@@ -378,36 +378,32 @@ tasks:
     cmds:
       - echo "SPARK_VERSION=$SPARK_VERSION"
       - mkdir -p ~/.spark/data
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml up -d
+      - docker compose -p featurebyte_docker -f docker/docker-compose.yml up -d
       - task: test-setup-status
 
   test-setup-status:
     desc: "Wait for the test environment to be ready"
     internal: true
+    silent: true
     preconditions:
-      - sh: docker compose ls | grep 'featurebyte-test'
+      - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
     cmds:
-      -  |
-        for i in {1..60}; do
-          docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" spark-thrift-test | grep 'healthy' -q && exit 0
-          sleep 1
+      -  |-
+        for i in {1..30}; do
+          [[ $(docker compose ls --format=json | jq '.[] | select(.Name == "featurebyte_docker") | .Status == "running(3)"') == "true" ]] && exit 0
+          echo "Waiting for the test environment to be ready"
+          sleep 2
         done
-        for i in {1..60}; do
-          docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" mongo-testrs | grep 'healthy' -q && exit 0
-          sleep 1
-        done
-        exit 1
 
   test-teardown:
     desc: "Teardown the test environment"
     env:
       SPARK_VERSION: '{{default "3.3.1"}}'
     preconditions:
-      - sh: docker compose ls | grep 'featurebyte-test'
+      - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
-    cmds:
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml down
+    cmd: docker compose -p featurebyte_docker -f docker/docker-compose.yml down
 
   docs:
     desc: "Build the documentation and reload the browser"
@@ -461,22 +457,6 @@ tasks:
     desc: "Stops featurebyte-server in development mode"
     cmds:
       - poetry run featurebyte stop
-
-  docker-clean:
-    desc: "Clean the docker images and data directories"
-    ignore_error: true
-    cmds:
-      - docker volume rm $(docker volume ls -q)
-      - rm -rf ~/.spark
-      - rm -rf ~/.featurebyte/data
-
-  docker-tag-featurebyte-version:
-    desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
-    vars:
-      FB_VERSION:
-        sh: awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' pyproject.toml
-    cmds:
-      - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:{{.FB_VERSION}}
 
   changelog:
     desc: "Generate all changelog entries in .changelog"
