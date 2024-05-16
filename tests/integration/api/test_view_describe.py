@@ -261,3 +261,30 @@ def test_describe_empty_view(event_table):
     # check describe should not error
     describe_df = view.describe()
     assert (describe_df.loc["unique"] == 0).all()
+
+
+@pytest.mark.asyncio
+async def test_describe_invalid_dates(session, feature_store, catalog):
+    """
+    Test describe with invalid dates
+    """
+    _ = catalog
+
+    await session.execute_query(
+        """
+        CREATE OR REPLACE TABLE TABLE_INVALID_DATES AS
+        SELECT CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        """
+    )
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="TABLE_INVALID_DATES",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    describe_df = source_table.describe()
+    assert describe_df.shape[0] > 0
