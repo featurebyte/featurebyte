@@ -68,11 +68,9 @@ from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
-
-# Static testing mongodb connection from docker/test/docker-compose.yml
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
-MONGO_CONNECTION = "mongodb://localhost:27017/?replicaSet=rs0"
+MONGO_CONNECTION = "mongodb://localhost:37017/?replicaSet=rs0"
 TEST_REDIS_URI = "redis://localhost:36379"
 
 
