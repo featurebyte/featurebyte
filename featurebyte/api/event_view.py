@@ -222,6 +222,7 @@ class EventView(View, GroupByMixin, RawMixin):
         """
         Validates feature addition
         - Checks that the feature is non-time based
+        - Checks that the feature does not use request columns
         - Checks that entity is present in one of the columns
 
         Parameters
