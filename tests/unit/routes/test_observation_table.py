@@ -533,6 +533,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response_dict["target_namespace_id"] == target_namespace_id
 
+        # test delete target namespace
+        response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "TargetNamespace is referenced by ObservationTable: observation_table"
+        )
+
     @pytest.mark.asyncio
     async def test_update_use_case_without_target(
         self, test_api_client_persistent, create_success_response
