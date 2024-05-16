@@ -1076,6 +1076,7 @@ async def online_store_fixture(app_container):
             name="redis_online_store",
             details=RedisOnlineStoreDetails(
                 redis_type="redis",
+                connection_string="localhost:36379",
             ),
         )
     )
