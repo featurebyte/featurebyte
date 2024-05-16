@@ -412,6 +412,7 @@ def test_udf_feat_with_on_demand_function(
     snowflake_event_view_with_entity,
     power_udf,
     float_feature,
+    non_time_based_feature,
 ):
     """Test deployment enablement for feature with UDF (when on-demand function will be required)"""
 
