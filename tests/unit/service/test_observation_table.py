@@ -206,8 +206,22 @@ async def test_validate__most_recent_point_in_time(
                 (
                   1.0 - COUNT("POINT_IN_TIME") / NULLIF(COUNT(*), 0)
                 ) * 100 AS "%missing__0",
-                MIN("POINT_IN_TIME") AS "min__0",
-                MAX("POINT_IN_TIME") AS "max__0",
+                MIN(
+                  IFF(
+                    "POINT_IN_TIME" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+                    OR "POINT_IN_TIME" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                    NULL,
+                    "POINT_IN_TIME"
+                  )
+                ) AS "min__0",
+                MAX(
+                  IFF(
+                    "POINT_IN_TIME" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+                    OR "POINT_IN_TIME" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                    NULL,
+                    "POINT_IN_TIME"
+                  )
+                ) AS "max__0",
                 COUNT(DISTINCT "cust_id") AS "unique__1",
                 (
                   1.0 - COUNT("cust_id") / NULLIF(COUNT(*), 0)
