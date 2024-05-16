@@ -7,7 +7,7 @@ import re
 import textwrap
 from datetime import datetime
 from unittest import mock
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
@@ -317,23 +317,13 @@ def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view)
 
 
 @pytest.fixture(name="empty_event_view_builder")
-def get_empty_event_view_fixture(snowflake_feature_store):
+def get_empty_event_view_fixture(snowflake_event_table_with_entity):
     """
     Get an empty event view.
     """
 
     def get_event_view():
-        return EventView(
-            columns_info=[],
-            node_name="input_1",
-            tabular_source=TabularSource(
-                feature_store_id=PydanticObjectId(ObjectId()),
-                table_details=TableDetails(
-                    table_name="random",
-                ),
-            ),
-            feature_store=snowflake_feature_store,
-        )
+        return snowflake_event_table_with_entity.get_view()
 
     return get_event_view
 
@@ -362,19 +352,19 @@ def get_empty_feature_fixture(snowflake_feature_store):
 
 
 def test_validate_feature_addition__time_based_feature_no_override(
-    production_ready_feature, empty_event_view_builder
+    production_ready_feature, snowflake_event_view_with_entity
 ):
     """
     Test _validate_feature_addition with no override col provided - expect error
     """
-    event_view = empty_event_view_builder()
+    event_view = snowflake_event_view_with_entity
     with pytest.raises(ValueError) as exc_info:
         event_view._validate_feature_addition("random_col", production_ready_feature, None)
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
 def test_validate_feature_addition__request_column_derived_feature(
-    non_time_based_feature, empty_event_view_builder
+    non_time_based_feature, snowflake_event_view_with_entity
 ):
     """
     Test _validate_feature_addition with request column derived feature
@@ -384,7 +374,7 @@ def test_validate_feature_addition__request_column_derived_feature(
         + (RequestColumn.point_in_time() - RequestColumn.point_in_time()).dt.day
     )
     req_col_feat.name = "req_col_feat"
-    event_view = empty_event_view_builder()
+    event_view = snowflake_event_view_with_entity
     expected_msg = (
         "We currently only support the addition of features that do not use request columns."
     )
@@ -393,48 +383,38 @@ def test_validate_feature_addition__request_column_derived_feature(
 
 
 def test_validate_feature_addition__time_based_feature_with_override(
-    production_ready_feature, empty_event_view_builder
+    production_ready_feature, snowflake_event_view_with_entity
 ):
     """
     Test _validate_feature_addition with override col provided - expect error
     """
-    event_view = empty_event_view_builder()
+    event_view = snowflake_event_view_with_entity
     with pytest.raises(ValueError) as exc_info:
         event_view._validate_feature_addition("random_col", production_ready_feature, "random")
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
 def test_validate_feature_addition__non_time_based_no_override(
-    empty_feature_builder, empty_event_view_builder
+    snowflake_event_view_with_entity, non_time_based_feature
 ):
     """
     Test _validate_feature_addition non-time based with no override col
     """
-    event_view = empty_event_view_builder()
-    empty_feature = empty_feature_builder()
     # Should run with no errors
-    with mock.patch(
-        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
-    ) as mock_is_time_based:
-        mock_is_time_based.return_value = False
-        event_view._validate_feature_addition("random_col", empty_feature, None)
+    snowflake_event_view_with_entity._validate_feature_addition(
+        "random_col", non_time_based_feature, None
+    )
 
 
 def test_validate_feature_addition__non_time_based_with_override(
-    event_view_with_col_infos, empty_feature_builder
+    snowflake_event_view_with_entity,
+    non_time_based_feature,
 ):
     """
     Test _validate_feature_addition non-time based with override col
     """
-    col_name = "col_a"
-    event_view = event_view_with_col_infos([ColumnInfo(name=col_name, dtype=DBVarType.INT)])
-    empty_feature = empty_feature_builder()
-    # Should run with no errors
-    with mock.patch(
-        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
-    ) as mock_is_time_based:
-        mock_is_time_based.return_value = False
-        event_view._validate_feature_addition("random_col", empty_feature, col_name)
+    event_view = snowflake_event_view_with_entity
+    event_view._validate_feature_addition("random_col", non_time_based_feature, "col_float")
 
 
 def assert_entity_identifiers_raises_errors(identifiers, feature):
