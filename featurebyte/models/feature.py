@@ -609,6 +609,28 @@ class FeatureModel(BaseFeatureModel):
 
         return values
 
+    @property
+    def used_request_column(self) -> bool:
+        """
+        Returns whether the Feature object uses request column(s) in the computation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.graph.has_node_type(target_node=self.node, node_type=NodeType.REQUEST_COLUMN)
+
+    @property
+    def used_user_defined_function(self) -> bool:
+        """
+        Returns whether the Feature object uses user defined function(s) in the computation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.graph.has_node_type(target_node=self.node, node_type=NodeType.GENERIC_FUNCTION)
+
     class Settings(BaseFeatureModel.Settings):
         """
         MongoDB settings
