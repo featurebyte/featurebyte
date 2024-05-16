@@ -22,6 +22,10 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
 
     document_class = ProxyTableModel
 
+    @property
+    def is_catalog_specific(self) -> bool:
+        return True
+
     async def create_document(self, data: DocumentCreateSchema) -> Document:
         raise NotImplementedError
 
@@ -36,3 +40,13 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
         populate_remote_attributes: bool = True,
     ) -> Optional[Document]:
         raise NotImplementedError
+
+
+class AllTableService(TableService):  # pylint: disable=abstract-method
+    """
+    TableService class
+    """
+
+    @property
+    def is_catalog_specific(self) -> bool:
+        return False

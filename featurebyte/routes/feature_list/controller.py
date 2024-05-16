@@ -4,7 +4,7 @@ FeatureList API route controller
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
 
 import copy
 from http import HTTPStatus
@@ -16,6 +16,7 @@ from fastapi.exceptions import HTTPException
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
+    DocumentDeletionError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
@@ -23,6 +24,7 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController
@@ -59,12 +61,14 @@ from featurebyte.schema.worker.task.feature_list_create import (
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
 )
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
@@ -91,6 +95,8 @@ class FeatureListController(
         feature_service: FeatureService,
         entity_service: EntityService,
         table_service: TableService,
+        deployment_service: DeploymentService,
+        historical_feature_table_service: HistoricalFeatureTableService,
         catalog_name_injector: CatalogNameInjector,
         feature_preview_service: FeaturePreviewService,
         tile_job_log_service: TileJobLogService,
@@ -104,6 +110,8 @@ class FeatureListController(
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.table_service = table_service
+        self.deployment_service = deployment_service
+        self.historical_feature_table_service = historical_feature_table_service
         self.catalog_name_injector = catalog_name_injector
         self.feature_preview_service = feature_preview_service
         self.tile_job_log_service = tile_job_log_service
@@ -261,6 +269,9 @@ class FeatureListController(
         feature_list_id: ObjectId
             FeatureList ID
         """
+        await self.verify_operation_by_checking_reference(
+            document_id=feature_list_id, exception_class=DocumentDeletionError
+        )
         await self.feature_list_facade_service.delete_feature_list(feature_list_id=feature_list_id)
 
     async def list_feature_lists(
@@ -596,3 +607,11 @@ class FeatureListController(
             feature_list_id=feature_list_id, count=count
         )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.deployment_service, {"feature_list_id": document_id}),
+            (self.historical_feature_table_service, {"feature_list_id": document_id}),
+        ]
