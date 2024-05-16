@@ -231,13 +231,12 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             )
 
         # Map feature names to the original names
-        feature_docs = await self.feature_service.list_documents_as_dict(
-            query_filter={"_id": {"$in": feature_list.feature_ids}},
-            projection={"name": 1, "version": 1},
-        )
         feature_name_map = {}
         feature_id_to_versioned_name = {}
-        for feature_doc in feature_docs["data"]:
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+            query_filter={"_id": {"$in": feature_list.feature_ids}},
+            projection={"name": 1, "version": 1},
+        ):
             feature_name = feature_doc["name"]
             feature_version = VersionIdentifier(**feature_doc["version"]).to_str()
             feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
