@@ -58,6 +58,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -628,7 +629,12 @@ class Feature(
         -------
         bool
         """
-        return self.graph.has_request_column_node(self.node)
+        try:
+            return self.cached_model.used_request_column
+        except RecordRetrievalException:
+            return self.graph.has_node_type(
+                target_node=self.node, node_type=NodeType.REQUEST_COLUMN
+            )
 
     @property
     def table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:

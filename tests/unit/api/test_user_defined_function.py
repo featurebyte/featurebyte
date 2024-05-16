@@ -435,15 +435,16 @@ def test_udf_feat_with_on_demand_function(
         UDF.power_func(col_feat, feat_with_req_col)
 
     expected_error = (
-        'Error in feature #2 ("sum_1d"): This feature has different table feature job settings than the first '
-        'input feature ("col_feat"). Please ensure all features have the same table feature job settings.'
+        "This feature requires a Python on-demand function during deployment. "
+        "We cannot proceed with creating the feature because the on-demand function involves a UDF, "
+        "and the Python version of the UDF is not supported at the moment."
     )
-    with pytest.raises(ValueError, match=re.escape(expected_error)):
-        UDF.power_func(col_feat, float_feature)
+    transformed_feat = UDF.power_func(col_feat, float_feature)
+    transformed_feat.name = "transformed_feat"
+    with pytest.raises(Exception, match=re.escape(expected_error)):
+        transformed_feat.save()
 
-    expected_error = (
-        'Error in feature #2 ("sum_1d_diff_entity"): This feature has different primary entity IDs than the '
-        'first input feature ("sum_1d"). Please make sure all features have the same primary entity IDs.'
-    )
-    with pytest.raises(ValueError, match=re.escape(expected_error)):
-        UDF.power_func(float_feature, feat_with_diff_entity)
+    # this is ok as the two features' primary entities can be joined
+    another_transformed_feat = UDF.power_func(float_feature, feat_with_diff_entity)
+    another_transformed_feat.name = "another_transformed_feat"
+    another_transformed_feat.save()

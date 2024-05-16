@@ -232,24 +232,6 @@ class QueryGraph(QueryGraphModel):
                 output.append(node.parameters.entity_column)
         return sorted(set(output))
 
-    def has_request_column_node(self, node: Node) -> bool:
-        """
-        Check if the query sub-graph has a request column node
-
-        Parameters
-        ----------
-        node: Node
-            Target node used to start the search
-
-        Returns
-        -------
-        bool
-            True if the query sub-graph has a request column node, False otherwise
-        """
-        for _ in self.iterate_nodes(target_node=node, node_type=NodeType.REQUEST_COLUMN):
-            return True
-        return False
-
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
     ) -> Iterator[Tuple[GroupByNode, Optional[ObjectId]]]:
