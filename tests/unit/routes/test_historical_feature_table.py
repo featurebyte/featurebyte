@@ -246,3 +246,14 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
+
+    def test_delete_feature_list_of_historical_feature_table(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """Test delete feature list of historical feature table"""
+        feature_list_id = create_success_response.json()["feature_list_id"]
+
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"/feature_list/{feature_list_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "FeatureList is referenced by Deployment: my_deployment"
