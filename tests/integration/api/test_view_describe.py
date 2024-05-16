@@ -272,7 +272,7 @@ async def test_describe_invalid_dates(session, feature_store, catalog):
 
     await session.execute_query(
         """
-        CREATE OR REPLACE TABLE TABLE_INVALID_DATES AS
+        CREATE TABLE TABLE_INVALID_DATES AS
         SELECT CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS date_col
         UNION ALL
         SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
@@ -294,12 +294,16 @@ async def test_describe_invalid_dates(session, feature_store, catalog):
     )
     describe_df = source_table.describe()
     assert describe_df.shape[0] > 0
-    result_dict = describe_df["DATE_COL"].to_dict()
+    result_dict = describe_df.iloc[:, 0].to_dict()
     assert result_dict == {
         "dtype": "TIMESTAMP",
         "unique": 4,
         "%missing": 0.0,
-        "top": "0019-01-01 10:00:00.000",
+        "top": (
+            "0019-01-01 10:00:00.000"
+            if session.source_type == "snowflake"
+            else "0019-01-01 10:00:00"
+        ),
         "freq": 3.0,
         "min": "2021-01-01T10:00:00.000000000",
         "max": "2023-01-01T10:00:00.000000000",

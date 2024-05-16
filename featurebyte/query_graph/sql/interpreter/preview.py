@@ -675,6 +675,33 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, cte_statements
 
+    @staticmethod
+    def _clip_column_before_stats_func(
+        col_expr: expressions.Expression,
+        col_dtype: DBVarType,
+        stats_name: str,
+    ) -> expressions.Expression:
+        if col_dtype not in DBVarType.supported_timestamp_types():
+            return col_expr
+
+        if stats_name not in {"min", "max"}:
+            return col_expr
+
+        invalid_mask = expressions.or_(
+            expressions.LT(
+                this=col_expr,
+                expression=make_literal_value("1900-01-01", cast_as_timestamp=True),
+            ),
+            expressions.GT(
+                this=col_expr,
+                expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
+            ),
+        )
+        clipped_col_expr = expressions.If(
+            this=invalid_mask, true=expressions.Null(), false=col_expr
+        )
+        return clipped_col_expr
+
     def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches
         self,
         sql_tree: expressions.Select,
@@ -719,24 +746,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 continue
             column = columns_info[col_name]
             output_columns.append(column)
-
             col_expr = quoted_identifier(col_name)
-            if column.dtype in DBVarType.supported_timestamp_types():
-                invalid_mask = expressions.or_(
-                    expressions.LT(
-                        this=col_expr,
-                        expression=make_literal_value("1900-01-01", cast_as_timestamp=True),
-                    ),
-                    expressions.GT(
-                        this=col_expr,
-                        expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
-                    ),
-                )
-                clipped_col_expr = expressions.If(
-                    this=invalid_mask, true=expressions.Null(), false=col_expr
-                )
-            else:
-                clipped_col_expr = None
 
             # add dtype
             final_selections.append(
@@ -765,10 +775,11 @@ class PreviewMixin(BaseGraphInterpreter):
             for stats_name, (stats_func, supported_dtypes) in required_stats_expressions.items():
                 if stats_func:
                     if self._is_dtype_supported(column.dtype, supported_dtypes):
-                        if stats_name in {"min", "max"} and clipped_col_expr is not None:
-                            stats_func_col_expr = clipped_col_expr
-                        else:
-                            stats_func_col_expr = col_expr
+                        stats_func_col_expr = self._clip_column_before_stats_func(
+                            col_expr=col_expr,
+                            col_dtype=column.dtype,
+                            stats_name=stats_name,
+                        )
                         stats_selections.append(
                             expressions.alias_(
                                 stats_func(stats_func_col_expr, column_idx),
