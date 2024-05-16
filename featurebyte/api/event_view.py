@@ -222,6 +222,7 @@ class EventView(View, GroupByMixin, RawMixin):
         """
         Validates feature addition
         - Checks that the feature is non-time based
+        - Checks that the feature does not use request columns
         - Checks that entity is present in one of the columns
 
         Parameters
@@ -244,6 +245,12 @@ class EventView(View, GroupByMixin, RawMixin):
         # Validate whether feature is time based
         if feature.is_time_based:
             raise ValueError("We currently only support the addition of non-time based features.")
+
+        # Validate whether request column is used in feature definition
+        if feature.used_request_column:
+            raise ValueError(
+                "We currently only support the addition of features that do not use request columns."
+            )
 
         # Validate entity_col_override
         if entity_col_override is not None:

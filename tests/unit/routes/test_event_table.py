@@ -446,7 +446,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
-    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+    def test_delete_entity_and_semantic(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -462,3 +462,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.delete(f"/entity/{entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "Entity is referenced by Table: sf_event_table"
+
+        # attempt to delete semantic
+        col_int_columns_info = next(col for col in columns_info if col["name"] == "col_int")
+        semantic_id = col_int_columns_info["semantic_id"]
+        assert semantic_id is not None
+        headers = test_api_client.headers.copy()
+        response = test_api_client.delete(f"/semantic/{semantic_id}", headers=headers)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Semantic is referenced by Table: sf_event_table"

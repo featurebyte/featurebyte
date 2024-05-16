@@ -16,7 +16,11 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.transform.offline_store_ingest import (
+    OfflineStoreIngestQueryGraphTransformer,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.feature import FeatureServiceCreate
@@ -162,7 +166,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         DocumentCreationError
             If the feature's feature job settings are not consistent
         """
-        # validate feature model
+        # validate feature job settings are consistent
         table_id_feature_job_settings = feature.extract_table_id_feature_job_settings()
         table_id_to_feature_job_setting = {}
         for table_id_feature_job_setting in table_id_feature_job_settings:
@@ -179,6 +183,30 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                         f"Feature job settings for table {table_id} are not consistent. "
                         f"Two different feature job settings are found: "
                         f"{table_id_to_feature_job_setting[table_id]} and {feature_job_setting}"
+                    )
+
+        # validate feature with UDFs
+        if feature.used_user_defined_function:
+            transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
+            assert feature.name is not None
+            result = transformer.transform(
+                target_node=feature.node,
+                relationships_info=feature.relationships_info or [],
+                feature_name=feature.name,
+                feature_version=feature.version.to_str(),
+            )
+            if result.is_decomposed:
+                # if the graph is decomposed, it implies that on-demand-function is used when the
+                # feature is online-enabled. Check whether the UDF is used in the on-demand function.
+                decom_graph = result.graph
+                decom_node = result.graph.get_node_by_name(result.node_name_map[feature.node.name])
+                if decom_graph.has_node_type(
+                    target_node=decom_node, node_type=NodeType.GENERIC_FUNCTION
+                ):
+                    raise DocumentCreationError(
+                        "This feature requires a Python on-demand function during deployment. "
+                        "We cannot proceed with creating the feature because the on-demand function involves a UDF, "
+                        "and the Python version of the UDF is not supported at the moment."
                     )
 
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:

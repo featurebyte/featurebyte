@@ -59,6 +59,7 @@ class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
     input_var_prefix: str = Field(default="col")
     request_input_var_prefix: str = Field(default="request_col")
     output_dtype: DBVarType
+    to_generate_null_filling_function: bool = Field(default=False)
 
     @classmethod
     def to_py_type(cls, dtype: DBVarType) -> str:
