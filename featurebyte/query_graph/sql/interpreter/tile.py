@@ -111,7 +111,7 @@ class TileSQLGenerator:
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         sqls = []
         for groupby_node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
-            assert isinstance(groupby_node, GroupByNode), "GroupByNode expected"
+            assert isinstance(groupby_node, GroupByNode)
 
             if self.is_on_demand:
                 event_table_timestamp_filter = None

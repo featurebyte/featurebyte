@@ -245,6 +245,12 @@ class EventView(View, GroupByMixin, RawMixin):
         if feature.is_time_based:
             raise ValueError("We currently only support the addition of non-time based features.")
 
+        # Validate whether request column is used in feature definition
+        if feature.used_request_column:
+            raise ValueError(
+                "We currently only support the addition of features that do not use request columns."
+            )
+
         # Validate entity_col_override
         if entity_col_override is not None:
             self._validate_entity_col_override(entity_col_override)

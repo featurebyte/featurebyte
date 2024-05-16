@@ -3,6 +3,7 @@ Unit test for EventView class
 """
 
 import copy
+import re
 import textwrap
 from datetime import datetime
 from unittest import mock
@@ -12,7 +13,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import to_timedelta
+from featurebyte import RequestColumn, to_timedelta
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -372,6 +373,25 @@ def test_validate_feature_addition__time_based_feature_no_override(
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
+def test_validate_feature_addition__request_column_derived_feature(
+    non_time_based_feature, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition with request column derived feature
+    """
+    req_col_feat = (
+        non_time_based_feature
+        + (RequestColumn.point_in_time() - RequestColumn.point_in_time()).dt.day
+    )
+    req_col_feat.name = "req_col_feat"
+    event_view = empty_event_view_builder()
+    expected_msg = (
+        "We currently only support the addition of features that do not use request columns."
+    )
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        event_view.add_feature("random_col", req_col_feat)
+
+
 def test_validate_feature_addition__time_based_feature_with_override(
     production_ready_feature, empty_event_view_builder
 ):
@@ -658,6 +678,8 @@ def test_add_feature__inferred_entity_multiple_times(
     """
     Test calling add_feature() multiple times without specifying entity columns
     """
+    _ = snowflake_item_table
+
     snowflake_event_table[snowflake_event_table.event_id_column].as_entity(transaction_entity.name)
     event_view = snowflake_event_table.get_view()
     original_column_info = copy.deepcopy(event_view.columns_info)

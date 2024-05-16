@@ -428,7 +428,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         for node in self.graph.iterate_nodes(
             target_node=self.node, node_type=NodeType.REQUEST_COLUMN
         ):
-            assert isinstance(node, RequestColumnNode), "Unexpected node type"
+            assert isinstance(node, RequestColumnNode)
             output.append(node)
         return output
 
