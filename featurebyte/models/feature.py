@@ -590,6 +590,8 @@ class FeatureModel(BaseFeatureModel):
             # in this case, we will not add tile related attributes
             return values
         except Exception:
+            # print a traceback for debugging purpose
+            # without this, the error message will be swallowed by the root_validator
             print(traceback.format_exc())
             raise
 
