@@ -2,7 +2,7 @@ services:
   mongodb:
     image: "mongo:6"
     ports:
-      - 27017:27017  # Expose MongoDB port
+      - 37017:37017  # Expose MongoDB port
     command:
       - /bin/bash
       - -c
@@ -11,22 +11,22 @@ services:
         set -m
 
         # Start mongodb in the background
-        mongod --dbpath /data/db --replSet rs0 --bind_ip_all &
+        mongod --dbpath /data/db --replSet rs0 --bind_ip_all --port 37017 &
 
-        until mongosh --eval 'db.runCommand("ping").ok' --quiet; do
+        until mongosh --port 37017 --eval 'db.runCommand("ping").ok' --quiet; do
           echo "Waiting for mongodb to be listening"
           sleep 1
         done
 
         # Bootstrap if not already bootstrapped
-        if ! mongosh --eval "rs.status()" 1>/dev/null 2>&1; then
-          mongosh --eval 'rs.initiate({ "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "127.0.0.1", "priority": 1}]})'
+        if ! mongosh --port 37017 --eval "rs.status()" 1>/dev/null 2>&1; then
+          mongosh --port 37017 --eval 'rs.initiate({ "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "127.0.0.1:37017", "priority": 1}]})'
         fi
 
         # Attach back to session
         fg
     healthcheck:
-      test: mongosh --eval 'db.runCommand("ping").ok' --quiet
+      test: mongosh --port 37017 --eval 'db.runCommand("ping").ok' --quiet
       interval: 60s
       timeout: 10s
       start_period: 5s
@@ -34,7 +34,7 @@ services:
   redis:
     image: "redis:6.2.5"
     ports:
-      - 6379:6379
+      - 36379:6379
 
   spark-thrift:
     image: featurebyte/cluster-apache-spark:${SPARK_VERSION}
