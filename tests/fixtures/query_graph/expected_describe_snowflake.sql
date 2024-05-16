@@ -128,11 +128,25 @@ WITH data AS (
     NULL AS "%empty__0",
     NULL AS "mean__0",
     NULL AS "std__0",
-    MIN("ts") AS "min__0",
+    MIN(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "min__0",
     NULL AS "25%__0",
     NULL AS "50%__0",
     NULL AS "75%__0",
-    MAX("ts") AS "max__0",
+    MAX(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "max__0",
     NULL AS "min TZ offset__0",
     NULL AS "max TZ offset__0",
     COUNT(DISTINCT "cust_id") AS "unique__1",

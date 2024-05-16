@@ -19,8 +19,22 @@ WITH data AS (
   FROM data
 ), stats AS (
   SELECT
-    MIN("ts") AS "min__0",
-    MAX("ts") AS "max__0",
+    MIN(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "min__0",
+    MAX(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "max__0",
     NULL AS "min__1",
     NULL AS "max__1",
     MIN("a") AS "min__2",

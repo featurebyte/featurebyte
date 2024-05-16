@@ -719,7 +719,24 @@ class PreviewMixin(BaseGraphInterpreter):
                 continue
             column = columns_info[col_name]
             output_columns.append(column)
+
             col_expr = quoted_identifier(col_name)
+            if column.dtype in DBVarType.supported_timestamp_types():
+                invalid_mask = expressions.or_(
+                    expressions.LT(
+                        this=col_expr,
+                        expression=make_literal_value("1900-01-01", cast_as_timestamp=True),
+                    ),
+                    expressions.GT(
+                        this=col_expr,
+                        expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
+                    ),
+                )
+                clipped_col_expr = expressions.If(
+                    this=invalid_mask, true=expressions.Null(), false=col_expr
+                )
+            else:
+                clipped_col_expr = None
 
             # add dtype
             final_selections.append(
@@ -737,7 +754,9 @@ class PreviewMixin(BaseGraphInterpreter):
             if entropy_required or top_required:
                 table_name = f"counts__{column_idx}"
                 count_stats_sql = self._construct_count_stats_sql(
-                    col_expr=col_expr, column_idx=column_idx, col_dtype=column.dtype
+                    col_expr=quoted_identifier(col_name),
+                    column_idx=column_idx,
+                    col_dtype=column.dtype,
                 )
                 cte_statements.append((table_name, count_stats_sql))
                 count_tables.append(table_name)
@@ -746,9 +765,13 @@ class PreviewMixin(BaseGraphInterpreter):
             for stats_name, (stats_func, supported_dtypes) in required_stats_expressions.items():
                 if stats_func:
                     if self._is_dtype_supported(column.dtype, supported_dtypes):
+                        if stats_name in {"min", "max"} and clipped_col_expr is not None:
+                            stats_func_col_expr = clipped_col_expr
+                        else:
+                            stats_func_col_expr = col_expr
                         stats_selections.append(
                             expressions.alias_(
-                                stats_func(col_expr, column_idx),
+                                stats_func(stats_func_col_expr, column_idx),
                                 f"{stats_name}__{column_idx}",
                                 quoted=True,
                             ),
