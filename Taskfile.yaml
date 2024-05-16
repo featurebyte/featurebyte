@@ -403,7 +403,8 @@ tasks:
     preconditions:
       - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
-    cmd: docker compose -p featurebyte_docker -f docker/docker-compose.yml down
+    cmds:
+      - docker compose -p featurebyte_docker -f docker/docker-compose.yml down
 
   docs:
     desc: "Build the documentation and reload the browser"
