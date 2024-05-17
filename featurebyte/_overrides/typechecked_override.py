@@ -40,7 +40,7 @@ def custom_typechecked(
         return functools.partial(custom_typechecked, always=always, _localns=_localns)
 
     module = inspect.getmodule(func)
-    if module and module.__name__.startswith("feast."):
+    if module and module.__name__.startswith("feast.feature_view"):
         return func
 
     return original_typechecked(func, always=always, _localns=_localns)  # type: ignore
