@@ -124,6 +124,7 @@ if __name__ == "__main__":
         "threading",
         "tempfile",
         "textwrap",
+        "traceback",
         "types",
         "typing",
         "uuid",

@@ -12,6 +12,9 @@ import pandas as pd
 
 # pylint: disable=no-name-in-module
 from feast import OnDemandFeatureView
+from feast.base_feature_view import BaseFeatureView
+from feast.feature_view_projection import FeatureViewProjection
+from feast.field import Field
 from feast.online_response import OnlineResponse
 from feast.protos.feast.serving.ServingService_pb2 import FieldStatus, GetOnlineFeaturesResponse
 from feast.type_map import python_values_to_proto_values
@@ -109,7 +112,7 @@ class DataFrameWrapper(pd.DataFrame):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._alias: Dict[str, str] = {}
+        self.attrs["_alias"] = {}
 
     def add_column_alias(self, column_name: str, alias: str) -> None:
         """
@@ -122,14 +125,14 @@ class DataFrameWrapper(pd.DataFrame):
         alias: str
             Alias name of the column
         """
-        self._alias[alias] = column_name
+        self.attrs["_alias"][alias] = column_name
 
     def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
         if not isinstance(key, str) and isinstance(key, Iterable):
             return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
 
-        if isinstance(key, str) and key in self._alias:
-            key = self._alias[key]
+        if isinstance(key, str) and key in self.attrs["_alias"]:
+            key = self.attrs["_alias"][key]
 
         return super().__getitem__(key)
 
@@ -186,3 +189,71 @@ def get_transformed_features_df(
             rename_columns[long_name] = short_name
 
     return pd.DataFrame(df_with_transformed_features).rename(columns=rename_columns)
+
+
+def _hash_feature(feature: Field) -> int:
+    """
+    Returns a hash value for the given feature field.
+
+    Parameters
+    ----------
+    feature: Field
+        The feature field to hash.
+
+    Returns
+    -------
+    int
+    """
+    return hash(
+        (
+            feature.name,
+            hash(feature.dtype),
+            hash(feature.description),
+            hash(frozenset(feature.tags.items())),
+        )
+    )
+
+
+def with_projection(
+    feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection
+) -> Any:
+    """
+    Returns a copy of this base feature view with the feature view projection set to
+    the given projection.
+
+    Parameters
+    ----------
+    feature_view: BaseFeatureView
+        The base feature view to copy.
+    feature_view_projection: FeatureViewProjection
+        The feature view projection to assign to the copy.
+
+    Returns
+    -------
+    Any
+
+    Raises
+    -------
+    ValueError
+        The name or features of the projection do not match.
+    """
+    if feature_view_projection.name != feature_view.name:
+        raise ValueError(
+            f"The projection for the {feature_view.name} FeatureView cannot be applied because it differs in name. "
+            f"The projection is named {feature_view_projection.name} and the name indicates which "
+            "FeatureView the projection is for."
+        )
+
+    feature_view_hashes = {_hash_feature(feat) for feat in feature_view.features}
+    for feature in feature_view_projection.features:
+        if _hash_feature(feature) not in feature_view_hashes:
+            raise ValueError(
+                f"The projection for {feature_view.name} cannot be applied because it contains {feature.name} "
+                f"which the FeatureView doesn't have."
+            )
+
+    # pylint: disable=invalid-name,unnecessary-dunder-call
+    cp = feature_view.__copy__()
+    cp.projection = feature_view_projection
+
+    return cp

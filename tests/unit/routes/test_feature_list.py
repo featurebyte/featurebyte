@@ -428,34 +428,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response_dict["total"] == 1
         assert response_dict["data"] == [new_version_response_dict]
 
-    def _make_production_ready_and_deploy(self, client, feature_list_doc):
-        doc_id = feature_list_doc["_id"]
-        for feature_id in feature_list_doc["feature_ids"]:
-            # upgrade readiness level to production ready first
-            response = client.patch(
-                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
-            )
-            assert response.status_code == HTTPStatus.OK
-
-        response = client.patch(f"{self.base_route}/{doc_id}", json={})
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is False
-
-        # deploy the feature list
-        response = client.post("/deployment", json={"feature_list_id": doc_id})
-        assert response.status_code == HTTPStatus.CREATED
-        assert response.json()["status"] == "SUCCESS"
-
-        # enable the deployment
-        deployment_id = response.json()["payload"]["output_document_id"]
-        response = client.patch(f"/deployment/{deployment_id}", json={"enabled": True})
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["status"] == "SUCCESS"
-
-        response = client.get(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is True
-
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
@@ -544,6 +516,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is False
+
+        # test feature list delete
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"].startswith(
+            "FeatureList is referenced by Deployment: Deployment with sf_feature_list_"
+        ), response.json()
 
     def test_delete_204(self, test_api_client_persistent, create_success_response):
         """Test delete (success)"""

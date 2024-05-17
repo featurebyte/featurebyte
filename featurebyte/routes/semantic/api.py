@@ -24,7 +24,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.routes.semantic.controller import SemanticController
-from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.semantic import SemanticCreate, SemanticList
 
 
@@ -114,3 +114,8 @@ class SemanticRouter(
         self, request: Request, semantic_id: PydanticObjectId, data: DescriptionUpdate
     ) -> SemanticModel:
         return await super().update_description(request, semantic_id, data)
+
+    async def delete_object(
+        self, request: Request, semantic_id: PydanticObjectId
+    ) -> DeleteResponse:
+        return await super().delete_object(request, semantic_id)

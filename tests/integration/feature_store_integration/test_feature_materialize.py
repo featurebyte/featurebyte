@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -29,9 +30,9 @@ from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
-from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from tests.integration.conftest import (
+    TEST_REDIS_URI,
     tag_entities_for_event_table,
     tag_entities_for_item_table,
     tag_entities_for_scd_table,
@@ -82,19 +83,39 @@ def app_container_fixture(persistent, user, catalog, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": catalog.id,
-        "redis": redis.from_url(REDIS_URI),
-        "redis_uri": REDIS_URI,
+        "redis": redis.from_url(TEST_REDIS_URI),
+        "redis_uri": TEST_REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
 
+@pytest.fixture(name="udf_cos", scope="module")
+def udf_cos_fixture(catalog):
+    """
+    Fixture for cosine similarity UDF
+    """
+    _ = catalog
+    udf = fb.UserDefinedFunction.create(
+        name="udf_cos",
+        sql_function_name="cos",
+        function_parameters=[
+            fb.FunctionParameter(name="x", dtype=DBVarType.FLOAT),
+        ],
+        output_dtype=DBVarType.FLOAT,
+        is_global=False,
+    )
+    yield udf
+
+
 @pytest.fixture(name="features", scope="module")
 def features_fixture(
-    event_table, scd_table, source_type, item_table
+    event_table, scd_table, source_type, item_table, udf_cos
 ):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
+    _ = udf_cos
+
     event_view = event_table.get_view()
 
     # Feature saved but not deployed
@@ -115,7 +136,8 @@ def features_fixture(
 
     # Window aggregate feature with more post-processing
     feature_2 = feature_1 * 100
-    feature_2.name = feature_1.name + "_TIMES_100"
+    feature_2 = fb.UDF.udf_cos(feature_2)
+    feature_2.name = feature_1.name + "_TIMES_100_COS"
 
     # Feature with a different entity
     feature_3 = event_view.groupby("PRODUCT_ACTION").aggregate_over(
@@ -779,7 +801,7 @@ async def test_feast_registry(
             }
         ],
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [623.1500244140625],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [62315.0],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}": [np.cos(62315.0)],
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [
             [
                 0.5365338952415342,
@@ -833,7 +855,7 @@ async def test_feast_registry(
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [None],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [None],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}": [None],
         f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [None],
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [None],
         f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [None],
@@ -917,7 +939,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
             "àdd": 338.51,
         },
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.3800048828125,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": np.cos(47538.0),
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
             0.41825654595626777,
             0.3459365542614712,
@@ -967,7 +989,7 @@ def expected_features_order_id_T3850(source_type):
             "àdd": 27.1,
         },
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 623.15,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 62315.0,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": np.cos(62315.0),
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
             0.5365338952415342,
             0.4908373917748641,
@@ -1218,7 +1240,7 @@ async def test_simulated_materialize__ttl_feature_table(
         "__feature_timestamp",
         "üser id",
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}",
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
         f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
         f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",

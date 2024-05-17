@@ -143,7 +143,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
-from featurebyte.service.table import TableService
+from featurebyte.service.table import AllTableService, TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
@@ -214,6 +214,7 @@ app_container_config.register_class(AllCatalogService)
 app_container_config.register_class(AllDeploymentController)
 app_container_config.register_class(AllDeploymentService)
 app_container_config.register_class(AllFeatureListService)
+app_container_config.register_class(AllTableService)
 app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
 app_container_config.register_class(BatchRequestTableController)

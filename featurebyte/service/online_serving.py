@@ -14,6 +14,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd
+from feast.base_feature_view import BaseFeatureView
 from feast.feature_store import FeatureStore as FeastFeatureStore
 from feast.on_demand_feature_view import OnDemandFeatureView
 from jinja2 import Template
@@ -27,6 +28,7 @@ from featurebyte.exception import (
 from featurebyte.feast.patch import (
     augment_response_with_on_demand_transforms,
     get_transformed_features_df,
+    with_projection,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
@@ -229,13 +231,12 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             )
 
         # Map feature names to the original names
-        feature_docs = await self.feature_service.list_documents_as_dict(
-            query_filter={"_id": {"$in": feature_list.feature_ids}},
-            projection={"name": 1, "version": 1},
-        )
         feature_name_map = {}
         feature_id_to_versioned_name = {}
-        for feature_doc in feature_docs["data"]:
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+            query_filter={"_id": {"$in": feature_list.feature_ids}},
+            projection={"name": 1, "version": 1},
+        ):
             feature_name = feature_doc["name"]
             feature_version = VersionIdentifier(**feature_doc["version"]).to_str()
             feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
@@ -357,12 +358,18 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 "get_transformed_features_df",
                 new=get_transformed_features_df,
             ):
-                feature_service = feast_store.get_feature_service(feast_service_name)
-                df_feast_online_features = feast_store.get_online_features(
-                    feature_service,
-                    updated_request_data,
-                ).to_df()[versioned_feature_names]
-                return df_feast_online_features
+                # FIXME: This is a temporary fix to avoid O(N^2) complexity in with_projection method
+                with patch.object(
+                    BaseFeatureView,
+                    "with_projection",
+                    new=with_projection,
+                ):
+                    feature_service = feast_store.get_feature_service(feast_service_name)
+                    df_feast_online_features = feast_store.get_online_features(
+                        feature_service,
+                        updated_request_data,
+                    ).to_df()[versioned_feature_names]
+                    return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

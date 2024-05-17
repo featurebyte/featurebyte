@@ -1561,10 +1561,11 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
         columns = feature_op_structure.aggregations
-        assert len(columns) == 1
+        assert len(columns) == 1, "Feature should have exactly one aggregation"
         # For now, the supported feature should have an item_groupby node in its lineage
-        assert any(node_name.startswith("item_groupby") for node_name in columns[0].node_names)
-        assert feature_op_structure.output_type == NodeOutputType.SERIES
+        assert (
+            feature_op_structure.output_type == NodeOutputType.SERIES
+        ), "Output should be a series"
 
     def _derive_node_operation_info(
         self,

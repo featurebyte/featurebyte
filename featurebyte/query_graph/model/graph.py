@@ -453,6 +453,26 @@ class QueryGraphModel(FeatureByteBaseModel):
             output_column_name = cast(str, node.parameters.columns[0])
         return output_column_name
 
+    def has_node_type(self, target_node: Node, node_type: NodeType) -> bool:
+        """
+        Check if the query sub-graph has a specific node type
+
+        Parameters
+        ----------
+        target_node: Node
+            Target node used to start the search
+        node_type: NodeType
+            Node type to check
+
+        Returns
+        -------
+        bool
+            True if the query sub-graph has a request column node, False otherwise
+        """
+        for _ in self.iterate_nodes(target_node=target_node, node_type=node_type):
+            return True
+        return False
+
     def iterate_nodes(
         self,
         target_node: Node,
