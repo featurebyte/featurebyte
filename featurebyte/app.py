@@ -9,6 +9,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
+from featurebyte._overrides.typechecked_override import custom_typechecked
 from featurebyte.common.utils import get_version
 from featurebyte.logging import configure_featurebyte_logger, get_logger
 from featurebyte.middleware import ExceptionMiddleware
@@ -57,6 +58,9 @@ from featurebyte.worker import get_celery, get_redis
 
 configure_featurebyte_logger()
 logger = get_logger(__name__)
+
+# import to override typechecked decorator
+_ = custom_typechecked
 
 
 def _dep_injection_func(

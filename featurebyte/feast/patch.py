@@ -112,7 +112,7 @@ class DataFrameWrapper(pd.DataFrame):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._alias: Dict[str, str] = {}
+        self.attrs["_alias"] = {}
 
     def add_column_alias(self, column_name: str, alias: str) -> None:
         """
@@ -125,14 +125,14 @@ class DataFrameWrapper(pd.DataFrame):
         alias: str
             Alias name of the column
         """
-        self._alias[alias] = column_name
+        self.attrs["_alias"][alias] = column_name
 
     def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
         if not isinstance(key, str) and isinstance(key, Iterable):
             return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
 
-        if isinstance(key, str) and key in self._alias:
-            key = self._alias[key]
+        if isinstance(key, str) and key in self.attrs["_alias"]:
+            key = self.attrs["_alias"][key]
 
         return super().__getitem__(key)
 
