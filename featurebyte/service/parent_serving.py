@@ -8,11 +8,13 @@ from typing import List, Optional
 
 from collections import OrderedDict
 
+from featurebyte.enum import TableDataType
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import EntityLookupStep, EntityLookupStepCreator
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
+from featurebyte.service.item_table import ExtendedItemTableService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.table import TableService
 
@@ -27,10 +29,12 @@ class ParentEntityLookupService:
         self,
         entity_service: EntityService,
         table_service: TableService,
+        extended_item_table_service: ExtendedItemTableService,
         relationship_info_service: RelationshipInfoService,
     ):
         self.entity_service = entity_service
         self.table_service = table_service
+        self.extended_item_table_service = extended_item_table_service
         self.relationship_info_service = relationship_info_service
 
     async def get_required_join_steps(
@@ -115,6 +119,14 @@ class ParentEntityLookupService:
                 query_filter={"_id": {"$in": list(all_table_ids)}}
             )
         }
+        for table_id, table in tables_by_id.items():
+            if table.type == TableDataType.ITEM_TABLE:
+                item_table = (
+                    await self.extended_item_table_service.get_document_with_event_table_model(
+                        table_id
+                    )
+                )
+                tables_by_id[table_id] = item_table
 
         return EntityLookupStepCreator(
             entity_relationships_info=entity_relationships_info,

@@ -4,12 +4,13 @@ This module contains ItemTable related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Tuple, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -57,6 +58,8 @@ class ItemTableModel(ItemTableData, TableModel):
             ],
         )
     )
+
+    event_table_model: Optional[EventTableModel] = Field(default=None, exclude=True)
 
     @property
     def primary_key_columns(self) -> List[str]:

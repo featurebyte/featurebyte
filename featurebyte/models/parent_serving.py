@@ -98,7 +98,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
             default_entity_lookup_steps[info.id] = EntityLookupStep(
                 id=info.id,
-                table=relation_table.dict(by_alias=True),
+                table=relation_table,
                 parent=EntityLookupInfo(
                     key=parent_column_name,
                     serving_name=parent_entity.serving_names[0],
