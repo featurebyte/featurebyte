@@ -1150,6 +1150,32 @@ def group_entity_fixture(catalog):
     yield entity
 
 
+@pytest.fixture(name="item_entity")
+def item_entity_fixture(catalog):
+    """
+    Item entity fixture
+    """
+    _ = catalog
+    entity = Entity(
+        name="item", serving_names=["item_id"], _id=ObjectId("664a3e617ac430c2ae37aede")
+    )
+    entity.save()
+    yield entity
+
+
+@pytest.fixture(name="item_type_entity")
+def item_type_entity_fixture(catalog):
+    """
+    Item type entity fixture
+    """
+    _ = catalog
+    entity = Entity(
+        name="item_type", serving_names=["item_type"], _id=ObjectId("664a3e7d7ac430c2ae37aedf")
+    )
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
     snowflake_event_table,
@@ -1235,11 +1261,15 @@ def snowflake_event_view_entity_feature_job_fixture(
 
 
 @pytest.fixture(name="snowflake_item_view_with_entity")
-def snowflake_item_view_with_entity_fixture(snowflake_item_table, transaction_entity):
+def snowflake_item_view_with_entity_fixture(
+    snowflake_item_table, transaction_entity, item_entity, item_type_entity
+):
     """
     Snowflake item view with entity
     """
     snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_table["item_id_col"].as_entity(item_entity.name)
+    snowflake_item_table["item_type"].as_entity(item_type_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event")
     return item_view
 
@@ -1904,6 +1934,24 @@ def aggregate_asat_composite_entity_fixture(snowflake_scd_table_with_entity):
         feature_name="asat_gender_x_other_count",
     )
     return feature
+
+
+@pytest.fixture(name="item_view_window_aggregate_feature")
+def item_view_window_aggregate_feature_fixture(snowflake_item_view_with_entity):
+    """
+    Fixture to get a window aggregate feature from an item view
+    """
+    return snowflake_item_view_with_entity.groupby(["item_type"]).aggregate_over(
+        value_column="item_amount",
+        method="sum",
+        windows=["1d"],
+        feature_names=["sum_1d"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
+    )["sum_1d"]
 
 
 @pytest.fixture(name="descendant_of_gender_feature")

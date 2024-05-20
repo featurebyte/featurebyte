@@ -15,7 +15,9 @@ from sqlglot.expressions import Expression, Select, Subqueryable, select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -509,6 +511,66 @@ def get_combined_universe(
         combined_universe_expr = DUMMY_ENTITY_UNIVERSE
 
     return combined_universe_expr
+
+
+def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> expressions.Select:
+    """
+    Get the entity universe for a relation table that is an ItemTable. This is used when looking up
+    a parent entity using a child entity (item id column) in an ItemTable.
+
+    Parameters
+    ----------
+    item_table_model: TableModel
+        Item table model
+
+    Returns
+    -------
+    expressions.Select
+    """
+    assert isinstance(item_table_model, ItemTableModel)
+    event_table_model = item_table_model.event_table_model
+    assert event_table_model is not None
+    filtered_event_table_expr = (
+        expressions.select(quoted_identifier(event_table_model.event_id_column))
+        .from_(
+            get_fully_qualified_table_name((event_table_model.tabular_source.table_details.dict()))
+        )
+        .where(
+            expressions.and_(
+                expressions.GTE(
+                    this=quoted_identifier(event_table_model.event_timestamp_column),
+                    expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
+                ),
+                expressions.LT(
+                    this=quoted_identifier(event_table_model.event_timestamp_column),
+                    expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
+                ),
+            )
+        )
+    )
+    universe = (
+        expressions.select(quoted_identifier(item_table_model.item_id_column))
+        .distinct()
+        .from_(
+            expressions.Table(
+                this=get_fully_qualified_table_name(
+                    item_table_model.tabular_source.table_details.dict()
+                ),
+                alias="ITEM",
+            ),
+        )
+        .join(
+            filtered_event_table_expr.subquery(alias="EVENT"),
+            on=expressions.EQ(
+                this=get_qualified_column_identifier(item_table_model.event_id_column, "ITEM"),
+                expression=get_qualified_column_identifier(
+                    event_table_model.event_id_column, "EVENT"
+                ),
+            ),
+            join_type="INNER",
+        )
+    )
+    return universe
 
 
 class EntityUniverseModel(FeatureByteBaseModel):

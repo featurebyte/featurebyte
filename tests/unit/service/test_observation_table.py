@@ -195,11 +195,6 @@ async def test_validate__most_recent_point_in_time(
                 "POINT_IN_TIME" AS "POINT_IN_TIME",
                 "cust_id" AS "cust_id"
               FROM "fb_database"."fb_schema"."fb_table"
-            ), casted_data AS (
-              SELECT
-                CAST("POINT_IN_TIME" AS STRING) AS "POINT_IN_TIME",
-                CAST("cust_id" AS STRING) AS "cust_id"
-              FROM data
             ), stats AS (
               SELECT
                 COUNT(DISTINCT "POINT_IN_TIME") AS "unique__0",

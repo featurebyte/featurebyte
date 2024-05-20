@@ -112,7 +112,7 @@ from featurebyte.service.historical_features import (
     HistoricalFeaturesService,
     HistoricalFeaturesValidationParametersService,
 )
-from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.item_table import ExtendedItemTableService, ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -252,6 +252,7 @@ app_container_config.register_class(EntityRelationshipExtractorService)
 app_container_config.register_class(EntityLookupFeatureTableService)
 app_container_config.register_class(EventTableController)
 app_container_config.register_class(EventTableService)
+app_container_config.register_class(ExtendedItemTableService)
 app_container_config.register_class(FeatureController)
 app_container_config.register_class(FeatureService)
 app_container_config.register_class(FeatureFacadeService)
