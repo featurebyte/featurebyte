@@ -696,7 +696,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return clipped_col_expr
 
-    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches
+    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self,
         sql_tree: expressions.Select,
         columns: List[ViewDataColumn],
