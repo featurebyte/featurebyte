@@ -126,10 +126,8 @@ class VersionService:
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific
                     # GroupBy node given event table ID
-                    parameters = {
-                        **group_by_node.parameters.dict(),
-                        **feature_job_setting.to_seconds(),
-                    }
+                    parameters = group_by_node.parameters.dict()
+                    parameters["feature_job_setting"] = feature_job_setting.dict()
                     if group_by_node.parameters.dict() != parameters:
                         node_name_to_replacement_node[group_by_node.name] = GroupByNode(
                             **{**group_by_node.dict(), "parameters": parameters}

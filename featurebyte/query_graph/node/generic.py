@@ -13,6 +13,7 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -685,11 +686,8 @@ class GroupByNodeParameters(BaseGroupbyParameters):
 
     windows: List[Optional[str]]
     timestamp: InColumnStr
-    blind_spot: int
-    offset: int
-    period: int
-    execution_buffer: int = Field(default=0)
     names: List[OutColumnStr]
+    feature_job_setting: FeatureJobSetting
     tile_id: Optional[str]
     aggregation_id: Optional[str]
     tile_id_version: int = Field(default=1)
@@ -697,10 +695,13 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     @root_validator(pre=True)
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "frequency" in values:
-            values["period"] = values["frequency"]
-        if "time_modulo_frequency" in values:
-            values["offset"] = values["time_modulo_frequency"]
+        old_keys = ["frequency", "time_modulo_frequency", "blind_spot"]
+        if all(key in values for key in old_keys) and "feature_job_setting" not in values:
+            values["feature_job_setting"] = FeatureJobSetting(
+                period=f"{values['frequency']}s",
+                offset=f"{values['time_modulo_frequency']}s",
+                blind_spot=f"{values['blind_spot']}s",
+            )
         return values
 
 
@@ -798,10 +799,11 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         )
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
+        fjs = self.parameters.feature_job_setting
         feature_job_setting: ObjectClass = ClassEnum.FEATURE_JOB_SETTING(
-            blind_spot=f"{self.parameters.blind_spot}s",
-            period=f"{self.parameters.period}s",
-            offset=f"{self.parameters.offset}s",
+            blind_spot=fjs.blind_spot,
+            period=fjs.period,
+            offset=fjs.offset,
         )
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         out_var_name = var_name_generator.generate_variable_name(

@@ -229,13 +229,14 @@ class TileBasedAggregationSpec(AggregationSpec):
                 groupby_node=groupby_node,
                 feature_name=feature_name,
             )
+            fjs = groupby_node_params.feature_job_setting
             agg_spec = cls(
                 node_name=groupby_node.name,
                 feature_name=feature_name,
                 window=window_secs,
-                frequency=groupby_node_params.period,
-                time_modulo_frequency=groupby_node_params.offset,
-                blind_spot=groupby_node_params.blind_spot,
+                frequency=fjs.period_seconds,
+                time_modulo_frequency=fjs.offset_seconds,
+                blind_spot=fjs.blind_spot_seconds,
                 tile_table_id=tile_table_id,
                 aggregation_id=aggregation_id,
                 keys=groupby_node_params.keys,  # type: ignore[arg-type]

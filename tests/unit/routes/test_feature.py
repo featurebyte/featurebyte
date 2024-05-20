@@ -232,9 +232,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         graph = QueryGraphModel(**response_dict["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         parameters = groupby_node.parameters.dict()
-        assert parameters["offset"] == 3600
-        assert parameters["period"] == 86400
-        assert parameters["blind_spot"] == 86400
+        assert parameters["feature_job_setting"] == {
+            "offset": "3600s",
+            "period": "86400s",
+            "blind_spot": "86400s",
+            "execution_buffer": "0s",
+        }
 
         # check that the table cleaning operations are applied
         graph_node = graph.get_node_by_name("graph_1")

@@ -26,10 +26,7 @@ from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
-    TableIdFeatureJobSetting,
-)
+from featurebyte.query_graph.model.feature_job_setting import TableIdFeatureJobSetting
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
@@ -314,11 +311,7 @@ class QueryGraph(QueryGraphModel):
             table_feature_job_settings.append(
                 TableIdFeatureJobSetting(
                     table_id=table_id,
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot=f"{group_by_node.parameters.blind_spot}s",
-                        period=f"{group_by_node.parameters.period}s",
-                        offset=f"{group_by_node.parameters.offset}s",
-                    ),
+                    feature_job_setting=group_by_node.parameters.feature_job_setting,
                 )
             )
         return table_feature_job_settings

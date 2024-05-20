@@ -12,6 +12,7 @@ import json
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 
 
 def hash_node(
@@ -113,12 +114,11 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     hash_components.append(aggregation_setting)
 
     # Feature job settings
-    job_setting = (
-        parameters["period"],
-        parameters["offset"],
-        parameters["blind_spot"],
-    )
-    hash_components.append(job_setting)
+    fjs = FeatureJobSetting(**parameters["feature_job_setting"]).to_seconds()
+    period = fjs["period"]
+    offset = fjs["offset"]
+    blind_spot = fjs["blind_spot"]
+    hash_components.append((period, offset, blind_spot))
 
     # Readable prefix for troubleshooting
     prefix = f"{parameters['agg_func']}"
@@ -169,23 +169,17 @@ def get_tile_table_identifier_v1(row_index_lineage_hash: str, parameters: dict[s
     hash_components.append(aggregation_setting)
 
     # Feature job settings
-    job_setting = (
-        parameters["period"],
-        parameters["offset"],
-        parameters["blind_spot"],
-    )
-    hash_components.append(job_setting)
+    fjs = FeatureJobSetting(**parameters["feature_job_setting"]).to_seconds()
+    period = fjs["period"]
+    offset = fjs["offset"]
+    blind_spot = fjs["blind_spot"]
+    hash_components.append((period, offset, blind_spot))
 
     # Row index lineage determines the rows that will be present in the tile table
     hash_components.append(row_index_lineage_hash)
 
     # Readable prefix for troubleshooting
-    prefix = (
-        f"tile"
-        f"_f{parameters['period']}"
-        f"_m{parameters['offset']}"
-        f"_b{parameters['blind_spot']}"
-    )
+    prefix = f"tile_f{period}_m{offset}_b{blind_spot}"
 
     # Hash all the factors above as the tile table identifier
     hasher = hashlib.shake_128()

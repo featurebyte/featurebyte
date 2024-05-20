@@ -139,11 +139,15 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-                    "blind_spot": 600,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "execution_buffer": 0,
+                    "feature_job_setting": {
+                        "blind_spot": "600s",
+                        "execution_buffer": "0s",
+                        "offset": "300s",
+                        "period": "1800s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
@@ -152,9 +156,7 @@
                         "sum_2h",
                         "sum_1d"
                     ],
-                    "offset": 300,
                     "parent": "col_float",
-                    "period": 1800,
                     "serving_names": [
                         "cust_id"
                     ],

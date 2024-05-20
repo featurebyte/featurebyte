@@ -158,10 +158,12 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             "agg_func": "avg",
             "aggregation_id": None,
             "entity_ids": groupby_node_params["entity_ids"],
-            "blind_spot": 900,
-            "period": 3600,
-            "offset": 1800,
-            "execution_buffer": 0,
+            "feature_job_setting": {
+                "blind_spot": "900s",
+                "period": "3600s",
+                "offset": "1800s",
+                "execution_buffer": "0s",
+            },
             "keys": ["cust_id"],
             "names": ["a_2h_average"],  # before pruned: ["a_2h_average", "a_48h_average"]
             "parent": "a",

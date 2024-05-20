@@ -13,6 +13,7 @@ from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -306,6 +307,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             + [spec.tile_column_name for spec in tile_specs]
         )
         columns_map = {col: quoted_identifier(col) for col in columns}
+        fjs = FeatureJobSetting(**parameters["feature_job_setting"])
         sql_node = BuildTileNode(
             context=context,
             columns_map=columns_map,
@@ -314,9 +316,9 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             value_by=parameters["value_by"],
             tile_specs=tile_specs,
             timestamp=parameters["timestamp"],
-            frequency_minute=parameters["period"] // 60,
-            blind_spot=parameters["blind_spot"],
-            time_modulo_frequency=parameters["offset"],
+            frequency_minute=fjs.period_seconds // 60,
+            blind_spot=fjs.blind_spot_seconds,
+            time_modulo_frequency=fjs.offset_seconds,
             is_on_demand=is_on_demand,
             is_order_dependent=aggregator.is_order_dependent,
             adapter=context.adapter,

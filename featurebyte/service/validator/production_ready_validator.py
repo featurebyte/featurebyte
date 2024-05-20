@@ -2,9 +2,9 @@
 Production ready validator
 """
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
-from featurebyte import ColumnCleaningOperation, FeatureJobSetting
+from featurebyte import ColumnCleaningOperation
 from featurebyte.exception import DocumentUpdateError, NoChangesInFeatureVersionError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -170,28 +170,6 @@ class ProductionReadyValidator:
             )
 
     @staticmethod
-    def _get_feature_job_setting_from_groupby_node(node: Node) -> FeatureJobSetting:
-        """
-        Get feature job setting from node.
-
-        Parameters
-        ----------
-        node: Node
-            node
-
-        Returns
-        -------
-        FeatureJobSetting
-            feature job setting
-        """
-        groupby_node = cast(GroupByNode, node)
-        parameters = groupby_node.parameters
-        blind_spot_str = f"{parameters.blind_spot}s"
-        period_str = f"{parameters.period}s"
-        offset_str = f"{parameters.offset}s"
-        return FeatureJobSetting(blind_spot=blind_spot_str, period=period_str, offset=offset_str)
-
-    @staticmethod
     async def _get_feature_job_setting_diffs_table_source_vs_promoted_feature(
         table_source_node: Node,
         table_source_graph: QueryGraph,
@@ -220,14 +198,10 @@ class ProductionReadyValidator:
         ):
             # Get corresponding group by node in promoted graph
             promoted_group_by_node = promoted_feature_graph.get_node_by_name(current_node.name)
-            source_feature_job_setting = (
-                ProductionReadyValidator._get_feature_job_setting_from_groupby_node(current_node)
-            )
-            promoted_feature_job_setting = (
-                ProductionReadyValidator._get_feature_job_setting_from_groupby_node(
-                    promoted_group_by_node
-                )
-            )
+            assert isinstance(current_node, GroupByNode)
+            assert isinstance(promoted_group_by_node, GroupByNode)
+            source_feature_job_setting = current_node.parameters.feature_job_setting
+            promoted_feature_job_setting = promoted_group_by_node.parameters.feature_job_setting
             if source_feature_job_setting != promoted_feature_job_setting:
                 return {
                     "data_source": source_feature_job_setting,

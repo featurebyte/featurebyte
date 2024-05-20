@@ -194,6 +194,7 @@ class TileSQLGenerator:
         assert tile_table_id is not None, "Tile table ID is required"
         assert aggregation_id is not None, "Aggregation ID is required"
         sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
+        fjs = groupby_node.parameters.feature_job_setting
         info = TileGenSql(
             tile_table_id=tile_table_id,
             tile_id_version=groupby_node.parameters.tile_id_version,
@@ -203,9 +204,9 @@ class TileSQLGenerator:
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,
             tile_value_types=tile_value_types,
-            time_modulo_frequency=groupby_node.parameters.offset,
-            frequency=groupby_node.parameters.period,
-            blind_spot=groupby_node.parameters.blind_spot,
+            time_modulo_frequency=fjs.offset_seconds,
+            frequency=fjs.period_seconds,
+            blind_spot=fjs.blind_spot_seconds,
             windows=groupby_node.parameters.windows,
             serving_names=groupby_node.parameters.serving_names,
             value_by_column=groupby_node.parameters.value_by,

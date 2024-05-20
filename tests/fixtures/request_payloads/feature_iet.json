@@ -331,20 +331,22 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_5075a32b3ad63ef26b142fed42003f7722022559",
-                    "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "execution_buffer": 0,
+                    "feature_job_setting": {
+                        "blind_spot": "10800s",
+                        "execution_buffer": "0s",
+                        "offset": "10800s",
+                        "period": "21600s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
                     "names": [
                         "sum(a * log(a))"
                     ],
-                    "offset": 10800,
                     "parent": "a * log(a)",
-                    "period": 21600,
                     "serving_names": [
                         "cust_id"
                     ],
@@ -383,20 +385,22 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_fa3804c2f2ab322422fb47867a04f7ac554dcc5e",
-                    "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "execution_buffer": 0,
+                    "feature_job_setting": {
+                        "blind_spot": "10800s",
+                        "execution_buffer": "0s",
+                        "offset": "10800s",
+                        "period": "21600s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
                     "names": [
                         "sum(a) (24h)"
                     ],
-                    "offset": 10800,
                     "parent": "a",
-                    "period": 21600,
                     "serving_names": [
                         "cust_id"
                     ],

@@ -641,9 +641,12 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     groupby_node = new_version_dict["graph"]["nodes"][2]
     groupby_node_params = groupby_node["parameters"]
     assert groupby_node["type"] == "groupby"
-    assert groupby_node_params["blind_spot"] == 45 * 60
-    assert groupby_node_params["period"] == 30 * 60
-    assert groupby_node_params["offset"] == 15 * 60
+    assert groupby_node_params["feature_job_setting"] == {
+        "blind_spot": "2700s",
+        "period": "1800s",
+        "offset": "900s",
+        "execution_buffer": "0s",
+    }
 
     # before deletion
     _ = Feature.get_by_id(new_version.id)
@@ -1581,11 +1584,8 @@ def test_feature_create_new_version__multiple_event_table(
         ]
     )
     pruned_graph, _ = new_version.extract_pruned_graph_and_node()
-    expected_job_settings = feature_job_setting.to_seconds()
     group_by_params = pruned_graph.get_node_by_name("groupby_1").parameters
-    assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
-    assert group_by_params.period == expected_job_settings["period"]
-    assert group_by_params.offset == expected_job_settings["offset"]
+    assert group_by_params.feature_job_setting == feature_job_setting
 
 
 def test_primary_entity__unsaved_feature(float_feature, cust_id_entity):

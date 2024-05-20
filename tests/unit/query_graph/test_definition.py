@@ -400,9 +400,11 @@ def test_extract_definition__join_with_groupby(
         "value_by": "item_type",
         "parent": "item_id",
         "agg_func": "sum",
-        "offset": 1800,  # 30m
-        "period": 3600,  # 1h
-        "blind_spot": 900,  # 15m
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
         "timestamp": "ts",
         "names": ["aggregated_item_type_count"],
         "windows": [None],
