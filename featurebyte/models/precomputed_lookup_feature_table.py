@@ -10,7 +10,7 @@ import json
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity_lookup_feature_table import get_entity_lookup_graph
 from featurebyte.models.entity_universe import (
@@ -18,6 +18,7 @@ from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
     get_combined_universe,
+    get_item_relation_table_lookup_universe,
 )
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -260,23 +261,28 @@ def get_child_entity_universe_template(
     entity_lookup_steps = [
         entity_lookup_steps_mapping[lookup_step.id] for lookup_step in lookup_steps
     ]
-    lookup_graph_result = get_entity_lookup_graph(
-        lookup_step=entity_lookup_steps[0],
-        feature_store=feature_store,
-    )
-    initial_universe_expr = cast(
-        Select,
-        get_combined_universe(
-            entity_universe_params=[
-                EntityUniverseParams(
-                    graph=lookup_graph_result.graph,
-                    node=lookup_graph_result.lookup_node,
-                    join_steps=None,
-                )
-            ],
-            source_type=feature_store.type,
-        ),
-    )
+    if entity_lookup_steps[0].table.type != TableDataType.ITEM_TABLE:
+        lookup_graph_result = get_entity_lookup_graph(
+            lookup_step=entity_lookup_steps[0],
+            feature_store=feature_store,
+        )
+        initial_universe_expr = cast(
+            Select,
+            get_combined_universe(
+                entity_universe_params=[
+                    EntityUniverseParams(
+                        graph=lookup_graph_result.graph,
+                        node=lookup_graph_result.lookup_node,
+                        join_steps=None,
+                    )
+                ],
+                source_type=feature_store.type,
+            ),
+        )
+    else:
+        initial_universe_expr = get_item_relation_table_lookup_universe(
+            entity_lookup_steps[0].table
+        )
     request_table_name = "ENTITY_UNIVERSE"
     request_table_columns = [
         SpecialColumnName.POINT_IN_TIME.value,

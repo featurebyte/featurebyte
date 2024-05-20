@@ -36,7 +36,7 @@ async def test_get_join_steps__one_step(
     assert join_steps == [
         EntityLookupStep(
             id=relationship_info.id,
-            table=data.dict(by_alias=True),
+            table=data,
             parent=EntityLookupInfo(
                 key="b",
                 serving_name="B",
@@ -72,7 +72,7 @@ async def test_get_join_steps__two_steps(
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
-            table=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b,
             parent=EntityLookupInfo(
                 entity_id=entity_b.id,
                 key="b",
@@ -86,7 +86,7 @@ async def test_get_join_steps__two_steps(
         ),
         EntityLookupStep(
             id=rel_b_to_c.id,
-            table=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c,
             parent=EntityLookupInfo(
                 entity_id=entity_c.id,
                 key="c",
@@ -142,7 +142,7 @@ async def test_get_join_steps__two_branches(
         ),
         EntityLookupStep(
             id=rel_b_to_d.id,
-            table=data_b_to_d.dict(by_alias=True),
+            table=data_b_to_d,
             parent=EntityLookupInfo(
                 key="d",
                 serving_name="D",
@@ -156,7 +156,7 @@ async def test_get_join_steps__two_branches(
         ),
         EntityLookupStep(
             id=rel_b_to_c.id,
-            table=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c,
             parent=EntityLookupInfo(
                 key="c",
                 serving_name="C",
@@ -200,7 +200,7 @@ async def test_get_join_steps__serving_names_mapping(
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
-            table=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b,
             parent=EntityLookupInfo(
                 key="b",
                 serving_name="B",
@@ -214,7 +214,7 @@ async def test_get_join_steps__serving_names_mapping(
         ),
         EntityLookupStep(
             id=rel_b_to_d.id,
-            table=data_b_to_d.dict(by_alias=True),
+            table=data_b_to_d,
             parent=EntityLookupInfo(
                 key="d",
                 serving_name="D",
@@ -228,7 +228,7 @@ async def test_get_join_steps__serving_names_mapping(
         ),
         EntityLookupStep(
             id=rel_b_to_c.id,
-            table=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c,
             parent=EntityLookupInfo(
                 key="c",
                 serving_name="C",
@@ -295,7 +295,7 @@ async def test_get_join_steps__multiple_provided(
     assert join_steps == [
         EntityLookupStep(
             id=rel_b_to_c.id,
-            table=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c,
             parent=EntityLookupInfo(
                 key="c",
                 serving_name="C",
@@ -309,7 +309,7 @@ async def test_get_join_steps__multiple_provided(
         ),
         EntityLookupStep(
             id=rel_c_to_d.id,
-            table=data_c_to_d.dict(by_alias=True),
+            table=data_c_to_d,
             parent=EntityLookupInfo(
                 key="d",
                 serving_name="D",
@@ -346,7 +346,7 @@ async def test_get_join_steps__use_provided_relationships(
     assert join_steps == [
         EntityLookupStep(
             id=relationship_info_1.id,
-            table=data.dict(by_alias=True),
+            table=data,
             parent=EntityLookupInfo(
                 key="b",
                 serving_name="B",
@@ -390,7 +390,7 @@ async def test_required_entity__complex_and_should_not_error(
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
-            table=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b,
             parent=EntityLookupInfo(
                 key="b",
                 serving_name="B",

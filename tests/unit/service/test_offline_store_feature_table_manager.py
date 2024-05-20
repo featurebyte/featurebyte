@@ -309,6 +309,28 @@ async def deployed_item_aggregate_feature(
 
 
 @pytest_asyncio.fixture
+async def deployed_item_view_window_aggregate_feature(
+    app_container,
+    item_view_window_aggregate_feature,
+    item_entity,
+    float_feat_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed item view window aggregate feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    return await deploy_feature(
+        app_container,
+        item_view_window_aggregate_feature,
+        context_primary_entity_ids=[item_entity.id],
+        deployment_id=float_feat_deployment_id,
+    )
+
+
+@pytest_asyncio.fixture
 async def deployed_complex_feature(
     app_container,
     non_time_based_feature,
@@ -542,6 +564,22 @@ async def customer_to_gender_relationship_info(
         app_container,
         child_entity_id=cust_id_entity.id,
         parent_entity_id=gender_entity.id,
+    )
+
+
+@pytest_asyncio.fixture
+async def item_id_to_item_type_relationship_info(
+    app_container,
+    item_entity,
+    item_type_entity,
+):
+    """
+    Fixture for the relationship info id between item and item type entities
+    """
+    return await get_relationship_info(
+        app_container,
+        child_entity_id=item_entity.id,
+        parent_entity_id=item_type_entity.id,
     )
 
 
@@ -1676,3 +1714,118 @@ async def test_undeploy_bad_state_error_handling(
     scheduled_tasks = await get_all_scheduled_tasks(periodic_task_service)
     assert not list(feature_tables.keys())
     assert not list(scheduled_tasks.keys())
+
+
+@pytest.mark.asyncio
+async def test_item_view_window_aggregate(
+    app_container,
+    document_service,
+    deployed_item_view_window_aggregate_feature,
+    item_id_to_item_type_relationship_info,
+    float_feat_deployment_id,
+    item_entity,
+    update_fixtures,
+):
+    """
+    Test feature table creation for a feature with item view window aggregate
+    """
+    catalog_id = app_container.catalog_id
+    feature_tables = await get_all_feature_tables(document_service)
+    expected_suffix = get_lookup_steps_unique_identifier([item_id_to_item_type_relationship_info])
+    assert set(feature_tables.keys()) == {
+        "cat1_item_type_30m",
+        f"cat1_item_type_30m_via_item_id_{expected_suffix}",
+    }
+    feature_table = feature_tables["cat1_item_type_30m"]
+
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_id = feature_table_dict.pop("_id")
+    feature_table_dict.pop("feature_cluster")
+    assert feature_table_dict == {
+        "base_name": "item_type_30m",
+        "block_modification_by": [],
+        "catalog_id": catalog_id,
+        "deployment_ids": [float_feat_deployment_id],
+        "description": None,
+        "entity_lookup_info": None,
+        "entity_universe": {
+            "query_template": {
+                "formatted_expression": textwrap.dedent(
+                    """
+                    SELECT DISTINCT
+                      "item_type"
+                    FROM online_store_22f02bbc16545d0e730d39effc50176c1d1f6299
+                    WHERE
+                      "AGGREGATION_RESULT_NAME" = '_fb_internal_item_type_window_w86400_sum_2e4057b32df81d547bde013cd755a1189af7e615'
+                      AND "item_type" IS NOT NULL
+                    """
+                ).strip()
+            }
+        },
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "feature_ids": [deployed_item_view_window_aggregate_feature.id],
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+        "feature_store_id": feature_table_dict["feature_store_id"],
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": "cat1_item_type_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": ["sum_1d_V231227"],
+        "output_dtypes": ["FLOAT"],
+        "precomputed_lookup_feature_table_info": None,
+        "primary_entity_ids": [ObjectId("664a3e7d7ac430c2ae37aedf")],
+        "serving_names": ["item_type"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+
+    # check precomputed lookup feature table
+    feature_table = feature_tables[f"cat1_item_type_30m_via_item_id_{expected_suffix}"]
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": catalog_id,
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster": None,
+        "feature_cluster_path": None,
+        "feature_ids": [],
+        "feature_job_setting": None,
+        "feature_store_id": deployed_item_view_window_aggregate_feature.tabular_source.feature_store_id,
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": f"cat1_item_type_30m_via_item_id_{expected_suffix}",
+        "base_name": None,
+        "name_prefix": None,
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": [],
+        "output_dtypes": [],
+        "precomputed_lookup_feature_table_info": {
+            "lookup_steps": [item_id_to_item_type_relationship_info.dict(by_alias=True)],
+            "lookup_mapping": [
+                {
+                    "lookup_feature_table_serving_name": "item_id",
+                    "source_feature_table_serving_name": "item_type",
+                }
+            ],
+            "source_feature_table_id": feature_table_id,
+        },
+        "primary_entity_ids": [item_entity.id],
+        "serving_names": item_entity.serving_names,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "deployment_ids": [float_feat_deployment_id],
+    }
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/item_id_to_item_type_universe.sql",
+        update_fixture=update_fixtures,
+    )

@@ -1132,6 +1132,19 @@ def item_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="item_type_entity", scope="session")
+def item_type_entity_fixture(catalog):
+    """
+    Fixture for an Entity "ItemType"
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("664ac92379c46110f9275db1"), name="ItemType", serving_names=["item_type"]
+    )
+    entity.save()
+    return entity
+
+
 @pytest.fixture(name="status_entity", scope="session")
 def status_entity_fixture(catalog):
     """
@@ -1275,6 +1288,7 @@ def tag_entities_for_item_table(item_table):
     """
     item_table["order_id"].as_entity("Order")
     item_table["item_id"].as_entity("Item")
+    item_table["item_type"].as_entity("ItemType")
 
 
 @pytest.fixture(name="item_table", scope="session")
@@ -1285,6 +1299,7 @@ def item_table_fixture(
     event_table,
     order_entity,
     item_entity,
+    item_type_entity,
     catalog,
 ):
     """
@@ -1293,6 +1308,7 @@ def item_table_fixture(
     _ = catalog
     _ = order_entity
     _ = item_entity
+    _ = item_type_entity
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,

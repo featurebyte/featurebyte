@@ -78,7 +78,6 @@ def get_entity_lookup_graph(
             }
         }
     else:
-        # TODO: handle ITEM_TABLE which also needs event_parameters
         additional_params = {}
     lookup_node = graph.add_operation(
         node_type=NodeType.LOOKUP,

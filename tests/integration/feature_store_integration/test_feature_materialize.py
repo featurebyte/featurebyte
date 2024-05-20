@@ -320,6 +320,7 @@ async def saved_feature_list_composite_entities_fixture(features):
 def removed_relationships_fixture(
     saved_feature_list_all,
     saved_feature_list_composite_entities,
+    saved_feature_list_item_type_feature,
     event_table,
     item_table,
     scd_table,
@@ -338,6 +339,7 @@ def removed_relationships_fixture(
     """
     _ = saved_feature_list_all
     _ = saved_feature_list_composite_entities
+    _ = saved_feature_list_item_type_feature
 
     def untag_entities(table):
         for column_info in table.columns_info:
@@ -492,6 +494,78 @@ async def deployed_features_list_composite_entities_order_use_case_fixture(
     ):
         deployment = feature_list.deploy(
             "deployment order use case", use_case_name=order_use_case.name
+        )
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            await deploy_service.update_deployment(
+                deployment_id=deployment.id,
+                to_enable_deployment=True,
+            )
+
+    yield deployment
+    await deploy_service.update_deployment(
+        deployment_id=deployment.id,
+        to_enable_deployment=False,
+    )
+
+
+@pytest.fixture(name="item_use_case", scope="module")
+def item_use_case_fixture(item_entity):
+    """
+    Fixture for item level use case
+    """
+    target = fb.TargetNamespace.create(
+        "item_target",
+        primary_entity=[item_entity.name],
+        dtype=DBVarType.FLOAT,
+    )
+    context = fb.Context.create(
+        name="item_context",
+        primary_entity=[item_entity.name],
+    )
+    use_case = fb.UseCase.create("item_use_case", target.name, context.name, "item_description")
+    return use_case
+
+
+@pytest_asyncio.fixture(name="saved_feature_list_item_type_feature", scope="module")
+async def saved_feature_list_item_type_feature_fixture(item_table):
+    """
+    Fixture for a saved feature list with item type feature
+    """
+    item_view = item_table.get_view()
+    feature = item_view.groupby("item_type").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["7d"],
+        feature_names=["Count 7d by Item Type"],
+    )["Count 7d by Item Type"]
+    feature.save()
+    feature.update_readiness("PRODUCTION_READY")
+
+    feature_list = fb.FeatureList([feature], name=f"{feature.name} Feature List")
+    feature_list.save()
+    return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_item_use_case", scope="module")
+async def deployed_feature_list_item_use_case_fixture(
+    app_container,
+    saved_feature_list_item_type_feature,
+    item_use_case,
+):
+    """
+    Fixture for a deployed feature list with a ItemType feature to be served by Item entity (child
+    of ItemType)
+    """
+    deploy_service = app_container.deploy_service
+    with patch(
+        "featurebyte.service.feature_manager.get_next_job_datetime",
+        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
+    ):
+        deployment = saved_feature_list_item_type_feature.deploy(
+            "deployment item use case", use_case_name=item_use_case.name
         )
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
@@ -1418,3 +1492,31 @@ def test_online_features__patch_feast(config, deployed_feature_list):
             json=data.json_dict(),
         ).json()
         assert res3 == {"features": res2["features"] + res1["features"]}
+
+
+@pytest.mark.order(11)
+def test_item_view_feature_online_serving(config, deployed_feature_list_item_use_case):
+    """
+    Test item view feature with parent serving
+    """
+    client = config.get_client()
+    deployment = deployed_feature_list_item_use_case
+
+    entity_serving_names = [
+        {
+            "item_id": "item_60",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+    assert res.status_code == 200
+
+    feat_dict = res.json()["features"][0]
+    expected = {"item_id": "item_60", "Count 7d by Item Type": 11}
+    assert_dict_approx_equal(feat_dict, expected)
