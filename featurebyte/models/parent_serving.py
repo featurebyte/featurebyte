@@ -11,7 +11,7 @@ from pydantic import root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.proxy_table import ProxyTableModel, TableModel
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -51,7 +51,7 @@ class EntityLookupStep(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId
-    table: ProxyTableModel
+    table: TableModel
     parent: EntityLookupInfo
     child: EntityLookupInfo
 
@@ -64,7 +64,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
     entity_relationships_info: List[EntityRelationshipInfo]
     entities_by_id: Dict[PydanticObjectId, EntityModel]
-    tables_by_id: Dict[PydanticObjectId, ProxyTableModel]
+    tables_by_id: Dict[PydanticObjectId, TableModel]
     default_entity_lookup_steps: Dict[PydanticObjectId, EntityLookupStep]
 
     @root_validator(pre=True)
