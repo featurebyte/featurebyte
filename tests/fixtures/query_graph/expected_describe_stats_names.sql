@@ -9,14 +9,6 @@ WITH data AS (
   ORDER BY
     RANDOM(1234)
   LIMIT 10
-), casted_data AS (
-  SELECT
-    CAST("ts" AS STRING) AS "ts",
-    CAST("cust_id" AS STRING) AS "cust_id",
-    CAST("a" AS STRING) AS "a",
-    CAST("b" AS STRING) AS "b",
-    CAST("a_copy" AS STRING) AS "a_copy"
-  FROM data
 ), stats AS (
   SELECT
     MIN(
