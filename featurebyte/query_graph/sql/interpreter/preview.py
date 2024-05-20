@@ -653,11 +653,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
 
     @staticmethod
-    def _get_ctes_with_casted_data(
-        sql_tree: expressions.Expression,
-    ) -> Tuple[expressions.Select, List[CteStatement]]:
-        cte_statements: List[CteStatement] = [("data", sql_tree)]
-
+    def _get_cte_with_casted_data(sql_tree: expressions.Expression) -> CteStatement:
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
         for col_expr in sql_tree.expressions:
@@ -671,9 +667,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         sql_tree = expressions.select(*casted_columns).from_("data")
-        cte_statements.append((CASTED_DATA_TABLE_NAME, sql_tree))
-
-        return sql_tree, cte_statements
+        return CASTED_DATA_TABLE_NAME, sql_tree
 
     @staticmethod
     def _clip_column_before_stats_func(
@@ -702,7 +696,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return clipped_col_expr
 
-    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches
+    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self,
         sql_tree: expressions.Select,
         columns: List[ViewDataColumn],
@@ -728,7 +722,12 @@ class PreviewMixin(BaseGraphInterpreter):
         columns_info = {
             column.name: column for column in columns if column.name or len(columns) == 1
         }
-        sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
+
+        # original data
+        cte_statements: List[CteStatement] = [("data", sql_tree)]
+
+        # data casted to string
+        cte_casted_data = self._get_cte_with_casted_data(sql_tree)
 
         # only extract requested stats if specified
         required_stats_expressions = {}
@@ -827,6 +826,17 @@ class PreviewMixin(BaseGraphInterpreter):
             cte_statements.append(("stats", sql_tree))
             all_tables.append("stats")
         all_tables.extend(count_tables)
+
+        # check if data casted to string is used and if so add it to cte_statements
+        used_casted_data = False
+        for _, cte_expr in cte_statements[1:]:
+            for cur_expr, _, _ in cte_expr.walk():
+                if isinstance(cur_expr, expressions.Identifier):
+                    if cur_expr.alias_or_name == CASTED_DATA_TABLE_NAME:
+                        used_casted_data = True
+                        break
+        if used_casted_data:
+            cte_statements.insert(1, cte_casted_data)
 
         sql_tree = self._join_all_tables(cte_statements, all_tables).select(*final_selections)
 
@@ -964,7 +974,10 @@ class PreviewMixin(BaseGraphInterpreter):
             num_rows=num_rows,
             seed=seed,
         )
-        sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
+        cte_statements: List[CteStatement] = [
+            ("data", sql_tree),
+            self._get_cte_with_casted_data(sql_tree),
+        ]
         # It's expected that this function is called on a node that is associated with a column and
         # not a frame, so here we simply take the first column.
         col_expr = sql_tree.expressions[0]
