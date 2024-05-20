@@ -1775,8 +1775,9 @@ async def test_item_view_window_aggregate(
         "feature_ids": [deployed_item_view_window_aggregate_feature.id],
         "feature_job_setting": {
             "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
+            "period": "1800s",
+            "offset": "300s",
+            "execution_buffer": "0s",
         },
         "feature_store_id": feature_table_dict["feature_store_id"],
         "has_ttl": True,

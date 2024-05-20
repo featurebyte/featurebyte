@@ -1946,11 +1946,7 @@ def item_view_window_aggregate_feature_fixture(snowflake_item_view_with_entity):
         method="sum",
         windows=["1d"],
         feature_names=["sum_1d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
     )["sum_1d"]
 
 
