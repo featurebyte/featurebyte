@@ -515,7 +515,8 @@ def get_combined_universe(
 
 def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> expressions.Select:
     """
-    Get the entity universe for a relation table that is an ItemTable
+    Get the entity universe for a relation table that is an ItemTable. This is used when looking up
+    a parent entity using a child entity (item id column) in an ItemTable.
 
     Parameters
     ----------
@@ -549,6 +550,7 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     )
     universe = (
         expressions.select(quoted_identifier(item_table_model.item_id_column))
+        .distinct()
         .from_(
             expressions.Table(
                 this=get_fully_qualified_table_name(
@@ -565,6 +567,7 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
                     event_table_model.event_id_column, "EVENT"
                 ),
             ),
+            join_type="INNER",
         )
     )
     return universe

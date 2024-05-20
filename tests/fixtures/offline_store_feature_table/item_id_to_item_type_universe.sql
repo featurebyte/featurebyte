@@ -3,10 +3,10 @@ WITH ENTITY_UNIVERSE AS (
     __fb_current_feature_timestamp AS "POINT_IN_TIME",
     "item_id"
   FROM (
-    SELECT
+    SELECT DISTINCT
       "item_id_col"
     FROM "sf_database"."sf_schema"."items_table" AS ITEM
-    JOIN (
+    INNER JOIN (
       SELECT
         "col_int"
       FROM "sf_database"."sf_schema"."sf_table"
