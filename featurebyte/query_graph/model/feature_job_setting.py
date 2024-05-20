@@ -143,6 +143,18 @@ class FeatureJobSetting(FeatureByteBaseModel):
         """
         return parse_duration_string(self.blind_spot)
 
+    @property
+    def execution_buffer_seconds(self) -> int:
+        """
+        Get execution buffer in seconds
+
+        Returns
+        -------
+        int
+            execution buffer in seconds
+        """
+        return parse_duration_string(self.execution_buffer)
+
     def to_seconds(self) -> Dict[str, Any]:
         """Convert job settings format using seconds as time unit
 
@@ -154,6 +166,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
             "period": self.period_seconds,
             "offset": self.offset_seconds,
             "blind_spot": self.blind_spot_seconds,
+            "execution_buffer": self.execution_buffer_seconds,
         }
 
     def normalize(self) -> "FeatureJobSetting":
@@ -168,6 +181,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
             period=f"{fjs['period']}s",
             offset=f"{fjs['offset']}s",
             blind_spot=f"{fjs['blind_spot']}s",
+            execution_buffer=f"{fjs['execution_buffer']}s",
         )
 
     def __hash__(self) -> int:
