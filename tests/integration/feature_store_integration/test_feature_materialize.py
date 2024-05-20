@@ -1495,13 +1495,10 @@ def test_online_features__patch_feast(config, deployed_feature_list):
 
 
 @pytest.mark.order(11)
-def test_item_view_feature_online_serving(
-    session, config, deployed_feature_list_item_use_case, source_type
-):
+def test_item_view_feature_online_serving(config, deployed_feature_list_item_use_case):
     """
     Test item view feature with parent serving
     """
-    _ = session
     client = config.get_client()
     deployment = deployed_feature_list_item_use_case
 

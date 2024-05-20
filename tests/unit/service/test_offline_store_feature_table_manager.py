@@ -1720,12 +1720,10 @@ async def test_undeploy_bad_state_error_handling(
 async def test_item_view_window_aggregate(
     app_container,
     document_service,
-    periodic_task_service,
     deployed_item_view_window_aggregate_feature,
     item_id_to_item_type_relationship_info,
     float_feat_deployment_id,
     item_entity,
-    expected_feast_registry_mapping,
     update_fixtures,
 ):
     """

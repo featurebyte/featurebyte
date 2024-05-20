@@ -17,7 +17,7 @@ from featurebyte.enum import InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
-from featurebyte.models.proxy_table import ProxyTableModel, TableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -514,6 +514,18 @@ def get_combined_universe(
 
 
 def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> expressions.Select:
+    """
+    Get the entity universe for a relation table that is an ItemTable
+
+    Parameters
+    ----------
+    item_table_model: TableModel
+        Item table model
+
+    Returns
+    -------
+    expressions.Select
+    """
     assert isinstance(item_table_model, ItemTableModel)
     event_table_model = item_table_model.event_table_model
     assert event_table_model is not None

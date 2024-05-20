@@ -11,7 +11,7 @@ from pydantic import root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.proxy_table import ProxyTableModel, TableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
