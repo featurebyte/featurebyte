@@ -1,6 +1,7 @@
 """
 Deployment API routes
 """
+
 from typing import Literal, Optional, cast
 
 from http import HTTPStatus

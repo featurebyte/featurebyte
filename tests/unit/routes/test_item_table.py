@@ -1,6 +1,7 @@
 """
 Tests for ItemTable routes
 """
+
 from http import HTTPStatus
 
 import pytest
@@ -130,7 +131,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
     async def test_item_id_semantic(self, data_response, app_container):
         """Test item id semantic is set correctly"""
         item_id_semantic = await app_container.semantic_service.get_or_create_document(
-            name=SemanticType.ITEM_ID
+            name=SemanticType.ITEM_ID.value
         )
 
         # check the that semantic ID is set correctly
@@ -161,7 +162,13 @@ class TestItemTableApi(BaseTableApiTestSuite):
                 "table_name": "items_table",
             },
             "status": "PUBLIC_DRAFT",
-            "entities": [],
+            "entities": [
+                {
+                    "name": "transaction",
+                    "serving_names": ["transaction_id"],
+                    "catalog_name": "grocery",
+                },
+            ],
             "semantics": ["event_id", "item_id"],
             "column_count": 6,
             "event_table_name": "sf_event_table",
@@ -184,7 +191,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             {
                 "name": "event_id_col",
                 "dtype": "INT",
-                "entity": None,
+                "entity": "transaction",
                 "semantic": "event_id",
                 "critical_data_info": None,
                 "description": None,

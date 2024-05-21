@@ -1,6 +1,7 @@
 """
 Deployment API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Literal, Optional, Tuple
@@ -10,9 +11,13 @@ from http import HTTPStatus
 from bson import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentDeletionError,
+    FeatureListNotOnlineEnabledError,
+)
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
-from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
@@ -39,13 +44,14 @@ from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.use_case import UseCaseService
 
 
-class DeploymentController(
+class DeploymentController(  # pylint: disable=too-many-instance-attributes, too-many-arguments
     BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]
 ):
     """
@@ -65,6 +71,7 @@ class DeploymentController(
         use_case_service: UseCaseService,
         batch_feature_table_service: BatchFeatureTableService,
         feast_feature_store_service: FeastFeatureStoreService,
+        entity_serving_names_service: EntityServingNamesService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -75,6 +82,7 @@ class DeploymentController(
         self.use_case_service = use_case_service
         self.batch_feature_table_service = batch_feature_table_service
         self.feast_feature_store_service = feast_feature_store_service
+        self.entity_serving_names_service = entity_serving_names_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -89,14 +97,29 @@ class DeploymentController(
         -------
         Task
             Task to create deployment.
+
+        Raises
+        ------
+        DocumentCreationError
+            Primary entity of the use case is not in the feature list's supported serving entities.
         """
         # check if feature list exists
-        _ = await self.feature_list_service.get_document(document_id=data.feature_list_id)
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=data.feature_list_id
+        )
 
         context_id = None
         if data.use_case_id:
             use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
             context_id = use_case.context_id
+            context = await self.context_service.get_document(document_id=context_id)
+
+            # check whether the context primary entity is in the feature list supported serving entities
+            supported_serving_ids = feature_list_doc["supported_serving_entity_ids"]
+            if supported_serving_ids and context.primary_entity_ids not in supported_serving_ids:
+                raise DocumentCreationError(
+                    "Primary entity of the use case is not in the feature list's supported serving entities."
+                )
 
         payload = DeploymentCreateUpdateTaskPayload(
             deployment_payload=CreateDeploymentPayload(
@@ -220,17 +243,15 @@ class DeploymentController(
             Invalid request payload
         """
         document = await self.service.get_document(deployment_id)
-
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
-            if (
-                FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
-                and catalog.online_store_id is not None
-            ):
+            if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
-                    await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
+                    await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
+                        deployment=document
+                    )
                 )
             else:
                 feast_store = None
@@ -244,6 +265,7 @@ class DeploymentController(
             if feast_store and feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
+                    deployment=document,
                     feast_store=feast_store,
                     request_data=data.entity_serving_names,
                 )
@@ -315,9 +337,13 @@ class DeploymentController(
             Sample entity serving names
         """
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
-        entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
-            feature_list_id=deployment.feature_list_id, count=count
-        )
+        entity_serving_names = []
+        if deployment.serving_entity_ids:
+            entity_serving_names = (
+                await self.entity_serving_names_service.get_sample_entity_serving_names(
+                    entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+                )
+            )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
 
 

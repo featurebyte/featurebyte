@@ -1,6 +1,7 @@
 """
 Utilities related to SQL generation for groupby operations
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, cast

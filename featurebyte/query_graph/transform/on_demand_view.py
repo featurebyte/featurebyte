@@ -1,13 +1,13 @@
 """
 On demand feature view (for Feast) related classes and functions.
 """
+
 from typing import Any, Dict, List, Tuple
 
 import textwrap
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
+from featurebyte.typing import Scalar
 
 
 class OnDemandFeatureViewGlobalState(BaseModel):

@@ -1,15 +1,16 @@
 """
 FeatureNamespace API pyaload schema
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_namespace import (
     DefaultVersionMode,
     FeatureNamespaceModel,
@@ -24,7 +25,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     dtype: DBVarType
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness

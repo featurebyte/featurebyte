@@ -1,6 +1,7 @@
 """
 Module for constructs to work with template SQL code with placeholders
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

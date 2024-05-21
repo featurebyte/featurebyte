@@ -3,6 +3,7 @@ App container config module.
 
 This contains all our registrations for dependency injection.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints

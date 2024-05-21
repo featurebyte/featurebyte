@@ -1,6 +1,7 @@
 """
 Tile SQL Jinjia template
 """
+
 from jinja2 import Template
 
 tm_retrieve_tile_job_audit_logs = Template(

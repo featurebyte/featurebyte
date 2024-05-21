@@ -1,6 +1,7 @@
 """
 Test TableStatusService
 """
+
 import pytest
 
 from featurebyte.exception import DocumentConflictError, DocumentUpdateError

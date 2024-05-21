@@ -1,6 +1,7 @@
 """
 Base materialized table router
 """
+
 from typing import Generic, Type, TypeVar
 
 from fastapi import APIRouter, Request

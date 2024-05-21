@@ -1,10 +1,12 @@
 """
 Catalog module
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+from typing_extensions import Literal
 
 import pandas as pd
 from bson import ObjectId
@@ -680,7 +682,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     @update_and_reset_catalog
     def list_relationships(
-        self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
+        self,
+        include_id: Optional[bool] = True,
+        relationship_type: Optional[Literal[tuple(RelationshipType)]] = None,  # type: ignore[misc]
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -960,7 +964,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return StaticSourceTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_deployments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_deployments(
+        self,
+        include_id: Optional[bool] = True,
+        feature_list_id: Optional[Union[ObjectId, str]] = None,
+    ) -> pd.DataFrame:
         """
         List saved deployments.
 
@@ -968,6 +976,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ----------
         include_id: Optional[bool]
             Whether to include id in the list.
+        feature_list_id: Optional[Union[ObjectId, str]]
+            Filter deployments by feature list ID.
 
         Returns
         -------
@@ -980,7 +990,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> deployments = catalog.list_deployments()
         """
-        return Deployment.list(include_id=include_id)
+        return Deployment.list(include_id=include_id, feature_list_id=feature_list_id)
 
     @update_and_reset_catalog
     def list_user_defined_functions(self, include_id: Optional[bool] = True) -> pd.DataFrame:

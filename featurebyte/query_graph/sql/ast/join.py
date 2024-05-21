@@ -1,9 +1,11 @@
 """
 Module for join operation sql generation
 """
+
 from __future__ import annotations
 
-from typing import Literal, Optional, cast
+from typing import Optional, cast
+from typing_extensions import Literal
 
 from dataclasses import dataclass
 

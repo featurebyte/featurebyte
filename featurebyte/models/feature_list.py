@@ -1,6 +1,7 @@
 """
 This module contains Feature list related models
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Set
@@ -41,6 +42,7 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     FeatureEntityLookupInfo,
 )
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 
 
@@ -305,9 +307,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         List of entity relationship info for the feature list
     supported_serving_entity_ids: List[ServingEntity]
         List of supported serving entity ids, serving entity id is a list of entity ids for serving
-    enabled_serving_entity_ids: List[ServingEntity]
-        Subset of supported_serving_entity_ids. List of serving entity ids that are used by
-        currently enabled deployments
     deployed: bool
         Whether to deploy this feature list version
     feature_list_namespace_id: PydanticObjectId
@@ -328,9 +327,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default=None
     )
     supported_serving_entity_ids: List[ServingEntity] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    enabled_serving_entity_ids: List[ServingEntity] = Field(
         allow_mutation=False, default_factory=list
     )
     readiness_distribution: FeatureReadinessDistribution = Field(
@@ -376,7 +372,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
-    @validator("supported_serving_entity_ids", "enabled_serving_entity_ids")
+    @validator("supported_serving_entity_ids")
     @classmethod
     def _validate_supported_serving_entity_ids(
         cls, value: List[ServingEntity]
@@ -553,11 +549,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             ]
         return self._feature_clusters
 
-    @property
-    def remote_attribute_paths(self) -> List[Path]:
+    @classmethod
+    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
-        if self.feature_clusters_path:
-            paths.append(Path(self.feature_clusters_path))
+        feature_clusters_path = document_dict.get("feature_clusters_path")
+        if feature_clusters_path:
+            paths.append(Path(feature_clusters_path))
         return paths
 
     @property
@@ -572,7 +569,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
 
     def initialize_store_info(
-        self, features: List[FeatureModel], feature_store: FeatureStoreModel
+        self,
+        features: List[FeatureModel],
+        feature_store: FeatureStoreModel,
+        feature_table_map: Dict[str, Any],
+        serving_entity_specs: Optional[List[ColumnSpec]],
     ) -> None:
         """
         Initialize store info for a feature list
@@ -583,6 +584,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             List of features
         feature_store: FeatureStoreModel
             Feature store model
+        feature_table_map: Dict[str, Any]
+            List of offline feature table map from source table name to actual feature table
+            (could be a source table or a precomputed lookup table)
+        serving_entity_specs: Optional[List[ColumnSpec]]
+            List of serving entity specs
         """
         store_type_to_store_info_class = {
             SourceType.SNOWFLAKE: SnowflakeStoreInfo,
@@ -592,7 +598,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]
-            store_info = store_info_class.create(features=features, feature_store=feature_store)
+            store_info = store_info_class.create(
+                features=features,
+                feature_store=feature_store,
+                feature_table_map=feature_table_map,
+                serving_entity_specs=serving_entity_specs,
+            )
             self.internal_store_info = store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):

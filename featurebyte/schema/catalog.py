@@ -1,15 +1,17 @@
 """
 Catalog API payload schema
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -24,7 +26,7 @@ class CatalogCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     default_feature_store_ids: List[PydanticObjectId]
     online_store_id: Optional[PydanticObjectId] = Field(default=None)
 
@@ -42,7 +44,7 @@ class CatalogUpdate(FeatureByteBaseModel):
     Catalog update schema
     """
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
 
 
 class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
@@ -58,7 +60,7 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     Catalog service update schema
     """
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
     is_deleted: Optional[bool]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):

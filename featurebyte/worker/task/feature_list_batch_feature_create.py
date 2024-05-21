@@ -1,6 +1,7 @@
 """
 Feature list creation with batch feature creation task
 """
+
 from __future__ import annotations
 
 from typing import Any, Sequence

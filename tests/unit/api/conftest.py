@@ -1,6 +1,7 @@
 """
 Common test fixtures used across api test directories
 """
+
 import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch
@@ -10,7 +11,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog, FeatureJobSetting, TargetNamespace, UseCase
+from featurebyte import Catalog, RequestColumn, TargetNamespace, UseCase
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -260,6 +261,8 @@ def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item
     """
     Saved ItemTable fixture
     """
+    _ = snowflake_feature_store
+
     previous_id = snowflake_item_table.id
     assert snowflake_item_table.saved
     assert snowflake_item_table.id == previous_id
@@ -315,16 +318,6 @@ def snowflake_scd_view_fixture(snowflake_scd_table):
     """
     scd_view = snowflake_scd_table.get_view()
     yield scd_view
-
-
-@pytest.fixture(name="snowflake_scd_view_with_entity")
-def snowflake_scd_view_with_entity_fixture(snowflake_scd_table, cust_id_entity, transaction_entity):
-    """
-    SCDView fixture with entity
-    """
-    snowflake_scd_table["cust_id"].as_entity(cust_id_entity.name)
-    snowflake_scd_table["col_text"].as_entity(transaction_entity.name)
-    return snowflake_scd_table.get_view()
 
 
 @pytest.fixture(name="snowflake_change_view")
@@ -386,7 +379,7 @@ def batch_request_table_from_source_fixture(
     snowflake_database_table, snowflake_execute_query_for_materialized_table, catalog
 ):
     """Batch request table from source table fixture"""
-    _ = catalog
+    _ = catalog, snowflake_execute_query_for_materialized_table
     return snowflake_database_table.create_batch_request_table(
         "batch_request_table_from_source_table"
     )
@@ -436,7 +429,9 @@ def deployment_fixture(float_feature, use_case):
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
+def latest_event_timestamp_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
     """
     Fixture for a timestamp feature
     """
@@ -445,10 +440,43 @@ def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
         method="latest",
         windows=["90d"],
         feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1h", frequency="1h", time_modulo_frequency="30m"
-        ),
+        feature_job_setting=feature_group_feature_job_setting,
     )["latest_event_timestamp_90d"]
+    return feature
+
+
+@pytest.fixture(name="latest_event_timestamp_overall_feature")
+def latest_event_timestamp_overall_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby([]).aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_overall_90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp_overall_90d"]
+    return feature
+
+
+@pytest.fixture(name="ttl_non_ttl_composite_feature")
+def ttl_non_ttl_composite_feature_fixture(float_feature, non_time_based_feature):
+    """Fixture for a composite feature"""
+    ttl_component = 2 * (float_feature + 100)
+    non_ttl_component = 3 - (non_time_based_feature + 100)
+    feature = ttl_component + non_ttl_component
+    feature.name = "feature"
+    return feature
+
+
+@pytest.fixture(name="req_col_day_diff_feature")
+def req_col_feature_fixture(latest_event_timestamp_feature):
+    """Fixture for a feature that uses a request column"""
+    feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+    feature.name = "req_col_feature"
     return feature
 
 
@@ -477,3 +505,24 @@ def mock_source_table_fixture():
         "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
     ):
         yield mock_source_table
+
+
+@pytest.fixture(name="patch_alive_progress", autouse=True)
+def patch_alive_progress_fixture():
+    """
+    Patch the alive progress method
+    """
+    patched = {}
+    patch_targets = [
+        "featurebyte.api.utils",
+        "featurebyte.api.feature_group",
+        "featurebyte.api.mixin",
+    ]
+    started_patchers = []
+    for module in patch_targets:
+        patcher = patch(f"{module}.alive_bar")
+        patched[module] = patcher.start()
+        started_patchers.append(patcher)
+    yield patched
+    for patcher in started_patchers:
+        patcher.stop()

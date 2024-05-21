@@ -1,6 +1,7 @@
 """
 Query graph util module
 """
+
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node

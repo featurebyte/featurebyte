@@ -1,6 +1,7 @@
 """
 This module contains all the enums used for query graph.
 """
+
 from typing import Set
 
 from featurebyte.enum import StrEnum
@@ -58,6 +59,7 @@ class NodeType(StrEnum):
     JOIN_FEATURE = "join_feature"
     TRACK_CHANGES = "track_changes"
     FORWARD_AGGREGATE = "forward_aggregate"
+    FORWARD_AGGREGATE_AS_AT = "forward_aggregate_as_at"
 
     # other operations
     ASSIGN = "assign"

@@ -1,6 +1,7 @@
 """
 This module contains Semantic related models
 """
+
 from typing import List
 
 import pymongo

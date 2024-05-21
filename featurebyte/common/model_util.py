@@ -1,6 +1,7 @@
 """
 This module contains the implementation of feature job setting validation
 """
+
 from __future__ import annotations
 
 from typing import Any, Tuple

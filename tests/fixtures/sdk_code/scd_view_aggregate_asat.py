@@ -13,7 +13,6 @@ feat = scd_view.groupby(by_keys=["cust_id"], category=None).aggregate_asat(
     method="max",
     feature_name="col_float_max",
     offset=None,
-    backward=True,
     skip_fill_na=True,
 )
 output = feat

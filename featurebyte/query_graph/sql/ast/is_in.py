@@ -1,6 +1,7 @@
 """
 Is in SQL node
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

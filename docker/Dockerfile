@@ -1,4 +1,7 @@
-FROM python:3.8-slim AS builder
+FROM python:3.10-slim AS builder
+
+# Increase PIP read timeout to 120 seconds to avoid timeout issues
+ENV PIP_DEFAULT_TIMEOUT=120
 
 # install build tools
 RUN apt-get update && \
@@ -9,7 +12,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock /app/
 
 # Installing featurebyte dependencies
-RUN pip install poetry==1.5.1 && \
+RUN pip install poetry==1.8.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
     . /opt/venv/bin/activate && \
@@ -25,7 +28,7 @@ RUN . /opt/venv/bin/activate && \
     pip install dist/*.whl
 
 
-FROM python:3.8-slim AS runner
+FROM python:3.10-slim AS runner
 
 ARG USER_HOME=/app
 

@@ -1,5 +1,6 @@
 """Tests for feature job setting validation
 """
+
 import pytest
 
 from featurebyte.common.model_util import (

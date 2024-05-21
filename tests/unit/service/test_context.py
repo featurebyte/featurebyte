@@ -1,7 +1,9 @@
 """
 Test ContextService
 """
+
 import pytest
+import pytest_asyncio
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -11,9 +13,20 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.context import ContextUpdate
 
 
-@pytest.fixture(name="input_event_table_node")
-def input_event_table_node_fixture(event_table):
+@pytest_asyncio.fixture(name="input_event_table_node")
+async def input_event_table_node_fixture(event_table, app_container, entity, entity_transaction):
     """Input event_table node of a graph"""
+    controller = app_container.event_table_controller
+    await controller.update_column_entity(
+        document_id=event_table.id,
+        column_name="col_int",
+        entity_id=entity_transaction.id,
+    )
+    await controller.update_column_entity(
+        document_id=event_table.id,
+        column_name="cust_id",
+        entity_id=entity.id,
+    )
     return {
         "name": "input_1",
         "type": "input",

@@ -1,6 +1,7 @@
 """
 Module with logic related to feature SQL generation
 """
+
 from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence, Set, Type, Union
@@ -12,7 +13,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
     EntityRelationshipsContext,
@@ -28,6 +29,7 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.aggregator.base import TileBasedAggregator
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
+from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -44,10 +46,13 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
+from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
+    ForwardAggregateAsAtSpec,
+)
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from featurebyte.query_graph.sql.specs import (
-    AggregateAsAtSpec,
     AggregationSpec,
     AggregationType,
     FeatureSpec,
@@ -57,6 +62,7 @@ from featurebyte.query_graph.sql.specs import (
     TileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 AggregatorType = Union[
     LatestAggregator,
@@ -66,6 +72,7 @@ AggregatorType = Union[
     ItemAggregator,
     AsAtAggregator,
     ForwardAggregator,
+    ForwardAsAtAggregator,
 ]
 AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
 
@@ -93,12 +100,14 @@ class FeatureExecutionPlan:
             AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
             AggregationType.AS_AT: AsAtAggregator(**aggregator_kwargs),
             AggregationType.FORWARD: ForwardAggregator(**aggregator_kwargs),
+            AggregationType.FORWARD_AS_AT: ForwardAsAtAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.feature_entity_lookup_steps: dict[str, EntityLookupStep] = {}
         self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
         self.parent_serving_preparation = parent_serving_preparation
+        self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
 
     @property
@@ -288,6 +297,8 @@ class FeatureExecutionPlan:
         if key in self.feature_specs:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
+        if feature_spec.feature_dtype is not None:
+            self.feature_name_dtype_mapping[key] = feature_spec.feature_dtype
 
     def add_feature_entity_lookup_step(self, entity_lookup_step: EntityLookupStep) -> None:
         """
@@ -426,8 +437,12 @@ class FeatureExecutionPlan:
                 columns.append(quoted_identifier(agg_result_name))
         else:
             for feature_spec in self.feature_specs.values():
+                feature_expr = feature_spec.feature_expr
+                feature_dtype = self.feature_name_dtype_mapping.get(feature_spec.feature_name)
+                if feature_dtype is not None:
+                    feature_expr = self._cast_output_column_by_dtype(feature_expr, feature_dtype)
                 feature_alias = expressions.alias_(
-                    feature_spec.feature_expr, alias=feature_spec.feature_name, quoted=True
+                    feature_expr, alias=feature_spec.feature_name, quoted=True
                 )
                 columns.append(feature_alias)
 
@@ -444,6 +459,22 @@ class FeatureExecutionPlan:
             f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
         return table_expr
+
+    @staticmethod
+    def _cast_output_column_by_dtype(
+        feature_expr: expressions.Expression, dtype: DBVarType
+    ) -> expressions.Expression:
+        if dtype == DBVarType.FLOAT:
+            return expressions.Cast(
+                this=feature_expr,
+                to=expressions.DataType.build("DOUBLE"),
+            )
+        if dtype == DBVarType.INT:
+            return expressions.Cast(
+                this=feature_expr,
+                to=expressions.DataType.build("BIGINT"),
+            )
+        return feature_expr
 
     def get_overall_entity_lookup_steps(self) -> list[EntityLookupStep]:
         """
@@ -536,7 +567,7 @@ class FeatureExecutionPlan:
         return post_aggregation_sql
 
 
-class FeatureExecutionPlanner:
+class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
     """Responsible for constructing a FeatureExecutionPlan given QueryGraphModel and Node
 
     Parameters
@@ -563,6 +594,7 @@ class FeatureExecutionPlanner:
         if source_type is None:
             source_type = SourceType.SNOWFLAKE
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
+        self.op_struct_extractor = OperationStructureExtractor(graph=self.graph)
         self.plan = FeatureExecutionPlan(
             source_type,
             is_online_serving,
@@ -640,6 +672,7 @@ class FeatureExecutionPlanner:
         lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
+        forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
 
         out: list[AggregationSpecType] = []
         if groupby_nodes:
@@ -666,6 +699,10 @@ class FeatureExecutionPlanner:
         if forward_aggregate_nodes:
             for forward_aggregate_node in forward_aggregate_nodes:
                 out.extend(self.get_non_tiling_specs(ForwardAggregateSpec, forward_aggregate_node))
+
+        if forward_asat_nodes:
+            for forward_asat_node in forward_asat_nodes:
+                out.extend(self.get_non_tiling_specs(ForwardAggregateAsAtSpec, forward_asat_node))
 
         return out
 
@@ -734,6 +771,10 @@ class FeatureExecutionPlanner:
             aggregation_specs=aggregation_specs,
         )
         sql_node = sql_graph.build(node)
+        op_struct = self.op_struct_extractor.extract(node=node).operation_structure_map[node.name]
+        name_to_dtype = {
+            aggregation.name: aggregation.dtype for aggregation in op_struct.aggregations
+        }
 
         if isinstance(sql_node, TableNode):
             # sql_node corresponds to a FeatureGroup that results from point-in-time groupby or item
@@ -742,6 +783,7 @@ class FeatureExecutionPlanner:
                 feature_spec = FeatureSpec(
                     feature_name=feature_name,
                     feature_expr=feature_expr,
+                    feature_dtype=name_to_dtype[feature_name],
                 )
                 self.plan.add_feature_spec(feature_spec)
         else:
@@ -754,5 +796,9 @@ class FeatureExecutionPlanner:
                 # this could still be previewed as an "unnamed" feature since the expression is
                 # available, but it cannot be published.
                 feature_name = "Unnamed"
-            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=sql_node.sql)
+            feature_spec = FeatureSpec(
+                feature_name=feature_name,
+                feature_expr=sql_node.sql,
+                feature_dtype=name_to_dtype.get(feature_name),
+            )
             self.plan.add_feature_spec(feature_spec)

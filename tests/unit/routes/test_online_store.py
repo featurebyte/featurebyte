@@ -1,6 +1,7 @@
 """
 Test for OnlineStore route
 """
+
 from http import HTTPStatus
 
 import pytest

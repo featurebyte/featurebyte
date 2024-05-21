@@ -127,7 +127,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_30d": '{\n  "TYPE_42": 4\n}',
+        "count_30d": {"TYPE_42": 4},
     }
     df_training_events = pd.DataFrame(
         {
@@ -138,15 +138,15 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features["count_30d"].tolist() == [
-        '{\n  "TYPE_42": 4\n}',
+        {"TYPE_42": 4},
         None,
-        '{\n  "TYPE_42": 2\n}',
-        '{\n  "TYPE_42": 2\n}',
-        '{\n  "TYPE_42": 5\n}',
-        '{\n  "TYPE_42": 4\n}',
-        '{\n  "TYPE_42": 2\n}',
-        '{\n  "TYPE_42": 3\n}',
-        '{\n  "TYPE_42": 2\n}',
+        {"TYPE_42": 2},
+        {"TYPE_42": 2},
+        {"TYPE_42": 5},
+        {"TYPE_42": 4},
+        {"TYPE_42": 2},
+        {"TYPE_42": 3},
+        {"TYPE_42": 2},
         None,
     ]
 

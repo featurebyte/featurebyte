@@ -1,6 +1,7 @@
 """
 Temp Data API route controller
 """
+
 from __future__ import annotations
 
 import mimetypes

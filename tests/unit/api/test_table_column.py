@@ -1,6 +1,7 @@
 """
 Unit test for DataColumn class
 """
+
 import textwrap
 
 import pytest
@@ -144,7 +145,7 @@ def _check_event_table_with_critical_data_info(event_table):
               "col_int" IS NULL
             ) THEN 0 ELSE "col_int" END AS BIGINT)
           END AS BIGINT) AS "col_int",
-          CAST(CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0.0 ELSE "col_float" END AS FLOAT) AS "col_float",
+          CAST(CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0.0 ELSE "col_float" END AS DOUBLE) AS "col_float",
           "col_char" AS "col_char",
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",
@@ -172,7 +173,7 @@ def _check_event_table_with_critical_data_info(event_table):
               "col_int" IS NULL
             ) THEN 0 ELSE "col_int" END AS BIGINT)
           END AS BIGINT) AS "col_int",
-          CAST(CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0.0 ELSE "col_float" END AS FLOAT) AS "col_float",
+          CAST(CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0.0 ELSE "col_float" END AS DOUBLE) AS "col_float",
           "col_char" AS "col_char",
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",

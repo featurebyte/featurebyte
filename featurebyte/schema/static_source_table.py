@@ -1,14 +1,15 @@
 """
 StaticSourceTableModel API payload schema
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.static_source_table import StaticSourceInput, StaticSourceTableModel
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableListRecord
@@ -20,7 +21,7 @@ class StaticSourceTableCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     feature_store_id: PydanticObjectId
     sample_rows: Optional[int] = Field(ge=0)
     request_input: StaticSourceInput

@@ -184,6 +184,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_2h_average",
-  "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average"
+  CAST("_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_2h_average",
+  CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG

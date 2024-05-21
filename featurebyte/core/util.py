@@ -1,14 +1,15 @@
 """
 util.py contains common functions used across different classes
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from featurebyte.common.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.scalar import get_value_parameter
+from featurebyte.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 
 if TYPE_CHECKING:
     from featurebyte.core.series import FrozenSeries, FrozenSeriesT

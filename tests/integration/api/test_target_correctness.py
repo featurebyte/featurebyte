@@ -1,6 +1,7 @@
 """
 Target correctness tests.
 """
+
 from typing import Optional
 
 from collections import defaultdict
@@ -33,7 +34,7 @@ class TargetParameter:
 
 
 @pytest.fixture(name="target_parameters")
-def target_parameters_fixture(source_type):
+def target_parameters_fixture():
     """
     Parameters for feature tests using aggregate_over
     """
@@ -50,9 +51,6 @@ def target_parameters_fixture(source_type):
         ),
         TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func),
     ]
-    spark_only_agg_types = ["max", "std", "latest"]
-    if source_type == "spark":
-        parameters = [param for param in parameters if param.agg_name in spark_only_agg_types]
     return parameters
 
 

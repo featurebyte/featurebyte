@@ -1,6 +1,7 @@
 """
 Unit test for snowflake tile
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock, Mock, call
 
@@ -26,6 +27,7 @@ def test_construct_snowflaketile_time_modulo_error():
             value_column_types=["FLOAT"],
             entity_column_names=["col1"],
             feature_store_id=ObjectId(),
+            windows=["1d"],
         )
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
@@ -46,6 +48,7 @@ def test_construct_snowflaketile_frequency_minute_error():
             value_column_types=["FLOAT"],
             entity_column_names=["col1"],
             feature_store_id=ObjectId(),
+            windows=["1d"],
         )
     assert "frequency_minute should be a multiple of 60 if it is more than 60" in str(excinfo.value)
 
@@ -65,6 +68,7 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
         tile_id="some_tile_id",
         aggregation_id="some_agg_id",
         feature_store_id=ObjectId(),
+        windows=["1d"],
     )
     assert tile_spec.time_modulo_frequency_second == 0
     assert tile_spec.blind_spot_second == 3
@@ -178,9 +182,9 @@ async def test_generate_tiles_on_demand__progress_update(
     )
 
     assert mock_progress_callback.call_args_list == [
-        call(0, "0/4 completed"),
-        call(25, "1/4 completed"),
-        call(50, "2/4 completed"),
-        call(75, "3/4 completed"),
-        call(100, "4/4 completed"),
+        call(0, "Computing tiles on demand"),
+        call(25, "Computed 1 out of 4 tiles"),
+        call(50, "Computed 2 out of 4 tiles"),
+        call(75, "Computed 3 out of 4 tiles"),
+        call(100, "Computed 4 out of 4 tiles"),
     ]

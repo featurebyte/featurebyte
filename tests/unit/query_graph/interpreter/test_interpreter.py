@@ -1,6 +1,7 @@
 """
 This module contains the tests for the Query Graph Interpreter
 """
+
 import json
 import os
 import textwrap

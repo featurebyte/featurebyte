@@ -1,6 +1,7 @@
 """
 Test the construction of the feast register.
 """
+
 import textwrap
 
 import pytest
@@ -9,7 +10,7 @@ from google.protobuf.json_format import MessageToDict
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
-from tests.util.helper import assert_lists_of_dicts_equal, deploy_features_through_api
+from tests.util.helper import assert_lists_of_dicts_equal
 
 
 def test_feast_registry_construction__missing_asset(
@@ -28,6 +29,7 @@ def test_feast_registry_construction__missing_asset(
             features=[float_feature.cached_model],
             feature_lists=[],
             entity_lookup_steps_mapping={},
+            serving_entity_ids=None,
         )
 
     with pytest.raises(ValueError, match="Missing features: "):
@@ -38,11 +40,12 @@ def test_feast_registry_construction__missing_asset(
             features=[],
             feature_lists=[feature_list],
             entity_lookup_steps_mapping={},
+            serving_entity_ids=None,
         )
 
 
 @pytest.mark.asyncio
-async def test_feast_registry_construction__with_post_processing_features(  # pylint: disable=too-many-locals
+async def test_feast_registry_construction__with_post_processing_features(  # pylint: disable=too-many-locals,too-many-arguments
     snowflake_feature_store,
     mysql_online_store,
     cust_id_entity,
@@ -53,6 +56,7 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
     mock_pymysql_connect,
     mock_deployment_flow,
     app_container,
+    expected_cust_id_via_transaction_id_table_name,
 ):
     """Test the construction of the feast register (with post processing features)"""
     _ = mock_deployment_flow
@@ -67,7 +71,8 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
 
     feature_list = FeatureList([feature_requires_post_processing], name="test_feature_list")
     feature_list.save()
-    deploy_features_through_api([feature_requires_post_processing])
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment.enable()
 
     helper_service = app_container.entity_lookup_feature_table_service
     entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping(
@@ -80,6 +85,7 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
         features=[feature_requires_post_processing.cached_model],
         feature_lists=[feature_list.cached_model],  # type: ignore
         entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+        serving_entity_ids=feature_list.cached_model.primary_entity_ids,
     )
     feast_registry_dict = MessageToDict(feast_registry_proto)
     on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
@@ -87,11 +93,11 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
     odfv_spec = on_demand_feature_views[0]["spec"]
     assert odfv_spec["name"].startswith("odfv_feature_")
     assert odfv_spec["project"] == "featurebyte_project"
-    assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
+    assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "FLOAT"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
-        "cat1_cust_id_30m",
         "cat1_transaction_id_1d",
+        expected_cust_id_via_transaction_id_table_name,
     }
 
     data_sources = feast_registry_dict["dataSources"]
@@ -176,9 +182,8 @@ def expected_data_sources_fixture(expected_data_source_names):
 
 
 @pytest.fixture(name="expected_feature_view_specs")
-def expected_feature_view_specs_fixture(feature_list):
+def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_table_name):
     """Expected feature view specs"""
-    relationship_info_id = feature_list.cached_model.relationships_info[0].id
     common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
     common_batch_source = {
         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
@@ -204,11 +209,11 @@ def expected_feature_view_specs_fixture(feature_list):
             "features": [
                 {
                     "name": f"non_time_time_sum_amount_feature_{version}",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
             ],
         },
@@ -246,34 +251,44 @@ def expected_feature_view_specs_fixture(feature_list):
             "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
             "features": [
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"sum_1d_{version}", "valueType": "DOUBLE"},
+                {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
                     "valueType": "UNIX_TIMESTAMP",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part1",
-                    "valueType": "DOUBLE",
+                    "valueType": "FLOAT",
                 },
             ],
             "ttl": "3600s",
         },
         {
             **common_params,
-            "name": f"fb_entity_lookup_{relationship_info_id}",
+            "name": expected_cust_id_via_transaction_id_table_name,
             "batchSource": {
                 **common_batch_source,
-                "name": f"fb_entity_lookup_{relationship_info_id}",
+                "name": expected_cust_id_via_transaction_id_table_name,
                 "snowflakeOptions": {
                     **common_snowflake_options,
-                    "table": f"fb_entity_lookup_{relationship_info_id}",
+                    "table": expected_cust_id_via_transaction_id_table_name,
                 },
-                "timestampField": "__feature_timestamp",
-                "type": "BATCH_SNOWFLAKE",
             },
             "entities": ["transaction_id"],
             "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
-            "features": [{"name": "cust_id", "valueType": "INT64"}],
+            "features": [
+                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
+                {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part0",
+                    "valueType": "UNIX_TIMESTAMP",
+                },
+                {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "FLOAT",
+                },
+            ],
+            "ttl": "3600s",
         },
     ]
 
@@ -291,7 +306,7 @@ def expected_feature_service_spec_fixture(
             "project": "featurebyte_project",
             "features": [
                 {
-                    "featureColumns": [{"name": f"sum_1d_{version}", "valueType": "DOUBLE"}],
+                    "featureColumns": [{"name": f"sum_1d_{version}", "valueType": "FLOAT"}],
                     "featureViewName": f"odfv_sum_1d_{version.lower()}_{float_feature.id}",
                 },
                 {
@@ -302,7 +317,7 @@ def expected_feature_service_spec_fixture(
                     "featureColumns": [
                         {
                             "name": f"composite_feature_ttl_req_col_{version}",
-                            "valueType": "DOUBLE",
+                            "valueType": "FLOAT",
                         }
                     ],
                     "featureViewName": f"odfv_composite_feature_ttl_req_col_{version.lower()}_{comp_feat_id}",
@@ -311,7 +326,7 @@ def expected_feature_service_spec_fixture(
                     "featureColumns": [
                         {
                             "name": f"non_time_time_sum_amount_feature_{version}",
-                            "valueType": "DOUBLE",
+                            "valueType": "FLOAT",
                         }
                     ],
                     "featureViewName": "cat1_transaction_id_1d",

@@ -1,6 +1,7 @@
 """
 This module contains feature store details used to construct feast data source & offline store config
 """
+
 from typing import Any, Optional, Union, cast
 
 from abc import ABC, abstractmethod

@@ -1,6 +1,7 @@
 """
 This module contains utility functions used in tests
 """
+
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 

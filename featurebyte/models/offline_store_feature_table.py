@@ -1,9 +1,10 @@
 """
 OfflineStoreFeatureTableModel class
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,6 +27,7 @@ from featurebyte.models.entity_universe import EntityUniverseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -41,12 +43,55 @@ class OnlineStoreLastMaterializedAt(BaseModel):
     value: datetime
 
 
+class PrecomputedLookupMapping(BaseModel):
+    """
+    Track entities before and after lookup
+    """
+
+    lookup_feature_table_serving_name: str
+    source_feature_table_serving_name: str
+
+
+class PrecomputedLookupFeatureTableInfo(BaseModel):
+    """
+    Metadata for a feature table that is derived from a source feature table in order to support
+    precomputed lookup using a related entity
+    """
+
+    lookup_steps: List[EntityRelationshipInfo]
+    source_feature_table_id: Optional[PydanticObjectId]
+    lookup_mapping: Optional[List[PrecomputedLookupMapping]]
+
+    def get_lookup_feature_table_serving_name(
+        self, source_feature_table_serving_name: str
+    ) -> Optional[str]:
+        """
+        Returns the corresponding serving name in the precomputed lookup feature table given a
+        serving name in the source feature table, if available.
+
+        Parameters
+        ----------
+        source_feature_table_serving_name: str
+            Source feature table serving name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        mapping = {
+            entry.source_feature_table_serving_name: entry.lookup_feature_table_serving_name
+            for entry in (self.lookup_mapping or {})
+        }
+        return mapping.get(source_feature_table_serving_name)
+
+
 class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
     OfflineStoreFeatureTable class
     """
 
     name: str
+    base_name: Optional[str] = Field(default=None)
     name_prefix: Optional[str] = Field(default=None)
     name_suffix: Optional[str] = Field(default=None)
     feature_ids: List[PydanticObjectId]
@@ -65,8 +110,10 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
-    entity_lookup_info: Optional[EntityRelationshipInfo]
+    entity_lookup_info: Optional[EntityRelationshipInfo]  # Note: deprecated
+    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     @root_validator
     @classmethod
@@ -87,11 +134,12 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             values["feature_store_id"] = values["feature_cluster"].feature_store_id
         return values
 
-    @property
-    def remote_attribute_paths(self) -> List[Path]:
+    @classmethod
+    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
         paths = []
-        if self.feature_cluster_path:
-            paths.append(Path(self.feature_cluster_path))
+        feature_cluster_path = document_dict.get("feature_cluster_path")
+        if feature_cluster_path:
+            paths.append(Path(feature_cluster_path))
         return paths
 
     @property
@@ -106,15 +154,21 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         entity_lookup_info = None
         if self.entity_lookup_info:
             entity_lookup_info = self.entity_lookup_info.dict(by_alias=True)
+        precomputed_lookup_feature_table_info = None
+        if self.precomputed_lookup_feature_table_info:
+            precomputed_lookup_feature_table_info = self.precomputed_lookup_feature_table_info.dict(
+                by_alias=True
+            )
         return {
             "catalog_id": self.catalog_id,
             "primary_entity_ids": self.primary_entity_ids,
             "serving_names": self.serving_names,
-            "feature_job_setting": self.feature_job_setting.dict()
-            if self.feature_job_setting
-            else None,
+            "feature_job_setting": (
+                self.feature_job_setting.dict() if self.feature_job_setting else None
+            ),
             "has_ttl": self.has_ttl,
             "entity_lookup_info": entity_lookup_info,
+            "precomputed_lookup_feature_table_info": precomputed_lookup_feature_table_info,
         }
 
     @property
@@ -135,7 +189,48 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             raise ValueError("entity_universe is not set")
         return EntityUniverseModel(**self.internal_entity_universe)
 
-    def _get_basename(self) -> str:
+    @staticmethod
+    def get_serving_names_for_table_name(
+        serving_names: List[str],
+        max_serv_name_len: int = 19,
+        max_serv_num: int = 2,
+    ) -> str:
+        """
+        Get the serving names formatted to be used as part of the feature table name
+
+        Parameters
+        ----------
+        serving_names: List[str]
+            List of serving names
+        max_serv_name_len: int
+            Maximum length of each serving name when formatting
+        max_serv_num: int
+            Maximum number of serving names to include when formatting
+
+        Returns
+        -------
+        str
+        """
+        # take first 3 serving names and join them with underscore
+        # if serving name is longer than 16 characters, truncate it
+        # max length of the name = 15 * 3 + 2 = 47
+        # strip leading and trailing underscores for all serving names & sanitized name
+        name = sanitize_identifier(
+            "_".join(
+                serving_name[:max_serv_name_len].strip("_")
+                for serving_name in serving_names[:max_serv_num]
+            )
+        ).strip("_")
+        return name
+
+    def get_basename(self) -> str:
+        """
+        Get the base name of the feature table (exclude prefix and suffix)
+
+        Returns
+        -------
+        str
+        """
         # max length of feature table name is 64
         # reserving 8 characters for prefix (catalog name, `<project_name>_`, which is 7 hex digits)
         # need to the same prefix for project name (same as catalog prefix)
@@ -149,19 +244,13 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             - (max_serv_num - 1)  # underscores
             - 1  # frequency separator
         )
-
         name = "_no_entity"
         if self.serving_names:
-            # take first 3 serving names and join them with underscore
-            # if serving name is longer than 16 characters, truncate it
-            # max length of the name = 15 * 3 + 2 = 47
-            # strip leading and trailing underscores for all serving names & sanitized name
-            name = sanitize_identifier(
-                "_".join(
-                    serving_name[:max_serv_name_len].strip("_")
-                    for serving_name in self.serving_names[:max_serv_num]
-                )
-            ).strip("_")
+            name = self.get_serving_names_for_table_name(
+                self.serving_names,
+                max_serv_name_len=max_serv_name_len,
+                max_serv_num=max_serv_num,
+            )
 
         if self.feature_job_setting:
             # take the frequency part of the feature job setting
@@ -188,7 +277,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if self.name_prefix:
             full_name += self.name_prefix + "_"
 
-        full_name += self._get_basename()
+        full_name += self.get_basename()
 
         if self.name_suffix:
             full_name += "_" + self.name_suffix
@@ -216,6 +305,22 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                     return entry.value
         return None
 
+    def get_output_dtypes_for_columns(self, column_names: List[str]) -> List[DBVarType]:
+        """
+        Get a list DBVarType corresponding to the provided column names
+
+        Parameters
+        ----------
+        column_names: List[str]
+            Column names
+
+        Returns
+        -------
+        List[DBVarType]
+        """
+        mapping = dict(zip(self.output_column_names, self.output_dtypes))
+        return [mapping[col] for col in column_names]
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
@@ -236,6 +341,10 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_job_setting"),
             pymongo.operations.IndexModel("has_ttl"),
             pymongo.operations.IndexModel("entity_lookup_info"),
+            pymongo.operations.IndexModel(
+                "precomputed_lookup_feature_table_info.source_feature_table_id"
+            ),
+            pymongo.operations.IndexModel("deployment_ids"),
         ]
         auditable = False
 
@@ -270,7 +379,9 @@ class OnlineStoresLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
 
 
 OfflineStoreFeatureTableUpdate = Union[
-    FeaturesUpdate, OfflineLastMaterializedAtUpdate, OnlineStoresLastMaterializedAtUpdate
+    FeaturesUpdate,
+    OfflineLastMaterializedAtUpdate,
+    OnlineStoresLastMaterializedAtUpdate,
 ]
 
 
@@ -283,7 +394,7 @@ class OfflineIngestGraphMetadata:
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
+    offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]]
 
 
 def get_combined_ingest_graph(
@@ -318,6 +429,7 @@ def get_combined_ingest_graph(
     all_offline_ingest_graphs = []
 
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
+    feature_node_relationships_info = []
     for feature in features:
         offline_ingest_graphs = (
             feature.offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -335,15 +447,26 @@ def get_combined_ingest_graph(
 
             graph, node = offline_ingest_graph.ingest_graph_and_node()
             local_query_graph, local_name_map = local_query_graph.load(graph)
-            output_nodes.append(local_query_graph.get_node_by_name(local_name_map[node.name]))
+            mapped_node = local_query_graph.get_node_by_name(local_name_map[node.name])
+            output_nodes.append(mapped_node)
+            feature_node_relationships_info.append(
+                FeatureNodeRelationshipsInfo(
+                    node_name=mapped_node.name,
+                    relationships_info=feature.relationships_info or [],
+                    primary_entity_ids=offline_ingest_graph.primary_entity_ids,
+                )
+            )
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
-            all_offline_ingest_graphs.append(offline_ingest_graph)
+            all_offline_ingest_graphs.append(
+                (offline_ingest_graph, feature.relationships_info or [])
+            )
 
     feature_cluster = FeatureCluster(
         feature_store_id=features[0].tabular_source.feature_store_id,
         graph=local_query_graph,
         node_names=[node.name for node in output_nodes],
+        feature_node_relationships_infos=feature_node_relationships_info,
     )
 
     return OfflineIngestGraphMetadata(

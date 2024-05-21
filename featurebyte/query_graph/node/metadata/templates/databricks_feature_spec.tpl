@@ -2,6 +2,7 @@
 # Import necessary modules for feature engineering and machine learning
 from databricks.feature_engineering import FeatureEngineeringClient
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
+from pyspark.sql import SparkSession
 {{pyspark_import_statement}}
 import mlflow
 
@@ -26,8 +27,9 @@ exclude_columns = {{exclude_columns}}
 # Prepare the dataset for log model
 # 'features' is a list of feature lookups to be included in the training set
 # 'exclude_columns' is a list of columns to be excluded from the training set
-target_column = "[TARGET_COLUMN]"
+target_column = "{{target_column}}"
 schema = {{schema}}
+spark = SparkSession.builder.getOrCreate()
 log_model_dataset = fe.create_training_set(
     df=spark.createDataFrame([], schema),
     feature_lookups=features,
@@ -35,6 +37,7 @@ log_model_dataset = fe.create_training_set(
     exclude_columns=exclude_columns,
 )
 
+{% if include_log_model -%}
 # Log the model and register it to the unity catalog
 fe.log_model(
     model=model,  # model is the trained model
@@ -43,3 +46,4 @@ fe.log_model(
     training_set=log_model_dataset,
     registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
 )
+{% endif -%}

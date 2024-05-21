@@ -1,6 +1,7 @@
 """
 TargetTableService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -13,6 +14,7 @@ from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -62,6 +64,27 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     @property
     def class_name(self) -> str:
         return "TargetTable"
+
+    def _construct_get_query_filter(
+        self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
+    ) -> QueryFilter:
+        query_filter = super()._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        query_filter["request_input.type"] = {"$in": ["observation_table", "dataframe"]}
+        return query_filter
+
+    def construct_list_query_filter(
+        self,
+        query_filter: Optional[QueryFilter] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        query_filter = super().construct_list_query_filter(
+            query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        query_filter["request_input.type"] = {"$in": ["observation_table", "dataframe"]}
+        return query_filter
 
     async def get_target_table_task_payload(
         self,

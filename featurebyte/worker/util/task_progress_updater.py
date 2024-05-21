@@ -1,6 +1,7 @@
 """
 Task progress updater
 """
+
 from typing import Any, Optional
 
 from uuid import UUID

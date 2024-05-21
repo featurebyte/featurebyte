@@ -1,12 +1,13 @@
 """
 BaseTaskPayload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, Optional
 
 import json
-from enum import Enum
+from enum import Enum, IntEnum
 
 from bson.objectid import ObjectId
 from pydantic import Field
@@ -24,6 +25,17 @@ class TaskType(StrEnum):
     IO_TASK = "io_task"
 
 
+class TaskPriority(IntEnum):
+    """
+    Task priority enum
+    """
+
+    CRITICAL = 0
+    HIGH = 1
+    MEDIUM = 2
+    LOW = 3
+
+
 class BaseTaskPayload(FeatureByteBaseModel):
     """
     Base class for Task payload
@@ -35,7 +47,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     output_collection_name: ClassVar[Optional[str]] = None
     command: ClassVar[Optional[Enum]] = None
     task_type: TaskType = Field(default=TaskType.IO_TASK)
-    priority: int = Field(default=0, ge=0, le=3)  # 0 is the highest priority
+    priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     is_scheduled_task: Optional[bool] = Field(default=False)
     is_revocable: ClassVar[Optional[bool]] = False
 

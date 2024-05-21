@@ -1,10 +1,12 @@
 """
 This module contains Feature related models
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+import traceback
 from datetime import datetime
 
 import pymongo
@@ -106,6 +108,12 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
     # transaction and state will not be included as they are not used by the feature.
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
+    )
+
+    # entity join steps contains the steps required to join the entities used by the feature or target
+    # when it is None, it means that the attribute is not initialized (for backward compatibility)
+    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None
     )
 
@@ -449,7 +457,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         for agg in operation_structure.iterate_aggregations():
             node = self.graph.get_node_by_name(agg.node_name)
             input_node_names = self.graph.backward_edges_map[node.name]
-            assert len(input_node_names) <= 1
+            assert len(input_node_names) <= 1, "Aggregation node should have at most one input node"
             output.append(
                 AggregationNodeInfo(
                     node_type=node.type,
@@ -581,6 +589,11 @@ class FeatureModel(BaseFeatureModel):
             # add a try except block here for the old features that may trigger StopIteration,
             # in this case, we will not add tile related attributes
             return values
+        except Exception:
+            # print a traceback for debugging purpose
+            # without this, the error message will be swallowed by the root_validator
+            print(traceback.format_exc())
+            raise
 
         aggregation_ids = []
         for info in tile_infos:
@@ -601,6 +614,28 @@ class FeatureModel(BaseFeatureModel):
         values["online_store_table_names"] = sorted(online_store_table_names)
 
         return values
+
+    @property
+    def used_request_column(self) -> bool:
+        """
+        Returns whether the Feature object uses request column(s) in the computation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.graph.has_node_type(target_node=self.node, node_type=NodeType.REQUEST_COLUMN)
+
+    @property
+    def used_user_defined_function(self) -> bool:
+        """
+        Returns whether the Feature object uses user defined function(s) in the computation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.graph.has_node_type(target_node=self.node, node_type=NodeType.GENERIC_FUNCTION)
 
     class Settings(BaseFeatureModel.Settings):
         """

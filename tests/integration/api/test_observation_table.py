@@ -1,11 +1,11 @@
 """
 Integration tests for ObservationTable
 """
+
 import os
 
 import pandas as pd
 import pytest
-from bson import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
@@ -160,6 +160,7 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
         view.create_observation_table(
             f"BAD_OBSERVATION_TABLE_FROM_VIEW_{source_type}",
             primary_entities=["User"],
+            columns_rename_mapping={"User ID": "üser id"},
         )
 
     expected_msg = "Point in time column should have timestamp type; got INT"

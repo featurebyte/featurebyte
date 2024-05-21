@@ -1,6 +1,7 @@
 """
 DataBricks offline store
 """
+
 from typing import Literal
 
 from featurebyte import AccessTokenCredential

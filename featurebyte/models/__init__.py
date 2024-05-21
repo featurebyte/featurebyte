@@ -1,6 +1,7 @@
 """
 Document models for serialization to persistent storage
 """
+
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_table import EventTableModel

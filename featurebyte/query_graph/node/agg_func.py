@@ -1,8 +1,9 @@
 """
 Aggregation method model
 """
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Literal, Optional, Union
-from typing_extensions import Annotated
+
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union
+from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
@@ -19,7 +20,7 @@ class BaseAggFunc(BaseModel):
     type: AggFunc
 
     def __init_subclass__(cls, **kwargs: Any):
-        if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
+        if "Literal" in repr(cls.__fields__["type"].type_):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
 
@@ -50,8 +51,7 @@ class BaseAggFunc(BaseModel):
     @abstractmethod
     def _derive_output_var_type(
         self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        ...
+    ) -> DBVarType: ...
 
     @abstractmethod
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:

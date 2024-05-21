@@ -1,6 +1,7 @@
 """
 Backward compatibility tests
 """
+
 import os
 import tempfile
 from http import HTTPStatus

@@ -1,6 +1,7 @@
 """
 Entity Relationship Extractor Service
 """
+
 from typing import Dict, List, Optional, Sequence
 
 import itertools
@@ -9,6 +10,7 @@ from dataclasses import dataclass
 
 from bson import ObjectId
 
+from featurebyte.models.entity import EntityModel
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityAncestorDescendantMapper,
     EntityRelationshipInfo,
@@ -244,6 +246,29 @@ class EntityRelationshipExtractorService:
         ):
             output.append(EntityRelationshipInfo(**relationship_info.dict(by_alias=True)))
         return output
+
+    async def get_entity_id_to_entity(
+        self, entity_ids: List[ObjectId]
+    ) -> Dict[ObjectId, EntityModel]:
+        """
+        Construct entity ID to entity dictionary mapping
+
+        Parameters
+        ----------
+        entity_ids: List[ObjectId]
+            List of entity IDs
+
+        Returns
+        -------
+        Dict[ObjectId, EntityModel]
+            Dictionary mapping entity ID to entity model
+        """
+        entity_id_to_entity: Dict[ObjectId, EntityModel] = {}
+        async for entity in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": entity_ids}}
+        ):
+            entity_id_to_entity[entity.id] = entity
+        return entity_id_to_entity
 
     async def extract_relationship_from_primary_entity(
         self,

@@ -1,6 +1,7 @@
 """
 Test session validator class
 """
+
 import copy
 from unittest.mock import AsyncMock, patch
 

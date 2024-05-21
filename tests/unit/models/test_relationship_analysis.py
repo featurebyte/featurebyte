@@ -1,6 +1,7 @@
 """
 Unit tests for RelationshipAnalysisService
 """
+
 from bson import ObjectId
 
 from featurebyte.models import EntityModel

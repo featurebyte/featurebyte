@@ -1,10 +1,11 @@
 """
 Session class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Dict, Optional, OrderedDict, Type
+from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
@@ -16,26 +17,26 @@ import time
 from abc import ABC, abstractmethod
 from asyncio import events
 from io import BytesIO
+from random import randint
 
 import aiofiles
 import pandas as pd
 import pyarrow as pa
+from bson import ObjectId
+from cachetools import TTLCache
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
-from sqlglot.expressions import Expression
+from sqlglot.expressions import Expression, Select
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.common.utils import (
-    create_new_arrow_stream_writer,
-    dataframe_from_arrow_stream,
-    pa_table_to_record_batches,
-)
+from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
-from featurebyte.exception import QueryExecutionTimeOut
+from featurebyte.exception import DataWarehouseOperationError, QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.node.schema import TableDetails as NodeTableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -50,7 +51,7 @@ HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
-
+session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 logger = get_logger(__name__)
 
@@ -103,7 +104,9 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     try:
         return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
     except asyncio.exceptions.TimeoutError:
-        _raise_timeout_exception_in_thread(thread_info["tid"])
+        tid = thread_info.get("tid")
+        if tid:
+            _raise_timeout_exception_in_thread(thread_info["tid"])
         raise
 
 
@@ -118,7 +121,7 @@ class BaseSession(BaseModel):
     database_name: str = ""
     schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
-    _unique_id: int = PrivateAttr(default=0)
+    _cache_key: Any = PrivateAttr(default=None)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
 
     def __init__(self, **data: Any) -> None:
@@ -128,9 +131,35 @@ class BaseSession(BaseModel):
     def _initialize_connection(self) -> None:
         """Initialize connection"""
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __del__(self) -> None:
         # close connection
-        self._connection.close()
+        if self._connection is not None:
+            self._connection.close()
+
+    def set_cache_key(self, key: Any) -> None:
+        """
+        Set hash key used to cache session object
+
+        Parameters
+        ----------
+        key: Any
+            Hash key
+        """
+        self._cache_key = key
+
+    async def clone_if_not_threadsafe(self) -> BaseSession:
+        """
+        Create a new session object from a session that is not threadsafe
+
+        Returns
+        -------
+        BaseSession
+        """
+        if self.is_threadsafe():
+            return self
+        new_session = self.copy()
+        new_session._initialize_connection()  # pylint: disable=protected-access
+        return new_session
 
     @property
     def no_schema_error(self) -> Type[Exception]:
@@ -179,15 +208,15 @@ class BaseSession(BaseModel):
         """
         return self._connection
 
-    def generate_session_unique_id(self) -> str:
+    @classmethod
+    def generate_session_unique_id(cls) -> str:
         """Generate unique id within the session
 
         Returns
         -------
         str
         """
-        self._unique_id += 1
-        return str(self._unique_id)
+        return str(ObjectId()).upper()
 
     @abstractmethod
     async def list_databases(self) -> list[str]:
@@ -216,7 +245,10 @@ class BaseSession(BaseModel):
 
     @abstractmethod
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
@@ -227,6 +259,8 @@ class BaseSession(BaseModel):
             Database name
         schema_name: str | None
             Schema name
+        timeout: float
+            Timeout in seconds
 
         Returns
         -------
@@ -239,6 +273,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
@@ -252,6 +287,8 @@ class BaseSession(BaseModel):
             Schema name
         table_name: str
             Table name
+        timeout: float
+            Timeout in seconds
 
         Returns
         -------
@@ -376,9 +413,7 @@ class BaseSession(BaseModel):
         """
         # fetch all results into a single dataframe and write batched records to the stream
         dataframe = self.fetch_query_result_impl(cursor)
-        table = pa.Table.from_pandas(dataframe)
-        for batch in pa_table_to_record_batches(table):
-            yield batch
+        yield pa.record_batch(dataframe)
 
     async def get_async_query_stream(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
@@ -460,7 +495,7 @@ class BaseSession(BaseModel):
 
         query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
-            results = await self.execute_query(query)
+            results = await self.execute_query(query, to_log_error=False)
         except self._no_schema_error:  # pylint: disable=broad-except
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
@@ -478,7 +513,10 @@ class BaseSession(BaseModel):
         }
 
     async def execute_query(
-        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self,
+        query: str,
+        timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        to_log_error: bool = True,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query
@@ -489,13 +527,32 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
+        to_log_error: bool
+            If True, log error
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
+
+        Raises
+        ------
+        Exception
+            If query execution fails
         """
-        bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+        try:
+            bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+        except Exception as exc:
+            if to_log_error:
+                logger.error(
+                    "Error executing query", extra={"query": query, "source_type": self.source_type}
+                )
+
+            # remove session from cache if query fails
+            if self._cache_key:
+                session_cache.pop(self._cache_key, None)
+            raise exc
+
         buffer = BytesIO()
         async for chunk in bytestream:
             buffer.write(chunk)
@@ -526,7 +583,10 @@ class BaseSession(BaseModel):
         return await self.execute_query(query=query, timeout=timeout)
 
     async def execute_query_long_running(
-        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self,
+        query: str,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        to_log_error: bool = True,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a long time
@@ -537,13 +597,15 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
+        to_log_error: bool
+            If True, log error
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
-        return await self.execute_query(query=query, timeout=timeout)
+        return await self.execute_query(query=query, timeout=timeout, to_log_error=to_log_error)
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
@@ -558,12 +620,22 @@ class BaseSession(BaseModel):
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
+
+        Raises
+        ------
+        Exception
+            If query execution fails
         """
         cursor = self.connection.cursor()
         try:
             cursor.execute(query)
             result = self.fetch_query_result_impl(cursor)
             return result
+        except Exception as exc:
+            # remove session from cache if query fails
+            if self._cache_key:
+                session_cache.pop(self._cache_key, None)
+            raise exc
         finally:
             cursor.close()
 
@@ -614,7 +686,6 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
-        is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -629,21 +700,43 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
-        is_view : bool
-            If True - it is view not table.
+
+        Raises
+        ------
+        DataWarehouseOperationError
+            If the operation failed
         """
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
-        query = sql_to_string(
-            expressions.Drop(
-                this=expressions.Table(this=fully_qualified_table_name),
-                kind="VIEW" if is_view else "TABLE",
-                exists=if_exists,
-            ),
-            source_type=self.source_type,
-        )
-        await self.execute_query(query)
+
+        async def _drop(is_view: bool) -> None:
+            fully_qualified_table_name = get_fully_qualified_table_name(
+                {
+                    "table_name": table_name,
+                    "schema_name": schema_name,
+                    "database_name": database_name,
+                }
+            )
+            query = sql_to_string(
+                expressions.Drop(
+                    this=expressions.Table(this=fully_qualified_table_name),
+                    kind="VIEW" if is_view else "TABLE",
+                    exists=if_exists,
+                ),
+                source_type=self.source_type,
+            )
+            await self.execute_query(query)
+
+        try:
+            await _drop(is_view=False)
+        except Exception as exc:  # pylint: disable=bare-except
+            msg = str(exc)
+            if "VIEW" in msg:
+                try:
+                    await _drop(is_view=True)
+                    return
+                except Exception as exc_view:  # pylint: disable=bare-except
+                    msg = str(exc_view)
+                    raise DataWarehouseOperationError(msg) from exc_view
+            raise DataWarehouseOperationError(msg) from exc
 
     def format_quoted_identifier(self, identifier_name: str) -> str:
         """
@@ -674,6 +767,144 @@ class BaseSession(BaseModel):
         str
         """
         return sql_to_string(expr, source_type=self.source_type)
+
+    async def retry_sql(
+        self,
+        sql: str,
+        retry_num: int = 10,
+        sleep_interval: int = 5,
+    ) -> pd.DataFrame | None:
+        """
+        Retry sql operation
+
+        Parameters
+        ----------
+        sql: str
+            SQL query
+        retry_num: int
+            Number of retries
+        sleep_interval: int
+            Sleep interval between retries
+
+        Returns
+        -------
+        pd.DataFrame
+            Result of the sql operation
+
+        Raises
+        ------
+        Exception
+            if the sql operation fails after retry_num retries
+        """
+
+        for i in range(retry_num):
+            try:
+                return await self.execute_query_long_running(sql)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "SQL query failed",
+                    extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
+                )
+                if i == retry_num - 1:
+                    logger.error(
+                        "SQL query failed", extra={"attempts": retry_num, "exception": exc}
+                    )
+                    raise
+
+            random_interval = randint(1, sleep_interval)
+            await asyncio.sleep(random_interval)
+
+        return None
+
+    async def table_exists(self, table_name: str) -> bool:
+        """
+        Check if table exists
+
+        Parameters
+        ----------
+        table_name: str
+            input table name
+
+        Returns
+        -------
+            True if table exists, False otherwise
+        """
+        try:
+            expr = (
+                expressions.Select(expressions=[expressions.Star()])
+                .from_(quoted_identifier(table_name.upper()))
+                .limit(1)
+            )
+            await self.execute_query_long_running(
+                sql_to_string(expr, self.source_type), to_log_error=False
+            )
+            return True
+        except self._no_schema_error:  # pylint: disable=broad-except
+            pass
+        return False
+
+    async def create_table_as(
+        self,
+        table_details: NodeTableDetails | str,
+        select_expr: Select | str,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
+        replace: bool = False,
+        retry: bool = False,
+        retry_num: int = 10,
+        sleep_interval: int = 5,
+    ) -> pd.DataFrame | None:
+        """
+        Create a table using a select statement
+
+        Parameters
+        ----------
+        table_details: NodeTableDetails | str
+            Details or name of the table to be created
+        select_expr: Select | str
+            Select expression or SQL to create the table
+        partition_keys: list[str] | None
+            Partition keys
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
+        replace: bool
+            Whether to replace the table if exists
+        retry: bool
+            Whether to retry the operation
+        retry_num: int
+            Number of retries
+        sleep_interval: int
+            Sleep interval between retries
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        adapter = get_sql_adapter(self.source_type)
+
+        if isinstance(table_details, str):
+            table_details = NodeTableDetails(
+                database_name=None,
+                schema_name=None,
+                table_name=table_details.upper(),  # use upper case for unquoted identifiers
+            )
+        if isinstance(select_expr, str):
+            select_expr = f"SELECT * FROM ({select_expr})"
+
+        query = sql_to_string(
+            adapter.create_table_as(
+                table_details=table_details,
+                select_expr=select_expr,
+                kind=kind,
+                partition_keys=partition_keys,
+                replace=replace,
+            ),
+            source_type=self.source_type,
+        )
+
+        if retry:
+            return await self.retry_sql(query, retry_num=retry_num, sleep_interval=sleep_interval)
+        return await self.execute_query_long_running(query)
 
 
 class SqlObjectType(StrEnum):
@@ -923,6 +1154,9 @@ class BaseSchemaInitializer(ABC):
             if sql_object_type == SqlObjectType.TABLE:
                 # Table naming convention does not include "T_" prefix
                 identifier = identifier[len("T_") :]
+            elif sql_object_type == SqlObjectType.FUNCTION and identifier == "F_OBJECT_DELETE":
+                # OBJECT_DELETE does not include "F_" prefix
+                identifier = identifier[len("F_") :]
 
             full_filename = os.path.join(sql_directory, filename)
 

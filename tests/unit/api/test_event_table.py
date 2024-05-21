@@ -1,6 +1,7 @@
 """
 Unit test for EventTable class
 """
+
 from __future__ import annotations
 
 import textwrap
@@ -308,6 +309,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = "event_timestamp"
+    expected_special_columns = ["event_timestamp", "col_int", "created_at"]
 
     def test_delete(self, table_under_test):
         """Test delete"""
@@ -1103,8 +1105,8 @@ def test_shape(snowflake_event_table, snowflake_query_map):
     Test creating ObservationTable from an EventView
     """
 
-    def side_effect(query, timeout=None):
-        _ = timeout
+    def side_effect(query, timeout=None, to_log_error=True):
+        _ = timeout, to_log_error
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)

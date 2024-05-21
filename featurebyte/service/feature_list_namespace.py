@@ -1,6 +1,7 @@
 """
 FeatureListNamespaceService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel

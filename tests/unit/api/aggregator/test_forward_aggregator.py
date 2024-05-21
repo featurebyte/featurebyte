@@ -1,6 +1,7 @@
 """
 Test forward aggregator.
 """
+
 import pytest
 
 from featurebyte import AggFunc

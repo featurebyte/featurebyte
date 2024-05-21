@@ -1,6 +1,7 @@
 """
 This module contains integration tests for TileManager
 """
+
 import pytest
 
 from featurebyte.enum import InternalName

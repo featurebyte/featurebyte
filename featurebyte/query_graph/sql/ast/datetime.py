@@ -1,6 +1,7 @@
 """
 Module for datetime operations related sql generation
 """
+
 from __future__ import annotations
 
 from typing import Union, cast
@@ -11,12 +12,12 @@ import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
-from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
+from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
 @dataclass

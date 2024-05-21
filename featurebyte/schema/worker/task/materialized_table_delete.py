@@ -1,6 +1,7 @@
 """
 Materialized Table Delete Task Payload schema
 """
+
 from __future__ import annotations
 
 from featurebyte.enum import StrEnum, WorkerCommand
@@ -10,7 +11,6 @@ from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.static_source_table import StaticSourceTableModel
-from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 
 
@@ -24,7 +24,6 @@ class MaterializedTableCollectionName(StrEnum):
     BATCH_REQUEST = BatchRequestTableModel.collection_name()
     BATCH_FEATURE = BatchFeatureTableModel.collection_name()
     STATIC_SOURCE = StaticSourceTableModel.collection_name()
-    TARGET = TargetTableModel.collection_name()
 
 
 class MaterializedTableDeleteTaskPayload(BaseTaskPayload):

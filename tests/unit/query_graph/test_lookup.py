@@ -1,6 +1,7 @@
 """
 Tests for Lookup SQLNode
 """
+
 import textwrap
 
 from featurebyte.enum import SourceType

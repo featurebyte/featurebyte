@@ -1,6 +1,7 @@
 """
 BaseDataController for API routes
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
@@ -18,6 +19,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
+from featurebyte.service.base_table_document import DocumentCreate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -96,7 +98,9 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         """
         column_semantic_map = {}
         for field, semantic_type in self.semantic_tag_rules.items():
-            semantic_id = await self.semantic_service.get_or_create_document(name=semantic_type)
+            semantic_id = await self.semantic_service.get_or_create_document(
+                name=semantic_type.value
+            )
             special_column_name = getattr(document, field)
             if special_column_name:
                 column_semantic_map[special_column_name] = semantic_id
@@ -164,7 +168,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
             )
         return document
 
-    async def create_table(self, data: TableDocumentT) -> TableDocumentT:
+    async def create_table(self, data: DocumentCreate) -> TableDocumentT:
         """
         Create Table record at persistent
 

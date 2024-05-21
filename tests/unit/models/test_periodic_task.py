@@ -1,6 +1,7 @@
 """
 Test periodic task model
 """
+
 from pymongo.operations import IndexModel
 
 from featurebyte.models.periodic_task import PeriodicTask

@@ -1,6 +1,7 @@
 """
 Tests for DimensionTable routes
 """
+
 from http import HTTPStatus
 
 import pytest

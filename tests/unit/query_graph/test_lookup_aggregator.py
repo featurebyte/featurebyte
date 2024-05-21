@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.sql.aggregator.lookup.LookupAggregator
 """
+
 from __future__ import annotations
 
 import textwrap
@@ -241,17 +242,24 @@ def test_lookup_aggregator__online_with_current_flag(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          "cust_id" AS "CUSTOMER_ID",
-          "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+          "CUSTOMER_ID",
+          ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1") AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
         FROM (
           SELECT
-            "effective_ts" AS "effective_ts",
-            "cust_id" AS "cust_id",
-            "membership_status" AS "membership_status"
-          FROM "db"."public"."customer_profile_table"
-          WHERE
-            "is_record_current" = TRUE
+            "cust_id" AS "CUSTOMER_ID",
+            "membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+          FROM (
+            SELECT
+              "effective_ts" AS "effective_ts",
+              "cust_id" AS "cust_id",
+              "membership_status" AS "membership_status"
+            FROM "db"."public"."customer_profile_table"
+            WHERE
+              "is_record_current" = TRUE
+          )
         )
+        GROUP BY
+          "CUSTOMER_ID"
         """
     ).strip()
     assert direct_lookups[0].expr.sql(pretty=True) == expected_sql

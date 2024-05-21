@@ -4,8 +4,19 @@ import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
-from featurebyte import Entity, FeatureList, Relationship, Table
+from featurebyte import (
+    Configurations,
+    Context,
+    Entity,
+    FeatureList,
+    Relationship,
+    Table,
+    TargetNamespace,
+    UseCase,
+)
+from featurebyte.enum import DBVarType
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import tz_localize_if_needed
 
@@ -22,8 +33,18 @@ def customer_entity_fixture(customer_entity):
     return customer_entity
 
 
+@pytest.fixture(name="event_entity", scope="session")
+def event_entity_fixture():
+    """
+    Fixture for event entity
+    """
+    event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
+    event_entity.save()
+    return event_entity
+
+
 @pytest_asyncio.fixture(name="tables", scope="session")
-async def tables_fixture(session, data_source, customer_entity):
+async def tables_fixture(session, data_source, customer_entity, event_entity):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -68,8 +89,6 @@ async def tables_fixture(session, data_source, customer_entity):
     await session.register_table(f"{table_prefix}_SCD_2", df_scd_2, temporary=False)
     await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
 
-    event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
-    event_entity.save()
     city_entity = Entity(name=f"{table_prefix}_city", serving_names=["serving_city_id"])
     city_entity.save()
     state_entity = Entity(name=f"{table_prefix}_state", serving_names=["serving_state_id"])
@@ -191,15 +210,35 @@ def customer_num_city_change_feature_fixture(tables):
     return feature
 
 
+@pytest.fixture(name="event_use_case", scope="session")
+def event_use_case_fixture(event_entity):
+    """
+    Fixture for an event use case. To be specified when creating deployment, so that the deployment
+    can be served by providing serving_event_id
+    """
+    target = TargetNamespace.create(
+        name="dummy_target", primary_entity=[event_entity.name], dtype=DBVarType.FLOAT
+    )
+    context = Context.create(name="event_context", primary_entity=[event_entity.name])
+    use_case = UseCase.create(
+        name="event_use_case", target_name=target.name, context_name=context.name
+    )
+    return use_case
+
+
 @pytest.fixture(name="feature_list_deployment_with_child_entities", scope="module")
-def feature_list_deployment_with_child_entities_fixture(country_feature, mock_task_manager):
+def feature_list_deployment_with_child_entities_fixture(
+    country_feature, mock_task_manager, event_use_case
+):
     _ = mock_task_manager
 
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
     deployment = None
     try:
-        deployment = feature_list.deploy(make_production_ready=True)
+        deployment = feature_list.deploy(
+            make_production_ready=True, use_case_name=event_use_case.name
+        )
         deployment.enable()
         time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
@@ -213,6 +252,7 @@ def feature_list_deployment_with_child_entities_fixture(country_feature, mock_ta
 def feature_list_with_parent_child_features_fixture(
     country_feature,
     city_feature,
+    event_use_case,
     mock_task_manager,
 ):
     _ = mock_task_manager
@@ -223,7 +263,9 @@ def feature_list_with_parent_child_features_fixture(
     feature_list.save(conflict_resolution="retrieve")
     deployment = None
     try:
-        deployment = feature_list.deploy(make_production_ready=True)
+        deployment = feature_list.deploy(
+            make_production_ready=True, use_case_name=event_use_case.name
+        )
         deployment.enable()
         time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
@@ -231,6 +273,45 @@ def feature_list_with_parent_child_features_fixture(
     finally:
         if deployment:
             deployment.disable()
+
+
+def test_use_case_list_filtering_by_feature_list(feature_list_with_parent_child_features):
+    """
+    Test that use case list is filtered by feature list
+    """
+    feature_list = feature_list_with_parent_child_features
+    supported_serving_entity_ids = feature_list.cached_model.supported_serving_entity_ids
+
+    # retrieve use case filtered by feature list ID
+    client = Configurations().get_client()
+    params = {"feature_list_id": str(feature_list.id)}
+    response = client.get("/use_case", params=params)
+    response_dict = response.json()
+    assert response_dict["total"] == 1
+
+    use_case_doc = response_dict["data"][0]
+    context = Context.get_by_id(ObjectId(use_case_doc["context_id"]))
+    context_primary_entity_ids = context.primary_entity_ids
+
+    # check that use case's primary entity ids is in the supported serving entity ids
+    assert context_primary_entity_ids in supported_serving_entity_ids
+
+    # create another use case with different primary entity
+    entity = Entity.create(name="another_entity", serving_names=["another_serving_id"])
+    target = TargetNamespace.create(
+        name="another_target", primary_entity=[entity.name], dtype=DBVarType.FLOAT
+    )
+    context = Context.create(name="another_context", primary_entity=[entity.name])
+    another_use_case = UseCase.create(
+        name="another_use_case", target_name=target.name, context_name=context.name
+    )
+
+    # retrieve all use cases and check that other use case is in the non-filtered list
+    response = client.get("/use_case")
+    response_dict = response.json()
+    assert response_dict["total"] > 1
+    use_case_ids = [doc["_id"] for doc in response_dict["data"]]
+    assert str(another_use_case.id) in use_case_ids
 
 
 @pytest.fixture(name="feature_list_with_complex_features", scope="module")

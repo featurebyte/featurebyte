@@ -1,6 +1,7 @@
 """
 This module contains integration tests for online feature store
 """
+
 from datetime import datetime
 
 import numpy as np

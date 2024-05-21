@@ -25,7 +25,7 @@ WITH _FB_AGGREGATED AS (
         SELECT
           "__FB_KEY_COL_0",
           "__FB_KEY_COL_1",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
           "__FB_TABLE_ROW_INDEX",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
@@ -72,16 +72,24 @@ WITH _FB_AGGREGATED AS (
   ) AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
-      "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      "CUSTOMER_ID",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+      ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2") AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
     FROM (
       SELECT
-        "cust_id" AS "cust_id",
-        "cust_value_1" AS "cust_value_1",
-        "cust_value_2" AS "cust_value_2"
-      FROM "db"."public"."dimension_table"
+        "cust_id" AS "CUSTOMER_ID",
+        "cust_value_1" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
+        "cust_value_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
+      FROM (
+        SELECT
+          "cust_id" AS "cust_id",
+          "cust_value_1" AS "cust_value_1",
+          "cust_value_2" AS "cust_value_2"
+        FROM "db"."public"."dimension_table"
+      )
     )
+    GROUP BY
+      "CUSTOMER_ID"
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 )
@@ -89,8 +97,8 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "a_latest_value",
-  (
+  CAST("_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS DOUBLE) AS "a_latest_value",
+  CAST((
     "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
-  ) AS "MY FEATURE"
+  ) AS DOUBLE) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG

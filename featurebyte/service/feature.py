@@ -1,6 +1,7 @@
 """
 FeatureService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -15,7 +16,11 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.transform.offline_store_ingest import (
+    OfflineStoreIngestQueryGraphTransformer,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.feature import FeatureServiceCreate
@@ -128,6 +133,22 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             # derivation.
             feature_dict["aggregation_ids"] = ["dummy_aggregation_id"]
             feature_dict["aggregation_result_names"] = ["dummy_aggregation_result_name"]
+
+        feature = FeatureModel(**feature_dict)
+        if sanitize_for_definition:
+            return feature
+
+        # derive entity join steps
+        store_info_service = self.offline_store_info_initialization_service
+        entity_id_to_serving_name = {
+            entity_id: entity.serving_names[0]
+            for entity_id, entity in derived_data.entity_id_to_entity.items()
+        }
+        feature_dict["entity_join_steps"] = (
+            await store_info_service.get_entity_join_steps_for_feature_table(
+                feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
+            )
+        )
         return FeatureModel(**feature_dict)
 
     @staticmethod
@@ -145,7 +166,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         DocumentCreationError
             If the feature's feature job settings are not consistent
         """
-        # validate feature model
+        # validate feature job settings are consistent
         table_id_feature_job_settings = feature.extract_table_id_feature_job_settings()
         table_id_to_feature_job_setting = {}
         for table_id_feature_job_setting in table_id_feature_job_settings:
@@ -162,6 +183,30 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                         f"Feature job settings for table {table_id} are not consistent. "
                         f"Two different feature job settings are found: "
                         f"{table_id_to_feature_job_setting[table_id]} and {feature_job_setting}"
+                    )
+
+        # validate feature with UDFs
+        if feature.used_user_defined_function:
+            transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
+            assert feature.name is not None
+            result = transformer.transform(
+                target_node=feature.node,
+                relationships_info=feature.relationships_info or [],
+                feature_name=feature.name,
+                feature_version=feature.version.to_str(),
+            )
+            if result.is_decomposed:
+                # if the graph is decomposed, it implies that on-demand-function is used when the
+                # feature is online-enabled. Check whether the UDF is used in the on-demand function.
+                decom_graph = result.graph
+                decom_node = result.graph.get_node_by_name(result.node_name_map[feature.node.name])
+                if decom_graph.has_node_type(
+                    target_node=decom_node, node_type=NodeType.GENERIC_FUNCTION
+                ):
+                    raise DocumentCreationError(
+                        "This feature requires a Python on-demand function during deployment. "
+                        "We cannot proceed with creating the feature because the on-demand function involves a UDF, "
+                        "and the Python version of the UDF is not supported at the moment."
                     )
 
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
@@ -355,3 +400,19 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             table_ids=feature.table_ids,
             count=count,
         )
+
+    async def get_online_disabled_feature_ids(self) -> List[ObjectId]:
+        """
+        Get the ids of the features that are online disabled
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        disabled_feature_ids = []
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter={"online_enabled": False},
+            projection={"_id": 1},
+        ):
+            disabled_feature_ids.append(doc["_id"])
+        return disabled_feature_ids

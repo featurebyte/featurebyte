@@ -1,4 +1,5 @@
 """Unit tests for SDK code generation"""
+
 import pandas as pd
 import pytest
 
@@ -251,6 +252,26 @@ def test_sdk_code_generation__forward_aggregate_target(
         fixture_path="tests/fixtures/sdk_code/lookup_target_code_generation.py",
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
+    )
+
+
+def test_sdk_code_generation__forward_aggregate_asat(
+    snowflake_scd_table_with_entity, update_fixtures
+):
+    """Test SDK code generation for forward aggregate asat target"""
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    aggregate_asat_target = scd_view.groupby("col_boolean").forward_aggregate_asat(
+        value_column="col_float",
+        method="sum",
+        target_name="asat_target",
+    )
+    check_sdk_code_generation(
+        aggregate_asat_target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/forward_aggregate_asat_target_code_generation.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_scd_table_with_entity.id,
     )
 
 
@@ -620,4 +641,25 @@ def test_timestamp_filtering_sdk_code_generation(
         fixture_path="tests/fixtures/sdk_code/feature_with_timestamp_filtering.py",
         update_fixtures=update_fixtures,
         table_id=snowflake_event_table_with_entity.id,
+    )
+
+
+def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, update_fixtures):
+    """Test SDK code generation for target lookup feature"""
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+
+    view = snowflake_scd_table.get_view()
+    view['"quote column"'] = view["col_float"] * 2
+    target = view['"quote column"'].as_target(target_name="Target name with special characters")
+
+    # check that the feature can be saved without throwing error
+    target.save()
+
+    check_sdk_code_generation(
+        target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/target_scd_lookup.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_scd_table.id,
     )

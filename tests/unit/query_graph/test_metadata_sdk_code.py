@@ -1,6 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.node.metadata.sdk_code
 """
+
 import importlib
 import textwrap
 
@@ -276,7 +277,8 @@ def test_code_generator__on_demand_function():
                 feat = input1 + 1
                 return feat
 
-            return on_demand_feature_func(x1)
+            output = on_demand_feature_func(x1)
+            return None if pd.isnull(output) else output
             $$
             """
         ).strip()

@@ -1,6 +1,7 @@
 """
 Test for graph quick pruning related logics
 """
+
 import pytest
 
 from featurebyte.query_graph.graph import QueryGraph

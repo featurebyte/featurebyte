@@ -1,6 +1,7 @@
 """
 Test relationships module
 """
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId

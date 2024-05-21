@@ -1,6 +1,7 @@
 """
 Feature validation util
 """
+
 from typing import List
 
 from featurebyte.query_graph.enum import NodeType

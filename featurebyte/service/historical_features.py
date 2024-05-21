@@ -1,6 +1,7 @@
 """
 HistoricalFeaturesService
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -24,6 +25,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
     Computer,
+    ExecutionResult,
     ExecutorParams,
     QueryExecutor,
 )
@@ -59,12 +61,12 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         self.tile_cache_service = tile_cache_service
         self.feature_table_cache_service = feature_table_cache_service
 
-    async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> None:
+    async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> ExecutionResult:
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
         ):
-            await self.feature_table_cache_service.create_view_from_cache(
+            is_output_view = await self.feature_table_cache_service.create_view_or_table_from_cache(
                 feature_store=executor_params.feature_store,
                 observation_table=executor_params.observation_set,
                 graph=executor_params.graph,
@@ -84,11 +86,12 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 observation_set=executor_params.observation_set,
                 serving_names_mapping=executor_params.serving_names_mapping,
                 feature_store=executor_params.feature_store,
-                is_feature_list_deployed=executor_params.is_feature_list_deployed,
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 output_table_details=executor_params.output_table_details,
                 progress_callback=executor_params.progress_callback,
             )
+            is_output_view = False
+        return ExecutionResult(is_output_view=is_output_view)
 
 
 class HistoricalFeaturesValidationParametersService:

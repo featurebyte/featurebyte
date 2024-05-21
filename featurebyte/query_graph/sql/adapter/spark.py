@@ -1,6 +1,7 @@
 """
 SparkAdapter class for generating Spark specific SQL expressions
 """
+
 from __future__ import annotations
 
 from sqlglot import expressions

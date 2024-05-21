@@ -1,6 +1,7 @@
 """
 BaseService class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
+from cachetools import LRUCache
 from pymongo.errors import OperationFailure
 from redis import Redis
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
@@ -107,6 +109,7 @@ class BaseDocumentService(
     # pylint: disable=too-many-public-methods
 
     document_class: Type[Document]
+    _remote_attribute_cache: Any = LRUCache(maxsize=1024)
 
     def __init__(
         self,
@@ -419,7 +422,7 @@ class BaseDocumentService(
         int
             number of records deleted
         """
-        document = await self.get_document(
+        document_dict = await self.get_document_as_dict(
             document_id=document_id,
             exception_detail=exception_detail,
             use_raw_query_filter=use_raw_query_filter,
@@ -429,7 +432,7 @@ class BaseDocumentService(
         )
 
         # check if document is modifiable
-        self._check_document_modifiable(document=document.dict(by_alias=True))
+        self._check_document_modifiable(document=document_dict)
 
         query_filter = self._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
@@ -442,7 +445,11 @@ class BaseDocumentService(
         )
 
         # remove remote attributes
-        for remote_path in document.remote_attribute_paths:
+        for (
+            remote_path
+        ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
+            document_dict
+        ):
             await self.storage.try_delete_if_exists(remote_path)
         return int(num_of_records_deleted)
 
@@ -1018,6 +1025,7 @@ class BaseDocumentService(
         document: Optional[Document] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[Document]:
         """
         Update document at persistent
@@ -1036,13 +1044,17 @@ class BaseDocumentService(
             Whether to make additional query to retrieval updated document & return
         skip_block_modification_check: bool
             Whether to skip block modification check (use with caution, only use when updating document description)
+        populate_remote_attributes: bool
+            Whether to populate remote attributes (e.g. file paths) when returning document
 
         Returns
         -------
         Optional[Document]
         """
         if document is None:
-            document = await self.get_document(document_id=document_id)
+            document = await self.get_document(
+                document_id=document_id, populate_remote_attributes=False
+            )
 
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
@@ -1056,7 +1068,9 @@ class BaseDocumentService(
         )
 
         if return_document:
-            return await self.get_document(document_id=document_id)
+            return await self.get_document(
+                document_id=document_id, populate_remote_attributes=populate_remote_attributes
+            )
         return None
 
     @retry(

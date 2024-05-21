@@ -1,6 +1,7 @@
 """
 Unit test for query graph
 """
+
 import textwrap
 from collections import defaultdict
 

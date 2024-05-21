@@ -1,6 +1,7 @@
 """
 This module contains DimensionTable related models
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Tuple, Type
@@ -41,6 +42,14 @@ class DimensionTableModel(DimensionTableData, TableModel):
     @property
     def primary_key_columns(self) -> List[str]:
         return [self.dimension_id_column]
+
+    @property
+    def special_columns(self) -> List[str]:
+        cols = [
+            self.dimension_id_column,
+            self.record_creation_timestamp_column,
+        ]
+        return [col for col in cols if col]
 
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any

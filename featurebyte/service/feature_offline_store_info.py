@@ -1,6 +1,7 @@
 """
 Feature Offline Store Info Initialization Service
 """
+
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId
@@ -14,6 +15,8 @@ from featurebyte.models.offline_store_ingest_query import (
 )
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
@@ -237,8 +240,11 @@ class OfflineStoreInfoInitializationService:
             feature_version=feature.version.to_str(),
         )
 
-        null_filling_value_extractor = NullFillingValueExtractor(graph=feature.graph)
-        null_filling_value_state = null_filling_value_extractor.extract(node=feature.node)
+        null_filling_value = None
+        if not dry_run:
+            null_filling_value = (
+                NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
+            )
 
         if result.is_decomposed:
             decomposed_graph, output_node_name = await self.reconstruct_decomposed_graph(
@@ -289,7 +295,7 @@ class OfflineStoreInfoInitializationService:
                 primary_entity_dtypes=[
                     entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids
                 ],
-                null_filling_value=null_filling_value_state.fill_value,
+                null_filling_value=null_filling_value,
             )
 
         # populate offline store info
@@ -304,13 +310,55 @@ class OfflineStoreInfoInitializationService:
                 for entity_id, serving_name in entity_id_to_serving_name.items()
             ],
         )
-        offline_store_info.initialize(
-            feature_versioned_name=feature.versioned_name,
-            feature_dtype=feature.dtype,
-            feature_job_settings=[
-                setting.feature_job_setting for setting in feature.table_id_feature_job_settings
-            ],
-            feature_id=feature.id,
-            null_filling_value=null_filling_value_state.fill_value,
-        )
+        if not dry_run:
+            offline_store_info.initialize(
+                feature_versioned_name=feature.versioned_name,
+                feature_dtype=feature.dtype,
+                feature_job_settings=[
+                    setting.feature_job_setting for setting in feature.table_id_feature_job_settings
+                ],
+                feature_id=feature.id,
+                null_filling_value=null_filling_value,
+            )
+
         return offline_store_info
+
+    async def get_entity_join_steps_for_feature_table(
+        self, feature: FeatureModel, entity_id_to_serving_name: Dict[ObjectId, str]
+    ) -> List[EntityRelationshipInfo]:
+        """
+        Get entity join steps for feature table
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature
+        entity_id_to_serving_name: Dict[ObjectId, str]
+            Entity id to serving name mapping
+
+        Returns
+        -------
+        List[EntityRelationshipInfo]
+        """
+        if feature.entity_join_steps is not None:
+            return feature.entity_join_steps
+
+        # derive entity join steps for old features which don't have entity_join_steps
+        feature_tables_entity_ids = await self.get_offline_store_feature_tables_entity_ids(
+            feature, entity_id_to_serving_name
+        )
+
+        entity_join_steps = []
+        for entity_ids in feature_tables_entity_ids:
+            if feature.relationships_info is None:
+                continue
+            internal_steps = EntityLookupPlanner.generate_lookup_steps(
+                available_entity_ids=feature.primary_entity_ids,
+                required_entity_ids=entity_ids,
+                relationships_info=feature.relationships_info,
+            )
+            for step in internal_steps:
+                if step not in entity_join_steps:
+                    entity_join_steps.append(step)
+
+        return entity_join_steps

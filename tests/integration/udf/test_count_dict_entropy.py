@@ -1,6 +1,7 @@
 """
 Tests for count dict entropy UDF
 """
+
 import numpy as np
 import pytest
 
@@ -9,11 +10,13 @@ import pytest
     "dictionary, expected",
     [
         (None, np.nan),
+        ({"a": 0}, 0),
         ({}, 0),
         ({"a": 1}, 0),
         ({"a": 1, "b": 0}, 0),
         ({"a": 1, "b": 1, "c": 1}, 1.098612),
         ({"a": 1, "b": 2, "c": 3}, 1.011404),
+        ({"a": -1, "b": 2, "c": -3}, 1.011404),
     ],
 )
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 """
 Test ColumnInfo class
 """
+
 import pytest
 
 from featurebyte.enum import DBVarType

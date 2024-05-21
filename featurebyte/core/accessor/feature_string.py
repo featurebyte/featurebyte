@@ -1,6 +1,7 @@
 """
 Feature string accessor module.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, TypeVar

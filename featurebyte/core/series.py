@@ -1,10 +1,12 @@
 """
 Series class
 """
+
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union
+from typing_extensions import Literal
 
 from functools import wraps
 
@@ -13,7 +15,6 @@ from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.accessor.vector import VectorAccessorMixin
@@ -22,6 +23,7 @@ from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 
 FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
 FuncT = TypeVar("FuncT", bound=Callable[..., "FrozenSeriesT"])

@@ -1,6 +1,7 @@
 """
 ViewConstructionService class
 """
+
 from __future__ import annotations
 
 from typing import Any, cast
@@ -88,9 +89,9 @@ class ViewConstructionService:
             # prepare additional parameters for metadata update
             event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)  # type: ignore
             metadata_parameters["event_drop_column_names"] = event_metadata.drop_column_names
-            metadata_parameters[
-                "event_column_cleaning_operations"
-            ] = event_metadata.column_cleaning_operations
+            metadata_parameters["event_column_cleaning_operations"] = (
+                event_metadata.column_cleaning_operations
+            )
 
         return view_parameters, metadata_parameters
 

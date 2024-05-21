@@ -1,6 +1,7 @@
 """
 Parent / child entity lookup related models
 """
+
 from __future__ import annotations
 
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple

@@ -1,6 +1,7 @@
 """
 Test FeatureListNamespaceService
 """
+
 import pytest
 from bson.objectid import ObjectId
 

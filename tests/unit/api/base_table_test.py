@@ -1,6 +1,7 @@
 """
 Base View test suite
 """
+
 import textwrap
 
 import pandas as pd
@@ -40,6 +41,7 @@ class BaseTableTestSuite:
     expected_clean_table_column_sql = ""
     expected_attr_name_value_pairs = []
     expected_timestamp_column = ""
+    expected_special_columns = None
 
     @pytest.fixture(autouse=True)
     def immediately_expired_api_object_cache(self, mock_api_object_cache):
@@ -211,3 +213,8 @@ class BaseTableTestSuite:
         assert table_under_test.saved
         table_under_test.delete()
         assert not table_under_test.saved
+
+    def test_special_columns(self, table_under_test):
+        """Test special columns"""
+        table_model = table_under_test.cached_model
+        assert table_model.special_columns == self.expected_special_columns

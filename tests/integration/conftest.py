@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
+
 # pylint: disable=too-many-lines
 from typing import Dict, List, cast
 
@@ -65,14 +66,12 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
-from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
-
-# Static testing mongodb connection from docker/test/docker-compose.yml
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
-MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+MONGO_CONNECTION = "mongodb://localhost:37017/?replicaSet=rs0"
+TEST_REDIS_URI = "redis://localhost:36379"
 
 
 logger = get_logger(__name__)
@@ -200,6 +199,15 @@ def storage_fixture():
         yield LocalStorage(base_path=Path(tempdir))
 
 
+@pytest.fixture(name="always_patch_app_get_storage", scope="session", autouse=True)
+def always_patch_app_get_storage_fixture(storage):
+    """
+    Patch app.get_storage for all tests in this module
+    """
+    with patch("featurebyte.app.get_storage", return_value=storage):
+        yield
+
+
 @pytest.fixture(name="config", scope="session")
 def config_fixture(storage):
     """
@@ -307,9 +315,10 @@ def mock_get_persistent_fixture(persistent):
     """
     Mock get_persistent in featurebyte/app.py
     """
-    with mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent, mock.patch(
-        "featurebyte.worker.task_executor.MongoDBImpl"
-    ) as mock_persistent_worker:
+    with (
+        mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent,
+        mock.patch("featurebyte.worker.task_executor.MongoDBImpl") as mock_persistent_worker,
+    ):
         mock_persistent.return_value = persistent
         mock_persistent_worker.return_value = persistent
         yield
@@ -937,6 +946,10 @@ def create_generic_tile_spec():
         tile_id=tile_id,
         aggregation_id=aggregation_id,
         feature_store_id=ObjectId(),
+        # Set a large windows since many tests assume that all the tiles in the tile_data.csv will
+        # be selected, but this is now not necessarily the case since we will only select the tiles
+        # that are within the window.
+        windows=["3650d"],
     )
 
 
@@ -1119,6 +1132,19 @@ def item_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="item_type_entity", scope="session")
+def item_type_entity_fixture(catalog):
+    """
+    Fixture for an Entity "ItemType"
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("664ac92379c46110f9275db1"), name="ItemType", serving_names=["item_type"]
+    )
+    entity.save()
+    return entity
+
+
 @pytest.fixture(name="status_entity", scope="session")
 def status_entity_fixture(catalog):
     """
@@ -1130,6 +1156,16 @@ def status_entity_fixture(catalog):
     )
     entity.save()
     return entity
+
+
+def tag_entities_for_event_table(event_table):
+    """
+    Helper function to tag entities for the event table fixture
+    """
+    event_table["TRANSACTION_ID"].as_entity("Order")
+    event_table["ÜSER ID"].as_entity("User")
+    event_table["PRODUCT_ACTION"].as_entity("ProductAction")
+    event_table["CUST_ID"].as_entity("Customer")
 
 
 def create_transactions_event_table_from_data_source(
@@ -1146,9 +1182,9 @@ def create_transactions_event_table_from_data_source(
     )
     expected_dtypes = pd.Series(
         {
-            "ËVENT_TIMESTAMP": "TIMESTAMP_TZ"
-            if data_source.type == SourceType.SNOWFLAKE
-            else "TIMESTAMP",
+            "ËVENT_TIMESTAMP": (
+                "TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"
+            ),
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
             "ÜSER ID": "INT",
@@ -1159,8 +1195,8 @@ def create_transactions_event_table_from_data_source(
             "TRANSACTION_ID": "VARCHAR",
             "EMBEDDING_ARRAY": "ARRAY",
             "ARRAY": "ARRAY",
-            "FLAT_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
-            "NESTED_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
+            "FLAT_DICT": "DICT",
+            "NESTED_DICT": "DICT",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
@@ -1175,10 +1211,7 @@ def create_transactions_event_table_from_data_source(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_table["TRANSACTION_ID"].as_entity("Order")
-    event_table["ÜSER ID"].as_entity("User")
-    event_table["PRODUCT_ACTION"].as_entity("ProductAction")
-    event_table["CUST_ID"].as_entity("Customer")
+    tag_entities_for_event_table(event_table)
     return event_table
 
 
@@ -1249,6 +1282,15 @@ def item_table_name_fixture(source_type):
     return f"{source_type}_item_table"
 
 
+def tag_entities_for_item_table(item_table):
+    """
+    Tag entities for the item table fixture
+    """
+    item_table["order_id"].as_entity("Order")
+    item_table["item_id"].as_entity("Item")
+    item_table["item_type"].as_entity("ItemType")
+
+
 @pytest.fixture(name="item_table", scope="session")
 def item_table_fixture(
     session,
@@ -1257,12 +1299,16 @@ def item_table_fixture(
     event_table,
     order_entity,
     item_entity,
+    item_type_entity,
     catalog,
 ):
     """
     Fixture for an ItemTable in integration tests
     """
     _ = catalog
+    _ = order_entity
+    _ = item_entity
+    _ = item_type_entity
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1274,8 +1320,7 @@ def item_table_fixture(
         item_id_column="item_id",
         event_table_name=event_table.name,
     )
-    item_table["order_id"].as_entity(order_entity.name)
-    item_table["item_id"].as_entity(item_entity.name)
+    tag_entities_for_item_table(item_table)
     return item_table
 
 
@@ -1338,6 +1383,14 @@ def scd_table_name_fixture(source_type):
     return f"{source_type}_scd_table"
 
 
+def tag_entities_for_scd_table(scd_table):
+    """
+    Tag entities for scd table fixture
+    """
+    scd_table["User ID"].as_entity("User")
+    scd_table["User Status"].as_entity("UserStatus")
+
+
 @pytest.fixture(name="scd_table", scope="session")
 def scd_table_fixture(
     scd_data_tabular_source,
@@ -1350,14 +1403,15 @@ def scd_table_fixture(
     Fixture for a SCDTable in integration tests
     """
     _ = catalog
+    _ = user_entity
+    _ = status_entity
     scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
-    scd_table["User ID"].as_entity(user_entity.name)
-    scd_table["User Status"].as_entity(status_entity.name)
+    tag_entities_for_scd_table(scd_table)
     return scd_table
 
 
@@ -1402,7 +1456,7 @@ def mock_task_manager(request, persistent, storage):
                     "user": user,
                     "persistent": persistent,
                     "celery": Mock(),
-                    "redis": redis.from_url(REDIS_URI),
+                    "redis": redis.from_url(TEST_REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
@@ -1445,9 +1499,10 @@ def mock_task_manager(request, persistent, storage):
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
-                "featurebyte.worker.task_executor.get_celery"
-            ) as mock_get_celery_worker:
+            with (
+                patch("featurebyte.app.get_celery") as mock_get_celery,
+                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
+            ):
 
                 def get_task(task_id):
                     status = task_status.get(task_id)
@@ -1505,7 +1560,7 @@ def task_manager_fixture(persistent, user, catalog, storage):
         celery=get_celery(),
         catalog_id=catalog.id,
         storage=storage,
-        redis=redis.from_url(REDIS_URI),
+        redis=redis.from_url(TEST_REDIS_URI),
     )
     return task_manager
 
@@ -1521,7 +1576,7 @@ def app_container_fixture(persistent, user, catalog, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": catalog.id,
-        "redis": redis.from_url(REDIS_URI),
+        "redis": redis.from_url(TEST_REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1537,7 +1592,7 @@ def app_container_no_catalog_fixture(persistent, user, storage):
         "celery": get_celery(),
         "storage": storage,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "redis": redis.from_url(REDIS_URI),
+        "redis": redis.from_url(TEST_REDIS_URI),
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -1619,7 +1674,7 @@ def online_store_fixture():
         name="My Online Store",
         details=RedisOnlineStoreDetails(
             redis_type="redis",
-            connection_string=REDIS_URI.replace("redis://", ""),
+            connection_string=TEST_REDIS_URI.replace("redis://", ""),
         ),
     )
 
@@ -1656,14 +1711,14 @@ def feature_group_per_category_fixture(event_view):
     feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
     feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
     feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
-    feature_group_per_category[
-        "NUM_UNIQUE_ACTION_24h_exclude_missing"
-    ] = feature_counts_24h.cd.unique_count(include_missing=False)
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h_exclude_missing"] = (
+        feature_counts_24h.cd.unique_count(include_missing=False)
+    )
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category[
-        "ACTION_SIMILARITY_2h_to_24h"
-    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = (
+        feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    )
 
     return feature_group_per_category
 

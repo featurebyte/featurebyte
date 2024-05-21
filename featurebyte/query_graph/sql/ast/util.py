@@ -1,6 +1,7 @@
 """
 Utilities for building SQLNode
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -49,7 +50,7 @@ def prepare_binary_op_input_nodes(
     if table_node is None:
         # In this case, the left node is a column from the request data. The right node must be from
         # a feature and has a valid table node.
-        assert right_node.table_node is not None
+        assert right_node.table_node is not None, "Right node must have a table node"
         table_node = right_node.table_node
 
     return table_node, left_node, right_node
@@ -70,7 +71,7 @@ def prepare_unary_input_nodes(
     tuple[TableNode, ExpressionNode, dict[str, Any]]
     """
     input_expr_node = context.input_sql_nodes[0]
-    assert isinstance(input_expr_node, ExpressionNode)
+    assert isinstance(input_expr_node, ExpressionNode), "Input node must be an expression node"
     table_node = input_expr_node.table_node
     assert table_node is not None
     return table_node, input_expr_node, context.parameters

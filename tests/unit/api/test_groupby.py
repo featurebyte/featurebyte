@@ -1,6 +1,7 @@
 """
 Unit test for EventViewGroupBy
 """
+
 from typing import List, Type
 
 import pytest

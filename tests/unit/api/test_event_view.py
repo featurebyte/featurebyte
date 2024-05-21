@@ -3,16 +3,17 @@ Unit test for EventView class
 """
 
 import copy
+import re
 import textwrap
 from datetime import datetime
 from unittest import mock
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import to_timedelta
+from featurebyte import RequestColumn, to_timedelta
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -316,23 +317,13 @@ def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view)
 
 
 @pytest.fixture(name="empty_event_view_builder")
-def get_empty_event_view_fixture(snowflake_feature_store):
+def get_empty_event_view_fixture(snowflake_event_table_with_entity):
     """
     Get an empty event view.
     """
 
     def get_event_view():
-        return EventView(
-            columns_info=[],
-            node_name="input_1",
-            tabular_source=TabularSource(
-                feature_store_id=PydanticObjectId(ObjectId()),
-                table_details=TableDetails(
-                    table_name="random",
-                ),
-            ),
-            feature_store=snowflake_feature_store,
-        )
+        return snowflake_event_table_with_entity.get_view()
 
     return get_event_view
 
@@ -361,60 +352,69 @@ def get_empty_feature_fixture(snowflake_feature_store):
 
 
 def test_validate_feature_addition__time_based_feature_no_override(
-    production_ready_feature, empty_event_view_builder
+    production_ready_feature, snowflake_event_view_with_entity
 ):
     """
     Test _validate_feature_addition with no override col provided - expect error
     """
-    event_view = empty_event_view_builder()
+    event_view = snowflake_event_view_with_entity
     with pytest.raises(ValueError) as exc_info:
         event_view._validate_feature_addition("random_col", production_ready_feature, None)
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
+def test_validate_feature_addition__request_column_derived_feature(
+    non_time_based_feature, snowflake_event_view_with_entity
+):
+    """
+    Test _validate_feature_addition with request column derived feature
+    """
+    req_col_feat = (
+        non_time_based_feature
+        + (RequestColumn.point_in_time() - RequestColumn.point_in_time()).dt.day
+    )
+    req_col_feat.name = "req_col_feat"
+    event_view = snowflake_event_view_with_entity
+    expected_msg = (
+        "We currently only support the addition of features that do not use request columns."
+    )
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        event_view.add_feature("random_col", req_col_feat)
+
+
 def test_validate_feature_addition__time_based_feature_with_override(
-    production_ready_feature, empty_event_view_builder
+    production_ready_feature, snowflake_event_view_with_entity
 ):
     """
     Test _validate_feature_addition with override col provided - expect error
     """
-    event_view = empty_event_view_builder()
+    event_view = snowflake_event_view_with_entity
     with pytest.raises(ValueError) as exc_info:
         event_view._validate_feature_addition("random_col", production_ready_feature, "random")
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
 def test_validate_feature_addition__non_time_based_no_override(
-    empty_feature_builder, empty_event_view_builder
+    snowflake_event_view_with_entity, non_time_based_feature
 ):
     """
     Test _validate_feature_addition non-time based with no override col
     """
-    event_view = empty_event_view_builder()
-    empty_feature = empty_feature_builder()
     # Should run with no errors
-    with mock.patch(
-        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
-    ) as mock_is_time_based:
-        mock_is_time_based.return_value = False
-        event_view._validate_feature_addition("random_col", empty_feature, None)
+    snowflake_event_view_with_entity._validate_feature_addition(
+        "random_col", non_time_based_feature, None
+    )
 
 
 def test_validate_feature_addition__non_time_based_with_override(
-    event_view_with_col_infos, empty_feature_builder
+    snowflake_event_view_with_entity,
+    non_time_based_feature,
 ):
     """
     Test _validate_feature_addition non-time based with override col
     """
-    col_name = "col_a"
-    event_view = event_view_with_col_infos([ColumnInfo(name=col_name, dtype=DBVarType.INT)])
-    empty_feature = empty_feature_builder()
-    # Should run with no errors
-    with mock.patch(
-        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
-    ) as mock_is_time_based:
-        mock_is_time_based.return_value = False
-        event_view._validate_feature_addition("random_col", empty_feature, col_name)
+    event_view = snowflake_event_view_with_entity
+    event_view._validate_feature_addition("random_col", non_time_based_feature, "col_float")
 
 
 def assert_entity_identifiers_raises_errors(identifiers, feature):
@@ -658,6 +658,8 @@ def test_add_feature__inferred_entity_multiple_times(
     """
     Test calling add_feature() multiple times without specifying entity columns
     """
+    _ = snowflake_item_table
+
     snowflake_event_table[snowflake_event_table.event_id_column].as_entity(transaction_entity.name)
     event_view = snowflake_event_table.get_view()
     original_column_info = copy.deepcopy(event_view.columns_info)
@@ -849,9 +851,9 @@ def test_create_observation_table_from_event_view__no_sample(
     assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -871,9 +873,9 @@ def test_create_observation_table_from_event_view__no_sample(
         )
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -909,9 +911,9 @@ def test_create_observation_table_from_event_view__with_sample(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -938,9 +940,9 @@ def test_create_observation_table_from_event_view__with_sample(
         LIMIT 100
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT

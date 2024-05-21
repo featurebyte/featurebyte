@@ -1,10 +1,16 @@
 """
 OfflineStoreFeatureTableConstructionService class
 """
+
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
+import os
+import pickle
+from pathlib import Path
+
+import aiofiles
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting, SourceType
@@ -13,7 +19,6 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
-    construct_window_aggregates_universe,
     get_combined_universe,
 )
 from featurebyte.models.entity_validation import EntityInfo
@@ -26,12 +31,16 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.exception import OfflineStoreFeatureTableBadStateError
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.parent_serving import ParentEntityLookupService
+from featurebyte.storage import Storage
 
 
 class OfflineStoreFeatureTableConstructionService:
@@ -44,10 +53,14 @@ class OfflineStoreFeatureTableConstructionService:
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
         entity_serving_names_service: EntityServingNamesService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        storage: Storage,
     ):
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
         self.entity_serving_names_service = entity_serving_names_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.storage = storage
 
     async def get_dummy_offline_store_feature_table_model(
         self,
@@ -115,7 +128,6 @@ class OfflineStoreFeatureTableConstructionService:
         self,
         feature_table_name: str,
         features: List[FeatureModel],
-        aggregate_result_table_names: List[str],
         primary_entities: List[EntityModel],
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
@@ -130,8 +142,6 @@ class OfflineStoreFeatureTableConstructionService:
             Feature table name
         features : List[FeatureModel]
             List of features
-        aggregate_result_table_names : List[str]
-            List of aggregate result table names
         primary_entities : List[EntityModel]
             List of primary entities
         has_ttl : bool
@@ -144,6 +154,11 @@ class OfflineStoreFeatureTableConstructionService:
         Returns
         -------
         OfflineStoreFeatureTableModel
+
+        Raises
+        ------
+        OfflineStoreFeatureTableBadStateError
+            If the entity universe cannot be determined
         """
         ingest_graph_metadata = get_combined_ingest_graph(
             features=features,
@@ -152,12 +167,36 @@ class OfflineStoreFeatureTableConstructionService:
             feature_job_setting=feature_job_setting,
         )
 
-        entity_universe = await self.get_entity_universe_model(
-            serving_names=[entity.serving_names[0] for entity in primary_entities],
-            aggregate_result_table_names=aggregate_result_table_names,
-            offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
-            source_type=source_type,
-        )
+        try:
+            entity_universe = await self.get_entity_universe_model(
+                offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
+                source_type=source_type,
+                feature_table_name=feature_table_name,
+            )
+        except OfflineStoreFeatureTableBadStateError:
+            # Temporarily save the offline ingest graphs and other information to a file for
+            # troubleshooting
+            debug_info = {
+                "feature_ids": [feature.id for feature in features],
+                "primary_entities": primary_entities,
+                "has_ttl": has_ttl,
+                "feature_job_setting": feature_job_setting,
+                "feature_table_name": feature_table_name,
+                "offline_ingest_graphs": ingest_graph_metadata.offline_ingest_graphs,
+            }
+            path = self.offline_store_feature_table_service.get_full_remote_file_path(
+                f"offline_store_feature_table/{feature_table_name}/entity_universe_debug_info.pickle"
+            )
+            try:
+                await self.storage.delete(Path(path))
+            except FileNotFoundError:
+                pass
+            async with aiofiles.tempfile.TemporaryDirectory() as tempdir_path:
+                file_path = os.path.join(tempdir_path, "data.pickle")
+                with open(file_path, "wb") as file_obj:
+                    pickle.dump(debug_info, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
+                await self.storage.put(Path(file_path), Path(path))
+            raise
 
         return OfflineStoreFeatureTableModel(
             name=feature_table_name,
@@ -175,73 +214,74 @@ class OfflineStoreFeatureTableConstructionService:
 
     async def get_entity_universe_model(
         self,
-        serving_names: List[str],
-        aggregate_result_table_names: List[str],
-        offline_ingest_graphs: List[OfflineStoreIngestQueryGraph],
+        offline_ingest_graphs: List[
+            Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
+        ],
         source_type: SourceType,
+        feature_table_name: str,
     ) -> EntityUniverseModel:
         """
         Create a new EntityUniverseModel object
 
         Parameters
         ----------
-        serving_names: List[str]
-            The serving names of the entities
-        aggregate_result_table_names: List[str]
-            The names of the aggregate result tables for window aggregates
         offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
             The offline ingest graphs that the entity universe is to be constructed from
         source_type: SourceType
             Source type information
+        feature_table_name: str
+            Name of the offline store feature table which the entity universe is for
 
         Returns
         -------
         EntityUniverse
+
+        Raises
+        ------
+        OfflineStoreFeatureTableBadStateError
+            If the entity universe cannot be determined
         """
-        if aggregate_result_table_names:
-            universe_expr = construct_window_aggregates_universe(
-                serving_names=serving_names,
-                aggregate_result_table_names=aggregate_result_table_names,
+        params = []
+        for offline_ingest_graph, relationships_info in offline_ingest_graphs:
+            primary_entities = [
+                (await self.entity_service.get_document(entity_id))
+                for entity_id in offline_ingest_graph.primary_entity_ids
+            ]
+            for info in offline_ingest_graph.aggregation_nodes_info:
+                node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
+                # The entity universe has to be described in terms of the primary entity. If the
+                # aggregation is based on a parent entity, we need to map it back to the primary
+                # entity (a child).
+                non_primary_entity_ids = self._get_non_primary_entity_ids(
+                    node,
+                    offline_ingest_graph.primary_entity_ids,
+                )
+                if non_primary_entity_ids:
+                    entity_info = EntityInfo(
+                        required_entities=[
+                            (await self.entity_service.get_document(entity_id))
+                            for entity_id in non_primary_entity_ids
+                        ],
+                        provided_entities=primary_entities,
+                    )
+                    join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                        entity_info, relationships_info
+                    )
+                else:
+                    join_steps = None
+                params.append(
+                    EntityUniverseParams(
+                        graph=offline_ingest_graph.graph,
+                        node=node,
+                        join_steps=join_steps,
+                    )
+                )
+        universe_expr = get_combined_universe(params, source_type)
+
+        if universe_expr is None:
+            raise OfflineStoreFeatureTableBadStateError(
+                f"Failed to create entity universe for offline store feature table {feature_table_name}"
             )
-        else:
-            params = []
-            for offline_ingest_graph in offline_ingest_graphs:
-                primary_entities = [
-                    (await self.entity_service.get_document(entity_id))
-                    for entity_id in offline_ingest_graph.primary_entity_ids
-                ]
-                for info in offline_ingest_graph.aggregation_nodes_info:
-                    node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
-                    # The entity universe has to be described in terms of the primary entity. If the
-                    # aggregation is based on a parent entity, we need to map it back to the primary
-                    # entity (a child).
-                    non_primary_entity_ids = self._get_non_primary_entity_ids(
-                        node,
-                        offline_ingest_graph.primary_entity_ids,
-                    )
-                    if non_primary_entity_ids:
-                        entity_info = EntityInfo(
-                            required_entities=[
-                                (await self.entity_service.get_document(entity_id))
-                                for entity_id in non_primary_entity_ids
-                            ],
-                            provided_entities=primary_entities,
-                        )
-                        join_steps = (
-                            await self.parent_entity_lookup_service.get_required_join_steps(
-                                entity_info
-                            )
-                        )
-                    else:
-                        join_steps = None
-                    params.append(
-                        EntityUniverseParams(
-                            graph=offline_ingest_graph.graph,
-                            node=node,
-                            join_steps=join_steps,
-                        )
-                    )
-            universe_expr = get_combined_universe(params, source_type)
 
         return EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe_expr))
 

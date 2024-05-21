@@ -1,7 +1,9 @@
 """
 Unit test for UseCase class
 """
+
 from featurebyte import ObservationTable, TargetNamespace, UseCase
+from featurebyte.enum import DBVarType
 
 
 def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, context):
@@ -16,6 +18,7 @@ def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, contex
         name=target_name,
         window="28d",
         primary_entity=[cust_id_entity.name],
+        dtype=DBVarType.FLOAT,
     )
     assert namespace.name == target_name
     use_case = UseCase.create(

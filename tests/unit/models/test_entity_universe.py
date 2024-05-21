@@ -1,6 +1,7 @@
 """
 Tests for entity_universe.py
 """
+
 import textwrap
 from datetime import datetime
 
@@ -19,11 +20,18 @@ from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 
 
+def get_nodes_from_feature(feature, node_type):
+    """
+    Get node from feature
+    """
+    return list(feature.graph.iterate_nodes(feature.node, node_type))
+
+
 def get_node_from_feature(feature, node_type):
     """
     Get node from feature
     """
-    return next(feature.graph.iterate_nodes(feature.node, node_type))
+    return get_nodes_from_feature(feature, node_type)[0]
 
 
 @pytest.fixture
@@ -83,6 +91,36 @@ def item_aggregate_graph_and_node(filtered_non_time_based_feature):
 
 
 @pytest.fixture
+def window_aggregate_graph_and_node(float_feature_different_job_setting):
+    """
+    Fixture for a groupby node with entity
+    """
+    graph = float_feature_different_job_setting.graph
+    groupby_node = get_node_from_feature(float_feature_different_job_setting, NodeType.GROUPBY)
+    return graph, groupby_node
+
+
+@pytest.fixture
+def window_aggregate_no_entity_graph_and_node(feature_without_entity):
+    """
+    Fixture for a groupby node without entity
+    """
+    graph = feature_without_entity.graph
+    groupby_node = get_node_from_feature(feature_without_entity, NodeType.GROUPBY)
+    return graph, groupby_node
+
+
+@pytest.fixture
+def window_aggregate_multiple_windows(float_feature_multiple_windows):
+    """
+    Fixture for groupby node supporting complex feature with multiple windows
+    """
+    graph = float_feature_multiple_windows.graph
+    groupby_nodes = get_nodes_from_feature(float_feature_multiple_windows, NodeType.GROUPBY)
+    return graph, groupby_nodes
+
+
+@pytest.fixture
 def join_steps(snowflake_scd_table_with_entity):
     """
     Fixture for a join steps to be applied when constructing entity universe
@@ -103,6 +141,14 @@ def join_steps(snowflake_scd_table_with_entity):
             ),
         )
     ]
+
+
+def assert_one_item_and_format_sql(universe_template):
+    """
+    Helper function to check that universe template has a single item and return formatted sql
+    """
+    assert len(universe_template) == 1
+    return universe_template[0].sql(pretty=True)
 
 
 def test_lookup_feature(catalog, lookup_graph_and_node):
@@ -133,9 +179,11 @@ def test_lookup_feature(catalog, lookup_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
-    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
 def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
@@ -166,9 +214,11 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_boolean" IS NOT NULL
         """
     ).strip()
-    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
 def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_graph_and_node):
@@ -184,7 +234,7 @@ def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_gra
           1 AS "dummy_entity"
         """
     ).strip()
-    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
 def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
@@ -238,9 +288,11 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
               L."item_amount" > 10
             )
         )
+        WHERE
+          "event_id_col" IS NOT NULL
         """
     ).strip()
-    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
 def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_and_node):
@@ -286,6 +338,8 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_boolean" IS NOT NULL
         UNION
         SELECT DISTINCT
           "col_text" AS "cust_id"
@@ -306,6 +360,8 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -354,6 +410,8 @@ def test_combined_universe_deduplicate(
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        WHERE
+          "col_text" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -398,9 +456,128 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
               "effective_timestamp" >= __fb_last_materialized_timestamp
               AND "effective_timestamp" < __fb_current_feature_timestamp
           )
+          WHERE
+            "col_text" IS NOT NULL
         ) AS PARENT
         LEFT JOIN "sf_database"."sf_schema"."scd_table" AS CHILD
           ON PARENT."cust_id" = CHILD."col_text"
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__output_dummy_entity_universe(
+    catalog, window_aggregate_no_entity_graph_and_node
+):
+    """
+    Test combined universe should include dummy entity universe only when there are no other entity
+    universes to be combined
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=window_aggregate_no_entity_graph_and_node[0],
+                node=window_aggregate_no_entity_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          1 AS "dummy_entity"
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__exclude_dummy_entity_universe(
+    catalog, window_aggregate_graph_and_node, window_aggregate_no_entity_graph_and_node
+):
+    """
+    Test combined universe should exclude dummy entity universe only when there are other entity
+    universes to be combined
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=window_aggregate_no_entity_graph_and_node[0],
+                node=window_aggregate_no_entity_graph_and_node[1],
+                join_steps=None,
+            ),
+            EntityUniverseParams(
+                graph=window_aggregate_graph_and_node[0],
+                node=window_aggregate_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "cust_id"
+        FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+        WHERE
+          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
+          AND "cust_id" IS NOT NULL
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__window_aggregate_multiple_windows(
+    catalog, window_aggregate_graph_and_node, window_aggregate_multiple_windows
+):
+    """
+    Test constructing universe for a window aggregate involving multiple windows
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        *(
+            [
+                EntityUniverseParams(
+                    graph=window_aggregate_graph_and_node[0],
+                    node=window_aggregate_graph_and_node[1],
+                    join_steps=None,
+                ),
+            ]
+            + [
+                EntityUniverseParams(
+                    graph=window_aggregate_multiple_windows[0],
+                    node=groupby_node,
+                    join_steps=None,
+                )
+                for groupby_node in window_aggregate_multiple_windows[1]
+            ],
+        ),
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "cust_id"
+        FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+        WHERE
+          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+          AND "cust_id" IS NOT NULL
+        UNION
+        SELECT DISTINCT
+          "cust_id"
+        FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+        WHERE
+          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
+          AND "cust_id" IS NOT NULL
+        UNION
+        SELECT DISTINCT
+          "cust_id"
+        FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+        WHERE
+          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
+          AND "cust_id" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -413,7 +590,7 @@ def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_an
     _ = catalog
     graph, node = lookup_graph_and_node
     constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
-    query_template = constructor.get_entity_universe_template()
+    query_template = constructor.get_entity_universe_template()[0]
     entity_universe_model = EntityUniverseModel(
         query_template=SqlglotExpressionModel.create(query_template)
     )
@@ -438,6 +615,8 @@ def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_an
             "effective_timestamp" >= CAST('2022-10-15 09:00:00' AS TIMESTAMP)
             AND "effective_timestamp" < CAST('2022-10-15 10:00:00' AS TIMESTAMP)
         )
+        WHERE
+          NOT "col_text" IS NULL
         """
     ).strip()
     actual = entity_universe_model.get_entity_universe_expr(

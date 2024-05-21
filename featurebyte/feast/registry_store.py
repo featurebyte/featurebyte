@@ -1,6 +1,7 @@
 """
 Featurebyte registry store
 """
+
 from typing import cast
 
 from pathlib import Path

@@ -1,6 +1,7 @@
 """
 Fixture for Service related unit tests
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -20,6 +21,11 @@ from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityRelationshipInfo,
+    FeatureEntityLookupInfo,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -37,8 +43,9 @@ from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
-from featurebyte.utils.messaging import REDIS_URI
-from tests.util.helper import manage_document
+from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
+
+TEST_REDIS_URI = "redis://localhost:36379"
 
 
 @pytest.fixture(name="get_credential")
@@ -67,7 +74,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
         "catalog_id": catalog.id,
         "user_id": user.id,
         "task_id": uuid4(),
-        "redis_uri": REDIS_URI,
+        "redis_uri": TEST_REDIS_URI,
     }
     return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
@@ -155,6 +162,12 @@ def dimension_table_service_fixture(app_container):
 def scd_table_service_fixture(app_container):
     """SCDTable service"""
     return app_container.scd_table_service
+
+
+@pytest.fixture(name="table_facade_service")
+def table_facade_service_fixture(app_container):
+    """TableFacade service"""
+    return app_container.table_facade_service
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -437,9 +450,9 @@ async def entity_transaction_fixture(test_dir, entity_service):
 
 
 @pytest_asyncio.fixture(name="context")
-async def context_fixture(test_dir, context_service, feature_store, entity):
+async def context_fixture(test_dir, context_service, feature_store, entity, entity_transaction):
     """Context model"""
-    _ = feature_store, entity
+    _ = feature_store, entity, entity_transaction
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/context.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -466,14 +479,14 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
             event_table = await event_table_service.create_document(
                 data=EventTableCreate(**payload)
             )
-            event_timestamp = await semantic_service.get_or_create_document(
-                name=SemanticType.EVENT_TIMESTAMP
+            event_timestamp_sem = await semantic_service.get_or_create_document(
+                name=SemanticType.EVENT_TIMESTAMP.value
             )
             columns_info = []
             for col in event_table.columns_info:
                 col_dict = col.dict()
                 if col.name == "event_timestamp":
-                    col_dict["semantic_id"] = event_timestamp.id
+                    col_dict["semantic_id"] = event_timestamp_sem.id
                 columns_info.append(col_dict)
 
             event_table = await event_table_service.update_document(
@@ -667,9 +680,15 @@ async def deployed_feature_list_fixture(
     deploy_service,
     feature_list_service,
     production_ready_feature_list,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """Fixture for a deployed feature list"""
-    _ = online_enable_service_data_warehouse_mocks
+    _ = (
+        online_enable_service_data_warehouse_mocks,
+        mock_update_data_warehouse,
+        mock_offline_store_feature_manager_dependencies,
+    )
     await deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
         deployment_id=ObjectId(),
@@ -782,7 +801,9 @@ async def setup_for_feature_readiness_fixture(
         yield new_feature_id, new_flist.id
 
 
-async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns):
+async def create_event_table_with_entities(
+    data_name, test_dir, event_table_service, columns, table_facade_service
+):
     """Helper function to create an EventTable with provided columns and entities"""
 
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
@@ -794,18 +815,27 @@ async def create_event_table_with_entities(data_name, test_dir, event_table_serv
         keep_cols = ["event_timestamp", "created_at", "col_int"]
         for col_info in columns_info:
             if col_info["name"] in keep_cols:
+                col_info["entity_id"] = None  # strip entity id from the original payload
                 new_columns_info.append(col_info)
         for col_name, col_entity_id in columns:
             col_info = {"name": col_name, "entity_id": col_entity_id, "dtype": "INT"}
             new_columns_info.append(col_info)
-        return new_columns_info
+
+        output = [ColumnInfo(**col_info) for col_info in new_columns_info]
+        return output
 
     payload.pop("_id")
     payload["tabular_source"]["table_details"]["table_name"] = data_name
-    payload["columns_info"] = _update_columns_info(payload["columns_info"])
     payload["name"] = data_name
 
     event_table = await event_table_service.create_document(data=EventTableCreate(**payload))
+    columns_info = _update_columns_info(payload["columns_info"])
+    await table_facade_service.update_table_columns_info(
+        table_id=event_table.id,
+        columns_info=columns_info,
+        service=event_table_service,
+    )
+    event_table = await event_table_service.get_document(document_id=event_table.id)
     return event_table
 
 
@@ -857,6 +887,7 @@ async def entity_e_fixture(entity_service):
 async def create_table_and_add_parent(
     test_dir,
     event_table_service,
+    table_facade_service,
     relationship_info_service,
     child_entity,
     parent_entity,
@@ -871,6 +902,7 @@ async def create_table_and_add_parent(
         test_dir,
         event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
+        table_facade_service,
     )
     relationship_info = await relationship_info_service.create_document(
         data=RelationshipInfoCreate(
@@ -891,6 +923,7 @@ async def b_is_parent_of_a_fixture(
     entity_b,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -901,6 +934,7 @@ async def b_is_parent_of_a_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_a,
         parent_entity=entity_b,
@@ -915,6 +949,7 @@ async def c_is_parent_of_b_fixture(
     entity_c,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -925,6 +960,7 @@ async def c_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_c,
@@ -939,6 +975,7 @@ async def d_is_parent_of_b_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -949,6 +986,7 @@ async def d_is_parent_of_b_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_b,
         parent_entity=entity_d,
@@ -963,6 +1001,7 @@ async def d_is_parent_of_c_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -973,6 +1012,7 @@ async def d_is_parent_of_c_fixture(
     return await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_d,
@@ -988,6 +1028,7 @@ async def a_is_parent_of_c_and_d_fixture(
     entity_d,
     relationship_info_service,
     event_table_service,
+    table_facade_service,
     test_dir,
     feature_store,
 ):
@@ -998,6 +1039,7 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_c,
         parent_entity=entity_a,
@@ -1007,6 +1049,7 @@ async def a_is_parent_of_c_and_d_fixture(
     await create_table_and_add_parent(
         test_dir,
         event_table_service,
+        table_facade_service,
         relationship_info_service,
         child_entity=entity_d,
         parent_entity=entity_a,
@@ -1033,6 +1076,7 @@ async def online_store_fixture(app_container):
             name="redis_online_store",
             details=RedisOnlineStoreDetails(
                 redis_type="redis",
+                connection_string="localhost:36379",
             ),
         )
     )
@@ -1049,3 +1093,220 @@ async def catalog_with_online_store_fixture(app_container, catalog, online_store
         document_id=catalog.id, data=catalog_update
     )
     return catalog
+
+
+@pytest.fixture(name="fl_requiring_parent_serving_deployment_id")
+def fl_requiring_parent_serving_deployment_id_fixture():
+    """
+    Fixture for a deployment id for a feature list that requires parent serving
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="is_online_store_registered_for_catalog")
+def is_online_store_registered_for_catalog_fixture():
+    """
+    Fixture to determine if catalog is configured with an online store
+    """
+    return True
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
+async def deployed_feature_list_requiring_parent_serving_fixture(
+    app_container,
+    float_feature,
+    aggregate_asat_feature,
+    cust_id_entity,
+    gender_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
+):
+    """
+    Fixture a deployed feature list that require serving parent features
+
+    float_feature: customer entity feature (ttl)
+    aggregate_asat_feature: gender entity feature (non-ttl)
+
+    Gender is a parent of customer.
+
+    Primary entity of the combined feature is customer.
+
+    Combined feature requires serving two feature tables (one customer, one gender) using customer
+    as the serving entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = float_feature + aggregate_asat_feature
+    new_feature.name = "feature_requiring_parent_serving"
+    new_feature.save()
+
+    new_feature_2 = new_feature + 123
+    new_feature_2.name = new_feature.name + "_plus_123"
+    new_feature_2.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving",
+        feature_ids=[
+            new_feature.id,
+            new_feature_2.id,
+        ],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=cust_id_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+        FeatureEntityLookupInfo(
+            feature_id=new_feature_2.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
+
+    return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_ttl")
+async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
+    app_container,
+    float_feature,
+    non_time_based_feature,
+    cust_id_entity,
+    transaction_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+):
+    """
+    Fixture a deployed feature list that require serving parent features with ttl
+
+    float_feature: customer entity feature (ttl)
+    non_time_based_feature: transaction entity feature (non-ttl)
+
+    Customer is a parent of transaction.
+
+    Primary entity of the combined feature is transaction.
+
+    Combined feature requires serving two feature tables (one transaction, one customer) using
+    transaction as the serving entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = float_feature + non_time_based_feature
+    new_feature.name = "feature_requiring_parent_serving_ttl"
+    new_feature.save()
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving_ttl",
+        feature_ids=[
+            new_feature.id,
+        ],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=transaction_entity.id,
+        parent_entity_id=cust_id_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
+
+    return feature_list
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_composite_entity")
+async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(  # pylint: disable=too-many-arguments
+    app_container,
+    descendant_of_gender_feature,
+    aggregate_asat_composite_entity_feature,
+    group_entity,
+    gender_entity,
+    another_entity,
+    fl_requiring_parent_serving_deployment_id,
+    mock_offline_store_feature_manager_dependencies,
+    mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    online_store,
+):
+    """
+    Fixture a deployed feature list that require serving parent features with composite entities
+
+    descendant_of_gender_feature: group entity feature (non-ttl)
+    aggregate_asat_composite_entity_feature: gender X another_entity feature (non-ttl)
+
+    Gender is a parent of Group.
+
+    Primary entity of the combined feature is group X another_entity.
+
+    Combined feature requires serving two feature tables (1. group entity, 2. gender entity X
+    another_entity via group X another_entity) using group entity X another_entity as the serving
+    entity.
+    """
+    _ = mock_offline_store_feature_manager_dependencies
+    _ = mock_update_data_warehouse
+
+    new_feature = descendant_of_gender_feature + aggregate_asat_composite_entity_feature
+    new_feature.name = "feature_requiring_parent_serving"
+    new_feature.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    feature_list = await deploy_feature_ids(
+        app_container,
+        feature_list_name="fl_requiring_parent_serving",
+        feature_ids=[new_feature.id],
+        deployment_id=fl_requiring_parent_serving_deployment_id,
+    )
+    assert feature_list.primary_entity_ids == [another_entity.id, group_entity.id]
+    expected_relationship_info = await get_relationship_info(
+        app_container,
+        child_entity_id=group_entity.id,
+        parent_entity_id=gender_entity.id,
+    )
+    assert feature_list.features_entity_lookup_info == [
+        FeatureEntityLookupInfo(
+            feature_id=new_feature.id,
+            feature_list_to_feature_primary_entity_join_steps=[],
+            feature_internal_entity_join_steps=[
+                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+            ],
+        ),
+    ]
+    return feature_list

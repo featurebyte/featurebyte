@@ -1,6 +1,8 @@
 """
 This module contains utility functions used in tests
 """
+
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Generator
@@ -28,10 +30,10 @@ from featurebyte import FeatureList, get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -148,14 +150,18 @@ def add_groupby_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
-            "tile_id": get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
-            if override_tile_id is None
-            else override_tile_id,
-            "aggregation_id": get_aggregation_identifier(
-                graph.node_name_to_ref[input_node.name], groupby_node_params
-            )
-            if override_aggregation_id is None
-            else override_aggregation_id,
+            "tile_id": (
+                get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
+                if override_tile_id is None
+                else override_tile_id
+            ),
+            "aggregation_id": (
+                get_aggregation_identifier(
+                    graph.node_name_to_ref[input_node.name], groupby_node_params
+                )
+                if override_aggregation_id is None
+                else override_aggregation_id
+            ),
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[input_node],
@@ -520,7 +526,7 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
     """
     Helper function to get the preview SQL for a series
     """
-    return SampleMixin.preview_sql(series_obj, *args, **kwargs)
+    return series_obj.preview_sql(*args, **kwargs)
 
 
 def check_decomposed_graph_output_node_hash(feature_model, output=None):
@@ -588,7 +594,7 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
     assert original_out_hash == decom_out_hash
 
 
-def generate_column_data(var_type, row_number=10):
+def generate_column_data(var_type, row_number=10, databricks_udf_input=False):
     """Generate data for a given var_type"""
     if var_type in DBVarType.supported_timestamp_types():
         return pd.date_range("2020-01-01", freq="1h", periods=row_number).astype(str)
@@ -604,10 +610,14 @@ def generate_column_data(var_type, row_number=10):
         selections = [
             None,
             np.nan,
-            json.dumps({}),
-            json.dumps({"foo": 1, "bar": 2}),
-            json.dumps({"你好": 1, "世界": 2}),
-            json.dumps({"foo": 1, "bar": 2, "baz": 3}),
+            {} if databricks_udf_input else json.dumps({}),
+            {"foo": 1, "bar": 2} if databricks_udf_input else json.dumps({"foo": 1, "bar": 2}),
+            {"你好": 1, "世界": 2} if databricks_udf_input else json.dumps({"你好": 1, "世界": 2}),
+            (
+                {"foo": 1, "bar": 2, "baz": 3}
+                if databricks_udf_input
+                else json.dumps({"foo": 1, "bar": 2, "baz": 3})
+            ),
         ]
         return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
@@ -699,6 +709,7 @@ def check_on_demand_feature_code_generation(
     df = pd.DataFrame()
     decomposed_graph = offline_store_info.graph
     target_node = decomposed_graph.get_node_by_name(offline_store_info.node_name)
+    databricks_specific_inputs = set()
     for graph_node in decomposed_graph.iterate_nodes(
         target_node=target_node, node_type=NodeType.GRAPH
     ):
@@ -706,6 +717,8 @@ def check_on_demand_feature_code_generation(
         df[graph_node.parameters.output_column_name] = generate_column_data(
             graph_node.parameters.output_dtype
         )
+        if graph_node.parameters.output_dtype in DBVarType.dictionary_types():
+            databricks_specific_inputs.add(graph_node.parameters.output_column_name)
 
     for node in decomposed_graph.iterate_nodes(
         target_node=target_node, node_type=NodeType.REQUEST_COLUMN
@@ -724,6 +737,10 @@ def check_on_demand_feature_code_generation(
         if col != "POINT_IN_TIME":
             df[f"{col}__ts"] = feat_event_ts.astype(int) // 1e9
 
+    # introduce some missing values to test null handling for datetime
+    if df.shape[0] > 1:
+        df["POINT_IN_TIME"].iloc[1] = None
+
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes
 
@@ -739,6 +756,8 @@ def check_on_demand_feature_code_generation(
     )
 
     # check the generated code can be executed successfully
+    for col in databricks_specific_inputs:
+        df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
     udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
 
     # check the consistency between on demand feature view & on demand feature function
@@ -765,6 +784,7 @@ async def deploy_feature_list(
     feature_list_model,
     context_primary_entity_ids=None,
     deployment_name_override=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a feature list using services
@@ -784,7 +804,7 @@ async def deploy_feature_list(
     use_case_model = await app_container.use_case_service.create_document(data)
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
-        deployment_id=ObjectId(),
+        deployment_id=deployment_id,
         deployment_name=(
             feature_list_model.name
             if deployment_name_override is None
@@ -801,6 +821,7 @@ async def deploy_feature_ids(
     feature_list_name,
     feature_ids,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to deploy a list of features using services
@@ -817,6 +838,7 @@ async def deploy_feature_ids(
         app_container=app_container,
         feature_list_model=feature_list_model,
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
 
 
@@ -826,6 +848,7 @@ async def deploy_feature(
     return_type="feature",
     feature_list_name_override=None,
     context_primary_entity_ids=None,
+    deployment_id=None,
 ):
     """
     Helper function to create deploy a single feature using services
@@ -847,6 +870,7 @@ async def deploy_feature(
         feature_list_name,
         [feature.id],
         context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
     )
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)
@@ -950,7 +974,7 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     async for info in app_container.relationship_info_service.list_documents_iterator(
         query_filter={"entity_id": child_entity_id, "related_entity_id": parent_entity_id}
     ):
-        return info
+        return EntityRelationshipInfo(**info.dict(by_alias=True))
     raise AssertionError("Relationship not found")
 
 
@@ -970,7 +994,7 @@ async def manage_document(doc_service, create_data, storage):
         doc = await doc_service.create_document(data=create_data)
 
         # check remote paths are created
-        for path in doc.remote_attribute_paths:
+        for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
             full_path = os.path.join(storage.base_path, path)
             assert os.path.exists(full_path), f"Remote path {full_path} not created"
 
@@ -981,6 +1005,6 @@ async def manage_document(doc_service, create_data, storage):
             await doc_service.delete_document(document_id=doc.id)
 
             # check remote paths are deleted
-            for path in doc.remote_attribute_paths:
+            for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
                 full_path = os.path.join(storage.base_path, path)
                 assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"

@@ -1,13 +1,14 @@
 """
 FeatureList Deploy Task Payload schema
 """
+
 from typing import Optional, Union
 from typing_extensions import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import NameStr, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
@@ -23,7 +24,7 @@ class CreateDeploymentPayload(BaseModel):
     """Create deployment"""
 
     type: Literal[DeploymentPayloadType.CREATE] = Field(DeploymentPayloadType.CREATE, const=True)
-    name: Optional[str] = Field(default=None)
+    name: Optional[NameStr] = Field(default=None)
     feature_list_id: PydanticObjectId
     enabled: bool
     use_case_id: Optional[PydanticObjectId] = Field(default=None)

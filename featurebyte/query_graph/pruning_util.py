@@ -1,6 +1,7 @@
 """
 Module for Query Graph pruning related utilities
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

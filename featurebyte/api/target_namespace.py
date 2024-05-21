@@ -1,6 +1,7 @@
 """
 Feature Namespace module.
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -14,6 +15,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -29,6 +31,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetNamespace")
 
     internal_window: Optional[str] = Field(alias="window")
+    internal_dtype: DBVarType = Field(alias="dtype")
 
     # class variables
     _route = "/target_namespace"
@@ -47,7 +50,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
 
     @classmethod
     def create(
-        cls, name: str, primary_entity: List[str], window: Optional[str] = None
+        cls, name: str, primary_entity: List[str], dtype: DBVarType, window: Optional[str] = None
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -58,6 +61,8 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             Name of the TargetNamespace
         primary_entity: List[str]
             List of entities.
+        dtype: DBVarType
+            Data type of the TargetNamespace
         window: Optional[str]
             Window of the TargetNamespace
 
@@ -71,13 +76,30 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
         ...     name="amount_7d_target",
         ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
         ...     primary_entity=["customer"]
         ... )
         """
         entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
-        target_namespace = TargetNamespace(name=name, entity_ids=entity_ids, window=window)
+        target_namespace = TargetNamespace(
+            name=name, entity_ids=entity_ids, dtype=dtype, window=window
+        )
         target_namespace.save()
         return target_namespace
+
+    @property
+    def dtype(self) -> DBVarType:
+        """
+        Database variable type of the target namespace.
+
+        Returns
+        -------
+        DBVarType
+        """
+        try:
+            return self.cached_model.dtype
+        except RecordRetrievalException:
+            return self.internal_dtype
 
     @property
     def window(self) -> Optional[str]:
@@ -137,6 +159,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
         ...     name="amount_7d_target",
         ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
         ...     primary_entity=["customer"]
         ... )
         >>> target_namespace.delete()  # doctest: +SKIP

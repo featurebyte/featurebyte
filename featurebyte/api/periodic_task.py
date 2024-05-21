@@ -1,6 +1,7 @@
 """
 PeriodicTask class
 """
+
 from __future__ import annotations
 
 from featurebyte.api.savable_api_object import SavableApiObject

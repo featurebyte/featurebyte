@@ -1,12 +1,13 @@
 """
 Base class for all request tables.
 """
+
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
@@ -17,7 +18,7 @@ class BaseRequestTableCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
 

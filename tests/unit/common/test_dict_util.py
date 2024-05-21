@@ -1,6 +1,7 @@
 """
 Tests for functions in dict_util.py module
 """
+
 import pytest
 
 from featurebyte.common.dict_util import get_field_path_value

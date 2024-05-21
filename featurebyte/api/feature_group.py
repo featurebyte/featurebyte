@@ -30,7 +30,6 @@ from featurebyte.api.mixin import AsyncMixin
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
-from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
@@ -50,6 +49,7 @@ from featurebyte.schema.feature import (
 )
 from featurebyte.schema.feature_list import FeatureListCreateJob, FeatureListPreview, FeatureListSQL
 from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
+from featurebyte.typing import Scalar
 
 logger = get_logger(__name__)
 

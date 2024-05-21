@@ -1,6 +1,7 @@
 """
 Test document model for stored credentials
 """
+
 import copy
 import json
 

@@ -1,9 +1,8 @@
 """
 Unit tests for BatchFeatureTable class
 """
-from typing import Any, Dict
 
-from unittest.mock import patch
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -13,16 +12,11 @@ from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-@pytest.fixture(autouse=True)
-def mock_online_enable_service_update_data_warehouse():
-    """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
-    with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
-        yield
-
-
 @pytest.fixture(name="batch_feature_table")
 def batch_feature_table_fixture(
-    deployment, batch_request_table_from_view, snowflake_execute_query_for_materialized_table
+    deployment,
+    batch_request_table_from_view,
+    mock_deployment_flow,
 ):
     """BatchFeatureTable fixture"""
     deployment.enable()
@@ -32,7 +26,7 @@ def batch_feature_table_fixture(
     return batch_feature_table
 
 
-class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
+class TestBatchFeatureTable(BaseMaterializedTableApiTest):
     """
     Test batch feature table
     """
@@ -69,4 +63,4 @@ class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
         assert df["name"].tolist() == [f"my_{expected_name}"]
         assert df["feature_store_name"].tolist() == ["sf_featurestore"]
         assert df["batch_request_table_name"].tolist() == ["batch_request_table_from_event_view"]
-        assert df["shape"].tolist() == [[500, 1]]
+        assert df["shape"].tolist() == [[500, 3]]

@@ -1,6 +1,7 @@
 """
 SCDTableService class
 """
+
 from __future__ import annotations
 
 from featurebyte.models.scd_table import SCDTableModel

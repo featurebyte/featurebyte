@@ -1,6 +1,7 @@
 """
 Tests for the featurebyte.query_graph.sql module
 """
+
 import textwrap
 from unittest.mock import Mock
 
@@ -393,10 +394,10 @@ def test_is_in_node(input_node):
         ({"type": "int", "from_dtype": DBVarType.INT}, "CAST(val AS BIGINT)"),
         ({"type": "int", "from_dtype": DBVarType.FLOAT}, "CAST(FLOOR(val) AS BIGINT)"),
         ({"type": "int", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS BIGINT)"),
-        ({"type": "float", "from_dtype": DBVarType.BOOL}, "CAST(CAST(val AS BIGINT) AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.INT}, "CAST(val AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.FLOAT}, "CAST(val AS FLOAT)"),
-        ({"type": "float", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS FLOAT)"),
+        ({"type": "float", "from_dtype": DBVarType.BOOL}, "CAST(CAST(val AS BIGINT) AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.INT}, "CAST(val AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.FLOAT}, "CAST(val AS DOUBLE)"),
+        ({"type": "float", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS DOUBLE)"),
         ({"type": "str", "from_dtype": DBVarType.BOOL}, "CAST(val AS VARCHAR)"),
         ({"type": "str", "from_dtype": DBVarType.INT}, "CAST(val AS VARCHAR)"),
         ({"type": "str", "from_dtype": DBVarType.FLOAT}, "CAST(val AS VARCHAR)"),

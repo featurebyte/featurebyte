@@ -1,22 +1,22 @@
 """
 This module contains TaskExecutor class
 """
+
 from __future__ import annotations
 
-from typing import Any, Awaitable, Optional
+from typing import Any, Coroutine, Optional, Set
 
 import asyncio
 import os
+import time
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
-from threading import Thread
 from uuid import UUID
 
 from bson import ObjectId
 from celery import Task
-from celery.exceptions import SoftTimeLimitExceeded
+from celery.exceptions import SoftTimeLimitExceeded, WorkerTerminate
 
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
@@ -28,40 +28,29 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_async_loop, get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
 
-def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """
-    Start background event loop
-
-    Parameters
-    ----------
-    loop: AbstractEventLoop
-        Event loop to run
-    """
-    try:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-    finally:
-        try:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        finally:
-            asyncio.set_event_loop(None)
-            loop.close()
+PENDING_TASKS: Set[UUID] = set()
+EXECUTION_LATENCY_THRESHOLD = 10  # max delay allowed for task execution in seconds
+WORKER_TERMINATED = False
 
 
-def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
+def run_async(
+    coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: Optional[int] = None
+) -> Any:
     """
     Run async function in both async and non-async context
     Parameters
     ----------
-    coro: Coroutine
+    coro: Coroutine[Any, Any, Any]
         Coroutine to run
+    request_id: UUID
+        Request ID
     timeout: Optional[int]
         Timeout in seconds, default to None (no timeout)
 
@@ -74,26 +63,43 @@ def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
     ------
     SoftTimeLimitExceeded
         timeout is exceeded
+    WorkerTerminate
+        Worker is terminated
     """
-    try:
-        loop = asyncio.get_running_loop()
-        logger.debug("Use existing async loop", extra={"loop": loop})
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        loop.set_default_executor(ThreadPoolExecutor(max_workers=1000))
-        logger.debug("Create new async loop", extra={"loop": loop})
-        thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
-        thread.start()
+    loop = get_async_loop()
+    task_received_time = time.time()
 
-    logger.info("Asyncio tasks", extra={"num_tasks": len(asyncio.all_tasks(loop=loop))})
+    logger.debug(
+        "Running async function",
+        extra={"timeout": timeout, "active_tasks": len(asyncio.all_tasks(loop=loop))},
+    )
 
-    logger.info("Start task", extra={"timeout": timeout})
-    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    async def _run_task() -> Any:
+        return await loop.create_task(coro, name=str(request_id))
+
+    PENDING_TASKS.add(request_id)
+    future = asyncio.run_coroutine_threadsafe(_run_task(), loop)
+
+    if timeout is None or timeout > EXECUTION_LATENCY_THRESHOLD:
+        try:
+            return future.result(timeout=EXECUTION_LATENCY_THRESHOLD)
+        except ConcurrentTimeoutError as exc:
+            # check if task execution is delayed beyond threshold
+            if request_id in PENDING_TASKS:
+                logger.error("Worker is not responsive, shutting down")
+                raise WorkerTerminate(True) from exc
+        # continue waiting for the task to complete
+        if timeout is not None:
+            timeout = max(timeout - int(time.time() - task_received_time), 0)
+
     try:
         return future.result(timeout=timeout)
     except ConcurrentTimeoutError as exc:
-        # try to cancel the job if it has not started
-        future.cancel()
+        active_tasks = asyncio.all_tasks(loop=loop)
+        for task in active_tasks:
+            if task.get_name() == str(request_id):
+                task.cancel()
+                break
         raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
 
 
@@ -254,6 +260,14 @@ class BaseCeleryTask(Task):
         -------
         Any
         """
+        command = str(payload.get("command"))
+        print(
+            f"Running: {command}"
+        )  # Add temporary print statement to confirm logging not causing freezing issue
+        logger.debug(f"Executing: {command}")
+        if request_id in PENDING_TASKS:
+            PENDING_TASKS.remove(request_id)
+
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         app_container = await self.get_app_container(request_id, payload, progress)
         executor = self.executor_class(
@@ -293,9 +307,18 @@ class IOBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_io_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        return run_async(
-            self.execute_task(self.request.id, **payload), timeout=self.request.timelimit[1]
-        )
+        global WORKER_TERMINATED  # pylint: disable=global-statement
+        if WORKER_TERMINATED:
+            raise WorkerTerminate(True)
+        try:
+            return run_async(
+                self.execute_task(self.request.id, **payload),
+                request_id=self.request.id,
+                timeout=self.request.timelimit[1],
+            )
+        except WorkerTerminate as exc:
+            WORKER_TERMINATED = True
+            raise self.retry(countdown=0) from exc
 
 
 class CPUBoundTask(BaseCeleryTask):

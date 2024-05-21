@@ -1,6 +1,7 @@
 """
 This module contains base aggregator related class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Type, Union
@@ -11,12 +12,12 @@ from featurebyte.api.aggregator.vector_validator import validate_vector_aggregat
 from featurebyte.api.feature import Feature
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
-from featurebyte.common.typing import OptionalScalar, get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType
+from featurebyte.typing import OptionalScalar, get_or_default
 
 
 class BaseAggregator(ABC):

@@ -161,5 +161,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS "order_size_30d_avg"
+  CAST("_fb_internal_CUSTOMER_ID_window_w2592000_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec" AS DOUBLE) AS "order_size_30d_avg"
 FROM _FB_AGGREGATED AS AGG

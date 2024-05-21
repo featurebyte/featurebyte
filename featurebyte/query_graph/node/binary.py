@@ -1,8 +1,10 @@
 """
 This module contains binary operation node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence, Tuple
+from typing import List, Sequence, Tuple
+from typing_extensions import Literal
 
 from pydantic import Field
 
@@ -147,6 +149,10 @@ class DivideNode(BinaryArithmeticOpNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        _ = inputs
+        return DBVarType.FLOAT
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"

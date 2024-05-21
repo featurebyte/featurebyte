@@ -64,6 +64,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
             feature_store_id=snowflake_feature_store.id,
             parent_column_name="col_float",
             aggregation_function_name="sum",
+            windows=["30m", "2h", "1d"],
         )
     ]
     assert model.tile_specs == expected_tile_specs
@@ -133,6 +134,7 @@ def test_extended_feature_model__agg_per_category_feature(
             feature_store_id=snowflake_feature_store.id,
             parent_column_name="col_float",
             aggregation_function_name="sum",
+            windows=["30m", "2h", "1d"],
         )
     ]
     assert model.tile_specs == expected_tile_specs

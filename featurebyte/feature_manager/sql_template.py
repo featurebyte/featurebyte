@@ -1,6 +1,7 @@
 """
 Feature SQL template
 """
+
 from jinja2 import Template
 
 tm_feature_tile_monitor = Template(

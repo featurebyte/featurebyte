@@ -1,6 +1,7 @@
 """
 This module contains session to EventView integration tests
 """
+
 import json
 import os
 import time
@@ -147,13 +148,12 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     columns = [
         col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
     ]
-    if source_type == "spark":
+
+    # only snowflake supports timezone in datetime columns
+    if source_type not in ["snowflake"]:
         expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
             expected["ËVENT_TIMESTAMP"], utc=True
         ).dt.tz_localize(None)
-    if source_type in ["spark", "snowflake"]:
-        output["FLAT_DICT"] = output["FLAT_DICT"].apply(json.loads)
-        output["NESTED_DICT"] = output["NESTED_DICT"].apply(json.loads)
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
@@ -456,7 +456,8 @@ def patched_num_features_per_query():
     """
     with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
         with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 4):
-            yield
+            with patch("featurebyte.tile.tile_cache.NUM_TRACKER_TABLES_PER_QUERY", 1):
+                yield
 
 
 @pytest.fixture(name="new_user_id_entity", scope="session")
@@ -1052,7 +1053,7 @@ def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type != SourceType.SPARK:
+    if source_type == SourceType.SNOWFLAKE:
         # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
         timestamp_series = df[timestamp_column].apply(
             lambda x: x.tz_convert("UTC").tz_localize(None)
@@ -1076,7 +1077,7 @@ def test_datetime_comparison__fixed_timestamp_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type != SourceType.SPARK:
+    if source_type == SourceType.SNOWFLAKE:
         fixed_timestamp = fixed_timestamp_with_tz
     else:
         # Spark returns timestamp converted to UTC and without timezone. To allow comparison,
@@ -1362,7 +1363,7 @@ def test_latest_per_category_aggregation(event_view):
     expected = json.loads(
         '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
     )
-    assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
+    assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
 
 
 @mock.patch.dict(os.environ, {"FEATUREBYTE_TILE_ID_VERSION": "1"})
@@ -1398,18 +1399,10 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     # This request causes the tile values corresponding to latest event timestamp to be added to the
     # same tile table
     df = feature_list_2.compute_historical_features(observations_set)
-
-    expected_feature_value = pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC")
-    if source_type == "spark":
-        expected_feature_value = expected_feature_value.tz_convert(None)
-
-    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
-    if source_type == "databricks":
-        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
-        "LATEST_EVENT_TIMESTAMP_BY_USER": expected_feature_value,
+        "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673"),
     }
 
 
@@ -1436,10 +1429,13 @@ def test_create_observation_table__errors_with_no_entities(event_view):
     with pytest.raises(RecordCreationException) as exc:
         new_event_view.create_observation_table(
             f"observation_table_name_{ObjectId()}",
+            primary_entities=[],
         )
     assert "At least one entity column" in str(exc)
 
     # Test that no error if we skip the entity validation check
     new_event_view.create_observation_table(
-        f"observation_table_name_{ObjectId()}", skip_entity_validation_checks=True
+        f"observation_table_name_{ObjectId()}",
+        primary_entities=[],
+        skip_entity_validation_checks=True,
     )

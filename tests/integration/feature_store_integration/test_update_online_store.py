@@ -1,6 +1,7 @@
 """
 Test updating online store for a catalog
 """
+
 import os
 from datetime import datetime
 from unittest.mock import patch

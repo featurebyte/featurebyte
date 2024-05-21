@@ -1,6 +1,7 @@
 """
 Base classes required for constructing query graph nodes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 # pylint: disable=too-many-lines
 from typing import (
@@ -108,11 +109,11 @@ class BaseNode(BaseModel):
 
         # make sure subclass set certain properties correctly
         assert self.__fields__["type"].field_info.const is True
-        assert repr(self.__fields__["type"].type_).startswith("typing.Literal")
+        assert "Literal" in repr(self.__fields__["type"].type_)
         assert self.__fields__["output_type"].type_ is NodeOutputType
 
     def __init_subclass__(cls, **kwargs: Any):
-        if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
+        if "Literal" in repr(cls.__fields__["type"].type_):
             # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
             NODE_TYPES.append(cls)
 
@@ -837,6 +838,33 @@ class BaseNode(BaseModel):
                 )
 
         return self.clone(parameters=node_params), output_column_remap
+
+    @staticmethod
+    def _to_datetime_expr(
+        var_name_expr: VarNameExpressionStr, to_handle_none: bool = True, **to_datetime_kwargs: Any
+    ) -> ExpressionStr:
+        """
+        Convert input variable name expression to datetime expression
+
+        Parameters
+        ----------
+        var_name_expr: VarNameExpressionStr
+            Variable name expression
+        to_handle_none: bool
+            Whether to handle null values
+        to_datetime_kwargs: Any
+            Additional keyword arguments for pd.to_datetime function
+
+        Returns
+        -------
+        ExpressionStr
+        """
+        to_dt_expr = get_object_class_from_function_call(
+            "pd.to_datetime", var_name_expr, utc=True, **to_datetime_kwargs
+        )
+        if to_handle_none:
+            return ExpressionStr(f"pd.NaT if {var_name_expr} is None else {to_dt_expr}")
+        return ExpressionStr(to_dt_expr)
 
 
 class SeriesOutputNodeOpStructMixin:

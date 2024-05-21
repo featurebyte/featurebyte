@@ -1,6 +1,7 @@
 """
 ContextService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -119,8 +120,11 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         document: Optional[ContextModel] = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
+        populate_remote_attributes: bool = True,
     ) -> Optional[ContextModel]:
-        document = await self.get_document(document_id=document_id)
+        document = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         if data.graph and data.node_name:
             node = data.graph.get_node_by_name(data.node_name)
             operation_structure = data.graph.extract_operation_structure(
@@ -135,5 +139,6 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
             exclude_none=exclude_none,
             return_document=return_document,
             skip_block_modification_check=skip_block_modification_check,
+            populate_remote_attributes=populate_remote_attributes,
         )
         return document

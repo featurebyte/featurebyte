@@ -135,9 +135,6 @@ def get_active_profile() -> Profile:
     # check if we are in DataBricks environment and valid secrets are present create a profile automatically
     try:
         from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
-        from pyspark.errors.exceptions.captured import (  # pylint: disable=import-outside-toplevel
-            IllegalArgumentException,
-        )
 
         if len(conf.profiles) == 1 and conf.profiles[0].name == "local":
             api_url = None
@@ -145,7 +142,10 @@ def get_active_profile() -> Profile:
             try:
                 api_url = dbutils.secrets.get(scope="featurebyte", key="api-url")
                 api_token = dbutils.secrets.get(scope="featurebyte", key="api-token")
-            except IllegalArgumentException:
+            except Exception as databricks_exc:  # pylint: disable=broad-exception-caught
+                # use a more generic exception to avoid dependency on databricks sdk blocking
+                # the rest of the code
+                logger.warning(f"Failed to get secrets from Databricks: {databricks_exc}")
                 logger.info(
                     "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation:\n"
                     "databricks secrets create-scope --scope featurebyte\n"

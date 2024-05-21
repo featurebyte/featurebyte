@@ -1,6 +1,7 @@
 """
 Base Class for Tile Schedule Instance
 """
+
 from typing import Any
 
 from abc import ABC, abstractmethod

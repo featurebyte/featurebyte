@@ -1,15 +1,17 @@
 """
 FastAPI Application
 """
+
 from typing import Any, Callable, Coroutine, List, Optional
 
-import aioredis
+import redis.asyncio as redis
 import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
+from featurebyte._overrides.typechecked_override import custom_typechecked
 from featurebyte.common.utils import get_version
-from featurebyte.logging import get_logger
+from featurebyte.logging import configure_featurebyte_logger, get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.base_router import BaseRouter
@@ -54,7 +56,11 @@ from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
+configure_featurebyte_logger()
 logger = get_logger(__name__)
+
+# import to override typechecked decorator
+_ = custom_typechecked
 
 
 def _dep_injection_func(
@@ -216,23 +222,15 @@ def get_app() -> FastAPI:
         user = User()
         channel = f"task_{user.id}_{task_id}_progress"
 
-        logger.debug("Listening to channel", extra={"channel": channel})
-        redis = await aioredis.from_url(REDIS_URI)
-        sub = redis.pubsub()
-        await sub.subscribe(channel)
-
-        # listen for messages
-        async for message in sub.listen():
-            if message and isinstance(message, dict):
-                data = message.get("data")
-                if isinstance(data, bytes):
-                    await websocket.send_bytes(data)
-
-        # clean up
-        logger.debug("Unsubscribing from channel", extra={"channel": channel})
-        await sub.unsubscribe(channel)
-        await sub.close()
-        redis.close()
+        async with redis.from_url(REDIS_URI) as client:
+            async with client.pubsub() as pubsub:  # type: ignore
+                logger.debug("Listening to channel", extra={"channel": channel})
+                await pubsub.subscribe(channel)
+                async for message in pubsub.listen():
+                    if message and isinstance(message, dict):
+                        data = message.get("data")
+                        if isinstance(data, bytes):
+                            await websocket.send_bytes(data)
 
     # Add exception middleware
     _app.add_middleware(ExceptionMiddleware)

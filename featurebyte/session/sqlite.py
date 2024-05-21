@@ -1,6 +1,7 @@
 """
 SQLiteSession class
 """
+
 from __future__ import annotations
 
 from typing import Optional, OrderedDict
@@ -15,7 +16,11 @@ from pydantic import Field
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+)
 
 
 class SQLiteSession(BaseSession):
@@ -47,9 +52,14 @@ class SQLiteSession(BaseSession):
         return []
 
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
-        tables = await self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
+        tables = await self.execute_query(
+            "SELECT name FROM sqlite_master WHERE type = 'table'", timeout=timeout
+        )
         output = []
         if tables is not None:
             for _, (name,) in tables[["name"]].iterrows():
@@ -82,8 +92,9 @@ class SQLiteSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
-        schema = await self.execute_query(f'PRAGMA table_info("{table_name}")')
+        schema = await self.execute_query(f'PRAGMA table_info("{table_name}")', timeout=timeout)
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
             for _, (column_name, data_type) in schema[["name", "type"]].iterrows():
@@ -100,7 +111,9 @@ class SQLiteSession(BaseSession):
     ) -> None:
         raise NotImplementedError()
 
-    async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
+    async def execute_query(
+        self, query: str, timeout: float = 600, to_log_error: bool = True
+    ) -> pd.DataFrame | None:
         # sqlite session cannot be used in across threads
         _ = timeout
         return super().execute_query_blocking(query=query)

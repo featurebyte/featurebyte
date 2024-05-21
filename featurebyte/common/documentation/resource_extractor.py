@@ -1,6 +1,7 @@
 """
 Extract resource details given a path descriptor.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, get_type_hints

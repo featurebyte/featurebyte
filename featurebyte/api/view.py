@@ -1,6 +1,7 @@
 """
 View class
 """
+
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
@@ -10,7 +11,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -18,6 +18,7 @@ from typing import (
     Union,
     cast,
 )
+from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -30,6 +31,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.mixin import SampleMixin
 from featurebyte.api.obs_table.utils import get_definition_for_obs_table_creation_from_view
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.static_source_table import StaticSourceTable
@@ -44,10 +46,8 @@ from featurebyte.common.join_utils import (
     filter_columns_info,
     is_column_name_in_columns,
 )
-from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
-from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
@@ -72,6 +72,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
+from featurebyte.typing import ScalarSequence
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -316,14 +317,14 @@ class ViewColumn(Series, SampleMixin):
         For SCD views, lookup targets are materialized through point-in-time joins, and the resulting value represents
         the active row for the natural key at the point-in-time indicated in the target request.
 
-        To obtain a target value at a specific time before the request's point-in-time, an offset can be specified.
+        To obtain a target value at a specific time after the request's point-in-time, an offset can be specified.
 
         Parameters
         ----------
         target_name: str
             Name of the target to create.
         offset: str
-            When specified, retrieve target value as of this offset prior to the point-in-time.
+            When specified, retrieve target value as of this offset after the point-in-time.
 
         Returns
         -------
@@ -338,12 +339,12 @@ class ViewColumn(Series, SampleMixin):
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
 
 
-        If the view is a Slowly Changing Dimension View, you may also consider to create a target that retrieves the
-        entity's attribute at a point-in-time prior to the point-in-time specified in the target request by specifying
+        If the view is a Slowly Changing Dimension View, you may also consider creating a target that retrieves the
+        entity's attribute at a specific time after the point-in-time specified in the target request by specifying
         an offset.
 
-        >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_target(
-        ...   "UsesWindows_12w_ago", offset="12w"
+        >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
+        ...   "UsesWindows_next_12w", offset="12w"
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
@@ -691,7 +692,7 @@ class RawMixin(QueryObject, ABC):
         )
 
 
-class View(ProtectedColumnsQueryObject, Frame, ABC):
+class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     """
     Views are cleaned versions of Catalog tables and offer a flexible and efficient way to work with Catalog tables.
     They allow operations like creating new columns, filtering records, conditionally editing columns, extracting lags,
@@ -1667,6 +1668,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1696,6 +1698,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table. If None, the primary entities are
             inferred from the view.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The data type and primary entities must match the those in the target namespace.
 
         Returns
         -------
@@ -1735,10 +1741,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 if column_info.entity_id:
                     primary_entity_ids.append(column_info.entity_id)
 
-        if not primary_entity_ids:
-            raise ValueError(
-                "No primary entities found. Please specify the primary entities when creating the observation table."
-            )
+            if not primary_entity_ids:
+                raise ValueError(
+                    "No primary entities found. Please specify the primary entities when creating the observation table."
+                )
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         definition = get_definition_for_obs_table_creation_from_view(
@@ -1766,6 +1772,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
+            target_column=target_column,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

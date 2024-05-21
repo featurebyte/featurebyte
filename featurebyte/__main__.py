@@ -1,6 +1,7 @@
 """
 Featurebyte CLI tools
 """
+
 import typer
 from rich.text import Text
 

@@ -1,6 +1,7 @@
 """
 Utility functions for credential management
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

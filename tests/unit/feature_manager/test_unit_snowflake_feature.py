@@ -1,6 +1,7 @@
 """
 This module contains unit tests for FeatureManagerSnowflake
 """
+
 from unittest import mock
 from unittest.mock import AsyncMock
 
@@ -87,31 +88,28 @@ async def test_online_enable(
     with mock.patch(
         "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
     ) as mock_tile_job_exists:
-        mock_tile_job_exists.return_value = False
-        await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
+        with mock.patch(
+            "featurebyte.service.tile_registry_service.TileRegistryService.update_backfill_metadata"
+        ):
+            mock_tile_job_exists.return_value = False
+            await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
 
     mock_schedule_online_tiles.assert_called_once()
     mock_schedule_offline_tiles.assert_called_once()
     mock_generate_tiles.assert_called_once()
 
     # Expected execute_query calls are triggered by TileScheduleOnlineStore:
-    # 1. Check if online store table exists (execute_query)
-    # 2. Compute online store values and store in a temporary table
-    # 3. Insert into online store table (execute_query_long_running)
-    assert mock_snowflake_session.execute_query.call_count == 1
-    assert mock_snowflake_session.execute_query_long_running.call_count == 2
 
-    # First call
-    args, _ = mock_snowflake_session.execute_query.call_args_list[0]
-    assert args[0] == (
-        "select * from online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c limit 1"
+    # 1. Check if online store table exists (execute_query)
+    mock_snowflake_session.table_exists.assert_called_once_with(
+        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
     )
 
-    # Second call
+    # 2. Compute online store values and store in a temporary table
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
-    assert args[0].strip().startswith("CREATE TABLE __SESSION_TEMP_TABLE_")
+    assert args[0].strip().startswith('CREATE TABLE "__SESSION_TEMP_TABLE_')
 
-    # Third call
+    # 3. Insert into online store table (execute_query_long_running)
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
     assert args[0].strip().startswith("INSERT INTO online_store_")
 
@@ -145,7 +143,7 @@ async def test_online_enable_duplicate_tile_task(
         "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
     ) as mock_tile_job_exists:
         with mock.patch(
-            "featurebyte.service.feature_manager.FeatureManagerService._generate_historical_tiles"
+            "featurebyte.service.feature_manager.FeatureManagerService._backfill_tiles"
         ) as mock_generate_historical_tiles:
             with mock.patch(
                 "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
@@ -155,7 +153,7 @@ async def test_online_enable_duplicate_tile_task(
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
-    mock_generate_historical_tiles.assert_not_called()
+    mock_generate_historical_tiles.assert_called()
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.schedule_online_tiles")
@@ -187,7 +185,7 @@ async def test_online_enable_aggregation_results_already_scheduled(
         "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
     ) as mock_tile_job_exists:
         with mock.patch(
-            "featurebyte.service.feature_manager.FeatureManagerService._generate_historical_tiles"
+            "featurebyte.service.feature_manager.FeatureManagerService._backfill_tiles"
         ) as mock_generate_historical_tiles:
             with mock.patch(
                 "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
@@ -199,16 +197,7 @@ async def test_online_enable_aggregation_results_already_scheduled(
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
-    mock_generate_historical_tiles.assert_not_called()
-
-    for execute_query_call in mock_snowflake_session.execute_query.call_args_list:
-        args, _ = execute_query_call
-        query = args[0]
-        # Updating TILE_FEATURE_MAPPING is expected
-        assert "TILE_FEATURE_MAPPING" in query
-        # Updating ONLINE_STORE_MAPPING is not expected because the aggregation result is already
-        # scheduled
-        assert "ONLINE_STORE_MAPPING" not in query
+    mock_generate_historical_tiles.assert_called()
 
 
 @pytest.mark.asyncio

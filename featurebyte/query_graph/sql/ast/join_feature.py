@@ -1,6 +1,7 @@
 """
 SQL generation for JOIN_FEATURE query node type
 """
+
 from __future__ import annotations
 
 from typing import Optional, Tuple, cast

@@ -1,6 +1,7 @@
 """
 Tests for feature preview SQL generation
 """
+
 import pytest
 
 from featurebyte.enum import SourceType

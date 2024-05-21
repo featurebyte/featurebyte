@@ -1,14 +1,16 @@
 """
 Pydantic schemas for handling API payloads for credential routes
 """
+
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -30,7 +32,7 @@ class CredentialCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
     feature_store_id: PydanticObjectId
     database_credential: Optional[DatabaseCredential]
     storage_credential: Optional[StorageCredential]

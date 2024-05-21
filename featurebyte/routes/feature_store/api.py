@@ -1,14 +1,17 @@
 """
 FeatureStore API routes
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from http import HTTPStatus
+
 from fastapi import Query, Request
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -33,6 +36,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
+from featurebyte.schema.task import Task
 
 
 class FeatureStoreRouter(
@@ -116,6 +120,13 @@ class FeatureStoreRouter(
             self.get_data_description,
             methods=["POST"],
             response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/data_description",
+            self.submit_data_description_task,
+            methods=["POST"],
+            response_model=Task,
+            status_code=HTTPStatus.CREATED,
         )
 
     async def create_object(
@@ -337,6 +348,23 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.describe(sample=sample, size=size, seed=seed)
+
+    @staticmethod
+    async def submit_data_description_task(
+        request: Request,
+        sample: FeatureStoreSample,
+        size: int = Query(default=0, gte=0, le=1000000),
+        seed: int = Query(default=1234),
+        catalog_id: PydanticObjectId = Query(default=None),
+    ) -> Task:
+        """
+        Submit data description task for query graph node
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        task_submit: Task = await controller.create_data_description(
+            sample=sample, size=size, seed=seed, catalog_id=catalog_id or DEFAULT_CATALOG_ID
+        )
+        return task_submit
 
     async def delete_object(
         self, request: Request, feature_store_id: PydanticObjectId

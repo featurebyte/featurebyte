@@ -1,16 +1,17 @@
 """
 This module contains datetime operation related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
-from typing_extensions import Annotated
+from typing import Callable, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing_extensions import Annotated, Literal
 
 import textwrap  # pylint: disable=wrong-import-order
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
+import numpy as np
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
@@ -34,6 +35,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT
+from featurebyte.typing import Scalar
 
 
 class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
@@ -443,16 +445,68 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
         return [], ExpressionStr(f"np.nan if pd.isna({var_name}) else list({var_name}.keys())")
 
 
-class GetValueFromDictionaryNode(BaseCountDictOpNode):
-    """Get value from dictionary node class"""
+class BaseCountDictWithKeyOpNode(BaseCountDictOpNode, ABC):
+    """Base class for count dictionary operation with key"""
 
     class Parameters(BaseModel):
         """Parameters"""
 
         value: Optional[Scalar]
 
-    type: Literal[NodeType.GET_VALUE] = Field(NodeType.GET_VALUE, const=True)
     parameters: Parameters
+
+    def get_key_value(self) -> ValueStr:
+        """
+        Get key value as ValueStr from node parameters
+
+        Returns
+        -------
+        ValueStr
+        """
+        # Note that the key of the dictionary/map is always a string for all supported data warehouses.
+        if isinstance(self.parameters.value, (int, float, np.integer, np.floating)):
+            param = ValueStr.create(str(int(self.parameters.value)))
+        else:
+            # If it is a string, it is already quoted.
+            # If it is other types, the dictionary lookup will return null.
+            param = ValueStr.create(self.parameters.value)
+        return param
+
+    @staticmethod
+    def get_key_value_func_name(
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], str]:
+        """
+        Create a function statement & get the function name for getting key value
+
+        Parameters
+        ----------
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+
+        Returns
+        -------
+        Tuple[List[StatementT], str]
+        """
+        statements: List[StatementT] = []
+        func_name = "get_key_value"
+        if var_name_generator.should_insert_function(function_name=func_name):
+            func_string = f"""
+            def {func_name}(key):
+                if pd.isna(key):
+                    return key
+                if isinstance(key, (int, float, np.integer, np.floating)):
+                    return str(int(key))
+                return key
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
+
+
+class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
+    """Get value from dictionary node class"""
+
+    type: Literal[NodeType.GET_VALUE] = Field(NodeType.GET_VALUE, const=True)
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         aggregations = inputs[0].aggregations
@@ -470,7 +524,7 @@ class GetValueFromDictionaryNode(BaseCountDictOpNode):
         return agg_func.derive_output_var_type(parent_column.dtype, category=None)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
-        param = other_operands[0] if other_operands else ValueStr.create(self.parameters.value)
+        param = other_operands[0] if other_operands else self.get_key_value()
         return f"{operand}.cd.get_value(key={param})"
 
     def _derive_on_demand_view_code(
@@ -482,19 +536,22 @@ class GetValueFromDictionaryNode(BaseCountDictOpNode):
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name: str = input_var_name_expressions[0].as_input()
         value_expr: Union[str, ObjectClass]
+        statements: List[StatementT] = []
         if len(node_inputs) == 1:
-            param = ValueStr.create(self.parameters.value)
             value_expr = get_object_class_from_function_call(
                 f"{var_name}.apply",
-                ExpressionStr(f"lambda x: np.nan if pd.isna(x) else x.get({param})"),
+                ExpressionStr(f"lambda x: np.nan if pd.isna(x) else x.get({self.get_key_value()})"),
             )
         else:
+            func_statements, key_func_name = self.get_key_value_func_name(var_name_generator)
+            statements.extend(func_statements)
             operand: str = input_var_name_expressions[1].as_input()
             value_expr = (
-                f"{var_name}.combine({operand}, lambda x, y: np.nan if pd.isna(x) else x.get(y))"
+                f"{var_name}.combine({operand}, "
+                f"lambda x, y: np.nan if pd.isna(x) or pd.isna(y) else x.get({key_func_name}(y)))"
             )
 
-        return [], ExpressionStr(value_expr)
+        return statements, ExpressionStr(value_expr)
 
     def _derive_user_defined_function_code(
         self,
@@ -504,27 +561,28 @@ class GetValueFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name: str = input_var_name_expressions[0].as_input()
+        statements: List[StatementT] = []
         if len(node_inputs) == 1:
-            param = ValueStr.create(self.parameters.value)
             value_expr = ExpressionStr(
-                f"np.nan if pd.isna({var_name}) else {var_name}.get({param})"
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({self.get_key_value()})"
             )
         else:
+            func_statements, key_func_name = self.get_key_value_func_name(var_name_generator)
+            statements.extend(func_statements)
             operand: str = input_var_name_expressions[1].as_input()
             value_expr = ExpressionStr(
-                f"np.nan if pd.isna({var_name}) else {var_name}.get({operand})"
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({key_func_name}({operand}))"
             )
 
-        return [], value_expr
+        return statements, value_expr
 
 
-class GetRankFromDictionaryNode(BaseCountDictOpNode):
+class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
     """Get rank from dictionary node class"""
 
-    class Parameters(BaseModel):
+    class Parameters(BaseCountDictWithKeyOpNode.Parameters):
         """Parameters"""
 
-        value: Optional[Scalar]
         descending: bool = False
 
     type: Literal[NodeType.GET_RANK] = Field(NodeType.GET_RANK, const=True)
@@ -534,7 +592,7 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
         return DBVarType.FLOAT
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
-        key = other_operands[0] if other_operands else self.parameters.value
+        key = other_operands[0] if other_operands else self.get_key_value()
         descending = ValueStr.create(self.parameters.descending)
         params = f"key={key}, descending={descending}"
         return f"{operand}.cd.get_value(key={params})"
@@ -548,7 +606,10 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(input_dict, key, is_descending):
-                if pd.isna(input_dict) or key not in input_dict:
+                if pd.isna(input_dict) or pd.isna(key):
+                    return np.nan
+                key = str(int(key)) if isinstance(key, (int, float, np.integer, np.floating)) else key
+                if key not in input_dict:
                     return np.nan
                 sorted_values = sorted(input_dict.values(), reverse=is_descending)
                 return sorted_values.index(input_dict[key]) + 1
@@ -567,19 +628,21 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
         descending = ValueStr.create(self.parameters.descending)
         statements, func_name = self._get_rank_func_name(var_name_generator)
         if len(node_inputs) == 1:
-            param = ValueStr.create(self.parameters.value)
             rank_expr = ExpressionStr(
                 get_object_class_from_function_call(
                     f"{var_name}.apply",
                     ExpressionStr(
-                        f"lambda dct: {func_name}(dct, key={param}, is_descending={descending})"
+                        f"lambda dct: {func_name}(dct, key={self.get_key_value()}, is_descending={descending})"
                     ),
                 )
             )
         else:
+            func_statements, key_func_name = self.get_key_value_func_name(var_name_generator)
+            statements.extend(func_statements)
             operand: str = input_var_name_expressions[1].as_input()
             rank_expr = ExpressionStr(
-                f"{var_name}.combine({operand}, lambda dct, key: {func_name}(dct, key=key, is_descending={descending}))"
+                f"{var_name}.combine({operand}, "
+                f"lambda dct, key: {func_name}(dct, key={key_func_name}(key), is_descending={descending}))"
             )
 
         return statements, rank_expr
@@ -595,37 +658,32 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
         descending = ValueStr.create(self.parameters.descending)
         statements, func_name = self._get_rank_func_name(var_name_generator)
         if len(node_inputs) == 1:
-            param = ValueStr.create(self.parameters.value)
             rank_expr = ExpressionStr(
-                f"{func_name}({var_name}, key={param}, is_descending={descending})"
+                f"{func_name}({var_name}, key={self.get_key_value()}, is_descending={descending})"
             )
         else:
+            func_statements, key_func_name = self.get_key_value_func_name(var_name_generator)
+            statements.extend(func_statements)
             operand: str = input_var_name_expressions[1].as_input()
             rank_expr = ExpressionStr(
-                f"{func_name}({var_name}, key={operand}, is_descending={descending})"
+                f"{func_name}({var_name}, key={key_func_name}({operand}), is_descending={descending})"
             )
 
         return statements, rank_expr
 
 
-class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
+class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
     """Get relative frequency from dictionary node class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Scalar]
 
     type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = Field(
         NodeType.GET_RELATIVE_FREQUENCY, const=True
     )
-    parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
-        param = other_operands[0] if other_operands else ValueStr.create(self.parameters.value)
+        param = other_operands[0] if other_operands else self.get_key_value()
         return f"{operand}.cd.get_relative_frequency(key={param})"
 
     @staticmethod
@@ -637,7 +695,10 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(input_dict, key):
-                if pd.isna(input_dict) or key not in input_dict:
+                if pd.isna(input_dict) or pd.isna(key):
+                    return np.nan
+                key = str(int(key)) if isinstance(key, (int, float, np.integer, np.floating)) else key
+                if key not in input_dict:
                     return np.nan
                 total_count = sum(input_dict.values())
                 if total_count == 0:

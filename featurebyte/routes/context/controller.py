@@ -1,6 +1,7 @@
 """
 Context API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Tuple
@@ -15,7 +16,7 @@ from featurebyte.routes.common.primary_entity_validator import PrimaryEntityVali
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableServiceUpdate
-from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
@@ -38,7 +39,7 @@ class ContextController(
     def __init__(
         self,
         observation_table_service: ObservationTableService,
-        batch_feature_table_service: BatchFeatureTableService,
+        batch_request_table_service: BatchRequestTableService,
         context_service: ContextService,
         deployment_service: DeploymentService,
         user_service: UserService,
@@ -49,7 +50,7 @@ class ContextController(
     ):
         super().__init__(service=context_service)
         self.observation_table_service = observation_table_service
-        self.batch_feature_table_service = batch_feature_table_service
+        self.batch_request_table_service = batch_request_table_service
         self.context_service = context_service
         self.deployment_service = deployment_service
         self.user_service = user_service
@@ -172,7 +173,7 @@ class ContextController(
         return [
             (self.use_case_service, {"context_id": document_id}),
             (self.observation_table_service, {"context_id": document_id}),
-            (self.batch_feature_table_service, {"context_id": document_id}),
+            (self.batch_request_table_service, {"context_id": document_id}),
             (self.deployment_service, {"context_id": document_id}),
         ]
 

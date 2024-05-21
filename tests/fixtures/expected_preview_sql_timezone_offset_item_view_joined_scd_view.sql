@@ -55,7 +55,7 @@ FROM (
   FROM (
     SELECT
       "__FB_KEY_COL_0",
-      LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+      LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
       "event_id_col",
       "item_id_col",
       "item_type",
@@ -140,6 +140,8 @@ FROM (
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."scd_table"
+        WHERE
+          "effective_timestamp" IS NOT NULL
       )
     )
   )
@@ -148,17 +150,35 @@ FROM (
 ) AS L
 LEFT JOIN (
   SELECT
-    "col_int" AS "col_int",
-    "col_float" AS "col_float",
-    "col_text" AS "col_text",
-    "col_binary" AS "col_binary",
-    "col_boolean" AS "col_boolean",
-    "effective_timestamp" AS "effective_timestamp",
-    "end_timestamp" AS "end_timestamp",
-    "date_of_birth" AS "date_of_birth",
-    "created_at" AS "created_at",
-    "cust_id" AS "cust_id"
-  FROM "sf_database"."sf_schema"."scd_table"
+    ANY_VALUE("col_int") AS "col_int",
+    ANY_VALUE("col_float") AS "col_float",
+    "col_text",
+    ANY_VALUE("col_binary") AS "col_binary",
+    ANY_VALUE("col_boolean") AS "col_boolean",
+    "effective_timestamp",
+    ANY_VALUE("end_timestamp") AS "end_timestamp",
+    ANY_VALUE("date_of_birth") AS "date_of_birth",
+    ANY_VALUE("created_at") AS "created_at",
+    ANY_VALUE("cust_id") AS "cust_id"
+  FROM (
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      "effective_timestamp" AS "effective_timestamp",
+      "end_timestamp" AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
+      "created_at" AS "created_at",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."scd_table"
+    WHERE
+      "effective_timestamp" IS NOT NULL
+  )
+  GROUP BY
+    "effective_timestamp",
+    "col_text"
 ) AS R
   ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
 LIMIT 10

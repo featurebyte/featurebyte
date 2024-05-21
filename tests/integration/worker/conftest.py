@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in worker directory
 """
+
 from typing import Any
 
 import os
@@ -15,7 +16,7 @@ from bson import ObjectId
 
 from featurebyte.app import get_celery
 from featurebyte.persistent.mongo import MongoDB
-from tests.integration.conftest import MONGO_CONNECTION
+from tests.integration.conftest import MONGO_CONNECTION, TEST_REDIS_URI
 
 
 class RunThread(threading.Thread):
@@ -80,9 +81,10 @@ def celery_service_fixture(worker_type):
                 "MONGODB_DB": database_name,
                 "FEATUREBYTE_SERVER": "http://127.0.0.1:8080",
                 "FEATUREBYTE_HOME": tempdir,
+                "REDIS_URI": TEST_REDIS_URI,
             }
         )
-        celery = get_celery()
+        celery = get_celery(redis_uri=TEST_REDIS_URI, mongo_uri=MONGO_CONNECTION)
         celery.conf.mongodb_backend_settings["database"] = database_name
         proc = subprocess.Popen(command, env=env, stdout=subprocess.PIPE)
         thread = RunThread(proc.stdout)

@@ -1,6 +1,7 @@
 """
 FeatureManagerService class
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Set
@@ -26,8 +27,38 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.databricks_unity import DatabricksUnitySession
 
 logger = get_logger(__name__)
+
+
+def get_previous_job_datetime(
+    input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
+) -> datetime:
+    """
+    Calculate the expected current job datetime give input datetime, frequency_minutes and
+    time_modulo_frequency_seconds.
+
+    Parameters
+    ----------
+    input_dt: datetime
+        input datetime
+    frequency_minutes: int
+        frequency in minutes
+    time_modulo_frequency_seconds: int
+        time_modulo_frequency in seconds
+
+    Returns
+    -------
+    datetime
+    """
+    next_job_time = get_next_job_datetime(
+        input_dt=input_dt,
+        frequency_minutes=frequency_minutes,
+        time_modulo_frequency_seconds=time_modulo_frequency_seconds,
+    )
+    previous_job_time = next_job_time - timedelta(minutes=frequency_minutes)
+    return previous_job_time
 
 
 class FeatureManagerService:
@@ -79,6 +110,7 @@ class FeatureManagerService:
             and session.source_type == SourceType.DATABRICKS_UNITY
         ):
             # Register Databricks UDF for on-demand feature
+            assert isinstance(session, DatabricksUnitySession)
             await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
 
         if not feature_spec.is_online_store_eligible:
@@ -115,14 +147,10 @@ class FeatureManagerService:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
             tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
-                # generate historical tiles
-                await self._generate_historical_tiles(session=session, tile_spec=tile_spec)
                 tile_specs_to_be_scheduled.append(tile_spec)
-
-            elif is_recreating_schema:
-                # if this is called when recreating the schema, we cannot assume that the historical
-                # tiles are available even if there is an active tile jobs.
-                await self._generate_historical_tiles(session=session, tile_spec=tile_spec)
+            await self._backfill_tiles(
+                session=session, tile_spec=tile_spec, schedule_time=schedule_time
+            )
 
         # populate feature store. if this is called when recreating the schema, we need to run all
         # the online store compute queries since the tables need to be regenerated.
@@ -199,46 +227,157 @@ class FeatureManagerService:
         schedule_time: datetime,
         aggregation_result_name: str,
     ) -> None:
-        next_job_time = get_next_job_datetime(
+        job_schedule_ts = get_previous_job_datetime(
             input_dt=schedule_time,
             frequency_minutes=tile_spec.frequency_minute,
             time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
         )
-        job_schedule_ts = next_job_time - timedelta(minutes=tile_spec.frequency_minute)
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
         await self.tile_manager_service.populate_feature_store(
             session, tile_spec, job_schedule_ts_str, aggregation_result_name
         )
 
-    async def _generate_historical_tiles(self, session: BaseSession, tile_spec: TileSpec) -> None:
-        # generate historical tile_values
-        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+    async def _backfill_tiles(
+        self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime
+    ) -> None:
+        """
+        Backfill tiles required to populate internal online store
 
-        # derive the latest tile_start_date
-        end_ind = date_util.timestamp_utc_to_tile_index(
-            datetime.utcnow(),
-            tile_spec.time_modulo_frequency_second,
-            tile_spec.blind_spot_second,
-            tile_spec.frequency_minute,
-        )
-        end_ts = date_util.tile_index_to_timestamp_utc(
-            end_ind,
-            tile_spec.time_modulo_frequency_second,
-            tile_spec.blind_spot_second,
-            tile_spec.frequency_minute,
-        )
-        end_ts_str = end_ts.strftime(date_format)
+        This will determine the tiles that need to be backfilled using information stored in the
+        tile registry collection. Tiles between backfill_start_date and last_run_tile_end_date can
+        be assumed to be available because of previous backfills and on going scheduled tile tasks.
+        See an example below.
 
-        start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        Feature: Amount Sum over 48 hours
+
+                 <-------------------------------- 48h ------------------------------->
+                                            (tiles available)
+                                      # # # # # # # # # # # # # # #
+        ---------|-------------------|----------------------------|-------------------|--> (time)
+                 ^                   ^                            ^                   ^
+             start_ts        backfill_start_date      last_run_tile_end_date       end_ts
+                 <------------------->                            <------------------->
+                    required compute                                 required compute
+           (start_ts_1)        (end_ts_1)                 (start_ts_2)           (end_ts_2)
+
+        Notes:
+
+        * start_ts: start timestamp of the tiles that need to be computed. This is determined by
+          end_ts and the largest feature derivation window of the feature.
+
+        * end_ts: end timestamp of the tiles that need to be computed. This is determined by the
+          feature job settings and the deployment time.
+
+        * backfill_start_date: start timestamp of the tile that was last backfilled. This is updated
+          by tile backfill process during deployment.
+
+        * last_run_tile_end_date: end timestamp of the tile that was last computed in the scheduled
+          tile task. This is updated by scheduled tile task regularly.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
+        tile_spec: TileSpec
+            Instance of TileSpec
+        schedule_time: datetime
+            The moment of enabling the feature
+        """
+        # Derive the tile end date based on expected previous job time
+        job_schedule_ts = get_previous_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=tile_spec.frequency_minute,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
+        end_ts = job_schedule_ts - timedelta(seconds=tile_spec.blind_spot_second)
+
+        # Determine the earliest tiles required to compute the features for offline store. This is
+        # determined by the largest feature derivation window.
+        max_window_seconds: Optional[int] = None
+        for window in tile_spec.windows:
+            if window is None:
+                max_window_seconds = None
+                break
+            window_seconds = int(pd.Timedelta(window).total_seconds())
+            if max_window_seconds is None or window_seconds > max_window_seconds:
+                max_window_seconds = window_seconds
+
+        if max_window_seconds is None:
+            # Need to backfill all the way back for features without a bounded window
+            start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        else:
+            # For features with a bounded window, backfill only the required tiles
+            start_ts = end_ts - timedelta(seconds=max_window_seconds)
+
+        start_ts_1: Optional[datetime] = None
+        end_ts_1: Optional[datetime] = None
+        start_ts_2: Optional[datetime] = None
+        end_ts_2: Optional[datetime] = None
 
         tile_model = await self.tile_registry_service.get_tile_model(
             tile_spec.tile_id, tile_spec.aggregation_id
         )
-        if tile_model is not None and tile_model.last_run_metadata_offline is not None:
-            start_ts = tile_model.last_run_metadata_offline.tile_end_date
+        if tile_model is not None and tile_model.backfill_metadata is not None:
+            if start_ts.replace(tzinfo=None) < tile_model.backfill_metadata.start_date:
+                # Need to compute tiles up to previous backfill start date
+                start_ts_1 = start_ts
+                end_ts_1 = tile_model.backfill_metadata.start_date
+            if tile_model.last_run_metadata_offline is None:
+                # Note: unlikely to happen as there should already be a tile job running, but we
+                # still need to handle this case in case of bad state / error
+                start_ts_2 = tile_model.backfill_metadata.start_date
+                end_ts_2 = end_ts
+            elif tile_model.last_run_metadata_offline.tile_end_date < end_ts.replace(tzinfo=None):
+                # Need to compute tiles from last run tile end date to end_ts
+                start_ts_2 = tile_model.last_run_metadata_offline.tile_end_date
+                end_ts_2 = end_ts
+            to_init_backfill_metadata = False
+        else:
+            # Need to compute tiles up to end_ts
+            start_ts_2 = start_ts
+            end_ts_2 = end_ts
+            to_init_backfill_metadata = True
 
-        logger.info(f"start_ts: {start_ts}")
+        logger.info(
+            "Determined tile start and end timestamps for online enabling",
+            extra={
+                "start_ts_1": str(start_ts_1),
+                "end_ts_1": str(end_ts_1),
+                "start_ts_2": str(start_ts_2),
+                "end_ts_2": str(end_ts_2),
+            },
+        )
 
+        if start_ts_1 is not None and end_ts_1 is not None:
+            await self._backfill_tiles_with_start_end(
+                session=session,
+                tile_spec=tile_spec,
+                start_ts=start_ts_1,
+                end_ts=end_ts_1,
+                update_last_run_metadata=False,
+                update_backfill_start_date=True,
+            )
+
+        if start_ts_2 is not None and end_ts_2 is not None:
+            await self._backfill_tiles_with_start_end(
+                session=session,
+                tile_spec=tile_spec,
+                start_ts=start_ts_2,
+                end_ts=end_ts_2,
+                update_last_run_metadata=True,
+                update_backfill_start_date=to_init_backfill_metadata,
+            )
+
+    async def _backfill_tiles_with_start_end(
+        self,
+        session: BaseSession,
+        tile_spec: TileSpec,
+        start_ts: datetime,
+        end_ts: datetime,
+        update_last_run_metadata: bool,
+        update_backfill_start_date: bool,
+    ) -> None:
+        # Align the start timestamp to the tile boundary
         start_ind = date_util.timestamp_utc_to_tile_index(
             start_ts,
             tile_spec.time_modulo_frequency_second,
@@ -251,16 +390,23 @@ class FeatureManagerService:
             tile_spec.blind_spot_second,
             tile_spec.frequency_minute,
         )
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         start_ts_str = start_ts.strftime(date_format)
-
+        end_ts_str = end_ts.strftime(date_format)
         await self.tile_manager_service.generate_tiles(
             session=session,
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
             start_ts_str=start_ts_str,
-            last_tile_start_ts_str=end_ts_str,
+            last_tile_start_ts_str=end_ts_str if update_last_run_metadata else None,
         )
+        if update_backfill_start_date:
+            await self.tile_registry_service.update_backfill_metadata(
+                tile_id=tile_spec.tile_id,
+                aggregation_id=tile_spec.aggregation_id,
+                backfill_start_date=start_ts,
+            )
 
     async def _update_tile_feature_mapping_table(
         self,
@@ -301,6 +447,7 @@ class FeatureManagerService:
             and session.source_type == SourceType.DATABRICKS_UNITY
         ):
             # Remove Databricks UDF for on-demand feature
+            assert isinstance(session, DatabricksUnitySession)
             await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
 
         if not feature_spec.is_online_store_eligible:
@@ -408,20 +555,20 @@ class FeatureManagerService:
 
     @staticmethod
     async def may_register_databricks_udf_for_on_demand_feature(
-        session: BaseSession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
     ) -> None:
         """
         Register Databricks UDF for on-demand feature.
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
+        session: DatabricksUnitySession
+            Instance of DatabricksUnitySession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+        if offline_store_info and offline_store_info.udf_info and offline_store_info.udf_info.codes:
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Registering Databricks UDF for on-demand feature",
@@ -432,23 +579,28 @@ class FeatureManagerService:
             )
             await session.execute_query(f"DROP FUNCTION IF EXISTS {udf_info.sql_function_name}")
             await session.execute_query(udf_info.codes)
+            await session.set_owner("FUNCTION", udf_info.sql_function_name)
 
     @staticmethod
     async def remove_databricks_udf_for_on_demand_feature_if_exists(
-        session: BaseSession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
     ) -> None:
         """
         Remove Databricks UDF for on-demand feature.
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
+        session: DatabricksUnitySession
+            Instance of DatabricksUnitySession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
+        if (
+            offline_store_info
+            and offline_store_info.udf_info
+            and offline_store_info.udf_info.sql_function_name
+        ):
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Removing Databricks UDF for on-demand feature",

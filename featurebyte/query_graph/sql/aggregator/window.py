@@ -1,6 +1,7 @@
 """
 SQL generation for aggregation with time windows
 """
+
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Tuple, cast

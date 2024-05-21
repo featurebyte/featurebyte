@@ -1,6 +1,7 @@
 """
 Test feature table cache service
 """
+
 import pytest
 from bson import ObjectId
 

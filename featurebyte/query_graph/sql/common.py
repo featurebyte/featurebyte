@@ -1,6 +1,7 @@
 """
 Common helpers and data structures for feature SQL generation
 """
+
 from __future__ import annotations
 
 from typing import Dict, Optional, Sequence, Tuple, Union

@@ -1,6 +1,7 @@
 """
 Historical features SQL generation
 """
+
 from __future__ import annotations
 
 from typing import List, Optional, Tuple, cast
@@ -110,7 +111,7 @@ class DataFrameObservationSet(ObservationSet):
     ) -> None:
         if add_row_index:
             self.dataframe[InternalName.TABLE_ROW_INDEX] = np.arange(self.dataframe.shape[0])
-        await session.register_table(request_table_name, self.dataframe)
+        await session.register_table(request_table_name, self.dataframe, temporary=False)
 
 
 class MaterializedTableObservationSet(ObservationSet):
@@ -142,13 +143,13 @@ class MaterializedTableObservationSet(ObservationSet):
             columns.append(
                 expressions.alias_(row_number, alias=InternalName.TABLE_ROW_INDEX, quoted=True),
             )
-        query = sql_to_string(
-            expressions.select(*columns).from_(
+
+        await session.create_table_as(
+            table_details=TableDetails(table_name=request_table_name),
+            select_expr=expressions.select(*columns).from_(
                 get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
             ),
-            source_type=session.source_type,
         )
-        await session.register_table_with_query(request_table_name, query)
 
 
 def get_internal_observation_set(
@@ -366,7 +367,9 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
         return FeatureQuerySet(
             feature_queries=[],
             output_query=output_query,
+            output_table_name=output_table_details.table_name,
             progress_message=progress_message,
+            validate_output_row_index=output_include_row_index,
         )
 
     feature_queries = []
@@ -414,5 +417,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-ma
     return FeatureQuerySet(
         feature_queries=feature_queries,
         output_query=output_query,
+        output_table_name=output_table_details.table_name,
         progress_message=progress_message,
+        validate_output_row_index=output_include_row_index,
     )

@@ -104,7 +104,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
     ON REQ."transaction_id" = T1."transaction_id"
 )
 SELECT
-  (
+  CAST((
     "_fb_internal_cust_id_window_w604800_sum_32c30411c654d6ad110110ed16543be7a7cefaaa" + CASE
       WHEN (
         "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1" IS NULL
@@ -112,5 +112,5 @@ SELECT
       THEN 0
       ELSE "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
     END
-  ) AS "combined_feature"
+  ) AS BIGINT) AS "combined_feature"
 FROM _FB_AGGREGATED AS AGG

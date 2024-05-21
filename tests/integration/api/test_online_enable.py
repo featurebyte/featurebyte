@@ -1,6 +1,7 @@
 """
 Integration test for online enabling features
 """
+
 import asyncio
 import os
 import subprocess

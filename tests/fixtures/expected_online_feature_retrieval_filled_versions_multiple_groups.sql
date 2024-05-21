@@ -56,7 +56,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."CUSTOMER_ID",
   AGG."order_id",
-  "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "a_48h_average"
+  CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "__TEMP_000000000000000000000000_1" AS
@@ -102,7 +102,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."CUSTOMER_ID",
   AGG."order_id",
-  "_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "order_size"
+  CAST("_fb_internal_order_id_item_count_None_order_id_None_input_2" AS BIGINT) AS "order_size"
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT
@@ -110,7 +110,7 @@ SELECT
   REQ."order_id",
   T0."a_48h_average",
   T1."order_size"
-FROM REQUEST_TABLE_1234 AS REQ
+FROM "REQUEST_TABLE_1234" AS REQ
 LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
   ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX"
 LEFT JOIN "__TEMP_000000000000000000000000_1" AS T1

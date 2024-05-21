@@ -1,6 +1,7 @@
 """
 FeatureByte Autodoc Extension for mkdocs
 """
+
 from __future__ import annotations
 
 from markdown import Markdown

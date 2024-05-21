@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import Feature
-from featurebyte.common.typing import is_scalar_nan
+from featurebyte.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
@@ -44,6 +44,7 @@ def test_dimension_lookup_features(dimension_view):
     # Test single lookup feature
     preview_params = {"item_id": "item_42"}
     df = feature.preview(pd.DataFrame([preview_params]))
+    assert df.shape[0] == 1
     assert df.iloc[0].to_dict() == {
         "ItemTypeFeature": "type_42",
         **preview_params,
@@ -55,6 +56,7 @@ def test_dimension_lookup_features(dimension_view):
         feature_names=["ItemNameFeature", "ItemTypeFeature"],
     )
     df = feature_group.preview(pd.DataFrame([preview_params]))
+    assert df.shape[0] == 1
     assert df.iloc[0].to_dict() == {
         "ItemNameFeature": "name_42",
         "ItemTypeFeature": "type_42",

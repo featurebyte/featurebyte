@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2 (2024-03-15)
+
+### 🐛 Bug Fixes
+
++ `service` Databricks integration fix
+
 ## v1.0.1 (2024-03-12)
 
 ### 💡 Enhancements

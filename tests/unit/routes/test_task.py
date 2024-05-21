@@ -1,6 +1,7 @@
 """
 Test for TaskStatus route
 """
+
 from http import HTTPStatus
 
 import pytest

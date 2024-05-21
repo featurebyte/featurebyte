@@ -1,6 +1,7 @@
 """
 Module for SQL syntax tree builder
 """
+
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Type

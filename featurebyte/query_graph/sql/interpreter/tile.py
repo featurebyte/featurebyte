@@ -1,6 +1,7 @@
 """
 This module contains the Query Graph Interpreter
 """
+
 from __future__ import annotations
 
 from typing import Optional, cast
@@ -148,7 +149,7 @@ class TileSQLGenerator:
                 and isinstance(column, SourceDataColumn)
                 and column.table_id is not None
             ):
-                assert isinstance(column, SourceDataColumn)
+                assert isinstance(column, SourceDataColumn), "SourceDataColumn expected"
                 return EventTableTimestampFilter(
                     timestamp_column_name=column.name,
                     event_table_id=column.table_id,
@@ -190,8 +191,8 @@ class TileSQLGenerator:
         entity_columns = groupby_sql_node.keys
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         tile_value_types = [spec.tile_column_type for spec in groupby_sql_node.tile_specs]
-        assert tile_table_id is not None
-        assert aggregation_id is not None
+        assert tile_table_id is not None, "Tile table ID is required"
+        assert aggregation_id is not None, "Aggregation ID is required"
         sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
         info = TileGenSql(
             tile_table_id=tile_table_id,
@@ -239,8 +240,8 @@ class TileGenMixin(BaseGraphInterpreter):
         -------
         List[TileGenSql]
         """
-        flat_graph, flat_starting_node = self.flatten_graph(node_name=starting_node.name)
+        flat_starting_node = self.get_flattened_node(starting_node.name)
         generator = TileSQLGenerator(
-            flat_graph, is_on_demand=is_on_demand, source_type=self.source_type
+            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
         )
         return generator.construct_tile_gen_sql(flat_starting_node)

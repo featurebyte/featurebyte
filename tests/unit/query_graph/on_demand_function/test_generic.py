@@ -1,6 +1,7 @@
 """
 Test node's demand feature view related methods
 """
+
 from featurebyte.query_graph.node.generic import AliasNode, ConditionalNode, FilterNode
 from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
 

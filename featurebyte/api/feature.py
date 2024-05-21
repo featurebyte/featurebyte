@@ -1,10 +1,12 @@
 """
 Feature and FeatureList classes
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing_extensions import Literal
 
 from http import HTTPStatus
 
@@ -41,7 +43,6 @@ from featurebyte.api.templates.feature_or_target_doc import (
 from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import ScalarSequence
 from featurebyte.common.utils import enforce_observation_set_row_order, is_server_mode
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -57,9 +58,13 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
@@ -69,6 +74,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.typing import ScalarSequence
 
 logger = get_logger(__name__)
 
@@ -614,6 +620,33 @@ class Feature(
         """
         return super().saved
 
+    @property
+    def used_request_column(self) -> bool:
+        """
+        Returns whether the Feature object uses request column(s) in the computation.
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            return self.cached_model.used_request_column
+        except RecordRetrievalException:
+            return self.graph.has_node_type(
+                target_node=self.node, node_type=NodeType.REQUEST_COLUMN
+            )
+
+    @property
+    def table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:
+        """
+        Return table feature job settings of tables used by the feature
+
+        Returns
+        -------
+        List[TableFeatureJobSetting]
+        """
+        return self.graph.extract_table_id_feature_job_settings(target_node=self.node)
+
     @typechecked
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
@@ -911,17 +944,19 @@ class Feature(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "table_feature_job_settings": [
-                    table_feature_job_setting.dict()
-                    for table_feature_job_setting in table_feature_job_settings
-                ]
-                if table_feature_job_settings
-                else None,
-                "table_cleaning_operations": [
-                    clean_ops.dict() for clean_ops in table_cleaning_operations
-                ]
-                if table_cleaning_operations
-                else None,
+                "table_feature_job_settings": (
+                    [
+                        table_feature_job_setting.dict()
+                        for table_feature_job_setting in table_feature_job_settings
+                    ]
+                    if table_feature_job_settings
+                    else None
+                ),
+                "table_cleaning_operations": (
+                    [clean_ops.dict() for clean_ops in table_cleaning_operations]
+                    if table_cleaning_operations
+                    else None
+                ),
             },
         )
         if response.status_code != HTTPStatus.CREATED:

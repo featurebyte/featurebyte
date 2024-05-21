@@ -1,6 +1,7 @@
 """
 This module contains EventTable related models
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type
@@ -82,6 +83,16 @@ class EventTableModel(EventTableData, TableModel):
         if self.event_id_column:
             return [self.event_id_column]
         return []  # DEV-556: event_id_column should not be empty
+
+    @property
+    def special_columns(self) -> List[str]:
+        cols = [
+            self.event_timestamp_column,
+            self.event_id_column,
+            self.record_creation_timestamp_column,
+            self.event_timestamp_timezone_offset_column,
+        ]
+        return [col for col in cols if col]
 
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any

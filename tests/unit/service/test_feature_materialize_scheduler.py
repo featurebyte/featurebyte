@@ -1,6 +1,7 @@
 """
 Teat FeatureMaterializeSchedulerService
 """
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId

@@ -1,6 +1,7 @@
 """
 Enum related to feast
 """
+
 from __future__ import annotations
 
 from feast.types import PrimitiveFeastType
@@ -29,7 +30,7 @@ def to_feast_primitive_type(dtype: DBVarType) -> PrimitiveFeastType:
     mapping = {
         DBVarType.BOOL: PrimitiveFeastType.BOOL,
         DBVarType.VARCHAR: PrimitiveFeastType.STRING,
-        DBVarType.FLOAT: PrimitiveFeastType.FLOAT64,
+        DBVarType.FLOAT: PrimitiveFeastType.FLOAT32,
         DBVarType.INT: PrimitiveFeastType.INT64,
         DBVarType.TIMESTAMP_TZ: PrimitiveFeastType.UNIX_TIMESTAMP,
         DBVarType.TIMESTAMP: PrimitiveFeastType.UNIX_TIMESTAMP,

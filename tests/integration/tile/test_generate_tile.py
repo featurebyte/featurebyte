@@ -1,6 +1,7 @@
 """
 Tile Generate tests for Spark Session
 """
+
 from datetime import datetime
 
 import pytest

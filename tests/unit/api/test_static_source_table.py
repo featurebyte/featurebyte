@@ -1,6 +1,7 @@
 """
 Unit tests for StaticSourceTable class
 """
+
 from unittest.mock import Mock, call, patch
 
 import pandas as pd

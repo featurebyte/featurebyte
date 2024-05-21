@@ -1,13 +1,14 @@
 """
 UserDefinedFunction API payload schema
 """
+
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -19,9 +20,9 @@ class UserDefinedFunctionCreateBase(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     description: Optional[StrictStr] = Field(default=None)
-    sql_function_name: StrictStr
+    sql_function_name: NameStr
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
 
@@ -53,7 +54,7 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     UserDefinedFunction update schema
     """
 
-    sql_function_name: Optional[StrictStr]
+    sql_function_name: Optional[NameStr]
     function_parameters: Optional[List[FunctionParameter]]
     output_dtype: Optional[DBVarType]
 

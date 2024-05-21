@@ -1,6 +1,7 @@
 """
 Implement graph data structure for query graph
 """
+
 from typing import (
     Any,
     Callable,
@@ -8,13 +9,13 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Literal,
     Optional,
     Set,
     Tuple,
     TypedDict,
     cast,
 )
+from typing_extensions import Literal
 
 from collections import OrderedDict, defaultdict
 
