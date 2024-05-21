@@ -86,9 +86,9 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
         # run backtest
         await self.task_progress_updater.update_progress(percent=5, message="Running Analysis")
         feature_job_setting = FeatureJobSetting(
-            frequency=payload.frequency,
+            frequency=payload.period,
             blind_spot=payload.blind_spot,
-            job_time_modulo_frequency=payload.job_time_modulo_frequency,
+            job_time_modulo_frequency=payload.offset,
             feature_cutoff_modulo_frequency=0,
         )
         backtest_result, backtest_report = analysis.backtest(

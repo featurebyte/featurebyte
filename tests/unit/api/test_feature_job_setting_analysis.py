@@ -158,8 +158,8 @@ def test_backtest(mock_display_html, mock_post_async_task, saved_analysis):
         payload={
             "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
             "feature_job_setting_analysis_id": str(analysis.id),
-            "frequency": 120,
-            "job_time_modulo_frequency": 100,
+            "period": 120,
+            "offset": 100,
             "blind_spot": 50,
         },
         retrieve_result=False,
