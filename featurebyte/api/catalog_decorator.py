@@ -1,6 +1,7 @@
 """
 Catalog decorator.
 """
+
 from typing import Any
 
 from functools import wraps

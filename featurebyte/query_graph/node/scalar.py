@@ -1,15 +1,17 @@
 """
 Models for the value parameter used by SingleValueNodeParameters
 """
+
 from __future__ import annotations
 
-from typing import Literal, Union, cast
+from typing import Union, cast
+from typing_extensions import Literal
 
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 from featurebyte.enum import StrEnum
+from featurebyte.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 
 
 class NonNativeValueType(StrEnum):

@@ -1,20 +1,23 @@
 """
 This module contains generic function related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
-from typing_extensions import Annotated
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
@@ -26,6 +29,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
     CommentStr,
+    ExpressionStr,
     InfoDict,
     ObjectClass,
     StatementT,
@@ -34,6 +38,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
+from featurebyte.typing import Scalar
 
 SDKFunctionArgument = Union[VarNameExpressionInfo, Scalar, ObjectClass]
 
@@ -261,3 +266,17 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         expression = get_object_class_from_function_call(udf_var_name, *function_parameters)
         statements.append((out_var_name, expression))
         return statements, out_var_name
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if config.to_generate_null_filling_function:
+            # NOTE: We make an assumption that all UDFs does not have null filling capability,
+            # any null input(s) will result in null output.
+            if self.parameters.output_dtype in DBVarType.supported_timestamp_types():
+                return [], ExpressionStr("pd.NaT")
+            return [], ExpressionStr("np.nan")
+        raise NotImplementedError("User defined function is not supported for GenericFunctionNode")

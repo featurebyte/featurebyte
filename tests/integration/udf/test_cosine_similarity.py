@@ -1,6 +1,7 @@
 """
 Tests for snowflake cosine similarity UDF
 """
+
 import numpy as np
 import pytest
 
@@ -21,6 +22,7 @@ import pytest
         ({"a": 1, "b": 2, "c": 3}, {"a": 1, "b": 2, "c": None}, 0.597614),
         ({"a": 1, "b": np.nan, "c": 3}, {"a": 1, "b": 2, "c": None}, 0.141421),
         ({"a": 1}, {"b": 2, "c": None}, 0),
+        ({"a": 0}, {"b": 0}, 0),
     ],
 )
 @pytest.mark.asyncio

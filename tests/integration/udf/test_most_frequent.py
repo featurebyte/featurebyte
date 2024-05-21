@@ -1,6 +1,7 @@
 """
 Tests for most frequent UDF
 """
+
 import numpy as np
 import pytest
 

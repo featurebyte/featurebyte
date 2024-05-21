@@ -1,6 +1,7 @@
 """
 Snowflake double vector agg only test fixture module
 """
+
 import textwrap
 
 SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY = textwrap.dedent(

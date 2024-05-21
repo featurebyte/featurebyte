@@ -1,9 +1,11 @@
 """
 SnowflakeAdapter class for generating Snowflake specific SQL expressions
 """
+
 from __future__ import annotations
 
-from typing import List, Literal, Optional, cast
+from typing import List, Optional, cast
+from typing_extensions import Literal
 
 import re
 import string
@@ -165,7 +167,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
 
     @classmethod
     def create_table_as(
-        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+        cls,
+        table_details: TableDetails,
+        select_expr: Select | str,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
+        replace: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -174,8 +181,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         ----------
         table_details: TableDetails
             TableDetails of the table to be created
-        select_expr: Select
+        select_expr: Select | str
             Select expression
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
+        partition_keys: list[str] | None
+            Partition keys
         replace: bool
             Whether to replace the table if exists
 
@@ -186,7 +197,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         destination_expr = get_fully_qualified_table_name(table_details.dict())
         return expressions.Create(
             this=expressions.Table(this=destination_expr),
-            kind="TABLE",
+            kind=kind,
             expression=select_expr,
             replace=replace,
         )

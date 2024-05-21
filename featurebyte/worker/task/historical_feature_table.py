@@ -1,13 +1,13 @@
 """
 HistoricalFeatureTable creation task
 """
+
 from __future__ import annotations
 
 from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
@@ -59,17 +59,12 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         location = await self.historical_feature_table_service.generate_materialized_table_location(
             payload.feature_store_id
         )
-        is_view = (
-            isinstance(observation_set, ObservationTableModel)
-            and observation_set.has_row_index is True
-        )
         async with self.drop_table_on_error(
             db_session=db_session,
             table_details=location.table_details,
             payload=payload,
-            is_view=is_view,
         ):
-            await self.historical_features_service.compute(
+            result = await self.historical_features_service.compute(
                 observation_set=observation_set,
                 compute_request=payload.featurelist_get_historical_features,
                 output_table_details=location.table_details,
@@ -92,6 +87,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
                 columns_info=columns_info,
                 num_rows=num_rows,
-                is_view=is_view,
+                is_view=result.is_output_view,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)

@@ -1,12 +1,14 @@
 """
 Base Class for SQL related operations
 """
+
 from typing import Any
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
@@ -56,10 +58,7 @@ class BaseSqlModel(BaseModel):
         -------
             quoted column name
         """
-        if isinstance(self._session, SnowflakeSession):
-            return f'"{col_val}"'
-
-        return f"`{col_val}`"
+        return sql_to_string(quoted_identifier(col_val), self._session.source_type)
 
     def quote_column_null_aware_equal(self, left_expr: str, right_expr: str) -> str:
         """
@@ -94,10 +93,4 @@ class BaseSqlModel(BaseModel):
         -------
             True if table exists, False otherwise
         """
-        table_exist_flag = True
-        try:
-            await self._session.execute_query(f"select * from {table_name} limit 1")
-        except self._session._no_schema_error:  # pylint: disable=protected-access
-            table_exist_flag = False
-
-        return table_exist_flag
+        return await self._session.table_exists(table_name)

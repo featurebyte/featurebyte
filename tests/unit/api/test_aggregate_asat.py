@@ -1,36 +1,20 @@
 """
 Unit tests for aggregate_asat
 """
+
 import pytest
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
-@pytest.fixture
-def entity_col_int():
-    entity = Entity(name="col_int_entity", serving_names=["col_int"])
-    entity.save()
-    return entity
-
-
-@pytest.fixture
-def scd_view_with_entity(snowflake_scd_table, entity_col_int):
-    """
-    Fixture for an SCDView with entity configured
-    """
-    Entity(name="col_text_entity", serving_names=["col_text"]).save()
-    snowflake_scd_table["col_text"].as_entity("col_text_entity")
-    snowflake_scd_table["cust_id"].as_entity("col_int_entity")
-    return snowflake_scd_table.get_view()
-
-
-def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity_col_int):
+def test_aggregate_asat__valid(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
     """
     Test valid usage of aggregate_asat
     """
-    feature = scd_view_with_entity.groupby("cust_id").aggregate_asat(
+    feature = snowflake_scd_view_with_entity.groupby("col_boolean").aggregate_asat(
         value_column="col_float", method="sum", feature_name="asat_feature"
     )
     assert isinstance(feature, Feature)
@@ -55,13 +39,13 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity
             "current_flag_column": "is_active",
             "effective_timestamp_column": "effective_timestamp",
             "end_timestamp_column": "end_timestamp",
-            "entity_ids": [entity_col_int.id],
-            "keys": ["cust_id"],
+            "entity_ids": [gender_entity_id],
+            "keys": ["col_boolean"],
             "name": "asat_feature",
             "natural_key_column": "col_text",
             "offset": None,
             "parent": "col_float",
-            "serving_names": ["col_int"],
+            "serving_names": ["gender"],
             "value_by": None,
         },
         "type": "aggregate_as_at",
@@ -89,66 +73,11 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity
     )
 
 
-def test_aggregate_asat__method_required(scd_view_with_entity):
-    """
-    Test method parameter is required
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("cust_id").aggregate_asat(
-            value_column="col_float", feature_name="asat_feature"
-        )
-    assert str(exc.value) == "method is required"
-
-
-def test_aggregate_asat__feature_name_required(scd_view_with_entity):
-    """
-    Test feature_name parameter is required
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("cust_id").aggregate_asat(
-            value_column="col_float", feature_name="asat_feature"
-        )
-    assert str(exc.value) == "method is required"
-
-
-def test_aggregate_asat__latest_not_supported(scd_view_with_entity):
-    """
-    Test using "latest" method is not supported
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("cust_id").aggregate_asat(
-            value_column="col_float", method="latest", feature_name="asat_feature"
-        )
-    assert str(exc.value) == "latest aggregation method is not supported for aggregated_asat"
-
-
-def test_aggregate_asat__groupby_key_cannot_be_natural_key(scd_view_with_entity):
-    """
-    Test using natural key as groupby key is not allowed
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_text").aggregate_asat(
-            value_column="col_float", method="sum", feature_name="asat_feature"
-        )
-    assert str(exc.value) == "Natural key column cannot be used as a groupby key in aggregate_asat"
-
-
-def test_aggregate_asat__invalid_offset_string(scd_view_with_entity):
-    """
-    Test offset string is validated
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("cust_id").aggregate_asat(
-            value_column="col_float", method="sum", feature_name="asat_feature", offset="yesterday"
-        )
-    assert "Failed to parse the offset parameter" in str(exc.value)
-
-
-def test_aggregate_asat__offset(scd_view_with_entity, entity_col_int):
+def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id):
     """
     Test offset parameter
     """
-    feature = scd_view_with_entity.groupby("cust_id").aggregate_asat(
+    feature = snowflake_scd_view_with_entity.groupby("col_boolean").aggregate_asat(
         value_column="col_float", method="sum", feature_name="asat_feature", offset="7d"
     )
 
@@ -174,14 +103,61 @@ def test_aggregate_asat__offset(scd_view_with_entity, entity_col_int):
             "current_flag_column": "is_active",
             "effective_timestamp_column": "effective_timestamp",
             "end_timestamp_column": "end_timestamp",
-            "entity_ids": [entity_col_int.id],
-            "keys": ["cust_id"],
+            "entity_ids": [gender_entity_id],
+            "keys": ["col_boolean"],
             "name": "asat_feature",
             "natural_key_column": "col_text",
             "offset": "7d",
             "parent": "col_float",
-            "serving_names": ["col_int"],
+            "serving_names": ["gender"],
             "value_by": None,
         },
         "type": "aggregate_as_at",
+    }
+
+
+def test_aggregate_asat__not_backward(snowflake_scd_view_with_entity, gender_entity_id):
+    """
+    Test offset parameter
+    """
+    with pytest.warns(UserWarning, match="The backward parameter has no effect."):
+        feature = snowflake_scd_view_with_entity.groupby("col_boolean").aggregate_asat(
+            value_column="col_float",
+            method="sum",
+            feature_name="asat_feature",
+            offset="7d",
+            backward=False,
+        )
+    assert isinstance(feature, Feature)
+
+
+def test_aggregate_asat_with_category(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
+    """Test aggregate_asat with category"""
+    _ = snowflake_scd_table, gender_entity_id
+    feature = snowflake_scd_view_with_entity.groupby(
+        "col_boolean", category="col_text"
+    ).aggregate_asat(
+        value_column="col_float",
+        method="sum",
+        feature_name="asat_feature",
+        offset="7d",
+    )
+    feature.save()
+
+    # check that category is set correctly
+    agg_info = feature.info()["metadata"]["aggregations"]
+    assert agg_info == {
+        "F0": {
+            "aggregation_type": "aggregate_as_at",
+            "category": "col_text",
+            "column": "Input0",
+            "filter": False,
+            "function": "sum",
+            "keys": ["col_boolean"],
+            "name": "asat_feature",
+            "offset": "7d",
+            "window": None,
+        }
     }

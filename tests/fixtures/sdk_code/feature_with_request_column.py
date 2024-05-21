@@ -16,7 +16,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     windows=["90d"],
     feature_names=["latest_event_timestamp_90d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="3600s", frequency="3600s", time_modulo_frequency="1800s"
+        blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
     ),
     skip_fill_na=True,
 )

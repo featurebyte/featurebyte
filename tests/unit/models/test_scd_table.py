@@ -1,6 +1,7 @@
 """
 Tests for SCDTable models
 """
+
 import datetime
 
 import pytest

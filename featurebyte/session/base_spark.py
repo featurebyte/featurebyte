@@ -1,6 +1,7 @@
 """
 BaseSparkSession class
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, OrderedDict, cast
@@ -10,6 +11,7 @@ import os
 from abc import ABC, abstractmethod
 
 import pandas as pd
+import pyarrow as pa
 from bson import ObjectId
 from pyhive.exc import OperationalError
 
@@ -20,9 +22,54 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSchemaInitializer,
+    BaseSession,
+    MetadataSchemaInitializer,
+)
 
 logger = get_logger(__name__)
+
+db_vartype_mapping = {
+    "INT": DBVarType.INT,
+    "BINARY": DBVarType.BINARY,
+    "BOOLEAN": DBVarType.BOOL,
+    "DATE": DBVarType.DATE,
+    "DECIMAL": DBVarType.FLOAT,
+    "DOUBLE": DBVarType.FLOAT,
+    "FLOAT": DBVarType.FLOAT,
+    "INTERVAL": DBVarType.TIMEDELTA,
+    "VOID": DBVarType.VOID,
+    "TIMESTAMP": DBVarType.TIMESTAMP,
+    "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
+    "MAP": DBVarType.DICT,
+    "STRUCT": DBVarType.DICT,
+    "STRING": DBVarType.VARCHAR,
+}
+
+
+pa_type_mapping = {
+    "STRING": pa.string(),
+    "TINYINT": pa.int8(),
+    "SMALLINT": pa.int16(),
+    "INT": pa.int32(),
+    "BIGINT": pa.int64(),
+    "BINARY": pa.large_binary(),
+    "BOOLEAN": pa.bool_(),
+    "DATE": pa.string(),
+    "TIME": pa.time32("ms"),
+    "DOUBLE": pa.float64(),
+    "FLOAT": pa.float32(),
+    # https://spark.apache.org/docs/3.5.0/api/python/reference/pyspark.sql/api/pyspark.sql.types.DecimalType.html
+    "DECIMAL": pa.decimal128(38, 18),
+    "INTERVAL": pa.duration("ns"),
+    "NULL": pa.null(),
+    "TIMESTAMP": pa.timestamp("ns", tz=None),
+    "ARRAY": pa.string(),
+    "MAP": pa.string(),
+    "STRUCT": pa.string(),
+}
 
 
 class BaseSparkSession(BaseSession, ABC):
@@ -105,37 +152,61 @@ class BaseSparkSession(BaseSession, ABC):
         """
 
     @staticmethod
-    def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
+    def _get_pyarrow_type(datatype: str) -> pa.DataType:
+        """
+        Get pyarrow type from Spark data type
+
+        Parameters
+        ----------
+        datatype: str
+            Spark data type
+
+        Returns
+        -------
+        pa.DataType
+        """
+        if datatype.startswith("INTERVAL"):
+            pyarrow_type = pa.int64()
+        elif datatype.startswith("DECIMAL("):
+            # e.g. DECIMAL(10, 2)
+            precision, scale = map(int, datatype[8:-1].split(","))
+            if scale > 0:
+                pyarrow_type = pa.decimal128(precision, scale)
+            else:
+                pyarrow_type = pa.int64()
+        else:
+            pyarrow_type = pa_type_mapping.get(datatype)
+
+        if not pyarrow_type:
+            # warn and fallback to string for unrecognized types
+            logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
+            pyarrow_type = pa.string()
+        return pyarrow_type
+
+    @staticmethod
+    def _convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
+        spark_type: str,
+    ) -> DBVarType:
         if spark_type.endswith("INT"):
             # BIGINT, INT, SMALLINT, TINYINT
             return DBVarType.INT
-        if spark_type.startswith("DECIMAL"):
+        if spark_type.startswith("DECIMAL("):
             # DECIMAL(10, 2)
-            return DBVarType.FLOAT
+            _, scale = map(int, spark_type[8:-1].split(","))
+            if scale > 0:
+                return DBVarType.FLOAT
+            return DBVarType.INT
         if spark_type.startswith("ARRAY"):
             # ARRAY<BIGINT>
             return DBVarType.ARRAY
         if spark_type.startswith("STRUCT"):
-            return DBVarType.STRUCT
-
-        mapping = {
-            "BINARY": DBVarType.BINARY,
-            "BOOLEAN": DBVarType.BOOL,
-            "DATE": DBVarType.DATE,
-            "DECIMAL": DBVarType.FLOAT,
-            "DOUBLE": DBVarType.FLOAT,
-            "FLOAT": DBVarType.FLOAT,
-            "INTERVAL": DBVarType.TIMEDELTA,
-            "VOID": DBVarType.VOID,
-            "TIMESTAMP": DBVarType.TIMESTAMP,
-            "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
-            "MAP": DBVarType.MAP,
-            "STRUCT": DBVarType.STRUCT,
-            "STRING": DBVarType.VARCHAR,
-        }
-        if spark_type not in mapping:
+            return DBVarType.DICT
+        if spark_type.startswith("MAP"):
+            return DBVarType.DICT
+        db_vartype = db_vartype_mapping.get(spark_type, DBVarType.UNKNOWN)
+        if db_vartype == DBVarType.UNKNOWN:
             logger.warning(f"Spark: Not supported data type '{spark_type}'")
-        return mapping.get(spark_type, DBVarType.UNKNOWN)
+        return db_vartype
 
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True
@@ -183,7 +254,7 @@ class BaseSparkSession(BaseSession, ABC):
                 )
 
                 await self.execute_query(
-                    f"CREATE TABLE `{table_name}` USING DELTA "
+                    f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
                     f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
                     f"AS SELECT * FROM `{temp_view_name}`"
                 )
@@ -223,10 +294,13 @@ class BaseSparkSession(BaseSession, ABC):
         return output
 
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f"SHOW TABLES IN `{database_name}`.`{schema_name}`"
+            f"SHOW TABLES IN `{database_name}`.`{schema_name}`", timeout=timeout
         )
         output = []
         if tables is not None:
@@ -239,9 +313,11 @@ class BaseSparkSession(BaseSession, ABC):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
+        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
+            timeout=timeout,
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
@@ -375,7 +451,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 13
+        return 15
 
     @property
     def sql_directory_name(self) -> str:
@@ -495,9 +571,9 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),
             (
                 "F_COUNT_DICT_COSINE_SIMILARITY",
-                "com.featurebyte.hive.udf.CountDictCosineSimilarityV1",
+                "com.featurebyte.hive.udf.CountDictCosineSimilarityV2",
             ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV2"),
+            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV3"),
             ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",

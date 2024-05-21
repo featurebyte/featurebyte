@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.query_graph.tiling
 """
+
 import copy
 
 import pytest

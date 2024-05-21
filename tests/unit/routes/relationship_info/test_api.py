@@ -1,6 +1,7 @@
 """
 Test relationship info routes
 """
+
 from http import HTTPStatus
 
 import pytest

@@ -1,6 +1,7 @@
 """
 Tests for BatchRequestTable route
 """
+
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
@@ -82,3 +83,17 @@ class TestBatchRequestTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "description": None,
         }
+
+    def test_delete_context_of_batch_request_table(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """Test delete context of batch request table"""
+        context_id = create_success_response.json()["context_id"]
+
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"/context/{context_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Context is referenced by BatchRequestTable: batch_request_table"
+        )

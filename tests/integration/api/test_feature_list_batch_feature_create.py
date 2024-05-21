@@ -1,6 +1,7 @@
 """
 Test feature list & feature group creation with batch feature creation
 """
+
 import pandas as pd
 import pytest
 

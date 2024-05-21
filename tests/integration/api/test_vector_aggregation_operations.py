@@ -1,6 +1,7 @@
 """
 Test vector aggregation operations module
 """
+
 from typing import List
 
 import json

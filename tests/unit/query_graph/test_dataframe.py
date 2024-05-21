@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.query_graph.sql.dataframe
 """
+
 import textwrap
 
 import numpy as np

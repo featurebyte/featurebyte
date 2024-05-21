@@ -1,14 +1,15 @@
 """
 BatchFeatureTable API payload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
@@ -20,7 +21,7 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     feature_store_id: PydanticObjectId
     batch_request_table_id: PydanticObjectId
     deployment_id: PydanticObjectId

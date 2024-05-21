@@ -1,6 +1,7 @@
 """
 SourceTable class
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.mixin import SampleMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -58,7 +60,7 @@ else:
 logger = get_logger(__name__)
 
 
-class TableDataFrame(BaseFrame):
+class TableDataFrame(BaseFrame, SampleMixin):
     """
     TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
     This class is used to construct the query graph for previewing/sampling underlying table stored at the
@@ -1007,6 +1009,7 @@ class SourceTable(AbstractTableData):
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
+        target_column: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -1035,6 +1038,10 @@ class SourceTable(AbstractTableData):
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
             List of primary entities for the observation table.
+        target_column: Optional[str]
+            Name of the column in the observation table that stores the target values.
+            The target column name must match an existing target namespace in the catalog.
+            The data type and primary entities must match the those in the target namespace.
 
         Returns
         -------
@@ -1083,6 +1090,7 @@ class SourceTable(AbstractTableData):
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
+            target_column=target_column,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

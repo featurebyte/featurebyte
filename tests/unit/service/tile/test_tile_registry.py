@@ -1,6 +1,7 @@
 """
 Unit tests for TileRegistryService
 """
+
 from datetime import datetime
 
 import pytest

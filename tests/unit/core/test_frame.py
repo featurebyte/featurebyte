@@ -1,6 +1,7 @@
 """
 Unit test for Frame
 """
+
 import pytest
 
 from featurebyte.core.frame import Frame, Series

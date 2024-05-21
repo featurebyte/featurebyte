@@ -1,6 +1,7 @@
 """
 Entity Relationship Combiner Service
 """
+
 from typing import Dict, List, Set, Tuple
 
 from collections import defaultdict

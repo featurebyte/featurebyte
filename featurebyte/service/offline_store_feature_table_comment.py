@@ -1,12 +1,14 @@
 """
 OfflineStoreFeatureTableCommentService
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
 from dataclasses import dataclass
 
+from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -14,6 +16,8 @@ from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTa
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.session_manager import SessionManagerService
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -73,10 +77,17 @@ class OfflineStoreFeatureTableCommentService:
         """
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         for idx, entry in enumerate(comments):
-            if isinstance(entry, TableComment):
-                await session.comment_table(entry.table_name, entry.comment)
-            else:
-                await session.comment_column(entry.table_name, entry.column_name, entry.comment)
+            try:
+                if isinstance(entry, TableComment):
+                    await session.comment_table(entry.table_name, entry.comment)
+                else:
+                    await session.comment_column(entry.table_name, entry.column_name, entry.comment)
+            except Exception as exc:  # pylint: disable=broad-except
+                if isinstance(entry, TableComment):
+                    extra = {"table_name": entry.table_name}
+                else:
+                    extra = {"table_name": entry.table_name, "column_name": entry.column_name}
+                logger.error("Failed to add comment: %s", exc, extra=extra)
 
             if update_progress:
                 percent = int((idx + 1) / len(comments) * 100)
@@ -111,16 +122,7 @@ class OfflineStoreFeatureTableCommentService:
             return f"{entity_model.name} (serving name: {entity_model.serving_names[0]})"
 
         primary_entities_info = ", ".join([_format_entity(entity) for entity in primary_entities])
-        if feature_table_model.entity_lookup_info is not None:
-            parent_entity = await self.entity_service.get_document(
-                feature_table_model.entity_lookup_info.related_entity_id
-            )
-            sentences = [
-                f"This feature table is used to lookup the entity {_format_entity(parent_entity)}"
-                f" using the entity {primary_entities_info} based on their parent-child"
-                f" relationship"
-            ]
-        elif feature_table_model.primary_entity_ids:
+        if feature_table_model.primary_entity_ids:
             sentences = [
                 f"This feature table consists of features for primary entity {primary_entities_info}"
             ]
@@ -173,9 +175,9 @@ class OfflineStoreFeatureTableCommentService:
                         comment += f". Description of {feature.name}: {feature_description}"
                     comments[(table_name, offline_ingest_graph.output_column_name)] = comment
                 elif feature_description is not None:
-                    comments[
-                        (table_name, offline_ingest_graph.output_column_name)
-                    ] = feature_description
+                    comments[(table_name, offline_ingest_graph.output_column_name)] = (
+                        feature_description
+                    )
 
         out = [
             ColumnComment(

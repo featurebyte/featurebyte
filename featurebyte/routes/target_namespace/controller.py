@@ -1,6 +1,7 @@
 """
 Target namespace controller
 """
+
 from typing import Any, List, Tuple
 
 from bson import ObjectId
@@ -13,6 +14,7 @@ from featurebyte.schema.target_namespace import (
     TargetNamespaceInfo,
     TargetNamespaceList,
 )
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.use_case import UseCaseService
@@ -32,10 +34,12 @@ class TargetNamespaceController(
         target_namespace_service: TargetNamespaceService,
         target_service: TargetService,
         use_case_service: UseCaseService,
+        observation_table_service: ObservationTableService,
     ):
         super().__init__(target_namespace_service)
         self.target_service = target_service
         self.use_case_service = use_case_service
+        self.observation_table_service = observation_table_service
 
     async def create_target_namespace(
         self,
@@ -62,6 +66,7 @@ class TargetNamespaceController(
         return [
             (self.target_service, {"target_namespace_id": document_id}),
             (self.use_case_service, {"target_namespace_id": document_id}),
+            (self.observation_table_service, {"target_namespace_id": document_id}),
         ]
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> TargetNamespaceInfo:

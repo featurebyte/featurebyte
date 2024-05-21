@@ -1,0 +1,50 @@
+[
+  {
+  "_id": {
+    "$oid": "6630069292a0a095bdf3fd5a"
+  },
+  "user_id": {
+    "$oid": "64645f76cfc8e397f762c868"
+  },
+  "name": "cat1_accountid_1d_1",
+  "created_at": {
+    "$date": "2024-04-29T20:44:02.762Z"
+  },
+  "updated_at": null,
+  "block_modification_by": [],
+  "description": null,
+  "catalog_id": {
+    "$oid": "64708919ea4c4876a77d2b80"
+  },
+  "name_prefix": "cat1",
+  "name_suffix": "1",
+  "feature_ids": [],
+  "primary_entity_ids": [
+    {
+      "$oid": "64708932ea4c4876a77d2b85"
+    }
+  ],
+  "serving_names": [
+    "ACCOUNTID"
+  ],
+  "feature_job_setting": {
+    "blind_spot": "0s",
+    "frequency": "86400s",
+    "time_modulo_frequency": "47520s"
+  },
+  "has_ttl": true,
+  "last_materialized_at": null,
+  "online_stores_last_materialized_at": [],
+  "feature_cluster_path": "catalog/64708919ea4c4876a77d2b80/offline_store_feature_table/6630069292a0a095bdf3fd5a/feature_cluster.json",
+  "feature_cluster": null,
+  "output_column_names": [],
+  "output_dtypes": [],
+  "entity_universe": null,
+  "entity_lookup_info": null,
+  "precomputed_lookup_feature_table_info": null,
+  "feature_store_id": {
+    "$oid": "646cb1cef1d0ea5b3693e111"
+  },
+  "deployment_ids": []
+  }
+]

@@ -1,6 +1,7 @@
 """
 Test FastAPI app
 """
+
 import importlib
 import os
 import time

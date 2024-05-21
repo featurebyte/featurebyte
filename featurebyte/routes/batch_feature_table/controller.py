@@ -1,6 +1,7 @@
 """
 BatchFeatureTable API route controller
 """
+
 from __future__ import annotations
 
 from bson import ObjectId

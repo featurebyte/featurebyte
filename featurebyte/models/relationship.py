@@ -1,6 +1,7 @@
 """
 This module contains Relation mixin model
 """
+
 from typing import Any, Dict, List, Optional
 
 import pymongo

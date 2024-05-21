@@ -1,6 +1,7 @@
 """
 Test sanitizer module
 """
+
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.service.sanitizer import sanitize_query_graph_for_feature_definition
 

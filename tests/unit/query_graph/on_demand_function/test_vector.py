@@ -1,6 +1,7 @@
 """
 Test on-demand view code generation of vector related nodes.
 """
+
 import numpy as np
 import pandas as pd
 

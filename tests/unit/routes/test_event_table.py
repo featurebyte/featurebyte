@@ -1,6 +1,7 @@
 """
 Tests for EventTable routes
 """
+
 from http import HTTPStatus
 
 import pytest
@@ -321,7 +322,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
             },
             "status": "PUBLIC_DRAFT",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
+                {
+                    "name": "transaction",
+                    "serving_names": ["transaction_id"],
+                    "catalog_name": "grocery",
+                },
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"},
             ],
             "semantics": ["event_id", "event_timestamp", "record_creation_timestamp"],
             "column_count": 9,
@@ -349,7 +355,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             {
                 "name": "col_int",
                 "dtype": "INT",
-                "entity": None,
+                "entity": "transaction",
                 "semantic": "event_id",
                 "critical_data_info": None,
                 "description": None,
@@ -425,6 +431,14 @@ class TestEventTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
+
+        # untag id column's entity from the table first
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/column_entity",
+            json={"column_name": create_response_dict["event_id_column"], "entity_id": None},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK, response.json()
 
@@ -432,11 +446,14 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
-    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+    def test_delete_entity_and_semantic(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
-        columns_info = create_response_dict["columns_info"]
+
+        # get the latest document
+        response = test_api_client.get(f"/event_table/{create_response_dict['_id']}")
+        columns_info = response.json()["columns_info"]
         cust_columns_info = next(col for col in columns_info if col["name"] == "cust_id")
         entity_id = cust_columns_info["entity_id"]
         assert entity_id is not None
@@ -445,3 +462,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.delete(f"/entity/{entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "Entity is referenced by Table: sf_event_table"
+
+        # attempt to delete semantic
+        col_int_columns_info = next(col for col in columns_info if col["name"] == "col_int")
+        semantic_id = col_int_columns_info["semantic_id"]
+        assert semantic_id is not None
+        headers = test_api_client.headers.copy()
+        response = test_api_client.delete(f"/semantic/{semantic_id}", headers=headers)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Semantic is referenced by Table: sf_event_table"

@@ -29,7 +29,9 @@ $$
   for k, v in counts_other.items():
     v = v or 0
     norm_other += v * v
-  cosine_sim = dot_product / (math.sqrt(norm) * math.sqrt(norm_other))
-  return cosine_sim
+  norm_product = math.sqrt(norm) * math.sqrt(norm_other)
+  if norm_product == 0:
+    return 0
+  return dot_product / norm_product
 $$
 ;

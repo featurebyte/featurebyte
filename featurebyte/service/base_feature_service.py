@@ -1,9 +1,10 @@
 """
 Base namespace service
 """
+
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from dataclasses import dataclass
 
@@ -12,6 +13,7 @@ from redis import Redis
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.entity import EntityModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -30,6 +32,7 @@ class FeatureOrTargetDerivedData:
     """Feature or Target data"""
 
     primary_entity_ids: List[ObjectId]
+    entity_id_to_entity: Dict[ObjectId, EntityModel]
     relationships_info: List[EntityRelationshipInfo]
 
 
@@ -101,14 +104,16 @@ class BaseFeatureService(
         """
         query_graph = QueryGraph(**graph.dict(by_alias=True))
         entity_ids = query_graph.get_entity_ids(node_name=node_name)
-        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-            entity_ids=entity_ids
-        )
         extractor = self.entity_relationship_extractor_service
+        entity_id_to_entity = await extractor.get_entity_id_to_entity(entity_ids=entity_ids)
+        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+            entity_ids=entity_ids, entity_id_to_entity=entity_id_to_entity
+        )
         relationships_info = await extractor.extract_relationship_from_primary_entity(
             entity_ids=entity_ids, primary_entity_ids=primary_entity_ids
         )
         return FeatureOrTargetDerivedData(
             primary_entity_ids=primary_entity_ids,
+            entity_id_to_entity=entity_id_to_entity,
             relationships_info=relationships_info,
         )

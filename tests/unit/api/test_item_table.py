@@ -1,6 +1,7 @@
 """
 Unit test for ItemTable class
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -278,6 +279,7 @@ class TestItemTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = None
+    expected_special_columns = ["item_id_col", "event_id_col"]
 
 
 def test_item_table_column__as_entity(snowflake_item_table, mock_api_object_cache):

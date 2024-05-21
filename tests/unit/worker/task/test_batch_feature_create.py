@@ -1,6 +1,7 @@
 """
 Test batch feature creation task
 """
+
 import os
 import textwrap
 from unittest.mock import AsyncMock, patch

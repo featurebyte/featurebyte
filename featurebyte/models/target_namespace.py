@@ -1,6 +1,7 @@
 """
 Target namespace module
 """
+
 from typing import List, Optional
 
 import pymongo
@@ -46,7 +47,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     default_target_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
+    _sort_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
     _duration_validator = validator("window", pre=True, allow_reuse=True)(duration_string_validator)

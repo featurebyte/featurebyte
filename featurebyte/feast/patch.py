@@ -1,14 +1,20 @@
 """
 This module functions used to patch the Feast library.
 """
+
 from __future__ import annotations
 
-from typing import List
+from typing import Any, Dict, Iterable, List, Union
 
 from collections import defaultdict
 
+import pandas as pd
+
 # pylint: disable=no-name-in-module
 from feast import OnDemandFeatureView
+from feast.base_feature_view import BaseFeatureView
+from feast.feature_view_projection import FeatureViewProjection
+from feast.field import Field
 from feast.online_response import OnlineResponse
 from feast.protos.feast.serving.ServingService_pb2 import FieldStatus, GetOnlineFeaturesResponse
 from feast.type_map import python_values_to_proto_values
@@ -68,9 +74,11 @@ def augment_response_with_on_demand_transforms(
         selected_subset = [f for f in transformed_features_df.columns if f in _feature_refs]
         # this is an additional step introduced to extract the correct dtypes for the transformed features
         odfv_dtype_map = {
-            f"{odfv.projection.name_to_use()}__{feature.name}"
-            if full_feature_names
-            else feature.name: feature.dtype.to_value_type()
+            (
+                f"{odfv.projection.name_to_use()}__{feature.name}"
+                if full_feature_names
+                else feature.name
+            ): feature.dtype.to_value_type()
             for feature in odfv.features
         }
 
@@ -94,3 +102,158 @@ def augment_response_with_on_demand_transforms(
                     event_timestamps=[Timestamp()] * len(proto_values[feature_idx]),
                 )
             )
+
+
+class DataFrameWrapper(pd.DataFrame):
+    """
+    Wrapper class for pandas DataFrame to support alias column names. This feature is used to improve the
+    runtime & memory performance of the get_transformed_features_df function.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.attrs["_alias"] = {}
+
+    def add_column_alias(self, column_name: str, alias: str) -> None:
+        """
+        Add a column alias
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        alias: str
+            Alias name of the column
+        """
+        self.attrs["_alias"][alias] = column_name
+
+    def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
+        if not isinstance(key, str) and isinstance(key, Iterable):
+            return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
+
+        if isinstance(key, str) and key in self.attrs["_alias"]:
+            key = self.attrs["_alias"][key]
+
+        return super().__getitem__(key)
+
+
+def get_transformed_features_df(
+    feature_view: OnDemandFeatureView,
+    df_with_features: pd.DataFrame,
+    full_feature_names: bool = False,
+) -> pd.DataFrame:
+    """
+    The main difference between this and the original Feast implementation is that an extended pandas
+    DataFrame with alias column names support is used to improve the runtime & memory performance of the
+    function.
+
+    Parameters
+    ----------
+    feature_view: OnDemandFeatureView
+        OnDemandFeatureView object
+    df_with_features: pd.DataFrame
+        Dataframe with features
+    full_feature_names: bool
+        A boolean that provides the option to add the feature view prefixes to the feature names,
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with transformed features
+    """
+    # Original implementation assigns a new column on each iteration, this implementation uses a wrapper
+    # class to improve the runtime & memory performance.
+    df_with_features = DataFrameWrapper(df_with_features)
+    for source_fv_projection in feature_view.source_feature_view_projections.values():
+        for feature in source_fv_projection.features:
+            full_feature_ref = f"{source_fv_projection.name}__{feature.name}"
+            if full_feature_ref in df_with_features.keys():
+                # Make sure the partial feature name is always present
+                df_with_features.add_column_alias(full_feature_ref, feature.name)
+            elif feature.name in df_with_features.keys():
+                # Make sure the full feature name is always present
+                df_with_features.add_column_alias(feature.name, full_feature_ref)
+
+    # Compute transformed values and apply to each result row
+    df_with_transformed_features = feature_view.udf(df_with_features)
+
+    # Work out whether the correct columns names are used.
+    rename_columns: Dict[str, str] = {}
+    for feature in feature_view.features:
+        short_name = feature.name
+        long_name = f"{feature_view.projection.name_to_use()}__{feature.name}"
+        if short_name in df_with_transformed_features.columns and full_feature_names:
+            rename_columns[short_name] = long_name
+        elif not full_feature_names:
+            # Long name must be in dataframe.
+            rename_columns[long_name] = short_name
+
+    return pd.DataFrame(df_with_transformed_features).rename(columns=rename_columns)
+
+
+def _hash_feature(feature: Field) -> int:
+    """
+    Returns a hash value for the given feature field.
+
+    Parameters
+    ----------
+    feature: Field
+        The feature field to hash.
+
+    Returns
+    -------
+    int
+    """
+    return hash(
+        (
+            feature.name,
+            hash(feature.dtype),
+            hash(feature.description),
+            hash(frozenset(feature.tags.items())),
+        )
+    )
+
+
+def with_projection(
+    feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection
+) -> Any:
+    """
+    Returns a copy of this base feature view with the feature view projection set to
+    the given projection.
+
+    Parameters
+    ----------
+    feature_view: BaseFeatureView
+        The base feature view to copy.
+    feature_view_projection: FeatureViewProjection
+        The feature view projection to assign to the copy.
+
+    Returns
+    -------
+    Any
+
+    Raises
+    -------
+    ValueError
+        The name or features of the projection do not match.
+    """
+    if feature_view_projection.name != feature_view.name:
+        raise ValueError(
+            f"The projection for the {feature_view.name} FeatureView cannot be applied because it differs in name. "
+            f"The projection is named {feature_view_projection.name} and the name indicates which "
+            "FeatureView the projection is for."
+        )
+
+    feature_view_hashes = {_hash_feature(feat) for feat in feature_view.features}
+    for feature in feature_view_projection.features:
+        if _hash_feature(feature) not in feature_view_hashes:
+            raise ValueError(
+                f"The projection for {feature_view.name} cannot be applied because it contains {feature.name} "
+                f"which the FeatureView doesn't have."
+            )
+
+    # pylint: disable=invalid-name,unnecessary-dunder-call
+    cp = feature_view.__copy__()
+    cp.projection = feature_view_projection
+
+    return cp

@@ -1,6 +1,7 @@
 """
 Feature or target helper
 """
+
 from typing import Any, Dict, List
 
 from featurebyte.models.base import PydanticObjectId

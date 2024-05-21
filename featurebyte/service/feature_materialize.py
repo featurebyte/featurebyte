@@ -1,12 +1,15 @@
 """
 FeatureMaterializeService class
 """
+
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, List, Optional, Tuple, cast
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, cast
 
 import textwrap
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -16,10 +19,12 @@ from redis import Redis
 from redis.lock import Lock
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
+from featurebyte.logging import get_logger
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.offline_store_feature_table import (
     OfflineLastMaterializedAtUpdate,
     OfflineStoreFeatureTableModel,
@@ -32,11 +37,16 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, get_combined_serving_names
+from featurebyte.query_graph.sql.entity import (
+    DUMMY_ENTITY_COLUMN_NAME,
+    get_combined_serving_names,
+    get_combined_serving_names_expr,
+)
 from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
 )
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -47,6 +57,9 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
+NUM_COLUMNS_PER_MATERIALIZE = 50
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -80,6 +93,77 @@ class MaterializedFeatures:
         return result
 
 
+@dataclass
+class MaterializedFeaturesSet:
+    """
+    A set of materialized features for an offline store feature table.
+
+    There can be multiple materialized features if precomputed lookup feature tables are required
+    for the offline store feature table.
+    """
+
+    all_materialized_features: Dict[str, MaterializedFeatures]
+    table_name_to_feature_table: Dict[str, OfflineStoreFeatureTableModel]
+
+    @classmethod
+    def create(
+        cls,
+        source_feature_table: OfflineStoreFeatureTableModel,
+        source_materialized_features: MaterializedFeatures,
+    ) -> MaterializedFeaturesSet:
+        """
+        Create an instance of MaterializedFeatureSet given the materialized features corresponding
+        to the offline store feature table. Subsequent materialized features can be added.
+
+        Parameters
+        ----------
+        source_feature_table: OfflineStoreFeatureTableModel
+            Source feature table
+        source_materialized_features: MaterializedFeatures
+            Materialized features for the feature table
+
+        Returns
+        -------
+        MaterializedFeaturesSet
+        """
+        return MaterializedFeaturesSet(
+            all_materialized_features={source_feature_table.name: source_materialized_features},
+            table_name_to_feature_table={source_feature_table.name: source_feature_table},
+        )
+
+    def add_lookup_materialized_features(
+        self,
+        feature_table: OfflineStoreFeatureTableModel,
+        materialized_features: MaterializedFeatures,
+    ) -> None:
+        """
+        Add a MaterializedFeatures
+
+        Parameters
+        ----------
+        feature_table: OfflineStoreFeatureTableModel
+            A precomputed lookup feature table that the materialized features correspond to
+        materialized_features: MaterializedFeatures
+            Materialized features for the feature table
+        """
+        self.all_materialized_features[feature_table.name] = materialized_features
+        self.table_name_to_feature_table[feature_table.name] = feature_table
+
+    def iterate_materialized_features(
+        self,
+    ) -> Iterator[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
+        """
+        Iterate over materialized features
+
+        Yields
+        ------
+        Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]
+            Tuple of feature table object and materialized features
+        """
+        for table_name, materialized_features in self.all_materialized_features.items():
+            yield self.table_name_to_feature_table[table_name], materialized_features
+
+
 class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     """
     FeatureMaterializeService is responsible for materialising a set of currently online enabled
@@ -97,6 +181,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feast_feature_store_service: FeastFeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         entity_validation_service: EntityValidationService,
+        deployment_service: DeploymentService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -107,16 +192,17 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.feast_feature_store_service = feast_feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.entity_validation_service = entity_validation_service
+        self.deployment_service = deployment_service
         self.redis = redis
 
     @asynccontextmanager
-    async def materialize_features(
+    async def materialize_features(  # pylint: disable=too-many-locals
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
         selected_columns: Optional[List[str]] = None,
         session: Optional[BaseSession] = None,
         use_last_materialized_timestamp: bool = True,
-    ) -> AsyncIterator[MaterializedFeatures]:
+    ) -> AsyncIterator[MaterializedFeaturesSet]:
         """
         Materialise features for the provided offline store feature table.
 
@@ -153,21 +239,19 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ),
             column_names=feature_table_model.serving_names,
         )
-        adapter = get_sql_adapter(session.source_type)
         feature_timestamp = datetime.utcnow()
-        create_batch_request_table_query = sql_to_string(
-            adapter.create_table_as(
-                table_details=batch_request_table.table_details,
-                select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
-                    current_feature_timestamp=feature_timestamp,
-                    last_materialized_timestamp=feature_table_model.last_materialized_at
+
+        await session.create_table_as(
+            table_details=batch_request_table.table_details,
+            select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
+                current_feature_timestamp=feature_timestamp,
+                last_materialized_timestamp=(
+                    feature_table_model.last_materialized_at
                     if use_last_materialized_timestamp
-                    else None,
+                    else None
                 ),
             ),
-            source_type=session.source_type,
         )
-        await session.execute_query_long_running(create_batch_request_table_query)
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details
         )
@@ -178,6 +262,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             schema_name=session.schema_name,
             table_name=f"TEMP_FEATURE_TABLE_{unique_id}".upper(),
         )
+        tables_names_pending_cleanup = [
+            batch_request_table.table_details.table_name,
+            output_table_details.table_name,
+        ]
         try:
             if selected_columns is None:
                 nodes = feature_table_model.feature_cluster.nodes
@@ -191,6 +279,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph_nodes=(feature_table_model.feature_cluster.graph, nodes),
                 feature_list_model=None,
+                offline_store_feature_table_model=feature_table_model,
                 request_column_names=set(feature_table_model.serving_names),
                 feature_store=feature_store,
             )
@@ -216,7 +305,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     column_names.append(column_name)
                     column_dtypes.append(data_type)
 
-            yield MaterializedFeatures(
+            adapter = get_sql_adapter(session.source_type)
+            materialized_features = MaterializedFeatures(
                 materialized_table_name=output_table_details.table_name,
                 column_names=column_names,
                 data_types=[adapter.get_physical_type_from_dtype(dtype) for dtype in column_dtypes],
@@ -224,16 +314,215 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 feature_timestamp=feature_timestamp,
                 source_type=session.source_type,
             )
+            materialized_features_set = MaterializedFeaturesSet.create(
+                feature_table_model, materialized_features
+            )
+
+            for (
+                lookup_feature_table,
+                lookup_materialized_features,
+            ) in await self._materialize_precomputed_lookup_feature_tables(
+                session=session,
+                adapter=adapter,
+                feature_table_model=feature_table_model,
+                feature_timestamp=feature_timestamp,
+                materialized_feature_table_name=output_table_details.table_name,
+                column_names=column_names,
+                column_dtypes=column_dtypes,
+                use_last_materialized_timestamp=use_last_materialized_timestamp,
+            ):
+                materialized_features_set.add_lookup_materialized_features(
+                    lookup_feature_table, lookup_materialized_features
+                )
+                tables_names_pending_cleanup.append(
+                    lookup_materialized_features.materialized_table_name
+                )
+
+            yield materialized_features_set
 
         finally:
             # Delete temporary batch request table and materialized feature table
-            for table_details in [batch_request_table.table_details, output_table_details]:
+            for table_name in tables_names_pending_cleanup:
                 await session.drop_table(
-                    table_name=table_details.table_name,
-                    schema_name=table_details.schema_name,  # type: ignore
-                    database_name=table_details.database_name,  # type: ignore
+                    table_name=table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
                     if_exists=True,
                 )
+
+    async def _get_precomputed_lookup_feature_tables(
+        self, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> List[OfflineStoreFeatureTableModel]:
+        return [
+            doc
+            async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
+                feature_table_model.id
+            )
+        ]
+
+    async def _materialize_precomputed_lookup_feature_tables(
+        self,
+        session: BaseSession,
+        adapter: BaseAdapter,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_timestamp: datetime,
+        materialized_feature_table_name: str,
+        column_names: List[str],
+        column_dtypes: List[DBVarType],
+        use_last_materialized_timestamp: bool,
+    ) -> List[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
+        precomputed_lookup_feature_tables = await self._get_precomputed_lookup_feature_tables(
+            feature_table_model
+        )
+        result = []
+        for lookup_feature_table in precomputed_lookup_feature_tables:
+            lookup_materialized_features = await self._materialize_precomputed_lookup_feature_table(
+                session=session,
+                adapter=adapter,
+                feature_timestamp=feature_timestamp,
+                materialized_feature_table_name=materialized_feature_table_name,
+                column_names=column_names,
+                column_dtypes=column_dtypes,
+                source_feature_table_serving_names=feature_table_model.serving_names,
+                use_last_materialized_timestamp=(
+                    use_last_materialized_timestamp and not feature_table_model.has_ttl
+                ),
+                lookup_feature_table=lookup_feature_table,
+            )
+            result.append((lookup_feature_table, lookup_materialized_features))
+        return result
+
+    @staticmethod
+    async def _materialize_precomputed_lookup_feature_table(
+        session: BaseSession,
+        adapter: BaseAdapter,
+        feature_timestamp: datetime,
+        materialized_feature_table_name: str,
+        column_names: List[str],
+        column_dtypes: List[DBVarType],
+        use_last_materialized_timestamp: bool,
+        source_feature_table_serving_names: List[str],
+        lookup_feature_table: OfflineStoreFeatureTableModel,
+    ) -> MaterializedFeatures:
+
+        # Construct a lookup universe table with both the child and parent entities to be joined
+        # with the source feature table
+        unique_id = ObjectId()
+        lookup_universe_table_details = TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name=f"TEMP_LOOKUP_UNIVERSE_TABLE_{unique_id}".upper(),
+        )
+        create_entity_universe_table_query = sql_to_string(
+            adapter.create_table_as(
+                table_details=lookup_universe_table_details,
+                select_expr=lookup_feature_table.entity_universe.get_entity_universe_expr(
+                    current_feature_timestamp=feature_timestamp,
+                    last_materialized_timestamp=(
+                        lookup_feature_table.last_materialized_at
+                        if use_last_materialized_timestamp
+                        else None
+                    ),
+                ),
+            ),
+            source_type=session.source_type,
+        )
+        await session.execute_query_long_running(create_entity_universe_table_query)
+        lookup_feature_table_details = TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name=f"TEMP_LOOKUP_FEATURE_TABLE_{unique_id}".upper(),
+        )
+
+        # Handle serving names and join conditions
+        lookup_info = lookup_feature_table.precomputed_lookup_feature_table_info
+        assert lookup_info is not None
+
+        serving_name_exprs = {}
+        join_conditions = []
+        for source_serving_name in source_feature_table_serving_names:
+            lookup_serving_name: Optional[str]
+            if lookup_info.lookup_mapping is None:
+                lookup_serving_name = source_serving_name  # backward compatibility
+            else:
+                lookup_serving_name = lookup_info.get_lookup_feature_table_serving_name(
+                    source_serving_name
+                )
+            if lookup_serving_name is None:
+                # source_serving_name is not part of the entity lookup, so it won't appear in the
+                # entity universe. This can happen in composite entity where only one of the
+                # entities are looked up in the precomputed lookup feature table.
+                serving_name_exprs[source_serving_name] = get_qualified_column_identifier(
+                    source_serving_name, "R"
+                )
+            else:
+                serving_name_exprs[lookup_serving_name] = get_qualified_column_identifier(
+                    lookup_serving_name, "L"
+                )
+                join_conditions.append(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(source_serving_name, "L"),
+                        expression=get_qualified_column_identifier(source_serving_name, "R"),
+                    )
+                )
+
+        if len(lookup_feature_table.serving_names) > 1:
+            combined_serving_names = get_combined_serving_names(lookup_feature_table.serving_names)
+            serving_name_exprs[combined_serving_names] = expressions.alias_(
+                get_combined_serving_names_expr(
+                    [
+                        serving_name_exprs[serving_name]
+                        for serving_name in lookup_feature_table.serving_names
+                    ]
+                ),
+                alias=combined_serving_names,
+            )
+
+        # Create the lookup feature table by joining the entity table with the source feature table
+        create_lookup_feature_table_query = sql_to_string(
+            adapter.create_table_as(
+                table_details=lookup_feature_table_details,
+                select_expr=expressions.select(
+                    *(
+                        list(serving_name_exprs.values())
+                        + [
+                            get_qualified_column_identifier(column_name, "R")
+                            for column_name in column_names
+                        ]
+                    )
+                )
+                .from_(
+                    expressions.Table(
+                        this=quoted_identifier(lookup_universe_table_details.table_name),
+                        alias=expressions.TableAlias(this="L"),
+                    ),
+                )
+                .join(
+                    expressions.Table(
+                        this=quoted_identifier(materialized_feature_table_name),
+                        alias=expressions.TableAlias(this="R"),
+                    ),
+                    join_type="left",
+                    on=expressions.and_(*join_conditions),
+                ),
+            ),
+            source_type=session.source_type,
+        )
+        await session.execute_query_long_running(create_lookup_feature_table_query)
+        await session.drop_table(
+            table_name=lookup_universe_table_details.table_name,
+            schema_name=lookup_universe_table_details.schema_name,  # type: ignore
+            database_name=lookup_universe_table_details.database_name,  # type: ignore
+            if_exists=True,
+        )
+        return MaterializedFeatures(
+            materialized_table_name=lookup_feature_table_details.table_name,
+            column_names=column_names,
+            data_types=[adapter.get_physical_type_from_dtype(dtype) for dtype in column_dtypes],
+            serving_names=lookup_feature_table.serving_names,
+            feature_timestamp=feature_timestamp,
+            source_type=session.source_type,
+        )
 
     def get_table_update_lock(self, offline_store_table_name: str) -> Lock:
         """
@@ -271,37 +560,49 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             OfflineStoreFeatureTableModel object
         """
         session = await self._get_session(feature_table_model)
+        feature_tables = []
+        feature_timestamp = None
+
         async with self.materialize_features(
             feature_table_model, session=session, use_last_materialized_timestamp=True
-        ) as materialized_features:
-            with self.get_table_update_lock(offline_store_table_name=feature_table_model.name):
-                await self._insert_into_feature_table(
-                    session,
-                    feature_table_model,
-                    materialized_features,
+        ) as materialized_features_set:
+            for (
+                current_feature_table,
+                materialized_features,
+            ) in materialized_features_set.iterate_materialized_features():
+                with self.get_table_update_lock(
+                    offline_store_table_name=current_feature_table.name
+                ):
+                    await self._insert_into_feature_table(
+                        session,
+                        current_feature_table.name,
+                        materialized_features,
+                    )
+                feature_tables.append(current_feature_table)
+                feature_timestamp = materialized_features.feature_timestamp
+                # Update offline table last materialized timestamp
+                await self._update_offline_last_materialized_at(
+                    current_feature_table, materialized_features.feature_timestamp
                 )
 
         # Feast online materialize
-        feature_store = await self._get_feast_feature_store()
-        if feature_store is not None and feature_store.config.online_store is not None:
-            assert feature_store.online_store_id is not None
-            online_store_last_materialized_at = (
-                feature_table_model.get_online_store_last_materialized_at(
-                    feature_store.online_store_id
+        for current_feature_table in feature_tables:
+            if current_feature_table.deployment_ids:
+                service = self.feast_feature_store_service
+                feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                    feature_table_model=current_feature_table, online_store_id=None
                 )
-            )
-            await self._materialize_online(
-                feature_store=feature_store,
-                feature_table_model=feature_table_model,
-                columns=feature_table_model.output_column_names,
-                start_date=online_store_last_materialized_at,
-                end_date=materialized_features.feature_timestamp,
-            )
-
-        # Update offline table last materialized timestamp
-        await self._update_offline_last_materialized_at(
-            feature_table_model, materialized_features.feature_timestamp
-        )
+                if feature_store and feature_store.config.online_store is not None:
+                    online_store_last_materialized_at = current_feature_table.get_online_store_last_materialized_at(
+                        feature_store.online_store_id  # type: ignore
+                    )
+                    await self._materialize_online(
+                        feature_store=feature_store,
+                        feature_table=current_feature_table,
+                        columns=feature_table_model.output_column_names,
+                        start_date=online_store_last_materialized_at,
+                        end_date=feature_timestamp,  # type: ignore
+                    )
 
     async def initialize_new_columns(
         self,
@@ -316,30 +617,17 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
-        with self.get_table_update_lock(feature_table_model.name):
-            offline_info = await self._initialize_new_columns_offline(feature_table_model)
-
-        if offline_info is not None:
-            column_names, materialize_end_date = offline_info
-            await self._initialize_new_columns_online(
-                feature_table_model=feature_table_model,
-                column_names=column_names,
-                end_date=materialize_end_date,
-            )
-
-    async def _initialize_new_columns_offline(
-        self,
-        feature_table_model: OfflineStoreFeatureTableModel,
-    ) -> Optional[Tuple[List[str], datetime]]:
         session = await self._get_session(feature_table_model)
         num_rows_in_feature_table = await self._num_rows_in_feature_table(
-            session, feature_table_model
+            session, feature_table_model.name
         )
-
         if num_rows_in_feature_table is not None:
-            selected_columns = await self._ensure_compatible_schema(session, feature_table_model)
-            if not selected_columns:
-                return None
+            selected_columns = await self._ensure_compatible_schema(
+                session,
+                feature_table_name=feature_table_model.name,
+                feature_table_column_names=feature_table_model.output_column_names,
+                feature_table_column_dtypes=feature_table_model.output_dtypes,
+            )
         else:
             selected_columns = None
 
@@ -348,55 +636,279 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             feature_table_model=feature_table_model,
             selected_columns=selected_columns,
             use_last_materialized_timestamp=False,
-        ) as materialized_features:
-            if num_rows_in_feature_table is None:
-                # Create feature table is it doesn't exist yet
-                await self._create_feature_table(
-                    session,
-                    feature_table_model,
-                    materialized_features,
-                )
-                await self._update_offline_last_materialized_at(
-                    feature_table_model, materialized_features.feature_timestamp
-                )
-                materialize_end_date = materialized_features.feature_timestamp
-            else:
-                if num_rows_in_feature_table == 0:
-                    feature_timestamp_value = materialized_features.feature_timestamp.isoformat()
-                else:
-                    feature_timestamp_value = await self._get_last_feature_timestamp(
-                        session, feature_table_model.name
-                    )
-                # Merge into existing feature table. If the table exists but is empty, do not
-                # specify merge conditions so that the merge operation simply inserts rows with
-                # new columns.
-                await self._merge_into_feature_table(
+        ) as materialized_features_set:
+            for (
+                current_feature_table,
+                materialized_features,
+            ) in materialized_features_set.iterate_materialized_features():
+                await self._initialize_new_columns_offline_and_online(
                     session=session,
-                    feature_table_model=feature_table_model,
+                    current_feature_table=current_feature_table,
+                    source_feature_table=feature_table_model,
                     materialized_features=materialized_features,
-                    feature_timestamp_value=feature_timestamp_value,
-                    to_specify_merge_conditions=num_rows_in_feature_table > 0,
                 )
-                materialize_end_date = pd.Timestamp(feature_timestamp_value).to_pydatetime()
 
-            return materialized_features.column_names, materialize_end_date
+    async def initialize_precomputed_lookup_feature_table(
+        self,
+        source_feature_table_id: PydanticObjectId,
+        lookup_feature_tables: List[OfflineStoreFeatureTableModel],
+    ) -> None:
+        """
+        Initialize a precomputed lookup feature table by creating it and backfill using the source
+        feature table
+
+        Parameters
+        ----------
+        source_feature_table_id: PydanticObjectId
+            Id of the source feature table
+        lookup_feature_tables: List[OfflineStoreFeatureTableModel]
+            Precomputed lookup feature tables to be initialized
+        """
+        if not lookup_feature_tables:
+            return
+
+        source_feature_table = await self.offline_store_feature_table_service.get_document(
+            source_feature_table_id
+        )
+        session = await self._get_session(source_feature_table)
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, source_feature_table.name
+        )
+        if num_rows_in_feature_table is None or num_rows_in_feature_table == 0:
+            # The source feature table is empty as well, so all the tables can be initialized
+            # together by initialize_new_columns() later.
+            return
+
+        # The source feature table already exists, but precomputed lookup tables don't. In this
+        # case, need to initialize lookup feature tables to have the same columns as the source
+        # feature table.
+        async with self._get_latest_from_feature_table(
+            session, source_feature_table
+        ) as source_features:
+            for lookup_feature_table in lookup_feature_tables:
+                materialized_lookup_features = (
+                    await self._materialize_precomputed_lookup_feature_table(
+                        session=session,
+                        adapter=get_sql_adapter(session.source_type),
+                        feature_timestamp=source_features.feature_timestamp,
+                        materialized_feature_table_name=source_feature_table.name,
+                        column_names=source_features.column_names,
+                        column_dtypes=source_feature_table.get_output_dtypes_for_columns(
+                            source_features.column_names
+                        ),
+                        use_last_materialized_timestamp=False,
+                        source_feature_table_serving_names=source_feature_table.serving_names,
+                        lookup_feature_table=lookup_feature_table,
+                    )
+                )
+                try:
+                    await self._initialize_new_columns_offline_and_online(
+                        session=session,
+                        current_feature_table=lookup_feature_table,
+                        source_feature_table=source_feature_table,
+                        materialized_features=materialized_lookup_features,
+                    )
+                finally:
+                    await session.drop_table(
+                        table_name=materialized_lookup_features.materialized_table_name,
+                        schema_name=session.schema_name,
+                        database_name=session.database_name,
+                        if_exists=True,
+                    )
+
+    @asynccontextmanager
+    async def _get_latest_from_feature_table(  # pylint: disable=too-many-locals
+        self,
+        session: BaseSession,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> AsyncIterator[MaterializedFeatures]:
+
+        timestamp_cols = [quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN.value)]
+        join_key_cols = [quoted_identifier(col) for col in feature_table_model.serving_names]
+
+        # Retrieve columns that are actually available in the physical table. This should be the
+        # same as feature_table_model.output_column_names most of the time.
+        column_names_not_in_warehouse = set(
+            await self._get_column_names_not_in_warehouse(
+                session=session,
+                feature_table_name=feature_table_model.name,
+                feature_table_column_names=feature_table_model.output_column_names,
+            )
+        )
+        available_column_names = [
+            col
+            for col in feature_table_model.output_column_names
+            if col not in column_names_not_in_warehouse
+        ]
+        column_name_to_data_type = {
+            column_name: get_sql_adapter(session.source_type).get_physical_type_from_dtype(dtype)
+            for (column_name, dtype) in zip(
+                feature_table_model.output_column_names, feature_table_model.output_dtypes
+            )
+        }
+        feature_name_cols = [quoted_identifier(col) for col in available_column_names]
+
+        row_number_expr = expressions.Window(
+            this=expressions.RowNumber(),
+            partition_by=join_key_cols,
+            order=expressions.Order(
+                expressions=[
+                    expressions.Ordered(this=timestamp_col, desc=True)
+                    for timestamp_col in timestamp_cols
+                ]
+            ),
+            over=expressions.WindowSpec(),
+        )
+        select_fields = timestamp_cols + join_key_cols + feature_name_cols
+
+        inner_expr = expressions.Select(
+            expressions=select_fields
+            + [expressions.alias_(row_number_expr, "_row_number", quoted=True)],
+        ).from_(expressions.Table(this=quoted_identifier(feature_table_model.name)))
+        expr = (
+            expressions.Select(expressions=select_fields)
+            .from_(inner_expr.subquery())
+            .where(
+                expressions.EQ(
+                    this=quoted_identifier("_row_number"),
+                    expression=expressions.Literal(this=1, is_string=False),
+                )
+            )
+        )
+        unique_id = str(ObjectId())
+        output_table_details = TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name=f"TEMP_FEATURE_TABLE_{unique_id}".upper(),
+        )
+        feature_timestamp = pd.Timestamp(
+            await self._get_last_feature_timestamp(session, feature_table_model.name)
+        ).to_pydatetime()
+        try:
+            await session.create_table_as(table_details=output_table_details, select_expr=expr)
+            yield MaterializedFeatures(
+                materialized_table_name=output_table_details.table_name,
+                column_names=available_column_names,
+                data_types=[column_name_to_data_type[col] for col in available_column_names],
+                serving_names=feature_table_model.serving_names,
+                feature_timestamp=feature_timestamp,
+                source_type=session.source_type,
+            )
+        finally:
+            await session.drop_table(
+                table_name=output_table_details.table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+                if_exists=True,
+            )
+
+    async def _initialize_new_columns_offline_and_online(
+        self,
+        session: BaseSession,
+        current_feature_table: OfflineStoreFeatureTableModel,
+        source_feature_table: OfflineStoreFeatureTableModel,
+        materialized_features: MaterializedFeatures,
+    ) -> None:
+        with self.get_table_update_lock(current_feature_table.name):
+            offline_info = await self._initialize_new_columns_offline(
+                session=session,
+                feature_table_name=current_feature_table.name,
+                feature_table_column_names=materialized_features.column_names,
+                feature_table_column_dtypes=source_feature_table.get_output_dtypes_for_columns(
+                    materialized_features.column_names
+                ),
+                feature_table_serving_names=current_feature_table.serving_names,
+                materialized_features=materialized_features,
+            )
+        if offline_info is not None:
+            column_names, materialize_end_date, is_new_table = offline_info
+            if is_new_table:
+                await self._update_offline_last_materialized_at(
+                    current_feature_table, materialized_features.feature_timestamp
+                )
+            await self._initialize_new_columns_online(
+                feature_table=current_feature_table,
+                column_names=column_names,
+                end_date=materialize_end_date,
+            )
+
+    async def _initialize_new_columns_offline(
+        self,
+        session: BaseSession,
+        feature_table_name: str,
+        feature_table_column_names: List[str],
+        feature_table_column_dtypes: List[DBVarType],
+        feature_table_serving_names: List[str],
+        materialized_features: MaterializedFeatures,
+    ) -> Optional[Tuple[List[str], datetime, bool]]:
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, feature_table_name
+        )
+
+        if num_rows_in_feature_table is not None:
+            await self._ensure_compatible_schema(
+                session,
+                feature_table_name=feature_table_name,
+                feature_table_column_names=feature_table_column_names,
+                feature_table_column_dtypes=feature_table_column_dtypes,
+            )
+
+        if num_rows_in_feature_table is None:
+            # Create feature table is it doesn't exist yet
+            await self._create_feature_table(
+                session,
+                feature_table_name=feature_table_name,
+                feature_table_serving_names=feature_table_serving_names,
+                materialized_features=materialized_features,
+            )
+            materialize_end_date = materialized_features.feature_timestamp
+            is_new_table = True
+        else:
+            if num_rows_in_feature_table == 0:
+                feature_timestamp_value = materialized_features.feature_timestamp.isoformat()
+            else:
+                feature_timestamp_value = await self._get_last_feature_timestamp(
+                    session, feature_table_name
+                )
+            # Merge into existing feature table. If the table exists but is empty, do not
+            # specify merge conditions so that the merge operation simply inserts rows with
+            # new columns.
+            await self._merge_into_feature_table(
+                session=session,
+                feature_table_name=feature_table_name,
+                feature_table_serving_names=feature_table_serving_names,
+                materialized_features=materialized_features,
+                feature_timestamp_value=feature_timestamp_value,
+                to_specify_merge_conditions=num_rows_in_feature_table > 0,
+            )
+            materialize_end_date = pd.Timestamp(feature_timestamp_value).to_pydatetime()
+            is_new_table = False
+
+        return materialized_features.column_names, materialize_end_date, is_new_table
 
     async def _initialize_new_columns_online(
         self,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table: OfflineStoreFeatureTableModel,
         column_names: List[str],
         end_date: datetime,
     ) -> None:
         # Feast online materialize. Start date is not set because these are new columns.
-        feature_store = await self._get_feast_feature_store()
-        if feature_store is not None and feature_store.config.online_store is not None:
-            assert feature_store.online_store_id is not None
-            await self._materialize_online(
-                feature_store=feature_store,
-                feature_table_model=feature_table_model,
-                columns=column_names,
-                end_date=end_date,
+        updated_feature_table = await self.offline_store_feature_table_service.get_document(
+            document_id=feature_table.id, populate_remote_attributes=False
+        )
+        if updated_feature_table.deployment_ids:
+            service = self.feast_feature_store_service
+            feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                feature_table_model=updated_feature_table, online_store_id=None
             )
+            if feature_store is not None and feature_store.config.online_store is not None:
+                assert feature_store.online_store_id is not None
+                await self._materialize_online(
+                    feature_store=feature_store,
+                    feature_table=feature_table,
+                    columns=column_names,
+                    end_date=end_date,
+                )
 
     async def update_online_store(
         self,
@@ -424,16 +936,19 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         end_date = pd.Timestamp(
             await self._get_last_feature_timestamp(session, feature_table_model.name)
         ).to_pydatetime()
-        start_date = feature_table_model.get_online_store_last_materialized_at(
-            feature_store.online_store_id
-        )
-        await self._materialize_online(
-            feature_store=feature_store,
-            feature_table_model=feature_table_model,
-            columns=feature_table_model.output_column_names,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        tables = [feature_table_model]
+        tables.extend(await self._get_precomputed_lookup_feature_tables(feature_table_model))
+        for current_feature_table in tables:
+            start_date = current_feature_table.get_online_store_last_materialized_at(
+                feature_store.online_store_id
+            )
+            await self._materialize_online(
+                feature_store=feature_store,
+                feature_table=current_feature_table,
+                columns=feature_table_model.output_column_names,
+                start_date=start_date,
+                end_date=end_date,
+            )
 
     async def drop_columns(
         self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
@@ -449,20 +964,21 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         column_names: List[str]
             List of column names to drop
         """
-        session = await self._get_session(feature_table_model)
-        for column_name in column_names:
-            query = sql_to_string(
-                expressions.AlterTable(
-                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                    actions=[
-                        expressions.Drop(
-                            this=quoted_identifier(column_name), kind="COLUMN", exists=True
-                        )
-                    ],
-                ),
-                source_type=session.source_type,
-            )
-            await session.execute_query(query)
+        with self._must_not_fail(feature_table_model, "drop_columns"):
+            session = await self._get_session(feature_table_model)
+            for column_name in column_names:
+                query = sql_to_string(
+                    expressions.AlterTable(
+                        this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                        actions=[
+                            expressions.Drop(
+                                this=quoted_identifier(column_name), kind="COLUMN", exists=True
+                            )
+                        ],
+                    ),
+                    source_type=session.source_type,
+                )
+                await session.execute_query_long_running(query)
 
     async def drop_table(self, feature_table_model: OfflineStoreFeatureTableModel) -> None:
         """
@@ -473,18 +989,19 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
-        session = await self._get_session(feature_table_model)
-        await session.drop_table(
-            feature_table_model.name,
-            schema_name=session.schema_name,
-            database_name=session.database_name,
-            if_exists=True,
-        )
+        with self._must_not_fail(feature_table_model, "drop_table"):
+            session = await self._get_session(feature_table_model)
+            await session.drop_table(
+                feature_table_model.name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+                if_exists=True,
+            )
 
     async def _materialize_online(
         self,
         feature_store: FeastFeatureStore,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table: OfflineStoreFeatureTableModel,
         columns: List[str],
         end_date: datetime,
         start_date: Optional[datetime] = None,
@@ -496,17 +1013,23 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         """
         if not columns:
             return
-        await materialize_partial(
-            feature_store=feature_store,
-            feature_view=feature_store.get_feature_view(feature_table_model.name),
-            columns=columns,
-            end_date=end_date,
-            start_date=start_date,
-            with_feature_timestamp=feature_table_model.has_ttl,
-        )
         assert feature_store.online_store_id is not None
+        for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
+            columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
+            await materialize_partial(
+                feature_store=feature_store,
+                feature_view=feature_store.get_feature_view(feature_table.name),
+                columns=columns_batch,
+                end_date=end_date,
+                start_date=start_date,
+                with_feature_timestamp=(
+                    feature_table.has_ttl
+                    if isinstance(feature_table, OfflineStoreFeatureTableModel)
+                    else False
+                ),
+            )
         await self.offline_store_feature_table_service.update_online_last_materialized_at(
-            document_id=feature_table_model.id,
+            document_id=feature_table.id,
             online_store_id=feature_store.online_store_id,
             last_materialized_at=end_date,
         )
@@ -521,69 +1044,70 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             document_id=feature_table_model.id, data=update_schema
         )
 
-    async def _get_feast_feature_store(self) -> Optional[FeastFeatureStore]:
-        """
-        Get the FeastFeatureStore object
-
-        Returns
-        -------
-        Optional[FeastFeatureStore]
-            FeastFeatureStore object
-        """
-        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
-        if feast_registry is None:
-            return None
-        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
-
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
-        assert feature_table_model.feature_cluster is not None, "Missing feature cluster"
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_table_model.feature_cluster.feature_store_id
-        )
+        feature_store_id: Optional[PydanticObjectId]
+        if feature_table_model.feature_cluster is not None:
+            feature_store_id = feature_table_model.feature_cluster.feature_store_id
+        else:
+            feature_store_id = feature_table_model.feature_store_id
+        assert feature_store_id is not None, "feature_store_id not available"
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         return session
+
+    @contextmanager
+    def _must_not_fail(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        method_name: str,
+    ) -> Iterator[None]:
+        try:
+            yield
+        except BaseException:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "Unexpected error when attempting to modify offline store feature table",
+                extra={"method_name": method_name, "feature_table_id": str(feature_table_model.id)},
+            )
 
     @classmethod
     async def _create_feature_table(
         cls,
         session: BaseSession,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table_name: str,
+        feature_table_serving_names: List[str],
         materialized_features: MaterializedFeatures,
     ) -> None:
-        adapter = get_sql_adapter(session.source_type)
-        query = sql_to_string(
-            adapter.create_table_as(
-                table_details=TableDetails(
-                    database_name=session.database_name,
-                    schema_name=session.schema_name,
-                    table_name=feature_table_model.name,
-                ),
-                select_expr=expressions.select(
-                    expressions.alias_(
-                        make_literal_value(
-                            materialized_features.feature_timestamp.isoformat(),
-                            cast_as_timestamp=True,
-                        ),
-                        alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
-                        quoted=True,
-                    )
-                )
-                .select(
-                    *[
-                        quoted_identifier(column)
-                        for column in materialized_features.serving_names_and_column_names
-                    ]
-                )
-                .from_(quoted_identifier(materialized_features.materialized_table_name)),
+        await session.create_table_as(
+            table_details=TableDetails(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=feature_table_name,
             ),
-            source_type=session.source_type,
+            select_expr=expressions.select(
+                expressions.alias_(
+                    make_literal_value(
+                        materialized_features.feature_timestamp.isoformat(),
+                        cast_as_timestamp=True,
+                    ),
+                    alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                    quoted=True,
+                )
+            )
+            .select(
+                *[
+                    quoted_identifier(column)
+                    for column in materialized_features.serving_names_and_column_names
+                ]
+            )
+            .from_(quoted_identifier(materialized_features.materialized_table_name)),
         )
-        await session.execute_query(query)
-        await cls._add_primary_key_constraint_if_necessary(session, feature_table_model)
+        await cls._add_primary_key_constraint_if_necessary(
+            session, feature_table_name, feature_table_serving_names
+        )
 
     @classmethod
     async def _add_primary_key_constraint_if_necessary(
-        cls, session: BaseSession, feature_table_model: OfflineStoreFeatureTableModel
+        cls, session: BaseSession, feature_table_name: str, feature_table_serving_names: List[str]
     ) -> None:
         # Only needed for Databricks with Unity catalog for now
         if session.source_type != SourceType.DATABRICKS_UNITY:
@@ -591,23 +1115,23 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
         # formatted manually here
-        if len(feature_table_model.serving_names) > 0:
-            primary_key_columns = feature_table_model.serving_names[:]
+        if len(feature_table_serving_names) > 0:
+            primary_key_columns = feature_table_serving_names[:]
         else:
             primary_key_columns = [DUMMY_ENTITY_COLUMN_NAME]
         quoted_timestamp_column = f"`{InternalName.FEATURE_TIMESTAMP_COLUMN}`"
         quoted_primary_key_columns = [f"`{column_name}`" for column_name in primary_key_columns]
         for quoted_col in [quoted_timestamp_column] + quoted_primary_key_columns:
-            await session.execute_query(
-                f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
+            await session.execute_query_long_running(
+                f"ALTER TABLE `{feature_table_name}` ALTER COLUMN {quoted_col} SET NOT NULL"
             )
         primary_key_args = ", ".join(
             [f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns
         )
-        await session.execute_query(
+        await session.execute_query_long_running(
             textwrap.dedent(
                 f"""
-                ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
+                ALTER TABLE `{feature_table_name}` ADD CONSTRAINT `pk_{feature_table_name}`
                 PRIMARY KEY({primary_key_args})
                 """
             ).strip()
@@ -616,13 +1140,13 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     async def _insert_into_feature_table(
         session: BaseSession,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table_name: str,
         materialized_features: MaterializedFeatures,
     ) -> None:
         query = sql_to_string(
             expressions.Insert(
                 this=expressions.Schema(
-                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                    this=expressions.Table(this=quoted_identifier(feature_table_name)),
                     expressions=[quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)]
                     + [
                         quoted_identifier(column)
@@ -649,7 +1173,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ),
             source_type=session.source_type,
         )
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
 
     @staticmethod
     async def _get_last_feature_timestamp(session: BaseSession, feature_table_name: str) -> str:
@@ -666,13 +1190,14 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             ).from_(quoted_identifier(feature_table_name)),
             source_type=session.source_type,
         )
-        result = await session.execute_query(query)
+        result = await session.execute_query_long_running(query)
         return str(result["RESULT"].iloc[0])  # type: ignore
 
     @staticmethod
     async def _merge_into_feature_table(
         session: BaseSession,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table_name: str,
+        feature_table_serving_names: List[str],
         materialized_features: MaterializedFeatures,
         feature_timestamp_value: str,
         to_specify_merge_conditions: bool,
@@ -688,7 +1213,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                         serving_name, "materialized_features"
                     ),
                 )
-                for serving_name in feature_table_model.serving_names
+                for serving_name in feature_table_serving_names
             ] + [
                 expressions.EQ(
                     this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN),
@@ -725,7 +1250,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         )
         merge_expr = expressions.Merge(
             this=expressions.Table(
-                this=quoted_identifier(feature_table_model.name),
+                this=quoted_identifier(feature_table_name),
                 alias=expressions.TableAlias(this="offline_store_table"),
             ),
             using=expressions.select(
@@ -752,66 +1277,83 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         )
         query = sql_to_string(merge_expr, source_type=session.source_type)
 
-        await session.execute_query(query)
+        await session.execute_query_long_running(query)
 
     @classmethod
     async def _num_rows_in_feature_table(
         cls,
         session: BaseSession,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table_name: str,
     ) -> Optional[int]:
         try:
             query = sql_to_string(
                 expressions.select(expressions.Count(this=expressions.Star())).from_(
-                    quoted_identifier(feature_table_model.name)
+                    quoted_identifier(feature_table_name)
                 ),
                 source_type=session.source_type,
             )
-            result = await session.execute_query(query)
+            result = await session.execute_query_long_running(query)
             return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
         except session._no_schema_error:  # pylint: disable=protected-access
             return None
 
     @classmethod
-    async def _ensure_compatible_schema(
+    async def _get_column_names_not_in_warehouse(
         cls,
         session: BaseSession,
-        feature_table_model: OfflineStoreFeatureTableModel,
+        feature_table_name: str,
+        feature_table_column_names: List[str],
     ) -> List[str]:
         existing_columns = [
             c.upper()
             for c in (
                 await session.list_table_schema(
-                    feature_table_model.name, session.database_name, session.schema_name
+                    feature_table_name, session.database_name, session.schema_name
                 )
             ).keys()
         ]
-        new_columns = [
-            col
-            for col in feature_table_model.output_column_names
-            if col.upper() not in existing_columns
-        ]
+        return [col for col in feature_table_column_names if col.upper() not in existing_columns]
+
+    @classmethod
+    async def _ensure_compatible_schema(
+        cls,
+        session: BaseSession,
+        feature_table_name: str,
+        feature_table_column_names: List[str],
+        feature_table_column_dtypes: List[DBVarType],
+    ) -> List[str]:
+        assert len(feature_table_column_names) == len(feature_table_column_dtypes)
+
+        new_columns = await cls._get_column_names_not_in_warehouse(
+            session=session,
+            feature_table_name=feature_table_name,
+            feature_table_column_names=feature_table_column_names,
+        )
 
         if new_columns:
             adapter = get_sql_adapter(session.source_type)
             query = adapter.alter_table_add_columns(
-                expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                cls._get_column_defs(feature_table_model, new_columns, adapter),
+                expressions.Table(this=quoted_identifier(feature_table_name)),
+                cls._get_column_defs(
+                    feature_table_column_names,
+                    feature_table_column_dtypes,
+                    new_columns,
+                    adapter,
+                ),
             )
-            await session.execute_query(query)
+            await session.execute_query_long_running(query)
 
         return new_columns
 
     @staticmethod
     def _get_column_defs(
-        feature_table_model: OfflineStoreFeatureTableModel,
+        column_names: List[str],
+        column_dtypes: List[DBVarType],
         columns: List[str],
         adapter: BaseAdapter,
     ) -> List[expressions.ColumnDef]:
         columns_and_types = {}
-        for column_name, column_data_type in zip(
-            feature_table_model.output_column_names, feature_table_model.output_dtypes
-        ):
+        for column_name, column_data_type in zip(column_names, column_dtypes):
             if column_name in columns:
                 columns_and_types[column_name] = column_data_type
 

@@ -1,6 +1,7 @@
 """
 Feature List Facade Service which is responsible for handling high level feature list operations
 """
+
 from typing import Any, Callable, Coroutine, Optional
 
 from bson import ObjectId
@@ -86,7 +87,10 @@ class FeatureListFacadeService:
         return output
 
     async def make_features_production_ready(
-        self, feature_list_id: ObjectId, ignore_guardrails: bool = False
+        self,
+        feature_list_id: ObjectId,
+        ignore_guardrails: bool = False,
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Make feature(s) of the given feature list production ready
@@ -97,15 +101,30 @@ class FeatureListFacadeService:
             Feature list id
         ignore_guardrails: bool
             Ignore guardrails of feature readiness update
+        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]]
+            Progress callback to update progress
         """
-        feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
-        for feature_id in feature_list.feature_ids:
+        feature_list = await self.feature_list_service.get_document(
+            document_id=feature_list_id, populate_remote_attributes=False
+        )
+        total_features = len(feature_list.feature_ids)
+        for i, feature_id in enumerate(feature_list.feature_ids):
             await self.feature_readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness.PRODUCTION_READY,
                 ignore_guardrails=ignore_guardrails,
             )
-        await self.feature_list_service.get_document(document_id=feature_list_id)
+            if progress_callback:
+                percent = int((i + 1) / total_features * 100)
+                await progress_callback(
+                    percent=percent,
+                    message=f"Updated feature readiness for feature {i + 1} / {total_features}",
+                )
+
+        if progress_callback:
+            await progress_callback(
+                percent=100, message="Completed making all features production ready"
+            )
 
     async def update_status(
         self, feature_list_namespace_id: ObjectId, status: FeatureListStatus

@@ -1,6 +1,7 @@
 """
 List of Exceptions
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -208,6 +209,18 @@ class CredentialsError(BaseUnprocessableEntityError):
     """
 
 
+class DataWarehouseConnectionError(BaseUnprocessableEntityError):
+    """
+    Raise when connection to data warehouse cannot be established
+    """
+
+
+class DataWarehouseOperationError(BaseUnprocessableEntityError):
+    """
+    Raise when data warehouse operations failed
+    """
+
+
 class DocumentError(BaseUnprocessableEntityError):
     """
     General exception raised when there are some issue at persistent layer operations
@@ -364,6 +377,12 @@ class NoFeatureJobSettingInSourceError(FeatureByteException):
     """
 
 
+class DeploymentDataBricksAccessorError(FeatureByteException):
+    """
+    Raise when there is an error with deployment
+    """
+
+
 class NoChangesInFeatureVersionError(DocumentError):
     """
     Raise when we try to create a new feature version, but there are no differences.
@@ -385,6 +404,12 @@ class LimitExceededError(BaseUnprocessableEntityError):
 class ColumnNotFoundError(FeatureByteException):
     """
     Raised when a specified column is not found in the view or table
+    """
+
+
+class FeatureMaterializationError(FeatureByteException):
+    """
+    Raised when there is an error with feature materialization
     """
 
 
@@ -430,6 +455,15 @@ class CatalogNotSpecifiedError(BaseFailedDependencyError):
         return "Catalog not specified. Please specify a catalog."
 
 
+class NotInDataBricksEnvironmentError(BaseFailedDependencyError):
+    """
+    Raise when the code is not running in a DataBricks environment
+    """
+
+    def __str__(self) -> str:
+        return "This method can only be called in a DataBricks environment."
+
+
 class UseCaseInvalidDataError(BaseUnprocessableEntityError):
     """
     Raise when invalid observation table default is specified
@@ -473,6 +507,18 @@ class ObservationTableMissingColumnsError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a target name that does not exist
+    """
+
+
+class ObservationTableTargetDefinitionExistsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a target name that already has a definition
+    """
+
+
 class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
     Raise when task is not revocable
@@ -492,4 +538,10 @@ TaskRevokeExceptions = (SystemExit, KeyboardInterrupt, RuntimeError, CancelledEr
 class TaskCanceledError(FeatureByteException):
     """
     Raise when task is canceled
+    """
+
+
+class CursorSchemaError(FeatureByteException):
+    """
+    Raise when cursor schema is not as expected
     """

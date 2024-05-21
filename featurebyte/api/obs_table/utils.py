@@ -1,6 +1,7 @@
 """
 Observation table utils
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 from featurebyte.common.utils import get_version

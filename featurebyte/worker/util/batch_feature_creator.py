@@ -1,6 +1,7 @@
 """
 Batch feature creator
 """
+
 from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
 
 import asyncio
@@ -249,9 +250,9 @@ class BatchFeatureCreator:
                 query_filter={"name": {"$in": feature_names}}
             ):
                 assert feat_namespace.name is not None
-                conflict_to_resolution_feature_id_map[
-                    feat_namespace.name
-                ] = feat_namespace.default_feature_id
+                conflict_to_resolution_feature_id_map[feat_namespace.name] = (
+                    feat_namespace.default_feature_id
+                )
         return conflict_to_resolution_feature_id_map
 
     async def is_generated_feature_consistent(self, document: FeatureModel) -> bool:

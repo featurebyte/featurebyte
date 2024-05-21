@@ -1,0 +1,432 @@
+import textwrap
+from unittest import mock
+from unittest.mock import AsyncMock, patch
+
+import freezegun
+import pandas as pd
+import pytest
+
+from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
+from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
+from featurebyte.models import FeatureStoreModel
+from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
+
+
+@pytest.fixture(name="always_enable_feast_integration", autouse=True)
+def always_enable_feast_integration_fixture(
+    enable_feast_integration,
+    patched_catalog_get_create_payload,
+    mock_deployment_flow,
+):
+    """Enable feast integration & patch catalog ID for all tests in this module"""
+    _ = enable_feast_integration, patched_catalog_get_create_payload, mock_deployment_flow
+    yield
+
+
+@pytest.fixture(name="databricks_use_case")
+def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_entity):
+    """Databricks use case fixture"""
+    primary_entity = [transaction_entity.name]
+    grouped_event_view = snowflake_event_view_with_entity.groupby("col_int")
+    target = grouped_event_view.forward_aggregate(
+        method="sum",
+        value_column="col_float",
+        window="1d",
+        target_name="float_target",
+    )
+    target.save()
+    context = Context.create(name="transaction_context", primary_entity=primary_entity)
+    use_case = UseCase.create(
+        name="transaction_use_case",
+        target_name=target.name,
+        context_name=context.name,
+    )
+    return use_case
+
+
+@pytest.fixture(name="relative_freq_feature")
+def relative_freq_feature_fixture(
+    snowflake_event_view_with_entity, snowflake_scd_view, arbitrary_default_feature_job_setting
+):
+    """Test count dict feature udf"""
+    event_view = snowflake_event_view_with_entity
+    scd_view = snowflake_scd_view
+    joined_view = event_view.join(scd_view, on="col_int", rprefix="scd_")
+    feat = joined_view["col_boolean"].as_feature("col_boolean")
+    feat1 = event_view.groupby(by_keys=[], category="col_boolean").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["4w"],
+        feature_names=["overall_count_of_col_text"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["overall_count_of_col_text"]
+    feat_rel_freq = feat1.cd.get_relative_frequency(key=feat)
+    feat_rel_freq.name = "relative_frequency"
+    return feat_rel_freq
+
+
+@pytest.fixture(name="count_feature")
+def count_feature_fixture(grouped_event_view, feature_group_feature_job_setting):
+    """Count feature fixture"""
+    grouped = grouped_event_view.aggregate_over(
+        method="count",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["count_feature"],
+    )
+    return grouped["count_feature"]
+
+
+@pytest.fixture(name="databricks_deployment")
+def databricks_deployment_fixture(
+    float_feature,
+    count_feature,
+    non_time_based_feature,
+    ttl_non_ttl_composite_feature,
+    latest_event_timestamp_overall_feature,
+    relative_freq_feature,
+    req_col_day_diff_feature,
+    databricks_use_case,
+):
+    """Databricks deployment fixture"""
+    use_case = databricks_use_case
+    features = [
+        float_feature,
+        count_feature,
+        non_time_based_feature,
+        ttl_non_ttl_composite_feature,
+        req_col_day_diff_feature,
+        latest_event_timestamp_overall_feature,
+        relative_freq_feature,
+    ]
+    for feature in features:
+        with freezegun.freeze_time("2024-01-03"):
+            feature.save()
+
+    feature_list = FeatureList(features, name="feature_list")
+    feature_list.save()
+    with mock.patch(
+        "featurebyte.service.feature_list.FeatureStoreService.get_document", new_callable=AsyncMock
+    ) as mock_get_document:
+        # mock the feature store service to return the databricks feature store
+        feature_store = FeatureStoreModel(
+            name="databricks_feature_store",
+            type="databricks_unity",
+            details=DatabricksDetails(
+                host="host.databricks.com",
+                http_path="sql/protocalv1/some_path",
+                catalog_name="feature_engineering",
+                schema_name="some_schema",
+                storage_path=f"dbfs:/FileStore/some_storage_path",
+            ),
+        )
+        mock_get_document.return_value = feature_store
+        deployment = feature_list.deploy(
+            make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
+        )
+        deployment.enable()
+        yield deployment
+
+
+@pytest.fixture(name="cust_id_30m_suffix")
+def cust_id_30m_suffix_fixture(databricks_deployment):
+    """Offset table suffix fixture"""
+    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
+    return get_lookup_steps_unique_identifier(relationships_info)
+
+
+@pytest.fixture(name="mock_is_databricks_env")
+def mock_is_databricks_env_fixture():
+    """Mock is_databricks_environment"""
+    with patch(
+        "featurebyte.api.accessor.databricks._is_databricks_environment"
+    ) as mock_is_databricks_env:
+        yield mock_is_databricks_env
+
+
+def test_databricks_accessor__with_non_databricks_unity_feature_store(deployment):
+    """Test databricks accessor with non-databricks feature store"""
+    expected = "Deployment is not enabled"
+    with pytest.raises(DeploymentDataBricksAccessorError, match=expected):
+        _ = deployment.databricks
+
+    deployment.enable()
+    expected = "Deployment is not using DataBricks Unity as the store"
+    with pytest.raises(DeploymentDataBricksAccessorError, match=expected):
+        _ = deployment.databricks
+
+
+def test_databricks_specs(
+    count_feature,
+    ttl_non_ttl_composite_feature,
+    req_col_day_diff_feature,
+    relative_freq_feature,
+    databricks_deployment,
+    cust_id_30m_suffix,
+):
+    """Test databricks specs"""
+    expected = """
+    # auto-generated by FeatureByte (based-on databricks-feature-store 0.16.3)
+    # Import necessary modules for feature engineering and machine learning
+    from databricks.feature_engineering import FeatureEngineeringClient
+    from databricks.feature_engineering import FeatureFunction, FeatureLookup
+    from pyspark.sql import SparkSession
+    from pyspark.sql.types import (
+        DoubleType,
+        LongType,
+        StringType,
+        StructField,
+        StructType,
+        TimestampType,
+    )
+    import mlflow
+
+    # Initialize the Feature Engineering client to interact with Databricks Feature Store
+    fe = FeatureEngineeringClient()
+
+    # Timestamp column name used to retrieve the latest feature values
+    timestamp_lookup_key = "POINT_IN_TIME"
+
+    # Define the features for the model
+    # FeatureLookup is used to specify how to retrieve features from the feature store
+    # Each FeatureLookup or FeatureFunction object defines a set of features to be included
+    features = [
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["sum_1d_V240103"],
+            rename_outputs={"sum_1d_V240103": "sum_1d"},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["count_feature_V240103"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_count_feature_v240103_[FEATURE_ID0]",
+            input_bindings={"x_1": "count_feature_V240103"},
+            output_name="count_feature",
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["non_time_time_sum_amount_feature_V240103"],
+            rename_outputs={
+                "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
+            },
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
+            input_bindings={
+                "x_1": "__feature_V240103__part0",
+                "x_2": "__feature_V240103__part1",
+            },
+            output_name="feature",
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_[TABLE_SUFFIX]",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__req_col_feature_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
+            input_bindings={
+                "x_1": "__req_col_feature_V240103__part0",
+                "r_1": "POINT_IN_TIME",
+            },
+            output_name="req_col_feature",
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_30m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["latest_event_timestamp_overall_90d_V240103"],
+            rename_outputs={
+                "latest_event_timestamp_overall_90d_V240103": "latest_event_timestamp_overall_90d"
+            },
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_6m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part0"],
+            rename_outputs={},
+        ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="feature_engineering.some_schema.udf_relative_frequency_v240103_[FEATURE_ID3]",
+            input_bindings={
+                "x_1": "__relative_frequency_V240103__part1",
+                "x_2": "__relative_frequency_V240103__part0",
+            },
+            output_name="relative_frequency",
+        ),
+    ]
+
+    # List of columns to exclude from the training set
+    # Users should consider including request columns and primary entity columns here
+    # This is important if these columns are not features but are only needed for lookup purposes
+    exclude_columns = [
+        "POINT_IN_TIME",
+        "__feature_V240103__part0",
+        "__feature_V240103__part1",
+        "__featurebyte_dummy_entity",
+        "__relative_frequency_V240103__part0",
+        "__relative_frequency_V240103__part1",
+        "__req_col_feature_V240103__part0",
+        "count_feature_V240103",
+        "transaction_id",
+    ]
+
+    # Prepare the dataset for log model
+    # 'features' is a list of feature lookups to be included in the training set
+    # 'exclude_columns' is a list of columns to be excluded from the training set
+    target_column = "float_target"
+    schema = StructType(
+        [
+            StructField(target_column, DoubleType()),
+            StructField("__featurebyte_dummy_entity", StringType()),
+            StructField("transaction_id", LongType()),
+            StructField("POINT_IN_TIME", TimestampType()),
+        ]
+    )
+    spark = SparkSession.builder.getOrCreate()
+    log_model_dataset = fe.create_training_set(
+        df=spark.createDataFrame([], schema),
+        feature_lookups=features,
+        label=target_column,
+        exclude_columns=exclude_columns,
+    )
+
+    # Log the model and register it to the unity catalog
+    fe.log_model(
+        model=model,  # model is the trained model
+        artifact_path="[ARTIFACT_PATH]",  # artifact_path is the path to the model
+        flavor=mlflow.sklearn,
+        training_set=log_model_dataset,
+        registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
+    )
+    """
+    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
+    assert len(relationships_info) == 1
+    replace_pairs = [
+        ("[FEATURE_ID0]", str(count_feature.cached_model.id)),
+        ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
+        ("[FEATURE_ID2]", str(req_col_day_diff_feature.cached_model.id)),
+        ("[FEATURE_ID3]", str(relative_freq_feature.cached_model.id)),
+        ("[TABLE_SUFFIX]", cust_id_30m_suffix),
+    ]
+    for replace_pair in replace_pairs:
+        expected = expected.replace(*replace_pair)
+
+    feat_specs = databricks_deployment.databricks.get_feature_specs_definition()
+    assert feat_specs.strip() == textwrap.dedent(expected).strip()
+
+
+def test_databricks_commands__run_in_non_databricks_env(databricks_deployment):
+    """Test databricks commands run in non-databricks environment"""
+    expected = "This method can only be called in a DataBricks environment."
+    with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
+        databricks_deployment.databricks.log_model(
+            model=None, artifact_path="some_path", flavor=None, registered_model_name="some_name"
+        )
+
+    with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
+        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+
+
+def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_deployment):
+    """Test databricks commands with missing import"""
+    _ = mock_is_databricks_env
+
+    expected = "Please install the databricks feature engineering package to use this accessor."
+    with pytest.raises(ImportError, match=expected):
+        databricks_deployment.databricks.log_model(
+            model=None,
+            artifact_path="some_path",
+            flavor=None,
+            registered_model_name="some_name",
+        )
+
+    with pytest.raises(ImportError, match=expected):
+        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+
+
+def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
+    """Test list feature table names"""
+    output = databricks_deployment.databricks.list_feature_table_names()
+    assert output == [
+        "feature_engineering.some_schema.cat1__no_entity_30m",
+        "feature_engineering.some_schema.cat1__no_entity_6m",
+        f"feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_{cust_id_30m_suffix}",
+        "feature_engineering.some_schema.cat1_transaction_id_1d",
+    ]
+
+
+def test_null_filling_udf(databricks_deployment, count_feature):
+    """Test null filling UDF"""
+    expected = """
+    CREATE FUNCTION udf_count_feature_[VERSION]_[FEATURE_ID](x_1 BIGINT)
+    RETURNS BIGINT
+    LANGUAGE PYTHON
+    COMMENT ''
+    AS $$
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def user_defined_function(col_1: int) -> int:
+        # col_1: count_feature_V240103
+        return 0 if pd.isnull(col_1) else col_1
+
+    output = user_defined_function(x_1)
+    return None if pd.isnull(output) else output
+    $$
+    """
+    replace_pairs = [
+        ("[VERSION]", count_feature.version.lower()),
+        ("[FEATURE_ID]", str(count_feature.cached_model.id)),
+    ]
+    for replace_pair in replace_pairs:
+        expected = expected.replace(*replace_pair)
+
+    udf_info = count_feature.cached_model.offline_store_info.udf_info
+    assert udf_info.codes.strip() == textwrap.dedent(expected).strip()

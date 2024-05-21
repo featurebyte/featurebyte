@@ -1,6 +1,7 @@
 """
 Spark Thrift Server Data Source
 """
+
 # pylint: disable=no-name-in-module
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, cast
 

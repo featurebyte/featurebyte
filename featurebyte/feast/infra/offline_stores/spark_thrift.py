@@ -1,6 +1,7 @@
 """
 Spark Thrift Server Offline Store
 """
+
 from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
 
 import json
@@ -276,6 +277,10 @@ class SparkThriftRetrievalJob(RetrievalJob):
         """
         result = self.db_session.execute_query_blocking(self.query)
         assert isinstance(result, pd.DataFrame)
+
+        # skip if result is empty
+        if result.shape[0] == 0:
+            return result
 
         # convert arrays to string
         for column in result.columns:

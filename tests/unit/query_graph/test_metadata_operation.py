@@ -1,6 +1,7 @@
 """
 Tests for classes defined in featurebyte/query_graph/node/metadata/operation.py
 """
+
 import pytest
 
 from featurebyte.enum import DBVarType

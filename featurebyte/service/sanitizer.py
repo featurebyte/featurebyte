@@ -1,6 +1,7 @@
 """
 Sanitizer module
 """
+
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 

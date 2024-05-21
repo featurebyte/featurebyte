@@ -1,6 +1,7 @@
 """
 Tests for DimensionTable models
 """
+
 import datetime
 
 import pytest

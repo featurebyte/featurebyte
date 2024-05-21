@@ -1,6 +1,7 @@
 """
 Test AzureBlobStorage class
 """
+
 import os
 from unittest.mock import patch
 
@@ -23,20 +24,24 @@ class TestAzureBlobStorageSuite(BaseStorageTestSuite):
         Storage object fixture
         """
 
-        with patch(
-            "featurebyte.utils.storage.AZURE_STORAGE_ACCOUNT_NAME",
-            os.environ["AZURE_STORAGE_ACCOUNT_NAME"],
-        ), patch(
-            "featurebyte.utils.storage.AZURE_STORAGE_ACCOUNT_KEY",
-            os.environ["AZURE_STORAGE_ACCOUNT_KEY"],
-        ), patch(
-            "featurebyte.utils.storage.AZURE_STORAGE_CONTAINER_NAME",
-            "storage-test",
+        with (
+            patch(
+                "featurebyte.utils.storage.AZURE_STORAGE_ACCOUNT_NAME",
+                os.environ["AZURE_STORAGE_ACCOUNT_NAME"],
+            ),
+            patch(
+                "featurebyte.utils.storage.AZURE_STORAGE_ACCOUNT_KEY",
+                os.environ["AZURE_STORAGE_ACCOUNT_KEY"],
+            ),
+            patch(
+                "featurebyte.utils.storage.AZURE_STORAGE_CONTAINER_NAME",
+                "storage-test",
+            ),
         ):
             prefix = str(ObjectId())
             yield AzureBlobStorage(get_client=get_azure_storage_blob_client, prefix=prefix)
 
             # cleanup remote folder
             async with get_azure_storage_blob_client() as client:
-                async for blob in client.list_blobs():
+                async for blob in client.list_blobs(name_starts_with=prefix):
                     await client.delete_blob(blob.name, delete_snapshots="include")

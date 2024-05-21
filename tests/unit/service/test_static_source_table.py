@@ -1,6 +1,7 @@
 """
 Test for StaticSourceTableService
 """
+
 import pytest
 
 from featurebyte.models.request_input import SourceTableRequestInput

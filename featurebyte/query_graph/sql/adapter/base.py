@@ -1,9 +1,11 @@
 """
 Base class for SQL adapters
 """
+
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Optional
+from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -497,7 +499,12 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
     @classmethod
     @abstractmethod
     def create_table_as(
-        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+        cls,
+        table_details: TableDetails,
+        select_expr: Select | str,
+        kind: Literal["TABLE", "VIEW"] = "TABLE",
+        partition_keys: list[str] | None = None,
+        replace: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -506,8 +513,12 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         ----------
         table_details: TableDetails
             TableDetails of the table to be created
-        select_expr: Select
+        select_expr: Select | str
             Select expression
+        kind: Literal["TABLE", "VIEW"]
+            Kind of table to create
+        partition_keys: list[str] | None
+            Partition keys
         replace: bool
             Whether to replace the table if exists
 
@@ -679,7 +690,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         Select
         """
         _ = vector_aggregate_columns, quote_vector_agg_aliases
-        return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
+        return input_expr.select(*select_keys, *agg_exprs, copy=False).group_by(*keys, copy=False)
 
     @classmethod
     @abstractmethod

@@ -1,6 +1,7 @@
 """
 This module contains Feature list namespace related models
 """
+
 from __future__ import annotations
 
 from typing import Any, List
@@ -60,7 +61,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_feature_list_ids_validator = validator(
+    _sort_ids_validator = validator(
         "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
     )(construct_sort_validator())
 

@@ -1,12 +1,13 @@
 """
 Context API payload schema
 """
+
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -18,26 +19,9 @@ class ContextCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr]
-
-    @validator("primary_entity_ids")
-    @classmethod
-    def _sort_primary_entity_ids(cls, value: List[PydanticObjectId]) -> List[PydanticObjectId]:
-        """
-        Sort primary_entity_ids
-
-        Parameters
-        ----------
-        value: List[PydanticObjectId]
-            value to be validated
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        return sorted(value)
 
 
 class ContextList(PaginationMixin):
@@ -63,7 +47,7 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_eda_table: Optional[bool]
     remove_default_preview_table: Optional[bool]
 
-    name: Optional[StrictStr]
+    name: Optional[NameStr]
 
     @root_validator(pre=True)
     @classmethod

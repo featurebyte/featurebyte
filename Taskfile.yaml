@@ -1,5 +1,8 @@
 version: '3'
 
+env:
+  FEAST_USAGE: False
+
 tasks:
   init:
     desc: "Initialize the project for development"
@@ -106,7 +109,6 @@ tasks:
     deps:
       - task: install
     cmds:
-      - poetry run pyupgrade --py38-plus **/*.py
       - poetry run isort .
       - poetry run black .
       - poetry run toml-sort --all --in-place pyproject.toml poetry.lock
@@ -279,29 +281,39 @@ tasks:
 
   test-integration-spark:
     desc: Runs integration tests against Spark
-    deps:
-      - task: install
-    cmds:
-      - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
-      - task: test-teardown
+    vars:
+      # Default to teardown
+      TEARDOWN:
+        sh: printenv TEARDOWN || echo "true"
 
-  test-integration-databricks:
-    desc: Runs integration tests against Databricks
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     deps:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks
-      - task: test-teardown
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
+      - cmd: |
+          if [ "{{.TEARDOWN}}" == "true" ]; then
+              task test-teardown
+          fi
 
   test-integration-databricks-unity:
     desc: Runs integration tests against Databricks
     deps:
       - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity
+      - poetry run pytest --timeout=1350 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - task: test-teardown
 
   test-docs:
@@ -366,32 +378,33 @@ tasks:
     cmds:
       - echo "SPARK_VERSION=$SPARK_VERSION"
       - mkdir -p ~/.spark/data
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml up -d
+      - docker compose -p featurebyte_docker -f docker/docker-compose.yml up -d
       - task: test-setup-status
 
   test-setup-status:
     desc: "Wait for the test environment to be ready"
     internal: true
+    silent: true
     preconditions:
-      - sh: docker compose ls | grep 'featurebyte-test'
+      - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
     cmds:
-      -  |
-        for i in {1..60}; do
-          docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" spark-thrift-test | grep 'healthy' -q && exit 0
-          sleep 1
+      -  |-
+        for i in {1..30}; do
+          [[ $(docker compose ls --format=json | jq '.[] | select(.Name == "featurebyte_docker") | .Status == "running(3)"') == "true" ]] && exit 0
+          echo "Waiting for the test environment to be ready"
+          sleep 2
         done
-        exit 1
 
   test-teardown:
     desc: "Teardown the test environment"
     env:
       SPARK_VERSION: '{{default "3.3.1"}}'
     preconditions:
-      - sh: docker compose ls | grep 'featurebyte-test'
+      - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
     cmds:
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml down
+      - docker compose -p featurebyte_docker -f docker/docker-compose.yml down
 
   docs:
     desc: "Build the documentation and reload the browser"
@@ -446,28 +459,6 @@ tasks:
     cmds:
       - poetry run featurebyte stop
 
-  docker-clean:
-    desc: "Clean the docker images and data directories"
-    ignore_error: true
-    cmds:
-      - docker volume rm $(docker volume ls -q)
-      - rm -rf ~/.spark
-      - rm -rf ~/.featurebyte/data
-
-  docker-tag-featurebyte-version:
-    desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
-    vars:
-      FB_VERSION:
-        sh: awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' pyproject.toml
-    cmds:
-      - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:{{.FB_VERSION}}
-
-  publish-mongodb:
-    desc: "Publish mongodb package to public featurebyte registry"
-    dir: docker/
-    cmds:
-      - docker buildx build --platform linux/amd64,linux/arm64 -t featurebyte/mongo:latest -t featurebyte/mongo:6 -f mongo.Dockerfile . --push
-
   changelog:
     desc: "Generate all changelog entries in .changelog"
     cmds:
@@ -480,22 +471,11 @@ tasks:
     vars:
       clogs:
         sh: |
-          git diff $(git merge-base origin/main HEAD): --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
-    preconditions:
-      - sh: bash -c '[[ "" != "{{.clogs}}" ]]'
-        msg: "No changelog files found in PR"
+          git diff $(git merge-base origin/main HEAD): --no-renames --name-status -- .changelog/ | awk '{if ($1 != "D" && $2 ~ /.yaml$/ && $2 !~ /TEMPLATE[.]yaml$/) { print $2 }}' | sed 's-.changelog/--g' | xargs
+    # Do not run if there are no changelog files
+    status:
+      - "[ '{{.clogs}}' == '' ]"
     cmds:
       - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
         silent: true
       - python .changelog/changelog-gen.py {{.clogs}}
-
-  changelog-pr-files:
-    desc: "View changelog files in PR"
-    vars:
-      clogs:
-        sh: |
-          git diff $(git merge-base origin/main HEAD): --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
-    cmds:
-      - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
-        silent: true
-      - python .changelog/changelog-gen.py --file-mode {{.clogs}}

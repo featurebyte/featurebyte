@@ -1,6 +1,7 @@
 """
 EventView class
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
@@ -13,13 +14,13 @@ from pydantic import Field
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
+from featurebyte.typing import validate_type_is_feature
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
@@ -221,6 +222,7 @@ class EventView(View, GroupByMixin, RawMixin):
         """
         Validates feature addition
         - Checks that the feature is non-time based
+        - Checks that the feature does not use request columns
         - Checks that entity is present in one of the columns
 
         Parameters
@@ -243,6 +245,12 @@ class EventView(View, GroupByMixin, RawMixin):
         # Validate whether feature is time based
         if feature.is_time_based:
             raise ValueError("We currently only support the addition of non-time based features.")
+
+        # Validate whether request column is used in feature definition
+        if feature.used_request_column:
+            raise ValueError(
+                "We currently only support the addition of features that do not use request columns."
+            )
 
         # Validate entity_col_override
         if entity_col_override is not None:

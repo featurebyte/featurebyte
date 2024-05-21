@@ -1,6 +1,7 @@
 """
 Tests for SCDTable routes
 """
+
 from http import HTTPStatus
 
 import pytest

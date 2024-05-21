@@ -1,6 +1,7 @@
 """
 Tile Monitor Job
 """
+
 import os
 
 from sqlglot import expressions
@@ -10,7 +11,6 @@ from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
 from featurebyte.service.tile_registry_service import TileRegistryService
-from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -121,10 +121,11 @@ class TileMonitor(TileCommon):
             logger.debug(f"tile_monitor_exist_flag: {tile_monitor_exist_flag}")
 
             if not tile_monitor_exist_flag:
-                create_sql = construct_create_table_query(
-                    monitor_table_name, compare_sql, session=self._session
+                await self._session.create_table_as(
+                    table_details=monitor_table_name,
+                    select_expr=compare_sql,
+                    retry=True,
                 )
-                await retry_sql(self._session, create_sql)
             else:
                 tile_registry_ins = TileRegistry(
                     session=self._session,
@@ -185,7 +186,7 @@ class TileMonitor(TileCommon):
                             b.CREATED_AT
                         )
                 """
-                await retry_sql(session=self._session, sql=insert_sql)
+                await self._session.retry_sql(insert_sql)
 
             insert_monitor_summary_sql = f"""
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
@@ -196,4 +197,4 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            await retry_sql(self._session, insert_monitor_summary_sql)
+            await self._session.retry_sql(insert_monitor_summary_sql)

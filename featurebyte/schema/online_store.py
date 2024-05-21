@@ -1,6 +1,7 @@
 """
 OnlineStore API payload schema
 """
+
 from typing import List, Optional
 
 from datetime import datetime
@@ -8,7 +9,7 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -19,7 +20,7 @@ class OnlineStoreCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     details: OnlineStoreDetails
 
 

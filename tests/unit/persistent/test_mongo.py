@@ -1,6 +1,7 @@
 """
 Test MongoDB persistent backend
 """
+
 from __future__ import annotations
 
 import time

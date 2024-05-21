@@ -1,6 +1,7 @@
 """
 Test FastAPI app middleware
 """
+
 import copy
 from http import HTTPStatus
 

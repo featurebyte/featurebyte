@@ -1,12 +1,15 @@
 """
 TileCacheService class
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Optional
 
 from bson import ObjectId
 
+from featurebyte.common.progress import divide_progress_callback
+from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -66,11 +69,35 @@ class TileCacheService:
             tile_manager_service=self.tile_manager_service,
             feature_store_id=feature_store_id,
         )
-        await tile_cache.compute_tiles_on_demand(
+        if progress_callback is not None:
+            tile_check_progress_callback, tile_compute_progress_callback = divide_progress_callback(
+                progress_callback=progress_callback,
+                at_percent=20,
+            )
+        else:
+            tile_check_progress_callback, tile_compute_progress_callback = None, None
+
+        required_tile_computations = await tile_cache.get_required_computation(
+            request_id=request_id,
             graph=graph,
             nodes=nodes,
-            request_id=request_id,
             request_table_name=request_table_name,
             serving_names_mapping=serving_names_mapping,
-            progress_callback=progress_callback,
+            progress_callback=tile_check_progress_callback,
         )
+
+        # Execute tile computations
+        try:
+            if required_tile_computations:
+                logger.info(
+                    "Obtained required tile computations",
+                    extra={"n": len(required_tile_computations)},
+                )
+                with timer("Compute tiles on demand", logger):
+                    await tile_cache.invoke_tile_manager(
+                        required_tile_computations, tile_compute_progress_callback
+                    )
+            else:
+                logger.debug("All required tiles can be reused")
+        finally:
+            await tile_cache.cleanup_temp_tables()

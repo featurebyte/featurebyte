@@ -1,6 +1,7 @@
 """
 Target API payload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -12,6 +13,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -31,7 +33,7 @@ class TargetCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
@@ -90,7 +92,7 @@ class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):
     Target service update schema
     """
 
-    name: Optional[str]
+    name: Optional[NameStr]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

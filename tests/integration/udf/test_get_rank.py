@@ -1,6 +1,7 @@
 """
 Tests for snowflake get rank UDF
 """
+
 import numpy as np
 import pytest
 

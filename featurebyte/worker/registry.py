@@ -1,6 +1,7 @@
 """
 Task registry
 """
+
 from typing import Dict, Type
 
 from enum import Enum
@@ -11,6 +12,7 @@ from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
+from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -54,6 +56,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
+    WorkerCommand.DATA_DESCRIPTION: DataDescriptionTask,
     WorkerCommand.TEST: TestTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,

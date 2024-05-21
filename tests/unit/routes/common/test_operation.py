@@ -1,6 +1,7 @@
 """
 Unit tests for DictTransform class
 """
+
 import pytest
 
 from featurebyte.schema.common.operation import DictProject, DictTransform

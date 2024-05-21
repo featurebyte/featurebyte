@@ -1,8 +1,9 @@
 """
 This module contains integration tests for FeatureSnowflake
 """
+
 import contextlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
 import numpy as np
@@ -310,10 +311,10 @@ async def test_online_enabled_feature_spec(
     assert len(result) == 100
     expected_df = pd.DataFrame(
         {
-            "INDEX": np.array([5514911, 5514910, 5514909], dtype=np.int32),
+            "INDEX": np.array([5514911, 5514910, 5514909]),
             "PRODUCT_ACTION": ["view", "view", "view"],
-            "CUST_ID": np.array([1, 1, 1], dtype=np.int8),
-            "VALUE": np.array([5, 2, 2], dtype=np.int8),
+            "CUST_ID": np.array([1, 1, 1]),
+            "VALUE": np.array([5, 2, 2]),
         }
     )
     result = result[:3].drop(columns=["CREATED_AT"])
@@ -440,6 +441,10 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     with patch(
         "featurebyte.service.tile_manager.TileManagerService.generate_tiles"
     ) as mock_generate_tiles:
-        await feature_manager_service.online_enable(session, online_feature_spec)
+        with patch("featurebyte.service.feature_manager.datetime") as mock_datetime:
+            # simulate re-deploy at a later date; otherwise this will be a no-op since no new tiles
+            # need to be generated and generate_tiles won't be called
+            mock_datetime.utcnow.return_value = last_tile_start_ts + timedelta(days=1)
+            await feature_manager_service.online_enable(session, online_feature_spec)
         _, kwargs = mock_generate_tiles.call_args
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

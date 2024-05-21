@@ -1,6 +1,7 @@
 """
 Test for feast online store models
 """
+
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 
 from featurebyte import MySQLOnlineStoreDetails, RedisOnlineStoreDetails

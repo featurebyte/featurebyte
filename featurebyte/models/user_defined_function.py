@@ -1,6 +1,7 @@
 """
 This module contains UserDefinedFunction related models
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Union
@@ -12,11 +13,11 @@ from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar, Timestamp
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    NameStr,
     PydanticObjectId,
     UniqueValuesConstraint,
 )
@@ -30,6 +31,7 @@ from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext
 from featurebyte.query_graph.sql.ast.function import GenericFunctionNode as GenericFunctionSQLNode
 from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.typing import Scalar, Timestamp
 
 # supported function parameter input DBVarType to Python type mapping
 function_parameter_dtype_to_python_type = {
@@ -212,7 +214,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         Catalog id of the function (if any), if not provided, it can be used across all catalogs
     """
 
-    name: str
+    name: NameStr
     sql_function_name: str
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType

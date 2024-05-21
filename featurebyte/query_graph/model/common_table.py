@@ -1,7 +1,9 @@
 """
 This module contains common table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, cast
+
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing_extensions import Literal
 
 from abc import abstractmethod
 
@@ -60,7 +62,7 @@ class BaseTableData(FeatureByteBaseModel):
     def __init_subclass__(cls, **kwargs: Any):
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
         table_type = cls.__fields__["type"]
-        if repr(table_type.type_).startswith("typing.Literal"):
+        if "Literal" in repr(table_type.type_):
             DATA_TABLES.append(cls)
         if table_type.default != TableDataType.SOURCE_TABLE:
             SPECIFIC_DATA_TABLES.append(cls)

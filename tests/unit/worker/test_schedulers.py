@@ -1,6 +1,7 @@
 """
 Test custom scheduling logic
 """
+
 import pandas as pd
 import pytest
 from celerybeatmongo.models import PeriodicTask as PeriodicTaskDoc

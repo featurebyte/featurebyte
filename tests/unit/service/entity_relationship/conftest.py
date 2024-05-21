@@ -1,6 +1,7 @@
 """
 Fixtures for entity relationship related tests
 """
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId

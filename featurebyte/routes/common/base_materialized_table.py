@@ -1,6 +1,7 @@
 """
 Base class for materialized table routes
 """
+
 from typing import Any, AsyncGenerator, Optional, TypeVar
 
 from io import BytesIO

@@ -1,6 +1,7 @@
 """
 Module for managing physical feature table cache as well as metadata storage.
 """
+
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
@@ -10,7 +11,6 @@ from sqlglot import expressions
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
-from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -218,7 +218,6 @@ class FeatureTableCacheService:
         nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -260,7 +259,6 @@ class FeatureTableCacheService:
                 feature_store=feature_store,
                 output_table_details=output_table_details,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
             )
@@ -275,7 +273,6 @@ class FeatureTableCacheService:
         nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -293,7 +290,6 @@ class FeatureTableCacheService:
                 nodes=nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 progress_callback=progress_callback,
             )
 
@@ -307,24 +303,19 @@ class FeatureTableCacheService:
                 )
                 for node, feature_definition in nodes
             ]
-            adapter = get_sql_adapter(db_session.source_type)
-            query = sql_to_string(
-                adapter.create_table_as(
-                    table_details=TableDetails(
-                        database_name=db_session.database_name,
-                        schema_name=db_session.schema_name,
-                        table_name=final_table_name,
-                    ),
-                    select_expr=(
-                        expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-                        .select(*request_columns)
-                        .select(*feature_names)
-                        .from_(quoted_identifier(intermediate_table_name))
-                    ),
+            await db_session.create_table_as(
+                table_details=TableDetails(
+                    database_name=db_session.database_name,
+                    schema_name=db_session.schema_name,
+                    table_name=final_table_name,
                 ),
-                source_type=db_session.source_type,
+                select_expr=(
+                    expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+                    .select(*request_columns)
+                    .select(*feature_names)
+                    .from_(quoted_identifier(intermediate_table_name))
+                ),
             )
-            await db_session.execute_query(query)
         finally:
             await db_session.drop_table(
                 database_name=db_session.database_name,
@@ -343,7 +334,6 @@ class FeatureTableCacheService:
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        is_feature_list_deployed: bool = False,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -366,7 +356,6 @@ class FeatureTableCacheService:
                 nodes=non_cached_nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
-                is_feature_list_deployed=is_feature_list_deployed,
                 progress_callback=progress_callback,
             )
 
@@ -386,7 +375,9 @@ class FeatureTableCacheService:
                 )
                 for node, definition in non_cached_nodes
             ]
-            await db_session.execute_query(adapter.alter_table_add_columns(table_exr, columns_expr))
+            await db_session.execute_query_long_running(
+                adapter.alter_table_add_columns(table_exr, columns_expr)
+            )
 
             # merge temp table into cache table
             merge_conditions = [
@@ -434,7 +425,7 @@ class FeatureTableCacheService:
                     ),
                 ],
             )
-            await db_session.execute_query(
+            await db_session.execute_query_long_running(
                 sql_to_string(merge_expr, source_type=db_session.source_type)
             )
         finally:
@@ -456,7 +447,7 @@ class FeatureTableCacheService:
                 .limit(1),
                 source_type=session.source_type,
             )
-            _ = await session.execute_query(query)
+            _ = await session.execute_query_long_running(query)
             return True
         except session._no_schema_error:  # pylint: disable=protected-access
             return False
@@ -536,14 +527,6 @@ class FeatureTableCacheService:
             remaining_progress_callback = None
 
         if non_cached_nodes:
-            is_feature_list_deployed = False
-            if feature_list_id:
-                try:
-                    feature_list = await self.feature_list_service.get_document(feature_list_id)
-                    is_feature_list_deployed = feature_list.deployed
-                except DocumentNotFoundError:
-                    is_feature_list_deployed = False
-
             if feature_table_cache_exists:
                 # if feature table cache exists - update existing table with new features
                 await self._update_table(
@@ -555,7 +538,6 @@ class FeatureTableCacheService:
                     non_cached_nodes=non_cached_nodes,
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
-                    is_feature_list_deployed=is_feature_list_deployed,
                     progress_callback=remaining_progress_callback,
                 )
             else:
@@ -569,7 +551,6 @@ class FeatureTableCacheService:
                     nodes=non_cached_nodes,
                     is_target=is_target,
                     serving_names_mapping=serving_names_mapping,
-                    is_feature_list_deployed=is_feature_list_deployed,
                     progress_callback=remaining_progress_callback,
                 )
 
@@ -586,6 +567,7 @@ class FeatureTableCacheService:
         observation_table: ObservationTableModel,
         graph: QueryGraph,
         nodes: List[Node],
+        columns: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
         Given the graph and set of nodes, read respective cached features from feature table cache.
@@ -600,6 +582,8 @@ class FeatureTableCacheService:
             Graph definition
         nodes: List[Node]
             Node names
+        columns: Optional[List[str]]
+            Optional list of columns to read from the cache table
 
         Returns
         -------
@@ -627,8 +611,11 @@ class FeatureTableCacheService:
         columns_expr = self._get_column_exprs(
             graph, nodes, hashes, cast(Dict[str, str], cached_features)
         )
+        additional_columns_expr = [quoted_identifier(col) for col in columns] if columns else []
         select_expr = (
-            expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
+            expressions.select(
+                quoted_identifier(InternalName.TABLE_ROW_INDEX), *additional_columns_expr
+            )
             .select(*columns_expr)
             .from_(
                 get_fully_qualified_table_name(
@@ -641,9 +628,9 @@ class FeatureTableCacheService:
             )
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
-        return await db_session.execute_query(sql)
+        return await db_session.execute_query_long_running(sql)
 
-    async def create_view_from_cache(
+    async def create_view_or_table_from_cache(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -656,7 +643,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> None:
+    ) -> bool:
         """
         Create or update cache table and create a new view which refers to the cached table
 
@@ -681,6 +668,11 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        bool
+            Whether the output is a view
         """
         with timer(
             "Update feature table cache",
@@ -726,13 +718,21 @@ class FeatureTableCacheService:
                 )
             )
         )
-        create_view_exr = expressions.Create(
-            this=expressions.Table(
-                this=get_fully_qualified_table_name(output_view_details.dict()),
-            ),
-            kind="VIEW",
-            expression=select_expr,
-            replace=False,
-        )
-        sql = sql_to_string(create_view_exr, source_type=db_session.source_type)
-        await db_session.execute_query(sql)
+        try:
+            await db_session.create_table_as(
+                table_details=output_view_details,
+                select_expr=select_expr,
+                kind="VIEW",
+            )
+            return True
+        except:  # pylint: disable=bare-except
+            logger.info(
+                "Failed to create view. Trying to create a table instead",
+                extra={"observation_table_id": observation_table.id},
+                exc_info=True,
+            )
+            await db_session.create_table_as(
+                table_details=output_view_details,
+                select_expr=select_expr,
+            )
+            return False

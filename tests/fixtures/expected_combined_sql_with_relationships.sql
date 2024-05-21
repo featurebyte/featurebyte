@@ -21,34 +21,48 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
       FROM REQUEST_TABLE AS REQ
       LEFT JOIN (
         SELECT
-          "col_text" AS "COL_TEXT",
-          "col_int" AS "COL_INT"
+          "COL_TEXT",
+          ANY_VALUE("COL_INT") AS "COL_INT"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."dimension_table"
+            "col_text" AS "COL_TEXT",
+            "col_int" AS "COL_INT"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."dimension_table"
+          )
         )
+        GROUP BY
+          "COL_TEXT"
       ) AS T0
         ON REQ."COL_TEXT" = T0."COL_TEXT"
     ) AS REQ
     LEFT JOIN (
       SELECT
-        "relation_cust_id" AS "cust_id",
-        "relation_biz_id" AS "cust_id_100000000000000000000000"
+        "cust_id",
+        ANY_VALUE("cust_id_100000000000000000000000") AS "cust_id_100000000000000000000000"
       FROM (
         SELECT
-          "relation_cust_id" AS "relation_cust_id",
-          "relation_biz_id" AS "relation_biz_id"
-        FROM "db"."public"."some_table_name"
+          "relation_cust_id" AS "cust_id",
+          "relation_biz_id" AS "cust_id_100000000000000000000000"
+        FROM (
+          SELECT
+            "relation_cust_id" AS "relation_cust_id",
+            "relation_biz_id" AS "relation_biz_id"
+          FROM "db"."public"."some_table_name"
+        )
       )
+      GROUP BY
+        "cust_id"
     ) AS T0
       ON REQ."cust_id" = T0."cust_id"
   ) AS REQ
@@ -226,10 +240,10 @@ SELECT
   AGG."a",
   AGG."b",
   AGG."c",
-  (
+  CAST((
     "_fb_internal_cust_id_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" / NULLIF(
       "_fb_internal_cust_id_100000000000000000000000_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
       0
     )
-  ) AS "a_2h_avg_by_user_div_7d_by_biz"
+  ) AS DOUBLE) AS "a_2h_avg_by_user_div_7d_by_biz"
 FROM _FB_AGGREGATED AS AGG

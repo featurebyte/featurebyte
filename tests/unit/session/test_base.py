@@ -1,6 +1,7 @@
 """
 Unit test for base snowflake session.
 """
+
 from __future__ import annotations
 
 from typing import Any, OrderedDict
@@ -19,6 +20,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -70,7 +72,9 @@ def base_session_test_fixture():
             table_name: str | None,
             database_name: str | None = None,
             schema_name: str | None = None,
+            timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
         ) -> OrderedDict[str, ColumnSpecWithDescription]:
+            _ = timeout
             return collections.OrderedDict()
 
         async def register_table(
@@ -135,7 +139,8 @@ def test_get_current_working_schema_version(base_schema_initializer_test, base_s
 
 @pytest.mark.asyncio
 async def test_get_working_schema_version__no_data(base_session_test):
-    async def mocked_execute_query(self, query: str) -> pd.DataFrame | None:
+    async def mocked_execute_query(self, query, to_log_error=True) -> pd.DataFrame | None:
+        _ = self, query, to_log_error
         return None
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query):
@@ -147,7 +152,10 @@ async def test_get_working_schema_version__no_data(base_session_test):
 async def test_get_working_schema_version__with_version_set(base_session_test):
     schema_version = 2
 
-    async def mocked_execute_query_with_version(self, query: str) -> pd.DataFrame | None:
+    async def mocked_execute_query_with_version(
+        self, query, to_log_error=True
+    ) -> pd.DataFrame | None:
+        _ = self, query, to_log_error
         return pd.DataFrame(
             {
                 "WORKING_SCHEMA_VERSION": [schema_version],

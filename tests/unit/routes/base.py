@@ -1,6 +1,7 @@
 """
 BaseApiTestSuite
 """
+
 # pylint: disable=too-many-lines
 import json
 import os
@@ -19,10 +20,11 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.api.utils import parquet_from_arrow_stream
 from featurebyte.common.utils import (
+    ResponseStream,
     create_new_arrow_stream_writer,
     dataframe_to_arrow_bytes,
-    parquet_from_arrow_stream,
 )
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -153,6 +155,15 @@ class BaseApiTestSuite:
         ):
             yield
 
+    @pytest.fixture(name="mock_deployment_flow")
+    def mock_deployment_flow_fixture(self, mock_deployment_flow):
+        """Mock deployment flow fixture"""
+        with patch(
+            "featurebyte.service.offline_store_feature_table_manager.OfflineStoreFeatureTableManagerService."
+            "handle_online_enabled_features"
+        ):
+            yield mock_deployment_flow
+
     @staticmethod
     def make_feature_production_ready(api_client, feature_id, catalog_id):
         """Make feature production ready"""
@@ -162,6 +173,21 @@ class BaseApiTestSuite:
             json={"readiness": "PRODUCTION_READY"},
         )
         assert response.status_code == HTTPStatus.OK, response.json()
+
+    @staticmethod
+    def tag_table_entity(api_client, table_type, table_payload):
+        """Tag table entity"""
+        if not table_type in {"item_table", "event_table", "dimension_table", "scd_table"}:
+            return
+
+        table_id = table_payload["_id"]
+        for column in table_payload["columns_info"]:
+            if column["entity_id"]:
+                response = api_client.patch(
+                    f"/{table_type}/{table_id}/column_entity",
+                    json={"column_name": column["name"], "entity_id": column["entity_id"]},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
 
     def update_deployment_enabled(self, api_client, deployment_id, catalog_id, enabled=True):
         """Enable deployment"""
@@ -243,6 +269,9 @@ class BaseApiTestSuite:
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
         assert response_dict["_id"] == id_before
+
+        if "_table" in self.base_route:
+            self.tag_table_entity(test_api_client, self.base_route.strip("/"), self.payload)
         return response
 
     def multiple_success_payload_generator(self, api_client):
@@ -830,6 +859,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -1228,7 +1258,12 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
 
         # check that table route can be used to retrieve the created table
         response = test_api_client.get(f"/table/{success_response_dict['_id']}")
-        assert response.json() == success_response_dict
+        response_dict = response.json()
+
+        # overwrite the updated_at & columns_info fields (due to entity tagging)
+        success_response_dict["updated_at"] = response_dict["updated_at"]
+        success_response_dict["columns_info"] = response_dict["columns_info"]
+        assert response_dict == success_response_dict
 
     def test_table_list_200(self, test_api_client_persistent, create_multiple_success_responses):
         """Test table list (success, multiple)"""
@@ -1380,7 +1415,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
             response.iter_content = response.iter_bytes
             with tempfile.TemporaryDirectory() as temp_dir:
                 output_path = Path(os.path.join(temp_dir, "test.parquet"))
-                parquet_from_arrow_stream(response=response, output_path=output_path, num_rows=3)
+                parquet_from_arrow_stream(
+                    ResponseStream(response.iter_content(1024)), output_path=output_path, num_rows=3
+                )
                 downloaded_df = pd.read_parquet(output_path)
         pd.testing.assert_frame_equal(downloaded_df, expected_df)
 
@@ -1394,6 +1431,11 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
                 """
             ).strip()
         )
+
+    @property
+    def download_filename_prefix(self):
+        """Prefix for download file name"""
+        return self.base_route.lstrip("/")
 
     def test_download_parquet(
         self, test_api_client_persistent, create_success_response, mock_get_session
@@ -1430,7 +1472,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         assert len(response.content) > 0
         assert response.headers == {
             "content-disposition": (
-                f'attachment; name="data"; filename="{self.base_route.lstrip("/")}_{table_name}.parquet"'
+                f'attachment; name="data"; filename="{self.download_filename_prefix}_{table_name}.parquet"'
             ),
             "content-type": "application/octet-stream",
         }

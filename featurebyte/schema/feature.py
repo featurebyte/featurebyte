@@ -1,6 +1,7 @@
 """
 Feature API payload schema
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -8,10 +9,15 @@ from typing import Any, List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, validator
 
 from featurebyte.enum import ConflictResolution
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import (
+    FeatureByteBaseModel,
+    NameStr,
+    PydanticObjectId,
+    VersionIdentifier,
+)
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
@@ -32,7 +38,7 @@ class FeatureCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
+    name: NameStr
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
@@ -52,7 +58,7 @@ class BatchFeatureItem(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId
-    name: StrictStr
+    name: NameStr
     node_name: str
     tabular_source: TabularSource
 

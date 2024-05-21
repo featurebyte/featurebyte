@@ -1,6 +1,7 @@
 """
 Test for Temp Data route
 """
+
 from http import HTTPStatus
 
 import pytest

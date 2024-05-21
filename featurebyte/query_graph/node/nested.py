@@ -1,6 +1,7 @@
 """
 This module contains nested graph related node classes
 """
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import (
     TYPE_CHECKING,
@@ -8,7 +9,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -16,13 +16,12 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Literal
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import (
@@ -57,6 +56,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.typing import Scalar
 
 
 class ProxyInputNode(BaseNode):
@@ -395,9 +395,9 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         event_view_node = input_nodes[1]
         assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
         event_view_metadata = event_view_node.parameters.metadata
-        metadata[
-            "event_column_cleaning_operations"
-        ] = event_view_metadata.column_cleaning_operations
+        metadata["event_column_cleaning_operations"] = (
+            event_view_metadata.column_cleaning_operations
+        )
         return metadata
 
 
@@ -638,9 +638,10 @@ class BaseGraphNode(BasePrunableNode):
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
-        input_var_name_expr: VarNameExpressionInfo,
+        input_var_name_expr: VariableNameStr,
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
+        is_databricks_udf: bool,
         config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
@@ -671,18 +672,18 @@ class BaseGraphNode(BasePrunableNode):
                     variable_name_prefix=var_name, node_name=None
                 )
 
-            statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            statements.append(
                 (
                     var_name_map["request_time"],
-                    get_object_class_from_function_call(
-                        "pd.to_datetime",
+                    self._to_datetime_expr(
                         ExpressionStr(
                             subset_frame_column_expr(
                                 VariableNameStr(input_df_name),
                                 SpecialColumnName.POINT_IN_TIME.value,
                             )
                         ),
-                        utc=True,
+                        to_handle_none=is_databricks_udf,
                     ),
                 )
             )
@@ -697,13 +698,12 @@ class BaseGraphNode(BasePrunableNode):
             statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
                 (
                     var_name_map["feat_ts"],
-                    get_object_class_from_function_call(
-                        "pd.to_datetime",
+                    self._to_datetime_expr(
                         ExpressionStr(
                             subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
                         ),
+                        to_handle_none=False,
                         unit="s",
-                        utc=True,
                     ),
                 )
             )
@@ -724,10 +724,12 @@ class BaseGraphNode(BasePrunableNode):
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            to_dt_expr = get_object_class_from_function_call(
-                "pd.to_datetime", input_var_name_expr, utc=True
+            statements.append(
+                (
+                    var_name,
+                    self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+                )
             )
-            statements.append((var_name, to_dt_expr))
             return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():
@@ -775,6 +777,7 @@ class BaseGraphNode(BasePrunableNode):
             config_for_ttl=config_for_ttl,
             ttl_handling_column=ttl_handling_column,
             ttl_seconds=ttl_seconds,
+            is_databricks_udf=False,
         )
 
     def _derive_user_defined_function_code(
@@ -801,9 +804,10 @@ class BaseGraphNode(BasePrunableNode):
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name,
             json_conversion_func=lambda expr: ExpressionStr(
-                f"np.nan if pd.isna({expr}) else json.loads({expr})"
+                f"np.nan if pd.isna({expr}) else {expr}"
             ),
             null_filling_func=lambda expr, val: ExpressionStr(
                 f"{val.as_input()} if pd.isna({expr}) else {expr}"
             ),
+            is_databricks_udf=True,
         )

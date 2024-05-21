@@ -1,6 +1,7 @@
 """
 This module contains count_dict accessor class
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union
@@ -9,12 +10,12 @@ from typeguard import typechecked
 
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar
 from featurebyte.core.series import DefaultSeriesBinaryOperator
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.count_dict import GetValueFromDictionaryNode
+from featurebyte.typing import Scalar
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
@@ -123,7 +124,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:
@@ -162,7 +163,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:
@@ -203,7 +204,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
-        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
+        {'Chips et Tortillas': 2.0, 'Colas, Thés glacés et Sodas': 10.0, 'Crèmes et Chantilly': 0.75, 'Pains': 1.09, 'Œufs': 1.19}
 
         New feature:
 
@@ -241,7 +242,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
-        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
+        {'Chips et Tortillas': 2.0, 'Colas, Thés glacés et Sodas': 10.0, 'Crèmes et Chantilly': 0.75, 'Pains': 1.09, 'Œufs': 1.19}
 
         New feature:
 
@@ -284,13 +285,13 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:
 
         >>> df["CustomerProductGroupCountsUniqueCount_7d"].iloc[0]
-        5
+        5.0
         """
         return self._make_operation(
             "unique_count",
@@ -331,13 +332,13 @@ class CountDictAccessor:
         Dictionary feature 1:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+         {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         Dictionary feature 2:
 
         >>> df["CustomerProductGroupCounts_90d"].iloc[0]
-        '{"Biscuits apéritifs":1,"Biscuits":1,"Bonbons":1,"Chips et Tortillas":2,"Colas, Thés glacés et Sodas":12,"Confitures":1,"Crèmes et Chantilly":2,"Céréales":1,"Emballages et sacs":1,"Fromages":3,"Glaces et Sorbets":1,"Glaçons":1,"Laits":4,"Noix":1,"Pains":4,"Petit-déjeuner":2,"Viande Surgelée":1,"Œufs":1}'
+        {'Biscuits apéritifs': 1, 'Biscuits': 1, 'Bonbons': 1, 'Chips et Tortillas': 2, 'Colas, Thés glacés et Sodas': 12, 'Confitures': 1, 'Crèmes et Chantilly': 2, 'Céréales': 1, 'Emballages et sacs': 1, 'Fromages': 3, 'Glaces et Sorbets': 1, 'Glaçons': 1, 'Laits': 4, 'Noix': 1, 'Pains': 4, 'Petit-déjeuner': 2, 'Viande Surgelée': 1, 'Œufs': 1}
 
 
         Similarity feature:
@@ -384,7 +385,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:
@@ -447,7 +448,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:
@@ -506,7 +507,7 @@ class CountDictAccessor:
         Dictionary feature:
 
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
-        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
 
 
         New feature:

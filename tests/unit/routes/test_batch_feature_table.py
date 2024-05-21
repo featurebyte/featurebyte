@@ -1,6 +1,7 @@
 """
 Tests for BatchFeatureTable routes
 """
+
 import copy
 from http import HTTPStatus
 from unittest.mock import patch
@@ -52,8 +53,9 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
     ]
 
     @pytest.fixture(autouse=True)
-    def mock_online_enable_service_update_data_warehouse(self):
+    def mock_online_enable_service_update_data_warehouse(self, mock_deployment_flow):
         """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
+        _ = mock_deployment_flow
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 

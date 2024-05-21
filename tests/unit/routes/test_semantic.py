@@ -1,6 +1,9 @@
 """
 Tests for Semantic route
 """
+
+from http import HTTPStatus
+
 from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseRelationshipApiTestSuite
@@ -38,3 +41,14 @@ class TestSemanticApi(BaseRelationshipApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = semantic
             yield payload
+
+    def test_delete(self, create_success_response, test_api_client_persistent):
+        """Test delete"""
+        test_api_client, _ = test_api_client_persistent
+
+        semantic_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{semantic_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"{self.base_route}/{semantic_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

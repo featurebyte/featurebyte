@@ -1,6 +1,7 @@
 """
 FeatureStore API route controller
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple
@@ -14,6 +15,7 @@ from featurebyte.models.persistent import QueryFilter
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
@@ -23,6 +25,8 @@ from featurebyte.schema.feature_store import (
     FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
+from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.data_description import DataDescriptionTaskPayload
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -53,6 +57,7 @@ class FeatureStoreController(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         credential_service: CredentialService,
         all_catalog_service: AllCatalogService,
+        task_controller: TaskController,
     ):
         super().__init__(feature_store_service)
         self.preview_service = preview_service
@@ -61,6 +66,7 @@ class FeatureStoreController(
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.credential_service = credential_service
         self.all_catalog_service = all_catalog_service
+        self.task_controller = task_controller
 
     async def create_feature_store(
         self,
@@ -382,6 +388,39 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.describe(sample=sample, size=size, seed=seed)
+
+    async def create_data_description(
+        self, sample: FeatureStoreSample, size: int, seed: int, catalog_id: ObjectId
+    ) -> Task:
+        """
+        Retrieve data description for query graph node
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        catalog_id: ObjectId
+            Catalog ID used for task submission
+
+        Returns
+        -------
+        Task
+        """
+
+        # prepare task payload and submit task
+        payload = DataDescriptionTaskPayload(
+            sample=sample,
+            size=size,
+            seed=seed,
+            user_id=self.task_controller.task_manager.user.id,
+            catalog_id=catalog_id,
+        )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId

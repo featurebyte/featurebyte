@@ -1,14 +1,15 @@
 """
 Module for literal value handling
 """
+
 from __future__ import annotations
 
 from typing import Any, cast
 
 from sqlglot import expressions, parse_one
 
-from featurebyte.common.typing import is_scalar_nan
 from featurebyte.query_graph.node.scalar import NonNativeValueType, TimestampValue
+from featurebyte.typing import is_scalar_nan
 
 
 def make_literal_value_from_non_native_types(value: dict[str, Any]) -> expressions.Expression:

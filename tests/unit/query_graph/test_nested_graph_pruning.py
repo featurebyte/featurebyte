@@ -1,6 +1,7 @@
 """
 Tests for nested graph pruning related logic
 """
+
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -108,6 +109,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         "aggregations": [
             {
                 "category": None,
+                "offset": None,
                 "column": {
                     "filter": False,
                     "name": "a",

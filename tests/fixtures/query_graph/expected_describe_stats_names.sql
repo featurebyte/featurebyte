@@ -9,18 +9,24 @@ WITH data AS (
   ORDER BY
     RANDOM(1234)
   LIMIT 10
-), casted_data AS (
-  SELECT
-    CAST("ts" AS STRING) AS "ts",
-    CAST("cust_id" AS STRING) AS "cust_id",
-    CAST("a" AS STRING) AS "a",
-    CAST("b" AS STRING) AS "b",
-    CAST("a_copy" AS STRING) AS "a_copy"
-  FROM data
 ), stats AS (
   SELECT
-    MIN("ts") AS "min__0",
-    MAX("ts") AS "max__0",
+    MIN(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "min__0",
+    MAX(
+      IFF(
+        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        NULL,
+        "ts"
+      )
+    ) AS "max__0",
     NULL AS "min__1",
     NULL AS "max__1",
     MIN("a") AS "min__2",

@@ -1,6 +1,7 @@
 """
 This module contains mixin classes for models.
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

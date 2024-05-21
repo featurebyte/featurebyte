@@ -1,6 +1,7 @@
 """
 SQL generation for aggregation without time windows from ItemView
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -118,9 +119,11 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
-                parent_cols=[get_qualified_column_identifier(s.parameters.parent, "ITEM")]
-                if s.parameters.parent
-                else [],
+                parent_cols=(
+                    [get_qualified_column_identifier(s.parameters.parent, "ITEM")]
+                    if s.parameters.parent
+                    else []
+                ),
             )
             for s in agg_specs
         ]

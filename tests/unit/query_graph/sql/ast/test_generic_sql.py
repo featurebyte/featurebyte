@@ -1,6 +1,7 @@
 """
 Test generic module
 """
+
 import pytest
 
 from featurebyte.query_graph.enum import NodeType

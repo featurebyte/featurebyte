@@ -1,5 +1,83 @@
 # Changelog
 
+## v1.0.3 (2024-05-21)
+
+### 💡 Enhancements
+
++ `service` Backfill only required tiles for offline store tables when enabling a deployment
++ `service` Fix view and table describe method error on invalid datetime values
++ `service` Cast type for features with float dtype
++ `docker` Bump base docker image to python 3.10
++ `api` Introduce databricks accessor to deployment API object.
++ `api` Support specifying the target column when creating an observation table.
+  + This change allows users to specify the target column when creating an observation table.
+  + The target column is the column that contains the target values for the observations.
+  + The target column name must match a valid target namespace name in the catalog.
+  + The primary entities of the target namespace must match that of the observation table.
++ `service` Run feature computation queries in parallel
++ `service` Cast features with integer dtype BIGINT explicitly in feature queries
++ `api` Use async task for table / view / column describe to avoid timeout on large datasets.
++ `gh-actions` Migration to pytest-split to github actions
+  + Databricks tests
+  + Spark tests
++ `service` Avoid repeated graph flattening in GraphInterpreter and improve tile sql generation efficiency
++ `service` Skip casting data to string in describe query if not required
++ `sdk-api` Prevent users from creating a UDF feature that is not deployable.
++ `service` Run on demand tile computation concurrently
++ `service` Validate point in time and entity columns do not contain missing values in observation table
++ `service` Validate internal row index column is valid after features computation
++ `service` Improve precomputed lookup feature tables handling
++ `service` Support creating Target objects using forward_aggregate_asat
++ `service` Handle duplicate rows when looking up SCD and dimension tables
++ `service` Calculate entropy using absolute count values
++ `models` Limit asset names to 255 characters in length to ensure they can be referenced as identifiers in SQL queries
+  + This change ensures that asset names are compatible with the maximum length of identifiers in SQL queries + This change will prevent errors when querying assets with long names
++ `dependencies` Bump dependencies to latest version
+  1. snowflake-connector-python
+  2. databricks-sdk
+  3. databricks-sql-connector
++ `api` Add more associated objects to historical feature table objects.
++ `service` Create tile cache working tables in parallel
+
+### ⚠️  Deprecations
+
++ `redis` Dropping aioredis as redis client library
+
+### 🐛 Bug Fixes
+
++ `service` Fix offline store feature table name construction logic to avoid name collisions
++ `service` Fix ambiguous column name error when concatenating serving names
++ `service` Fix target SCD lookup code definition generation bug when the target name contains special characters.
++ `deps` Pinning pyopenssl to 24.X.X as client requirement
++ `service` Databricks integration is not working as expected.
++ `service` Fix KeyError caused by precomputed_lookup_feature_table_info due to backward compatibility issue
++ `session` Set active schema for the snowflake explicitly. The connector does not set the active schema specified.
++ `service` Fix an error when submitting data describe task payload
++ `session` Fix dtype detected wrongly for MAP type in Spark session
++ `api` Make dtype mandatory when create a target namespace
++ `session` Fix DataBricks relative frequency UDF to return None when all counts are 0
++ `service` Handle missing values in SCD effective timestamp and point in time columns
++ `session` Fix DataBricks entropy UDF to return 0 when all counts are 0
++ `udf` Fix division by zero in count dict cosine similarity UDFs
++ `dependencies` Bumping vulnerable dependencies
+  + orjson
+  + cryptography
+  + ~~fastapi~~ (Need to bump to pydantic 2.X.X)
+  + python-multipart
+  + aiohttp
+  + jupyterlab
+  + black
+  + pymongo
+  + pillow
++ `session` Set ownership of created tables to the session group. This is a fix for the issue where the tables created cannot be updated by other users in the group.
+
+
+## v1.0.2 (2024-03-15)
+
+### 🐛 Bug Fixes
+
++ `service` Databricks integration fix
+
 ## v1.0.1 (2024-03-12)
 
 ### 💡 Enhancements

@@ -1,6 +1,7 @@
 """
 SessionManager class
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Hashable
@@ -10,8 +11,8 @@ import time
 from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
 
 from asyncache import cached
-from cachetools import TTLCache, keys
-from pydantic import BaseModel
+from cachetools import keys
+from pydantic import BaseModel, Field
 
 from featurebyte.enum import SourceType
 from featurebyte.exception import SessionInitializationTimeOut
@@ -19,7 +20,12 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.session.base import NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession, to_thread
+from featurebyte.session.base import (
+    NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSession,
+    session_cache,
+    to_thread,
+)
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.databricks_unity import DatabricksUnitySession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -34,13 +40,10 @@ SOURCE_TYPE_SESSION_MAP = {
     SourceType.SPARK: SparkSession,
 }
 
-session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
-
-
 logger = get_logger(__name__)
 
 
-async def get_new_session(item: str, credential_params: str, timeout: float) -> BaseSession:
+async def get_new_session(item: str, params: str, timeout: float) -> BaseSession:
     """
     Create a new session for the given database source key
 
@@ -48,8 +51,8 @@ async def get_new_session(item: str, credential_params: str, timeout: float) -> 
     ----------
     item: str
         JSON dumps of feature store type & details
-    credential_params: str
-        JSON dumps of credential parameters used to initiate a new session
+    params: str
+        JSON dumps of parameters used to initiate a new session
     timeout: float
         timeout for session creation
 
@@ -66,7 +69,7 @@ async def get_new_session(item: str, credential_params: str, timeout: float) -> 
     tic = time.time()
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
-    credential_params_dict = json.loads(credential_params)
+    params_dict = json.loads(params)
 
     def _create_session() -> BaseSession:
         """
@@ -77,7 +80,7 @@ async def get_new_session(item: str, credential_params: str, timeout: float) -> 
         BaseSession
         """
         return SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
-            **item_dict["details"], **credential_params_dict
+            **item_dict["details"], **params_dict
         )
 
     try:
@@ -91,27 +94,31 @@ async def get_new_session(item: str, credential_params: str, timeout: float) -> 
     return session
 
 
-def _session_hash_key(*args: Any, **kwargs: Any) -> tuple[Hashable, ...]:
+def _session_hash_key(item: str, params: str, timeout: float) -> tuple[Hashable, ...]:
     """
-    Return a cache key for the specified hashable arguments.
+    Return a cache key for the specified hashable arguments. The signature of this function must match the
+    signature of the `get_session` function.
 
     Parameters
     ----------
-    *args: Any
-        Positional arguments
-    **kwargs: Any
-        Keyword arguments
+    item: str
+        JSON dumps of feature store type & details
+    params: str
+        JSON dumps of parameters used to initiate a new session
+    timeout: float
+        timeout for session creation
 
     Returns
     -------
     tuple[Hashable, ...]
     """
     # exclude timeout from hash
-    return keys.hashkey(*args, **{key: value for key, value in kwargs.items() if key != "timeout"})
+    _ = timeout
+    return keys.hashkey(item=item, params=params)
 
 
 @cached(cache=session_cache, key=_session_hash_key)
-async def get_session(item: str, credential_params: str, timeout: float) -> BaseSession:
+async def get_session(item: str, params: str, timeout: float) -> BaseSession:
     """
     Retrieve or create a new session for the given database source key. If a new session is created,
     it will be cached.
@@ -120,8 +127,8 @@ async def get_session(item: str, credential_params: str, timeout: float) -> Base
     ----------
     item: str
         JSON dumps of feature store type & details
-    credential_params: str
-        JSON dumps of credential parameters used to initiate a new session
+    params: str
+        JSON dumps of parameters used to initiate a new session
     timeout: float
         timeout for session creation
 
@@ -130,7 +137,9 @@ async def get_session(item: str, credential_params: str, timeout: float) -> Base
     BaseSession
         Retrieved or created session object
     """
-    return await get_new_session(item, credential_params, timeout=timeout)
+    session = await get_new_session(item, params, timeout=timeout)
+    session.set_cache_key(_session_hash_key(item, params, timeout))
+    return session
 
 
 class SessionManager(BaseModel):
@@ -138,6 +147,7 @@ class SessionManager(BaseModel):
     Session manager to manage session of different database sources
     """
 
+    parameters: Dict[str, Any] = Field(default_factory=dict)
     credentials: Dict[str, CredentialModel]
 
     async def get_session_with_params(
@@ -180,6 +190,9 @@ class SessionManager(BaseModel):
                 f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
 
+        params = {**self.parameters}
+
+        # add credentials to session parameters
         credential_params = (
             {
                 key: value
@@ -189,6 +202,7 @@ class SessionManager(BaseModel):
             if credential
             else {}
         )
+        params.update(credential_params)
 
         json_str = json.dumps(
             {
@@ -203,7 +217,7 @@ class SessionManager(BaseModel):
             get_session_func = get_new_session
         session = await get_session_func(
             item=json_str,
-            credential_params=json.dumps(credential_params, sort_keys=True),
+            params=json.dumps(params, sort_keys=True),
             timeout=timeout,
         )
         assert isinstance(session, BaseSession)

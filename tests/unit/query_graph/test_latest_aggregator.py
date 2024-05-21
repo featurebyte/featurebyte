@@ -2,6 +2,7 @@
 Unit tests for featurebyte.query_graph.sql.aggregator.latest.LatestAggregator
 
 """
+
 import textwrap
 
 import pytest
@@ -81,7 +82,7 @@ def test_latest_aggregator(agg_specs_no_window):
               SELECT
                 "__FB_KEY_COL_0",
                 "__FB_KEY_COL_1",
-                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
                 "a",
                 "b",
                 "c",

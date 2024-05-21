@@ -1,6 +1,7 @@
 """
 Unit test for Credential class
 """
+
 from unittest import mock
 
 import numpy as np

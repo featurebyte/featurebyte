@@ -1,6 +1,7 @@
 """
 Test sql generation for complex features
 """
+
 from tests.util.helper import assert_equal_with_expected_fixture
 
 

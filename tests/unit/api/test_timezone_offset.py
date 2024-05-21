@@ -1,6 +1,7 @@
 """
 Unit tests for timezone offset related functionality in API objects
 """
+
 import textwrap
 
 from featurebyte import FeatureJobSetting, MissingValueImputation

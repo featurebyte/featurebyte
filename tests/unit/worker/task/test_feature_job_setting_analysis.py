@@ -1,6 +1,7 @@
 """
 Test Feature Job Setting Analysis worker task
 """
+
 import copy
 import json
 from unittest.mock import call, patch
@@ -269,10 +270,13 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             ],
         }
 
-        with patch(
-            "featurebyte.worker.task.feature_job_setting_analysis.FeatureStoreService.get_document"
-        ) as mock_get_document, patch(
-            "featurebyte.worker.task.feature_job_setting_analysis.SessionManagerService.get_feature_store_session"
+        with (
+            patch(
+                "featurebyte.worker.task.feature_job_setting_analysis.FeatureStoreService.get_document"
+            ) as mock_get_document,
+            patch(
+                "featurebyte.worker.task.feature_job_setting_analysis.SessionManagerService.get_feature_store_session"
+            ),
         ):
             feature_store = FeatureStoreModel(**snowflake_feature_store.dict(by_alias=True))
             mock_get_document.return_value = feature_store

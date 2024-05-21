@@ -1,6 +1,7 @@
 """
 FeatureListService class
 """
+
 from __future__ import annotations
 
 from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
@@ -26,6 +27,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
@@ -33,6 +35,7 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
     FeatureEntityLookupInfo,
 )
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -168,7 +171,10 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
     async def _populate_remote_attributes(self, document: FeatureListModel) -> FeatureListModel:
         if document.feature_clusters_path:
-            feature_clusters = await self.storage.get_text(Path(document.feature_clusters_path))
+            feature_clusters = await self.storage.get_text(
+                Path(document.feature_clusters_path),
+                cache_key=document.feature_clusters_path,
+            )
             document.internal_feature_clusters = json_util.loads(feature_clusters)
         return document
 
@@ -278,6 +284,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                 entity_ids=list(set().union(*[feature.entity_ids for feature in features]))
             )
         )
+        store_info_service = self.offline_store_info_initialization_service
         for idx, feature in enumerate(features):
             feature_list_to_feature_primary_entity_join_steps = (
                 EntityLookupPlanner.generate_lookup_steps(
@@ -286,21 +293,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
                     relationships_info=relationships_info,
                 )
             )
-            feature_internal_entity_join_steps = []
-            feature_tables_entity_ids = await self.offline_store_info_initialization_service.get_offline_store_feature_tables_entity_ids(
-                feature, entity_id_to_serving_name
-            )
-            for entity_ids in feature_tables_entity_ids:
-                if feature.relationships_info is None:
-                    continue
-                internal_steps = EntityLookupPlanner.generate_lookup_steps(
-                    available_entity_ids=feature.primary_entity_ids,
-                    required_entity_ids=entity_ids,
-                    relationships_info=feature.relationships_info,
+            feature_internal_entity_join_steps = (
+                await store_info_service.get_entity_join_steps_for_feature_table(
+                    feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
                 )
-                for step in internal_steps:
-                    if step not in feature_internal_entity_join_steps:
-                        feature_internal_entity_join_steps.append(step)
+            )
             feature_entity_lookup_info = FeatureEntityLookupInfo(
                 feature_id=feature.id,
                 feature_list_to_feature_primary_entity_join_steps=feature_list_to_feature_primary_entity_join_steps,
@@ -469,9 +466,11 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             await progress_callback(30, "Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
             features=feature_data["features"],
-            progress_callback=get_ranged_progress_callback(progress_callback, 30, 60)
-            if progress_callback
-            else None,
+            progress_callback=(
+                get_ranged_progress_callback(progress_callback, 30, 60)
+                if progress_callback
+                else None
+            ),
         )
 
         # update document with derived output
@@ -549,7 +548,13 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             disable_audit=self.should_disable_audit,
         )
 
-    async def update_store_info(self, document_id: ObjectId, features: List[FeatureModel]) -> None:
+    async def update_store_info(
+        self,
+        document_id: ObjectId,
+        features: List[FeatureModel],
+        feature_table_map: Dict[str, OfflineStoreFeatureTableModel],
+        serving_entity_specs: Optional[List[ColumnSpec]],
+    ) -> None:
         """
         Update store info for a feature list
 
@@ -559,15 +564,26 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             Feature list id
         features: List[FeatureModel]
             List of features
+        feature_table_map: Dict[str, OfflineStoreFeatureTableModel]
+            Feature table map
+        serving_entity_specs: Optional[List[ColumnSpec]]
+            List of serving entity specs
         """
-        feature_list = await self.get_document(document_id=document_id)
+        feature_list = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         assert set(feature_list.feature_ids) == set(feature.id for feature in features)
         self._check_document_modifiable(document=feature_list.dict(by_alias=True))
 
         feature_store = await self.feature_store_service.get_document(
             document_id=features[0].tabular_source.feature_store_id
         )
-        feature_list.initialize_store_info(features=features, feature_store=feature_store)
+        feature_list.initialize_store_info(
+            features=features,
+            feature_store=feature_store,
+            feature_table_map=feature_table_map,
+            serving_entity_specs=serving_entity_specs,
+        )
         if feature_list.internal_store_info:
             await self.persistent.update_one(
                 collection_name=self.collection_name,
@@ -632,7 +648,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         -------
         List[Dict[str, str]]
         """
-        feature_list = await self.get_document(feature_list_id)
+        feature_list = await self.get_document(feature_list_id, populate_remote_attributes=False)
 
         # get entities and tables used for the feature list
         return await self.entity_serving_names_service.get_sample_entity_serving_names(

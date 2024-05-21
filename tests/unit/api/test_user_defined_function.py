@@ -1,10 +1,15 @@
 """
 Unit tests for the UserDefinedFunction class.
 """
+
+import re
+
 import pandas as pd
 import pytest
 
 from featurebyte.api.catalog import Catalog
+from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import (
     RecordCreationException,
@@ -203,7 +208,7 @@ def test_create_complex_feature_with_user_defined_function(
 ):
     """Test create a complex feature with user-defined function"""
     # user defined function with multiple feature inputs
-    power_feat1 = UDF.power_func(float_feature, non_time_based_feature)
+    power_feat1 = UDF.power_func(float_feature, float_feature)
     power_feat1.name = "power_feat1"
     power_feat1.save()
 
@@ -367,3 +372,80 @@ def test_update_description(cos_udf):
     cos_udf.update_description(None)
     assert cos_udf.description is None
     assert cos_udf.info()["description"] is None
+
+
+def test_deployment_enablement_for_udf_feat(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    snowflake_scd_view_with_entity,
+    cos_udf,
+    power_udf,
+    date_sub_udf,
+    mock_api_object_cache,
+):
+    """Test deployment enablement for feature with UDF"""
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    _ = cos_udf, power_udf, date_sub_udf
+    _ = mock_api_object_cache
+    float_feat = snowflake_scd_view_with_entity.col_float.as_feature("float_feat")
+    cos_feat = UDF.cos_func(float_feat)
+
+    ts_feat = snowflake_scd_view_with_entity.end_timestamp.as_feature("ts_feat")
+    date_sub_feat = UDF.date_sub_func(ts_feat, 10)
+    date_sub_feat.name = "date_sub_feat"
+
+    power_cos_feat = UDF.power_func(cos_feat, 2)
+    power_cos_feat.name = "power_cos_feat"
+
+    feature_list = FeatureList([power_cos_feat, date_sub_feat], name="my_feature_list")
+    feature_list.save()
+
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+
+    # check deployment is enabled
+    assert deployment.enabled is True
+
+
+def test_udf_feat_with_on_demand_function(
+    snowflake_scd_view_with_entity,
+    snowflake_event_view_with_entity,
+    power_udf,
+    float_feature,
+    non_time_based_feature,
+):
+    """Test deployment enablement for feature with UDF (when on-demand function will be required)"""
+
+    _ = power_udf
+    ts_feat = snowflake_scd_view_with_entity.end_timestamp.as_feature("ts_feat")
+    col_feat = snowflake_scd_view_with_entity.col_float.as_feature("col_feat")
+    feat_with_req_col = (RequestColumn.point_in_time() - ts_feat).dt.day
+    feat_with_diff_entity = snowflake_event_view_with_entity.groupby(["col_int"]).aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1d"],
+        feature_names=["sum_1d_diff_entity"],
+        feature_job_setting=float_feature.table_id_feature_job_settings[0].feature_job_setting,
+    )["sum_1d_diff_entity"]
+
+    expected_error = (
+        'Error in feature #2 ("None"): This feature was created with a request column and cannot be used as '
+        "an input to this function. Please change the feature and try again."
+    )
+    with pytest.raises(ValueError, match=re.escape(expected_error)):
+        UDF.power_func(col_feat, feat_with_req_col)
+
+    expected_error = (
+        "This feature requires a Python on-demand function during deployment. "
+        "We cannot proceed with creating the feature because the on-demand function involves a UDF, "
+        "and the Python version of the UDF is not supported at the moment."
+    )
+    transformed_feat = UDF.power_func(col_feat, float_feature)
+    transformed_feat.name = "transformed_feat"
+    with pytest.raises(Exception, match=re.escape(expected_error)):
+        transformed_feat.save()
+
+    # this is ok as the two features' primary entities can be joined
+    another_transformed_feat = UDF.power_func(float_feature, feat_with_diff_entity)
+    another_transformed_feat.name = "another_transformed_feat"
+    another_transformed_feat.save()

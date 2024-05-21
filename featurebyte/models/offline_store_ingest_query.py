@@ -1,6 +1,7 @@
 """
 OfflineStoreIngestQuery object stores the offline store ingest query for a feature.
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
@@ -11,7 +12,6 @@ from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.common.string import sanitize_identifier
-from featurebyte.common.typing import Scalar
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -20,7 +20,13 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.sdk_code import CodeGenerator, VariableNameGenerator
+from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerator,
+    StatementStr,
+    ValueStr,
+    VariableNameGenerator,
+)
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
@@ -35,6 +41,7 @@ from featurebyte.query_graph.transform.on_demand_function import (
 )
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+from featurebyte.typing import Scalar
 
 
 def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
@@ -357,8 +364,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
             self.odfv_info = odfv_info
 
-        if self.is_decomposed:
-            # FIXME: should handle the case for null_filling_value
+        if self.is_decomposed or self.null_filling_value is not None:
             # initialize the user defined function info
             udf_info = UserDefinedFunctionInfo(
                 sql_function_name=f"udf_{unique_func_name}",
@@ -501,23 +507,44 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         input_var_prefix: str = "col",
         request_input_var_prefix: str = "request_col",
     ) -> OnDemandFeatureFunctionGlobalState:
-        if not self.is_decomposed:
-            raise ValueError(
-                "Cannot generate on demand feature function code for non-decomposed query graph"
+        codegen_kwargs = {
+            "sql_function_name": sql_function_name,
+            "sql_input_var_prefix": sql_input_var_prefix,
+            "sql_request_input_var_prefix": sql_request_input_var_prefix,
+            "sql_comment": sql_comment,
+            "function_name": function_name,
+            "input_var_prefix": input_var_prefix,
+            "request_input_var_prefix": request_input_var_prefix,
+            "output_dtype": output_dtype,
+        }
+        if self.is_decomposed:
+            node = self.graph.get_node_by_name(self.node_name)
+            codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
+                node=node, **codegen_kwargs
+            )
+        else:
+            assert self.null_filling_value is not None
+            assert self.metadata is not None, "non-decomposed query graph must have metadata"
+            codegen_state = OnDemandFeatureFunctionGlobalState(
+                code_generation_config=OnDemandFunctionCodeGenConfig(**codegen_kwargs),
+                var_name_generator=VariableNameGenerator(one_based=True),
+            )
+            col = codegen_state.var_name_generator.convert_to_variable_name(
+                variable_name_prefix=codegen_state.code_generation_config.input_var_prefix,
+                node_name=None,
+            )
+            codegen_state.register_input_argument(
+                variable_name_prefix=codegen_state.code_generation_config.input_var_prefix,
+                py_type=codegen_state.code_generation_config.to_py_type(DBVarType(output_dtype)),
+                column_name=self.metadata.output_column_name,
+            )
+            fill_value_expr = ValueStr(self.null_filling_value).as_input()
+            codegen_state.code_generator.add_statements(
+                statements=[
+                    StatementStr(f"return {fill_value_expr} if pd.isnull({col}) else {col}")
+                ]
             )
 
-        node = self.graph.get_node_by_name(self.node_name)
-        codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
-            node=node,
-            sql_function_name=sql_function_name,
-            sql_input_var_prefix=sql_input_var_prefix,
-            sql_request_input_var_prefix=sql_request_input_var_prefix,
-            sql_comment=sql_comment,
-            function_name=function_name,
-            input_var_prefix=input_var_prefix,
-            request_input_var_prefix=request_input_var_prefix,
-            output_dtype=output_dtype,
-        )
         return codegen_state
 
     def generate_databricks_user_defined_function_code(

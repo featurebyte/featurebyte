@@ -1,6 +1,7 @@
 """
 Module for generic operations sql generation
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, cast

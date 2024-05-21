@@ -1,12 +1,14 @@
 """
-Utility functions for API Objects
+Common utility functions
 """
+
 from __future__ import annotations
 
 from typing import Any, Generator, Iterator, List, Optional, Union
 
 import ast
 import functools
+import json
 import logging
 import os
 import time
@@ -14,19 +16,15 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
-from alive_progress import alive_bar
 from dateutil import parser
-from pandas.core.dtypes.common import is_string_dtype
-from requests import Response
 
-from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.enum import DBVarType, InternalName
+
+ARROW_METADATA_DB_VAR_TYPE = b"db_var_type"
 
 
 class ResponseStream:
@@ -119,6 +117,33 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     return data
 
 
+def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
+    """
+    Convert arrow table to pandas dataframe, handling list and map types
+
+    Parameters
+    ----------
+    arrow_table: pa.Table
+        Arrow table object
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas Dataframe object
+    """
+    # handle conversion of list and map types
+    dataframe = arrow_table.to_pandas()
+    encoded_types = DBVarType.dictionary_types().union(DBVarType.array_types())
+    for field in arrow_table.schema:
+        if field.metadata and ARROW_METADATA_DB_VAR_TYPE in field.metadata:
+            db_var_type = field.metadata[ARROW_METADATA_DB_VAR_TYPE].decode()
+            if db_var_type in encoded_types:
+                dataframe[field.name] = dataframe[field.name].apply(
+                    lambda x: json.loads(x) if x else None
+                )
+    return dataframe
+
+
 def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
     """
     Read data from arrow byte stream to pandas dataframe
@@ -134,7 +159,8 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
         Pandas Dataframe object
     """
     reader = pa.ipc.open_stream(buffer)
-    return reader.read_all().to_pandas()
+    arrow_table = reader.read_all()
+    return dataframe_from_arrow_table(arrow_table)
 
 
 def literal_eval(value: Any) -> Any:
@@ -153,61 +179,6 @@ def literal_eval(value: Any) -> Any:
     if value is None:
         return value
     return ast.literal_eval(value)
-
-
-def _update_batches_for_types(
-    batches: List[pa.RecordBatch], col_name_to_db_var_type: dict[str, DBVarType]
-) -> List[pa.RecordBatch]:
-    # Currently, we only need to perform updates if we have an ARRAY type.
-    if all(
-        array_type not in col_name_to_db_var_type.values() for array_type in DBVarType.array_types()
-    ):
-        return batches
-
-    output_list = []
-    for batch in batches:
-        curr_df = batch.to_pandas()
-        for col_name, db_var_type in col_name_to_db_var_type.items():
-            if db_var_type in DBVarType.array_types():
-                # Check if column is of string dtype
-                if is_string_dtype(curr_df[col_name]):
-                    # Apply a transformation to the column if the type is an array of strings, to convert them to list
-                    # type.
-                    curr_df[col_name] = curr_df[col_name].apply(literal_eval)
-        output_list.append(pa.RecordBatch.from_pandas(curr_df))
-
-    return output_list
-
-
-def pa_table_to_record_batches(
-    table: pa.Table, col_name_to_db_var_type: Optional[dict[str, DBVarType]] = None
-) -> List[pa.RecordBatch]:
-    """
-    Convert pyarrow table to list of RecordBatch object, with special handling
-    include schema in output for empty table
-
-    Parameters
-    ----------
-    table: pa.Table
-        PyArrow Table object
-    col_name_to_db_var_type: Optional[dict[str, DBVarType]]
-        Dict mapping column name to DBVarType
-
-    Returns
-    -------
-    Any
-        List of RecordBatch objects
-    """
-    if table.shape[0]:
-        # No mapping means we don't have to perform any updates.
-        if not col_name_to_db_var_type:
-            return table.to_batches()  # type: ignore[no-any-return]
-
-        return _update_batches_for_types(table.to_batches(), col_name_to_db_var_type)
-
-    # convert to pandas in order to create empty record batch with schema
-    # there is no way to get empty record batch from pyarrow table directly
-    return [pa.RecordBatch.from_pandas(table.to_pandas())]
 
 
 def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
@@ -320,39 +291,6 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
             else:
                 raise NotImplementedError()
     return dataframe
-
-
-def parquet_from_arrow_stream(response: Response, output_path: Path, num_rows: int) -> None:
-    """
-    Write parquet file from arrow byte stream
-
-    Parameters
-    ----------
-    response: Response
-        Streamed http response
-    output_path: Path
-        Output path
-    num_rows: int
-        Number of rows to write
-    """
-    reader = pa.ipc.open_stream(ResponseStream(response.iter_content(1024)))
-    batch = reader.read_next_batch()
-    with pq.ParquetWriter(output_path, batch.schema) as writer:
-        try:
-            with alive_bar(
-                total=num_rows,
-                title="Downloading table",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                while True:
-                    table = pa.Table.from_batches([batch])
-                    if table.num_rows == 0:
-                        break
-                    writer.write_table(table)
-                    progress_bar(table.num_rows)  # pylint: disable=not-callable
-                    batch = reader.read_next_batch()
-        except StopIteration:
-            pass
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

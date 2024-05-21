@@ -1,6 +1,7 @@
 """
 SessionManager service
 """
+
 from typing import Any, Optional
 
 from pydantic import ValidationError

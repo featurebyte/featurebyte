@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.api.feature_list
 """
+
 import textwrap
 from unittest.mock import Mock, patch
 
@@ -28,6 +29,18 @@ from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.util.helper import assert_equal_with_expected_fixture
+
+
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
 
 
 @pytest.fixture(name="draft_feature")
@@ -505,7 +518,6 @@ def test_get_feature_list(
             ("deployed", False),
             ("description", None),
             ("dtype_distribution", [{"dtype": "FLOAT", "count": 1}]),
-            ("enabled_serving_entity_ids", []),
             ("entity_ids", [str(cust_id_entity.id)]),
             ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
             ("feature_clusters_path", _get_new_value_from_audit_history("feature_clusters_path")),
@@ -922,19 +934,19 @@ def test_get_sql(feature_list):
     expected = textwrap.dedent(
         """
         SELECT
-          (
+          CAST((
             "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
-          ) AS "production_ready_feature",
-          (
+          ) AS DOUBLE) AS "production_ready_feature",
+          CAST((
             (
               "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
-          ) AS "draft_feature",
-          (
+          ) AS DOUBLE) AS "draft_feature",
+          CAST((
             (
               "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
-          ) AS "deprecated_feature"
+          ) AS DOUBLE) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
         """
     ).strip()

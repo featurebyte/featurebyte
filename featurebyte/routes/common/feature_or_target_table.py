@@ -1,6 +1,7 @@
 """
 Feature or target table controller
 """
+
 from __future__ import annotations
 
 from typing import Any, Generic, List, Optional, TypeVar
@@ -56,8 +57,8 @@ MaterializedTableDocumentServiceT = TypeVar(
 )
 PayloadT = TypeVar(
     "PayloadT",
-    TargetTableTaskPayload,
     HistoricalFeatureTableTaskPayload,
+    TargetTableTaskPayload,
 )
 TableCreateT = TypeVar(
     "TableCreateT",
@@ -99,7 +100,7 @@ class FeatureOrTargetTableController(
 
     def __init__(
         self,
-        service: Any,
+        service: MaterializedTableDocumentServiceT,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
@@ -114,14 +115,14 @@ class FeatureOrTargetTableController(
 
     @abstractmethod
     async def get_additional_info_params(
-        self, document: MaterializedTableDocumentT
+        self, document: BaseFeatureOrTargetTableModel
     ) -> dict[str, Any]:
         """
         Get additional info params
 
         Parameters
         ----------
-        document: MaterializedTableDocumentT
+        document: BaseFeatureOrTargetTableModel
             document
 
         Returns
@@ -271,7 +272,7 @@ class FeatureOrTargetTableController(
         _ = verbose
         document = await self.service.get_document(document_id)
         basic_info = await self.get_basic_info(document)
-        additional_params = await self.get_additional_info_params(document)  # type: ignore[arg-type]
+        additional_params = await self.get_additional_info_params(document)
         return self.info_class(
             **additional_params,
             **basic_info.dict(),

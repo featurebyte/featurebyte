@@ -1,13 +1,12 @@
 """
 Unit test for SourceTable
 """
-import logging
+
 from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
 
-from featurebyte import get_logger
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException
@@ -202,25 +201,6 @@ def test_create_observation_table(
     """
     _ = catalog
 
-    # without primary entities
-    from featurebyte.api.source_table import logger
-
-    logger.addHandler(mock_log_handler)
-    logger.setLevel(logging.DEBUG)
-
-    # should not fail but log a warning
-    snowflake_database_table.create_observation_table(
-        "my_observation_table_no_primary_entities",
-        columns=["event_timestamp", "cust_id"],
-        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
-    )
-    assert len(mock_log_handler.records) == 1
-    parts = mock_log_handler.records[0].split("|")
-    assert "|".join(parts[1:]) == (
-        " WARNING  | featurebyte.api.source_table | create_observation_table:1072 | "
-        "Primary entities will be a mandatory parameter in SDK version 0.7. | {}"
-    )
-
     observation_table = snowflake_database_table.create_observation_table(
         "my_observation_table",
         columns=["event_timestamp", "cust_id"],
@@ -234,9 +214,9 @@ def test_create_observation_table(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -249,9 +229,9 @@ def test_create_observation_table(
         )
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -276,6 +256,7 @@ def test_create_observation_table_with_sample_rows(
         observation_table = snowflake_database_table.create_observation_table(
             "my_observation_table",
             sample_rows=100,
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
 
     # Check return type
@@ -283,26 +264,38 @@ def test_create_observation_table_with_sample_rows(
     assert observation_table.name == "my_observation_table"
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args_list[-2][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-2]
     check_observation_table_creation_query(
-        query,
+        kwargs["query"],
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           *
         FROM (
           SELECT
-            *
-          FROM "sf_database"."sf_schema"."sf_table"
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "POINT_IN_TIME",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM (
+            SELECT
+              *
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
         ) TABLESAMPLE(14)
         ORDER BY
           RANDOM()
         LIMIT 100
         """,
     )
-    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    _, kwargs = snowflake_execute_query.call_args_list[-1]
     check_observation_table_creation_query(
-        row_index_query,
+        kwargs["query"],
         """
         CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -325,7 +318,9 @@ def test_bad_materialized_tables_cleaned_up(
         Mock(side_effect=RuntimeError("Something went wrong")),
     ):
         with pytest.raises(RecordCreationException) as exc:
-            snowflake_database_table.create_observation_table("my_observation_table")
+            snowflake_database_table.create_observation_table(
+                "my_observation_table", columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"}
+            )
 
     assert "RuntimeError: Something went wrong" in str(exc.value)
     assert snowflake_execute_query.call_args[0][0].startswith(

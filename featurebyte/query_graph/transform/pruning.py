@@ -1,6 +1,7 @@
 """
 This module contains graph pruning related classes.
 """
+
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel

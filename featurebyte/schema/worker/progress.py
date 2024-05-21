@@ -1,6 +1,7 @@
 """
 Progress payload schema
 """
+
 from typing import Any, Dict, Optional
 
 from pydantic import Field, StrictStr

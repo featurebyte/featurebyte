@@ -1,26 +1,42 @@
-version: "3.8"
-
 services:
-  mongo-rs:
-    hostname: mongo-testrs
-    container_name: mongo-testrs
-    image: "featurebyte/mongo:latest"
-    environment:
-      - MONGO_HOSTNAME=localhost
+  mongodb:
+    image: "mongo:6"
     ports:
-      - 27021:27021
-      - 27022:27022
+      - 37017:37017  # Expose MongoDB port
+    command:
+      - /bin/bash
+      - -c
+      - |
+        # Enable job control
+        set -m
+
+        # Start mongodb in the background
+        mongod --dbpath /data/db --replSet rs0 --bind_ip_all --port 37017 &
+
+        until mongosh --port 37017 --eval 'db.runCommand("ping").ok' --quiet; do
+          echo "Waiting for mongodb to be listening"
+          sleep 1
+        done
+
+        # Bootstrap if not already bootstrapped
+        if ! mongosh --port 37017 --eval "rs.status()" 1>/dev/null 2>&1; then
+          mongosh --port 37017 --eval 'rs.initiate({ "_id": "rs0", "version": 1, "members": [{ "_id": 1, "host": "127.0.0.1:37017", "priority": 1}]})'
+        fi
+
+        # Attach back to session
+        fg
+    healthcheck:
+      test: mongosh --port 37017 --eval 'db.runCommand("ping").ok' --quiet
+      interval: 60s
+      timeout: 10s
+      start_period: 5s
 
   redis:
-    hostname: redis-test
-    container_name: redis-test
     image: "redis:6.2.5"
     ports:
-      - 6379:6379
+      - 36379:6379
 
   spark-thrift:
-    hostname: spark-thrift
-    container_name: spark-thrift-test
     image: featurebyte/cluster-apache-spark:${SPARK_VERSION}
     ports:
       - "10009:10000"
@@ -32,12 +48,6 @@ services:
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
       - ~/.spark/data/staging:/opt/spark/data/derby/staging
-    healthcheck:
-      test: netstat -ltn | grep -c 10000
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     command:
       - /bin/sh
       - -c
@@ -49,10 +59,16 @@ services:
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
         --master=local[2] \
-        --conf spark.driver.memory=2G \
+        --conf spark.driver.memory=3G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \
         --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
         --conf spark.sql.hive.thriftServer.singleSession=false \
         --conf spark.hadoop.metastore.catalog.default=spark
+    healthcheck:
+      test: netstat -ltn | grep -c 10000
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

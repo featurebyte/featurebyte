@@ -1,6 +1,7 @@
 """
 FeatureListNamespace API payload scheme
 """
+
 from typing import List, Optional
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

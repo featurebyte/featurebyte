@@ -1,8 +1,9 @@
 """
 Test registry service.
 """
+
 import random
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
@@ -66,12 +67,17 @@ async def test_registry_service__project_name_creation(registry_service_map):
     registry_service = None
     existing_catalog_ids = set()
     existing_project_names = set()
-    for (feature_store_name, catalog_name), registry_service in registry_service_map.items():
+    deployment = Mock()
+    deployment.registry_info = None
+    for (_, catalog_name), registry_service in registry_service_map.items():
+        deployment.id = ObjectId()
         catalog = Catalog.get(name=catalog_name)
-        feature_store = FeatureStore.get(name=feature_store_name)
-        feast_registry = await registry_service.get_or_create_feast_registry(
-            catalog_id=catalog.id, feature_store_id=feature_store.id
-        )
+        with patch(
+            "featurebyte.service.deployment.DeploymentService.get_document", return_value=deployment
+        ):
+            feast_registry = await registry_service.get_or_create_feast_registry(
+                deployment=deployment
+            )
         expected_table_prefix = catalog_name_to_table_prefix[catalog_name]
         existing_catalog_ids.add(catalog.id)
         existing_project_names.add(feast_registry.name)
@@ -82,12 +88,16 @@ async def test_registry_service__project_name_creation(registry_service_map):
     assert registry_service is not None
     random.seed(0)
     for catalog_id in existing_catalog_ids:
-        new_project_name = await registry_service._create_project_name(catalog_id)
+        updated_catalog_id = str(catalog_id)
+        updated_catalog_id = ObjectId(updated_catalog_id[:-7][::-1] + updated_catalog_id[-7:])
+        assert updated_catalog_id != str(catalog_id)
+        registry_service.catalog_id = updated_catalog_id
+        new_project_name = await registry_service._get_or_create_project_name()
         assert new_project_name not in existing_project_names
 
     # check max try
-    existing_catalog_id = list(existing_catalog_ids)[0]
+    existing_catalog_id = registry_service.catalog_id
     with patch("featurebyte.feast.service.registry.random") as mock_random:
         mock_random.randrange.return_value = int(str(existing_catalog_id)[-7:], 16)
         with pytest.raises(RuntimeError, match="Unable to generate unique project name"):
-            await registry_service._create_project_name(existing_catalog_id)
+            await registry_service._get_or_create_project_name()

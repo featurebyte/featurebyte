@@ -1,6 +1,7 @@
 """
 This module contains graph flattening related classes.
 """
+
 from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field

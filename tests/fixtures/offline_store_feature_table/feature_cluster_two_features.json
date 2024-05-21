@@ -1,7 +1,26 @@
 {
     "combined_relationships_info": [],
     "feature_node_definition_hashes": null,
-    "feature_node_relationships_infos": null,
+    "feature_node_relationships_infos": [
+        {
+            "node_name": "alias_1",
+            "primary_entity_ids": [
+                {
+                    "$oid": "63f94ed6ea1f050131379214"
+                }
+            ],
+            "relationships_info": []
+        },
+        {
+            "node_name": "alias_2",
+            "primary_entity_ids": [
+                {
+                    "$oid": "63f94ed6ea1f050131379214"
+                }
+            ],
+            "relationships_info": []
+        }
+    ],
     "feature_store_id": {
         "$oid": "646f6c190ed28a5271fb02a1"
     },

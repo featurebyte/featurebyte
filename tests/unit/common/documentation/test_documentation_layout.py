@@ -1,6 +1,7 @@
 """
 Doc layout test module
 """
+
 import featurebyte
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 

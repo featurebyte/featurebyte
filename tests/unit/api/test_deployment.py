@@ -1,6 +1,7 @@
 """
 Unit tests for Deployment class
 """
+
 import textwrap
 from unittest.mock import patch
 
@@ -9,10 +10,26 @@ import pytest
 from freezegun import freeze_time
 
 import featurebyte as fb
+from featurebyte import FeatureList
 from featurebyte.api.deployment import Deployment
-from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import Configurations
-from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
+from featurebyte.exception import (
+    FeatureListNotOnlineEnabledError,
+    RecordCreationException,
+    RecordRetrievalException,
+)
+
+
+@pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
+def mock_warehouse_update_for_deployment_fixture(
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Mocks the warehouse update for deployment
+    """
+    _ = mock_update_data_warehouse, mock_offline_store_feature_manager_dependencies
+    yield
 
 
 def test_get(deployment):
@@ -193,3 +210,38 @@ def test_delete_deployment(deployment):
 
     with pytest.raises(RecordRetrievalException):
         Deployment.get_by_id(deployment_id)
+
+
+def test_associated_object_list_deployment(deployment, historical_feature_table):
+    """Test associated object list deployment"""
+    feature_list = FeatureList.get_by_id(deployment.feature_list_id)
+    list_deployments = feature_list.list_deployments()
+    assert list_deployments.shape[0] == 1
+    assert list_deployments.name.iloc[0] == deployment.name
+
+    # check historical feature table
+    list_deployments = historical_feature_table.list_deployments()
+    assert list_deployments.shape[0] == 0
+
+    # create another feature list and deploy
+    another_feature_list = historical_feature_table.feature_list
+    another_deployment = another_feature_list.deploy()
+    list_deployments = another_feature_list.list_deployments()
+    assert list_deployments.shape[0] == 1
+    assert list_deployments.name.iloc[0] == another_deployment.name
+
+
+def test_deployment_creation__primary_entity_validation(
+    latest_event_timestamp_overall_feature, use_case
+):
+    """Test deployment creation with primary entity validation"""
+    feature_list = FeatureList([latest_event_timestamp_overall_feature], name="my_feature_list")
+    feature_list.save()
+
+    expected_error = (
+        "Primary entity of the use case is not in the feature list's supported serving entities."
+    )
+    with pytest.raises(RecordCreationException, match=expected_error):
+        feature_list.deploy(
+            make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
+        )

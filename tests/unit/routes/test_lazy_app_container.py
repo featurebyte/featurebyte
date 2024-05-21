@@ -1,6 +1,7 @@
 """
 Test lazy app container module
 """
+
 from typing import Any, List
 
 import pytest

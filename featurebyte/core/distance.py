@@ -1,6 +1,7 @@
 """
 Module for distance related operations
 """
+
 from typing import Any, List, Optional
 
 from typeguard import typechecked

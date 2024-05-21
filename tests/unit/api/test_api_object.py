@@ -1,6 +1,7 @@
 """
 Tests functions/methods in api_object.py
 """
+
 import time
 from http import HTTPStatus
 from unittest.mock import Mock, patch

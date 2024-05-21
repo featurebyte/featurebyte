@@ -1,8 +1,8 @@
 """
 Tests for Deployment route
 """
+
 import json
-import os
 import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
@@ -31,9 +31,18 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
     )
 
     @pytest.fixture(autouse=True)
-    def mock_online_enable_service_update_data_warehouse(self):
+    def _mock_online_enable_service_update_data_warehouse(self, mock_deployment_flow):
         """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
+        _ = mock_deployment_flow
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
+            yield
+
+    @pytest.fixture(autouse=True)
+    def _always_patch_app_get_storage_fixture(self, storage):
+        """
+        Patch app.get_storage for all tests in this module
+        """
+        with patch("featurebyte.app.get_storage", return_value=storage):
             yield
 
     def setup_creation_route(self, api_client):
@@ -41,6 +50,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
             ("feature_list", "feature_list_single"),
@@ -50,6 +60,11 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
+
+            if api_object.endswith("_table"):
+                # tag table entity for table objects
+                self.tag_table_entity(api_client, api_object, payload)
+
             if api_object == "feature":
                 self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 
@@ -112,6 +127,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][0]["_id"],
                     "name": "my_deployment_2",
                     "feature_list_id": response_dict["data"][0]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][0][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][0]["user_id"],
@@ -121,11 +139,16 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "description": None,
                     "use_case_id": None,
                     "context_id": None,
+                    "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
                     "name": "my_deployment_1",
                     "feature_list_id": response_dict["data"][1]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][1][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][1]["user_id"],
@@ -135,11 +158,16 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "description": None,
                     "use_case_id": None,
                     "context_id": None,
+                    "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
                     "name": "my_deployment_0",
                     "feature_list_id": response_dict["data"][2]["feature_list_id"],
+                    "feature_list_namespace_id": response_dict["data"][2][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][2]["user_id"],
@@ -149,6 +177,8 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "description": None,
                     "use_case_id": None,
                     "context_id": None,
+                    "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 },
             ],
             "page": 1,
@@ -168,6 +198,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response = test_api_client.get("/feature_list")
         assert response.status_code == HTTPStatus.OK, response.text
         fl_ids = [obj["_id"] for obj in response.json()["data"]]
+        feature_list_namespace_ids = [
+            obj["feature_list_namespace_id"] for obj in response.json()["data"]
+        ]
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": fl_ids[0]})
         response_dict = response.json()
@@ -182,10 +215,13 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "description": None,
                     "enabled": False,
                     "feature_list_id": fl_ids[0],
+                    "feature_list_namespace_id": feature_list_namespace_ids[0],
                     "name": "my_deployment_2",
                     "updated_at": response_dict["data"][0]["updated_at"],
                     "use_case_id": None,
                     "user_id": response_dict["data"][0]["user_id"],
+                    "registry_info": None,
+                    "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                 }
             ],
             "page": 1,
@@ -535,14 +571,13 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         # Simulate online store being set, but feast registry is not available
         self.update_catalog_online_store_id(test_api_client, default_catalog_id)
 
-        with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
-            # Request online features
-            deployment_id = deployment_doc["_id"]
-            data = {"entity_serving_names": [{"cust_id": 1}]}
-            response = test_api_client.post(
-                f"{self.base_route}/{deployment_id}/online_features",
-                data=json.dumps(data),
-            )
+        # Request online features
+        deployment_id = deployment_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}]}
+        response = test_api_client.post(
+            f"{self.base_route}/{deployment_id}/online_features",
+            data=json.dumps(data),
+        )
         assert response.status_code == HTTPStatus.OK, response.content
 
         # Check result

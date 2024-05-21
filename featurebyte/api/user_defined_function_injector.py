@@ -1,6 +1,7 @@
 """
 This module contains generic function construction logic for user defined functions.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List, Tuple, Type, Union
@@ -108,7 +109,16 @@ class FunctionParameterProcessor:
         return value, kwargs
 
     @staticmethod
-    def _validate_series_inputs(series_inputs: FuncInputSeriesList) -> None:
+    def _validate_feature_inputs(feature_inputs: List[Feature]) -> None:
+        for index, feat in enumerate(feature_inputs, start=1):
+            if feat.used_request_column:
+                raise ValueError(
+                    f'Error in feature #{index} ("{feat.name}"): This feature was created with a request column '
+                    "and cannot be used as an input to this function. Please change the feature and try again."
+                )
+
+    @classmethod
+    def _validate_series_inputs(cls, series_inputs: FuncInputSeriesList) -> None:
         expected_row_index_lineage = series_inputs[0].row_index_lineage
         check_row_index_lineage = not isinstance(series_inputs[0], Feature)
         expected_series_type = Feature if isinstance(series_inputs[0], Feature) else ViewColumn
@@ -129,6 +139,9 @@ class FunctionParameterProcessor:
                     f'The row of the input ViewColumns "{series_inputs[0].name}" does not match '
                     f'the row of the input ViewColumns "{series_input.name}".'
                 )
+
+        if expected_series_type is Feature:
+            cls._validate_feature_inputs(series_inputs)  # type: ignore
 
     def _extract_node_parameters(
         self, *args: Any, **kwargs: Any

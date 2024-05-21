@@ -1,6 +1,7 @@
 """
 Date related common utility function
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone

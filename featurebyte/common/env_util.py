@@ -1,6 +1,7 @@
 """
 This module contains utility functions related to execution environment
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -48,6 +49,6 @@ def display_html_in_notebook(html_content: str) -> None:
 
     if is_notebook():
         # pylint: disable=import-outside-toplevel
-        from IPython.display import HTML, display  # type: ignore
+        from IPython.display import HTML, display
 
         display(HTML(html_content), metadata={"isolated": True})

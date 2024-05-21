@@ -1,6 +1,7 @@
 """
 Unit test for DatabricksSession
 """
+
 import os
 from unittest.mock import patch
 
@@ -168,9 +169,6 @@ async def test_databricks_session(databricks_session_dict):
         "col_date": ColumnSpecWithDescription(
             name="col_date", dtype=DBVarType.DATE, description="Date Column"
         ),
-        "col_decimal": ColumnSpecWithDescription(
-            name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
-        ),
         "col_double": ColumnSpecWithDescription(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
         ),
@@ -193,10 +191,13 @@ async def test_databricks_session(databricks_session_dict):
             name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
         ),
         "col_map": ColumnSpecWithDescription(
-            name="col_map", dtype=DBVarType.MAP, description="Map Column"
+            name="col_map", dtype=DBVarType.DICT, description="Map Column"
+        ),
+        "col_decimal": ColumnSpecWithDescription(
+            name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
         ),
         "col_struct": ColumnSpecWithDescription(
-            name="col_struct", dtype=DBVarType.STRUCT, description="Struct Column"
+            name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
         ),
         "col_string": ColumnSpecWithDescription(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
@@ -206,7 +207,7 @@ async def test_databricks_session(databricks_session_dict):
         ),
     }
     df_result = await session.execute_query("SELECT * FROM table")
-    df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})
+    df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]}, dtype="int32")
     pd.testing.assert_frame_equal(df_result, df_expected)
 
 
@@ -219,9 +220,11 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     with patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        with patch("featurebyte.session.databricks.WorkspaceClient"), patch(
-            "featurebyte.session.databricks.DbfsExt"
-        ), patch("featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True):
+        with (
+            patch("featurebyte.session.databricks.WorkspaceClient"),
+            patch("featurebyte.session.databricks.DbfsExt"),
+            patch("featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True),
+        ):
             session = DatabricksSession(**databricks_session_dict)
             df = pd.DataFrame(
                 {
@@ -232,7 +235,7 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
             if temporary:
                 expected = "CREATE OR REPLACE TEMPORARY VIEW"
             else:
-                expected = "CREATE TABLE"
+                expected = "CREATE OR REPLACE TABLE"
             await session.register_table("my_view", df, temporary)
 
             if temporary:

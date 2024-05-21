@@ -1,6 +1,7 @@
 """
 Test haversine module
 """
+
 from featurebyte.core.distance import haversine
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType

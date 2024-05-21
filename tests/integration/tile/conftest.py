@@ -1,6 +1,7 @@
 """
 Tile Tests for Spark Session
 """
+
 import os
 from datetime import datetime
 from unittest.mock import patch

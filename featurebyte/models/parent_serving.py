@@ -1,6 +1,7 @@
 """
 Models related to serving parent features
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -10,7 +11,7 @@ from pydantic import root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -50,7 +51,7 @@ class EntityLookupStep(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId
-    table: ProxyTableModel
+    table: TableModel
     parent: EntityLookupInfo
     child: EntityLookupInfo
 
@@ -63,13 +64,15 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
     entity_relationships_info: List[EntityRelationshipInfo]
     entities_by_id: Dict[PydanticObjectId, EntityModel]
-    tables_by_id: Dict[PydanticObjectId, ProxyTableModel]
+    tables_by_id: Dict[PydanticObjectId, TableModel]
     default_entity_lookup_steps: Dict[PydanticObjectId, EntityLookupStep]
 
     @root_validator(pre=True)
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        entity_relationships_info = values["entity_relationships_info"]
+        entity_relationships_info: List[EntityRelationshipInfo] = values[
+            "entity_relationships_info"
+        ]
         entities_by_id = values["entities_by_id"]
         tables_by_id = values["tables_by_id"]
         default_entity_lookup_steps = {}
@@ -80,8 +83,6 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
             child_entity = entities_by_id[info.entity_id]
 
             if info.entity_column_name is None or info.related_entity_column_name is None:
-                # Backward compatibility for relationships without the column names; these are not
-                # truly frozen since the table columns_info is dynamic.
                 child_column_name = None
                 parent_column_name = None
                 for column_info in relation_table.columns_info:
@@ -97,7 +98,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
             default_entity_lookup_steps[info.id] = EntityLookupStep(
                 id=info.id,
-                table=relation_table.dict(by_alias=True),
+                table=relation_table,
                 parent=EntityLookupInfo(
                     key=parent_column_name,
                     serving_name=parent_entity.serving_names[0],

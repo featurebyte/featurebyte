@@ -1,6 +1,7 @@
 """
 This module contains entity relationship info related classes.
 """
+
 from typing import Dict, List, Optional, Sequence, Set
 
 from collections import defaultdict
@@ -250,3 +251,34 @@ class EntityAncestorDescendantMapper:
             if entity_id not in all_ancestors_ids:
                 reduced_entity_ids.add(entity_id)
         return sorted(reduced_entity_ids)
+
+    def keep_related_entity_ids(
+        self,
+        entity_ids_to_filter: Sequence[ObjectId],
+        filter_by: Sequence[ObjectId],
+    ) -> List[ObjectId]:
+        """
+        Filter a list of entity ids to include only entity ids that are related to filter_by
+
+        Parameters
+        ----------
+        entity_ids_to_filter: Sequence[ObjectId]
+            List of entity ids to be filtered, e.g. a serving entity ids of a feature list
+        filter_by: Sequence[ObjectId]
+            Entity ids to filter by, e.g. the primary entity ids of an offline store feature table
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        related_entity_ids = set(filter_by)
+        for entity_id in filter_by:
+            related_entity_ids.update(self.entity_id_to_ancestor_ids[entity_id])
+            related_entity_ids.update(self.entity_id_to_descendant_ids[entity_id])
+
+        filtered_entity_ids = set()
+        for entity_id in entity_ids_to_filter:
+            if entity_id in related_entity_ids:
+                filtered_entity_ids.add(entity_id)
+
+        return sorted(filtered_entity_ids)

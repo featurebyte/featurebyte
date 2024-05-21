@@ -1,6 +1,7 @@
 """
 Test for OnlineStoreTableVersionService
 """
+
 import pytest
 import pytest_asyncio
 

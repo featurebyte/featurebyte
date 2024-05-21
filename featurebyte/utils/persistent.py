@@ -1,6 +1,7 @@
 """
 Utility functions for persistent
 """
+
 from __future__ import annotations
 
 import os
@@ -8,7 +9,7 @@ import os
 from featurebyte.persistent.mongo import MongoDB
 
 DATABASE_NAME = os.environ.get("MONGODB_DB", "featurebyte")
-MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27021")
+MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
 
 
 class MongoDBImpl(MongoDB):

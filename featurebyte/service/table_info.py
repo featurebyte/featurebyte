@@ -1,6 +1,7 @@
 """
 Table info service
 """
+
 from typing import Any, Dict
 
 from bson import ObjectId

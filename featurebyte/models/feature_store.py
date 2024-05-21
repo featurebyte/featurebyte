@@ -1,6 +1,7 @@
 """
 This module contains DatabaseSource related models
 """
+
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
@@ -15,6 +16,7 @@ from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -31,7 +33,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
     """Model for a feature store"""
 
-    name: StrictStr
+    name: NameStr
 
     def get_feature_store_details(self) -> FeatureStoreDetails:
         """
@@ -182,6 +184,17 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     def primary_key_columns(self) -> List[str]:
         """
         Primary key column names
+
+        Returns
+        -------
+        List[str]
+        """
+
+    @property
+    @abstractmethod
+    def special_columns(self) -> List[str]:
+        """
+        Special columns is a list of columns that have special meaning in the table
 
         Returns
         -------

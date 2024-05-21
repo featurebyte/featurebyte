@@ -1,6 +1,7 @@
 """
 Unit test for Context class
 """
+
 import pytest
 
 from featurebyte import Context, TargetNamespace, UseCase

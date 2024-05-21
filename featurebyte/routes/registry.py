@@ -3,6 +3,7 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
+
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -21,6 +22,9 @@ from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV7,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.migration.service.offline_store_feature_table import (
+    OfflineStoreFeatureTableMigrationServiceV9,
+)
 from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
@@ -71,6 +75,7 @@ from featurebyte.service.credential import CredentialService
 from featurebyte.service.deploy import (
     DeployFeatureListManagementService,
     DeployFeatureManagementService,
+    DeploymentServingEntityService,
     DeployService,
     FeastIntegrationService,
 )
@@ -106,7 +111,7 @@ from featurebyte.service.historical_features import (
     HistoricalFeaturesService,
     HistoricalFeaturesValidationParametersService,
 )
-from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.item_table import ExtendedItemTableService, ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -137,7 +142,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
-from featurebyte.service.table import TableService
+from featurebyte.service.table import AllTableService, TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
@@ -173,6 +178,7 @@ from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
+from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
@@ -207,6 +213,7 @@ app_container_config.register_class(AllCatalogService)
 app_container_config.register_class(AllDeploymentController)
 app_container_config.register_class(AllDeploymentService)
 app_container_config.register_class(AllFeatureListService)
+app_container_config.register_class(AllTableService)
 app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
 app_container_config.register_class(BatchRequestTableController)
@@ -231,6 +238,7 @@ app_container_config.register_class(FeastIntegrationService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
+app_container_config.register_class(DeploymentServingEntityService)
 app_container_config.register_class(DerivePrimaryEntityHelper)
 app_container_config.register_class(DimensionTableController)
 app_container_config.register_class(DimensionTableService)
@@ -243,6 +251,7 @@ app_container_config.register_class(EntityRelationshipExtractorService)
 app_container_config.register_class(EntityLookupFeatureTableService)
 app_container_config.register_class(EventTableController)
 app_container_config.register_class(EventTableService)
+app_container_config.register_class(ExtendedItemTableService)
 app_container_config.register_class(FeatureController)
 app_container_config.register_class(FeatureService)
 app_container_config.register_class(FeatureFacadeService)
@@ -384,6 +393,7 @@ app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestTask)
+app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
 app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
@@ -398,6 +408,7 @@ app_container_config.register_class(FeatureListMigrationServiceV5)
 app_container_config.register_class(FeatureListMigrationServiceV6)
 app_container_config.register_class(FeatureListMigrationServiceV7)
 app_container_config.register_class(FeatureMigrationServiceV8)
+app_container_config.register_class(OfflineStoreFeatureTableMigrationServiceV9)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")

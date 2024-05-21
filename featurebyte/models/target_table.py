@@ -1,23 +1,12 @@
 """
-TargetTableModel
+Target table model
 """
-from __future__ import annotations
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
-from featurebyte.models.materialized_table import MaterializedTableModel
+from featurebyte.models.observation_table import ObservationTableModel
 
 
-class TargetTableModel(BaseFeatureOrTargetTableModel):
+class TargetTableModel(ObservationTableModel, BaseFeatureOrTargetTableModel):
     """
-    TargetTable is the result of asynchronous target requests
+    Base Feature Or Target table model mixin for shared properties
     """
-
-    target_id: PydanticObjectId
-
-    class Settings(MaterializedTableModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "target_table"

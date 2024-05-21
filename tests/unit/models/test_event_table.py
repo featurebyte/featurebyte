@@ -1,6 +1,7 @@
 """
 Tests for EventTable models
 """
+
 import datetime
 
 import pytest

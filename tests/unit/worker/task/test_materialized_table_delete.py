@@ -25,7 +25,6 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
         (MaterializedTableCollectionName.BATCH_REQUEST, "batch request table"),
         (MaterializedTableCollectionName.BATCH_FEATURE, "batch feature table"),
         (MaterializedTableCollectionName.STATIC_SOURCE, "static source table"),
-        (MaterializedTableCollectionName.TARGET, "target table"),
     ],
 )
 async def test_get_task_description(

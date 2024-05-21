@@ -1,6 +1,7 @@
 """
 Tests for Join SQLNode
 """
+
 import textwrap
 
 import pytest
@@ -411,7 +412,7 @@ def test_scd_join(global_graph, scd_join_node):
           FROM (
             SELECT
               "__FB_KEY_COL_0",
-              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
               "cust_id",
               "event_column_1_out",
@@ -451,6 +452,8 @@ def test_scd_join(global_graph, scd_join_node):
                   "cust_id" AS "cust_id",
                   "membership_status" AS "membership_status"
                 FROM "db"."public"."customer_profile_table"
+                WHERE
+                  "effective_timestamp" IS NOT NULL
               )
             )
           )
@@ -459,10 +462,21 @@ def test_scd_join(global_graph, scd_join_node):
         ) AS L
         LEFT JOIN (
           SELECT
-            "effective_ts" AS "effective_ts",
-            "cust_id" AS "cust_id",
-            "membership_status" AS "membership_status"
-          FROM "db"."public"."customer_profile_table"
+            ANY_VALUE("effective_ts") AS "effective_ts",
+            "cust_id",
+            ANY_VALUE("membership_status") AS "membership_status"
+          FROM (
+            SELECT
+              "effective_ts" AS "effective_ts",
+              "cust_id" AS "cust_id",
+              "membership_status" AS "membership_status"
+            FROM "db"."public"."customer_profile_table"
+            WHERE
+              "effective_timestamp" IS NOT NULL
+          )
+          GROUP BY
+            "effective_timestamp",
+            "cust_id"
         ) AS R
           ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
         """

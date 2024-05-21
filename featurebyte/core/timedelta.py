@@ -1,15 +1,16 @@
 """
 Module for Timedelta related functions
 """
+
 from __future__ import annotations
 
 from typeguard import typechecked
 
-from featurebyte.common.typing import TimedeltaSupportedUnitType
 from featurebyte.core.series import Series
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.typing import TimedeltaSupportedUnitType
 
 
 @typechecked

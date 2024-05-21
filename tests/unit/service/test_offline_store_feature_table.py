@@ -1,6 +1,7 @@
 """
 Unit Tests for OfflineStoreFeatureTableService
 """
+
 import os
 from unittest.mock import patch
 
@@ -73,6 +74,24 @@ async def offline_store_feature_table_fixture(service, offline_store_feature_tab
     assert data.feature_cluster_path is None
     table = await service.create_document(data=data)
     return table
+
+
+@pytest.mark.asyncio
+async def test_create_multiple_documents(service, offline_store_feature_table_dict):
+    """Test create multiple documents"""
+    tables = []
+    for _ in range(3):
+        data = OfflineStoreFeatureTableModel(**offline_store_feature_table_dict)
+        tables.append(await service.create_document(data=data))
+
+    table_names = [table.name for table in tables]
+    table_base_names = {table.base_name for table in tables}
+    assert table_names == [
+        "cat1_cust_id_30m",
+        "cat1_cust_id_30m_1",
+        "cat1_cust_id_30m_2",
+    ]
+    assert table_base_names == {"cust_id_30m"}
 
 
 @pytest.mark.asyncio
@@ -154,6 +173,7 @@ async def test_update_document(
             output_dtypes=["FLOAT", "FLOAT"],
             entity_universe=offline_store_feature_table.entity_universe,
         ),
+        populate_remote_attributes=True,
     )
     assert updated_doc.feature_cluster == feature_cluster_two_features
 
@@ -203,7 +223,9 @@ async def test_update_document__with_failure(
 
     # update the document again & check the feature cluster file is created
     updated_doc = await service.update_document(
-        document_id=offline_store_feature_table.id, data=update_data
+        document_id=offline_store_feature_table.id,
+        data=update_data,
+        populate_remote_attributes=True,
     )
     assert updated_doc.feature_cluster == feature_cluster_two_features
     cluster_path = os.path.join(service.storage.base_path, updated_doc.feature_cluster_path)

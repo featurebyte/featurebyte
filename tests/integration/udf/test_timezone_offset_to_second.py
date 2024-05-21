@@ -1,6 +1,7 @@
 """
 This module contains integration tests for F_TIMEZONE_OFFSET_TO_SECOND
 """
+
 import pytest
 
 from featurebyte.session.base import BaseSession
