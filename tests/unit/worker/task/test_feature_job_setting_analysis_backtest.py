@@ -148,8 +148,8 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             "user_id": ObjectId(self.payload["user_id"]),
             "output_document_id": ObjectId(output_document_id),
             "feature_job_setting": {
-                "frequency": 180,
-                "job_time_modulo_frequency": 61,
+                "period": 180,
+                "offset": 61,
                 "blind_spot": 10,
                 "feature_cutoff_modulo_frequency": 0,
             },

@@ -112,10 +112,32 @@ class FeatureJobSetting(FeatureByteBaseModel):
     Feature Job Setting
     """
 
-    frequency: int
-    job_time_modulo_frequency: int
+    period: int
+    offset: int
     blind_spot: int
     feature_cutoff_modulo_frequency: int
+
+    @root_validator(pre=True)
+    @classmethod
+    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Handle backward compatibility
+
+        Parameters
+        ----------
+        values : Dict[str, Any]
+            Values to validate
+
+        Returns
+        -------
+        Dict[str, Any]
+            Validated values
+        """
+        if "frequency" in values:
+            values["period"] = values.pop("frequency")
+        if "job_time_modulo_frequency" in values:
+            values["offset"] = values.pop("job_time_modulo_frequency")
+        return values
 
 
 class FeatureJobSettingAnalysisWHJobFrequency(FeatureByteBaseModel):

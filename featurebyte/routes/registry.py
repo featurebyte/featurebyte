@@ -17,6 +17,9 @@ from featurebyte.migration.service.feature import (
     FeatureMigrationServiceV4,
     FeatureMigrationServiceV8,
 )
+from featurebyte.migration.service.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisMigrationServiceV13,
+)
 from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV5,
     FeatureListMigrationServiceV6,
@@ -411,6 +414,7 @@ app_container_config.register_class(FeatureListMigrationServiceV7)
 app_container_config.register_class(FeatureMigrationServiceV8)
 app_container_config.register_class(OfflineStoreFeatureTableMigrationServiceV9)
 app_container_config.register_class(EventTableMigrationServiceV12)
+app_container_config.register_class(FeatureJobSettingAnalysisMigrationServiceV13)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")

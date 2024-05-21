@@ -101,8 +101,8 @@ class FeatureJobSettingAnalysisController(
             analysis_parameters=feature_job_setting_analysis.analysis_parameters,
             recommendation=FeatureJobSetting(
                 blind_spot=f"{recommended_setting.blind_spot}s",
-                offset=f"{recommended_setting.job_time_modulo_frequency}s",
-                period=f"{recommended_setting.frequency}s",
+                offset=f"{recommended_setting.offset}s",
+                period=f"{recommended_setting.period}s",
             ),
             catalog_name=catalog.name,
             description=catalog.description,

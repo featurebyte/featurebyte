@@ -61,7 +61,7 @@ class OfflineStoreFeatureTableMigrationServiceV9(BaseMongoCollectionMigration):
         query_filter = self.delegate_service.construct_list_query_filter()
         total_before = await self.get_total_record(query_filter=query_filter)
 
-        # migrate all records and audit records
+        # migrate all records
         await self.migrate_all_records(query_filter=query_filter)
 
         # check the sample records after migration

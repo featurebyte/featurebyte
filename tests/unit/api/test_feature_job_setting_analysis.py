@@ -52,8 +52,8 @@ def test_list(saved_analysis, saved_event_table):
         "event_table",
         "analysis_start",
         "analysis_date",
-        "frequency",
-        "job_time_modulo_frequency",
+        "period",
+        "offset",
         "blind_spot",
     ]
     assert result["id"].iloc[0] == str(analysis_id)

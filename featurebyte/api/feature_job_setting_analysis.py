@@ -57,8 +57,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         "event_table",
         "analysis_start",
         "analysis_date",
-        "frequency",
-        "job_time_modulo_frequency",
+        "period",
+        "offset",
         "blind_spot",
     ]
     _list_foreign_keys = [

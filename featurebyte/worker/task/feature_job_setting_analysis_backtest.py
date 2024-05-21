@@ -81,6 +81,14 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
         analysis_result = analysis_data.pop("analysis_result")
         document.update(**analysis_data)
         document["analysis_result"].update(analysis_result)
+
+        # rename feature job setting parameters to match freeware interface
+        recommended_fjs = document["analysis_result"]["recommended_feature_job_setting"]
+        recommended_fjs["frequency"] = recommended_fjs.pop("period")
+        recommended_fjs["job_time_modulo_frequency"] = recommended_fjs.pop("offset")
+        document["analysis_result"]["recommended_feature_job_setting"] = recommended_fjs
+
+        # create analysis object
         analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest
