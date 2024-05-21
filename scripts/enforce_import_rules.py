@@ -171,6 +171,7 @@ if __name__ == "__main__":
             "utils",
             "logging",
             "core",
+            "typing",
         ]
     }
 
