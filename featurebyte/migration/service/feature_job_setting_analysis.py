@@ -4,7 +4,7 @@ Feature Job Settings Analysis migration service
 
 from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
-from featurebyte.migration.service.mixin import BaseMongoCollectionMigration
+from featurebyte.migration.service.mixin import BaseDocumentServiceT, BaseMongoCollectionMigration
 from featurebyte.persistent import Persistent
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 
@@ -30,8 +30,8 @@ class FeatureJobSettingAnalysisMigrationServiceV13(BaseMongoCollectionMigration)
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
 
     @property
-    def delegate_service(self) -> FeatureJobSettingAnalysisService:
-        return self.feature_job_setting_analysis_service
+    def delegate_service(self) -> BaseDocumentServiceT:
+        return self.feature_job_setting_analysis_service  # type: ignore[return-value]
 
     @migrate(
         version=13,
