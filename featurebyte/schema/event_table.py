@@ -4,7 +4,7 @@ EventTable API payload schema
 
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional
+from typing import Any, Literal, Optional, Sequence
 
 from pydantic import Field, StrictStr, root_validator, validator
 
@@ -65,7 +65,7 @@ class EventTableList(PaginationMixin):
     Paginated list of EventTable
     """
 
-    data: List[EventTableModel]
+    data: Sequence[EventTableModel]
 
 
 class EventTableUpdateMixin(FeatureByteBaseModel):

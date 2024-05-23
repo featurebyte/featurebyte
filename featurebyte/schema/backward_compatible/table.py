@@ -2,12 +2,12 @@
 Table API routes response
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Sequence, Union
 from typing_extensions import Annotated
 
 from pydantic import Field, parse_obj_as, root_validator
 
-from featurebyte.models import DimensionTableModel
+from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.proxy_table import ProxyTableModel
@@ -71,7 +71,7 @@ class EventTableListResponse(EventTableList):
     Event Table List Response
     """
 
-    data: list[EventTableModelResponse]
+    data: Sequence[EventTableModelResponse]
 
 
 TableModel = Annotated[
@@ -95,4 +95,4 @@ class TableListResponse(TableList):
     Table List Response
     """
 
-    data: List[ProxyTableModelResponse]
+    data: Sequence[ProxyTableModelResponse]

@@ -2,7 +2,7 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Sequence, Union
 
 from datetime import datetime
 
@@ -213,7 +213,7 @@ class FeatureJobSettingAnalysisList(PaginationMixin):
     Paginated list of Feature Job Setting Analysis
     """
 
-    data: List[FeatureJobSettingAnalysisRecord]
+    data: Sequence[FeatureJobSettingAnalysisRecord]
 
 
 class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):

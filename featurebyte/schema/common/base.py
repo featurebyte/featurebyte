@@ -4,7 +4,7 @@ Base info related schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence
 
 from datetime import datetime
 
@@ -52,7 +52,7 @@ class PaginationMixin(FeatureByteBaseModel):
     page: int = Field(default=1, gt=0)
     page_size: int = Field(default=10, gt=0, le=500)
     total: int
-    data: List[Any]
+    data: Sequence[Any]
 
 
 class DeleteResponse(FeatureByteBaseModel):

@@ -2,7 +2,7 @@
 This model contains the schema for backward compatible request responses.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Sequence
 
 from pydantic import Field, root_validator
 
@@ -81,7 +81,7 @@ class FeatureJobSettingAnalysisModelResponse(FeatureJobSettingAnalysisModel):
     """
 
     analysis_result: AnalysisResultResponse
-    backtest_summaries: Optional[List[BackTestSummary]] = Field(default_factory=list)
+    backtest_summaries: Optional[Sequence[BackTestSummary]] = Field(default_factory=list)  # type: ignore
 
 
 class FeatureJobSettingAnalysisListResponse(FeatureJobSettingAnalysisList):
@@ -89,4 +89,4 @@ class FeatureJobSettingAnalysisListResponse(FeatureJobSettingAnalysisList):
     Paginated list of Feature Job Setting Analysis
     """
 
-    data: List[FeatureJobSettingAnalysisRecordResponse]
+    data: Sequence[FeatureJobSettingAnalysisRecordResponse]
