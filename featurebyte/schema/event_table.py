@@ -25,9 +25,9 @@ class EventTableCreate(TableCreate):
     type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
-    default_feature_job_setting: Optional[FeatureJobSetting]
     event_timestamp_timezone_offset: Optional[StrictStr]
     event_timestamp_timezone_offset_column: Optional[StrictStr]
+    default_feature_job_setting: Optional[FeatureJobSetting]
 
     # pydantic validators
     _special_columns_validator = validator(

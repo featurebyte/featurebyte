@@ -128,6 +128,7 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
         "effective_timestamp_column": "effective_at",
         "end_timestamp_column": "end_at",
         "current_flag_column": "enabled",
+        "default_feature_job_setting": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
         "description": None,

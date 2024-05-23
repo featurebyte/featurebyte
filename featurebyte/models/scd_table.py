@@ -4,15 +4,16 @@ This module contains SCD table related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Tuple, Type, Union
+from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
@@ -22,6 +23,8 @@ class SCDTableModel(SCDTableData, TableModel):
     """
     Model for Slowly Changing Dimension Type 2 Data entity
 
+    default_feature_job_setting : Optional[FeatureJobSetting]
+        Default feature job setting
     natural_key_column: str
         The column for the natural key (key for which there is one unique active record) in the DWH.
     surrogate_key_column: str
@@ -35,6 +38,7 @@ class SCDTableModel(SCDTableData, TableModel):
         The current status of the table.
     """
 
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
     _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
 
     # pydantic validators

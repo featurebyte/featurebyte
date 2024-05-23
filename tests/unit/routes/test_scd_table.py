@@ -304,3 +304,36 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         table_id = create_response_dict["_id"]
         response = test_api_client.delete(f"{self.base_route}/{table_id}")
         assert response.status_code == HTTPStatus.OK, response.json()
+
+    def test_update_success(
+        self,
+        test_api_client_persistent,
+        data_response,
+    ):
+        """
+        Test update success
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        assert response_dict["default_feature_job_setting"] is None
+        insert_id = response_dict["_id"]
+        assert insert_id
+
+        update_payload = {
+            "default_feature_job_setting": {
+                "blind_spot": "1h",
+                "period": "1d",
+                "offset": "2h",
+            }
+        }
+        response = test_api_client.patch(
+            f"{self.base_route}/{insert_id}",
+            json=update_payload,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["default_feature_job_setting"] == {
+            "blind_spot": "3600s",
+            "period": "86400s",
+            "offset": "7200s",
+            "execution_buffer": "0s",
+        }

@@ -9,6 +9,7 @@ from typing_extensions import Literal
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
+from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -74,6 +75,9 @@ class SCDTable(TableApiObject):
     type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
 
     # pydantic instance variable (internal use)
+    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+        alias="default_feature_job_setting"
+    )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
     internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
@@ -451,6 +455,20 @@ class SCDTable(TableApiObject):
         """
         return self.effective_timestamp_column
 
+    @property
+    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+        """
+        Returns the default feature job setting for the SCDTable.
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        try:
+            return self.cached_model.default_feature_job_setting
+        except RecordRetrievalException:
+            return self.internal_default_feature_job_setting
+
     @classmethod
     def get_by_id(cls, id: ObjectId) -> SCDTable:  # pylint: disable=redefined-builtin,invalid-name
         """
@@ -473,3 +491,36 @@ class SCDTable(TableApiObject):
         >>> fb.SCDTable.get_by_id(<scd_table_id>)  # doctest: +SKIP
         """
         return cls._get_by_id(id=id)
+
+    @typechecked
+    def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:
+        """
+        Update default feature job setting
+
+        Parameters
+        ----------
+        feature_job_setting: FeatureJobSetting
+            Feature job setting object
+
+        Examples
+        --------
+        Configure a feature job setting to run daily at 1:05 am with a blind spot of 10 minutes.
+
+        >>> from featurebyte import FeatureJobSetting
+        >>> new_feature_job_setting = FeatureJobSetting(
+        ...   blind_spot="10m",
+        ...   period="24h",
+        ...   offset="65m",
+        ... )
+
+
+        Update default feature job setting to the new feature job setting.
+
+        >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
+        >>> scd_table.update_default_feature_job_setting(new_feature_job_setting)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"default_feature_job_setting": feature_job_setting.dict()},
+            allow_update_local=True,
+            add_internal_prefix=True,
+        )

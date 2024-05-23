@@ -106,6 +106,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
                 "table_name": "scd_table",
             },
         },
+        "default_feature_job_setting": None,
         "columns_info": [
             {
                 "entity_id": None,
@@ -435,3 +436,12 @@ def test_sdk_code_generation_on_saved_data(saved_scd_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_scd_table.id,
     )
+
+
+def test_update_default_feature_job_setting(saved_scd_table, feature_group_feature_job_setting):
+    """Test update feature job setting"""
+    assert saved_scd_table.default_feature_job_setting is None
+    saved_scd_table.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting
+    )
+    assert saved_scd_table.default_feature_job_setting == feature_group_feature_job_setting
