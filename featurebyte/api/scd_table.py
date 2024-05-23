@@ -312,7 +312,7 @@ class SCDTable(TableApiObject):
         #       | InputNode(type:scd) | -->| GraphNode(type:change_view) |
         #       +---------------------+    +-----------------------------+
         feature_job_setting = ChangeView.get_default_feature_job_setting(
-            default_feature_job_setting
+            default_feature_job_setting or self.default_feature_job_setting
         )
         col_names = SCDTableData.get_new_column_names(
             track_changes_column, self.effective_timestamp_column, prefixes

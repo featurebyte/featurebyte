@@ -749,3 +749,22 @@ def test_update_to_production_ready(feature_from_change_view):
     """Test updating a feature generated from change view to production ready"""
     feature_from_change_view.update_readiness(readiness=FeatureReadiness.PRODUCTION_READY)
     assert feature_from_change_view.readiness == FeatureReadiness.PRODUCTION_READY
+
+
+def test_change_view__aggregate_over(saved_scd_table, cust_id_entity):
+    """
+    Fixture for a feature created from a ChangeView
+    """
+    feature_job_setting = FeatureJobSetting(blind_spot="4h", offset="3h", period="24h")
+    saved_scd_table.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
+    saved_scd_table["col_text"].as_entity(cust_id_entity.name)
+    snowflake_change_view = saved_scd_table.get_change_view("col_int")
+    feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
+        method="count", windows=["30d"], feature_names=["feat_30d"]
+    )
+    feature = feature_group["feat_30d"]
+    feature.save()
+
+    # check the feature job setting of the saved feature
+    groupby_node = feature.cached_model.graph.nodes_map["groupby_1"]
+    assert groupby_node.parameters.feature_job_setting == feature_job_setting
