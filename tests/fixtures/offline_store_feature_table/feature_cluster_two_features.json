@@ -187,6 +187,7 @@
                     "names": [
                         "sum_1d"
                     ],
+                    "offset": null,
                     "parent": "col_float",
                     "serving_names": [
                         "cust_id"

@@ -202,6 +202,42 @@ def test_construct_universe_sql__unbounded_latest(
     assert universe.expr.sql(pretty=True) == expected_sql
 
 
+def test_construct_universe_sql__window_offset(
+    global_graph, window_aggregate_with_offset_feature_node
+):
+    """
+    Test constructing universe sql for window aggregate with offset
+    """
+    plan = OnlineStorePrecomputePlan(
+        global_graph,
+        window_aggregate_with_offset_feature_node,
+        get_sql_adapter(SourceType.SNOWFLAKE),
+        True,
+    )
+    agg_specs = get_aggregation_specs(global_graph, global_graph.get_node_by_name("groupby_1"))
+    universe = plan._construct_online_store_universe(agg_specs[0])
+    expected_sql = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
+          "cust_id" AS "CUSTOMER_ID"
+        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+        WHERE
+          INDEX >= FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          ) - 24 - 8
+          AND INDEX < FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          ) - 8
+        """
+    ).strip()
+    assert universe.expr.sql(pretty=True) == expected_sql
+
+
 def test_is_online_store_eligible__non_time_aware(global_graph, order_size_feature_node):
     """
     Test is_online_store_eligible for a non-time-aware feature node

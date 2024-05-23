@@ -31,14 +31,15 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
 Window = Optional[int]
+Offset = Optional[int]
 Frequency = int
 BlindSpot = int
 TimeModuloFreq = int
 AggSpecEntityIDs = Tuple[str, ...]
-TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
+TileIndicesIdType = Tuple[Window, Offset, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
 TileIdType = str
 IsOrderDependent = bool
-AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs, IsOrderDependent]
+AggregationSpecIdType = Tuple[TileIdType, Window, Offset, AggSpecEntityIDs, IsOrderDependent]
 
 ROW_NUMBER = "__FB_ROW_NUMBER"
 
@@ -93,9 +94,12 @@ class TileBasedRequestTablePlan:
         assert agg_spec.window is not None
         unique_tile_indices_id = self.get_unique_tile_indices_id(agg_spec)
         if unique_tile_indices_id not in self.expanded_request_table_names:
+            window_spec = f"W{agg_spec.window}"
+            if agg_spec.offset is not None:
+                window_spec += f"_O{agg_spec.offset}"
             output_table_name = (
                 f"REQUEST_TABLE"
-                f"_W{agg_spec.window}"
+                f"_{window_spec}"
                 f"_F{agg_spec.frequency}"
                 f"_BS{agg_spec.blind_spot}"
                 f"_M{agg_spec.time_modulo_frequency}"
@@ -137,6 +141,7 @@ class TileBasedRequestTablePlan:
         assert agg_spec.window is not None
         unique_tile_indices_id = (
             agg_spec.window,
+            agg_spec.offset,
             agg_spec.frequency,
             agg_spec.blind_spot,
             agg_spec.time_modulo_frequency,
@@ -164,6 +169,7 @@ class TileBasedRequestTablePlan:
         for unique_tile_indices_id, table_name in self.expanded_request_table_names.items():
             (
                 window_size,
+                offset,
                 frequency,
                 _,
                 time_modulo_frequency,
@@ -172,6 +178,7 @@ class TileBasedRequestTablePlan:
             assert window_size is not None
             expanded_table_sql = self.construct_expanded_request_table_sql(
                 window_size=window_size,
+                offset=offset,
                 frequency=frequency,
                 time_modulo_frequency=time_modulo_frequency,
                 serving_names=list(serving_names),
@@ -183,6 +190,7 @@ class TileBasedRequestTablePlan:
     def construct_expanded_request_table_sql(
         self,
         window_size: int,
+        offset: Optional[int],
         frequency: int,
         time_modulo_frequency: int,
         serving_names: list[str],
@@ -195,6 +203,8 @@ class TileBasedRequestTablePlan:
         ----------
         window_size : int
             Feature window size
+        offset : int
+            Feature window offset
         frequency : int
             Frequency in feature job setting
         time_modulo_frequency : int
@@ -221,6 +231,7 @@ class TileBasedRequestTablePlan:
             adapter=self.adapter,
             point_in_time_expr=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
             window_size=window_size,
+            offset=offset,
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
         )
@@ -264,6 +275,7 @@ class TileBasedAggregationSpecSet:
         key = (
             aggregation_spec.tile_table_id,
             aggregation_spec.window,
+            aggregation_spec.offset,
             tuple(aggregation_spec.serving_names),
             aggregation_spec.is_order_dependent,
         )

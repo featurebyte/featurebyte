@@ -135,6 +135,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     # pylint: disable=too-many-instance-attributes
 
     window: int | None
+    offset: int | None
     frequency: int
     blind_spot: int
     time_modulo_frequency: int
@@ -222,6 +223,10 @@ class TileBasedAggregationSpec(AggregationSpec):
         tile_value_columns = [
             spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
         ]
+        if groupby_node_params.offset is not None:
+            offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
+        else:
+            offset_secs = None
         for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
             window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
             pruned_graph, pruned_node, dtype = cls._get_aggregation_column_type(
@@ -233,6 +238,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 node_name=groupby_node.name,
                 feature_name=feature_name,
                 window=window_secs,
+                offset=offset_secs,
                 frequency=groupby_node_params.frequency,
                 time_modulo_frequency=groupby_node_params.time_modulo_frequency,
                 blind_spot=groupby_node_params.blind_spot,
