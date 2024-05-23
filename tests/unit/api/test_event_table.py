@@ -507,6 +507,9 @@ def test_update_default_job_setting__saved_event_table(
         "period": "360s",
         "offset": "180s",
         "execution_buffer": "0s",
+        # old fields
+        "frequency": "360s",
+        "time_modulo_frequency": "180s",
     }
 
 
@@ -728,6 +731,9 @@ def test_default_feature_job_setting_history(saved_event_table):
             "period": "600s",
             "offset": "120s",
             "execution_buffer": "0s",
+            # old fields
+            "frequency": "600s",
+            "time_modulo_frequency": "120s",
         }
     }
     assert len(history) == 2
@@ -746,6 +752,9 @@ def test_default_feature_job_setting_history(saved_event_table):
             "period": "300s",
             "offset": "120s",
             "execution_buffer": "0s",
+            # old fields
+            "frequency": "300s",
+            "time_modulo_frequency": "120s",
         }
     }
     assert len(history) == 3
