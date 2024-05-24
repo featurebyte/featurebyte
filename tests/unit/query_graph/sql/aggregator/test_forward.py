@@ -4,8 +4,6 @@ Test forward aggregator
 
 from __future__ import annotations
 
-import textwrap
-
 import pytest
 from sqlglot import select
 
@@ -15,6 +13,7 @@ from featurebyte.query_graph.node.generic import ForwardAggregateParameters
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.specs import AggregationSource, ForwardAggregateSpec
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="forward_node_parameters")
@@ -31,6 +30,12 @@ def forward_node_parameters_fixture(entity_id):
         serving_names=["serving_cust_id"],
         entity_ids=[entity_id],
     )
+
+
+@pytest.fixture(name="forward_node_parameters_with_offset")
+def forward_node_parameters_with_offset_fixture(forward_node_parameters):
+    forward_node_parameters.offset = "1d"
+    return forward_node_parameters
 
 
 @pytest.fixture(name="forward_spec")
@@ -53,7 +58,27 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
     )
 
 
-def test_forward_aggregator(forward_spec):
+@pytest.fixture(name="forward_spec_with_offset")
+def forward_spec_with_offset_fixture(forward_node_parameters_with_offset, entity_id):
+    """
+    forward spec with offset fixture
+    """
+    return ForwardAggregateSpec(
+        node_name="forward_aggregate_1",
+        feature_name=forward_node_parameters_with_offset.name,
+        serving_names=["serving_cust_id", "other_serving_key"],
+        serving_names_mapping=None,
+        parameters=forward_node_parameters_with_offset,
+        aggregation_source=AggregationSource(
+            expr=select("*").from_("tab"), query_node_name="input_1"
+        ),
+        entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
+    )
+
+
+def test_forward_aggregator(forward_spec, update_fixtures):
     """
     Test forward aggregator
     """
@@ -64,62 +89,28 @@ def test_forward_aggregator(forward_spec):
         select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
     )
 
-    expected = textwrap.dedent(
-        """
-        SELECT
-          a,
-          b,
-          c,
-          "T0"."_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1" AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1"
-        FROM REQUEST_TABLE
-        LEFT JOIN (
-          SELECT
-            INNER_."POINT_IN_TIME",
-            INNER_."serving_cust_id",
-            INNER_."other_serving_key",
-            OBJECT_AGG(
-              CASE
-                WHEN INNER_."col_float" IS NULL
-                THEN '__MISSING__'
-                ELSE CAST(INNER_."col_float" AS TEXT)
-              END,
-              TO_VARIANT(
-                INNER_."_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
-              )
-            ) AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1"
-          FROM (
-            SELECT
-              REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-              REQ."serving_cust_id" AS "serving_cust_id",
-              REQ."other_serving_key" AS "other_serving_key",
-              SOURCE_TABLE."col_float" AS "col_float",
-              SUM(SOURCE_TABLE."value") AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
-            FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id_other_serving_key" AS REQ
-            INNER JOIN (
-              SELECT
-                *
-              FROM tab
-            ) AS SOURCE_TABLE
-              ON (
-                DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") > DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME")
-                AND DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") <= DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0
-              )
-              AND REQ."serving_cust_id" = SOURCE_TABLE."cust_id"
-              AND REQ."other_serving_key" = SOURCE_TABLE."other_key"
-            GROUP BY
-              REQ."POINT_IN_TIME",
-              REQ."serving_cust_id",
-              REQ."other_serving_key",
-              SOURCE_TABLE."col_float"
-          ) AS INNER_
-          GROUP BY
-            INNER_."POINT_IN_TIME",
-            INNER_."serving_cust_id",
-            INNER_."other_serving_key"
-        ) AS T0
-          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
-          AND REQ."serving_cust_id" = T0."serving_cust_id"
-          AND REQ."other_serving_key" = T0."other_serving_key"
-        """
-    ).strip()
-    assert result.updated_table_expr.sql(pretty=True) == expected
+    result_sql = result.updated_table_expr.sql(pretty=True)
+    assert_equal_with_expected_fixture(
+        result_sql,
+        "tests/fixtures/aggregator/expected_forward_aggregator.sql",
+        update_fixtures,
+    )
+
+
+def test_forward_aggregator_offset(forward_spec_with_offset, update_fixtures):
+    """
+    Test forward aggregator with offset
+    """
+    aggregator = ForwardAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(forward_spec_with_offset)
+
+    result = aggregator.update_aggregation_table_expr(
+        select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
+    )
+
+    result_sql = result.updated_table_expr.sql(pretty=True)
+    assert_equal_with_expected_fixture(
+        result_sql,
+        "tests/fixtures/aggregator/expected_forward_aggregator_offset.sql",
+        update_fixtures,
+    )

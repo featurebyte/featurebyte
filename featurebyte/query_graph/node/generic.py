@@ -586,6 +586,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
 
     name: OutColumnStr
     window: Optional[str]
+    offset: Optional[str]
     timestamp_col: InColumnStr
 
 

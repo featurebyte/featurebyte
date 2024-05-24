@@ -703,6 +703,7 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
         "entity_ids": None,
         "keys": ["column_cc5a2868a817488c4a97385f271ea8e459e297eb"],
         "name": "target_fd6dbe7f77a1fad176370bdb7712f82d794c23af",
+        "offset": None,
         "parent": "column_feea481253974aea85c8250764a2e885f03851de",
         "serving_names": ["CUST_ID"],
         "timestamp_col": "column_d53dbf58718c6cf914d5fa867d92c36d6baadbee",

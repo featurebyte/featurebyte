@@ -779,7 +779,7 @@ async def test_create_feature_table_cache__with_target(
         '  "__FB_TABLE_ROW_INDEX",\n'
         '  "cust_id",\n'
         '  "POINT_IN_TIME",\n'
-        '  "float_target" AS "FEATURE_dfbe0388b776a0bd4e78b6e538889b9b9eea7bb1"\n'
+        '  "float_target" AS "FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996"\n'
         'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
     )
 

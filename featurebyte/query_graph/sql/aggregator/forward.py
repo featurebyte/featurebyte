@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -64,7 +64,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_expr)
         window_in_seconds = 0
         if spec.parameters.window:
-            window_in_seconds = pd.Timedelta(spec.parameters.window).total_seconds()
+            window_in_seconds = parse_duration_string(spec.parameters.window)
         end_point_expr = expressions.Add(
             this=point_in_time_epoch_expr, expression=make_literal_value(window_in_seconds)
         )
@@ -74,12 +74,26 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         table_timestamp_col = get_qualified_column_identifier(
             spec.parameters.timestamp_col, "SOURCE_TABLE"
         )
+        start_point_expr: expressions.Expression
+        if spec.parameters.offset is not None:
+            offset_in_seconds = parse_duration_string(spec.parameters.offset)
+            start_point_expr = expressions.Add(
+                this=point_in_time_epoch_expr,
+                expression=make_literal_value(offset_in_seconds),
+            )
+            end_point_expr = expressions.Add(
+                this=end_point_expr,
+                expression=make_literal_value(offset_in_seconds),
+            )
+        else:
+            start_point_expr = point_in_time_epoch_expr
+
         # Convert to epoch seconds
         table_timestamp_col = self.adapter.to_epoch_seconds(table_timestamp_col)
         record_validity_condition = expressions.and_(
             expressions.GT(
                 this=table_timestamp_col,
-                expression=point_in_time_epoch_expr,
+                expression=start_point_expr,
             ),
             expressions.LTE(
                 this=table_timestamp_col,
