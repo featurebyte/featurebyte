@@ -145,6 +145,7 @@
                         "cust_id"
                     ],
                     "name": "float_target",
+                    "offset": null,
                     "parent": "col_float",
                     "serving_names": [
                         "cust_id"

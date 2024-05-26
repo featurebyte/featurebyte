@@ -91,6 +91,7 @@ def test_forward_aggregate(forward_aggregator):
         "parent": "col_float",
         "agg_func": AggFunc.SUM,
         "window": "7d",
+        "offset": None,
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
