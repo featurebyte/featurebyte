@@ -29,6 +29,7 @@ def test_aggregation_spec__from_groupby_query_node(
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
             window=7200,
+            offset=None,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
@@ -57,6 +58,7 @@ def test_aggregation_spec__from_groupby_query_node(
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
             window=172800,
+            offset=None,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
@@ -110,6 +112,7 @@ def test_aggregation_spec__override_serving_names(
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
             window=7200,
+            offset=None,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
@@ -138,6 +141,7 @@ def test_aggregation_spec__override_serving_names(
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
             window=172800,
+            offset=None,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,

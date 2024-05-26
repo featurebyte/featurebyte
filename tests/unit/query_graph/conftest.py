@@ -1179,6 +1179,33 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
     return feature_node
 
 
+@pytest.fixture(name="window_aggregate_with_offset_feature_node")
+def window_aggregate_with_offset_feature_node(global_graph, input_node):
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_sum_24h_offset_8h"],
+        "windows": ["24h"],
+        "offset": "8h",
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_sum_24h_offset_8h"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="aggregate_asat_feature_node")
 def aggregate_asat_feature_node_fixture(global_graph, scd_table_input_node):
     node_params = {

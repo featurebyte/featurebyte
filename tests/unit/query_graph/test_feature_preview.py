@@ -488,3 +488,25 @@ def test_get_feature_preview_sql__on_demand_features(
         "tests/fixtures/expected_preview_sql_on_demand_features.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__window_offset(
+    global_graph, window_aggregate_with_offset_feature_node, update_fixtures
+):
+    """Test generated preview SQL for window aggregation with offset is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[window_aggregate_with_offset_feature_node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_window_offset.sql",
+        update_fixture=update_fixtures,
+    )

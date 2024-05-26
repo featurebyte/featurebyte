@@ -692,6 +692,7 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     tile_id: Optional[str]
     aggregation_id: Optional[str]
     tile_id_version: int = Field(default=1)
+    offset: Optional[str]
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):

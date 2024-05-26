@@ -21,6 +21,7 @@ def calculate_first_and_last_tile_indices(
     adapter: BaseAdapter,
     point_in_time_expr: Expression,
     window_size: Optional[int],
+    offset: Optional[int],
     frequency: int,
     time_modulo_frequency: int,
 ) -> Tuple[Optional[Expression], Expression]:
@@ -42,6 +43,8 @@ def calculate_first_and_last_tile_indices(
         Expression for the point in time column
     window_size : int
         Feature window size
+    offset : int
+        Feature window offset
     frequency : int
         Frequency in feature job setting
     time_modulo_frequency : int
@@ -59,11 +62,20 @@ def calculate_first_and_last_tile_indices(
     )
     if window_size is not None:
         num_tiles = window_size // frequency
-        first_tile_index_expr = cast(
-            Expression, parse_one(f"{last_tile_index_expr.sql()} - {num_tiles}")
+        first_tile_index_expr = expressions.Sub(
+            this=last_tile_index_expr, expression=make_literal_value(num_tiles)
         )
     else:
         first_tile_index_expr = None
+    if offset is not None:
+        offset_num_tiles = offset // frequency
+        last_tile_index_expr = expressions.Sub(
+            this=last_tile_index_expr, expression=make_literal_value(offset_num_tiles)
+        )
+        if first_tile_index_expr is not None:
+            first_tile_index_expr = expressions.Sub(
+                this=first_tile_index_expr, expression=make_literal_value(offset_num_tiles)
+            )
     return first_tile_index_expr, last_tile_index_expr
 
 

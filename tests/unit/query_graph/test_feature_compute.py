@@ -15,7 +15,6 @@ from featurebyte.models.parent_serving import (
     EntityLookupInfo,
     EntityLookupStep,
     EntityRelationshipsContext,
-    ParentServingPreparation,
 )
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
@@ -37,6 +36,7 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
     agg_spec = TileBasedAggregationSpec(
         node_name=expected_pruned_graph_and_node_1["pruned_node"].name,
         window=86400,
+        offset=None,
         frequency=3600,
         blind_spot=120,
         time_modulo_frequency=1800,
@@ -258,6 +258,7 @@ def test_feature_execution_planner(
             TileBasedAggregationSpec(
                 node_name=groupby_node.name,
                 window=7200,
+                offset=None,
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
@@ -288,6 +289,7 @@ def test_feature_execution_planner(
             TileBasedAggregationSpec(
                 node_name=groupby_node.name,
                 window=172800,
+                offset=None,
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
@@ -358,6 +360,7 @@ def test_feature_execution_planner__serving_names_mapping(
             TileBasedAggregationSpec(
                 node_name=groupby_node.name,
                 window=7200,
+                offset=None,
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
@@ -388,6 +391,7 @@ def test_feature_execution_planner__serving_names_mapping(
             TileBasedAggregationSpec(
                 node_name=groupby_node.name,
                 window=172800,
+                offset=None,
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,

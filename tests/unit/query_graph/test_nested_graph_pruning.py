@@ -170,6 +170,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             "timestamp": "ts",
             "value_by": None,
             "windows": ["2h"],
+            "offset": None,
         },
         "type": "groupby",
     }

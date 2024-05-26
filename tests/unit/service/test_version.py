@@ -94,6 +94,7 @@ async def test_create_new_feature_version(
         "agg_func": "sum",
         "value_by": None,
         "windows": ["30m"],
+        "offset": None,
         "timestamp": "event_timestamp",
         "names": ["sum_30m"],
         "serving_names": ["cust_id"],

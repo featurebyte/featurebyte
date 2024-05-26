@@ -225,6 +225,11 @@ class QueryGraphModel(FeatureByteBaseModel):
             node_parameters["feature_store_details"].pop("details", None)
         if node.type == NodeType.GROUPBY:
             node_parameters.pop("tile_id_version", None)
+            # keep node hash the same if not provided so that a new window aggregate feature without
+            # offset has the same definition hash as an old feature before window offset was
+            # introduced.
+            if node_parameters.get("offset") is None:
+                node_parameters.pop("offset", None)
         return node_parameters
 
     @classmethod

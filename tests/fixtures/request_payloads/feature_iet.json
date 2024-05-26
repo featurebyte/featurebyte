@@ -342,6 +342,7 @@
                     "names": [
                         "sum(a * log(a))"
                     ],
+                    "offset": null,
                     "parent": "a * log(a)",
                     "serving_names": [
                         "cust_id"
@@ -393,6 +394,7 @@
                     "names": [
                         "sum(a) (24h)"
                     ],
+                    "offset": null,
                     "parent": "a",
                     "serving_names": [
                         "cust_id"
