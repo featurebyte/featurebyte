@@ -66,11 +66,14 @@ def test_forward_aggregate_fill_na(forward_aggregator):
     }
 
 
-def test_forward_aggregate(forward_aggregator):
+@pytest.mark.parametrize("offset", [None, "1d"])
+def test_forward_aggregate(forward_aggregator, offset):
     """
     Test forward_aggregate.
     """
-    target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target")
+    target = forward_aggregator.forward_aggregate(
+        "col_float", AggFunc.SUM, "7d", "target", offset=offset
+    )
     # Assert Target is constructed with appropriate values
     assert target.name == "target"
     # assert target.window == "7d"  # TODO: Fix this
@@ -91,7 +94,7 @@ def test_forward_aggregate(forward_aggregator):
         "parent": "col_float",
         "agg_func": AggFunc.SUM,
         "window": "7d",
-        "offset": None,
+        "offset": None if offset is None else offset,
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
@@ -123,6 +126,7 @@ def test_prepare_node_parameters(forward_aggregator):
         window="7d",
         target_name="target",
         timestamp_col="timestamp_col",
+        offset="1d",
     )
     assert node_params == {
         "keys": forward_aggregator.keys,
@@ -134,6 +138,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "timestamp_col": "timestamp_col",
+        "offset": "1d",
     }
 
 
