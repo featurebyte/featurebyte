@@ -13,6 +13,7 @@ from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SourceType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
@@ -298,7 +299,9 @@ class FeatureManagerService:
             if window is None:
                 max_window_seconds = None
                 break
-            window_seconds = int(pd.Timedelta(window).total_seconds())
+            window_seconds = parse_duration_string(window)
+            if tile_spec.offset is not None:
+                window_seconds += parse_duration_string(tile_spec.offset)
             if max_window_seconds is None or window_seconds > max_window_seconds:
                 max_window_seconds = window_seconds
 

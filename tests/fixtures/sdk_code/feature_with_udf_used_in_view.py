@@ -37,6 +37,7 @@ grouped = view_1.groupby(by_keys=["cust_id"], category=None).aggregate_over(
         blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat = grouped["sum_cos_float_square"]
 feat_1 = udf_cos_func(feat)

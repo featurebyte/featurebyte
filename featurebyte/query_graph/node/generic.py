@@ -809,6 +809,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
             feature_names=self.parameters.names,
             feature_job_setting=feature_job_setting,
             skip_fill_na=True,
+            offset=self.parameters.offset,
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name

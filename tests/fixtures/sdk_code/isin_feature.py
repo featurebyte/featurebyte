@@ -24,6 +24,7 @@ grouped_1 = event_view.groupby(
         blind_spot="3600s", frequency="3600s", time_modulo_frequency="1800s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_1 = grouped_1["count_a_24h_per_col_int"]
 feat_2 = feat.isin(feat_1)

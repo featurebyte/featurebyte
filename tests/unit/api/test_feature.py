@@ -1498,6 +1498,7 @@ def test_feature_definition(feature_with_clean_column_names):
             blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
         ),
         skip_fill_na=True,
+        offset=None,
     )
     feat = grouped["sum_30m"]
     output = feat
@@ -1895,6 +1896,7 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
             blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
         ),
         skip_fill_na=True,
+        offset=None,
     )
     feat = grouped["sum_1d"]
     output = feat
@@ -1925,6 +1927,7 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
             blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
         ),
         skip_fill_na=True,
+        offset=None,
     )
     feat = grouped["sum_1d"]
     output = feat
