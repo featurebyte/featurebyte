@@ -29,7 +29,7 @@ WITH REQUEST_TABLE AS (
               DATEADD(
                 microsecond,
                 (
-                  24 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+                  32 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
                 ) * -1,
                 TO_TIMESTAMP(
                   FLOOR((
@@ -82,13 +82,13 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f" AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800" AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      SUM(value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f) AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f"
+      SUM(value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f) AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
@@ -123,5 +123,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  CAST("_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f" AS DOUBLE) AS "a_sum_24h_offset_8h"
+  CAST("_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800" AS DOUBLE) AS "a_sum_24h_offset_8h"
 FROM _FB_AGGREGATED AS AGG

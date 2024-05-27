@@ -44,6 +44,7 @@ class ExpectedEventFeatureValueParams(ExpectedFeatureValueParams):
     frequency: Optional[int]
     time_modulo_frequency: Optional[int]
     blind_spot: Optional[int]
+    offset_size_secs: Optional[int] = None
 
 
 @dataclass
@@ -79,6 +80,8 @@ def calculate_aggregate_over_ground_truth(
     )
 
     window_end_epoch_seconds = last_job_epoch_seconds - expected_feature_value_params.blind_spot
+    if expected_feature_value_params.offset_size_secs is not None:
+        window_end_epoch_seconds -= expected_feature_value_params.offset_size_secs
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
 
     if expected_feature_value_params.window_size_secs is not None:
@@ -281,6 +284,7 @@ def feature_parameters_fixture():
     parameters = [
         ("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
         ("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
+        ("ÀMOUNT", "avg", "24h-4h", "avg_24h_offset_4h", lambda x: x.mean(), None),
         ("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
         ("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max(), None),
         ("ÀMOUNT", "sum", "24h", "sum_24h", sum_func, None),
@@ -481,16 +485,21 @@ def check_aggregate_over(
     for (
         variable_column_name,
         agg_name,
-        window,
+        window_offset,
         feature_name,
         agg_func_callable,
         category,
     ) in feature_parameters:
+        if window_offset is not None and "-" in window_offset:
+            window, offset = window_offset.split("-", 1)
+        else:
+            window, offset = window_offset, None
         feature_group = event_view.groupby(entity_column_name, category=category).aggregate_over(
             method=agg_name,
             value_column=variable_column_name,
             windows=[window],
             feature_names=[feature_name],
+            offset=offset,
         )
         features.append(feature_group[feature_name])
 
@@ -499,6 +508,10 @@ def check_aggregate_over(
             window_size = pd.Timedelta(window).total_seconds()
         else:
             window_size = None
+        if offset is not None:
+            offset_size = pd.Timedelta(offset).total_seconds()
+        else:
+            offset_size = None
         df_expected = get_expected_feature_values(
             FeatureKind.AGGREGATE_OVER,
             observation_set,
@@ -514,6 +527,7 @@ def check_aggregate_over(
                 time_modulo_frequency=time_modulo_frequency,
                 blind_spot=blind_spot,
                 category=category,
+                offset_size_secs=offset_size,
             ),
         )[[feature_name]]
         elapsed_time_ref += time.time() - tic

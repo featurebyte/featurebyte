@@ -10,6 +10,7 @@ import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -166,10 +167,12 @@ class OnDemandTileComputePlan:
         tile_id = tile_info.tile_table_id
         for window in tile_info.windows:
             if window is not None:
-                window_size = int(pd.Timedelta(window).total_seconds())
+                window_size = parse_duration_string(window)
                 assert window_size % tile_info.frequency == 0
             else:
                 window_size = None
+            if window_size is not None and tile_info.offset is not None:
+                window_size += parse_duration_string(tile_info.offset)
             update_maximum_window_size_dict(
                 max_window_size_dict=self.max_window_size_by_tile_id,
                 key=tile_id,
