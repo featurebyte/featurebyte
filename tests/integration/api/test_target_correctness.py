@@ -12,6 +12,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import AggFunc
+from featurebyte.common.model_util import parse_duration_string
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -50,6 +51,7 @@ def target_parameters_fixture():
             lambda x: x.max(),
         ),
         TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func),
+        TargetParameter("ÀMOUNT", "sum", "24h-12h", "sum_24h_offset_12h", sum_func),
     ]
     return parameters
 
@@ -81,12 +83,6 @@ def transform_and_sample_observation_set(observation_set: pd.DataFrame) -> pd.Da
     return sampled_points
 
 
-def convert_duration_str_to_seconds(duration_str: str) -> Optional[float]:
-    if duration_str is not None:
-        return pd.Timedelta(duration_str).total_seconds()
-    return None
-
-
 def calculate_forward_aggregate_ground_truth(
     df: pd.DataFrame,
     point_in_time,
@@ -95,7 +91,8 @@ def calculate_forward_aggregate_ground_truth(
     entity_value,
     variable_column_name: str,
     agg_func: callable,
-    window: Optional[float],
+    window: Optional[int],
+    offset: Optional[int],
     category=None,
 ):
     """
@@ -106,6 +103,9 @@ def calculate_forward_aggregate_ground_truth(
     point_in_time = pd.Timestamp(point_in_time)
     pit_utc = point_in_time.tz_convert("UTC").tz_localize(None)
     window_start = pit_utc
+
+    if offset is not None:
+        window_start += pd.Timedelta(offset, unit="s")
 
     if window is not None:
         window_end = window_start + pd.Timedelta(window, unit="s")
@@ -132,7 +132,8 @@ def get_expected_target_values(
     utc_event_timestamps,
     variable_column_name: str,
     agg_func: callable,
-    window: Optional[float],
+    window: Optional[int],
+    offset: Optional[int],
     category=None,
 ) -> pd.DataFrame:
     expected_output = defaultdict(list)
@@ -149,6 +150,7 @@ def get_expected_target_values(
             variable_column_name=variable_column_name,
             agg_func=agg_func,
             window=window,
+            offset=offset,
             category=category,
         )
         expected_output["POINT_IN_TIME"].append(point_in_time)
@@ -170,6 +172,11 @@ def test_forward_aggregate(
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
 
     for target_parameter in target_parameters:
+        if "-" in target_parameter.window:
+            window, offset = target_parameter.window.split("-", 1)
+        else:
+            window, offset = target_parameter.window, None
+
         # Get expected target values
         utc_event_timestamps = pd.to_datetime(
             df[event_timestamp_column_name], utc=True
@@ -182,7 +189,8 @@ def test_forward_aggregate(
             utc_event_timestamps=utc_event_timestamps,
             variable_column_name=target_parameter.variable_column_name,
             agg_func=target_parameter.agg_func,
-            window=convert_duration_str_to_seconds(target_parameter.window),
+            window=parse_duration_string(window),
+            offset=parse_duration_string(offset) if offset is not None else None,
         )
 
         # Transform and sample to get a smaller sample dataframe just for preview
@@ -192,7 +200,8 @@ def test_forward_aggregate(
         target = event_view.groupby(entity_column_name).forward_aggregate(
             method=target_parameter.agg_name,
             value_column=target_parameter.variable_column_name,
-            window=target_parameter.window,
+            window=window,
+            offset=offset,
             target_name=target_parameter.target_name,
         )
         results = target.preview(preview_expected_values[["POINT_IN_TIME", "üser id"]])

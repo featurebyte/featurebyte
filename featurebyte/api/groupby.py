@@ -445,6 +445,7 @@ class GroupBy:
         target_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
+        offset: Optional[str] = None,
     ) -> Target:
         """
         The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
@@ -466,6 +467,9 @@ class GroupBy:
             Value to fill if the value in the column is empty
         skip_fill_na: bool
             Whether to skip filling NaN values
+        offset: Optional[str]
+            Offset duration to apply to the window, such as '1d'. If specified, the windows will be
+            shifted forward by the offset duration
 
         Returns
         -------
@@ -493,6 +497,7 @@ class GroupBy:
             target_name=target_name,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
+            offset=offset,
         )
 
     @typechecked

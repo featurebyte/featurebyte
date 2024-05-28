@@ -40,6 +40,7 @@ class ForwardAggregator(BaseAggregator):
         target_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
+        offset: Optional[str] = None,
     ) -> Target:
         """
         Aggregate given value_column for each group specified in keys over a time window.
@@ -58,6 +59,9 @@ class ForwardAggregator(BaseAggregator):
             Value to fill if the value in the column is empty
         skip_fill_na: bool
             Whether to skip filling NaN values
+        offset: Optional[str]
+            Offset duration to apply to the window, such as '1d'. If specified, the windows will be
+            shifted forward by the offset duration
 
         Returns
         -------
@@ -69,6 +73,7 @@ class ForwardAggregator(BaseAggregator):
             method=method,
             window=window,
             target_name=target_name,
+            offset=offset,
         )
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         # Create new node parameters
@@ -78,6 +83,7 @@ class ForwardAggregator(BaseAggregator):
             window=window,
             target_name=target_name,
             timestamp_col=self.view.timestamp_column,
+            offset=offset,
         )
         # Add forward aggregate node to graph.
         forward_aggregate_node = self.view.graph.add_operation(
@@ -104,6 +110,7 @@ class ForwardAggregator(BaseAggregator):
         window: Optional[str],
         target_name: Optional[str],
         timestamp_col: Optional[str],
+        offset: Optional[str],
     ) -> dict[str, Any]:
         """
         Helper function to prepare node parameters.
@@ -120,6 +127,8 @@ class ForwardAggregator(BaseAggregator):
             Name of the target column
         timestamp_col: str
             Timestamp column
+        offset: Optional[str]
+            Offset for the window
 
         Returns
         -------
@@ -135,6 +144,7 @@ class ForwardAggregator(BaseAggregator):
             "value_by": self.category,
             "entity_ids": self.entity_ids,
             "timestamp_col": timestamp_col,
+            "offset": offset,
         }
 
     def _validate_parameters(
@@ -143,6 +153,7 @@ class ForwardAggregator(BaseAggregator):
         method: Optional[str] = None,
         window: Optional[str] = None,
         target_name: Optional[str] = None,
+        offset: Optional[str] = None,
     ) -> None:
         """
         Helper function to validate parameters.
@@ -157,6 +168,8 @@ class ForwardAggregator(BaseAggregator):
             Window of the aggregation
         target_name: str
             Name of the target column
+        offset: Optional[str]
+            Offset for the window
 
         Raises
         ------
@@ -170,3 +183,6 @@ class ForwardAggregator(BaseAggregator):
 
         if window:
             parse_duration_string(window)
+
+        if offset:
+            parse_duration_string(offset)
