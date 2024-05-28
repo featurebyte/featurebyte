@@ -138,6 +138,7 @@ class GroupBy:
         feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
+        offset: Optional[str] = None,
     ) -> FeatureGroup:
         """
         The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window
@@ -193,6 +194,9 @@ class GroupBy:
             Value to fill if the value in the column is empty
         skip_fill_na: bool
             Whether to skip filling NaN values
+        offset: Optional[str]
+            Offset duration to apply to the window, such as '1d'. If specified, the windows will be
+            shifted backward by the offset duration
 
         Returns
         -------
@@ -249,6 +253,7 @@ class GroupBy:
             feature_job_setting=feature_job_setting,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
+            offset=offset,
         )
 
     @typechecked

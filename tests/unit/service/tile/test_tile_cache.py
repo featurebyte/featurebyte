@@ -27,6 +27,7 @@ def create_tile_gen_sql(aggregation_id):
         frequency=3600,
         blind_spot=0,
         windows=["7d"],
+        offset=None,
         serving_names=["a"],
         value_by_column=None,
         parent=None,

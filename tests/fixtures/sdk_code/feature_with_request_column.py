@@ -19,6 +19,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
         blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat = grouped["latest_event_timestamp_90d"]
 request_col = RequestColumn.point_in_time()

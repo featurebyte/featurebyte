@@ -48,6 +48,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
+        offset: Optional[str] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -72,6 +73,9 @@ class WindowAggregator(BaseAggregator):
             Value to fill if the value in the column is empty
         skip_fill_na: bool
             Whether to skip filling NaN values
+        offset: Optional[str]
+            Offset duration to apply to the window, such as '1d'. If specified, the windows will be
+            shifted backward by the offset duration
 
         Returns
         -------
@@ -86,6 +90,7 @@ class WindowAggregator(BaseAggregator):
             feature_job_setting=feature_job_setting,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
+            offset=offset,
         )
         self.view.validate_aggregate_over_parameters(
             keys=self.keys,
@@ -100,6 +105,7 @@ class WindowAggregator(BaseAggregator):
             timestamp_column=timestamp_column,
             value_by_column=self.category,
             feature_job_setting=feature_job_setting,
+            offset=offset,
         )
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
@@ -136,6 +142,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[FeatureJobSetting],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
+        offset: Optional[str],
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
@@ -165,11 +172,14 @@ class WindowAggregator(BaseAggregator):
             if self.category is not None:
                 raise ValueError("category is not supported for aggregation with unbounded window")
 
+        parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         if windows is not None:
-            parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
             for window in windows:
                 if window is not None:
                     validate_window(window, parsed_feature_job_setting.frequency)
+
+        if offset is not None:
+            validate_window(offset, parsed_feature_job_setting.frequency)
 
     def _get_job_setting_params(
         self, feature_job_setting: Optional[FeatureJobSetting]
@@ -198,6 +208,7 @@ class WindowAggregator(BaseAggregator):
         value_column: Optional[str],
         method: Optional[str],
         windows: Optional[list[Optional[str]]],
+        offset: Optional[str],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,
@@ -211,6 +222,7 @@ class WindowAggregator(BaseAggregator):
             "agg_func": method,
             "value_by": value_by_column,
             "windows": windows,
+            "offset": offset,
             "timestamp": timestamp_column or self.view.timestamp_column,
             "blind_spot": parsed_feature_job_setting.blind_spot_seconds,
             "time_modulo_frequency": parsed_feature_job_setting.time_modulo_frequency_seconds,
