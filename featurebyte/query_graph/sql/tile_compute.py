@@ -168,11 +168,11 @@ class OnDemandTileComputePlan:
         for window in tile_info.windows:
             if window is not None:
                 window_size = parse_duration_string(window)
+                if tile_info.offset is not None:
+                    window_size += parse_duration_string(tile_info.offset)
                 assert window_size % tile_info.frequency == 0
             else:
                 window_size = None
-            if window_size is not None and tile_info.offset is not None:
-                window_size += parse_duration_string(tile_info.offset)
             update_maximum_window_size_dict(
                 max_window_size_dict=self.max_window_size_by_tile_id,
                 key=tile_id,
