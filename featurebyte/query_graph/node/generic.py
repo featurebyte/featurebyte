@@ -676,6 +676,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             window=self.parameters.window,
             target_name=self.parameters.name,
             skip_fill_na=True,
+            offset=self.parameters.offset,
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name

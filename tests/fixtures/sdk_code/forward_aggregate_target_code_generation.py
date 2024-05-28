@@ -16,5 +16,6 @@ target = event_view.groupby(
     window="1d",
     target_name="forward_aggregate_target",
     skip_fill_na=True,
+    offset=None,
 )
 output = target
