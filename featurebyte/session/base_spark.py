@@ -245,18 +245,10 @@ class BaseSparkSession(BaseSession, ABC):
                     f"CACHE TABLE `{table_name}` OPTIONS ('storageLevel' 'DISK_ONLY')"
                 )
             else:
-                # register a permanent table from uncached temp view
-                request_id = self.generate_session_unique_id()
-                temp_view_name = f"__TEMP_TABLE_{request_id}"
-                await self.execute_query(
-                    f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_path}/{temp_filename}')"
-                )
-
                 await self.execute_query(
                     f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
                     f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
-                    f"AS SELECT * FROM `{temp_view_name}`"
+                    f"AS SELECT * FROM PARQUET.`{self.storage_path}/{temp_filename}`"
                 )
         finally:
             # clean up staging file
