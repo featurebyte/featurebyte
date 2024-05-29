@@ -118,3 +118,43 @@ def test_empty_groupby_keys(snowflake_event_view_with_entity):
 
     feature_model = FeatureModel(**feature_group["feat_count"].dict())
     assert feature_model.entity_ids == []
+
+
+def test_offset(snowflake_event_view_with_entity):
+    """
+    Test offset with window aggregation
+    """
+    feature_group = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="max",
+        windows=["24h"],
+        offset="12h",
+        feature_names=["feature"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
+    )
+    feature_dict = feature_group["feature"].dict()
+    node = get_node(feature_dict["graph"], "groupby_1")
+    assert node["parameters"]["offset"] == "12h"
+
+
+def test_offset__invalid_duration(snowflake_event_view_with_entity):
+    """
+    Test offset with window aggregation
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+            value_column="col_float",
+            method="max",
+            windows=["24h"],
+            offset="13m",
+            feature_names=["feature"],
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert (
+        str(exc_info.value)
+        == "window provided 13m is not a multiple of the feature job frequency 360s"
+    )

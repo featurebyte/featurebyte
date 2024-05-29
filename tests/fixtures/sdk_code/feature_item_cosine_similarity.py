@@ -24,6 +24,7 @@ grouped = item_view.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat = grouped["sum_item_amount_over_90d"]
 grouped_1 = item_view.groupby(
@@ -37,6 +38,7 @@ grouped_1 = item_view.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_1 = grouped_1["sum_item_amount_over_30d"]
 feat_2 = feat_1.cd.cosine_similarity(other=feat)

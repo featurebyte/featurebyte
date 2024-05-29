@@ -587,6 +587,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
 
     name: OutColumnStr
     window: Optional[str]
+    offset: Optional[str]
     timestamp_col: InColumnStr
 
 
@@ -676,6 +677,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             window=self.parameters.window,
             target_name=self.parameters.name,
             skip_fill_na=True,
+            offset=self.parameters.offset,
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name
@@ -691,6 +693,7 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     tile_id: Optional[str]
     aggregation_id: Optional[str]
     tile_id_version: int = Field(default=1)
+    offset: Optional[str]
 
     @root_validator(pre=True)
     @classmethod
@@ -819,6 +822,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
             feature_names=self.parameters.names,
             feature_job_setting=feature_job_setting,
             skip_fill_na=True,
+            offset=self.parameters.offset,
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name

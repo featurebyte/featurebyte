@@ -38,6 +38,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         window="1d",
         target_name="float_target",
         skip_fill_na=True,
+        offset=None,
     )
     output = target
     """
@@ -65,6 +66,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         window="1d",
         target_name="float_target",
         skip_fill_na=True,
+        offset=None,
     )
     output = target
     output.save(_id=ObjectId("{item_id}"))

@@ -194,6 +194,7 @@ def test_groupby__default_feature_job_setting(
         "parent": "col_float",
         "agg_func": "sum",
         "windows": ["30m", "1h", "2h"],
+        "offset": None,
         "names": ["feat_30m", "feat_1h", "feat_2h"],
         "feature_job_setting": {
             "blind_spot": "90s",
@@ -234,6 +235,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "parent": "col_float",
         "agg_func": "sum",
         "windows": ["30m", "1h", "2h"],
+        "offset": None,
         "names": ["feat_30m", "feat_1h", "feat_2h"],
         "feature_job_setting": {
             "blind_spot": "90s",

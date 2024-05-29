@@ -150,6 +150,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
             "timestamp": "event_timestamp",
             "value_by": None,
             "windows": ["30m"],
+            "offset": None,
         },
         "type": "groupby",
     }

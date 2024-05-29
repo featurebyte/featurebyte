@@ -229,6 +229,11 @@ class QueryGraphModel(FeatureByteBaseModel):
             node_parameters["frequency"] = int(fjs["period"].rstrip("s"))
             node_parameters["time_modulo_frequency"] = int(fjs["offset"].rstrip("s"))
             node_parameters["blind_spot"] = int(fjs["blind_spot"].rstrip("s"))
+            # keep node hash the same if not provided so that a new window aggregate feature without
+            # offset has the same definition hash as an old feature before window offset was
+            # introduced.
+            if node_parameters.get("offset") is None:
+                node_parameters.pop("offset", None)
         return node_parameters
 
     @classmethod

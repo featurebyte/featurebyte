@@ -34,6 +34,7 @@ from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -146,12 +147,16 @@ def add_groupby_operation(
     """
     Helper function to add a groupby node
     """
+    groupby_node_params = GroupByNodeParameters(**groupby_node_params).dict(by_alias=True)
     node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
             "tile_id": (
-                get_tile_table_identifier_v1("deadbeef1234", groupby_node_params)
+                get_tile_table_identifier_v1(
+                    "deadbeef1234",
+                    groupby_node_params,
+                )
                 if override_tile_id is None
                 else override_tile_id
             ),

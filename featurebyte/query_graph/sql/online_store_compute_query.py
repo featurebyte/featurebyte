@@ -126,6 +126,7 @@ class OnlineStorePrecomputePlan:
             adapter=self.adapter,
             point_in_time_expr=point_in_time_expr,
             window_size=window_size,
+            offset=agg_spec.offset,
             frequency=agg_spec.frequency,
             time_modulo_frequency=agg_spec.time_modulo_frequency,
         )

@@ -43,6 +43,7 @@ grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_2 = grouped["sum_item_amt_plus_one_over_30d"]
 grouped_1 = joined_view.groupby(
@@ -56,6 +57,7 @@ grouped_1 = joined_view.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_3 = grouped_1["sum_item_amt_over_30d"]
 feat_4 = feat_3 / feat_2

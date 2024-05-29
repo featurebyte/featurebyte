@@ -81,6 +81,26 @@ def feature_4h(snowflake_event_view_with_entity):
     return feature
 
 
+@pytest.fixture
+def feature_2h_with_offset(snowflake_event_view_with_entity):
+    """
+    Fixture for a feature with 2h derivation window and an offset
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        method="count",
+        windows=["2h"],
+        feature_names=["COUNT_2h_OFFSET_4h"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="30m",
+            frequency="1h",
+            time_modulo_frequency="15m",
+        ),
+        offset="4h",
+    )["COUNT_2h_OFFSET_4h"]
+    feature.save()
+    return feature
+
+
 def get_online_feature_spec(feature_model):
     """
     Helper function to get an OnlineFeatureSpec from a feature
@@ -448,5 +468,44 @@ async def test_enable_with_backfill_metadata_but_not_last_run_metadata(
     assert_equal_with_expected_fixture(
         executed_queries,
         "tests/fixtures/feature_manager/enable_without_last_run_metadata.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_enable_feature_with_offset(
+    app_container,
+    feature_manager_service,
+    mock_snowflake_session,
+    feature_2h_with_offset,
+    update_fixtures,
+):
+    """
+    Test enabling one feature without any existing backfill metadata
+    """
+    feature_model = feature_2h_with_offset.cached_model
+
+    tile_model = await get_tile_model(app_container, feature_model)
+    assert tile_model is None
+
+    mock_snowflake_session.table_exists.return_value = False
+    await feature_manager_service.online_enable(
+        session=mock_snowflake_session,
+        feature_spec=get_online_feature_spec(feature_model),
+        schedule_time=pd.Timestamp("2022-05-15 10:00:00"),
+    )
+
+    # Check tile registry metadata updated
+    tile_model = await get_tile_model(app_container, feature_model)
+    assert tile_model.backfill_metadata == BackfillMetadata(start_date=datetime(2022, 5, 15, 2, 45))
+    assert tile_model.last_run_metadata_offline == LastRunMetadata(
+        tile_end_date=datetime(2022, 5, 15, 8, 45), index=459057
+    )
+
+    # Check executed queries
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/feature_manager/enable_new_feature_offset.sql",
         update_fixtures,
     )

@@ -33,6 +33,7 @@ grouped = view.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat = grouped["timestamp_hour_counts_7d"]
 output = feat

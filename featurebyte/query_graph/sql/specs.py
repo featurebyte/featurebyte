@@ -135,6 +135,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     # pylint: disable=too-many-instance-attributes
 
     window: int | None
+    offset: int | None
     frequency: int
     blind_spot: int
     time_modulo_frequency: int
@@ -160,11 +161,15 @@ class TileBasedAggregationSpec(AggregationSpec):
         str
             Column names of the aggregated result
         """
-        if self.window is None:
+        if self.window is not None:
+            args = [f"w{self.window}", self.aggregation_id]
+        else:
             # In this case, this is latest aggregation without time window. The aggregation_id would
             # have a "latest_" prefix already.
-            return self.construct_agg_result_name(self.aggregation_id.replace("latest_", ""))
-        return self.construct_agg_result_name(f"w{self.window}", self.aggregation_id)
+            args = [self.aggregation_id.replace("latest_", "")]
+        if self.offset is not None:
+            args.append(f"o{self.offset}")
+        return self.construct_agg_result_name(*args)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -222,6 +227,10 @@ class TileBasedAggregationSpec(AggregationSpec):
         tile_value_columns = [
             spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
         ]
+        if groupby_node_params.offset is not None:
+            offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
+        else:
+            offset_secs = None
         for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
             window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
             pruned_graph, pruned_node, dtype = cls._get_aggregation_column_type(
@@ -237,6 +246,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 frequency=fjs.period_seconds,
                 time_modulo_frequency=fjs.offset_seconds,
                 blind_spot=fjs.blind_spot_seconds,
+                offset=offset_secs,
                 tile_table_id=tile_table_id,
                 aggregation_id=aggregation_id,
                 keys=groupby_node_params.keys,  # type: ignore[arg-type]

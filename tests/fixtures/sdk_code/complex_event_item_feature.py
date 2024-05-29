@@ -45,6 +45,7 @@ grouped = joined_view_1.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_1 = grouped["count_a_24h_per_col_int"]
 feat_2 = (feat_1.cd.entropy()) * (feat_1.cd.most_frequent()).str.len()
@@ -59,6 +60,7 @@ grouped_1 = joined_view_1.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_3 = grouped_1["sum_a_24h"]
 feat_4 = feat_1.cd.unique_count(include_missing=False)

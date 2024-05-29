@@ -29,6 +29,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
         blind_spot="2700s", period="1800s", offset="900s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat = grouped["sum_1d"]
 output = feat

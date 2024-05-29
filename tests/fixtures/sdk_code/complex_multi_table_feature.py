@@ -85,6 +85,7 @@ grouped = joined_view_1.groupby(
         blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
+    offset=None,
 )
 feat_1 = grouped["max_percent_over_30d"]
 output = feat_1

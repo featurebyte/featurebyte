@@ -62,6 +62,7 @@ class TileGenSql:
     frequency: int
     blind_spot: int
     windows: list[str | None]
+    offset: str | None
     serving_names: list[str]
     value_by_column: str | None
     parent: str | None
@@ -208,6 +209,7 @@ class TileSQLGenerator:
             frequency=fjs.period_seconds,
             blind_spot=fjs.blind_spot_seconds,
             windows=groupby_node.parameters.windows,
+            offset=groupby_node.parameters.offset,
             serving_names=groupby_node.parameters.serving_names,
             value_by_column=groupby_node.parameters.value_by,
             parent=groupby_node.parameters.parent,
