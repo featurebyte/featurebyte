@@ -7,10 +7,10 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
-from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
+from featurebyte.schema.backward_compatible.table import SCDTableListResponse, SCDTableModelResponse
 from featurebyte.schema.info import SCDTableInfo
-from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
+from featurebyte.schema.scd_table import SCDTableServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -25,12 +25,14 @@ from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.target import TargetService
 
 
-class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableService, SCDTableList]):
+class SCDTableController(
+    BaseTableDocumentController[SCDTableModelResponse, SCDTableService, SCDTableListResponse]
+):
     """
     SCDTable controller
     """
 
-    paginated_document_class = SCDTableList
+    paginated_document_class = SCDTableListResponse
     document_update_schema_class = SCDTableServiceUpdate
     semantic_tag_rules = {
         **BaseTableDocumentController.semantic_tag_rules,

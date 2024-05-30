@@ -514,7 +514,6 @@ class EventTable(TableApiObject):
         analysis = self.create_new_feature_job_setting_analysis()
         self.update_default_feature_job_setting(analysis.get_recommendation())
 
-    @typechecked
     def list_feature_job_setting_analysis(self) -> Optional[pd.DataFrame]:
         """
         Lists feature job setting analyses that have been performed.

@@ -4,13 +4,14 @@ SCDTable API payload schema
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal, Optional, Sequence
 
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
 
@@ -26,6 +27,7 @@ class SCDTableCreate(TableCreate):
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr]
     current_flag_column: Optional[StrictStr]
+    default_feature_job_setting: Optional[FeatureJobSetting]
 
     # pydantic validators
     _special_columns_validator = validator(
@@ -44,7 +46,7 @@ class SCDTableList(PaginationMixin):
     Paginated list of SCDTable
     """
 
-    data: List[SCDTableModel]
+    data: Sequence[SCDTableModel]
 
 
 class SCDDataUpdateMixin(FeatureByteBaseModel):
@@ -54,6 +56,7 @@ class SCDDataUpdateMixin(FeatureByteBaseModel):
 
     end_timestamp_column: Optional[StrictStr]
     current_flag_column: Optional[StrictStr]
+    default_feature_job_setting: Optional[FeatureJobSetting]
 
 
 class SCDTableUpdate(SCDDataUpdateMixin, TableUpdate):

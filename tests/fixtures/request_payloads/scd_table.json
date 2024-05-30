@@ -85,6 +85,7 @@
         }
     ],
     "current_flag_column": "is_active",
+    "default_feature_job_setting": null,
     "description": "test scd table",
     "effective_timestamp_column": "effective_timestamp",
     "end_timestamp_column": "end_timestamp",
