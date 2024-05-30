@@ -4,7 +4,7 @@ SCDTable API payload schema
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal, Optional, Sequence
 
 from pydantic import Field, StrictStr, validator
 
@@ -46,7 +46,7 @@ class SCDTableList(PaginationMixin):
     Paginated list of SCDTable
     """
 
-    data: List[SCDTableModel]
+    data: Sequence[SCDTableModel]
 
 
 class SCDDataUpdateMixin(FeatureByteBaseModel):

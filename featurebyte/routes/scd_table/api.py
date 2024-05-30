@@ -12,7 +12,6 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
@@ -24,7 +23,10 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.scd_table.controller import SCDTableController
-from featurebyte.schema.backward_compatible.table import FeatureJobSettingHistoryEntryResponse
+from featurebyte.schema.backward_compatible.table import (
+    FeatureJobSettingHistoryEntryResponse,
+    SCDTableModelResponse,
+)
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableList, SCDTableUpdate
@@ -38,7 +40,7 @@ router = APIRouter(prefix="/scd_table")
 
 
 class SCDTableRouter(
-    BaseApiRouter[SCDTableModel, SCDTableList, SCDTableCreate, SCDTableController]
+    BaseApiRouter[SCDTableModelResponse, SCDTableList, SCDTableCreate, SCDTableController]
 ):
     """
     SCD table router
@@ -46,7 +48,7 @@ class SCDTableRouter(
 
     # pylint: disable=arguments-renamed
 
-    object_model = SCDTableModel
+    object_model = SCDTableModelResponse
     list_object_model = SCDTableList
     create_object_schema = SCDTableCreate
     controller = SCDTableController
@@ -59,7 +61,7 @@ class SCDTableRouter(
             "/{scd_table_id}",
             self.update_scd_table,
             methods=["PATCH"],
-            response_model=SCDTableModel,
+            response_model=SCDTableModelResponse,
             status_code=HTTPStatus.OK,
         )
 
@@ -76,7 +78,7 @@ class SCDTableRouter(
             "/{scd_table_id}/column_entity",
             self.update_column_entity,
             methods=["PATCH"],
-            response_model=SCDTableModel,
+            response_model=SCDTableModelResponse,
             status_code=HTTPStatus.OK,
         )
 
@@ -85,7 +87,7 @@ class SCDTableRouter(
             "/{scd_table_id}/column_critical_data_info",
             self.update_column_critical_data_info,
             methods=["PATCH"],
-            response_model=SCDTableModel,
+            response_model=SCDTableModelResponse,
             status_code=HTTPStatus.OK,
         )
 
@@ -94,7 +96,7 @@ class SCDTableRouter(
             "/{scd_table_id}/column_description",
             self.update_column_description,
             methods=["PATCH"],
-            response_model=SCDTableModel,
+            response_model=SCDTableModelResponse,
             status_code=HTTPStatus.OK,
         )
 
@@ -106,7 +108,9 @@ class SCDTableRouter(
             response_model=List[FeatureJobSettingHistoryEntryResponse],
         )
 
-    async def get_object(self, request: Request, scd_table_id: PydanticObjectId) -> SCDTableModel:
+    async def get_object(
+        self, request: Request, scd_table_id: PydanticObjectId
+    ) -> SCDTableModelResponse:
         return await super().get_object(request, scd_table_id)
 
     async def list_audit_logs(
@@ -131,10 +135,10 @@ class SCDTableRouter(
 
     async def update_description(
         self, request: Request, scd_table_id: PydanticObjectId, data: DescriptionUpdate
-    ) -> SCDTableModel:
+    ) -> SCDTableModelResponse:
         return await super().update_description(request, scd_table_id, data)
 
-    async def create_object(self, request: Request, data: SCDTableCreate) -> SCDTableModel:
+    async def create_object(self, request: Request, data: SCDTableCreate) -> SCDTableModelResponse:
         controller = self.get_controller_for_request(request)
         return await controller.create_table(data=data)
 
@@ -153,12 +157,12 @@ class SCDTableRouter(
 
     async def update_scd_table(
         self, request: Request, scd_table_id: PydanticObjectId, data: SCDTableUpdate
-    ) -> SCDTableModel:
+    ) -> SCDTableModelResponse:
         """
         Update scd table
         """
         controller = self.get_controller_for_request(request)
-        scd_table: SCDTableModel = await controller.update_table(
+        scd_table: SCDTableModelResponse = await controller.update_table(
             document_id=scd_table_id,
             data=data,
         )
@@ -166,12 +170,12 @@ class SCDTableRouter(
 
     async def update_column_entity(
         self, request: Request, scd_table_id: PydanticObjectId, data: ColumnEntityUpdate
-    ) -> SCDTableModel:
+    ) -> SCDTableModelResponse:
         """
         Update column entity
         """
         controller = self.get_controller_for_request(request)
-        scd_table: SCDTableModel = await controller.update_column_entity(
+        scd_table: SCDTableModelResponse = await controller.update_column_entity(
             document_id=scd_table_id,
             column_name=data.column_name,
             entity_id=data.entity_id,
@@ -183,12 +187,12 @@ class SCDTableRouter(
         request: Request,
         scd_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
-    ) -> SCDTableModel:
+    ) -> SCDTableModelResponse:
         """
         Update column critical data info
         """
         controller = self.get_controller_for_request(request)
-        scd_table: SCDTableModel = await controller.update_column_critical_data_info(
+        scd_table: SCDTableModelResponse = await controller.update_column_critical_data_info(
             document_id=scd_table_id,
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
@@ -200,12 +204,12 @@ class SCDTableRouter(
         request: Request,
         scd_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
-    ) -> SCDTableModel:
+    ) -> SCDTableModelResponse:
         """
         Update column description
         """
         controller = self.get_controller_for_request(request)
-        scd_table: SCDTableModel = await controller.update_column_description(
+        scd_table: SCDTableModelResponse = await controller.update_column_description(
             document_id=scd_table_id,
             column_name=data.column_name,
             description=data.description,

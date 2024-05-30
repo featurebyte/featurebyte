@@ -336,4 +336,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             "period": "86400s",
             "offset": "7200s",
             "execution_buffer": "0s",
+            # handle backward compatibility
+            "frequency": "86400s",
+            "time_modulo_frequency": "7200s",
         }

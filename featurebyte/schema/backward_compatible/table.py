@@ -14,6 +14,7 @@ from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.event_table import EventTableList
+from featurebyte.schema.scd_table import SCDTableList
 from featurebyte.schema.table import TableList
 
 
@@ -66,6 +67,14 @@ class EventTableModelResponse(EventTableModel):
     default_feature_job_setting: Optional[FeatureJobSettingResponse]
 
 
+class SCDTableModelResponse(SCDTableModel):
+    """
+    SCD Table Model Response
+    """
+
+    default_feature_job_setting: Optional[FeatureJobSettingResponse]
+
+
 class EventTableListResponse(EventTableList):
     """
     Event Table List Response
@@ -74,8 +83,16 @@ class EventTableListResponse(EventTableList):
     data: Sequence[EventTableModelResponse]
 
 
+class SCDTableListResponse(SCDTableList):
+    """
+    SCD Table List Response
+    """
+
+    data: Sequence[SCDTableModelResponse]
+
+
 TableModel = Annotated[
-    Union[EventTableModelResponse, ItemTableModel, DimensionTableModel, SCDTableModel],
+    Union[EventTableModelResponse, ItemTableModel, DimensionTableModel, SCDTableModelResponse],
     Field(discriminator="type"),
 ]
 
