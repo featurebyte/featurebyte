@@ -88,9 +88,7 @@ def test_from_event_table(snowflake_event_table, mock_api_object_cache):
     entity.save()
     snowflake_event_table.cust_id.as_entity("customer")
     snowflake_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m")
     )
     event_view_second = snowflake_event_table.get_view()
     expected_view_columns_info = [
@@ -100,7 +98,7 @@ def test_from_event_table(snowflake_event_table, mock_api_object_cache):
     ]
     assert event_view_second.columns_info == expected_view_columns_info
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        blind_spot="1m30s", period="6m", offset="3m"
     )
 
 
@@ -227,11 +225,7 @@ def test_event_view_groupby__prune(
 ):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     group_by_col = "cust_id"
     a = event_view["a"] = event_view["cust_id"] + 10
     event_view["a_plus_one"] = a + 1

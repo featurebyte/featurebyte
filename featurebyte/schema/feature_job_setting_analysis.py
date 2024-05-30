@@ -2,7 +2,7 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Sequence, Union
 
 from datetime import datetime
 
@@ -112,10 +112,32 @@ class FeatureJobSetting(FeatureByteBaseModel):
     Feature Job Setting
     """
 
-    frequency: int
-    job_time_modulo_frequency: int
+    period: int
+    offset: int
     blind_spot: int
     feature_cutoff_modulo_frequency: int
+
+    @root_validator(pre=True)
+    @classmethod
+    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Handle backward compatibility
+
+        Parameters
+        ----------
+        values : Dict[str, Any]
+            Values to validate
+
+        Returns
+        -------
+        Dict[str, Any]
+            Validated values
+        """
+        if "frequency" in values:
+            values["period"] = values.pop("frequency")
+        if "job_time_modulo_frequency" in values:
+            values["offset"] = values.pop("job_time_modulo_frequency")
+        return values
 
 
 class FeatureJobSettingAnalysisWHJobFrequency(FeatureByteBaseModel):
@@ -191,7 +213,7 @@ class FeatureJobSettingAnalysisList(PaginationMixin):
     Paginated list of Feature Job Setting Analysis
     """
 
-    data: List[FeatureJobSettingAnalysisRecord]
+    data: Sequence[FeatureJobSettingAnalysisRecord]
 
 
 class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
@@ -201,6 +223,6 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     feature_job_setting_analysis_id: PydanticObjectId
-    frequency: int = Field(ge=60, le=3600 * 24 * 28)
-    job_time_modulo_frequency: int = Field(ge=0, le=3600 * 24 * 28)
+    period: int = Field(ge=60, le=3600 * 24 * 28)
+    offset: int = Field(ge=0, le=3600 * 24 * 28)
     blind_spot: int = Field(ge=0, le=3600 * 24 * 28)

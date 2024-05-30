@@ -166,9 +166,7 @@ async def register_table_with_array_column(
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     )
     event_table["USER_ID"].as_entity(vector_user_entity.name)
     event_table["ORDER_ID"].as_entity(vector_order_entity.name)

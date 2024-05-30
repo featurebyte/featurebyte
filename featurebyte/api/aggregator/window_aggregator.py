@@ -67,8 +67,7 @@ class WindowAggregator(BaseAggregator):
         timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event table timestamp is used)
         feature_job_setting: Optional[FeatureJobSetting]
-            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
-            feature job setting parameters
+            Dictionary contains `blind_spot`, `period` and `offset` keys which are feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
@@ -176,10 +175,10 @@ class WindowAggregator(BaseAggregator):
         if windows is not None:
             for window in windows:
                 if window is not None:
-                    validate_window(window, parsed_feature_job_setting.frequency)
+                    validate_window(window, parsed_feature_job_setting.period)
 
         if offset is not None:
-            validate_window(offset, parsed_feature_job_setting.frequency)
+            validate_window(offset, parsed_feature_job_setting.period)
 
     def _get_job_setting_params(
         self, feature_job_setting: Optional[FeatureJobSetting]
@@ -194,14 +193,7 @@ class WindowAggregator(BaseAggregator):
                 f"feature_job_setting is required as the {type(self.view).__name__} does not "
                 "have a default feature job setting"
             )
-        frequency = default_setting.frequency
-        time_modulo_frequency = default_setting.time_modulo_frequency
-        blind_spot = default_setting.blind_spot
-        return FeatureJobSetting(
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-            blind_spot=blind_spot,
-        )
+        return cast(FeatureJobSetting, default_setting)
 
     def _prepare_node_parameters(
         self,
@@ -224,9 +216,7 @@ class WindowAggregator(BaseAggregator):
             "windows": windows,
             "offset": offset,
             "timestamp": timestamp_column or self.view.timestamp_column,
-            "blind_spot": parsed_feature_job_setting.blind_spot_seconds,
-            "time_modulo_frequency": parsed_feature_job_setting.time_modulo_frequency_seconds,
-            "frequency": parsed_feature_job_setting.frequency_seconds,
+            "feature_job_setting": parsed_feature_job_setting.dict(),
             "names": feature_names,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,

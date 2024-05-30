@@ -246,8 +246,8 @@ class ChangeView(View, GroupByMixin):
         within 2 minutes and missing the latest data up to the last 30 seconds before the hour, the feature job
         settings could be:
 
-        - frequency: 60m
-        - time_modulo_frequency: 10s + 2m + 5s (a safety buffer) = 135s
+        - period: 60m
+        - offset: 10s + 2m + 5s (a safety buffer) = 135s
         - blind_spot: 30s + 10s + 2m + 5s = 165s
 
         FeatureByte offers automated analysis of event table record creation to suggest appropriate setting values. If
@@ -283,18 +283,14 @@ class ChangeView(View, GroupByMixin):
         --------
         >>> feature_job_setting = ChangeView.get_default_feature_job_setting()
         >>> feature_job_setting  # doctest: +SKIP
-        FeatureJobSetting(blind_spot='0', frequency='24h', time_modulo_frequency='6h24m')
+        FeatureJobSetting(blind_spot='0', period='24h', offset='6h24m')
         """
         if feature_job_setting is not None:
             return feature_job_setting
         # default job setting of once a day, at the time the view is created
         now = datetime.now()
         hour, minute = now.hour, now.minute
-        return FeatureJobSetting(
-            blind_spot="0",
-            time_modulo_frequency=f"{hour}h{minute}m",
-            frequency="24h",
-        )
+        return FeatureJobSetting(blind_spot="0", offset=f"{hour}h{minute}m", period="24h")
 
     def get_join_column(self) -> str:
         raise ChangeViewNoJoinColumnError

@@ -4,7 +4,7 @@ Table model's attribute payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
@@ -93,7 +93,7 @@ class TableList(PaginationMixin):
     TableList used to deserialize list document output
     """
 
-    data: List[ProxyTableModel]
+    data: Sequence[ProxyTableModel]
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:

@@ -406,11 +406,7 @@ def test_inherit_default_feature_job_setting(
     """
     Test ItemTable inherits the same default feature job setting from EventTable
     """
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="1m30s",
-        frequency="10m",
-        time_modulo_frequency="2m",
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="1m30s", period="10m", offset="2m")
     saved_event_table.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
     item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",

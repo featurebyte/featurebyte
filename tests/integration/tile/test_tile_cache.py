@@ -24,11 +24,7 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
         method="count",
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="45m",
-            frequency="1h",
-            time_modulo_frequency="30m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="45m", period="1h", offset="30m"),
     )
     yield feature_group["SESSION_COUNT_48h"]
 

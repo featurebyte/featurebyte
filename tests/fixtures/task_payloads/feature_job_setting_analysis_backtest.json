@@ -1,8 +1,8 @@
 {
     "id": "63049af4ecc3fad6f2b139d4",
     "feature_job_setting_analysis_id": "62f301e841b73757c9ff879a",
-    "frequency": 180,
-    "job_time_modulo_frequency": 61,
+    "period": 180,
+    "offset": 61,
     "blind_spot": 10,
     "user_id": "6301d232b9a5c3e5bfc45a0b",
     "catalog_id": "63eda344d0313fb925f7883a",

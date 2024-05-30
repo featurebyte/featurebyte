@@ -336,8 +336,8 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
     event_view = event_table.get_view()
     feature_job_setting = event_table.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
-        frequency=feature_job_setting.frequency,
-        time_modulo_frequency=feature_job_setting.time_modulo_frequency,
+        period=feature_job_setting.period,
+        offset=feature_job_setting.offset,
         blind_spot=feature_job_setting.blind_spot,
     )
     feature_group = event_view.groupby(entity_column_name).aggregate_over(
@@ -417,11 +417,12 @@ def test_aggregate_over(
     """
     Test that aggregate_over produces correct feature values
     """
+    _ = config
     event_view = event_table.get_view()
     feature_job_setting = event_table.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
-        frequency=feature_job_setting.frequency,
-        time_modulo_frequency=feature_job_setting.time_modulo_frequency,
+        period=feature_job_setting.period,
+        offset=feature_job_setting.offset,
         blind_spot=feature_job_setting.blind_spot,
     )
 

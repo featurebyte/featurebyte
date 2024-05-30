@@ -65,15 +65,15 @@ def validate_offset_string(offset_string: str) -> None:
 
 @typechecked
 def validate_job_setting_parameters(
-    frequency: str, time_modulo_frequency: str, blind_spot: str
+    period: str, offset: str, blind_spot: str
 ) -> Tuple[int, int, int]:
     """Validate that job setting parameters are correct
 
     Parameters
     ----------
-    frequency: str
+    period: str
         frequency of the feature job
-    time_modulo_frequency: str
+    offset: str
         offset of when the feature job will be run, should be smaller than frequency
     blind_spot: str
         historical gap introduced to the aggregation
@@ -88,16 +88,13 @@ def validate_job_setting_parameters(
     ValueError
         If the specified job setting parameters are invalid
     """
-    frequency_seconds = parse_duration_string(frequency, minimum_seconds=60)
-    time_modulo_frequency_seconds = parse_duration_string(time_modulo_frequency)
+    period_seconds = parse_duration_string(period, minimum_seconds=60)
+    offset_seconds = parse_duration_string(offset)
     blind_spot_seconds = parse_duration_string(blind_spot)
 
-    if time_modulo_frequency_seconds >= frequency_seconds:
-        raise ValueError(
-            f"Time modulo frequency ({time_modulo_frequency}) should be smaller than frequency"
-            f" ({frequency})"
-        )
-    return frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds
+    if offset_seconds >= period_seconds:
+        raise ValueError(f"Offset ({offset}) should be smaller than period ({period})")
+    return period_seconds, offset_seconds, blind_spot_seconds
 
 
 def get_version() -> str:

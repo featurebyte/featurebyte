@@ -126,19 +126,7 @@ class FeatureJobSettingExtractor:
         -------
         FeatureJobSetting
         """
-        return FeatureJobSetting(
-            frequency="1d",
-            time_modulo_frequency="0s",
-            blind_spot="0s",
-        )
-
-    @staticmethod
-    def _extract_group_by_node_feature_job_setting(node: GroupByNode) -> FeatureJobSetting:
-        return FeatureJobSetting(
-            blind_spot=f"{node.parameters.blind_spot}s",
-            frequency=f"{node.parameters.frequency}s",
-            time_modulo_frequency=f"{node.parameters.time_modulo_frequency}s",
-        )
+        return FeatureJobSetting(period="1d", offset="0s", blind_spot="0s")
 
     def _extract_lookup_node_feature_job_setting(
         self, node: LookupNode
@@ -165,7 +153,7 @@ class FeatureJobSettingExtractor:
             return None
 
         if isinstance(node, GroupByNode):
-            return self._extract_group_by_node_feature_job_setting(node=node)
+            return node.parameters.feature_job_setting
 
         if isinstance(node, LookupNode):
             return self._extract_lookup_node_feature_job_setting(node=node)

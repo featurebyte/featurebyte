@@ -24,11 +24,7 @@ def test_extract_table_id_to_feature_job_settings_and_cleaning_operations__time_
     assert table_id_feature_job_settings == [
         TableIdFeatureJobSetting(
             table_id=snowflake_event_table_id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="600s",
-                frequency="1800s",
-                time_modulo_frequency="300s",
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="600s", period="1800s", offset="300s"),
         )
     ]
 
@@ -83,8 +79,8 @@ def test_feature_binary_operation_validation__feature_job_settings(
     feature_sum_30m = feature_group["sum_30m"]
 
     # construct a feature with different feature job setting
-    assert feature_group_feature_job_setting.frequency == "30m"
-    feature_group_feature_job_setting.frequency = "1h"
+    assert feature_group_feature_job_setting.period == "1800s"
+    feature_group_feature_job_setting.period = "3600s"
     feature_sum_1w = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -99,8 +95,8 @@ def test_feature_binary_operation_validation__feature_job_settings(
 
     expected_message = (
         f"Feature job setting (table ID: {snowflake_event_table_id}) of "
-        "feature sum_30m (blind_spot='600s' frequency='1800s' time_modulo_frequency='300s') and "
-        "feature sum_1w (blind_spot='600s' frequency='3600s' time_modulo_frequency='300s') are not consistent. "
+        "feature sum_30m (blind_spot='600s' period='1800s' offset='300s' execution_buffer='0s') and "
+        "feature sum_1w (blind_spot='600s' period='3600s' offset='300s' execution_buffer='0s') are not consistent. "
         "Binary feature operations are only supported when the feature job settings are consistent."
     )
     assert expected_message in str(exc.value)
@@ -112,8 +108,9 @@ def test_feature_binary_operation_validation__feature_job_settings(
     table_feature_job_setting = feat_ratio.info()["table_feature_job_setting"]
     feature_job_setting = {
         "blind_spot": "600s",
-        "frequency": "1800s",
-        "time_modulo_frequency": "300s",
+        "period": "1800s",
+        "offset": "300s",
+        "execution_buffer": "0s",
     }
     assert table_feature_job_setting == {
         "this": [

@@ -225,6 +225,10 @@ class QueryGraphModel(FeatureByteBaseModel):
             node_parameters["feature_store_details"].pop("details", None)
         if node.type == NodeType.GROUPBY:
             node_parameters.pop("tile_id_version", None)
+            fjs = node_parameters.pop("feature_job_setting")
+            node_parameters["frequency"] = int(fjs["period"].rstrip("s"))
+            node_parameters["time_modulo_frequency"] = int(fjs["offset"].rstrip("s"))
+            node_parameters["blind_spot"] = int(fjs["blind_spot"].rstrip("s"))
             # keep node hash the same if not provided so that a new window aggregate feature without
             # offset has the same definition hash as an old feature before window offset was
             # introduced.

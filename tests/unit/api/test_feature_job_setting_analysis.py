@@ -52,8 +52,8 @@ def test_list(saved_analysis, saved_event_table):
         "event_table",
         "analysis_start",
         "analysis_date",
-        "frequency",
-        "job_time_modulo_frequency",
+        "period",
+        "offset",
         "blind_spot",
     ]
     assert result["id"].iloc[0] == str(analysis_id)
@@ -106,8 +106,9 @@ def test_info(saved_analysis):
         },
         "recommendation": {
             "blind_spot": "395s",
-            "frequency": "180s",
-            "time_modulo_frequency": "61s",
+            "period": "180s",
+            "offset": "61s",
+            "execution_buffer": "0s",
         },
         "catalog_name": "catalog",
     }
@@ -157,8 +158,8 @@ def test_backtest(mock_display_html, mock_post_async_task, saved_analysis):
         payload={
             "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
             "feature_job_setting_analysis_id": str(analysis.id),
-            "frequency": 120,
-            "job_time_modulo_frequency": 100,
+            "period": 120,
+            "offset": 100,
             "blind_spot": 50,
         },
         retrieve_result=False,

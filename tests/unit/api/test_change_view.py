@@ -174,15 +174,9 @@ def test_get_default_feature_job_setting():
     """
     # default is returned if nothing is provided
     feature_job_setting = ChangeView.get_default_feature_job_setting()
-    assert feature_job_setting == FeatureJobSetting(
-        blind_spot="0",
-        time_modulo_frequency=f"11h15m",
-        frequency="24h",
-    )
+    assert feature_job_setting == FeatureJobSetting(blind_spot="0", offset=f"11h15m", period="24h")
 
-    job_setting_provided = FeatureJobSetting(
-        blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
-    )
+    job_setting_provided = FeatureJobSetting(blind_spot="1h", offset="1h", period="12h")
     # get back setting provided
     feature_job_setting = ChangeView.get_default_feature_job_setting(job_setting_provided)
     assert feature_job_setting == job_setting_provided
@@ -297,8 +291,8 @@ def test_get_change_view__no_default_job_setting(snowflake_scd_table):
         change_view = snowflake_scd_table.get_change_view("col_int")
         assert change_view.default_feature_job_setting == FeatureJobSetting(
             blind_spot="0",
-            time_modulo_frequency=f"{mocked_hour}h{mocked_minute}m",
-            frequency="24h",
+            offset=f"{mocked_hour}h{mocked_minute}m",
+            period="24h",
         )
         change_view_test_helper(snowflake_scd_table, change_view)
 
@@ -307,9 +301,7 @@ def test_get_change_view__with_default_job_setting(snowflake_scd_table):
     """
     Test get_change_view - default job setting provided
     """
-    job_setting_provided = FeatureJobSetting(
-        blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
-    )
+    job_setting_provided = FeatureJobSetting(blind_spot="1h", offset="1h", period="12h")
     change_view = snowflake_scd_table.get_change_view("col_int", job_setting_provided)
     assert change_view.default_feature_job_setting == job_setting_provided
     change_view_test_helper(snowflake_scd_table, change_view)
@@ -384,11 +376,7 @@ def test_update_feature_job_setting(snowflake_change_view):
     # Assert that a feature job setting exists
     assert snowflake_change_view.default_feature_job_setting is not None
 
-    new_feature_job_setting = FeatureJobSetting(
-        blind_spot="15m",
-        time_modulo_frequency="30m",
-        frequency="1h",
-    )
+    new_feature_job_setting = FeatureJobSetting(blind_spot="15m", offset="30m", period="1h")
     snowflake_change_view.update_default_feature_job_setting(new_feature_job_setting)
     assert snowflake_change_view.default_feature_job_setting == new_feature_job_setting
 
@@ -604,9 +592,7 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
     to_use_saved_data = True
     change_view = saved_scd_table.get_change_view(
         track_changes_column="col_int",
-        default_feature_job_setting=FeatureJobSetting(
-            blind_spot="0", time_modulo_frequency="1h", frequency="24h"
-        ),
+        default_feature_job_setting=FeatureJobSetting(blind_spot="0", offset="1h", period="24h"),
         prefixes=(None, "_past"),
     )
     check_sdk_code_generation(

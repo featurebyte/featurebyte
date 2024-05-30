@@ -82,7 +82,7 @@ grouped = joined_view_1.groupby(
     windows=["30d"],
     feature_names=["max_percent_over_30d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,

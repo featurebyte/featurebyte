@@ -574,11 +574,7 @@ def test_isin_feature_sdk_code_generation(
         method="count",
         windows=["24h"],
         feature_names=["count_a_24h_per_col_int"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1h",
-            frequency="1h",
-            time_modulo_frequency="30m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1h", period="1h", offset="30m"),
     )["count_a_24h_per_col_int"]
     lookup_feature = event_view["cust_id"].as_feature("cust_id_feature")
 

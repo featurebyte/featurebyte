@@ -99,8 +99,9 @@ def test_feature_model(feature_model_dict, api_object_to_id):
                 "table_id": ObjectId(api_object_to_id["event_table"]),
                 "feature_job_setting": {
                     "blind_spot": "600s",
-                    "frequency": "1800s",
-                    "time_modulo_frequency": "300s",
+                    "period": "1800s",
+                    "offset": "300s",
+                    "execution_buffer": "0s",
                 },
             }
         ],

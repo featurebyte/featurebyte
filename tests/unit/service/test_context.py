@@ -211,9 +211,11 @@ async def test_context_update__validation_error(context_service, context, view_g
         "value_by": "item_type",
         "parent": None,
         "agg_func": "count",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
-        "blind_spot": 900,  # 15m
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
         "timestamp": "ts",
         "names": ["item_type_count_30d"],
         "windows": ["30d"],

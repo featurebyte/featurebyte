@@ -27,11 +27,7 @@ def feature_group_fixture(
         method="sum",
         windows=["30m", "2h", "4h"],
         feature_names=["amt_sum_30m", "amt_sum_2h", "amt_sum_4h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
     )
     return feature_group
 
@@ -59,9 +55,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name="sf_event_table",
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="75m", period="30m", offset="15m"),
             )
         ],
         table_cleaning_operations=None,
@@ -131,9 +125,7 @@ def test_create_new_version_on_item_view_aggregate_over_feature(
         table_feature_job_settings=[
             TableFeatureJobSetting(
                 table_name="sf_event_table",
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-                ),
+                feature_job_setting=FeatureJobSetting(blind_spot="75m", period="30m", offset="15m"),
             )
         ],
     )
@@ -143,8 +135,9 @@ def test_create_new_version_on_item_view_aggregate_over_feature(
             "table_name": "sf_event_table",
             "feature_job_setting": {
                 "blind_spot": "4500s",
-                "frequency": "1800s",
-                "time_modulo_frequency": "900s",
+                "period": "1800s",
+                "offset": "900s",
+                "execution_buffer": "0s",
             },
         }
     ]
@@ -156,9 +149,7 @@ def test_feature__default_feature_version_selection(
     """Test default feature version selection based on feature readiness level"""
     # set default feature job setting so that we can create new feature versions
     snowflake_event_table_with_entity.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-        )
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m")
     )
 
     # create features with different readiness levels
@@ -170,7 +161,7 @@ def test_feature__default_feature_version_selection(
             TableFeatureJobSetting(
                 table_name=snowflake_event_table_with_entity.name,
                 feature_job_setting=FeatureJobSetting(
-                    blind_spot=blind_spot, frequency="30m", time_modulo_frequency="5m"
+                    blind_spot=blind_spot, period="30m", offset="5m"
                 ),
             )
         )

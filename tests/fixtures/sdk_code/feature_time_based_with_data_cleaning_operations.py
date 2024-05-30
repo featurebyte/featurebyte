@@ -26,7 +26,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     windows=["1d"],
     feature_names=["sum_1d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="2700s", frequency="1800s", time_modulo_frequency="900s"
+        blind_spot="2700s", period="1800s", offset="900s"
     ),
     skip_fill_na=True,
     offset=None,

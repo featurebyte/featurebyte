@@ -58,7 +58,7 @@ def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> in
     int
         Time-to-live (TTL) in seconds
     """
-    return 2 * feature_job_setting.frequency_seconds
+    return 2 * feature_job_setting.period_seconds
 
 
 class OfflineStoreInfoMetadata(OfflineStoreMetadata):

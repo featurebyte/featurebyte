@@ -196,9 +196,12 @@ def test_groupby__default_feature_job_setting(
         "windows": ["30m", "1h", "2h"],
         "offset": None,
         "names": ["feat_30m", "feat_1h", "feat_2h"],
-        "blind_spot": 90,
-        "frequency": 360,
-        "time_modulo_frequency": 180,
+        "feature_job_setting": {
+            "blind_spot": "90s",
+            "period": "360s",
+            "offset": "180s",
+            "execution_buffer": "0s",
+        },
         "tile_id": "TILE_SUM_EC2E4C42C6A794E585BDC236D863F949196637B1",
         "tile_id_version": 2,
         "aggregation_id": "sum_ec2e4c42c6a794e585bdc236d863f949196637b1",
@@ -220,9 +223,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         method="sum",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     # check node params
     feature = feature_group["feat_30m"]
@@ -236,9 +237,12 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "windows": ["30m", "1h", "2h"],
         "offset": None,
         "names": ["feat_30m", "feat_1h", "feat_2h"],
-        "blind_spot": 90,
-        "frequency": 360,
-        "time_modulo_frequency": 180,
+        "feature_job_setting": {
+            "blind_spot": "90s",
+            "period": "360s",
+            "offset": "180s",
+            "execution_buffer": "0s",
+        },
         "tile_id": "TILE_SUM_C55AFDFDCA81F4387BA39197C13ACC7AB649BE1F",
         "tile_id_version": 2,
         "aggregation_id": "sum_c55afdfdca81f4387ba39197c13acc7ab649be1f",
@@ -259,9 +263,7 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
         method=method,
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     if method != "count":
         aggregate_kwargs["value_column"] = "col_float"
@@ -291,9 +293,7 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
             method="count",
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
         )
     assert (
         str(exc.value)
@@ -321,9 +321,7 @@ def test_groupby__required_params_missing(
         method="max",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     aggregate_kwargs.pop(missing_param)
     with pytest.raises(ValueError) as exc:
@@ -348,9 +346,7 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         method="sum",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
@@ -383,9 +379,7 @@ def test_groupby__aggregation_method_does_not_support_input_var_type(
             method="sum",
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
         )
     assert 'Aggregation method "sum" does not support "VARCHAR" input variable' in str(exc.value)
 
@@ -578,9 +572,7 @@ def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity)
             fill_value=0,
             windows=["30m"],
             feature_names=["feat_30m"],
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
         )
     assert str(exc.value) == "fill_value is not supported for aggregation per category"
 
@@ -597,9 +589,7 @@ def test__fill_value_not_allowed_with_skip_fill_na(snowflake_event_view_with_ent
             skip_fill_na=True,
             windows=["30m"],
             feature_names=["feat_30m"],
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-            ),
+            feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
         )
     expected_error = (
         "Specifying both fill_value and skip_fill_na is not allowed;"

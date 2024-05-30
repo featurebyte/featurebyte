@@ -1318,8 +1318,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ...       table_name="GROCERYINVOICE",
         ...       feature_job_setting=fb.FeatureJobSetting(
         ...         blind_spot="60s",
-        ...         frequency="3600s",
-        ...         time_modulo_frequency="90s",
+        ...         period="3600s",
+        ...         offset="90s",
         ...       )
         ...     )
         ...   ]

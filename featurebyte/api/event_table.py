@@ -350,8 +350,8 @@ class EventTable(TableApiObject):
         >>> from featurebyte import FeatureJobSetting
         >>> new_feature_job_setting = FeatureJobSetting(
         ...   blind_spot="10m",
-        ...   frequency="24h",
-        ...   time_modulo_frequency="65m",
+        ...   period="24h",
+        ...   offset="65m",
         ... )
 
 

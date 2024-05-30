@@ -30,7 +30,7 @@ grouped = view.groupby(
     windows=["7d"],
     feature_names=["timestamp_hour_counts_7d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", frequency="360s", time_modulo_frequency="180s"
+        blind_spot="90s", period="360s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,

@@ -188,8 +188,7 @@ class GroupBy:
         timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event table timestamp is used)
         feature_job_setting: Optional[FeatureJobSetting]
-            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
-            feature job setting parameters
+            Dictionary contains `blind_spot`, `period` and `offset` keys which are feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool

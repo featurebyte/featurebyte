@@ -220,7 +220,11 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
 @pytest.mark.parametrize(
     "replacement_map",
     [
-        {"groupby_1": {"blind_spot": 300}},
+        {
+            "groupby_1": {
+                "feature_job_setting": {"blind_spot": "300s", "offset": "1800s", "period": "3600s"}
+            }
+        },
         {"assign_1": {"name": "hello"}},
         {"input_1": {"columns": ["hello", "world"]}},
     ],
@@ -258,9 +262,11 @@ def groupby_node_params_fixture():
         "value_by": None,
         "parent": "a",
         "agg_func": "sum",
-        "time_modulo_frequency": 1800,
-        "frequency": 3600,
-        "blind_spot": 900,
+        "feature_job_setting": {
+            "offset": "1800s",
+            "period": "3600s",
+            "blind_spot": "900s",
+        },
         "timestamp": "ts",
         "names": ["a_7d_sum_by_business"],
         "windows": ["7d"],
@@ -480,9 +486,11 @@ def invalid_query_graph_groupby_node_fixture(
         "value_by": None,
         "parent": "a",
         "agg_func": "avg",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
-        "blind_spot": 900,  # 15m
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
         "timestamp": "ts",
         "names": ["a_2h_average", "a_48h_average"],
         "windows": ["2h", "48h"],

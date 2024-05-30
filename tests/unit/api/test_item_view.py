@@ -560,11 +560,7 @@ def test_item_view_groupby__item_table_column(
     """
     Test aggregating a column from ItemTable using an EventTable entity is allowed
     """
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     feature = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         "item_amount",
         method="sum",
@@ -603,11 +599,7 @@ def get_groupby_feature_job_setting_fixture():
     """
     Fixture for feature job setting
     """
-    return FeatureJobSetting(
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
-    )
+    return FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
 
 
 def test_item_view_groupby__event_table_column(snowflake_item_view, groupby_feature_job_setting):
@@ -685,11 +677,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_
     """
     Test count aggregation without value_column using EventTable entity is allowed
     """
-    feature_job_setting = FeatureJobSetting(
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
-    )
+    feature_job_setting = FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     feature = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         method="count",
         windows=["24h"],
@@ -864,7 +852,7 @@ def test_non_time_based_feature__create_new_version(item_event_saved_feature):
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
-                        blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                        blind_spot="45m", period="30m", offset="15m"
                     ),
                 )
             ],

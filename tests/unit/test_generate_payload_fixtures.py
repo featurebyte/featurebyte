@@ -108,11 +108,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         group_by_col="cust_id",
         window="24h",
         name="iet_entropy_24h",
-        feature_job_setting=FeatureJobSetting(
-            frequency="6h",
-            time_modulo_frequency="3h",
-            blind_spot="3h",
-        ),
+        feature_job_setting=FeatureJobSetting(period="6h", offset="3h", blind_spot="3h"),
     )
     feature_iet = replace_obj_id(feature_iet, ObjectId("646f6c1c0ed28a5271fb02d0"))
     float_target = replace_obj_id(float_target, ObjectId("64a80107d667dd0c2b13d8cd"))

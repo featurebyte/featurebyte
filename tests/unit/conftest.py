@@ -1198,7 +1198,7 @@ def arbitrary_default_feature_job_setting_fixture():
     """
     Get arbitrary default feature job setting
     """
-    return FeatureJobSetting(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m")
+    return FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m")
 
 
 @pytest.fixture(name="snowflake_event_table_with_entity_and_feature_job")
@@ -1542,11 +1542,7 @@ def feature_group_feature_job_setting():
     """
     Get feature group feature job setting
     """
-    return FeatureJobSetting(
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
-    )
+    return FeatureJobSetting(blind_spot="10m", period="30m", offset="5m")
 
 
 @pytest.fixture(name="feature_group")
@@ -1711,11 +1707,7 @@ def float_feature_different_job_setting_fixture(snowflake_event_view_with_entity
         value_column="col_float",
         method="sum",
         windows=["24h"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="3h",
-            blind_spot="15m",
-            time_modulo_frequency="5s",
-        ),
+        feature_job_setting=FeatureJobSetting(period="3h", blind_spot="15m", offset="5s"),
         feature_names=["sum_24h_every_3h"],
     )["sum_24h_every_3h"]
 
@@ -1786,11 +1778,7 @@ def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
         feature_names=["sum_30m_by_category", "sum_2h_by_category", "sum_1d_by_category"],
     )
     yield features["sum_1d_by_category"]
@@ -1805,11 +1793,7 @@ def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
     features = grouped.aggregate_over(
         method="count",
         windows=["30m", "2h", "1d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
         feature_names=["counts_30m", "counts_2h", "counts_1d"],
     )
     yield features
@@ -1825,11 +1809,7 @@ def sum_per_category_feature_fixture(snowflake_event_view_with_entity):
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
         feature_names=["sum_30m"],
     )
     yield features["sum_30m"]
@@ -1883,9 +1863,7 @@ def multiple_scd_joined_feature_fixture(
         "count",
         windows=["30d"],
         feature_names=["state_code_counts_30d"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
-        ),
+        feature_job_setting=FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
     )["state_code_counts_30d"]
     yield feature
 
@@ -1900,9 +1878,7 @@ def feature_without_entity_fixture(snowflake_event_table):
         value_column=None,
         method="count",
         windows=["1d"],
-        feature_job_setting=FeatureJobSetting(
-            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
-        ),
+        feature_job_setting=FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
         feature_names=["count_1d"],
     )
     yield feature_group["count_1d"]
@@ -1970,11 +1946,7 @@ def item_view_window_aggregate_feature_fixture(snowflake_item_view_with_entity):
         method="sum",
         windows=["1d"],
         feature_names=["sum_1d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
     )["sum_1d"]
 
 
@@ -2079,11 +2051,7 @@ def mock_snowflake_feature(
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
     )
     feature = feature_group["sum_30m"]
     feature.__dict__["online_enabled"] = False

@@ -331,11 +331,15 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_5075a32b3ad63ef26b142fed42003f7722022559",
-                    "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "frequency": 21600,
+                    "feature_job_setting": {
+                        "blind_spot": "10800s",
+                        "execution_buffer": "0s",
+                        "offset": "10800s",
+                        "period": "21600s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
@@ -349,7 +353,6 @@
                     ],
                     "tile_id": "TILE_SUM_5075A32B3AD63EF26B142FED42003F7722022559",
                     "tile_id_version": 2,
-                    "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
                     "windows": [
@@ -383,11 +386,15 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_fa3804c2f2ab322422fb47867a04f7ac554dcc5e",
-                    "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "frequency": 21600,
+                    "feature_job_setting": {
+                        "blind_spot": "10800s",
+                        "execution_buffer": "0s",
+                        "offset": "10800s",
+                        "period": "21600s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
@@ -401,7 +408,6 @@
                     ],
                     "tile_id": "TILE_SUM_FA3804C2F2AB322422FB47867A04F7AC554DCC5E",
                     "tile_id_version": 2,
-                    "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
                     "windows": [

@@ -112,11 +112,7 @@ def test_event_table_update_critical_data_info(event_table):
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
     )
     feat_preview_df = feature_group.preview(
         observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-14", "cust_id": 938}])

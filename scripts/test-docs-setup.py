@@ -121,11 +121,7 @@ def setup() -> None:
     grocery_product_table.GroceryProductGuid.as_entity("groceryproduct")
 
     grocery_invoice_table.update_default_feature_job_setting(
-        fb.FeatureJobSetting(
-            blind_spot="145",
-            frequency="60m",
-            time_modulo_frequency="90s",
-        )
+        fb.FeatureJobSetting(blind_spot="145", period="60m", offset="90s")
     )
 
     # Feature: InvoiceCount_60days

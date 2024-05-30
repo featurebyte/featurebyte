@@ -643,8 +643,8 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
                         "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "23h",
-                            "frequency": "24h",
-                            "time_modulo_frequency": "1h",
+                            "period": "24h",
+                            "offset": "1h",
                         },
                     }
                 ],

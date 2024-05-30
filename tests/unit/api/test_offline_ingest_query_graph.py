@@ -26,7 +26,7 @@ from tests.util.helper import (
 @pytest.fixture(name="default_feature_job_setting")
 def default_feature_job_setting_fixture():
     """Fixture for default feature job setting"""
-    return FeatureJobSetting(blind_spot="0s", frequency="1d", time_modulo_frequency="0s")
+    return FeatureJobSetting(blind_spot="0s", period="1d", offset="0s")
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -96,7 +96,7 @@ def test_feature__ttl_and_non_ttl_components(
         non_ttl_component_graph = ingest_query_graphs[0]
 
     expected_feature_job_setting = FeatureJobSetting(
-        blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+        blind_spot="600s", period="1800s", offset="300s"
     )
     assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
     assert ttl_component_graph.node_name == "mul_1"
@@ -258,7 +258,7 @@ def test_feature__multiple_non_ttl_components(
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]
     assert non_ttl_component_graph.feature_job_setting == FeatureJobSetting(
-        blind_spot="0s", frequency="1d", time_modulo_frequency="0s"
+        blind_spot="0s", period="1d", offset="0s"
     )
     assert non_ttl_component_graph.node_name == "alias_1"
     assert non_ttl_component_graph.has_ttl is False
@@ -647,7 +647,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
     # check the actual code
     expected = """
-    CREATE FUNCTION udf_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(x_1 MAP<STRING, DOUBLE>, x_2 STRING, x_3 MAP<STRING, DOUBLE>)
+    CREATE FUNCTION udf_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(x_1 STRING, x_2 MAP<STRING, DOUBLE>, x_3 MAP<STRING, DOUBLE>)
     RETURNS DOUBLE
     LANGUAGE PYTHON
     COMMENT ''
@@ -660,12 +660,12 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
 
     def user_defined_function(
-        col_1: dict[str, float], col_2: str, col_3: dict[str, float]
+        col_1: str, col_2: dict[str, float], col_3: dict[str, float]
     ) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
         # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_1) else col_1
+        feat_1 = np.nan if pd.isna(col_2) else col_2
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or pd.isna(key):
@@ -683,11 +683,11 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_2)
+        feat_2 = get_relative_frequency(feat_1, key=col_1)
         flag_1 = pd.isna(feat_2)
         feat_3 = 0 if flag_1 else feat_2
         feat_4 = np.nan if pd.isna(col_3) else col_3
-        feat_5 = get_relative_frequency(feat_4, key=col_2)
+        feat_5 = get_relative_frequency(feat_4, key=col_1)
         flag_2 = pd.isna(feat_5)
         feat_6 = 0 if flag_2 else feat_5
         feat_7 = (

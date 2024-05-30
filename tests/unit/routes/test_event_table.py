@@ -116,11 +116,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "event_id_column": "event_id",
             "event_timestamp_column": "event_date",
             "record_creation_timestamp_column": "created_at",
-            "default_feature_job_setting": {
-                "blind_spot": "10m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
-            },
+            "default_feature_job_setting": {"blind_spot": "10m", "period": "30m", "offset": "5m"},
             "status": "PUBLISHED",
             "user_id": str(user_id),
             "_id": ObjectId(),
@@ -146,9 +142,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
         """
         return {
             "default_feature_job_setting": {
-                "blind_spot": "12m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
+                "blind_spot": "720s",
+                "period": "1800s",
+                "offset": "300s",
+                "execution_buffer": "0s",
             },
             "record_creation_timestamp_column": "created_at",
         }
@@ -175,10 +172,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
         update_response_dict.pop("updated_at")
 
         # default_feature_job_setting should be updated
-        assert (
-            update_response_dict.pop("default_feature_job_setting")
-            == data_update_dict["default_feature_job_setting"]
-        )
+        assert update_response_dict.pop("default_feature_job_setting") == {
+            **data_update_dict["default_feature_job_setting"],
+            # old fields
+            "frequency": data_model_dict["default_feature_job_setting"]["period"],
+            "time_modulo_frequency": data_model_dict["default_feature_job_setting"]["offset"],
+        }
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
@@ -198,7 +197,11 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert [
             record["previous_values"].get("default_feature_job_setting")
             for record in results["data"]
-        ] == [{"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"}, None, None]
+        ] == [
+            {"blind_spot": "600s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
+            None,
+            None,
+        ]
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(
@@ -207,8 +210,24 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["setting"] for doc in results] == [
-            {"blind_spot": "12m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
+            {
+                "blind_spot": "720s",
+                "period": "1800s",
+                "offset": "300s",
+                "execution_buffer": "0s",
+                # old fields
+                "frequency": "1800s",
+                "time_modulo_frequency": "300s",
+            },
+            {
+                "blind_spot": "600s",
+                "period": "1800s",
+                "offset": "300s",
+                "execution_buffer": "0s",
+                # old fields
+                "frequency": "1800s",
+                "time_modulo_frequency": "300s",
+            },
         ]
 
     def test_update_excludes_unsupported_fields(
@@ -240,10 +259,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
         data.pop("updated_at")
 
         # default_feature_job_setting should be updated
-        assert (
-            data.pop("default_feature_job_setting")
-            == data_update_dict["default_feature_job_setting"]
-        )
+        assert data.pop("default_feature_job_setting") == {
+            **data_update_dict["default_feature_job_setting"],
+            # old fields
+            "frequency": data_model_dict["default_feature_job_setting"]["period"],
+            "time_modulo_frequency": data_model_dict["default_feature_job_setting"]["offset"],
+        }
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
@@ -274,8 +295,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 json={
                     "default_feature_job_setting": {
                         "blind_spot": blind_spot,
-                        "frequency": "30m",
-                        "time_modulo_frequency": "5m",
+                        "period": "30m",
+                        "offset": "5m",
                     },
                     "status": "PUBLIC_DRAFT",
                 },
@@ -316,9 +337,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "table_name": "sf_table",
             },
             "default_feature_job_setting": {
-                "blind_spot": "10m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
+                "blind_spot": "600s",
+                "period": "1800s",
+                "offset": "300s",
+                "execution_buffer": "0s",
             },
             "status": "PUBLIC_DRAFT",
             "entities": [

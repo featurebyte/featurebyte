@@ -257,7 +257,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             freq_part = ""
             for component in reversed(range(1, 5)):
                 freq_part = convert_seconds_to_time_format(
-                    self.feature_job_setting.frequency_seconds, components=component
+                    self.feature_job_setting.period_seconds, components=component
                 )
                 if len(freq_part) <= max_freq_len:
                     break

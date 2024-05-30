@@ -286,9 +286,7 @@ def test_feature_using_timezone_offset_with_cleaning_operations(
         method="count",
         windows=["7d"],
         feature_names=["timestamp_hour_counts_7d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )["timestamp_hour_counts_7d"]
     feature.save()
 

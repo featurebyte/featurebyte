@@ -208,8 +208,8 @@ def aggregate_kwargs_fixture():
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
+            period="30m",
+            offset="5m",
         ),
     )
     return aggregate_kwargs
@@ -285,12 +285,12 @@ def run_groupby_and_get_tile_table_identifier(
             "sum_976e8aefa273a14a2998f4148bb19377387408fa",
         ),
         (
-            {"frequency": "10m"},
+            {"period": "10m"},
             "TILE_SUM_2458AD1E0BBDC71E25E4F6AD60C405A66DB1C2F0",
             "sum_2458ad1e0bbdc71e25e4f6ad60c405a66db1c2f0",
         ),
         (
-            {"time_modulo_frequency": "10m"},
+            {"offset": "10m"},
             "TILE_SUM_8CA0F4BAA7250E0CB73A9E297B136F3F02DF36A4",
             "sum_8ca0f4baa7250e0cb73a9e297b136f3f02df36a4",
         ),
@@ -305,7 +305,7 @@ def test_tile_table_id__agg_parameters(
     snowflake_event_table, aggregate_kwargs, overrides, expected_tile_id, expected_agg_id
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
-    feature_job_setting_params = {"frequency", "blind_spot", "time_modulo_frequency"}
+    feature_job_setting_params = {"period", "blind_spot", "offset"}
     existing_fjs = aggregate_kwargs["feature_job_setting"]
     existing_fjs_dict = existing_fjs.json_dict()
     for key in overrides:

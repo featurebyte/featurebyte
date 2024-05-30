@@ -11,8 +11,8 @@ import pdfkit
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
 
-from featurebyte import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
@@ -101,8 +101,8 @@ class FeatureJobSettingAnalysisController(
             analysis_parameters=feature_job_setting_analysis.analysis_parameters,
             recommendation=FeatureJobSetting(
                 blind_spot=f"{recommended_setting.blind_spot}s",
-                time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
-                frequency=f"{recommended_setting.frequency}s",
+                offset=f"{recommended_setting.offset}s",
+                period=f"{recommended_setting.period}s",
             ),
             catalog_name=catalog.name,
             description=catalog.description,
@@ -130,10 +130,7 @@ class FeatureJobSettingAnalysisController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def backtest(
-        self,
-        data: FeatureJobSettingAnalysisBacktest,
-    ) -> Task:
+    async def backtest(self, data: FeatureJobSettingAnalysisBacktest) -> Task:
         """
         Run backtest on a Feature JobSetting Analysis
 

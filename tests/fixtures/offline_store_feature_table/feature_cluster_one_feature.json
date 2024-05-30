@@ -157,13 +157,17 @@
                 "parameters": {
                     "agg_func": "sum",
                     "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-                    "blind_spot": 600,
                     "entity_ids": [
                         {
                             "$oid": "63f94ed6ea1f050131379214"
                         }
                     ],
-                    "frequency": 1800,
+                    "feature_job_setting": {
+                        "blind_spot": "600s",
+                        "execution_buffer": "0s",
+                        "offset": "300s",
+                        "period": "1800s"
+                    },
                     "keys": [
                         "cust_id"
                     ],
@@ -177,7 +181,6 @@
                     ],
                     "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
                     "tile_id_version": 2,
-                    "time_modulo_frequency": 300,
                     "timestamp": "event_timestamp",
                     "value_by": null,
                     "windows": [
