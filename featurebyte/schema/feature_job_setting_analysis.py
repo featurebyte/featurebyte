@@ -226,3 +226,12 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
     period: int = Field(ge=60, le=3600 * 24 * 28)
     offset: int = Field(ge=0, le=3600 * 24 * 28)
     blind_spot: int = Field(ge=0, le=3600 * 24 * 28)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "frequency" in values:
+            values["period"] = values.pop("frequency")
+        if "job_time_modulo_frequency" in values:
+            values["offset"] = values.pop("job_time_modulo_frequency")
+        return values
