@@ -4,7 +4,7 @@ SCDTable API routes
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from http import HTTPStatus
 
@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.scd_table.controller import SCDTableController
+from featurebyte.schema.backward_compatible.table import FeatureJobSettingHistoryEntryResponse
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableList, SCDTableUpdate
@@ -95,6 +96,14 @@ class SCDTableRouter(
             methods=["PATCH"],
             response_model=SCDTableModel,
             status_code=HTTPStatus.OK,
+        )
+
+        # list default feature job setting history
+        self.router.add_api_route(
+            "/history/default_feature_job_setting/{scd_table_id}",
+            self.list_default_feature_job_setting_history,
+            methods=["GET"],
+            response_model=List[FeatureJobSettingHistoryEntryResponse],
         )
 
     async def get_object(self, request: Request, scd_table_id: PydanticObjectId) -> SCDTableModel:
@@ -202,6 +211,28 @@ class SCDTableRouter(
             description=data.description,
         )
         return scd_table
+
+    async def list_default_feature_job_setting_history(
+        self,
+        request: Request,
+        scd_table_id: PydanticObjectId,
+    ) -> List[FeatureJobSettingHistoryEntryResponse]:
+        """
+        List SCDTable default feature job settings history
+        """
+        controller = self.get_controller_for_request(request)
+        history_values = await controller.list_field_history(
+            document_id=scd_table_id,
+            field="default_feature_job_setting",
+        )
+
+        return [
+            FeatureJobSettingHistoryEntryResponse(
+                created_at=record.created_at,
+                setting=record.value,
+            )
+            for record in history_values
+        ]
 
     async def delete_object(
         self, request: Request, scd_table_id: PydanticObjectId

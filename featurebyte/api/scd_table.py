@@ -4,7 +4,7 @@ SCDTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
 from typing_extensions import Literal
 
 from bson import ObjectId
@@ -365,6 +365,20 @@ class SCDTable(TableApiObject):
         )
 
     @property
+    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+        """
+        Returns the default feature job setting for the SCDTable.
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        try:
+            return self.cached_model.default_feature_job_setting
+        except RecordRetrievalException:
+            return self.internal_default_feature_job_setting
+
+    @property
     def natural_key_column(self) -> str:
         """
         Returns the name of the column representing the natural key of a Slowly Changing Dimension (SCD) table. This
@@ -456,18 +470,15 @@ class SCDTable(TableApiObject):
         return self.effective_timestamp_column
 
     @property
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
         """
-        Returns the default feature job setting for the SCDTable.
+        List of default_job_setting history entries
 
         Returns
         -------
-        Optional[FeatureJobSetting]
+        list[dict[str, Any]]
         """
-        try:
-            return self.cached_model.default_feature_job_setting
-        except RecordRetrievalException:
-            return self.internal_default_feature_job_setting
+        return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
     def get_by_id(cls, id: ObjectId) -> SCDTable:  # pylint: disable=redefined-builtin,invalid-name

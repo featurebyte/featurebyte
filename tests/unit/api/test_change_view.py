@@ -768,3 +768,19 @@ def test_change_view__aggregate_over(saved_scd_table, cust_id_entity):
     # check the feature job setting of the saved feature
     groupby_node = feature.cached_model.graph.nodes_map["groupby_1"]
     assert groupby_node.parameters.feature_job_setting == feature_job_setting
+
+    # list all the feature job setting history
+    fjs_history = saved_scd_table.default_feature_job_setting_history
+    assert len(fjs_history) == 2
+    assert fjs_history[0] == {
+        "created_at": fjs_history[0]["created_at"],
+        "setting": {
+            "blind_spot": "14400s",
+            "offset": "10800s",
+            "period": "86400s",
+            "execution_buffer": "0s",
+            # backward compatibility
+            "frequency": "86400s",
+            "time_modulo_frequency": "10800s",
+        },
+    }
