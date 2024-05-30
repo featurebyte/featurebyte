@@ -218,9 +218,7 @@ class BaseSparkSession(BaseSession, ABC):
         await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
         await self.execute_query_long_running(f"CACHE TABLE `{table_name}`")
 
-    async def register_table(
-        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-    ) -> None:
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         # truncate timestamps to microseconds to avoid parquet and Spark issues
         if dataframe.shape[0] > 0:
             for colname in dataframe.columns:
@@ -234,22 +232,11 @@ class BaseSparkSession(BaseSession, ABC):
         self.upload_dataframe_to_storage(dataframe=dataframe, remote_path=temp_filename)
 
         try:
-            if temporary:
-                # create cached temp view
-                await self.execute_query(
-                    f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_path}/{temp_filename}')"
-                )
-                # cache table so we can remove the temp file
-                await self.execute_query(
-                    f"CACHE TABLE `{table_name}` OPTIONS ('storageLevel' 'DISK_ONLY')"
-                )
-            else:
-                await self.execute_query(
-                    f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
-                    f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
-                    f"AS SELECT * FROM PARQUET.`{self.storage_path}/{temp_filename}`"
-                )
+            await self.execute_query(
+                f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
+                f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
+                f"AS SELECT * FROM PARQUET.`{self.storage_path}/{temp_filename}`"
+            )
         finally:
             # clean up staging file
             try:

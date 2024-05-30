@@ -324,12 +324,7 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    async def register_table(
-        self,
-        table_name: str,
-        dataframe: pd.DataFrame,
-        temporary: bool = True,
-    ) -> None:
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         """
         Register a table
 
@@ -339,8 +334,6 @@ class BaseSession(BaseModel):
             Temp table name
         dataframe : pd.DataFrame
             DataFrame to register
-        temporary : bool
-            If True, register a temporary table
         """
 
     @classmethod

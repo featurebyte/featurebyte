@@ -111,7 +111,7 @@ class DataFrameObservationSet(ObservationSet):
     ) -> None:
         if add_row_index:
             self.dataframe[InternalName.TABLE_ROW_INDEX] = np.arange(self.dataframe.shape[0])
-        await session.register_table(request_table_name, self.dataframe, temporary=False)
+        await session.register_table(request_table_name, self.dataframe)
 
 
 class MaterializedTableObservationSet(ObservationSet):

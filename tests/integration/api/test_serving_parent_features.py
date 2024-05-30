@@ -84,10 +84,10 @@ async def tables_fixture(session, data_source, customer_entity, event_entity):
             "country": ["france", "japan"],
         }
     )
-    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD_1", df_scd_1, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2, temporary=False)
-    await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
+    await session.register_table(f"{table_prefix}_EVENT", df_events)
+    await session.register_table(f"{table_prefix}_SCD_1", df_scd_1)
+    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2)
+    await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1)
 
     city_entity = Entity(name=f"{table_prefix}_city", serving_names=["serving_city_id"])
     city_entity.save()

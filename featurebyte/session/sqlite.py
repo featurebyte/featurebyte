@@ -106,9 +106,7 @@ class SQLiteSession(BaseSession):
                 )
         return column_name_type_map
 
-    async def register_table(
-        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-    ) -> None:
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()
 
     async def execute_query(

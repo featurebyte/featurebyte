@@ -54,7 +54,7 @@ async def register_table_with_array_column(
     """
     _ = catalog
     table_name = "event_table_with_distances"
-    await session.register_table(table_name, distance_event_data, temporary=False)
+    await session.register_table(table_name, distance_event_data)
 
     database_table = data_source.get_source_table(
         database_name=session.database_name,

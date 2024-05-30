@@ -434,7 +434,7 @@ async def create_observation_table_from_dataframe(
     """
     unique_id = ObjectId()
     db_table_name = f"df_{unique_id}"
-    await session.register_table(db_table_name, df, temporary=False)
+    await session.register_table(db_table_name, df)
     return data_source.get_source_table(
         db_table_name,
         database_name=session.database_name,
@@ -450,7 +450,7 @@ async def create_batch_request_table_from_dataframe(session, df, data_source):
     """
     unique_id = ObjectId()
     db_table_name = f"df_{unique_id}"
-    await session.register_table(db_table_name, df, temporary=False)
+    await session.register_table(db_table_name, df)
     return data_source.get_source_table(
         db_table_name,
         database_name=session.database_name,

@@ -42,7 +42,7 @@ async def setup_module(session):
     """
     Setup module
     """
-    await session.register_table("TEST_DATA_TABLE", sample_dataframe(), temporary=True)
+    await session.register_table("TEST_DATA_TABLE", sample_dataframe())
 
 
 @pytest.mark.asyncio

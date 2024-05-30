@@ -125,14 +125,14 @@ async def test_scd_join_small(session, data_source, source_type):
 
     # Register event table
     table_name = f"{table_prefix}_EVENT"
-    await session.register_table(table_name, df_events, temporary=False)
+    await session.register_table(table_name, df_events)
     await session.execute_query(
         f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
     )
 
     # Register scd table
     table_name = f"{table_prefix}_SCD"
-    await session.register_table(table_name, df_scd, temporary=False)
+    await session.register_table(table_name, df_scd)
     await session.execute_query(
         f'UPDATE {table_name} SET {_quote("effective_ts")} = NULL WHERE {_quote("scd_value")} = 3'
     )
@@ -199,9 +199,9 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
         }
     )
     table_prefix = str(ObjectId())
-    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2, temporary=False)
+    await session.register_table(f"{table_prefix}_EVENT", df_events)
+    await session.register_table(f"{table_prefix}_SCD", df_scd)
+    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2)
     event_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_EVENT",
         database_name=session.database_name,

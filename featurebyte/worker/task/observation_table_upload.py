@@ -74,9 +74,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         )
 
         # Write the file to the warehouse
-        await db_session.register_table(
-            location.table_details.table_name, uploaded_dataframe, temporary=False
-        )
+        await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
         await self.observation_table_service.add_row_index_column(
             db_session, location.table_details
         )

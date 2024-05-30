@@ -149,13 +149,10 @@ class DatabricksUnitySession(DatabricksSession):
         """
         await self.execute_query(f"ALTER {kind} {name} OWNER TO `{self.group_name}`")
 
-    async def register_table(
-        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-    ) -> None:
-        await super().register_table(table_name, dataframe, temporary)
-        if not temporary:
-            # grant ownership of the table or view to the group
-            await self.set_owner("TABLE", table_name)
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+        await super().register_table(table_name, dataframe)
+        # grant ownership of the table or view to the group
+        await self.set_owner("TABLE", table_name)
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         schemas = await self.execute_query_interactive(

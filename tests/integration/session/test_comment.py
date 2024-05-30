@@ -23,7 +23,7 @@ async def registered_table(session):
             "b": [4, 5, 6],
         }
     )
-    await session.register_table(table_name, df, temporary=False)
+    await session.register_table(table_name, df)
     yield table_name
     await session.drop_table(
         table_name=table_name,

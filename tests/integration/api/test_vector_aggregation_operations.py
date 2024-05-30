@@ -153,7 +153,7 @@ async def register_table_with_array_column(
     """
     _ = catalog
     table_name = "event_table_with_vector"
-    await session.register_table(table_name, event_data_with_array, temporary=False)
+    await session.register_table(table_name, event_data_with_array)
 
     database_table = data_source.get_source_table(
         database_name=session.database_name,
@@ -186,7 +186,7 @@ async def register_item_table_with_array_column(
     Register a table with an array column
     """
     table_name = "item_table_with_vector"
-    await session.register_table(table_name, item_data_with_array, temporary=False)
+    await session.register_table(table_name, item_data_with_array)
 
     database_table = data_source.get_source_table(
         database_name=session.database_name,
@@ -212,7 +212,7 @@ async def register_scd_table_with_array_column(
     Register a table with an array column
     """
     table_name = "scd_table_with_vector"
-    await session.register_table(table_name, scd_data_with_array, temporary=False)
+    await session.register_table(table_name, scd_data_with_array)
 
     database_table = data_source.get_source_table(
         database_name=session.database_name,

@@ -93,7 +93,7 @@ async def test_observation_table_min_interval_between_entities(
         df[SpecialColumnName.POINT_IN_TIME].astype(str)
     )
     table_name = "observation_table_time_interval"
-    await session.register_table(table_name, df, temporary=False)
+    await session.register_table(table_name, df)
 
     database_table = data_source.get_source_table(
         database_name=session.database_name,
