@@ -224,7 +224,7 @@ class BaseSparkSession(BaseSession, ABC):
         try:
             await self.execute_query(
                 f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
-                f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5', 'delta.feature.timestampNtz' = 'supported')"  # pylint: disable=line-too-long
+                f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
                 f"AS SELECT * FROM PARQUET.`{self.storage_path}/{temp_filename}`"
             )
         finally:
