@@ -208,16 +208,6 @@ class BaseSparkSession(BaseSession, ABC):
             logger.warning(f"Spark: Not supported data type '{spark_type}'")
         return db_vartype
 
-    async def register_table_with_query(
-        self, table_name: str, query: str, temporary: bool = True
-    ) -> None:
-        if temporary:
-            create_command = "CREATE OR REPLACE TEMPORARY VIEW"
-        else:
-            create_command = "CREATE OR REPLACE VIEW"
-        await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
-        await self.execute_query_long_running(f"CACHE TABLE `{table_name}`")
-
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         # truncate timestamps to microseconds to avoid parquet and Spark issues
         if dataframe.shape[0] > 0:
