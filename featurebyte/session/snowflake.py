@@ -255,14 +255,9 @@ class SnowflakeSession(BaseSession):
                 else:
                     yield pa.record_batch(batch.to_pandas(), schema=schema)
 
-    async def register_table(
-        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-    ) -> None:
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         schema = self.get_columns_schema_from_dataframe(dataframe)
-        if temporary:
-            create_command = "CREATE OR REPLACE TEMP TABLE"
-        else:
-            create_command = "CREATE OR REPLACE TABLE"
+        create_command = "CREATE OR REPLACE TABLE"
         await self.execute_query(
             f"""
             {create_command} "{table_name}"(

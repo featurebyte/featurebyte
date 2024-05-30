@@ -154,7 +154,7 @@ async def test_change_view_correctness(session, data_source):
     df_expected.insert(0, "cust_id", "c1")
 
     table_name = "test_change_view_correctness_table"
-    await session.register_table(table_name, df, temporary=False)
+    await session.register_table(table_name, df)
 
     scd_source_table = data_source.get_source_table(
         table_name=table_name,

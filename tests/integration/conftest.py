@@ -853,7 +853,7 @@ async def datasets_registration_helper_fixture(
                 Session object
             """
             for table_name, df in self.datasets.items():
-                await session.register_table(table_name, df, temporary=False)
+                await session.register_table(table_name, df)
 
         @property
         def table_names(self) -> List[str]:

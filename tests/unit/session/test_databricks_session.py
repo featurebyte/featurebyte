@@ -211,9 +211,8 @@ async def test_databricks_session(databricks_session_dict):
     pd.testing.assert_frame_equal(df_result, df_expected)
 
 
-@pytest.mark.parametrize("temporary", [True, False])
 @pytest.mark.asyncio
-async def test_databricks_register_table(databricks_session_dict, databricks_connection, temporary):
+async def test_databricks_register_table(databricks_session_dict, databricks_connection):
     """
     Test Databricks session register_table
     """
@@ -232,16 +231,9 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
                     "cust_id": [1, 2, 3],
                 },
             )
-            if temporary:
-                expected = "CREATE OR REPLACE TEMPORARY VIEW"
-            else:
-                expected = "CREATE OR REPLACE TABLE"
-            await session.register_table("my_view", df, temporary)
-
-            if temporary:
-                assert mock_execute_query.call_args_list[0][0][0].startswith(expected)
-            else:
-                assert mock_execute_query.call_args_list[-1][0][0].startswith(expected)
+            expected = "CREATE OR REPLACE TABLE"
+            await session.register_table("my_view", df)
+            assert mock_execute_query.call_args_list[-1][0][0].startswith(expected)
 
 
 def test_databricks_sql_connector_not_available(databricks_session_dict):

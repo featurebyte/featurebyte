@@ -23,7 +23,11 @@ async def setup_test_data_fixture(session):
             "val_col": [None, -1.5],
         }
     )
-    await session.register_table(table_name="test_table", dataframe=table, temporary=True)
+    await session.register_table(table_name="test_table", dataframe=table)
+    yield
+    await session.drop_table(
+        "test_table", schema_name=session.schema_name, database_name=session.database_name
+    )
 
 
 @pytest.mark.asyncio

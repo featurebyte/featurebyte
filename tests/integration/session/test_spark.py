@@ -108,6 +108,7 @@ async def test_register_table(session):
             "üser id": [1, 2, 3, 4, 5],
         }
     )
-    await session.register_table(table_name="test_table", dataframe=df_training_events)
-    df_retrieve = await session.execute_query("SELECT * FROM test_table")
+    table_name = "test_table_test_register_table"
+    await session.register_table(table_name=table_name, dataframe=df_training_events)
+    df_retrieve = await session.execute_query(f"SELECT * FROM {table_name}")
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)

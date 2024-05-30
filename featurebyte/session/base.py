@@ -324,12 +324,7 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    async def register_table(
-        self,
-        table_name: str,
-        dataframe: pd.DataFrame,
-        temporary: bool = True,
-    ) -> None:
+    async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         """
         Register a table
 
@@ -339,8 +334,6 @@ class BaseSession(BaseModel):
             Temp table name
         dataframe : pd.DataFrame
             DataFrame to register
-        temporary : bool
-            If True, register a temporary table
         """
 
     @classmethod
@@ -658,27 +651,6 @@ class BaseSession(BaseModel):
             columns = [row[0] for row in cursor.description]
             return pd.DataFrame(all_rows, columns=columns)
         return None
-
-    async def register_table_with_query(
-        self, table_name: str, query: str, temporary: bool = True
-    ) -> None:
-        """
-        Register a temporary table using a Select query
-
-        Parameters
-        ----------
-        table_name : str
-            Temp table name
-        query : str
-            SQL query for the table
-        temporary : bool
-            If True, register a temporary table
-        """
-        if temporary:
-            create_command = "CREATE OR REPLACE TEMPORARY TABLE"
-        else:
-            create_command = "CREATE OR REPLACE TABLE"
-        await self.execute_query_long_running(f"{create_command} {table_name} AS {query}")
 
     async def drop_table(
         self,

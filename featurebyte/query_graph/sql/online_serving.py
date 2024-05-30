@@ -553,7 +553,7 @@ async def get_online_features(  # pylint: disable=too-many-locals,too-many-branc
         # table beforehand.
         if isinstance(request_data, pd.DataFrame):
             request_table_name = f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}"
-            await session.register_table(request_table_name, request_data, temporary=False)
+            await session.register_table(request_table_name, request_data)
         else:
             assert request_table_details is not None
             request_table_name = request_table_details.table_name
