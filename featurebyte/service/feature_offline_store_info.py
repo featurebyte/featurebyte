@@ -320,7 +320,7 @@ class OfflineStoreInfoInitializationService:
                     setting.feature_job_setting for setting in feature.table_id_feature_job_settings
                 ],
                 feature_id=feature.id,
-                has_ttl=metadata.has_ttl,
+                has_ttl=metadata.has_ttl if metadata else False,
                 null_filling_value=null_filling_value,
             )
 
