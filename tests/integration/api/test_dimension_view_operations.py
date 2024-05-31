@@ -28,8 +28,8 @@ def count_item_type_dictionary_feature_fixture(item_table):
 
     Feature is grouped by ORDER_ID, with ITEM_TYPE as their category.
     """
-    item_table = item_table.get_view()
-    return item_table.groupby("order_id", category="item_type").aggregate(
+    item_view = item_table.get_view()
+    return item_view.groupby("order_id", category="item_type").aggregate(
         method="count",
         feature_name="COUNT_ITEM_TYPE",
     )
@@ -199,6 +199,51 @@ def test_get_value_in_dictionary__target_is_scalar(event_table, source_type):
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         feature_name: 44.21,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_value_in_dictionary__target_is_non_lookup(event_table, source_type):
+    """
+    Test is in dictionary when the key is a feature but not a lookup feature
+    """
+    # get dictionary feature
+    event_view = event_table.get_view()
+    feature_name = "SUM_AMOUNT_DICT_30d"
+    feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
+        value_column="ÀMOUNT",
+        method="sum",
+        windows=["30d"],
+        feature_names=[feature_name],
+    )
+    dictionary_feature = feature_group[feature_name]
+
+    # get another feature to be used as key (not a lookup feature)
+    key_feature = event_view.groupby("CUST_ID").aggregate_over(
+        value_column="PRODUCT_ACTION",
+        method="latest",
+        windows=["30d"],
+        feature_names=["latest_action"],
+    )["latest_action"]
+
+    # perform get_value
+    get_value_feature = dictionary_feature.cd.get_value(key_feature)
+    assert isinstance(get_value_feature, Feature)
+    feature_name = "get_value_in_dictionary"
+    get_value_feature.name = feature_name
+
+    # assert
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "350"}
+    get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+
+    # Note: See notes above in test_get_value_from_dictionary__target_is_lookup_feature for why the
+    # casting is needed.
+    get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(float)
+
+    tz_localize_if_needed(get_value_feature_preview, source_type)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        feature_name: 22.05,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 

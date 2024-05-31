@@ -1106,19 +1106,6 @@ class FrozenSeries(
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
 
-    def validate_isin_operation(
-        self: FrozenSeriesT, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
-    ) -> None:
-        """
-        Optional validation that can be added by subclasses if needed.
-
-        Parameters
-        ----------
-        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
-            other input to check whether the current series is in
-        """
-        _ = other
-
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
@@ -1163,8 +1150,6 @@ class FrozenSeries(
         >>> new_feature = lookup_feature.isin(dictionary_feature)
         >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
-        self.validate_isin_operation(other)
-
         # convert to dictionary keys if the other input is a series.
         other_series = other
         if isinstance(other, FrozenSeries):

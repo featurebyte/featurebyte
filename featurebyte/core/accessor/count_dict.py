@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union
 
 from typeguard import typechecked
 
-from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.series import DefaultSeriesBinaryOperator
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
@@ -394,9 +393,7 @@ class CountDictAccessor:
         1
         """
         additional_node_params = {}
-        if isinstance(key, type(self._feature_obj)):
-            assert_is_lookup_feature(key.node_types_lineage)
-        else:
+        if not isinstance(key, type(self._feature_obj)):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
         # construct operation structure of the get value node output
@@ -459,9 +456,7 @@ class CountDictAccessor:
         additional_node_params: Dict[str, Any] = {
             "descending": descending,
         }
-        if isinstance(key, type(self._feature_obj)):
-            assert_is_lookup_feature(key.node_types_lineage)
-        else:
+        if not isinstance(key, type(self._feature_obj)):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
@@ -516,9 +511,7 @@ class CountDictAccessor:
         0.14285714285714302
         """
         additional_node_params = {}
-        if isinstance(key, type(self._feature_obj)):
-            assert_is_lookup_feature(key.node_types_lineage)
-        else:
+        if not isinstance(key, type(self._feature_obj)):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 

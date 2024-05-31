@@ -150,10 +150,6 @@ def test_get_value_from_dictionary__validation_fails(float_feature, count_per_ca
         float_feature.cd.get_value(float_feature)
     assert "Can only use .cd accessor with count per category features" in str(exc)
 
-    with pytest.raises(ValueError) as exc:
-        count_per_category_feature.cd.get_value(count_per_category_feature)
-    assert "not a lookup feature" in str(exc)
-
 
 def test_get_value_from_dictionary__success(
     snowflake_event_table, count_per_category_feature, sum_per_category_feature
@@ -214,10 +210,6 @@ def test_get_rank_from_dictionary__validation_fails(float_feature, count_per_cat
         float_feature.cd.get_rank(float_feature)
     assert "Can only use .cd accessor with count per category features" in str(exc)
 
-    with pytest.raises(ValueError) as exc:
-        count_per_category_feature.cd.get_rank(count_per_category_feature)
-    assert "not a lookup feature" in str(exc)
-
 
 def test_get_relative_frequency_from_dictionary__validation_fails(
     float_feature, count_per_category_feature
@@ -228,7 +220,3 @@ def test_get_relative_frequency_from_dictionary__validation_fails(
     with pytest.raises(AttributeError) as exc:
         float_feature.cd.get_relative_frequency(float_feature)
     assert "Can only use .cd accessor with count per category features" in str(exc)
-
-    with pytest.raises(ValueError) as exc:
-        count_per_category_feature.cd.get_relative_frequency(count_per_category_feature)
-    assert "not a lookup feature" in str(exc)
