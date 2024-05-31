@@ -18,6 +18,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
+from featurebyte.query_graph.node.nested import AggregationNodeInfo
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -245,3 +246,81 @@ def test_deployment_creation__primary_entity_validation(
         feature_list.deploy(
             make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
         )
+
+
+def test_deployment_with_unbounded_window(
+    snowflake_event_view_with_entity, cust_id_entity, feature_group_feature_job_setting
+):
+    """Test deployment with unbounded window"""
+    _ = cust_id_entity
+    feat_latest = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="latest",
+        windows=[None],
+        feature_names=["feat_latest"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["feat_latest"]
+
+    feat_latest_bounded = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="latest",
+        windows=["7d"],
+        feature_names=["feat_latest_bounded"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["feat_latest_bounded"]
+    feat_latest_combined = feat_latest + feat_latest_bounded
+    feat_latest_combined.name = "feat_latest_combined"
+
+    feature_list = FeatureList([feat_latest, feat_latest_combined], name="my_feature_list")
+    feature_list.save()
+
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment.enable()
+
+    offline_store_info = feat_latest.cached_model.offline_store_info
+    assert offline_store_info.metadata.has_ttl is False
+    assert offline_store_info.metadata.feature_job_setting == feature_group_feature_job_setting
+    assert offline_store_info.metadata.aggregation_nodes_info == [
+        AggregationNodeInfo(node_type="groupby", input_node_name="graph_1", node_name="groupby_1")
+    ]
+    assert offline_store_info.odfv_info is None
+
+    offline_store_info_combined = feat_latest_combined.cached_model.offline_store_info
+    assert offline_store_info_combined.metadata.has_ttl is True
+    assert (
+        offline_store_info_combined.metadata.feature_job_setting
+        == feature_group_feature_job_setting
+    )
+    assert offline_store_info_combined.metadata.aggregation_nodes_info == [
+        AggregationNodeInfo(node_type="groupby", input_node_name="graph_1", node_name="groupby_1"),
+        AggregationNodeInfo(node_type="groupby", input_node_name="graph_1", node_name="groupby_2"),
+    ]
+
+    version = feat_latest_combined.version
+    expected_odfv_codes = f"""
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def odfv_feat_latest_combined_{version.lower()}_{feat_latest_combined.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df = pd.DataFrame()
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        feature_timestamp = pd.to_datetime(
+            inputs["feat_latest_combined_{version}__ts"], unit="s", utc=True
+        )
+        mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+        inputs["feat_latest_combined_{version}"][~mask] = np.nan
+        df["feat_latest_combined_{version}"] = inputs["feat_latest_combined_{version}"]
+        df.fillna(np.nan, inplace=True)
+        return df
+    """
+    assert (
+        offline_store_info_combined.odfv_info.codes.strip()
+        == textwrap.dedent(expected_odfv_codes).strip()
+    )

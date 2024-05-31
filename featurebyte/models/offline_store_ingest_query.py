@@ -320,6 +320,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         feature_dtype: DBVarType,
         feature_job_settings: List[FeatureJobSetting],
         feature_id: ObjectId,
+        has_ttl: bool,
         null_filling_value: Optional[Scalar] = None,
     ) -> None:
         """
@@ -335,12 +336,14 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             List of feature job settings used by the feature
         feature_id: ObjectId
             Feature ID
+        has_ttl: bool
+            Whether the feature has time-to-live (TTL) component
         null_filling_value: Optional[Scalar]
             Null filling value
         """
         self.time_to_live_in_secs = None
         self.null_filling_value = null_filling_value
-        if feature_job_settings:
+        if has_ttl and feature_job_settings:
             self.time_to_live_in_secs = min(
                 get_time_aggregate_ttl_in_secs(feature_job_setting)
                 for feature_job_setting in feature_job_settings
