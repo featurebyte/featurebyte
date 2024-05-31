@@ -5,7 +5,7 @@ Series class
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 from typing_extensions import Literal
 
 from functools import wraps
