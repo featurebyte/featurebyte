@@ -85,7 +85,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
         # check document output
-        fixture_path = "tests/fixtures/feature_job_setting_analysis/result.json"
+        if result.event_table_id:
+            fixture_path = "tests/fixtures/feature_job_setting_analysis/result.json"
+        else:
+            fixture_path = "tests/fixtures/feature_job_setting_analysis/result_no_event_table.json"
         if update_fixtures:
             with open(fixture_path, "w") as file_obj:
                 json.dump(result.json_dict(), file_obj, indent=4)

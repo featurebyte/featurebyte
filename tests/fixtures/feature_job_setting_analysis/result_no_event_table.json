@@ -1,13 +1,13 @@
 {
-    "_id": "665f61e45a436114d29fe4c3",
+    "_id": "665f61e75a436114d29fe4fa",
     "user_id": "63f9506dd478b94127123456",
     "name": "sample_analysis",
-    "created_at": "2024-06-04T18:50:12.325000",
+    "created_at": "2024-06-04T18:50:15.409000",
     "updated_at": null,
     "block_modification_by": [],
     "description": null,
-    "catalog_id": "665f61e25a436114d29fe4be",
-    "event_table_id": "6337f9651050ee7d5980660d",
+    "catalog_id": "665f61e55a436114d29fe4f5",
+    "event_table_id": null,
     "event_table_candidate": null,
     "analysis_options": {
         "analysis_date": "2022-04-18T23:59:55.799000",
