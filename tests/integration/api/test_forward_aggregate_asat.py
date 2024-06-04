@@ -2,6 +2,7 @@
 Test forward_aggregate_asat
 """
 
+import numpy as np
 import pandas as pd
 
 from tests.util.helper import tz_localize_if_needed
@@ -47,7 +48,18 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
         }
     )
     expected = observations_set.copy()
-    expected["Future Number of Users With This Status"] = [1, 2, 2, 1, 1, 0, 0, 0, 0, 0]
+    expected["Future Number of Users With This Status"] = [
+        1,
+        2,
+        2,
+        1,
+        1,
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+    ]
     df = target.compute_targets(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)

@@ -274,5 +274,5 @@ def test_item_view_features_from_different_filters(item_table):
         }
     )
     df_historical_features = feature_list.compute_historical_features(df_training_events)
-    assert df_historical_features["feature_1"].tolist() == [2, 4, 0, 5, 1]
+    assert df_historical_features["feature_1"].equals(pd.Series([2, 4, np.nan, 5, 1]))
     assert df_historical_features["feature_2"].tolist() == [1, 5, 2, 3, 2]

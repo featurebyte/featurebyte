@@ -47,7 +47,7 @@ class WindowAggregator(BaseAggregator):
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
     ) -> FeatureGroup:
         """
@@ -70,7 +70,7 @@ class WindowAggregator(BaseAggregator):
             Dictionary contains `blind_spot`, `period` and `offset` keys which are feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-        skip_fill_na: bool
+        skip_fill_na: Optional[bool]
             Whether to skip filling NaN values
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
@@ -80,6 +80,8 @@ class WindowAggregator(BaseAggregator):
         -------
         FeatureGroup
         """
+        if skip_fill_na is None:
+            skip_fill_na = fill_value is None
 
         self._validate_parameters(
             value_column=value_column,

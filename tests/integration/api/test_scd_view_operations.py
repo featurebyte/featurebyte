@@ -496,7 +496,7 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
         "Current Number of Users With This Status": 1,
         "Current Number of Users With This Status 1d": 1,
     }
-    assert df.iloc[0].to_dict() == expected
+    assert df.iloc[0].equals(pd.Series(expected))
 
     # check preview
     df = feature_list.preview(
@@ -515,9 +515,9 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "user_status": "STÀTUS_CODE_42",
         "Current Number of Users With This Status": 1,
-        "Current Number of Users With This Status 1d": 0,
+        "Current Number of Users With This Status 1d": np.nan,
     }
-    assert df.iloc[0].to_dict() == expected
+    assert df.iloc[0].equals(pd.Series(expected))
 
     # check historical features
     observations_set = pd.DataFrame(
@@ -527,8 +527,30 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
         }
     )
     expected = observations_set.copy()
-    expected["Current Number of Users With This Status"] = [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
-    expected["Current Number of Users With This Status 1d"] = [0, 0, 1, 2, 2, 1, 1, 0, 0, 0]
+    expected["Current Number of Users With This Status"] = [
+        np.nan,
+        1,
+        2,
+        2,
+        1,
+        1,
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+    ]
+    expected["Current Number of Users With This Status 1d"] = [
+        np.nan,
+        np.nan,
+        1,
+        2,
+        2,
+        1,
+        1,
+        np.nan,
+        np.nan,
+        np.nan,
+    ]
     df = feature_list.compute_historical_features(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)

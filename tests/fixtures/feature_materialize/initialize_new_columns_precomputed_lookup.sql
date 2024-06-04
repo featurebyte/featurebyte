@@ -83,20 +83,8 @@ WITH ONLINE_REQUEST_TABLE AS (
 )
 SELECT
   AGG."gender",
-  CAST(CASE
-    WHEN (
-      "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
-    )
-    THEN 0
-    ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS BIGINT) AS "__feature_requiring_parent_serving_V220101__part1",
-  CAST(CASE
-    WHEN (
-      "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" IS NULL
-    )
-    THEN 0
-    ELSE "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-  END AS BIGINT) AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
+  CAST("_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS BIGINT) AS "__feature_requiring_parent_serving_V220101__part1",
+  CAST("_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS BIGINT) AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS

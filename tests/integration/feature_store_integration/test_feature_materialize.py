@@ -773,13 +773,10 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
     assert len(all_udfs) > 0
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
     if source_type == SourceType.DATABRICKS_UNITY:
-        # udf_currentnumberofuserswiththisstatus_<version>_<feature_id>
-        # udf_external_fs_count_by_product_action_7d_<version>_<feature_id>
         # udf_external_fs_complex_user_x_production_action_feature_<version>_<feature_id>
-        # udf_external_fs_count_overall_7d_<version>_<feature_id>
         # udf_external_fs_cosine_similarity_<version>_<feature_id>
         # udf_relativefrequency7d_<version>_<feature_id>
-        assert len(udfs_for_on_demand_func) == 6
+        assert len(udfs_for_on_demand_func) == 3
 
         await _check_udf_with_container_input(
             session, udfs_for_on_demand_func, offline_store_feature_tables
@@ -1026,7 +1023,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
             0.6493784232675229,
             0.38572185913993623,
         ],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 476.289306640625,
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": None,
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.895897626876831,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": None,

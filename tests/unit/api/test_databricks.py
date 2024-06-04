@@ -205,12 +205,7 @@ def test_databricks_specs(
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["count_feature_V240103"],
-            rename_outputs={},
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_count_feature_v240103_[FEATURE_ID0]",
-            input_bindings={"x_1": "count_feature_V240103"},
-            output_name="count_feature",
+            rename_outputs={"count_feature_V240103": "count_feature"},
         ),
         FeatureLookup(
             table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
@@ -309,7 +304,6 @@ def test_databricks_specs(
         "__relative_frequency_V240103__part0",
         "__relative_frequency_V240103__part1",
         "__req_col_feature_V240103__part0",
-        "count_feature_V240103",
         "transaction_id",
     ]
 
@@ -398,35 +392,7 @@ def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
     ]
 
 
-def test_null_filling_udf(databricks_deployment, count_feature):
+def test_no_null_filling_on_count_feature(databricks_deployment, count_feature):
     """Test null filling UDF"""
-    expected = """
-    CREATE FUNCTION udf_count_feature_[VERSION]_[FEATURE_ID](x_1 BIGINT)
-    RETURNS BIGINT
-    LANGUAGE PYTHON
-    COMMENT ''
-    AS $$
-    import datetime
-    import json
-    import numpy as np
-    import pandas as pd
-    import scipy as sp
-
-
-    def user_defined_function(col_1: int) -> int:
-        # col_1: count_feature_V240103
-        return 0 if pd.isnull(col_1) else col_1
-
-    output = user_defined_function(x_1)
-    return None if pd.isnull(output) else output
-    $$
-    """
-    replace_pairs = [
-        ("[VERSION]", count_feature.version.lower()),
-        ("[FEATURE_ID]", str(count_feature.cached_model.id)),
-    ]
-    for replace_pair in replace_pairs:
-        expected = expected.replace(*replace_pair)
-
     udf_info = count_feature.cached_model.offline_store_info.udf_info
-    assert udf_info.codes.strip() == textwrap.dedent(expected).strip()
+    assert udf_info is None
