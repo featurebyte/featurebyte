@@ -137,7 +137,7 @@ class GroupBy:
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: bool = True,
         offset: Optional[str] = None,
     ) -> FeatureGroup:
         """
@@ -192,7 +192,8 @@ class GroupBy:
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
-            Whether to skip filling NaN values
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
             shifted backward by the offset duration
@@ -264,7 +265,7 @@ class GroupBy:
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: bool = True,
     ) -> Feature:
         """
         The aggregate_asat method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
@@ -321,7 +322,8 @@ class GroupBy:
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
-            Whether to skip filling NaN values
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
 
         Returns
         -------
@@ -375,7 +377,7 @@ class GroupBy:
         method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: bool = True,
     ) -> Feature:
         """
         The aggregate method of a GroupBy class instance returns a Simple Aggregate Feature object. This object
@@ -408,7 +410,8 @@ class GroupBy:
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
-            Whether to skip filling NaN values
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
 
         Returns
         -------
@@ -443,7 +446,7 @@ class GroupBy:
         window: Optional[str] = None,
         target_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: bool = True,
         offset: Optional[str] = None,
     ) -> Target:
         """
@@ -465,7 +468,8 @@ class GroupBy:
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
-            Whether to skip filling NaN values
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
             shifted forward by the offset duration
@@ -507,7 +511,7 @@ class GroupBy:
         target_name: Optional[str] = None,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: bool = True,
     ) -> Target:
         """
         The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""
@@ -562,7 +566,8 @@ class GroupBy:
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
-            Whether to skip filling NaN values
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
 
         Returns
         -------

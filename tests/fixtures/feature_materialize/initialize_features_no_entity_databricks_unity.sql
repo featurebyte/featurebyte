@@ -72,13 +72,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     ON TRUE
 )
 SELECT
-  CAST(CASE
-    WHEN (
-      `_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64` IS NULL
-    )
-    THEN 0
-    ELSE `_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64`
-  END AS LONG) AS `count_1d_V220101`,
+  CAST(`_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64` AS LONG) AS `count_1d_V220101`,
   '0' AS `__featurebyte_dummy_entity`
 FROM _FB_AGGREGATED AS AGG;
 
