@@ -133,6 +133,40 @@ def test_event_view_describe_with_date_range(event_table):
     )
 
 
+def test_event_view_describe_with_date_range_and_size(event_table):
+    """
+    Test describe for EventView with date range and number of rows
+    """
+    event_view = event_table.get_view()
+    sample_params = {
+        "from_timestamp": "2001-10-10",
+        "to_timestamp": "2001-11-10",
+        "size": 100,
+    }
+    describe_df = event_view.describe(**sample_params)
+    col_describe_df = event_view["ÀMOUNT"].describe(**sample_params)
+    assert_series_equal(
+        col_describe_df["ÀMOUNT"],
+        describe_df["ÀMOUNT"][
+            [
+                "dtype",
+                "unique",
+                "%missing",
+                "top",
+                "freq",
+                "mean",
+                "std",
+                "min",
+                "25%",
+                "50%",
+                "75%",
+                "max",
+            ]
+        ],
+        check_dtype=False,
+    )
+
+
 def test_item_view_describe(item_table):
     """
     Test describe for ItemView

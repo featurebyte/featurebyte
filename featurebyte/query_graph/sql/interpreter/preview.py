@@ -116,6 +116,7 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         skip_conversion: bool = False,
+        total_num_rows: Optional[int] = None,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -135,6 +136,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Column to apply date range filtering on
         skip_conversion: bool
             Whether to skip data conversion
+        total_num_rows: Optional[int]
+            Total number of rows before sampling
 
         Returns
         -------
@@ -191,11 +194,16 @@ class PreviewMixin(BaseGraphInterpreter):
                 sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
         if num_rows > 0:
-            # apply random sampling
-            sql_tree = sql_tree.order_by(
-                expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
-            )
-            sql_tree = sql_tree.limit(num_rows)
+            if total_num_rows is None:
+                # apply random sampling
+                sql_tree = sql_tree.order_by(
+                    expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
+                )
+                sql_tree = sql_tree.limit(num_rows)
+            else:
+                sql_tree = self.adapter.random_sample(
+                    sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
+                )
 
         return sql_tree, type_conversions
 
@@ -881,6 +889,7 @@ class PreviewMixin(BaseGraphInterpreter):
         timestamp_column: Optional[str] = None,
         stats_names: Optional[List[str]] = None,
         columns_batch_size: Optional[int] = None,
+        total_num_rows: Optional[int] = None,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
@@ -888,8 +897,10 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         node_name : str
             Query graph node name
+        total_num_rows: int
+            Total number of rows before sampling
         num_rows : int
-            Number of rows to include in the preview
+            Number of rows to include when calculating the statistics
         seed: int
             Random seed to use for sampling
         from_timestamp: Optional[datetime]
@@ -922,6 +933,7 @@ class PreviewMixin(BaseGraphInterpreter):
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
             skip_conversion=True,
+            total_num_rows=total_num_rows,
         )
 
         if not columns_batch_size:
@@ -996,3 +1008,46 @@ class PreviewMixin(BaseGraphInterpreter):
             .from_(cat_counts.subquery())
         )
         return sql_to_string(output_expr, source_type=self.source_type)
+
+    def construct_row_count_sql(
+        self,
+        node_name: str,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+    ) -> str:
+        """
+        Construct SQL to get row counts for a given node.
+
+        Parameters
+        ----------
+        node_name: str
+            Query graph node name
+        from_timestamp: Optional[datetime]
+            Start of date range to filter on
+        to_timestamp: Optional[datetime]
+            End of date range to filter on
+        timestamp_column: Optional[str]
+            Column to apply date range filtering on
+
+        Returns
+        -------
+        str
+        """
+        expr = expressions.select(
+            expressions.alias_(
+                expression=expressions.Count(this=expressions.Star()),
+                alias="row_count",
+                quoted=True,
+            )
+        ).from_(
+            self._construct_sample_sql(
+                node_name=node_name,
+                num_rows=0,
+                from_timestamp=from_timestamp,
+                to_timestamp=to_timestamp,
+                timestamp_column=timestamp_column,
+                skip_conversion=True,
+            )[0].subquery()
+        )
+        return sql_to_string(expr, source_type=self.source_type)

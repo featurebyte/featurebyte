@@ -497,6 +497,54 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         return nested_select_expr
 
     @classmethod
+    def random_sample(
+        cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int
+    ) -> Select:
+        """
+        Construct query to randomly sample some number of rows from a table
+
+        Parameters
+        ----------
+        select_expr: Select
+            Table to sample from
+        desired_row_count: int
+            Desired number of rows after sampling
+        total_row_count: int
+            Total number of rows in the table
+        seed: int
+            Random seed
+
+        Returns
+        -------
+        Select
+        """
+        probability = desired_row_count / total_row_count * 1.1
+        sampled_expr = cls.random_sample_with_probability(select_expr, probability, seed)
+        return sampled_expr.limit(desired_row_count)
+
+    @classmethod
+    @abstractmethod
+    def random_sample_with_probability(
+        cls, select_expr: Select, probability: float, seed: int
+    ) -> Select:
+        """
+        Construct query to randomly sample rows from a table using the specified probability
+
+        Parameters
+        ----------
+        select_expr: Select
+            Table to sample from
+        probability: float
+            Probability that a row will be sampled
+        seed: int
+            Random seed
+
+        Returns
+        -------
+        Select
+        """
+
+    @classmethod
     @abstractmethod
     def create_table_as(
         cls,

@@ -229,6 +229,10 @@ class PreviewService:
             feature_store_id=sample.feature_store_id,
         )
 
+        if size > 0:
+            total_num_rows = await self._get_row_count(session, sample)
+        else:
+            total_num_rows = None
         describe_queries = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_describe_queries(
@@ -240,6 +244,7 @@ class PreviewService:
             timestamp_column=sample.timestamp_column,
             stats_names=sample.stats_names,
             columns_batch_size=columns_batch_size,
+            total_num_rows=total_num_rows,
         )
         df_queries = []
         for describe_query in describe_queries.queries:
@@ -298,3 +303,16 @@ class PreviewService:
         df_result = await session.execute_query(value_counts_sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         return df_result.set_index("key")["count"].to_dict()  # type: ignore
+
+    @staticmethod
+    async def _get_row_count(session: BaseSession, sample: FeatureStoreSample) -> int:
+        query = GraphInterpreter(
+            sample.graph, source_type=session.source_type
+        ).construct_row_count_sql(
+            node_name=sample.node_name,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+        )
+        df_result = await session.execute_query(query)
+        return df_result.iloc[0]["row_count"]  # type: ignore

@@ -281,3 +281,24 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(
             this="percentile", expressions=[input_expr, make_literal_value(quantile)]
         )
+
+    @classmethod
+    def random_sample_with_probability(
+        cls, select_expr: Select, probability: float, seed: int
+    ) -> Select:
+        uniform_distribution = expressions.Anonymous(
+            this="RANDOM", expressions=[make_literal_value(seed)]
+        )
+        cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for (column_idx, col_expr) in enumerate(select_expr.expressions)
+        ]
+        return (
+            expressions.select(*cols)
+            .from_(select_expr.subquery())
+            .where(
+                expressions.LTE(
+                    this=uniform_distribution, expression=make_literal_value(probability)
+                )
+            )
+        )
