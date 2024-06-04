@@ -238,6 +238,7 @@ class PreviewMixin(BaseGraphInterpreter):
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
+        total_num_rows: Optional[int] = None,
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -255,6 +256,8 @@ class PreviewMixin(BaseGraphInterpreter):
             End of date range to filter on
         timestamp_column: Optional[str]
             Column to apply date range filtering on
+        total_num_rows: int
+            Total number of rows before sampling
 
         Returns
         -------
@@ -269,6 +272,7 @@ class PreviewMixin(BaseGraphInterpreter):
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
+            total_num_rows=total_num_rows,
         )
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
@@ -897,8 +901,6 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         node_name : str
             Query graph node name
-        total_num_rows: int
-            Total number of rows before sampling
         num_rows : int
             Number of rows to include when calculating the statistics
         seed: int
@@ -914,6 +916,8 @@ class PreviewMixin(BaseGraphInterpreter):
         columns_batch_size: Optional[int]
             Maximum number of columns to include in each query. If None, include all columns in a
             single query.
+        total_num_rows: int
+            Total number of rows before sampling
 
         Returns
         -------

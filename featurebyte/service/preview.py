@@ -179,6 +179,10 @@ class PreviewService:
             node_name=sample.node_name,
             feature_store_id=sample.feature_store_id,
         )
+        if size > 0:
+            total_num_rows = await self._get_row_count(session, sample)
+        else:
+            total_num_rows = None
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_sample_sql(
@@ -188,6 +192,7 @@ class PreviewService:
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
+            total_num_rows=total_num_rows,
         )
         result = await session.execute_query(sample_sql)
         return dataframe_to_json(result, type_conversions)
@@ -233,6 +238,7 @@ class PreviewService:
             total_num_rows = await self._get_row_count(session, sample)
         else:
             total_num_rows = None
+
         describe_queries = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_describe_queries(
