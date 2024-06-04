@@ -452,7 +452,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = expected_df
+        mock_session.execute_query.side_effect = [
+            pd.DataFrame([{"row_count": 100}]),
+            expected_df,
+        ]
         mock_session.generate_session_unique_id = Mock(return_value="1")
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
@@ -462,21 +465,33 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             == textwrap.dedent(
                 """
                 SELECT
-                  "col_int" AS "col_int",
-                  "col_float" AS "col_float",
-                  "col_char" AS "col_char",
-                  "col_text" AS "col_text",
-                  "col_binary" AS "col_binary",
-                  "col_boolean" AS "col_boolean",
-                  "event_timestamp" AS "event_timestamp",
-                  "created_at" AS "created_at",
-                  "cust_id" AS "cust_id"
-                FROM "sf_database"."sf_schema"."sf_table"
+                  "col_int",
+                  "col_float",
+                  "col_char",
+                  "col_text",
+                  "col_binary",
+                  "col_boolean",
+                  "event_timestamp",
+                  "created_at",
+                  "cust_id"
+                FROM (
+                  SELECT
+                    "col_int" AS "col_int",
+                    "col_float" AS "col_float",
+                    "col_char" AS "col_char",
+                    "col_text" AS "col_text",
+                    "col_binary" AS "col_binary",
+                    "col_boolean" AS "col_boolean",
+                    "event_timestamp" AS "event_timestamp",
+                    "created_at" AS "created_at",
+                    "cust_id" AS "cust_id"
+                  FROM "sf_database"."sf_schema"."sf_table"
+                  WHERE
+                    "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
+                    AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
+                )
                 WHERE
-                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
-                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
-                ORDER BY
-                  RANDOM(1234)
+                  BITAND(RANDOM(1234), 2147483647) / 2147483647 <= 0.15000000000000002
                 LIMIT 10
                 """
             ).strip()
@@ -697,7 +712,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         expected_df = pd.DataFrame({"a": ["a"]})[:0]
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = expected_df
+        mock_session.execute_query.side_effect = [pd.DataFrame([{"row_count": 0}]), expected_df]
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)

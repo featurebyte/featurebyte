@@ -518,6 +518,8 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         -------
         Select
         """
+        if total_row_count == 0:
+            return select_expr
         probability = desired_row_count / total_row_count * 1.5
         sampled_expr = cls.random_sample_with_probability(select_expr, probability, seed)
         return sampled_expr.limit(desired_row_count)
