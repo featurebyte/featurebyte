@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
@@ -39,7 +40,7 @@ class ForwardAggregator(BaseAggregator):
         window: Optional[str] = None,
         target_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
     ) -> Target:
         """
@@ -57,7 +58,7 @@ class ForwardAggregator(BaseAggregator):
             Name of the target column
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-        skip_fill_na: bool
+        skip_fill_na: Optional[bool]
             Whether to skip filling NaN values
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
@@ -68,6 +69,7 @@ class ForwardAggregator(BaseAggregator):
         Target
         """
         # Validation
+        skip_fill_na = conditional_set_skip_fill_na(skip_fill_na, fill_value)
         self._validate_parameters(
             value_column=value_column,
             method=method,
