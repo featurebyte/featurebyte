@@ -773,13 +773,10 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
     assert len(all_udfs) > 0
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
     if source_type == SourceType.DATABRICKS_UNITY:
-        # udf_currentnumberofuserswiththisstatus_<version>_<feature_id>
-        # udf_external_fs_count_by_product_action_7d_<version>_<feature_id>
         # udf_external_fs_complex_user_x_production_action_feature_<version>_<feature_id>
-        # udf_external_fs_count_overall_7d_<version>_<feature_id>
         # udf_external_fs_cosine_similarity_<version>_<feature_id>
         # udf_relativefrequency7d_<version>_<feature_id>
-        assert len(udfs_for_on_demand_func) == 6
+        assert len(udfs_for_on_demand_func) == 3
 
         await _check_udf_with_container_input(
             session, udfs_for_on_demand_func, offline_store_feature_tables
