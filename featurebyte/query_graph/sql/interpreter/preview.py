@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Preview mixin for Graph Interpreter
 """
