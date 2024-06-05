@@ -718,10 +718,6 @@ def test_item_view_groupby__event_id_column(
         {"source": "graph_1", "target": "graph_2"},
         {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "is_null_1"},
-        {"source": "project_1", "target": "conditional_1"},
-        {"source": "is_null_1", "target": "conditional_1"},
-        {"source": "conditional_1", "target": "alias_1"},
     ]
 
     assert get_node(feature_dict["graph"], "item_groupby_1")["parameters"] == {

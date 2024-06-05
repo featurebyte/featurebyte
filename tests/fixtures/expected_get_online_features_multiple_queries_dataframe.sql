@@ -50,13 +50,7 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."cust_id",
-  CAST(CASE
-    WHEN (
-      "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64" IS NULL
-    )
-    THEN 0
-    ELSE "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
-  END AS BIGINT) AS "count_1d"
+  CAST("_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64" AS BIGINT) AS "count_1d"
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT

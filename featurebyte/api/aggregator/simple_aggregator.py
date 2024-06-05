@@ -8,6 +8,7 @@ from typing import List, Optional, Type
 from typing_extensions import Literal
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
@@ -39,7 +40,7 @@ class SimpleAggregator(BaseAggregator):
         method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: Optional[bool] = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -54,13 +55,14 @@ class SimpleAggregator(BaseAggregator):
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-        skip_fill_na: bool
+        skip_fill_na: Optional[bool]
             Whether to skip filling NaN values
 
         Returns
         -------
         Feature
         """
+        skip_fill_na = conditional_set_skip_fill_na(skip_fill_na, fill_value)
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         self.view.validate_simple_aggregate_parameters(

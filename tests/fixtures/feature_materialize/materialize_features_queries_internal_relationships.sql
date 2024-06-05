@@ -247,13 +247,7 @@ SELECT
       (
         CONCAT(CAST("_fb_internal_cust_id_lookup_col_boolean_project_1" AS VARCHAR), '_')
       ),
-      CAST(CASE
-        WHEN (
-          "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" IS NULL
-        )
-        THEN 0
-        ELSE "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
-      END AS VARCHAR)
+      CAST("_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" AS VARCHAR)
     )
   ) AS "complex_parent_child_feature_V220101"
 FROM _FB_AGGREGATED AS AGG;

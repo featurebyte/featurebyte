@@ -613,7 +613,7 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
         }
     )
     expected = observations_set.copy()
-    expected["user_city_changes_count_4w"] = [0, 1, 2]
+    expected["user_city_changes_count_4w"] = [np.nan, 1, 2]
 
     df = feature_list.compute_historical_features(observations_set)
 

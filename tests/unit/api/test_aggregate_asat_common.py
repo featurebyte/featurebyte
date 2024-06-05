@@ -4,6 +4,8 @@ Test common behaviour shared between aggregate_asat and forward_aggregate_asat
 
 import pytest
 
+from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
+
 
 def aggregate_asat_helper(view, is_forward, groupby_args, aggregate_kwargs):
     """
@@ -100,3 +102,21 @@ def test_aggregate_asat__invalid_offset_string(snowflake_scd_view_with_entity, i
             dict(value_column="col_float", method="sum", name="asat_feature", offset="yesterday"),
         )
     assert "Failed to parse the offset parameter" in str(exc.value)
+
+
+def test_conditional_set_skip_fill_na():
+    """Test the conditional_set_skip_fill_na function."""
+    expected_error = "The parameters 'skip_fill_na' and 'fill_value' are deprecated"
+    with pytest.warns(match=expected_error):
+        conditional_set_skip_fill_na(skip_fill_na=True, fill_value=None)
+
+    with pytest.warns(match=expected_error):
+        conditional_set_skip_fill_na(skip_fill_na=False, fill_value=0)
+
+    with pytest.warns(match=expected_error):
+        conditional_set_skip_fill_na(skip_fill_na=True, fill_value=None)
+
+    # test the default is set to True
+    with pytest.warns(None) as record:
+        assert conditional_set_skip_fill_na(skip_fill_na=None, fill_value=None) is True
+    assert len(record) == 0

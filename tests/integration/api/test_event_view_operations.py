@@ -217,7 +217,7 @@ def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-20 10:00:00", "2001-01-02 10:00:00"]),
             "üser id": [1, 1],
-            "COUNT_2h": [0, 3],
+            "COUNT_2h": [np.nan, 3],
             "COUNT_24h": [17, 14],
         }
     )
@@ -482,8 +482,8 @@ def get_training_events_and_expected_result():
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "üser id": df_training_events["üser id"],
-            "COUNT_2h": [3, 1, 1, 0, 0, 3, 0, 0, 1, 0],
-            "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, 0],
+            "COUNT_2h": [3, 1, 1, np.nan, np.nan, 3, np.nan, np.nan, 1, np.nan],
+            "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, np.nan],
             "COUNT_BY_ACTION_24h": [
                 '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
                 '{\n  "__MISSING__": 5,\n  "detail": 2,\n  "rëmove": 4,\n  "àdd": 1\n}',
@@ -525,11 +525,11 @@ def get_training_events_and_expected_result():
                 0.214286,
                 0.083333,
                 0.076923,
-                0.0,
-                0.0,
+                np.nan,
+                np.nan,
                 0.166667,
-                0.0,
-                0.0,
+                np.nan,
+                np.nan,
                 0.071429,
                 np.nan,  # Note: zero divide by zero
             ],
@@ -1246,8 +1246,8 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     ]
     assert new_columns == expected_updated_column_names
 
-    # test that count feature should not have any missing values
-    assert event_view_preview["transaction_count"].isna().sum() == 0
+    # test that count feature have missing values
+    assert event_view_preview["transaction_count"].isna().sum() == 2500
     assert event_view_preview["transaction_count"].equals(event_view_preview["transaction_count_2"])
 
     # test that one of the feature join keys is correct

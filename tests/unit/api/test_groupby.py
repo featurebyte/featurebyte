@@ -273,12 +273,10 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     ).aggregate_over(**aggregate_kwargs)
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
+    assert feature_dict["node_name"] == "project_1"
     if category is None:
-        # node type changes to ALIAS because of fillna
-        assert feature_dict["node_name"] == "alias_1"
         assert feature_dict["dtype"] == DBVarType.INT
     else:
-        assert feature_dict["node_name"] == "project_1"
         # count with category has dict like output type
         assert feature_dict["dtype"] == DBVarType.OBJECT
 
@@ -493,7 +491,7 @@ def test__fill_feature_or_target_count_fill_with_0(test_aggregator_and_count_fea
     )
     filled_edges = get_graph_edges_from_feature(filled_feature)
     assert_edges_updated_with_conditional(original_edges, filled_edges)
-    node = get_node_from_feature(filled_feature, "conditional_2")
+    node = get_node_from_feature(filled_feature, "conditional_1")
     assert node["parameters"]["value"] == 0
 
 
@@ -523,7 +521,7 @@ def test__fill_feature_or_target_update_value_count_feature(test_aggregator_and_
     )
     filled_edges = get_graph_edges_from_feature(filled_feature)
     assert_edges_updated_with_conditional(original_edges, filled_edges)
-    node = get_node_from_feature(filled_feature, "conditional_2")
+    node = get_node_from_feature(filled_feature, "conditional_1")
     assert node["parameters"]["value"] == value_to_update
 
 
@@ -534,10 +532,10 @@ def assert_edges_updated_with_conditional(original_edges, updated_edges):
     # We expect the graph to have additional conditional nodes filled up for the fillna operation
     expected_filled_edges = [
         *original_edges,
-        {"source": "alias_1", "target": "is_null_2"},
-        {"source": "alias_1", "target": "conditional_2"},
-        {"source": "is_null_2", "target": "conditional_2"},
-        {"source": "conditional_2", "target": "alias_2"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "alias_1"},
     ]
     assert expected_filled_edges == updated_edges
 
@@ -557,7 +555,7 @@ def test__fill_feature_or_target_update_value_non_count_features(test_aggregator
     )
     filled_edges = get_graph_edges_from_feature(filled_feature)
     assert_edges_updated_with_conditional(original_edges, filled_edges)
-    node = get_node_from_feature(filled_feature, "conditional_2")
+    node = get_node_from_feature(filled_feature, "conditional_1")
     assert node["parameters"]["value"] == value_to_update
 
 
@@ -573,6 +571,7 @@ def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity)
             windows=["30m"],
             feature_names=["feat_30m"],
             feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
+            skip_fill_na=False,
         )
     assert str(exc.value) == "fill_value is not supported for aggregation per category"
 

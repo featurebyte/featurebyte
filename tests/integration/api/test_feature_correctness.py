@@ -288,8 +288,15 @@ def feature_parameters_fixture():
         ("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
         ("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max(), None),
         ("ÀMOUNT", "sum", "24h", "sum_24h", sum_func, None),
-        (None, "count", "24h", "count_24h", lambda x: len(x), None),
-        ("ÀMOUNT", "na_count", "24h", "na_count_24h", lambda x: x.isnull().sum(), None),
+        (None, "count", "24h", "count_24h", lambda x: len(x) if len(x) else None, None),
+        (
+            "ÀMOUNT",
+            "na_count",
+            "24h",
+            "na_count_24h",
+            lambda x: x.isnull().sum() if len(x) else None,
+            None,
+        ),
         (None, "count", "24h", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
         ("PREV_AMOUNT_BY_CUST_ID", "avg", "24h", "prev_amount_avg_24h", lambda x: x.mean(), None),
         (
@@ -569,8 +576,8 @@ def test_aggregate_asat(
     Test that aggregate_asat produces correct feature values
     """
     feature_parameters = [
-        (None, "count", "asat_count", lambda x: len(x), None),
-        (None, "count", "asat_count_by_day_of_month", lambda x: len(x), "day"),
+        (None, "count", "asat_count", lambda x: len(x) if len(x) else None, None),
+        (None, "count", "asat_count_by_day_of_month", lambda x: len(x) if len(x) else None, "day"),
     ]
 
     scd_view = scd_table.get_view()
