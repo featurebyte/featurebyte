@@ -6,6 +6,7 @@ import copy
 import json
 from unittest.mock import call, patch
 
+import bs4
 import pytest
 from bson import ObjectId
 
@@ -71,6 +72,19 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         _ = mock_event_dataset
         yield
 
+    @staticmethod
+    def clean_html(html):
+        """
+        Strip img tag from html
+        """
+        soup = bs4.BeautifulSoup(html, "html.parser")
+        for tag in soup.find_all("img"):
+            # strip image tag with base64 encoded image to avoid issue where different OS may
+            # generate different base64 encoded image (could be due to different font rendering)
+            if tag["src"].startswith("data:image/png;base64"):
+                tag.decompose()
+        return str(soup)
+
     async def _check_execution_result(
         self, payload, output_document_id, persistent, storage, progress, update_fixtures
     ):
@@ -101,7 +115,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         assert result.analysis_options == expected.analysis_options
         assert result.analysis_parameters == expected.analysis_parameters
         assert result.analysis_result == expected.analysis_result
-        assert result.analysis_report == expected.analysis_report
+        assert self.clean_html(result.analysis_report) == self.clean_html(expected.analysis_report)
         if result.event_table_id:
             assert result.event_table_id == expected.event_table_id
             assert result.event_table_candidate is None
