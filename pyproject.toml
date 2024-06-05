@@ -76,10 +76,10 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "License :: Other/Proprietary License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 description = "Python Library for FeatureOps"
 documentation = "https://docs.featurebyte.com"
@@ -109,7 +109,7 @@ databricks-sdk = { version = "^0.24.0", optional = true }
 databricks-sql-connector = { version = "^3.1.1", optional = true }
 fastapi = { version =  "^0.96.0", optional = true }  # Need to bump pydantic to 2.X.X
 feast = { version = "^0.35.0", optional = true, extras = ["snowflake", "redis", "mysql"]}
-featurebyte-freeware = { version = "^0.2.18", optional = true }
+featurebyte-freeware = { version = "^0.2.19", optional = true }
 gevent = {version = "^23.9.1", optional = true}
 humanize = "^4.4.0"
 importlib_metadata = { version = "*", python = "^3.9"}
