@@ -1137,10 +1137,10 @@ class FrozenSeries(
         >>> view[condition].sample(5, seed=0)
                              GroceryProductGuid ProductGroup
         0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
-        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        1  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
         3  a817d904-bc58-4048-978d-c13857969a69       Fruits
-        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        4  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
 
         Create a new feature that checks whether a lookup feature is contained in the keys of a
         dictionary feature:

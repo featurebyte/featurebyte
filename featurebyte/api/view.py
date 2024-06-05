@@ -177,8 +177,8 @@ class ViewColumn(Series, SampleMixin):
         Sample 3 rows of a column.
         >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(3)
           ProductGroup
-        0       Épices
-        1         Chat
+        0         Chat
+        1       Épices
         2        Pains
 
 
@@ -526,10 +526,10 @@ class ViewColumn(Series, SampleMixin):
         >>> view[condition].sample(5, seed=0)
                              GroceryProductGuid ProductGroup
         0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
-        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        1  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
         3  a817d904-bc58-4048-978d-c13857969a69       Fruits
-        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        4  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
         """
         return super().isin(other=other)  # type: ignore[no-any-return,misc]
 
@@ -901,8 +901,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         Sample rows of a view.
         >>> catalog.get_view("GROCERYPRODUCT").sample(size=3)
                              GroceryProductGuid ProductGroup
-        0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
-        1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
+        0  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
+        1  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
         2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
 
 
