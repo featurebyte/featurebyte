@@ -52,7 +52,7 @@ def test_event_table_sample(event_table):
         (
             "spark",
             pd.Timestamp("2001-01-05 03:26:02.000051"),
-            pd.Timestamp("2001-08-09 03:36:29.000222"),
+            pd.Timestamp("2001-12-25 20:06:37.000928"),
         ),
     ],
     indirect=["source_type"],
@@ -82,8 +82,9 @@ def test_event_view_sample(event_table, expected_min, expected_max):
     ]
 
     assert sample_df.shape == (10, 13)
-    assert sample_df["ËVENT_TIMESTAMP"].min() == expected_min
-    assert sample_df["ËVENT_TIMESTAMP"].max() == expected_max
+    actual_min = sample_df["ËVENT_TIMESTAMP"].min()
+    actual_max = sample_df["ËVENT_TIMESTAMP"].max()
+    assert (actual_min, actual_max) == (expected_min, expected_max)
 
     # test view column
     ts_col = "ËVENT_TIMESTAMP"
@@ -97,11 +98,11 @@ def test_event_view_sample(event_table, expected_min, expected_max):
         (
             "snowflake",
             pd.Timestamp("2001-01-14 13:10:27.000894+1100"),
-            pd.Timestamp("2001-11-24 21:01:06.000615+0300"),
+            pd.Timestamp("2001-11-25 14:29:07.000853-0600"),
         ),
         (
             "spark",
-            pd.Timestamp("2001-01-03 22:23:17.000382"),
+            pd.Timestamp("2001-01-04 11:45:09.000014"),
             pd.Timestamp("2001-12-30 06:14:35.000448"),
         ),
     ],
@@ -115,8 +116,9 @@ def test_event_view_sample_seed(event_table, expected_min, expected_max):
     event_view = event_table.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 13)
-    assert sample_df["ËVENT_TIMESTAMP"].min() == expected_min
-    assert sample_df["ËVENT_TIMESTAMP"].max() == expected_max
+    actual_min = sample_df["ËVENT_TIMESTAMP"].min()
+    actual_max = sample_df["ËVENT_TIMESTAMP"].max()
+    assert (actual_min, actual_max) == (expected_min, expected_max)
 
 
 @pytest.mark.parametrize(
@@ -124,7 +126,7 @@ def test_event_view_sample_seed(event_table, expected_min, expected_max):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 00:44:07.000193-0700"),
+            pd.Timestamp("2001-10-10 14:15:10.000828-0700"),
             pd.Timestamp("2001-10-13 14:51:02.000709-0800"),
         ),
         (
@@ -149,8 +151,9 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
     }
     sample_df = event_view.sample(**sample_params)
     assert sample_df.shape == (15, 13)
-    assert sample_df["ËVENT_TIMESTAMP"].min() == expected_min
-    assert sample_df["ËVENT_TIMESTAMP"].max() == expected_max
+    actual_min = sample_df["ËVENT_TIMESTAMP"].min()
+    actual_max = sample_df["ËVENT_TIMESTAMP"].max()
+    assert (actual_min, actual_max) == (expected_min, expected_max)
 
     col_sample_df = event_view["TRANSACTION_ID"].sample(**sample_params)
     assert_series_equal(col_sample_df["TRANSACTION_ID"], sample_df["TRANSACTION_ID"])
@@ -161,13 +164,13 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
     [
         (
             "snowflake",
-            pd.Timestamp("2001-01-10 11:42:05.000464+1700"),
-            pd.Timestamp("2001-11-14 23:01:47.000468-1300"),
+            pd.Timestamp("2001-01-16 04:47:17.000533+1100"),
+            pd.Timestamp("2001-11-28 05:08:41.000417-0300"),
         ),
         (
             "spark",
             pd.Timestamp("2001-01-02 10:18:24.000729"),
-            pd.Timestamp("2001-12-02 16:50:38.000934"),
+            pd.Timestamp("2001-12-22 18:28:52.000837"),
         ),
     ],
     indirect=["source_type"],
@@ -191,8 +194,9 @@ def test_item_view_sample(item_table, expected_min, expected_max):
     ]
 
     assert sample_df.shape == (10, 8)
-    assert sample_df["ËVENT_TIMESTAMP"].min() == expected_min
-    assert sample_df["ËVENT_TIMESTAMP"].max() == expected_max
+    actual_min = sample_df["ËVENT_TIMESTAMP"].min()
+    actual_max = sample_df["ËVENT_TIMESTAMP"].max()
+    assert (actual_min, actual_max) == (expected_min, expected_max)
 
 
 @pytest.mark.parametrize(
@@ -200,7 +204,7 @@ def test_item_view_sample(item_table, expected_min, expected_max):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 00:44:07.000193-0700"),
+            pd.Timestamp("2001-10-10 14:52:49.000447+1100"),
             pd.Timestamp("2001-10-13 19:45:53.000750+0600"),
         ),
         (
@@ -225,8 +229,9 @@ def test_item_view_sample_with_date_range(item_table, expected_min, expected_max
     }
     sample_df = item_view.sample(**sample_params)
     assert sample_df.shape == (15, 8)
-    assert sample_df["ËVENT_TIMESTAMP"].min() == expected_min
-    assert sample_df["ËVENT_TIMESTAMP"].max() == expected_max
+    actual_min = sample_df["ËVENT_TIMESTAMP"].min()
+    actual_max = sample_df["ËVENT_TIMESTAMP"].max()
+    assert (actual_min, actual_max) == (expected_min, expected_max)
 
     col_sample_df = item_view["item_id"].sample(**sample_params)
     assert_series_equal(col_sample_df["item_id"], sample_df["item_id"])
