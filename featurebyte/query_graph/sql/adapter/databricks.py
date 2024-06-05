@@ -293,12 +293,16 @@ class DatabricksAdapter(BaseAdapter):
             quoted_identifier(col_expr.alias or col_expr.name)
             for (column_idx, col_expr) in enumerate(select_expr.expressions)
         ]
+        # Force random function to be evaluated for each row by doing select on a subquery
+        select_expr_with_prob = expressions.select(
+            expressions.alias_(uniform_distribution, alias="prob", quoted=True), *cols
+        ).from_(select_expr.subquery())
         return (
             expressions.select(*cols)
-            .from_(select_expr.subquery())
+            .from_(select_expr_with_prob.subquery())
             .where(
                 expressions.LTE(
-                    this=uniform_distribution, expression=make_literal_value(probability)
+                    this=quoted_identifier("prob"), expression=make_literal_value(probability)
                 )
             )
         )
