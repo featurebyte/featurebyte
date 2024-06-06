@@ -522,14 +522,19 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         cls, select_expr: Select, probability: float, seed: int
     ) -> Select:
         uniform_distribution = expressions.Div(
-            this=expressions.Anonymous(
-                this="BITAND",
-                expressions=[
-                    expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)]),
-                    make_literal_value(2147483647),
-                ],
+            this=expressions.Cast(
+                this=expressions.Anonymous(
+                    this="BITAND",
+                    expressions=[
+                        expressions.Anonymous(
+                            this="RANDOM", expressions=[make_literal_value(seed)]
+                        ),
+                        make_literal_value(2147483647),
+                    ],
+                ),
+                to=expressions.DataType.build("DOUBLE"),
             ),
-            expression=make_literal_value(2147483647),
+            expression=make_literal_value(2147483647.0),
         )
         cols = [
             quoted_identifier(col_expr.alias or col_expr.name)

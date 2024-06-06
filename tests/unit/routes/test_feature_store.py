@@ -491,7 +491,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                     AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
                 )
                 WHERE
-                  BITAND(RANDOM(1234), 2147483647) / 2147483647 <= 0.15000000000000002
+                  CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 <= 0.15000000000000002
                 ORDER BY
                   RANDOM(1234)
                 LIMIT 10
