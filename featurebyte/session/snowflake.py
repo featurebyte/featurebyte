@@ -187,7 +187,8 @@ class SnowflakeSession(BaseSession):
             When the cursor description is not as expected
         """
         fields = []
-        for field in cursor.description:
+        description = cursor._description or []  # pylint: disable=protected-access
+        for field in description:
             if not hasattr(field, "type_code"):
                 raise CursorSchemaError()
             field_type = FIELD_TYPES[field.type_code]
