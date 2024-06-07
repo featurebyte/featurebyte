@@ -518,7 +518,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return alter_table_sql
 
     @classmethod
-    def get_uniform_distribution_expr(cls, probability: float, seed: int) -> Expression:
+    def get_uniform_distribution_expr(cls, seed: int) -> Expression:
         return expressions.Div(
             this=expressions.Cast(
                 this=expressions.Anonymous(
