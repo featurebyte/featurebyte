@@ -4,6 +4,8 @@ Feature list make production ready task payload
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
@@ -17,8 +19,11 @@ class FeatureListMakeProductionReadyTaskPayload(BaseTaskPayload):
     Feature list make production ready task payload
     """
 
-    command = WorkerCommand.FEATURE_LIST_MAKE_PRODUCTION_READY
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_LIST_MAKE_PRODUCTION_READY
+    output_collection_name: ClassVar[str] = FeatureListModel.collection_name()
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.IO_TASK)
+    ignore_guardrails: bool = Field(default=False)
     feature_list_id: PydanticObjectId
-    ignore_guardrails: bool = False
-    output_collection_name = FeatureListModel.collection_name()

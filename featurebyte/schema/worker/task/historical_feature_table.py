@@ -4,7 +4,9 @@ HistoricalFeaturesTaskPayload schema
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
+
+from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -17,8 +19,11 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
     HistoricalFeatureTable creation task payload
     """
 
-    output_collection_name = HistoricalFeatureTableModel.collection_name()
-    command = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
-    task_type = TaskType.CPU_TASK
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
+    output_collection_name: ClassVar[str] = HistoricalFeatureTableModel.collection_name()
+    is_revocable: ClassVar[bool] = True
+
+    # instance variables
+    task_type: TaskType = Field(default=TaskType.CPU_TASK)
     observation_set_storage_path: Optional[str]
-    is_revocable = True

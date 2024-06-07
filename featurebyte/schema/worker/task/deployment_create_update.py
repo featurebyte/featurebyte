@@ -2,7 +2,7 @@
 FeatureList Deploy Task Payload schema
 """
 
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 from typing_extensions import Annotated, Literal
 
 from pydantic import BaseModel, Field
@@ -48,7 +48,10 @@ class DeploymentCreateUpdateTaskPayload(BaseTaskPayload):
     Deployment Create & Update Task Payload
     """
 
-    command = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
-    output_collection_name = DeploymentModel.collection_name()
-    task_type = TaskType.CPU_TASK
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
+    output_collection_name: ClassVar[str] = DeploymentModel.collection_name()
+
+    # instance variables
+    task_type: TaskType = Field(default=TaskType.CPU_TASK)
     deployment_payload: DeploymentPayload

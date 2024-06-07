@@ -4,6 +4,8 @@ Feature list creation with batch feature creation schema
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
@@ -19,6 +21,9 @@ class FeatureListCreateWithBatchFeatureCreationTaskPayload(
     Feature list creation with batch feature creation task payload
     """
 
-    command = WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE
+    output_collection_name: ClassVar[str] = FeatureListModel.collection_name()
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
-    output_collection_name = FeatureListModel.collection_name()

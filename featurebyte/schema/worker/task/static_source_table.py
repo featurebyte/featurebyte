@@ -4,6 +4,8 @@ StaticSourceTableTaskPayload schema
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
@@ -15,5 +17,6 @@ class StaticSourceTableTaskPayload(BaseTaskPayload, StaticSourceTableCreate):
     StaticSourceTable creation task payload
     """
 
-    output_collection_name = StaticSourceTableModel.collection_name()
-    command = WorkerCommand.STATIC_SOURCE_TABLE_CREATE
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.STATIC_SOURCE_TABLE_CREATE
+    output_collection_name: ClassVar[str] = StaticSourceTableModel.collection_name()
