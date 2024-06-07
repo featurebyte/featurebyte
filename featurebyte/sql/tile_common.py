@@ -1,10 +1,12 @@
 """
 Base Class for Tile Schedule Instance
 """
-from pydantic import ConfigDict
+
 from typing import Any
 
 from abc import ABC, abstractmethod
+
+from pydantic import ConfigDict
 
 from featurebyte.models.tile import TileCommonParameters
 from featurebyte.session.base import BaseSession

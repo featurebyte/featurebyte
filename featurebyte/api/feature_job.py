@@ -14,6 +14,7 @@ from io import BytesIO
 import humanize
 import numpy as np
 import pandas as pd
+from pydantic import ConfigDict
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
@@ -24,7 +25,6 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.tile import TileSpec
-from pydantic import ConfigDict
 
 logger = get_logger(__name__)
 

@@ -2,7 +2,7 @@
 This module contains schema related model
 """
 
-from typing import Literal, List
+from typing import List, Literal
 
 from pydantic import Field
 

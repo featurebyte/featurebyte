@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from pydantic import Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
-from featurebyte.models.base import NameStr, PydanticObjectId, FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 

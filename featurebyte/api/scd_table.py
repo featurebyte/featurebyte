@@ -4,7 +4,7 @@ SCDTable class
 
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Tuple, Type, cast
 from typing_extensions import Literal
 
 from bson import ObjectId

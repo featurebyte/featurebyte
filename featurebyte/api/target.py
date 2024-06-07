@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import model_validator, Field
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping

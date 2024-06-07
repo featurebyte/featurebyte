@@ -4,7 +4,7 @@ ItemTable class
 
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast
 from typing_extensions import Literal
 
 import operator
