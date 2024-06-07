@@ -453,7 +453,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
         mock_session.execute_query.side_effect = [
-            pd.DataFrame([{"row_count": 100}]),
+            pd.DataFrame([{"count": 100}]),
             expected_df,
         ]
         mock_session.generate_session_unique_id = Mock(return_value="1")
@@ -727,7 +727,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         expected_df = pd.DataFrame({"a": ["a"]})[:0]
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.side_effect = [pd.DataFrame([{"row_count": 0}]), expected_df]
+        mock_session.execute_query.side_effect = [pd.DataFrame([{"count": 0}]), expected_df]
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
