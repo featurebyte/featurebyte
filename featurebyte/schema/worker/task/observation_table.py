@@ -4,7 +4,7 @@ ObservationTableTaskPayload schema
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -20,7 +20,10 @@ class ObservationTableTaskPayload(BaseTaskPayload, ObservationTableCreate):
     ObservationTable creation task payload
     """
 
-    output_collection_name = ObservationTableModel.collection_name()
-    command = WorkerCommand.OBSERVATION_TABLE_CREATE
-    target_namespace_id: Optional[PydanticObjectId]
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.OBSERVATION_TABLE_CREATE
+    output_collection_name: ClassVar[str] = ObservationTableModel.collection_name()
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
+    target_namespace_id: Optional[PydanticObjectId]

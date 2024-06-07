@@ -2,7 +2,7 @@
 FeatureJobSettingAnalysisTaskPayload schema
 """
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -20,9 +20,14 @@ class FeatureJobSettingAnalysisTaskPayload(BaseTaskPayload, FeatureJobSettingAna
     Feature Job Setting Analysis Task Payload
     """
 
-    output_collection_name = FeatureJobSettingAnalysisModel.collection_name()
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_CREATE
+    output_collection_name: ClassVar[Optional[str]] = (
+        FeatureJobSettingAnalysisModel.collection_name()
+    )
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
-    command = WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_CREATE
 
 
 class FeatureJobSettingAnalysisBackTestTaskPayload(
@@ -32,8 +37,9 @@ class FeatureJobSettingAnalysisBackTestTaskPayload(
     Feature Job Setting Analysis Backtest Task Payload
     """
 
-    output_collection_name = "temp_data"
-    command = WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_BACKTEST
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_BACKTEST
+    output_collection_name: ClassVar[str] = "temp_data"
 
     @property
     def task_output_path(self) -> Optional[str]:

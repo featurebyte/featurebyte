@@ -2,7 +2,7 @@
 Target table task payload
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from pydantic import root_validator
 
@@ -17,8 +17,11 @@ class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
     TargetTable creation task payload
     """
 
-    output_collection_name = ObservationTableModel.collection_name()
-    command = WorkerCommand.TARGET_TABLE_CREATE
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.TARGET_TABLE_CREATE
+    output_collection_name: ClassVar[str] = ObservationTableModel.collection_name()
+
+    # instance variables
     observation_set_storage_path: Optional[str]
 
     @root_validator(pre=True)
