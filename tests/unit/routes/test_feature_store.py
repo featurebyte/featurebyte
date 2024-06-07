@@ -476,24 +476,37 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                   "cust_id"
                 FROM (
                   SELECT
-                    "col_int" AS "col_int",
-                    "col_float" AS "col_float",
-                    "col_char" AS "col_char",
-                    "col_text" AS "col_text",
-                    "col_binary" AS "col_binary",
-                    "col_boolean" AS "col_boolean",
-                    "event_timestamp" AS "event_timestamp",
-                    "created_at" AS "created_at",
-                    "cust_id" AS "cust_id"
-                  FROM "sf_database"."sf_schema"."sf_table"
-                  WHERE
-                    "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
-                    AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
+                    CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+                    "col_int",
+                    "col_float",
+                    "col_char",
+                    "col_text",
+                    "col_binary",
+                    "col_boolean",
+                    "event_timestamp",
+                    "created_at",
+                    "cust_id"
+                  FROM (
+                    SELECT
+                      "col_int" AS "col_int",
+                      "col_float" AS "col_float",
+                      "col_char" AS "col_char",
+                      "col_text" AS "col_text",
+                      "col_binary" AS "col_binary",
+                      "col_boolean" AS "col_boolean",
+                      "event_timestamp" AS "event_timestamp",
+                      "created_at" AS "created_at",
+                      "cust_id" AS "cust_id"
+                    FROM "sf_database"."sf_schema"."sf_table"
+                    WHERE
+                      "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
+                      AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
+                  )
                 )
                 WHERE
-                  CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 <= 0.15000000000000002
+                  "prob" <= 0.15000000000000002
                 ORDER BY
-                  RANDOM(1234)
+                  "prob"
                 LIMIT 10
                 """
             ).strip()

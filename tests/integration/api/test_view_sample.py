@@ -46,8 +46,8 @@ def test_event_table_sample(event_table):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-01-03 04:57:10.000270-1400"),
-            pd.Timestamp("2001-10-04 01:47:55.000533-0600"),
+            pd.Timestamp("2001-01-24 06:13:34.000562+1200"),
+            pd.Timestamp("2001-10-30 21:17:24.000101-0400"),
         ),
         (
             "spark",
@@ -98,11 +98,11 @@ def test_event_view_sample(event_table, expected_min, expected_max):
         (
             "snowflake",
             pd.Timestamp("2001-01-14 13:10:27.000894+1100"),
-            pd.Timestamp("2001-11-25 14:29:07.000853-0600"),
+            pd.Timestamp("2001-11-28 13:13:55.000988-1500"),
         ),
         (
             "spark",
-            pd.Timestamp("2001-01-04 11:45:09.000014"),
+            pd.Timestamp("2001-01-03 22:23:17.000382"),
             pd.Timestamp("2001-12-30 06:14:35.000448"),
         ),
     ],
@@ -126,7 +126,7 @@ def test_event_view_sample_seed(event_table, expected_min, expected_max):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 14:15:10.000828-0700"),
+            pd.Timestamp("2001-10-10 00:44:07.000193-0700"),
             pd.Timestamp("2001-10-13 14:51:02.000709-0800"),
         ),
         (
@@ -164,12 +164,12 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
     [
         (
             "snowflake",
-            pd.Timestamp("2001-01-16 04:47:17.000533+1100"),
+            pd.Timestamp("2001-01-10 11:42:05.000464+1700"),
             pd.Timestamp("2001-11-28 05:08:41.000417-0300"),
         ),
         (
             "spark",
-            pd.Timestamp("2001-01-02 10:18:24.000729"),
+            pd.Timestamp("2001-01-03 22:12:15.000735"),
             pd.Timestamp("2001-12-22 18:28:52.000837"),
         ),
     ],
@@ -205,7 +205,7 @@ def test_item_view_sample(item_table, expected_min, expected_max):
         (
             "snowflake",
             pd.Timestamp("2001-10-10 14:52:49.000447+1100"),
-            pd.Timestamp("2001-10-13 19:45:53.000750+0600"),
+            pd.Timestamp("2001-10-14 04:08:02.000346+1000"),
         ),
         (
             "spark",

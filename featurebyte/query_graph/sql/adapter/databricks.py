@@ -283,26 +283,7 @@ class DatabricksAdapter(BaseAdapter):
         )
 
     @classmethod
-    def random_sample_with_probability(
+    def get_uniform_distribution_expr(
         cls, select_expr: Select, probability: float, seed: int
-    ) -> Select:
-        uniform_distribution = expressions.Anonymous(
-            this="RANDOM", expressions=[make_literal_value(seed)]
-        )
-        cols = [
-            quoted_identifier(col_expr.alias or col_expr.name)
-            for (column_idx, col_expr) in enumerate(select_expr.expressions)
-        ]
-        # Force random function to be evaluated for each row by doing select on a subquery
-        select_expr_with_prob = expressions.select(
-            expressions.alias_(uniform_distribution, alias="prob", quoted=True), *cols
-        ).from_(select_expr.subquery())
-        return (
-            expressions.select(*cols)
-            .from_(select_expr_with_prob.subquery())
-            .where(
-                expressions.LTE(
-                    this=quoted_identifier("prob"), expression=make_literal_value(probability)
-                )
-            )
-        )
+    ) -> Expression:
+        return expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])

@@ -521,19 +521,35 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         if total_row_count == 0:
             return select_expr
         probability = desired_row_count / total_row_count * 1.5
-        sampled_expr = cls.random_sample_with_probability(select_expr, probability, seed)
-        # Shuffle the sampled output with a seed
-        return sampled_expr.order_by(
-            expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
-        ).limit(desired_row_count)
+        original_cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for (column_idx, col_expr) in enumerate(select_expr.expressions)
+        ]
+        prob_expr = alias_(
+            cls.get_uniform_distribution_expr(select_expr, probability, seed),
+            alias="prob",
+            quoted=True,
+        )
+        sampled_expr_with_prob = select(prob_expr, *original_cols).from_(select_expr.subquery())
+        return (
+            select(*original_cols)
+            .from_(sampled_expr_with_prob.subquery())
+            .where(
+                expressions.LTE(
+                    this=quoted_identifier("prob"), expression=make_literal_value(probability)
+                )
+            )
+            .limit(desired_row_count)
+            .order_by(quoted_identifier("prob"))
+        )
 
     @classmethod
     @abstractmethod
-    def random_sample_with_probability(
+    def get_uniform_distribution_expr(
         cls, select_expr: Select, probability: float, seed: int
-    ) -> Select:
+    ) -> Expression:
         """
-        Construct query to randomly sample rows from a table using the specified probability
+        Construct an expression that returns a random number uniformly distributed between 0 and 1
 
         Parameters
         ----------
@@ -546,7 +562,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
 
         Returns
         -------
-        Select
+        Expression
         """
 
     @classmethod

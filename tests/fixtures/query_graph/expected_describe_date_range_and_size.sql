@@ -7,17 +7,26 @@ WITH data AS (
     "a_copy"
   FROM (
     SELECT
-      "ts" AS "ts",
-      "cust_id" AS "cust_id",
-      "a" AS "a",
-      "b" AS "b",
-      "a" AS "a_copy"
-    FROM "db"."public"."event_table"
+      CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+      "ts",
+      "cust_id",
+      "a",
+      "b",
+      "a_copy"
+    FROM (
+      SELECT
+        "ts" AS "ts",
+        "cust_id" AS "cust_id",
+        "a" AS "a",
+        "b" AS "b",
+        "a" AS "a_copy"
+      FROM "db"."public"."event_table"
+    )
   )
   WHERE
-    CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 <= 0.15000000000000002
+    "prob" <= 0.15000000000000002
   ORDER BY
-    RANDOM(1234)
+    "prob"
   LIMIT 10
 ), stats AS (
   SELECT

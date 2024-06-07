@@ -518,10 +518,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return alter_table_sql
 
     @classmethod
-    def random_sample_with_probability(
+    def get_uniform_distribution_expr(
         cls, select_expr: Select, probability: float, seed: int
-    ) -> Select:
-        uniform_distribution = expressions.Div(
+    ) -> Expression:
+        return expressions.Div(
             this=expressions.Cast(
                 this=expressions.Anonymous(
                     this="BITAND",
@@ -535,17 +535,4 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 to=expressions.DataType.build("DOUBLE"),
             ),
             expression=make_literal_value(2147483647.0),
-        )
-        cols = [
-            quoted_identifier(col_expr.alias or col_expr.name)
-            for (column_idx, col_expr) in enumerate(select_expr.expressions)
-        ]
-        return (
-            expressions.select(*cols)
-            .from_(select_expr.subquery())
-            .where(
-                expressions.LTE(
-                    this=uniform_distribution, expression=make_literal_value(probability)
-                )
-            )
         )
