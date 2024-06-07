@@ -303,8 +303,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         Sample 3 rows from the table.
         >>> catalog.get_table("GROCERYPRODUCT").sample(3)
                              GroceryProductGuid ProductGroup
-        0  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
-        1  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
+        0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
+        1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
         2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
 
 

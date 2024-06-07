@@ -526,7 +526,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             for (column_idx, col_expr) in enumerate(select_expr.expressions)
         ]
         prob_expr = alias_(
-            cls.get_uniform_distribution_expr(select_expr, probability, seed),
+            cls.get_uniform_distribution_expr(probability, seed),
             alias="prob",
             quoted=True,
         )
@@ -545,16 +545,12 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
 
     @classmethod
     @abstractmethod
-    def get_uniform_distribution_expr(
-        cls, select_expr: Select, probability: float, seed: int
-    ) -> Expression:
+    def get_uniform_distribution_expr(cls, probability: float, seed: int) -> Expression:
         """
         Construct an expression that returns a random number uniformly distributed between 0 and 1
 
         Parameters
         ----------
-        select_expr: Select
-            Table to sample from
         probability: float
             Probability that a row will be sampled
         seed: int
