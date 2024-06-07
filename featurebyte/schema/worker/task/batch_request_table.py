@@ -16,5 +16,5 @@ class BatchRequestTableTaskPayload(BaseTaskPayload, BatchRequestTableCreate):
     """
 
     output_collection_name = BatchRequestTableModel.collection_name()
-    command = WorkerCommand.BATCH_REQUEST_TABLE_CREATE
-    priority = TaskPriority.CRITICAL
+    command: WorkerCommand = WorkerCommand.BATCH_REQUEST_TABLE_CREATE
+    priority: TaskPriority = TaskPriority.CRITICAL

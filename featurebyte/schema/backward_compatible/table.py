@@ -5,7 +5,7 @@ Table API routes response
 from typing import Any, Dict, Optional, Sequence, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, parse_obj_as, root_validator
+from pydantic import Field, model_validator, parse_obj_as
 
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
@@ -26,7 +26,8 @@ class FeatureJobSettingResponse(FeatureJobSetting):
     frequency: str
     time_modulo_frequency: str
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _handle_backward_compatibility_by_populating_older_fields(
         cls, values: Dict[str, Any]

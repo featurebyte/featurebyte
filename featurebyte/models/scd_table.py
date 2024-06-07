@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
@@ -42,7 +42,7 @@ class SCDTableModel(SCDTableData, TableModel):
     _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
+    _model_validator = model_validator(mode="before")(
         construct_data_model_root_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
@@ -56,7 +56,7 @@ class SCDTableModel(SCDTableData, TableModel):
         )
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
         # DEV-556: remove this after migration

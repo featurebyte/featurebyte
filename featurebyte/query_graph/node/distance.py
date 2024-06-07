@@ -2,12 +2,12 @@
 Distance node module
 """
 
-from typing import List, Sequence, Tuple
+from typing import List, Literal, Sequence, Tuple
 from typing_extensions import Literal
 
 import textwrap
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -35,7 +35,7 @@ class HaversineNode(BaseSeriesOutputNode):
     class Parameters(BaseModel):
         """Parameters"""
 
-    type: Literal[NodeType.HAVERSINE] = Field(NodeType.HAVERSINE, const=True)
+    type: Literal[NodeType.HAVERSINE] = NodeType.HAVERSINE
     parameters: Parameters
 
     @property

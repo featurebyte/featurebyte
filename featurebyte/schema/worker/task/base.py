@@ -10,7 +10,7 @@ import json
 from enum import Enum, IntEnum
 
 from bson.objectid import ObjectId
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -50,14 +50,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     is_scheduled_task: Optional[bool] = Field(default=False)
     is_revocable: ClassVar[Optional[bool]] = False
-
-    class Config:
-        """
-        Configurations for BaseTaskPayload
-        """
-
-        # With `frozen` flag enable, all the object attributes are immutable.
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
     @property
     def task(self) -> str:

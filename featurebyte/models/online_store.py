@@ -26,7 +26,7 @@ class BaseOnlineStoreDetails(FeatureByteBaseModel):
 
     # Online store type selector
     type: OnlineStoreType
-    credential: Optional[BaseDatabaseCredential]
+    credential: Optional[BaseDatabaseCredential] = None
 
     def hide_details_credentials(self) -> None:
         """
@@ -104,7 +104,9 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
 
     port: int = Field(default=3306, description="MySQL connection port.")
 
-    credential: Optional[UsernamePasswordCredential] = Field(description="MySQL user and password.")
+    credential: Optional[UsernamePasswordCredential] = Field(
+        None, description="MySQL user and password."
+    )
 
 
 OnlineStoreDetails = Annotated[

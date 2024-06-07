@@ -10,6 +10,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -21,7 +22,7 @@ from typing import (
 import copy
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -65,11 +66,7 @@ class BaseNodeParameters(BaseModel):
     BaseNodeParameters class
     """
 
-    class Config:
-        """Model configuration"""
-
-        # cause validation to fail if extra attributes are included (https://docs.pydantic.dev/usage/model_config/)
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class BaseNode(BaseModel):
@@ -99,21 +96,19 @@ class BaseNode(BaseModel):
     # nested parameter field names to be normalized
     _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
 
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
+    # model configuration
+    model_config = ConfigDict(use_enum_values=True, extra="forbid")
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
         # make sure subclass set certain properties correctly
-        assert self.__fields__["type"].field_info.const is True
-        assert "Literal" in repr(self.__fields__["type"].type_)
-        assert self.__fields__["output_type"].type_ is NodeOutputType
+        assert "Literal" in repr(self.model_fields["type"].annotation)
+        assert self.model_fields["output_type"].annotation is NodeOutputType
 
-    def __init_subclass__(cls, **kwargs: Any):
-        if "Literal" in repr(cls.__fields__["type"].type_):
+    @classmethod
+    def __pydantic_init_subclass__(cls) -> None:
+        if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
             NODE_TYPES.append(cls)
 
@@ -951,14 +946,14 @@ class SeriesOutputNodeOpStructMixin:
 class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
+    output_type: Literal[NodeOutputType.SERIES] = NodeOutputType.SERIES
+    parameters: BaseModel = {}
 
 
 class SingleValueNodeParameters(BaseNodeParameters):
     """SingleValueNodeParameters"""
 
-    value: Optional[ValueParameterType]
+    value: Optional[ValueParameterType] = None
 
 
 class ValueWithRightOpNodeParameters(SingleValueNodeParameters):
@@ -970,7 +965,7 @@ class ValueWithRightOpNodeParameters(SingleValueNodeParameters):
 class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output & contain a single scalar parameter"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    output_type: Literal[NodeOutputType.SERIES] = NodeOutputType.SERIES
     parameters: SingleValueNodeParameters
 
     @property

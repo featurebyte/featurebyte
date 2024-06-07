@@ -7,7 +7,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.online_store import OnlineStoreDetails
@@ -46,7 +46,8 @@ class OnlineStoreRead(FeatureByteBaseModel):
     description: Optional[StrictStr]
     details: OnlineStoreDetails
 
-    @validator("details")
+    @field_validator("details")
+    @classmethod
     @classmethod
     def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
         """

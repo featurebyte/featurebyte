@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import textwrap
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
@@ -38,6 +38,9 @@ class OnDemandFeatureViewGlobalState(BaseModel):
     code_generator: CodeGenerator = Field(
         default_factory=lambda: CodeGenerator(template="on_demand_view.tpl")
     )
+
+    # model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class OnDemandFeatureViewExtractor(

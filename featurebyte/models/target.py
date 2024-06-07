@@ -50,7 +50,7 @@ class TargetModel(BaseFeatureModel):
     """
 
     # ID related fields associated with this target
-    target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+    target_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
 
     def derive_window(self) -> Optional[str]:
         """

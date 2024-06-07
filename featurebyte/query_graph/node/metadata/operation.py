@@ -424,7 +424,7 @@ class GroupOperationStructure(BaseModel):
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
     aggregations: List[AggregationColumn] = Field(default_factory=list)
-    post_aggregation: Optional[PostAggregationColumn]
+    post_aggregation: Optional[PostAggregationColumn] = None
     row_index_lineage: Tuple[str, ...]
     is_time_based: bool = Field(default=False)
 

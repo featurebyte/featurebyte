@@ -15,7 +15,7 @@ class DictProject(BaseModel):
     Dictionary projection class based on given projection rule
     """
 
-    rule: Any
+    rule: Any = None
     verbose_only: bool = Field(default=False)
 
     @classmethod
@@ -64,7 +64,7 @@ class DictTransform(BaseModel):
     Dictionary transform class
     """
 
-    rule: Any
+    rule: Any = None
 
     @classmethod
     def _transform(cls, transform_rule: Any, input_value: Any, verbose: bool) -> Dict[str, Any]:

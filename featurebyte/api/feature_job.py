@@ -24,6 +24,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.tile import TileSpec
+from pydantic import ConfigDict
 
 logger = get_logger(__name__)
 
@@ -39,13 +40,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     feature_tile_table: pd.DataFrame
     feature_job_summary: pd.DataFrame
     job_session_logs: pd.DataFrame
-
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
+    model_config = ConfigDict()
 
     @property
     def request_parameters(self) -> Dict[str, Any]:

@@ -15,7 +15,7 @@ from enum import Enum
 from black import FileMode, format_str
 from bson import ObjectId
 from jinja2 import Template
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
@@ -126,8 +126,8 @@ class ObjectClass(BaseModel):
     - import objects
     """
 
-    module_path: Optional[str]
-    class_name: Optional[str]
+    module_path: Optional[str] = None
+    class_name: Optional[str] = None
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
     callable_name: Optional[str] = Field(default=None)
@@ -337,6 +337,9 @@ class VariableNameGenerator(BaseModel):
     func_id_to_var_name: Dict[PydanticObjectId, VariableNameStr] = Field(default_factory=dict)
     one_based: bool = Field(default=False)
 
+    # model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     def generate_variable_name(
         self,
         node_output_type: NodeOutputType,
@@ -518,6 +521,9 @@ class CodeGenerator(BaseModel):
 
     statements: List[StatementT] = Field(default_factory=list)
     template: str = Field(default="sdk_code.tpl")
+
+    # model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _get_template(self) -> Template:
         template_path = os.path.join(os.path.dirname(__file__), f"templates/{self.template}")

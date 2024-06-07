@@ -6,7 +6,7 @@ from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple,
 
 from collections import defaultdict
 
-from pydantic import Field, PrivateAttr, root_validator, validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -271,7 +271,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             ref_to_node_name[ref] = node_name
         return ref_to_node_name
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def _set_internal_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # NOTE: During graph instantiation, this method will get called (including global query graph).
@@ -316,14 +316,16 @@ class QueryGraphModel(FeatureByteBaseModel):
 
         return values
 
-    @validator("edges_map", "backward_edges_map")
+    @field_validator("edges_map", "backward_edges_map")
+    @classmethod
     @classmethod
     def _make_default_dict_list(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         # make sure the output is default dict to list
         updated_dict = defaultdict(list, value)
         return updated_dict
 
-    @validator("node_type_counter")
+    @field_validator("node_type_counter")
+    @classmethod
     @classmethod
     def _make_default_dict_int(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         # make sure the output is default dict to int

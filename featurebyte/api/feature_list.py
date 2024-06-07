@@ -24,7 +24,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson.objectid import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -322,7 +322,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
-    @root_validator
+    @model_validator(mode="after")
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         # set the following values if it is empty (used mainly by the SDK constructed feature list)

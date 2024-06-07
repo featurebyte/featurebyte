@@ -54,18 +54,18 @@ class AnalysisPlots(BaseModel):
     """
 
     wh_job_time_modulo_frequency_hist: Dict[str, Any]
-    wh_intervals_hist: Optional[Dict[str, Any]]
-    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]]
-    affected_jobs_record_age: Optional[Dict[str, Any]]
+    wh_intervals_hist: Optional[Dict[str, Any]] = None
+    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]] = None
+    affected_jobs_record_age: Optional[Dict[str, Any]] = None
 
 
-class BackTestSummary(BaseModel):
+class BackTestSummary(FeatureByteBaseModel):
     """
     BackTestSummary model
     """
 
     output_document_id: PydanticObjectId
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = None
     created_at: datetime.datetime
     feature_job_setting: FeatureJobSetting
     total_pct_late_data: float
@@ -77,7 +77,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_table_id: Optional[PydanticObjectId]
+    event_table_id: Optional[PydanticObjectId] = None
     event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
@@ -115,7 +115,7 @@ class BacktestResult(BaseModel):
     results: str
     job_with_issues_count: int
     warnings: List[str]
-    plot: Optional[str]
+    plot: Optional[str] = None
 
 
 class EventLandingTimeResult(BaseModel):
@@ -129,13 +129,13 @@ class EventLandingTimeResult(BaseModel):
     warnings: List[str]
 
 
-class AnalysisResultsData(BaseModel):
+class AnalysisResultsData(FeatureByteBaseModel):
     """
     Data heavy part of AnalysisResults
     """
 
     blind_spot_search_result: BlindSpotSearchResult
-    blind_spot_search_exc_missing_jobs_result: Optional[BlindSpotSearchResult]
+    blind_spot_search_exc_missing_jobs_result: Optional[BlindSpotSearchResult] = None
     event_landing_time_result: EventLandingTimeResult
     backtest_result: BacktestResult
 
@@ -146,14 +146,14 @@ class MissingJobsInfo(BaseModel):
     """
 
     normal_age_max: float
-    late_job_index: Optional[str]
-    late_event_index: Optional[str]
+    late_job_index: Optional[str] = None
+    late_event_index: Optional[str] = None
     jobs_after_missing_jobs_index: str
     affected_jobs_index: str
-    affected_event_index: Optional[str]
+    affected_event_index: Optional[str] = None
 
 
-class AnalysisData(BaseModel):
+class AnalysisData(FeatureByteBaseModel):
     """
     Analysis Data with support for json serialization
     """
@@ -163,11 +163,11 @@ class AnalysisData(BaseModel):
     missing_jobs_info: MissingJobsInfo
 
 
-class FeatureJobSettingAnalysisData(BaseModel):
+class FeatureJobSettingAnalysisData(FeatureByteBaseModel):
     """
     Store large objects from the analysis
     """
 
-    analysis_plots: Optional[AnalysisPlots]
-    analysis_data: Optional[AnalysisData]
+    analysis_plots: Optional[AnalysisPlots] = None
+    analysis_data: Optional[AnalysisData] = None
     analysis_result: AnalysisResultsData

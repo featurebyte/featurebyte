@@ -23,7 +23,7 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     Schema for entity relationship information (subset of existing RelationshipInfo)
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     relationship_type: RelationshipType
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId

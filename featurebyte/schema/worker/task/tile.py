@@ -13,8 +13,8 @@ class TileTaskPayload(BaseTaskPayload):
     Tile Task Payload
     """
 
-    command = WorkerCommand.TILE_COMPUTE
-    priority = TaskPriority.CRITICAL
+    command: WorkerCommand = WorkerCommand.TILE_COMPUTE
+    priority: TaskPriority = TaskPriority.CRITICAL
 
     feature_store_id: PydanticObjectId
     parameters: TileScheduledJobParameters

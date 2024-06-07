@@ -59,8 +59,8 @@ class Task(FeatureByteBaseModel):
     TaskStatus retrieval schema
     """
 
-    id: TaskId = Field(allow_mutation=False)
-    status: TaskStatus = Field(allow_mutation=False)
+    id: TaskId = Field(frozen=True)
+    status: TaskStatus = Field(frozen=True)
     output_path: Optional[str]
     payload: Dict[str, Any]
     traceback: Optional[str]

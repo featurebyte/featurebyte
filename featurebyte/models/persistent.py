@@ -44,10 +44,10 @@ class AuditDocument(FeatureByteBaseModel):
     Audit document
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
-    user_id: Optional[PydanticObjectId]
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
+    user_id: Optional[PydanticObjectId] = None
     name: str
-    document_id: Any
+    document_id: Any = None
     action_at: datetime = Field(default_factory=get_utc_now)
     action_type: AuditActionType
     previous_values: Dict[str, Any]
@@ -68,4 +68,4 @@ class FieldValueHistory(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    value: Any
+    value: Any = None

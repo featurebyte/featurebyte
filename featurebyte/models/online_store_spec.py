@@ -38,6 +38,8 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     feature: ExtendedFeatureModel
     precompute_queries: List[OnlineStoreComputeQueryModel] = []
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("precompute_queries", always=True)
     def _generate_precompute_queries(  # pylint: disable=no-self-argument
         cls,

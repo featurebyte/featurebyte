@@ -17,8 +17,8 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
     HistoricalFeatureTable creation task payload
     """
 
-    output_collection_name = HistoricalFeatureTableModel.collection_name()
-    command = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
-    task_type = TaskType.CPU_TASK
+    output_collection_name: str = HistoricalFeatureTableModel.collection_name()
+    command: WorkerCommand = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
+    task_type: TaskType = TaskType.CPU_TASK
     observation_set_storage_path: Optional[str]
-    is_revocable = True
+    is_revocable: bool = True

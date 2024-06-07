@@ -17,5 +17,5 @@ class CatalogOnlineStoreInitializeTaskPayload(BaseTaskPayload):
 
     command = WorkerCommand.CATALOG_ONLINE_STORE_UPDATE
     online_store_id: Optional[PydanticObjectId]
-    output_collection_name = CatalogModel.collection_name()
-    task_type = TaskType.CPU_TASK
+    output_collection_name: str = CatalogModel.collection_name()
+    task_type: TaskType = TaskType.CPU_TASK

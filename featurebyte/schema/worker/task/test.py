@@ -13,10 +13,10 @@ class TestTaskPayload(BaseTaskPayload):
     Test CPU Task Payload
     """
 
-    command = WorkerCommand.TEST
-    task_type = TaskType.CPU_TASK
+    command: WorkerCommand = WorkerCommand.TEST
+    task_type: TaskType = TaskType.CPU_TASK
     sleep: int = 0
-    is_revocable = True
+    is_revocable: bool = True
 
     @property
     def task_output_path(self) -> Optional[str]:
@@ -35,8 +35,8 @@ class TestIOTaskPayload(BaseTaskPayload):
     Test IO Task Payload
     """
 
-    command = WorkerCommand.TEST
-    task_type = TaskType.IO_TASK
+    command: WorkerCommand = WorkerCommand.TEST
+    task_type: TaskType = TaskType.IO_TASK
 
     @property
     def task_output_path(self) -> Optional[str]:

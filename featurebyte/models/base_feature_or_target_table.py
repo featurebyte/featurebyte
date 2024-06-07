@@ -13,4 +13,4 @@ class BaseFeatureOrTargetTableModel(MaterializedTableModel):
     Base Feature Or Target table model for shared properties
     """
 
-    observation_table_id: Optional[PydanticObjectId]
+    observation_table_id: Optional[PydanticObjectId] = None

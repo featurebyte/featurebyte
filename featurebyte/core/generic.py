@@ -12,7 +12,7 @@ from abc import abstractmethod
 
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.common.utils import get_version
@@ -78,8 +78,8 @@ class QueryObject(FeatureByteBaseModel):
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node_name: str
-    tabular_source: TabularSource = Field(allow_mutation=False)
-    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    tabular_source: TabularSource = Field(frozen=True)
+    feature_store: FeatureStoreModel = Field(exclude=True, frozen=True)
 
     _operation_structure_cache: Any = _create_operation_structure_cache()
 
@@ -174,7 +174,7 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self.operation_structure.output_category
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(values["graph"], GlobalQueryGraph):

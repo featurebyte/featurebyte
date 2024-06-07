@@ -144,8 +144,8 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
 
-    type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
-        DatabaseCredentialType.USERNAME_PASSWORD, const=True
+    type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = (
+        DatabaseCredentialType.USERNAME_PASSWORD
     )
     username: StrictStr = Field(description="Username of your account.")
     password: StrictStr = Field(description="Password of your account.")
@@ -162,9 +162,7 @@ class AccessTokenCredential(BaseDatabaseCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
 
-    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
-        DatabaseCredentialType.ACCESS_TOKEN, const=True
-    )
+    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = DatabaseCredentialType.ACCESS_TOKEN
     access_token: StrictStr = Field(description="The access token used to connect.")
 
 
@@ -181,9 +179,7 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")
 
-    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(
-        DatabaseCredentialType.KERBEROS_KEYTAB, const=True
-    )
+    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = DatabaseCredentialType.KERBEROS_KEYTAB
     principal: StrictStr = Field(description="The principal used to connect.")
     encoded_key_tab: StrictStr = Field(description="The key tab used to connect.")
 
@@ -260,7 +256,7 @@ class S3StorageCredential(BaseStorageCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
 
-    type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
+    type: Literal[StorageCredentialType.S3] = StorageCredentialType.S3
     s3_access_key_id: StrictStr = Field(
         description="S3 access key ID used for connecting to your S3 store."
     )
@@ -283,7 +279,7 @@ class GCSStorageCredential(BaseStorageCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.GCSStorageCredential")
 
-    type: StorageCredentialType = Field(StorageCredentialType.GCS, const=True)
+    type: Literal[StorageCredentialType.GCS] = StorageCredentialType.GCS
     service_account_info: Dict[str, str] = Field(
         description="Service account information used for connecting to your GCS store."
     )
@@ -303,7 +299,7 @@ class AzureBlobStorageCredential(BaseStorageCredential):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AzureBlobStorageCredential")
 
-    type: StorageCredentialType = Field(StorageCredentialType.AZURE, const=True)
+    type: Literal[StorageCredentialType.AZURE] = StorageCredentialType.AZURE
     account_name: StrictStr
     account_key: StrictStr
 
@@ -320,8 +316,8 @@ class CredentialModel(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
     def encrypt_credentials(self) -> None:
         """

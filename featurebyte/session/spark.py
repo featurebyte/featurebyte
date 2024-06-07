@@ -6,7 +6,7 @@ SparkSession class
 # pylint: disable=wrong-import-order
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, Union, cast
+from typing import Any, AsyncGenerator, Literal, Optional, Union, cast
 from typing_extensions import Annotated
 
 import os
@@ -66,9 +66,9 @@ class SparkSession(BaseSparkSession):
     port: int
     use_http_transport: bool
     use_ssl: bool
-    source_type: SourceType = Field(SourceType.SPARK, const=True)
-    database_credential: Optional[SparkDatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    source_type: Literal[SourceType.SPARK] = SourceType.SPARK
+    database_credential: Optional[SparkDatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
     def _initialize_connection(self) -> None:
         auth = None

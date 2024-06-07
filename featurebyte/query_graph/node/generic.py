@@ -7,7 +7,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Literal
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -71,7 +71,7 @@ class ProjectNode(BaseNode):
 
         columns: List[InColumnStr]
 
-    type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
+    type: Literal[NodeType.PROJECT] = NodeType.PROJECT
     parameters: Parameters
 
     @property
@@ -190,8 +190,8 @@ class ProjectNode(BaseNode):
 class FilterNode(BaseNode):
     """FilterNode class"""
 
-    type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
+    type: Literal[NodeType.FILTER] = NodeType.FILTER
+    parameters: BaseModel = {}
 
     # feature definition hash generation configuration
     _inherit_first_input_column_name_mapping = True
@@ -404,10 +404,10 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         """Parameters"""
 
         name: OutColumnStr
-        value: Optional[Any]
+        value: Optional[Any] = None
 
-    type: Literal[NodeType.ASSIGN] = Field(NodeType.ASSIGN, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.ASSIGN] = NodeType.ASSIGN
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: Parameters
 
     # feature definition hash generation configuration
@@ -519,8 +519,8 @@ class LagNode(BaseSeriesOutputNode):
         timestamp_column: InColumnStr
         offset: int
 
-    type: Literal[NodeType.LAG] = Field(NodeType.LAG, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    type: Literal[NodeType.LAG] = NodeType.LAG
+    output_type: Literal[NodeOutputType.SERIES] = NodeOutputType.SERIES
     parameters: Parameters
 
     @property
@@ -586,8 +586,8 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     """
 
     name: OutColumnStr
-    window: Optional[str]
-    offset: Optional[str]
+    window: Optional[str] = None
+    offset: Optional[str] = None
     timestamp_col: InColumnStr
 
 
@@ -596,8 +596,8 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     ForwardAggregateNode class.
     """
 
-    type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.FORWARD_AGGREGATE] = NodeType.FORWARD_AGGREGATE
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: ForwardAggregateParameters
 
     _auto_convert_expression_to_variable: ClassVar[bool] = False
@@ -690,12 +690,13 @@ class GroupByNodeParameters(BaseGroupbyParameters):
     timestamp: InColumnStr
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
-    tile_id: Optional[str]
-    aggregation_id: Optional[str]
+    tile_id: Optional[str] = None
+    aggregation_id: Optional[str] = None
     tile_id_version: int = Field(default=1)
-    offset: Optional[str]
+    offset: Optional[str] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         old_keys = ["frequency", "time_modulo_frequency", "blind_spot"]
@@ -711,8 +712,8 @@ class GroupByNodeParameters(BaseGroupbyParameters):
 class GroupByNode(AggregationOpStructMixin, BaseNode):
     """GroupByNode class"""
 
-    type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.GROUPBY] = NodeType.GROUPBY
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: GroupByNodeParameters
 
     # feature definition hash generation configuration
@@ -871,8 +872,8 @@ class ItemGroupbyParameters(BaseGroupbyParameters):
 class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
-    type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.ITEM_GROUPBY] = NodeType.ITEM_GROUPBY
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: ItemGroupbyParameters
 
     # class variable
@@ -961,10 +962,11 @@ class SCDBaseParameters(BaseModel):
 
     effective_timestamp_column: InColumnStr
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
-    current_flag_column: Optional[InColumnStr]
-    end_timestamp_column: Optional[InColumnStr]
+    current_flag_column: Optional[InColumnStr] = None
+    end_timestamp_column: Optional[InColumnStr] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: backward compatibility
@@ -982,7 +984,7 @@ class SCDJoinParameters(SCDBaseParameters):
 class SCDLookupParameters(SCDBaseParameters):
     """Parameters for SCD lookup"""
 
-    offset: Optional[str]
+    offset: Optional[str] = None
 
 
 class EventLookupParameters(BaseModel):
@@ -999,10 +1001,10 @@ class LookupParameters(BaseModel):
     entity_column: InColumnStr
     serving_name: str
     entity_id: PydanticObjectId
-    scd_parameters: Optional[SCDLookupParameters]
-    event_parameters: Optional[EventLookupParameters]
+    scd_parameters: Optional[SCDLookupParameters] = None
+    event_parameters: Optional[EventLookupParameters] = None
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_input_column_names_feature_names_same_length(
         cls, values: Dict[str, Any]
@@ -1016,7 +1018,7 @@ class LookupParameters(BaseModel):
 class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     """BaseLookupNode class"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: LookupParameters
 
     # feature definition hash generation configuration
@@ -1109,7 +1111,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
 class LookupNode(BaseLookupNode):
     """LookupNode class"""
 
-    type: Literal[NodeType.LOOKUP] = Field(NodeType.LOOKUP, const=True)
+    type: Literal[NodeType.LOOKUP] = NodeType.LOOKUP
 
     def _derive_sdk_code(
         self,
@@ -1149,13 +1151,13 @@ class LookupNode(BaseLookupNode):
 class LookupTargetParameters(LookupParameters):
     """LookupTargetParameters"""
 
-    offset: Optional[str]
+    offset: Optional[str] = None
 
 
 class LookupTargetNode(BaseLookupNode):
     """LookupTargetNode class"""
 
-    type: Literal[NodeType.LOOKUP_TARGET] = Field(NodeType.LOOKUP_TARGET, const=True)
+    type: Literal[NodeType.LOOKUP_TARGET] = NodeType.LOOKUP_TARGET
     parameters: LookupTargetParameters
 
     # class variable
@@ -1190,11 +1192,12 @@ class LookupTargetNode(BaseLookupNode):
 class JoinMetadata(BaseModel):
     """Metadata to track general `view.join(...)` operation"""
 
-    type: str = Field("join", const=True)
+    type: Literal["join"] = "join"
     rsuffix: str
     rprefix: str
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _backward_compat_fill_rprefix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values.get("rprefix") is None:
@@ -1205,9 +1208,9 @@ class JoinMetadata(BaseModel):
 class JoinEventTableAttributesMetadata(BaseModel):
     """Metadata to track `item_view.join_event_table_attributes(...)` operation"""
 
-    type: str = Field("join_event_table_attributes", const=True)
+    type: Literal["join_event_table_attributes"] = "join_event_table_attributes"
     columns: List[str]
-    event_suffix: Optional[str]
+    event_suffix: Optional[str] = None
 
 
 class JoinNodeParameters(BaseModel):
@@ -1220,16 +1223,13 @@ class JoinNodeParameters(BaseModel):
     right_input_columns: List[InColumnStr]
     right_output_columns: List[OutColumnStr]
     join_type: Literal["left", "inner"]
-    scd_parameters: Optional[SCDJoinParameters]
+    scd_parameters: Optional[SCDJoinParameters] = None
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
 
-    @validator(
-        "left_input_columns",
-        "right_input_columns",
-        "left_output_columns",
-        "right_output_columns",
+    @field_validator(
+        "left_input_columns", "right_input_columns", "left_output_columns", "right_output_columns"
     )
     @classmethod
     def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
@@ -1237,7 +1237,7 @@ class JoinNodeParameters(BaseModel):
             raise ValueError(f"Column names (values: {values}) must be unique!")
         return values
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
@@ -1251,8 +1251,8 @@ class JoinNodeParameters(BaseModel):
 class JoinNode(BasePrunableNode):
     """Join class"""
 
-    type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.JOIN] = NodeType.JOIN
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: JoinNodeParameters
 
     # feature definition hash generation configuration
@@ -1538,12 +1538,12 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         """
 
         view_entity_column: InColumnStr
-        view_point_in_time_column: Optional[InColumnStr]
+        view_point_in_time_column: Optional[InColumnStr] = None
         feature_entity_column: InColumnStr
         name: OutColumnStr
 
-    type: Literal[NodeType.JOIN_FEATURE] = Field(NodeType.JOIN_FEATURE, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.JOIN_FEATURE] = NodeType.JOIN_FEATURE
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: Parameters
 
     # feature definition hash generation configuration
@@ -1651,7 +1651,7 @@ class TrackChangesNodeParameters(BaseModel):
 class TrackChangesNode(BaseNode):
     """TrackChangesNode class"""
 
-    type: Literal[NodeType.TRACK_CHANGES] = Field(NodeType.TRACK_CHANGES, const=True)
+    type: Literal[NodeType.TRACK_CHANGES] = NodeType.TRACK_CHANGES
     parameters: TrackChangesNodeParameters
 
     @property
@@ -1760,15 +1760,15 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     """Parameters for AggregateAsAtNode"""
 
     name: OutColumnStr
-    offset: Optional[str]
+    offset: Optional[str] = None
     # Note: This is kept for backward compatibility and not used by SQL generation
-    backward: Optional[bool]
+    backward: Optional[bool] = None
 
 
 class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     """BaseAggregateAsAtNode class"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: AggregateAsAtParameters
 
     # class variable
@@ -1818,7 +1818,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
 class AggregateAsAtNode(BaseAggregateAsAtNode):
     """AggregateAsAtNode class"""
 
-    type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
+    type: Literal[NodeType.AGGREGATE_AS_AT] = NodeType.AGGREGATE_AS_AT
 
     # feature definition hash generation configuration
     _normalized_output_prefix = "feat_"
@@ -1863,9 +1863,7 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
 class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
     """ForwardAggregateAsAtNode class"""
 
-    type: Literal[NodeType.FORWARD_AGGREGATE_AS_AT] = Field(
-        NodeType.FORWARD_AGGREGATE_AS_AT, const=True
-    )
+    type: Literal[NodeType.FORWARD_AGGREGATE_AS_AT] = NodeType.FORWARD_AGGREGATE_AS_AT
 
     # feature definition hash generation configuration
     _normalized_output_prefix = "target_"
@@ -1915,8 +1913,8 @@ class AliasNode(BaseNode):
 
         name: OutColumnStr
 
-    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    type: Literal[NodeType.ALIAS] = NodeType.ALIAS
+    output_type: Literal[NodeOutputType.SERIES] = NodeOutputType.SERIES
     parameters: Parameters
 
     @property
@@ -2020,7 +2018,7 @@ class AliasNode(BaseNode):
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
 
-    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+    type: Literal[NodeType.CONDITIONAL] = NodeType.CONDITIONAL
 
     @property
     def max_input_count(self) -> int:

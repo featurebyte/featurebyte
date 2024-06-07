@@ -4,7 +4,7 @@ SnowflakeSession class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Any, AsyncGenerator, Literal, OrderedDict
 
 import collections
 import datetime
@@ -13,7 +13,6 @@ import logging
 
 import pandas as pd
 import pyarrow as pa
-from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
 from snowflake.connector.errors import Error as SnowflakeError
@@ -75,7 +74,7 @@ class SnowflakeSession(BaseSession):
     database_name: str
     schema_name: str
     role_name: str
-    source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
+    source_type: Literal[SourceType.SNOWFLAKE] = SourceType.SNOWFLAKE
     database_credential: UsernamePasswordCredential
 
     def _initialize_connection(self) -> None:

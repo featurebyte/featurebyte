@@ -12,9 +12,9 @@ class ScheduledFeatureMaterializeTaskPayload(BaseTaskPayload):
     Scheduled feature materialize task payload
     """
 
-    command = WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE
-    priority = TaskPriority.CRITICAL
+    command: WorkerCommand = WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE
+    priority: TaskPriority = TaskPriority.CRITICAL
 
     offline_store_feature_table_name: str
     offline_store_feature_table_id: PydanticObjectId
-    task_type = TaskType.CPU_TASK
+    task_type: TaskType = TaskType.CPU_TASK

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, validator
+from pydantic import StrictStr, validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -21,7 +21,7 @@ class SCDTableCreate(TableCreate):
     SCDTable Creation Schema
     """
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     natural_key_column: StrictStr
     surrogate_key_column: Optional[StrictStr]
     effective_timestamp_column: StrictStr

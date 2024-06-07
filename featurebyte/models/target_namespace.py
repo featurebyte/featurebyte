@@ -38,13 +38,13 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     """
 
     dtype: Optional[DBVarType] = Field(
-        allow_mutation=False, description="database variable type for the target"
+        None, frozen=True, description="database variable type for the target"
     )
-    window: Optional[str]
+    window: Optional[str] = None
 
     # list of IDs attached to this feature namespace or target namespace
-    target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    default_target_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
+    target_ids: List[PydanticObjectId] = Field(frozen=True)
+    default_target_id: Optional[PydanticObjectId] = Field(None, frozen=True)
 
     # pydantic validators
     _sort_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(

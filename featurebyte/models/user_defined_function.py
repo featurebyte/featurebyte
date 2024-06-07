@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Union
 
 import pandas as pd
 import pymongo
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
@@ -133,8 +133,8 @@ class FunctionParameter(FeatureByteBaseModel):
 
     name: str
     dtype: DBVarType
-    default_value: Optional[Union[Scalar, Timestamp]]
-    test_value: Optional[Union[Scalar, Timestamp]]
+    default_value: Optional[Union[Scalar, Timestamp]] = None
+    test_value: Optional[Union[Scalar, Timestamp]] = None
 
     @property
     def has_default_value(self) -> bool:
@@ -219,10 +219,11 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     signature: str = Field(default_factory=str)
-    catalog_id: Optional[PydanticObjectId]
+    catalog_id: Optional[PydanticObjectId] = None
     feature_store_id: PydanticObjectId
 
-    @validator("name", "sql_function_name")
+    @field_validator("name", "sql_function_name")
+    @classmethod
     @classmethod
     def _validate_function_name(cls, value: str) -> str:
         # check that name or function name is a valid identifier
@@ -230,7 +231,8 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
             raise ValueError(f'"{value}" is not a valid identifier')
         return value
 
-    @validator("function_parameters")
+    @field_validator("function_parameters")
+    @classmethod
     @classmethod
     def _validate_function_parameters(
         cls, value: List[FunctionParameter]
@@ -272,7 +274,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         str
         """
         function_parameters = []
-        value: Optional[Union[Scalar, TimestampValue]]
+        value: Optional[Union[Scalar, TimestampValue]] = None
         for param in self.function_parameters:
             if param.has_test_value:
                 test_value = param.test_value

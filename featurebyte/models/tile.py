@@ -5,7 +5,7 @@ This module contains Tile related models
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -59,22 +59,17 @@ class TileSpec(FeatureByteBaseModel):
     value_column_types: List[str]
     tile_id: str
     aggregation_id: str
-    aggregation_function_name: Optional[str]
-    parent_column_name: Optional[str]
-    category_column_name: Optional[str]
-    feature_store_id: Optional[ObjectId]
+    aggregation_function_name: Optional[str] = None
+    parent_column_name: Optional[str] = None
+    category_column_name: Optional[str] = None
+    feature_store_id: Optional[ObjectId] = None
     entity_tracker_table_name: str
     windows: List[Optional[str]]
-    offset: Optional[str]
+    offset: Optional[str] = None
+    model_config = ConfigDict()
 
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
-
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # Fill in default entity_tracker_table_name if not provided. For tests.
@@ -84,7 +79,8 @@ class TileSpec(FeatureByteBaseModel):
             )
         return values
 
-    @validator("tile_id")
+    @field_validator("tile_id")
+    @classmethod
     @classmethod
     def stripped(cls, value: str) -> str:
         """
@@ -108,7 +104,7 @@ class TileSpec(FeatureByteBaseModel):
             raise ValueError("value cannot be empty")
         return value.strip()
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def check_time_modulo_and_frequency_minute(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -158,10 +154,8 @@ class TileCommonParameters(FeatureByteBaseModel):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    class Config(FeatureByteBaseModel.Config):
-        """Model configuration"""
-
-        extra = "forbid"
+    # model configuration
+    model_config = ConfigDict(extra="forbid")
 
 
 class TileScheduledJobParameters(TileCommonParameters):

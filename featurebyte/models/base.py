@@ -256,12 +256,12 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         default=None, frozen=True, description="User identifier"
     )
     name: Optional[NameStr] = Field(None, description="Record name")
-    created_at: Optional[datetime] = Field(
-        default=None, frozen=True, description="Record creation time"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, frozen=True, description="Record last updated time"
-    )
+    # created_at: Optional[datetime] = Field(
+    #     default=None, frozen=True, description="Record creation time"
+    # )
+    # updated_at: Optional[datetime] = Field(
+    #     default=None, frozen=True, description="Record last updated time"
+    # )
     block_modification_by: List[ReferenceInfo] = Field(
         default_factory=list,
         frozen=True,

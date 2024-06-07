@@ -9,7 +9,7 @@ from typing_extensions import Annotated, Literal
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 import pandas as pd
-from pydantic import Field, validator
+from pydantic import Field, field_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, StrEnum
@@ -194,9 +194,7 @@ class MissingValueImputation(BaseCleaningOperation):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
-    type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.MISSING] = ConditionOperationField.MISSING
     imputed_value: Scalar
 
     def derive_sdk_code(self) -> ObjectClass:
@@ -234,16 +232,14 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
 
-    type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.DISGUISED] = ConditionOperationField.DISGUISED
     disguised_values: Sequence[OptionalScalar] = Field(
         description="List of values that need to be replaced."
     )
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
-    @validator("disguised_values")
+    @field_validator("disguised_values")
     @classmethod
     def _validate_disguised_values(cls, values: Sequence[Any]) -> Sequence[Any]:
         if len(values) == 0:
@@ -288,16 +284,14 @@ class UnexpectedValueImputation(BaseCleaningOperation):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
 
-    type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.NOT_IN] = ConditionOperationField.NOT_IN
     expected_values: Sequence[OptionalScalar] = Field(
         description="List of values that are expected to be present."
     )
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
-    @validator("expected_values")
+    @field_validator("expected_values")
     @classmethod
     def _validate_expected_values(cls, values: Sequence[Any]) -> Sequence[Any]:
         if len(values) == 0:
@@ -362,7 +356,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
     ] = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Determines how the boundary values are treated.\n"
         "- If type is `less_than`, any value that is less than the end_point "
         "value will be replaced with imputed_value.\n"
@@ -439,9 +433,7 @@ class StringValueImputation(BaseCleaningOperation):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
-    type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.IS_STRING] = ConditionOperationField.IS_STRING
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.STRING_VALUE_IMPUTATION(imputed_value=self.imputed_value)

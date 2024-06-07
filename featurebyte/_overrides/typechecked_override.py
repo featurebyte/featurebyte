@@ -14,9 +14,8 @@ from typeguard import typechecked as original_typechecked
 
 def custom_typechecked(
     func: Any = None,
-    *,
-    always: bool = False,
-    _localns: Optional[Dict[str, Any]] = None,
+    *args: Any,
+    **kwargs: Any,
 ) -> Any:
     """
     Customize the `typechecked` decorator to selectively enable or disable type checking
@@ -26,10 +25,10 @@ def custom_typechecked(
     ----------
     func : Any
         The function or class to enable type checking for.
-    always : bool
-        True to enable type checks even in optimized mode.
-    _localns : Optional[Dict[str, Any]]
-        Local namespace used for resolving type annotations.
+    *args : Any
+        Additional positional arguments to pass to the original `typechecked` decorator.
+    **kwargs : Any
+        Additional keyword arguments to pass to the original `typechecked` decorator.
 
     Returns
     -------
@@ -37,13 +36,13 @@ def custom_typechecked(
         Either the decorated function or a partial object, depending on whether `func` is provided.
     """
     if func is None:
-        return functools.partial(custom_typechecked, always=always, _localns=_localns)
+        return functools.partial(custom_typechecked, *args, **kwargs)
 
     module = inspect.getmodule(func)
     if module and module.__name__.startswith("feast.feature_view"):
         return func
 
-    return original_typechecked(func, always=always, _localns=_localns)  # type: ignore
+    return original_typechecked(func, *args, **kwargs)  # type: ignore
 
 
 # Override the typechecked function in the typeguard module

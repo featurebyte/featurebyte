@@ -36,7 +36,7 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
     sql: str
     table_name: str
     serving_names: List[StrictStr]
-    feature_store_id: Optional[PydanticObjectId]
+    feature_store_id: Optional[PydanticObjectId] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

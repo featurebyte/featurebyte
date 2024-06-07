@@ -15,6 +15,6 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
     BatchFeatureTable creation task payload
     """
 
-    output_collection_name = BatchFeatureTableModel.collection_name()
-    command = WorkerCommand.BATCH_FEATURE_TABLE_CREATE
-    priority = TaskPriority.CRITICAL
+    output_collection_name: str = BatchFeatureTableModel.collection_name()
+    command: WorkerCommand = WorkerCommand.BATCH_FEATURE_TABLE_CREATE
+    priority: TaskPriority = TaskPriority.CRITICAL

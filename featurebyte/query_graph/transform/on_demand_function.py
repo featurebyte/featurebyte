@@ -4,7 +4,7 @@ On demand function (for DataBricks) related classes and functions.
 
 from typing import Any, Dict, List, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
@@ -56,6 +56,8 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
     code_generator: CodeGenerator = Field(
         default_factory=lambda: CodeGenerator(template="on_demand_function.tpl")
     )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
     def sql_inputs_info(self) -> List[SQLInputArgumentInfo]:

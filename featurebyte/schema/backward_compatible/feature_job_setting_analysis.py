@@ -4,7 +4,7 @@ This model contains the schema for backward compatible request responses.
 
 from typing import Any, Dict, Optional, Sequence
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.models.feature_job_setting_analysis import (
     AnalysisResult,
@@ -26,7 +26,8 @@ class FeatureJobSettingResponse(FeatureJobSetting):
     frequency: int
     job_time_modulo_frequency: int
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _handle_backward_compatibility_by_populating_older_fields(
         cls, values: Dict[str, Any]

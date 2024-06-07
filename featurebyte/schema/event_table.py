@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import StrictStr, field_validator, model_validator, validator
 
 from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.enum import TableDataType
@@ -22,7 +22,7 @@ class EventTableCreate(TableCreate):
     EventTable Creation Schema
     """
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
     event_timestamp_timezone_offset: Optional[StrictStr]
@@ -38,14 +38,14 @@ class EventTableCreate(TableCreate):
         allow_reuse=True,
     )(TableCreate._special_column_validator)
 
-    @validator("event_timestamp_timezone_offset")
+    @field_validator("event_timestamp_timezone_offset")
     @classmethod
     def _validate_event_timestamp_timezone_offset(cls, value: Optional[str]) -> Optional[str]:
         if value is not None:
             validate_timezone_offset_string(value)
         return value
 
-    @root_validator()
+    @model_validator(mode="before")
     @classmethod
     def _validate_event_timestamp_timezone_offset_parameters(
         cls, values: dict[str, Any]

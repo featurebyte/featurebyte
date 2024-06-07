@@ -4,7 +4,7 @@ Feature Job Setting Model
 
 from typing import Any, Dict
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
@@ -65,7 +65,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
         default="0s",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate feature job setting parameters

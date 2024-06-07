@@ -108,7 +108,7 @@ class Profile(BaseModel):
 
     name: str
     api_url: AnyHttpUrl
-    api_token: Optional[str]
+    api_token: Optional[str] = None
     ssl_verify: bool = True
 
 

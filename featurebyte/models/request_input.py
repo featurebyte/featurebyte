@@ -46,8 +46,8 @@ class BaseRequestInput(FeatureByteBaseModel):
     BaseRequestInput is the base class for all RequestInput types
     """
 
-    columns: Optional[List[str]]
-    columns_rename_mapping: Optional[Dict[str, str]]
+    columns: Optional[List[str]] = None
+    columns_rename_mapping: Optional[Dict[str, str]] = None
 
     @abstractmethod
     def get_query_expr(self, source_type: SourceType) -> Select:
@@ -186,11 +186,11 @@ class ViewRequestInput(BaseRequestInput):
     """
 
     node_name: StrictStr
-    type: Literal[RequestInputType.VIEW] = Field(RequestInputType.VIEW, const=True)
+    type: Literal[RequestInputType.VIEW] = RequestInputType.VIEW
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_graph: Any = Field(alias="graph")
+    internal_graph: Any = Field(None, alias="graph")
     _graph: Optional[QueryGraphModel] = PrivateAttr(default=None)
 
     @property
@@ -231,7 +231,7 @@ class SourceTableRequestInput(BaseRequestInput):
     """
 
     source: TabularSource
-    type: Literal[RequestInputType.SOURCE_TABLE] = Field(RequestInputType.SOURCE_TABLE, const=True)
+    type: Literal[RequestInputType.SOURCE_TABLE] = RequestInputType.SOURCE_TABLE
 
     def get_query_expr(self, source_type: SourceType) -> Select:
         _ = source_type

@@ -11,7 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -46,8 +46,8 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: Optional[PydanticObjectId]
-    observation_table_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = None
+    observation_table_id: Optional[PydanticObjectId] = None
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
     async def materialize(
@@ -167,7 +167,8 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
-    @validator("most_recent_point_in_time", "least_recent_point_in_time")
+    @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
+    @classmethod
     @classmethod
     def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
         if value is None:

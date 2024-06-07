@@ -22,7 +22,7 @@ class TileGenerate(TileCommon):
     """
 
     tile_type: TileType
-    last_tile_start_str: Optional[str]
+    last_tile_start_str: Optional[str] = None
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:

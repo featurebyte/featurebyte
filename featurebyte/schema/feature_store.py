@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -60,7 +60,7 @@ class FeatureStoreSample(FeatureStorePreview):
     timestamp_column: Optional[str] = Field(default=None)
     stats_names: Optional[List[str]] = Field(default=None)
 
-    @root_validator()
+    @model_validator(mode="before")
     @classmethod
     def _validate_timestamp_column(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -83,7 +83,7 @@ class BaseSparkSession(BaseSession, ABC):
     catalog_name: str
     schema_name: str
 
-    region_name: Optional[str]
+    region_name: Optional[str] = None
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)

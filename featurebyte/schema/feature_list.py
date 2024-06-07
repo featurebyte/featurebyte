@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -43,7 +43,7 @@ class FeatureListCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    feature_ids: List[PydanticObjectId] = Field(min_items=1)
+    feature_ids: List[PydanticObjectId] = Field(min_length=1)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):
@@ -53,7 +53,7 @@ class FeatureListCreateJob(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
+    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_length=1)
     features_conflict_resolution: ConflictResolution
 
 
@@ -74,7 +74,8 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     features: List[BatchFeatureItem]
     skip_batch_feature_creation: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if (
@@ -158,7 +159,7 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
 
     # exclude this field from the response
     internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters", exclude=True
+        frozen=True, alias="feature_clusters", exclude=True
     )
 
 
@@ -214,7 +215,7 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     feature_clusters: Optional[List[FeatureCluster]]
     feature_list_id: Optional[PydanticObjectId]
 
-    @root_validator
+    @model_validator(mode="after")
     @classmethod
     def _validate_feature_clusters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         feature_clusters = values.get("feature_clusters", None)
@@ -231,11 +232,11 @@ class PreviewObservationSet(FeatureByteBaseModel):
     """
 
     point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
-        min_items=1, max_items=FEATURE_PREVIEW_ROW_LIMIT
+        min_length=1, max_length=FEATURE_PREVIEW_ROW_LIMIT
     )
     observation_table_id: Optional[PydanticObjectId]
 
-    @root_validator
+    @model_validator(mode="after")
     @classmethod
     def _validate_observation_set(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         point_in_time_and_serving_name_list = values.get(
@@ -266,7 +267,7 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     """
 
     entity_serving_names: List[Dict[str, Any]] = Field(
-        min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT
+        min_length=1, max_length=ONLINE_FEATURE_REQUEST_ROW_LIMIT
     )
 
 

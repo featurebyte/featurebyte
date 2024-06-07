@@ -1,7 +1,7 @@
 """
 Base Class for Tile Schedule Instance
 """
-
+from pydantic import ConfigDict
 from typing import Any
 
 from abc import ABC, abstractmethod
@@ -16,12 +16,8 @@ class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
     Base class for Tile Operation Classes
     """
 
-    class Config(TileCommonParameters.Config):
-        """
-        Config class to allow services to be passed in as arguments
-        """
-
-        arbitrary_types_allowed = True
+    # model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """

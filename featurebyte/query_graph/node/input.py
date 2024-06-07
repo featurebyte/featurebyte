@@ -3,13 +3,13 @@ This module contains SQL operation related to input node
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -57,7 +57,8 @@ class BaseInputNodeParameters(BaseModel):
         SourceType.TEST: ClassEnum.TESTDB_DETAILS,
     }
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: convert list of string to list of dictionary
@@ -191,7 +192,7 @@ class SourceTableInputNodeParameters(BaseInputNodeParameters):
 class EventTableInputNodeParameters(BaseInputNodeParameters):
     """EventTableParameters"""
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
     timestamp_column: Optional[InColumnStr] = Field(
         default=None
@@ -200,7 +201,8 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
     event_timestamp_timezone_offset: Optional[str] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: converted older record (parameters) into a newer format
@@ -238,7 +240,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
 class ItemTableInputNodeParameters(BaseInputNodeParameters):
     """ItemTableParameters"""
 
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_table_id: Optional[PydanticObjectId] = Field(default=None)
@@ -274,7 +276,7 @@ class ItemTableInputNodeParameters(BaseInputNodeParameters):
 class DimensionTableInputNodeParameters(BaseInputNodeParameters):
     """DimensionTableParameters"""
 
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
@@ -303,7 +305,7 @@ class DimensionTableInputNodeParameters(BaseInputNodeParameters):
 class SCDTableInputNodeParameters(BaseInputNodeParameters):
     """SCDTableParameters"""
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
     natural_key_column: Optional[InColumnStr] = Field(
         default=None
@@ -356,8 +358,8 @@ InputNodeParameters = Annotated[
 class InputNode(BaseNode):
     """InputNode class"""
 
-    type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    type: Literal[NodeType.INPUT] = NodeType.INPUT
+    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
     parameters: InputNodeParameters
 
     # class variable
@@ -369,7 +371,8 @@ class InputNode(BaseNode):
         TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
     }
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: set default table type when it is not present

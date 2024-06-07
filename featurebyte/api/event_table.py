@@ -4,14 +4,14 @@ EventTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import Literal, TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
 from typing_extensions import Literal
 
 from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
@@ -72,7 +72,7 @@ class EventTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
@@ -88,7 +88,7 @@ class EventTable(TableApiObject):
     )
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
+    _model_validator = model_validator(mode="before")(
         construct_data_model_root_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[

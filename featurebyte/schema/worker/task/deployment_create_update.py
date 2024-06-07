@@ -2,13 +2,13 @@
 FeatureList Deploy Task Payload schema
 """
 
-from typing import Optional, Union
-from typing_extensions import Annotated, Literal
+from typing import Literal, Optional, Union
+from typing_extensions import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
-from featurebyte.models.base import NameStr, PydanticObjectId
+from featurebyte.models.base import NameStr, PydanticObjectId, FeatureByteBaseModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
@@ -20,10 +20,10 @@ class DeploymentPayloadType(StrEnum):
     UPDATE = "update"
 
 
-class CreateDeploymentPayload(BaseModel):
+class CreateDeploymentPayload(FeatureByteBaseModel):
     """Create deployment"""
 
-    type: Literal[DeploymentPayloadType.CREATE] = Field(DeploymentPayloadType.CREATE, const=True)
+    type: Literal[DeploymentPayloadType.CREATE] = DeploymentPayloadType.CREATE
     name: Optional[NameStr] = Field(default=None)
     feature_list_id: PydanticObjectId
     enabled: bool
@@ -31,10 +31,10 @@ class CreateDeploymentPayload(BaseModel):
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
-class UpdateDeploymentPayload(BaseModel):
+class UpdateDeploymentPayload(FeatureByteBaseModel):
     """Update deployment"""
 
-    type: Literal[DeploymentPayloadType.UPDATE] = Field(DeploymentPayloadType.UPDATE, const=True)
+    type: Literal[DeploymentPayloadType.UPDATE] = DeploymentPayloadType.UPDATE
     enabled: bool
 
 
@@ -48,7 +48,7 @@ class DeploymentCreateUpdateTaskPayload(BaseTaskPayload):
     Deployment Create & Update Task Payload
     """
 
-    command = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
-    output_collection_name = DeploymentModel.collection_name()
-    task_type = TaskType.CPU_TASK
+    command: WorkerCommand = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
+    output_collection_name: str = DeploymentModel.collection_name()
+    task_type: TaskType = TaskType.CPU_TASK
     deployment_payload: DeploymentPayload

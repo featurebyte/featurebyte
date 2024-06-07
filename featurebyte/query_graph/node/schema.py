@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, Optional, Union
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
@@ -57,7 +57,8 @@ class SnowflakeDetails(BaseDatabaseDetails):
         default="PUBLIC",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # support old parameters
@@ -125,7 +126,8 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
     )
     storage_path: StrictStr = Field(description="DBFS path to use for file storage.")
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # support old parameters
@@ -221,7 +223,8 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         description="The name of the schema to use for creation of output tables."
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     @classmethod
     def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # support old parameters

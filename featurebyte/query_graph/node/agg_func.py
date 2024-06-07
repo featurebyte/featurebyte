@@ -19,8 +19,9 @@ class BaseAggFunc(BaseModel):
 
     type: AggFunc
 
-    def __init_subclass__(cls, **kwargs: Any):
-        if "Literal" in repr(cls.__fields__["type"].type_):
+    @classmethod
+    def __pydantic_init_subclass__(cls) -> None:
+        if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
 
@@ -72,7 +73,7 @@ class BaseAggFunc(BaseModel):
 class SumAggFunc(BaseAggFunc):
     """SumAggFunc class"""
 
-    type: Literal[AggFunc.SUM] = Field(AggFunc.SUM, const=True)
+    type: Literal[AggFunc.SUM.value] = AggFunc.SUM.value
     _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
@@ -112,13 +113,13 @@ class BaseNumAggFunc(BaseAggFunc):
 class AvgAggFunc(BaseNumAggFunc):
     """AvgAggFunc class"""
 
-    type: Literal[AggFunc.AVG] = Field(AggFunc.AVG, const=True)
+    type: Literal[AggFunc.AVG.value] = AggFunc.AVG.value
 
 
 class StdAggFunc(BaseNumAggFunc):
     """StdAggFunc class"""
 
-    type: Literal[AggFunc.STD] = Field(AggFunc.STD, const=True)
+    type: Literal[AggFunc.STD.value] = AggFunc.STD.value
 
 
 class MatchingVarTypeAggFunc(BaseAggFunc):
@@ -136,13 +137,13 @@ class MatchingVarTypeAggFunc(BaseAggFunc):
 class MaxAggFunc(MatchingVarTypeAggFunc):
     """MaxAggFunc class"""
 
-    type: Literal[AggFunc.MAX] = Field(AggFunc.MAX, const=True)
+    type: Literal[AggFunc.MAX.value] = AggFunc.MAX.value
 
 
 class MinAggFunc(MatchingVarTypeAggFunc):
     """MinAggFunc class"""
 
-    type: Literal[AggFunc.MIN] = Field(AggFunc.MIN, const=True)
+    type: Literal[AggFunc.MIN.value] = AggFunc.MIN.value
 
 
 class BaseCountAggFunc(BaseAggFunc):
@@ -160,19 +161,19 @@ class BaseCountAggFunc(BaseAggFunc):
 class CountAggFunc(BaseCountAggFunc):
     """CountAggFunc class"""
 
-    type: Literal[AggFunc.COUNT] = Field(AggFunc.COUNT, const=True)
+    type: Literal[AggFunc.COUNT.value] = AggFunc.COUNT.value
 
 
 class NaCountAggFunc(BaseCountAggFunc):
     """NaCountAggFunc class"""
 
-    type: Literal[AggFunc.NA_COUNT] = Field(AggFunc.NA_COUNT, const=True)
+    type: Literal[AggFunc.NA_COUNT.value] = AggFunc.NA_COUNT.value
 
 
 class LatestAggFunc(MatchingVarTypeAggFunc):
     """LatestAggFunc class"""
 
-    type: Literal[AggFunc.LATEST] = Field(AggFunc.LATEST, const=True)
+    type: Literal[AggFunc.LATEST.value] = AggFunc.LATEST.value
 
 
 if TYPE_CHECKING:

@@ -2,10 +2,10 @@
 This module contain columns related metadata used in node definition.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from pydantic.typing import CallableGenerator
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 
 class ColumnStr(str):
@@ -14,24 +14,11 @@ class ColumnStr(str):
     """
 
     @classmethod
-    def __get_validators__(cls) -> "CallableGenerator":
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> "ColumnStr":
-        """
-        Validate value
-
-        Parameters
-        ----------
-        value: Any
-            Input to the ColumnStr class
-
-        Returns
-        -------
-        ColumnStr
-        """
-        return cls(str(value))
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        _ = source_type
+        return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
 class OutColumnStr(ColumnStr):
