@@ -321,4 +321,4 @@ class PreviewService:
             timestamp_column=sample.timestamp_column,
         )
         df_result = await session.execute_query(query)
-        return df_result.iloc[0]["row_count"]  # type: ignore
+        return df_result.iloc[0]["count"]  # type: ignore

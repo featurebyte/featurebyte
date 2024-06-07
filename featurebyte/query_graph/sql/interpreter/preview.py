@@ -1042,7 +1042,7 @@ class PreviewMixin(BaseGraphInterpreter):
         expr = expressions.select(
             expressions.alias_(
                 expression=expressions.Count(this=expressions.Star()),
-                alias="row_count",
+                alias="count",
                 quoted=True,
             )
         ).from_(
