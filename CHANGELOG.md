@@ -1,13 +1,15 @@
 # Changelog
 
-## v1.0.4 (2024-06-04)
+## v1.1.0 (2024-06-08)
 
 ### 🛑 Breaking Changes
 
++ `sdk-api` Skip filling null value by default for aggregated features.
 + `service` Rename FeatureJobSetting attributes to match the new naming convention.
 
 ### 💡 Enhancements
 
++ `service` Perform sampling operations without sorting tables
 + `service` Support offset parameter in aggregate_over and forward_aggregate
 + `service` Add default feature job settings to the SCDTable.
 + `dependencies` Bumped `freeware` to 0.2.18 to support new feature job settings
