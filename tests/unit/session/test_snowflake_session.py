@@ -159,17 +159,20 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
     """
     with patch("featurebyte.session.snowflake.connector") as mock_connector:
         if not is_fetch_pandas_all_available:
-            mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
+            description = [["col_a"], ["col_b"], ["col_c"]]
+            mock_cursor = Mock(name="MockCursor", _description=description, description=description)
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
             mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         else:
+            description = [
+                ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
+                ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
+                ResultMetadataV2(name="col_c", type_code=0, is_nullable=True),
+            ]
             mock_cursor = Mock(
                 name="MockCursor",
-                description=[
-                    ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
-                    ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
-                    ResultMetadataV2(name="col_c", type_code=0, is_nullable=True),
-                ],
+                _description=description,
+                description=description,
             )
             mock_cursor.fetch_pandas_all.return_value = pd.DataFrame(
                 {
@@ -645,7 +648,7 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
     connection = snowflake_connector.connect.return_value
     cursor = connection.cursor.return_value
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
-    cursor.description = [
+    cursor._description = cursor.description = [
         ResultMetadataV2(name="col_a", type_code=0, is_nullable=True),
         ResultMetadataV2(name="col_b", type_code=0, is_nullable=True),
     ]
@@ -712,12 +715,12 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     cursor = connection.cursor.return_value
 
     # no data, no description
-    cursor.description = None
+    cursor._description = cursor.description = None
     session = SnowflakeSession(**snowflake_session_dict)
     result = await session.execute_query(query)
     assert result is None
     # empty dataframe from mock_fetch_arrow_batches
-    cursor.description = [
+    cursor._description = cursor.description = [
         ResultMetadataV2(name="a", type_code=1, is_nullable=True),
         ResultMetadataV2(name="b", type_code=1, is_nullable=True),
     ]
