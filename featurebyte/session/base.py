@@ -102,7 +102,8 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
 
     try:
-        return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+        output = await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
+        return output
     except asyncio.exceptions.TimeoutError:
         tid = thread_info.get("tid")
         if tid:
@@ -535,6 +536,16 @@ class BaseSession(BaseModel):
         """
         try:
             bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+
+            buffer = BytesIO()
+            async for chunk in bytestream:
+                buffer.write(chunk)
+            buffer.flush()
+            if buffer.tell() == 0:
+                return None
+            buffer.seek(0)
+            return dataframe_from_arrow_stream(buffer)
+
         except Exception as exc:
             if to_log_error:
                 logger.error(
@@ -545,15 +556,6 @@ class BaseSession(BaseModel):
             if self._cache_key:
                 session_cache.pop(self._cache_key, None)
             raise exc
-
-        buffer = BytesIO()
-        async for chunk in bytestream:
-            buffer.write(chunk)
-        buffer.flush()
-        if buffer.tell() == 0:
-            return None
-        buffer.seek(0)
-        return dataframe_from_arrow_stream(buffer)
 
     async def execute_query_interactive(
         self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
