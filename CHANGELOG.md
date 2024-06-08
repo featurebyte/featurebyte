@@ -14,6 +14,7 @@
 + `service` Add default feature job settings to the SCDTable.
 + `dependencies` Bumped `freeware` to 0.2.18 to support new feature job settings
 + `service` Relax constraint that key has to be a lookup feature in dictionary operations
++ `dependencies` bump snowflake-connector-python
 
 ### 🐛 Bug Fixes
 
