@@ -188,3 +188,17 @@ async def test_drop_table__view_error(session):
             database_name=session.database_name,
         )
     assert "wrong_name" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_execute_query__error_logging(session, caplog):
+    """Test execute query error logging"""
+    query = "SELECT * FROM TEST_DATA_TABLE"
+    try:
+        await session.execute_query(query)
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    record = next(record for record in caplog.records if record.levelname == "ERROR")
+    assert record.message == "Error executing query"
+    assert record.extra["query"] == query, record.extra

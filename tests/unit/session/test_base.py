@@ -259,10 +259,8 @@ async def test_should_update_schema__no_results_found(base_schema_initializer):
 
 
 @pytest.mark.asyncio
-async def test_to_thread():
-    """
-    Check thread execution is interrupted by timeout
-    """
+async def test_to_thread__blocking_function():
+    """Check thread execution is interrupted by timeout"""
 
     def _blocking_sync_function(values):
         try:
@@ -278,3 +276,19 @@ async def test_to_thread():
     # expect exception to be raised inside thread on timeout
     time.sleep(0.5)
     assert values[0] == 2
+
+
+@pytest.mark.asyncio
+async def test_to_thread__exception():
+    """Check thread execution is interrupted by exception"""
+
+    def _blocking_sync_function(values):
+        _ = values
+        raise ValueError("This is an exception from the thread!")
+
+    values = [0]
+    with pytest.raises(Exception) as exc:
+        await to_thread(_blocking_sync_function, 0.1, values)
+
+    # expect exception to be raised inside thread
+    assert "This is an exception from the thread!" in str(exc.value)
