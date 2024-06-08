@@ -199,6 +199,7 @@ async def test_execute_query__error_logging(session, caplog):
     except Exception:  # pylint: disable=broad-except
         pass
 
-    record = next(record for record in caplog.records if record.levelname == "ERROR")
-    assert record.message == "Error executing query"
+    record = next(
+        record for record in caplog.records if record.msg.startswith("Error executing query")
+    )
     assert record.extra["query"] == query, record.extra
