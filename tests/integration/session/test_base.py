@@ -193,11 +193,9 @@ async def test_drop_table__view_error(session):
 @pytest.mark.asyncio
 async def test_execute_query__error_logging(session, caplog):
     """Test execute query error logging"""
-    query = "SELECT * FROM TEST_DATA_TABLE"
-    try:
+    query = "SELECTS * FROM TEST_DATA_TABLE"
+    with pytest.raises(Exception):
         await session.execute_query(query)
-    except Exception:  # pylint: disable=broad-except
-        pass
 
     record = next(
         record for record in caplog.records if record.msg.startswith("Error executing query")

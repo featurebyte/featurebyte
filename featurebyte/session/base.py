@@ -102,8 +102,7 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
 
     try:
-        output = await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
-        return output
+        return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
     except asyncio.exceptions.TimeoutError:
         tid = thread_info.get("tid")
         if tid:
@@ -545,7 +544,6 @@ class BaseSession(BaseModel):
                 return None
             buffer.seek(0)
             return dataframe_from_arrow_stream(buffer)
-
         except Exception as exc:
             if to_log_error:
                 logger.error(
