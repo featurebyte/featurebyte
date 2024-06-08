@@ -497,6 +497,69 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         return nested_select_expr
 
     @classmethod
+    def random_sample(
+        cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int
+    ) -> Select:
+        """
+        Construct query to randomly sample some number of rows from a table
+
+        Parameters
+        ----------
+        select_expr: Select
+            Table to sample from
+        desired_row_count: int
+            Desired number of rows after sampling
+        total_row_count: int
+            Total number of rows in the table
+        seed: int
+            Random seed
+
+        Returns
+        -------
+        Select
+        """
+        if total_row_count == 0:
+            return select_expr
+        probability = desired_row_count / total_row_count * 1.5
+        original_cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for (column_idx, col_expr) in enumerate(select_expr.expressions)
+        ]
+        prob_expr = alias_(
+            cls.get_uniform_distribution_expr(seed),
+            alias="prob",
+            quoted=True,
+        )
+        sampled_expr_with_prob = select(prob_expr, *original_cols).from_(select_expr.subquery())
+        return (
+            select(*original_cols)
+            .from_(sampled_expr_with_prob.subquery())
+            .where(
+                expressions.LTE(
+                    this=quoted_identifier("prob"), expression=make_literal_value(probability)
+                )
+            )
+            .limit(desired_row_count)
+            .order_by(quoted_identifier("prob"))
+        )
+
+    @classmethod
+    @abstractmethod
+    def get_uniform_distribution_expr(cls, seed: int) -> Expression:
+        """
+        Construct an expression that returns a random number uniformly distributed between 0 and 1
+
+        Parameters
+        ----------
+        seed: int
+            Random seed
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
     @abstractmethod
     def create_table_as(
         cls,
