@@ -248,7 +248,7 @@ def features_fixture(
         .aggregate_over(
             "ÀMOUNT",
             method="latest",
-            windows=[None, "7d"],
+            windows=[None],
             feature_names=["Latest Amount by User"],
         )["Latest Amount by User"]
     )
