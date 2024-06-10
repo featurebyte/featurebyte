@@ -2,7 +2,7 @@
 This module contains Online Store related models
 """
 
-from typing import List, Literal, Optional, Union
+from typing import ClassVar, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import pymongo
@@ -53,7 +53,9 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.RedisOnlineStoreDetails")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.RedisOnlineStoreDetails"
+    )
 
     # Online store type selector
     type: Literal[OnlineStoreType.REDIS] = OnlineStoreType.REDIS
@@ -93,7 +95,9 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MySQLOnlineStoreDetails")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.MySQLOnlineStoreDetails"
+    )
 
     # Online store type selector
     type: Literal[OnlineStoreType.MYSQL] = OnlineStoreType.MYSQL

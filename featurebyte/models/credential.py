@@ -2,7 +2,7 @@
 Document model for stored credentials
 """
 
-from typing import Callable, Dict, List, Literal, Optional, Union
+from typing import Callable, ClassVar, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import base64  # pylint: disable=wrong-import-order
@@ -142,8 +142,12 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.UsernamePasswordCredential"
+    )
 
+    # instance variables
     type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
         DatabaseCredentialType.USERNAME_PASSWORD, const=True
     )
@@ -160,8 +164,10 @@ class AccessTokenCredential(BaseDatabaseCredential):
     >>> access_token_credential = AccessTokenCredential(access_token="access_token")
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
 
+    # instance variables
     type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
         DatabaseCredentialType.ACCESS_TOKEN, const=True
     )
@@ -179,8 +185,12 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
     ... )  # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.KerberosKeytabCredential"
+    )
 
+    # instance variables
     type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(
         DatabaseCredentialType.KERBEROS_KEYTAB, const=True
     )
@@ -258,8 +268,10 @@ class S3StorageCredential(BaseStorageCredential):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
 
+    # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr = Field(
         description="S3 access key ID used for connecting to your S3 store."
@@ -281,8 +293,10 @@ class GCSStorageCredential(BaseStorageCredential):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.GCSStorageCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.GCSStorageCredential")
 
+    # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.GCS, const=True)
     service_account_info: Dict[str, str] = Field(
         description="Service account information used for connecting to your GCS store."
@@ -301,8 +315,12 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AzureBlobStorageCredential")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.AzureBlobStorageCredential"
+    )
 
+    # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.AZURE, const=True)
     account_name: StrictStr
     account_key: StrictStr
