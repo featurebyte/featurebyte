@@ -53,7 +53,7 @@ def get_home_path() -> Path:
 
         db_user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
         default_home_path = Path(f"/Workspace/Users/{db_user}")
-    except (ModuleNotFoundError, ImportError, ValueError):
+    except (ModuleNotFoundError, ImportError, ValueError, AttributeError):
         pass
     return Path(os.environ.get("FEATUREBYTE_HOME", str(default_home_path.joinpath(".featurebyte"))))
 
