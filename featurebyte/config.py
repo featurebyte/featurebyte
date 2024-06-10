@@ -36,9 +36,6 @@ HTTP_REQUEST_BACKOFF_FACTOR: float = 0.3
 FEATURE_PREVIEW_ROW_LIMIT: int = 50
 ONLINE_FEATURE_REQUEST_ROW_LIMIT: int = 50
 
-# default local location
-DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
-
 
 def get_home_path() -> Path:
     """
@@ -49,7 +46,16 @@ def get_home_path() -> Path:
     Path
         Featurebyte Home path
     """
-    return Path(os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH)))
+    default_home_path: Path = Path.home()
+    try:
+        # check if we are in DataBricks environment and valid secrets are present create a profile automatically
+        from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
+
+        db_user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
+        default_home_path = Path(f"/Workspace/Users/{db_user}")
+    except (ModuleNotFoundError, ImportError, ValueError, AttributeError):
+        pass
+    return Path(os.environ.get("FEATUREBYTE_HOME", str(default_home_path.joinpath(".featurebyte"))))
 
 
 class LogLevel(StrEnum):
