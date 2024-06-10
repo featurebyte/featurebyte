@@ -108,22 +108,20 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     or feature. This object is callable and can be used as a function to transform view columns or feature.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UserDefinedFunction")
-
     # class variables
-    _route = "/user_defined_function"
-    _create_schema_class = UserDefinedFunctionCreate
-    _update_schema_class = UserDefinedFunctionUpdate
-    _get_schema = UserDefinedFunctionResponse
-    _list_schema = UserDefinedFunctionResponse
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UserDefinedFunction")
+    _route: ClassVar[str] = "/user_defined_function"
+    _create_schema_class: ClassVar[Any] = UserDefinedFunctionCreate
+    _update_schema_class: ClassVar[Any] = UserDefinedFunctionUpdate
+    _get_schema: ClassVar[Any] = UserDefinedFunctionResponse
+    _list_schema: ClassVar[Any] = UserDefinedFunctionResponse
+    _list_fields: ClassVar[List[str]] = [
         "signature",
         "sql_function_name",
         "feature_store_name",
         "is_global",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 

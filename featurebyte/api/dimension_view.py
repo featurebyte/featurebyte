@@ -23,8 +23,8 @@ class DimensionViewColumn(ViewColumn):
     DimensionViewColumn class
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
 
 class DimensionView(View, RawMixin):
@@ -41,14 +41,12 @@ class DimensionView(View, RawMixin):
     - [dimension_table#get_view](/reference/featurebyte.api.dimension_table.DimensionTable.get_view/): get dimension view from a `DimensionTable`
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.DimensionView",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _series_class = DimensionViewColumn
+    _series_class: ClassVar[Any] = DimensionViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.DIMENSION_VIEW
 
     # pydantic instance variables

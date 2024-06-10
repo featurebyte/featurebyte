@@ -123,13 +123,12 @@ class FeatureListNamespace(ApiObject):
     feature_list_namespace will not change.
     """
 
-    # class variable
-    _route = "/feature_list_namespace"
-    _update_schema_class = FeatureListNamespaceUpdate
-
-    _list_schema = FeatureListNamespaceModelResponse
-    _get_schema = FeatureListNamespaceModelResponse
-    _list_fields = [
+    # class variables
+    _route: ClassVar[str] = "/feature_list_namespace"
+    _update_schema_class: ClassVar[Any] = FeatureListNamespaceUpdate
+    _list_schema: ClassVar[Any] = FeatureListNamespaceModelResponse
+    _get_schema: ClassVar[Any] = FeatureListNamespaceModelResponse
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "num_feature",
         "status",
@@ -141,7 +140,7 @@ class FeatureListNamespace(ApiObject):
         "primary_entity",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("table_ids", TableApiObject, "tables"),
         ForeignKeyMapping("primary_entity_ids", Entity, "primary_entity"),
@@ -295,18 +294,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     ... ], name="My new feature list")
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.FeatureList",
         hide_keyword_only_params_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/feature_list"
-    _update_schema_class = FeatureListUpdate
-    _list_schema = FeatureListModelResponse
-    _get_schema = FeatureListModelResponse
-    _list_fields = [
+    _route: ClassVar[str] = "/feature_list"
+    _update_schema_class: ClassVar[Any] = FeatureListUpdate
+    _list_schema: ClassVar[Any] = FeatureListModelResponse
+    _get_schema: ClassVar[Any] = FeatureListModelResponse
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "version",
         "num_feature",

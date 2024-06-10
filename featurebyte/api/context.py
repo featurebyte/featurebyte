@@ -2,7 +2,7 @@
 Context module
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -27,14 +27,13 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     A context defines the circumstances in which features are expected to be served.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Context")
-
     # class variables
-    _route = "/context"
-    _list_schema = ContextModel
-    _get_schema = ContextModel
-    _update_schema_class = ContextUpdate
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Context")
+    _route: ClassVar[str] = "/context"
+    _list_schema: ClassVar[Any] = ContextModel
+    _get_schema: ClassVar[Any] = ContextModel
+    _update_schema_class: ClassVar[Any] = ContextUpdate
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "primary_entity_ids",
         "description",

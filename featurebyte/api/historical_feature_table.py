@@ -4,7 +4,7 @@ HistoricalFeatureTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
 
 from pathlib import Path
 
@@ -37,19 +37,19 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
     HistoricalFeatureTable class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.HistoricalFeatureTable")
-
-    _route = "/historical_feature_table"
-    _list_schema = HistoricalFeatureTableListRecord
-    _get_schema = HistoricalFeatureTableModel
-    _list_fields = [
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.HistoricalFeatureTable")
+    _route: ClassVar[str] = "/historical_feature_table"
+    _list_schema: ClassVar[Any] = HistoricalFeatureTableListRecord
+    _get_schema: ClassVar[Any] = HistoricalFeatureTableModel
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "feature_store_name",
         "observation_table_name",
         "shape",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("observation_table_id", ObservationTable, "observation_table_name"),
     ]

@@ -4,7 +4,7 @@ This module contains groupby related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import ClassVar, List, Optional, Union
 from typing_extensions import Literal
 
 import warnings
@@ -79,8 +79,8 @@ class GroupBy:
     ... )
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
     def __init__(

@@ -4,7 +4,7 @@ FeatureStore class
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from bson import ObjectId
 from pandas import DataFrame
@@ -29,14 +29,12 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
     which can significantly reduce the latency of feature serving during training and inference.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureStore")
-
     # class variables
-    _route = "/feature_store"
-    _list_schema = FeatureStoreModel
-    _get_schema = FeatureStoreModel
-    _list_fields = ["name", "type", "created_at"]
+    __fbautodoc__: ClassVar[Any] = FBAutoDoc(proxy_class="featurebyte.FeatureStore")
+    _route: ClassVar[str] = "/feature_store"
+    _list_schema: ClassVar[Any] = FeatureStoreModel
+    _get_schema: ClassVar[Any] = FeatureStoreModel
+    _list_fields: ClassVar[List[str]] = ["name", "type", "created_at"]
 
     # optional credential parameters
     database_credential: Optional[DatabaseCredential] = None

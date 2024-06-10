@@ -4,7 +4,7 @@ Feature Namespace module.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, ClassVar, List, Optional
 
 from pydantic import Field
 
@@ -28,25 +28,25 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     elements typically refer to different versions of a Target.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetNamespace")
-
-    internal_window: Optional[str] = Field(alias="window")
-    internal_dtype: DBVarType = Field(alias="dtype")
-
     # class variables
-    _route = "/target_namespace"
-    _update_schema_class = TargetNamespaceUpdate
-    _list_schema = TargetNamespaceModel
-    _get_schema = TargetNamespaceModel
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TargetNamespace")
+    _route: ClassVar[str] = "/target_namespace"
+    _update_schema_class: ClassVar[Any] = TargetNamespaceUpdate
+    _list_schema: ClassVar[Any] = TargetNamespaceModel
+    _get_schema: ClassVar[Any] = TargetNamespaceModel
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "dtype",
         "entities",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    # pydantic instance variables
+    internal_window: Optional[str] = Field(alias="window")
+    internal_dtype: DBVarType = Field(alias="dtype")
 
     @classmethod
     def create(

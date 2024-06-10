@@ -4,7 +4,7 @@ UseCase module
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -37,21 +37,19 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     automation is offered to them.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UseCase")
-
     # class variables
-    _route = "/use_case"
-    _list_schema = UseCaseModel
-    _get_schema = UseCaseModel
-    _update_schema_class = UseCaseUpdate
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UseCase")
+    _route: ClassVar[str] = "/use_case"
+    _list_schema: ClassVar[Any] = UseCaseModel
+    _get_schema: ClassVar[Any] = UseCaseModel
+    _update_schema_class: ClassVar[Any] = UseCaseUpdate
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "default_preview_table_name",
         "default_eda_table_name",
         "description",
     ]
-
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping(
             "default_preview_table_id", ObservationTable, "default_preview_table_name", "name"
         ),

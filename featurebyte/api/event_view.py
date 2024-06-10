@@ -31,8 +31,8 @@ class EventViewColumn(LaggableViewColumn):
     EventViewColumn class
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
 
 class EventView(View, GroupByMixin, RawMixin):
@@ -49,14 +49,12 @@ class EventView(View, GroupByMixin, RawMixin):
     - [event_table#get_view](/reference/featurebyte.api.event_table.EventTable.get_view/): get event view from an `EventTable`
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.EventView",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _series_class = EventViewColumn
+    _series_class: ClassVar[Any] = EventViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
     # pydantic instance variables

@@ -4,7 +4,7 @@ OnlineStore class
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from bson import ObjectId
 from pandas import DataFrame
@@ -24,14 +24,12 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
     The purpose of an Online Store is to host the most recent feature values for low latency serving.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.OnlineStore")
-
     # class variables
-    _route = "/online_store"
-    _list_schema = OnlineStoreModel
-    _get_schema = OnlineStoreModel
-    _list_fields = ["name", "details", "created_at"]
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.OnlineStore")
+    _route: ClassVar[str] = "/online_store"
+    _list_schema: ClassVar[Any] = OnlineStoreModel
+    _get_schema: ClassVar[Any] = OnlineStoreModel
+    _list_fields: ClassVar[List[str]] = ["name", "details", "created_at"]
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = OnlineStoreCreate(**self.dict(by_alias=True))

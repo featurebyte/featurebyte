@@ -5,7 +5,7 @@ BatchRequestTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pathlib import Path
 
@@ -25,19 +25,19 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
     BatchRequestTable class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.BatchRequestTable")
-
-    _route = "/batch_request_table"
-    _list_schema = BatchRequestTableListRecord
-    _get_schema = BatchRequestTableModel
-    _list_fields = [
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.BatchRequestTable")
+    _route: ClassVar[str] = "/batch_request_table"
+    _list_schema: ClassVar[Any] = BatchRequestTableListRecord
+    _get_schema: ClassVar[Any] = BatchRequestTableModel
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "type",
         "shape",
         "feature_store_name",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 

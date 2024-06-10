@@ -58,17 +58,15 @@ class SCDTable(TableApiObject):
     - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/): create SCD table from source table
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.SCDTable",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/scd_table"
-    _update_schema_class = SCDTableUpdate
-    _create_schema_class = SCDTableCreate
-    _get_schema = SCDTableModel
+    _route: ClassVar[str] = "/scd_table"
+    _update_schema_class: ClassVar[Any] = SCDTableUpdate
+    _create_schema_class: ClassVar[Any] = SCDTableCreate
+    _get_schema: ClassVar[Any] = SCDTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)
