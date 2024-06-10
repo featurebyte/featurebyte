@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.1 (2024-06-10)
+
+### 💡 Enhancements
+
++ `sdk-api` Use workspace home as default config path in databricks environment.
+
 ## v1.1.0 (2024-06-08)
 
 ### 🛑 Breaking Changes

@@ -133,36 +133,6 @@ def get_active_profile() -> Profile:
     """
     conf = Configurations()
 
-    # check if we are in DataBricks environment and valid secrets are present create a profile automatically
-    try:
-        from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
-
-        if len(conf.profiles) == 1 and conf.profiles[0].name == "local":
-            api_url = None
-            api_token = None
-            try:
-                api_url = dbutils.secrets.get(scope="featurebyte", key="api-url")
-                api_token = dbutils.secrets.get(scope="featurebyte", key="api-token")
-            except Exception as databricks_exc:  # pylint: disable=broad-exception-caught
-                # use a more generic exception to avoid dependency on databricks sdk blocking
-                # the rest of the code
-                logger.warning(f"Failed to get secrets from Databricks: {databricks_exc}")
-                logger.info(
-                    "Add the secrets (featurebyte.api-url, featurebyte.api-token) for auto profile creation:\n"
-                    "databricks secrets create-scope --scope featurebyte\n"
-                    "databricks secrets put --scope featurebyte --key api-url --string-value <api-url>\n"
-                    "databricks secrets put --scope featurebyte --key api-token --string-value <api-token>"
-                )
-            if api_url and api_token:
-                register_profile(
-                    profile_name="databricks-auto-profile",
-                    api_url=api_url,
-                    api_token=api_token,
-                    make_default=True,
-                )
-    except (ModuleNotFoundError, ImportError, ValueError):
-        pass
-
     if not conf.profile:
         logger.error(
             "No profile found. Please update your configuration file at {conf.config_file_path}"
