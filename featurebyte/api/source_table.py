@@ -67,6 +67,7 @@ class TableDataFrame(BaseFrame, SampleMixin):
     data warehouse. The constructed query graph is stored locally (not loaded into the global query graph).
     """
 
+    # instance variables
     table_data: BaseTableData
     int_timestamp_column: Optional[str] = Field(alias="timestamp_column")
 
@@ -437,8 +438,8 @@ class SourceTable(AbstractTableData):
     SourceTable class to preview table.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SourceTable")
-
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SourceTable")
     _table_data_class: ClassVar[Type[AllTableDataT]] = SourceTableData
 
     @property

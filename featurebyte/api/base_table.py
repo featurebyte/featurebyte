@@ -52,8 +52,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     parent, which is a table object (e.g. EventTable)
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableColumn")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TableColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -466,10 +466,11 @@ class TableListMixin(ApiObject):
     Mixin to implement source table list function
     """
 
-    _route = "/table"
-    _list_schema = ProxyTableModel
-    _list_fields = ["name", "type", "status", "entities", "created_at"]
-    _list_foreign_keys = [
+    # class variables
+    _route: ClassVar[str] = "/table"
+    _list_schema: ClassVar[Any] = ProxyTableModel
+    _list_fields: ClassVar[List[str]] = ["name", "type", "status", "entities", "created_at"]
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("columns_info.entity_id", Entity, "entities"),
     ]
 
@@ -503,12 +504,11 @@ class TableApiObject(
     Base class for all Table objects
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Table")
-
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Table")
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
-    # pydantic instance variable
+    # pydantic instance variables
     type: Literal[
         TableDataType.SOURCE_TABLE,
         TableDataType.EVENT_TABLE,

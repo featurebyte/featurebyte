@@ -5,7 +5,7 @@ Series class
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
 from typing_extensions import Literal
 
 from functools import wraps
@@ -127,11 +127,10 @@ class FrozenSeries(
     in-place modification of the column in the query graph.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Series",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
+    # instance variables
     name: Optional[StrictStr] = Field(default=None)
     dtype: DBVarType = Field(allow_mutation=False, description="variable type of the series")
 

@@ -4,7 +4,7 @@ Vector accessor module
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import series_binary_operation
@@ -39,10 +39,8 @@ class VectorAccessor:
     VectorAccessor class used to manipulate vector type FrozenSeries object
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.VectorAccessor",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.VectorAccessor")
 
     def __init__(self, obj: FrozenSeries):
         if obj.dtype not in DBVarType.array_types():

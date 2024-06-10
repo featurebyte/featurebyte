@@ -17,6 +17,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature import FeatureListHandler
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -104,8 +105,19 @@ class Feature(
     the count of canceled orders over the past 56 weeks, and the amount of money spent over the past 7 days.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Feature")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Feature")
+    _route: ClassVar[str] = "/feature"
+    _update_schema_class: ClassVar[Any] = FeatureUpdate
+    _list_schema: ClassVar[Any] = FeatureModelResponse
+    _get_schema: ClassVar[Any] = FeatureModelResponse
+    _list_fields: ClassVar[List[str]] = [
+        "name",
+        "version",
+        *FEATURE_COMMON_LIST_FIELDS,
+        "is_default",
+    ]
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
@@ -113,19 +125,6 @@ class Feature(
         allow_mutation=False,
         description="Provides information about the feature store that the feature is connected to.",
     )
-
-    # class variables
-    _route = "/feature"
-    _update_schema_class = FeatureUpdate
-    _list_schema = FeatureModelResponse
-    _get_schema = FeatureModelResponse
-    _list_fields = [
-        "name",
-        "version",
-        *FEATURE_COMMON_LIST_FIELDS,
-        "is_default",
-    ]
-    _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureCreate(**self.dict(by_alias=True))

@@ -53,7 +53,7 @@ def _get_cache_collection_name(
         )
     else:
         collection_name = obj.Settings.collection_name
-    return collection_name
+    return str(collection_name)
 
 
 def get_api_object_cache_key(
@@ -88,13 +88,11 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     # class variables
     _route: ClassVar[str] = ""
     _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
-    _list_schema = FeatureByteBaseDocumentModel
-    _get_schema = FeatureByteBaseDocumentModel
-    _list_fields = ["name", "created_at"]
-    _list_foreign_keys: List[ForeignKeyMapping] = []
-
-    # global api object cache shared by all the ApiObject class & its child classes
-    _cache: Any = TTLCache(maxsize=1024, ttl=1)
+    _list_schema: ClassVar[Any] = FeatureByteBaseDocumentModel
+    _get_schema: ClassVar[Any] = FeatureByteBaseDocumentModel
+    _list_fields: ClassVar[Any] = ["name", "created_at"]
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = []
+    _cache: ClassVar[Any] = TTLCache(maxsize=1024, ttl=1)  # share cache across all the subclasses
 
     def _repr_html_(self) -> str:
         """

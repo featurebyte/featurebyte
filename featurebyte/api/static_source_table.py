@@ -4,7 +4,7 @@ StaticSourceTable class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pathlib import Path
 
@@ -24,19 +24,19 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
     Static source table class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StaticSourceTable")
-
-    _route = "/static_source_table"
-    _list_schema = StaticSourceTableListRecord
-    _get_schema = StaticSourceTableModel
-    _list_fields = [
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.StaticSourceTable")
+    _route: ClassVar[str] = "/static_source_table"
+    _list_schema: ClassVar[Any] = StaticSourceTableListRecord
+    _get_schema: ClassVar[Any] = StaticSourceTableModel
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "type",
         "shape",
         "feature_store_name",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 

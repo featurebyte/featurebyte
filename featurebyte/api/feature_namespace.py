@@ -2,12 +2,13 @@
 Feature Namespace module.
 """
 
-from typing import List, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
@@ -29,15 +30,15 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
     """
 
     # class variables
-    _route = "/feature_namespace"
-    _update_schema_class = FeatureNamespaceUpdate
-    _list_schema = FeatureNamespaceModelResponse
-    _get_schema = FeatureNamespaceModelResponse
-    _list_fields = [
+    _route: ClassVar[str] = "/feature_namespace"
+    _update_schema_class: ClassVar[Any] = FeatureNamespaceUpdate
+    _list_schema: ClassVar[Any] = FeatureNamespaceModelResponse
+    _get_schema: ClassVar[Any] = FeatureNamespaceModelResponse
+    _list_fields: ClassVar[List[str]] = [
         "name",
         *FEATURE_COMMON_LIST_FIELDS,
     ]
-    _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
     @property
     def feature_ids(self) -> List[PydanticObjectId]:

@@ -2,7 +2,7 @@
 Relationships API object
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Literal
 
 import pandas as pd
@@ -38,16 +38,13 @@ class Relationship(ApiObject):
     the serving of the features.
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Relationship",
-    )
-
     # class variables
-    _route = "/relationship_info"
-    _update_schema_class = RelationshipInfoUpdate
-    _get_schema = RelationshipInfoModel
-    _list_schema = RelationshipInfoModel
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Relationship")
+    _route: ClassVar[str] = "/relationship_info"
+    _update_schema_class: ClassVar[Any] = RelationshipInfoUpdate
+    _get_schema: ClassVar[Any] = RelationshipInfoModel
+    _list_schema: ClassVar[Any] = RelationshipInfoModel
+    _list_fields: ClassVar[List[str]] = [
         "relationship_type",
         "entity",
         "related_entity",
@@ -57,7 +54,7 @@ class Relationship(ApiObject):
         "created_at",
         "updated_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_id", Entity, "entity"),
         ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
         ForeignKeyMapping("relation_table_id", TableApiObject, "relation_table"),

@@ -5,7 +5,7 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, ClassVar, List, Optional, Sequence, Union
 from typing_extensions import Literal
 
 import os
@@ -51,20 +51,20 @@ class ObservationTable(
     ObservationTable class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ObservationTable")
-
-    _route = "/observation_table"
-    _list_schema = ObservationTableListRecord
-    _get_schema = ObservationTableModel
-    _update_schema_class = ObservationTableUpdate
-    _list_fields = [
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.ObservationTable")
+    _route: ClassVar[str] = "/observation_table"
+    _list_schema: ClassVar[Any] = ObservationTableListRecord
+    _get_schema: ClassVar[Any] = ObservationTableModel
+    _update_schema_class: ClassVar[Any] = ObservationTableUpdate
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "type",
         "shape",
         "feature_store_name",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 

@@ -4,7 +4,7 @@ Target API object
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -60,16 +60,8 @@ class Target(
     Target class used to represent a Target in FeatureByte.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Target")
-
-    # pydantic instance variable (public)
-    feature_store: FeatureStoreModel = Field(
-        exclude=True,
-        allow_mutation=False,
-        description="Provides information about the feature store that the target is connected to.",
-    )
-
     # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Target")
     _route = "/target"
     _list_schema = TargetModel
     _get_schema = TargetModel
@@ -77,6 +69,13 @@ class Target(
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    # pydantic instance variable (public)
+    feature_store: FeatureStoreModel = Field(
+        exclude=True,
+        allow_mutation=False,
+        description="Provides information about the feature store that the target is connected to.",
+    )
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = TargetCreate(**self.dict(by_alias=True))

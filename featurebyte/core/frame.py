@@ -4,7 +4,7 @@ Frame class
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple, TypeVar, Union
+from typing import Any, ClassVar, List, Tuple, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field, validator
@@ -80,7 +80,8 @@ class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
     in-place modification of the table in the query graph.
     """
 
-    _series_class = FrozenSeries
+    # class variables
+    _series_class: ClassVar[Any] = FrozenSeries
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -161,7 +162,8 @@ class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
                 **self._getitem_series_params,
             )
             output.set_parent(self)
-            return output
+            return output  # type: ignore
+
         if isinstance(item, list):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
@@ -176,6 +178,7 @@ class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_name=node.name,
                 **self._getitem_frame_params,
             )
+
         # item must be Series type
         node = self._add_filter_operation(
             item=self, mask=item, node_output_type=NodeOutputType.FRAME
@@ -195,7 +198,8 @@ class Frame(FrozenFrame):
     This class supports column assignment to the table.
     """
 
-    _series_class = Series
+    # class variables
+    _series_class: ClassVar[Any] = Series
 
     @typechecked
     def __setitem__(

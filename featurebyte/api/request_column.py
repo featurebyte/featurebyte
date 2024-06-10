@@ -4,7 +4,7 @@ RequestColumn related classes for on-demand features
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -22,8 +22,10 @@ class RequestColumn(Series):
     RequestColumn class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.RequestColumn")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.RequestColumn")
 
+    # instance variables
     tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
         allow_mutation=False, default=None
     )

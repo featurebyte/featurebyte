@@ -4,7 +4,7 @@ FeatureJobSettingAnalysis class
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from io import BytesIO
 from pathlib import Path
@@ -46,13 +46,14 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
-
     # class variables
-    _route = "/feature_job_setting_analysis"
-    _list_schema = FeatureJobSettingAnalysisRecord
-    _get_schema = FeatureJobSettingAnalysisModel
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.FeatureJobSettingAnalysis"
+    )
+    _route: ClassVar[str] = "/feature_job_setting_analysis"
+    _list_schema: ClassVar[Any] = FeatureJobSettingAnalysisRecord
+    _get_schema: ClassVar[Any] = FeatureJobSettingAnalysisModel
+    _list_fields: ClassVar[List[str]] = [
         "created_at",
         "event_table",
         "analysis_start",
@@ -61,7 +62,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         "offset",
         "blind_spot",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("event_table_id", TableApiObject, "event_table"),
     ]
 
