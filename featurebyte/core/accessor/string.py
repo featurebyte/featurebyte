@@ -4,7 +4,7 @@ This module contains string accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional, TypeVar
 
 from typeguard import typechecked
 
@@ -42,10 +42,8 @@ class StringAccessor:
     StringAccessor class used to manipulate string type FrozenSeries object
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Series",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
     def __init__(self, obj: FrozenSeries):
         if obj.dtype != DBVarType.VARCHAR:

@@ -4,7 +4,7 @@ Feature string accessor module.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional, TypeVar
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.string import StringAccessor
@@ -38,8 +38,8 @@ class FeatureStringAccessor(StringAccessor):
     FeatureStringAccessor class used to manipulate string type Feature objects
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     def len(self) -> Feature:
         """

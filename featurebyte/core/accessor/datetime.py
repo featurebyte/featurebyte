@@ -4,7 +4,7 @@ This module contains datetime accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, Union, cast
+from typing import TYPE_CHECKING, ClassVar, Iterable, Optional, Union, cast
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_timezone_offset_string
@@ -83,10 +83,8 @@ class DatetimeAccessor:
     ... series["time_year"] = timeseries.dt.year
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Series",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
     def __init__(
         self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None

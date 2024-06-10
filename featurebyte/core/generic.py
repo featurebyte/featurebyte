@@ -4,7 +4,7 @@ This module generic query object classes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Tuple, TypeVar, cast
 
 import json
 import operator
@@ -76,12 +76,14 @@ class QueryObject(FeatureByteBaseModel):
     QueryObject class contains query graph, node, row index lineage & session.
     """
 
+    # class variables
+    _operation_structure_cache: ClassVar[Any] = _create_operation_structure_cache()
+
+    # instance variables
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
-
-    _operation_structure_cache: Any = _create_operation_structure_cache()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
