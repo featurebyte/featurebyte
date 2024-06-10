@@ -4,7 +4,7 @@ Entity class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 from bson import ObjectId
 from pydantic import Field
@@ -28,15 +28,13 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
     and aid in organizing features, feature lists, and use cases.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Entity")
-
     # class variables
-    _route = "/entity"
-    _update_schema_class = EntityUpdate
-    _list_schema = EntityModel
-    _get_schema = EntityModel
-    _list_fields = ["name", "serving_names", "created_at"]
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Entity")
+    _route: ClassVar[str] = "/entity"
+    _update_schema_class: ClassVar[Any] = EntityUpdate
+    _list_schema: ClassVar[Any] = EntityModel
+    _get_schema: ClassVar[Any] = EntityModel
+    _list_fields: ClassVar[List[str]] = ["name", "serving_names", "created_at"]
 
     # pydantic instance variable (internal use)
     internal_serving_names: List[str] = Field(alias="serving_names")

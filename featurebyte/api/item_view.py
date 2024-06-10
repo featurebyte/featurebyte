@@ -24,8 +24,8 @@ class ItemViewColumn(ViewColumn):
     ItemViewColumn class
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
 
 class ItemView(View, GroupByMixin, RawMixin):
@@ -49,14 +49,12 @@ class ItemView(View, GroupByMixin, RawMixin):
     - [item_table#get_view](/reference/featurebyte.api.item_table.ItemTable.get_view/): get item view from an `ItemTable`
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.ItemView",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _series_class = ItemViewColumn
+    _series_class: ClassVar[Any] = ItemViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.ITEM_VIEW
 
     # pydantic instance variables

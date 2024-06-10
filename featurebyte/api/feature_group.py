@@ -4,7 +4,19 @@ Feature group module.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, OrderedDict, Sequence, Set, Tuple, Union, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    OrderedDict,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import collections
 import time
@@ -485,8 +497,8 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     it into a FeatureList object.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.FeatureGroup",
         hide_keyword_only_params_in_class_docs=True,
     )

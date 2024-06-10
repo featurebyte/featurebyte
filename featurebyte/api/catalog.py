@@ -5,7 +5,7 @@ Catalog module
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Literal
 
 import pandas as pd
@@ -68,15 +68,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     # pylint: disable=too-many-public-methods
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Catalog")
-
     # class variables
-    _route = "/catalog"
-    _update_schema_class = CatalogUpdate
-    _list_schema = CatalogModel
-    _get_schema = CatalogModel
-    _list_fields = ["name", "created_at", "active"]
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Catalog")
+    _route: ClassVar[str] = "/catalog"
+    _update_schema_class: ClassVar[Any] = CatalogUpdate
+    _list_schema: ClassVar[Any] = CatalogModel
+    _get_schema: ClassVar[Any] = CatalogModel
+    _list_fields: ClassVar[List[str]] = ["name", "created_at", "active"]
 
     # pydantic instance variable (internal use)
     internal_default_feature_store_ids: List[PydanticObjectId] = Field(

@@ -4,7 +4,7 @@ FeatureStore class
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import ClassVar, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -27,10 +27,8 @@ class DataSource:
     This class is used to manage a data source in FeatureByte.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.DataSource",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DataSource")
 
     def __init__(self, feature_store_model: FeatureStoreModel):
         self._feature_store = feature_store_model

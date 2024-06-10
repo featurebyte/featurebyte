@@ -30,7 +30,7 @@ class MaterializedTableMixin(MaterializedTableModel):
     """
 
     _route: ClassVar[str] = ""
-    _poll_async_task: Callable[..., Any]
+    _poll_async_task: ClassVar[Callable[..., Any]]
 
     def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """

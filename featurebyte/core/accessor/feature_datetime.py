@@ -4,7 +4,7 @@ Feature datetime accessor module.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, ClassVar, TypeVar, Union
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.datetime import DatetimeAccessor
@@ -62,7 +62,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @property
     def year(self) -> Feature:

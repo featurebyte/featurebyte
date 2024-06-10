@@ -23,8 +23,8 @@ class SCDViewColumn(ViewColumn):
     SCDViewColumn class
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
 
 class SCDView(View, GroupByMixin, RawMixin):
@@ -42,14 +42,12 @@ class SCDView(View, GroupByMixin, RawMixin):
     - [scd_table#get_view](/reference/featurebyte.api.scd_table.SCDTable.get_view/): get SCD view from a `SCDTable`
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.SCDView",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _series_class = SCDViewColumn
+    _series_class: ClassVar[Any] = SCDViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.SCD_VIEW
 
     # pydantic instance variables

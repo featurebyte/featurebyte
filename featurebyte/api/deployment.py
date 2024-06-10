@@ -4,7 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Literal
 
 from http import HTTPStatus
@@ -50,21 +50,20 @@ class Deployment(DeletableApiObject):
     simplify management of the data and features.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Deployment")
-
     # class variables
-    _route = "/deployment"
-    _list_schema = DeploymentModel
-    _get_schema = DeploymentModel
-    _update_schema_class = DeploymentUpdate
-    _list_fields = [
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Deployment")
+    _route: ClassVar[str] = "/deployment"
+    _list_schema: ClassVar[Any] = DeploymentModel
+    _get_schema: ClassVar[Any] = DeploymentModel
+    _update_schema_class: ClassVar[Any] = DeploymentUpdate
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "feature_list_name",
         "feature_list_version",
         "num_feature",
         "enabled",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),

@@ -4,7 +4,7 @@ Credential module
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -24,25 +24,23 @@ class Credential(DeletableApiObject, SavableApiObject):
     Credential class is the data model used to represent your credentials that are persisted.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.Credential",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/credential"
-    _update_schema_class = CredentialUpdate
-    _list_schema = CredentialRead
-    _get_schema = CredentialRead
-    _list_fields = [
+    _route: ClassVar[str] = "/credential"
+    _update_schema_class: ClassVar[Any] = CredentialUpdate
+    _list_schema: ClassVar[Any] = CredentialRead
+    _get_schema: ClassVar[Any] = CredentialRead
+    _list_fields: ClassVar[List[str]] = [
         "feature_store",
         "created_at",
         "updated_at",
         "database_credential",
         "storage_credential",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store"),
     ]
 

@@ -4,7 +4,7 @@ BatchFeatureTable class
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pathlib import Path
 
@@ -25,19 +25,19 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
     BatchFeatureTable class
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.BatchFeatureTable")
-
-    _route = "/batch_feature_table"
-    _list_schema = BatchFeatureTableListRecord
-    _get_schema = BatchFeatureTableModel
-    _list_fields = [
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.BatchFeatureTable")
+    _route: ClassVar[str] = "/batch_feature_table"
+    _list_schema: ClassVar[Any] = BatchFeatureTableListRecord
+    _get_schema: ClassVar[Any] = BatchFeatureTableModel
+    _list_fields: ClassVar[List[str]] = [
         "name",
         "feature_store_name",
         "batch_request_table_name",
         "shape",
         "created_at",
     ]
-    _list_foreign_keys = [
+    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("batch_request_table_id", BatchRequestTable, "batch_request_table_name"),
     ]

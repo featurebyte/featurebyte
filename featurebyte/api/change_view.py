@@ -25,8 +25,8 @@ class ChangeViewColumn(LaggableViewColumn):
     ChangeViewColumn class
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
     def lag(
@@ -102,14 +102,12 @@ class ChangeView(View, GroupByMixin):
     - [get_change_view](/reference/featurebyte.api.scd_table.SCDTable.get_change_view/): get change view from a SCDTable
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.ChangeView",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _series_class = ChangeViewColumn
+    _series_class: ClassVar[Any] = ChangeViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.CHANGE_VIEW
 
     # pydantic instance variables

@@ -4,7 +4,7 @@ DimensionTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
 from typing_extensions import Literal
 
 from bson import ObjectId
@@ -49,17 +49,15 @@ class DimensionTable(TableApiObject):
     - [create_dimension_table](/reference/featurebyte.api.source_table.SourceTable.create_dimension_table/): create dimension table from source table
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.DimensionTable",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/dimension_table"
-    _update_schema_class = DimensionTableUpdate
-    _create_schema_class = DimensionTableCreate
-    _get_schema = DimensionTableModel
+    _route: ClassVar[str] = "/dimension_table"
+    _update_schema_class: ClassVar[Any] = DimensionTableUpdate
+    _create_schema_class: ClassVar[Any] = DimensionTableCreate
+    _get_schema: ClassVar[Any] = DimensionTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)

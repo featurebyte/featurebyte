@@ -91,9 +91,10 @@ class ViewColumn(Series, SampleMixin):
     can be used to create features, or perform operations with other series-like objects.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ViewColumn")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.ViewColumn")
 
+    # instance variables
     _parent: Optional[View] = PrivateAttr(default=None)
 
     @property
@@ -539,7 +540,8 @@ class GroupByMixin:
     Mixin that provides groupby functionality to a View object
     """
 
-    __fbautodoc__ = FBAutoDoc()
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
@@ -653,8 +655,8 @@ class RawMixin(QueryObject, ABC):
     Mixin that provides functionality to access raw view
     """
 
-    __fbautodoc__ = FBAutoDoc()
-
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
     _view_graph_node_type: ClassVar[GraphNodeType]
 
     @property
@@ -719,9 +721,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     graphical representation of intended operations.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.View")
-
     # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.View")
     _view_graph_node_type: ClassVar[GraphNodeType]
 
     def __repr__(self) -> str:

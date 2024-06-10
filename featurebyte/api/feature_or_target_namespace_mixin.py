@@ -2,7 +2,7 @@
 Base feature target namespace
 """
 
-from typing import List
+from typing import Any, ClassVar, List
 
 from pydantic import Field
 
@@ -17,8 +17,10 @@ class FeatureOrTargetNamespaceMixin(ApiObject):
     Base feature target namespace
     """
 
-    _get_schema = BaseFeatureNamespaceModel
+    # class variables
+    _get_schema: ClassVar[Any] = BaseFeatureNamespaceModel
 
+    # instance variables
     internal_entity_ids: List[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
 
     @property

@@ -4,7 +4,7 @@ This module contains count_dict accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypeVar, Union
 
 from typeguard import typechecked
 
@@ -68,10 +68,8 @@ class CountDictAccessor:
     CountDictAccessor used to manipulate dict-like type Feature object
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Series",
-    )
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
     def __init__(self, obj: Feature):
         if obj.dtype != DBVarType.OBJECT:

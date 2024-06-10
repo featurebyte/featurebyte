@@ -4,7 +4,7 @@ Table class
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from bson import ObjectId
 
@@ -40,15 +40,10 @@ class Table(TableListMixin):
     Two additional table types, Regular Time Series and Sensor data, will be supported in the near future.
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        proxy_class="featurebyte.Table",
-    )
-
     # class variables
-    _get_schema = ProxyTableModel
-
-    _data_type_to_cls_mapping = {
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Table")
+    _get_schema: ClassVar[Any] = ProxyTableModel
+    _data_type_to_cls_mapping: ClassVar[Dict[TableDataType, Any]] = {
         TableDataType.EVENT_TABLE: EventTable,
         TableDataType.ITEM_TABLE: ItemTable,
         TableDataType.SCD_TABLE: SCDTable,

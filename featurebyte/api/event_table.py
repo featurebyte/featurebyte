@@ -58,17 +58,15 @@ class EventTable(TableApiObject):
     - [create_event_table](/reference/featurebyte.api.source_table.SourceTable.create_event_table/): create event table from source table
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.EventTable",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/event_table"
-    _update_schema_class = EventTableUpdate
-    _create_schema_class = EventTableCreate
-    _get_schema = EventTableModel
+    _route: ClassVar[str] = "/event_table"
+    _update_schema_class: ClassVar[Any] = EventTableUpdate
+    _create_schema_class: ClassVar[Any] = EventTableCreate
+    _get_schema: ClassVar[Any] = EventTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)

@@ -82,17 +82,15 @@ class ItemTable(TableApiObject):
     - [create_item_table](/reference/featurebyte.api.source_table.SourceTable.create_item_table/): create item table from source table
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
         proxy_class="featurebyte.ItemTable",
         skip_params_and_signature_in_class_docs=True,
     )
-
-    # class variables
-    _route = "/item_table"
-    _update_schema_class = ItemTableUpdate
-    _create_schema_class = ItemTableCreate
-    _get_schema = ItemTableModel
+    _route: ClassVar[str] = "/item_table"
+    _update_schema_class: ClassVar[Any] = ItemTableUpdate
+    _create_schema_class: ClassVar[Any] = ItemTableCreate
+    _get_schema: ClassVar[Any] = ItemTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
