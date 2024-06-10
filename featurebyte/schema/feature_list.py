@@ -4,7 +4,7 @@ FeatureList API payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator, validator
@@ -119,8 +119,10 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureVersionInfo")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureVersionInfo")
 
+    # instance variables
     name: str = Field(description="Name of feature namespace.")
     version: VersionIdentifier = Field(description="Feature version.")
 
