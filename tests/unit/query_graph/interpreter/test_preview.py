@@ -2,6 +2,7 @@
 Unit tests for describe query
 """
 
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -155,6 +156,32 @@ def test_describe_no_batches(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = f"tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
+    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+
+
+def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
+    """Test describe sql with only required stats names"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    describe_query = interpreter.construct_describe_queries(
+        node.name,
+        num_rows=10,
+        total_num_rows=100,
+        from_timestamp=datetime(2024, 1, 1),
+        to_timestamp=datetime(2024, 2, 1),
+        seed=1234,
+        stats_names=["min", "max"],
+    ).queries[0]
+    assert describe_query.row_names == ["dtype", "min", "max"]
+    assert [column.name for column in describe_query.columns] == [
+        "ts",
+        "cust_id",
+        "a",
+        "b",
+        "a_copy",
+    ]
+    expected_filename = f"tests/fixtures/query_graph/expected_describe_date_range_and_size.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 

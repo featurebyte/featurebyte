@@ -18,7 +18,7 @@
     "feature_node_definition_hashes": null,
     "feature_node_relationships_infos": [
         {
-            "node_name": "alias_2",
+            "node_name": "alias_1",
             "primary_entity_ids": [
                 {
                     "$oid": "63f94ed6ea1f050131379214"
@@ -65,22 +65,6 @@
             },
             {
                 "source": "project_1",
-                "target": "is_null_1"
-            },
-            {
-                "source": "project_1",
-                "target": "conditional_1"
-            },
-            {
-                "source": "is_null_1",
-                "target": "conditional_1"
-            },
-            {
-                "source": "conditional_1",
-                "target": "alias_1"
-            },
-            {
-                "source": "alias_1",
                 "target": "cast_1"
             },
             {
@@ -105,7 +89,7 @@
             },
             {
                 "source": "concat_2",
-                "target": "alias_2"
+                "target": "alias_1"
             }
         ],
         "nodes": [
@@ -301,28 +285,6 @@
                 "type": "project"
             },
             {
-                "name": "is_null_1",
-                "output_type": "series",
-                "parameters": {},
-                "type": "is_null"
-            },
-            {
-                "name": "conditional_1",
-                "output_type": "series",
-                "parameters": {
-                    "value": 0
-                },
-                "type": "conditional"
-            },
-            {
-                "name": "alias_1",
-                "output_type": "series",
-                "parameters": {
-                    "name": "asat_gender_count"
-                },
-                "type": "alias"
-            },
-            {
                 "name": "cast_1",
                 "output_type": "series",
                 "parameters": {
@@ -369,7 +331,7 @@
                 "type": "concat"
             },
             {
-                "name": "alias_2",
+                "name": "alias_1",
                 "output_type": "series",
                 "parameters": {
                     "name": "complex_parent_child_feature_V231227"
@@ -379,6 +341,6 @@
         ]
     },
     "node_names": [
-        "alias_2"
+        "alias_1"
     ]
 }

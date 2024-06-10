@@ -7,12 +7,12 @@ from __future__ import annotations
 from typing import Any, ClassVar, Optional
 
 import json
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 from bson.objectid import ObjectId
 from pydantic import Field
 
-from featurebyte.enum import StrEnum
+from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
@@ -41,15 +41,18 @@ class BaseTaskPayload(FeatureByteBaseModel):
     Base class for Task payload
     """
 
-    user_id: Optional[PydanticObjectId]
-    catalog_id: PydanticObjectId
-    output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
+    # class variables
+    command: ClassVar[WorkerCommand]
     output_collection_name: ClassVar[Optional[str]] = None
-    command: ClassVar[Optional[Enum]] = None
+    is_revocable: ClassVar[bool] = False
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.IO_TASK)
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
+    output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
     is_scheduled_task: Optional[bool] = Field(default=False)
-    is_revocable: ClassVar[Optional[bool]] = False
+    user_id: Optional[PydanticObjectId]
+    catalog_id: PydanticObjectId
 
     class Config:
         """

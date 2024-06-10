@@ -52,7 +52,7 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 17
+        return 18
 
     async def create_schema(self) -> None:
         await super().create_schema()

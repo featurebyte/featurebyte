@@ -281,3 +281,7 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(
             this="percentile", expressions=[input_expr, make_literal_value(quantile)]
         )
+
+    @classmethod
+    def get_uniform_distribution_expr(cls, seed: int) -> Expression:
+        return expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])

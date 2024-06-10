@@ -118,7 +118,7 @@ def test_event_table_update_critical_data_info(event_table):
         observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-14", "cust_id": 938}])
     )
     assert list(feat_preview_df.columns) == ["POINT_IN_TIME", "cust_id", "COUNT_2h", "COUNT_24h"]
-    assert feat_preview_df.COUNT_2h.iloc[0] == 0
+    assert feat_preview_df.COUNT_2h.isnull().sum() == 1
     assert feat_preview_df.COUNT_24h.iloc[0] == 1
 
     # check historical request

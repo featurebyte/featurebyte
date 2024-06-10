@@ -516,3 +516,21 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         if rest:
             alter_table_sql += f",\n{rest}"
         return alter_table_sql
+
+    @classmethod
+    def get_uniform_distribution_expr(cls, seed: int) -> Expression:
+        return expressions.Div(
+            this=expressions.Cast(
+                this=expressions.Anonymous(
+                    this="BITAND",
+                    expressions=[
+                        expressions.Anonymous(
+                            this="RANDOM", expressions=[make_literal_value(seed)]
+                        ),
+                        make_literal_value(2147483647),
+                    ],
+                ),
+                to=expressions.DataType.build("DOUBLE"),
+            ),
+            expression=make_literal_value(2147483647.0),
+        )

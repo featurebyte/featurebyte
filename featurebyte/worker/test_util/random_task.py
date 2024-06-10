@@ -2,6 +2,8 @@
 Random task util. Mainly used in tests, but placing in src so that we can register for DI.
 """
 
+from typing import ClassVar
+
 import time
 
 from featurebyte.enum import StrEnum
@@ -21,8 +23,8 @@ class TestCommand(StrEnum):
 class RandomTaskPayload(BaseTaskPayload):
     """RandomTaskPayload class"""
 
-    output_collection_name = "random_collection"
-    command = TestCommand.RANDOM_COMMAND
+    command: ClassVar[TestCommand] = TestCommand.RANDOM_COMMAND  # type: ignore
+    output_collection_name: ClassVar[str] = "random_collection"
 
 
 class RandomTask(BaseTask[RandomTaskPayload]):
@@ -80,9 +82,9 @@ class Command(StrEnum):
 class LongRunningPayload(BaseTaskPayload):
     """LongRunningPayload class"""
 
-    output_collection_name = "long_running_result_collection"
-    command = Command.LONG_RUNNING_COMMAND
-    is_revocable = True
+    command: ClassVar[Command] = Command.LONG_RUNNING_COMMAND  # type: ignore
+    is_revocable: ClassVar[bool] = True
+    output_collection_name: ClassVar[str] = "long_running_result_collection"
 
 
 class LongRunningTask(BaseTask[LongRunningPayload]):

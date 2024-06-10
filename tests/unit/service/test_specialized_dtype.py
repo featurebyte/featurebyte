@@ -1,6 +1,7 @@
 """Unit tests for data type info detectors (embedding and flat dict)"""
 
 import json
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,14 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
+
+
+@pytest.fixture(name="patch_get_row_count", autouse=True)
+def patch_get_row_count_fixture():
+    """Patch _get_row_count method for PreviewService"""
+    with patch("featurebyte.service.preview.PreviewService._get_row_count") as method:
+        method.return_value = 100
+        yield
 
 
 @pytest.fixture(name="event_table")

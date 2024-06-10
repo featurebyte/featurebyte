@@ -188,3 +188,16 @@ async def test_drop_table__view_error(session):
             database_name=session.database_name,
         )
     assert "wrong_name" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_execute_query__error_logging(session, caplog):
+    """Test execute query error logging"""
+    query = "SELECTS * FROM TEST_DATA_TABLE"
+    with pytest.raises(Exception):
+        await session.execute_query(query)
+
+    record = next(
+        record for record in caplog.records if record.msg.startswith("Error executing query")
+    )
+    assert record.extra["query"] == query, record.extra

@@ -4,6 +4,8 @@ DataDescriptionTaskPayload schema
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -14,10 +16,12 @@ class DataDescriptionTaskPayload(BaseTaskPayload):
     DataDescriptionTaskPayload creation task payload
     """
 
-    output_collection_name = "temp_data"
-    command = WorkerCommand.DATA_DESCRIPTION
-    is_revocable = True
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.DATA_DESCRIPTION
+    output_collection_name: ClassVar[str] = "temp_data"
+    is_revocable: ClassVar[bool] = True
 
+    # instance variables
     sample: FeatureStoreSample
     size: int
     seed: int

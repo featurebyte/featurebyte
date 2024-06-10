@@ -23,7 +23,6 @@ from featurebyte.api.feature_namespace import FeatureNamespace
 from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
-from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
@@ -1103,19 +1102,6 @@ class Feature(
             str,
             response.json(),
         )
-
-    def validate_isin_operation(
-        self, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
-    ) -> None:
-        """
-        Validates whether a feature is a lookup feature.
-
-        Parameters
-        ----------
-        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
-            other
-        """
-        assert_is_lookup_feature(self.node_types_lineage)
 
     @substitute_docstring(
         doc_template=ISNULL_DOC,

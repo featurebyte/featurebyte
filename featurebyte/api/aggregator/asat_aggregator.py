@@ -9,6 +9,7 @@ from typing import List, Optional, Type, cast
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
+from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
@@ -44,7 +45,7 @@ class AsAtAggregator(BaseAsAtAggregator):
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
-        skip_fill_na: bool = False,
+        skip_fill_na: Optional[bool] = None,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -76,13 +77,14 @@ class AsAtAggregator(BaseAsAtAggregator):
             Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-        skip_fill_na: bool
+        skip_fill_na: Optional[bool]
             Whether to skip filling na values
 
         Returns
         -------
         Feature
         """
+        skip_fill_na = conditional_set_skip_fill_na(skip_fill_na, fill_value)
         self._validate_parameters(
             method=method,
             value_column=value_column,

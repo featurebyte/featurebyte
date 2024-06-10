@@ -4,7 +4,7 @@ Batch feature create task payload
 
 from __future__ import annotations
 
-from typing import List
+from typing import ClassVar, List
 
 from pydantic import Field
 
@@ -19,7 +19,10 @@ class BatchFeatureCreateTaskPayload(BaseTaskPayload, BatchFeatureCreate):
     Batch Feature create task payload
     """
 
-    command = WorkerCommand.BATCH_FEATURE_CREATE
+    # class variables
+    command: ClassVar[WorkerCommand] = WorkerCommand.BATCH_FEATURE_CREATE
+
+    # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     output_feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     conflict_resolution: ConflictResolution
