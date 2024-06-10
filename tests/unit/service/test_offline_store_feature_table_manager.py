@@ -118,6 +118,22 @@ def feat_with_internal_parent_child_relationships_deployment_id_fixture():
     return ObjectId()
 
 
+@pytest.fixture(name="latest_aggregation_with_window_deployment_id")
+def latest_aggregation_with_window_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
+@pytest.fixture(name="latest_aggregation_without_window_deployment_id")
+def latest_aggregation_without_window_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
 @pytest.fixture(name="feat_list_with_all_feats_deployed_deployment_id")
 def feat_list_with_all_features_deployed_deployment_id_fixture():
     """
@@ -374,6 +390,34 @@ async def deployed_feature_with_internal_parent_child_relationships(
 
 
 @pytest_asyncio.fixture
+async def deployed_latest_aggregation_features(
+    app_container,
+    latest_event_timestamp_feature,
+    latest_event_timestamp_unbounded_feature,
+    latest_aggregation_with_window_deployment_id,
+    latest_aggregation_without_window_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed latest aggregation features
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_1 = await deploy_feature(
+        app_container,
+        latest_event_timestamp_feature,
+        deployment_id=latest_aggregation_with_window_deployment_id,
+    )
+    feature_2 = await deploy_feature(
+        app_container,
+        latest_event_timestamp_unbounded_feature,
+        deployment_id=latest_aggregation_without_window_deployment_id,
+    )
+    return [feature_1, feature_2]
+
+
+@pytest_asyncio.fixture
 async def deployed_feature_list_when_all_features_already_deployed(
     app_container,
     float_feature,
@@ -405,6 +449,8 @@ def expected_feast_registry_mapping_fixture(
     complex_feat_deployment_id,
     feat_with_internal_parent_child_relationships_deployment_id,
     feat_list_with_all_feats_deployed_deployment_id,
+    latest_aggregation_with_window_deployment_id,
+    latest_aggregation_without_window_deployment_id,
 ):
     """Fixture for expected feast registry mapping"""
     fl_version = get_version()
@@ -453,6 +499,14 @@ def expected_feast_registry_mapping_fixture(
         feat_list_with_all_feats_deployed_deployment_id: {
             "feature_views": {"cat1_cust_id_30m"},
             "feature_services": {f"my_new_feature_list_{fl_version}"},
+        },
+        latest_aggregation_with_window_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m"},
+            "feature_services": {f"latest_event_timestamp_90d_list_{fl_version}"},
+        },
+        latest_aggregation_without_window_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m_1"},
+            "feature_services": {f"latest_event_timestamp_list_{fl_version}"},
         },
     }
 
@@ -1838,4 +1892,118 @@ async def test_item_view_window_aggregate(
         entity_universe["query_template"]["formatted_expression"],
         "tests/fixtures/offline_store_feature_table/item_id_to_item_type_universe.sql",
         update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_latest_aggregation_features(
+    app_container,
+    document_service,
+    periodic_task_service,
+    deployed_latest_aggregation_features,
+    latest_aggregation_with_window_deployment_id,
+    latest_aggregation_without_window_deployment_id,
+    expected_feast_registry_mapping,
+    update_fixtures,
+):
+    """
+    Test feature table creation with latest aggregation features
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert set(feature_tables.keys()) == {"cat1_cust_id_30m", "cat1_cust_id_30m_1"}
+
+    # Check latest aggregation with window
+    feature_table = feature_tables["cat1_cust_id_30m"]
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict.pop("_id")
+    _ = feature_table_dict.pop("feature_cluster")
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/latest_aggregation_with_window_universe.sql",
+        update_fixtures,
+    )
+    assert feature_table_dict == {
+        "base_name": "cust_id_30m",
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "deployment_ids": [latest_aggregation_with_window_deployment_id],
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "feature_ids": [deployed_latest_aggregation_features[0].id],
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "execution_buffer": "0s",
+            "offset": "300s",
+            "period": "1800s",
+        },
+        "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": "cat1_cust_id_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": ["latest_event_timestamp_90d_V231227"],
+        "output_dtypes": ["TIMESTAMP_TZ"],
+        "precomputed_lookup_feature_table_info": None,
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        deployment_id=latest_aggregation_with_window_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+    )
+
+    # Check latest aggregation without window
+    feature_table = feature_tables["cat1_cust_id_30m_1"]
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict.pop("_id")
+    _ = feature_table_dict.pop("feature_cluster")
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/latest_aggregation_without_window_universe.sql",
+        update_fixtures,
+    )
+    assert feature_table_dict == {
+        "base_name": "cust_id_30m",
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "deployment_ids": [latest_aggregation_without_window_deployment_id],
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "feature_ids": [deployed_latest_aggregation_features[1].id],
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "execution_buffer": "0s",
+            "offset": "300s",
+            "period": "1800s",
+        },
+        "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+        "has_ttl": False,
+        "last_materialized_at": None,
+        "name": "cat1_cust_id_30m_1",
+        "name_prefix": "cat1",
+        "name_suffix": "1",
+        "online_stores_last_materialized_at": [],
+        "output_column_names": ["latest_event_timestamp_V231227"],
+        "output_dtypes": ["TIMESTAMP_TZ"],
+        "precomputed_lookup_feature_table_info": None,
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        deployment_id=latest_aggregation_without_window_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
     )

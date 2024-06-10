@@ -2013,6 +2013,23 @@ def latest_event_timestamp_overall_feature_fixture(
     return feature
 
 
+@pytest.fixture(name="latest_event_timestamp_unbounded_feature")
+def latest_event_timestamp_unbounded_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a latest aggregation feature without a window
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=[None],
+        feature_names=["latest_event_timestamp"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp"]
+    return feature
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(credentials, snowflake_connector):
     """
