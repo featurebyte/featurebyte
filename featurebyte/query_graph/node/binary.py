@@ -3,7 +3,7 @@ This module contains binary operation node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Sequence, Tuple
+from typing import ClassVar, List, Sequence, Tuple
 from typing_extensions import Literal
 
 from pydantic import Field
@@ -34,7 +34,7 @@ class AndNode(BinaryOpWithBoolOutputNode):
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
     # AND operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} & {right_operand}"
@@ -46,7 +46,7 @@ class OrNode(BinaryOpWithBoolOutputNode):
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
     # OR operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} | {right_operand}"
@@ -58,7 +58,7 @@ class EqualNode(BinaryOpWithBoolOutputNode):
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
     # Equality operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} == {right_operand}"
@@ -70,7 +70,7 @@ class NotEqualNode(BinaryOpWithBoolOutputNode):
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
     # Equality operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} != {right_operand}"
@@ -118,7 +118,7 @@ class AddNode(BinaryArithmeticOpNode):
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
     # Addition operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"
@@ -139,7 +139,7 @@ class MultiplyNode(BinaryArithmeticOpNode):
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
     # Multiplication operation is commutative
-    is_commutative = True
+    is_commutative: ClassVar[bool] = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} * {right_operand}"

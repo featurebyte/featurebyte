@@ -4,7 +4,7 @@ This module contains UserDefinedFunction related models
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 import pymongo
@@ -128,9 +128,10 @@ class FunctionParameter(FeatureByteBaseModel):
     FunctionParameter(name='param1', dtype='INT', default_value=1, test_value=None)
     """
 
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FunctionParameter")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FunctionParameter")
 
+    # instance variables
     name: str
     dtype: DBVarType
     default_value: Optional[Union[Scalar, Timestamp]]

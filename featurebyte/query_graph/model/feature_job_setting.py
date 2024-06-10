@@ -2,7 +2,7 @@
 Feature Job Setting Model
 """
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from pydantic import Field, root_validator
 
@@ -44,8 +44,10 @@ class FeatureJobSetting(FeatureByteBaseModel):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
 
+    # instance variables
     blind_spot: str = Field(
         description="Establishes the time difference between when the feature is calculated and the most recent "
         "event timestamp to be processed."
@@ -238,8 +240,10 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")
 
+    # instance variables
     table_name: str = Field(
         description="Name of the table to which the feature job setting applies feature_job_setting."
     )

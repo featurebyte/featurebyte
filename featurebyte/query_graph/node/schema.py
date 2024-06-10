@@ -34,8 +34,10 @@ class SnowflakeDetails(BaseDatabaseDetails):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
 
+    # instance variables
     account: StrictStr = Field(
         description="The host account name which can be found using one of the following "
         "formats:\n"
@@ -82,8 +84,10 @@ class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-me
     Base model for details used to connect to a Databricks data source.
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
 
+    # instance variables
     host: StrictStr = Field(
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
@@ -111,8 +115,10 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
 
+    # instance variables
     host: StrictStr = Field(
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
@@ -156,8 +162,10 @@ class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksUnityDetails")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DatabricksUnityDetails")
 
+    # instance variables
     host: StrictStr = Field(
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
@@ -190,8 +198,10 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
 
+    # instance variables
     host: StrictStr = Field(
         default="127.0.0.1", description="The server where your spark cluster is hosted."
     )

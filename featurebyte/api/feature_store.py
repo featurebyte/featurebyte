@@ -30,7 +30,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[Any] = FBAutoDoc(proxy_class="featurebyte.FeatureStore")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureStore")
     _route: ClassVar[str] = "/feature_store"
     _list_schema: ClassVar[Any] = FeatureStoreModel
     _get_schema: ClassVar[Any] = FeatureStoreModel

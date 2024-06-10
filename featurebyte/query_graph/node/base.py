@@ -86,7 +86,6 @@ class BaseNode(BaseModel):
     # _auto_convert_expression_to_variable: when the expression is long, it will convert to a new
     # variable to limit the line width of the generated SDK code.
     _auto_convert_expression_to_variable: ClassVar[bool] = True
-
     # for generating feature definition hash
     # whether the node is commutative, i.e. the order of the inputs does not matter
     is_commutative: ClassVar[bool] = False

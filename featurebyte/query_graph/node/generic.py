@@ -194,7 +194,7 @@ class FilterNode(BaseNode):
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
     # feature definition hash generation configuration
-    _inherit_first_input_column_name_mapping = True
+    _inherit_first_input_column_name_mapping: ClassVar[bool] = True
 
     @property
     def max_input_count(self) -> int:
@@ -411,8 +411,8 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     parameters: Parameters
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "column_"
-    _inherit_first_input_column_name_mapping = True
+    _normalized_output_prefix: ClassVar[str] = "column_"
+    _inherit_first_input_column_name_mapping: ClassVar[bool] = True
 
     @property
     def max_input_count(self) -> int:
@@ -603,8 +603,8 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     _auto_convert_expression_to_variable: ClassVar[bool] = False
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "target_"
-    _window_parameter_field_name = "window"
+    _normalized_output_prefix: ClassVar[str] = "target_"
+    _window_parameter_field_name: ClassVar[Optional[str]] = "window"
 
     @property
     def max_input_count(self) -> int:
@@ -716,7 +716,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     parameters: GroupByNodeParameters
 
     # feature definition hash generation configuration
-    _window_parameter_field_name = "windows"
+    _window_parameter_field_name: ClassVar[Optional[str]] = "windows"
 
     @property
     def max_input_count(self) -> int:
@@ -879,7 +879,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     _auto_convert_expression_to_variable: ClassVar[bool] = False
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "feat_"
+    _normalized_output_prefix: ClassVar[str] = "feat_"
 
     @property
     def max_input_count(self) -> int:
@@ -1020,7 +1020,10 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     parameters: LookupParameters
 
     # feature definition hash generation configuration
-    _normalize_nested_parameter_field_names = ["scd_parameters", "event_parameters"]
+    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = [
+        "scd_parameters",
+        "event_parameters",
+    ]
 
     @property
     def max_input_count(self) -> int:
@@ -1256,7 +1259,7 @@ class JoinNode(BasePrunableNode):
     parameters: JoinNodeParameters
 
     # feature definition hash generation configuration
-    _normalize_nested_parameter_field_names = ["scd_parameters"]
+    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = ["scd_parameters"]
 
     @property
     def max_input_count(self) -> int:
@@ -1547,8 +1550,8 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     parameters: Parameters
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "column_"
-    _inherit_first_input_column_name_mapping = True
+    _normalized_output_prefix: ClassVar[str] = "column_"
+    _inherit_first_input_column_name_mapping: ClassVar[bool] = True
 
     @property
     def max_input_count(self) -> int:
@@ -1821,7 +1824,7 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
     type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "feat_"
+    _normalized_output_prefix: ClassVar[str] = "feat_"
 
     def _derive_sdk_code(
         self,
@@ -1868,7 +1871,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
     )
 
     # feature definition hash generation configuration
-    _normalized_output_prefix = "target_"
+    _normalized_output_prefix: ClassVar[str] = "target_"
 
     def _derive_sdk_code(
         self,

@@ -192,7 +192,7 @@ class MissingValueImputation(BaseCleaningOperation):
     >>> fb.MissingValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
     type: Literal[ConditionOperationField.MISSING] = Field(
         ConditionOperationField.MISSING, const=True, repr=False
@@ -232,7 +232,9 @@ class DisguisedValueImputation(BaseCleaningOperation):
     >>> fb.DisguisedValueImputation(disguised_values=[-1, -96], imputed_value=None)  # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.DisguisedValueImputation"
+    )
 
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True, repr=False
@@ -286,7 +288,9 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     >>> fb.UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.UnexpectedValueImputation"
+    )
 
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True, repr=False
@@ -354,7 +358,9 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ValueBeyondEndpointImputation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.ValueBeyondEndpointImputation"
+    )
 
     type: Literal[
         ConditionOperationField.LESS_THAN,
@@ -437,7 +443,7 @@ class StringValueImputation(BaseCleaningOperation):
     >>> fb.StringValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
     type: Literal[ConditionOperationField.IS_STRING] = Field(
         ConditionOperationField.IS_STRING, const=True, repr=False
@@ -504,7 +510,9 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.ColumnCleaningOperation"
+    )
 
     column_name: str = Field(
         description="Name of the column that requires cleaning. The cleaning operations specified in the second "
@@ -553,7 +561,7 @@ class TableCleaningOperation(FeatureByteBaseModel):
     ... )
     """
 
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")
 
     table_name: str = Field(
         description="Name of the table that requires cleaning. The cleaning operations specified in the second "
