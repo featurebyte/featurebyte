@@ -114,13 +114,6 @@ class FeatureManagerService:
             assert isinstance(session, DatabricksUnitySession)
             await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
 
-        if not feature_spec.is_online_store_eligible:
-            logger.info(
-                "Skipping scheduling both online and offline tile jobs",
-                extra={"feature_name": feature_spec.feature.name},
-            )
-            return
-
         if schedule_time is None:
             schedule_time = datetime.utcnow()
 

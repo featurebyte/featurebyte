@@ -116,6 +116,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         -------
         bool
         """
+        # TODO: can be removed?
         return is_online_store_eligible(graph=self.feature.graph, node=self.feature.node)
 
     @property
