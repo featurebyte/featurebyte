@@ -3,20 +3,17 @@ This module contains integration tests for FeatureSnowflake
 """
 
 import contextlib
-from datetime import datetime, timedelta
-from unittest.mock import PropertyMock, patch
+from datetime import timedelta
+from unittest.mock import patch
 
-import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
-from pandas.testing import assert_frame_equal
 
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
@@ -39,7 +36,7 @@ def create_and_enable_deployment(feature):
             deployment.disable()
 
 
-@pytest.fixture(name="feature_sum_30h")
+@pytest.fixture(name="feature_sum_30h", scope="module")
 def feature_sum_30h(event_table):
     """
     Feature feature_sum_30h fixture
@@ -51,16 +48,18 @@ def feature_sum_30h(event_table):
         windows=["30h"],
         feature_names=["sum_30h"],
     )["sum_30h"]
+    feature.save()
     return feature
 
 
 @pytest.fixture(name="feature_sum_30h_transformed")
-def feature_sum_30h_transformed(feature_sum_30h):
+def feature_sum_30h_transformed(feature_sum_30h, scope="module"):
     """
     Feature feature_sum_30h_transformed fixture
     """
     new_feature = feature_sum_30h + 123
     new_feature.name = "feature_sum_30h_transformed"
+    new_feature.save()
     return new_feature
 
 
@@ -148,136 +147,23 @@ async def online_store_table_exists(session, feature_service, saved_feature):
     return True
 
 
-@pytest.fixture(name="feature_sql")
-def feature_sql_fixture():
+@pytest_asyncio.fixture(name="online_enabled_feature_sum_30h")
+async def online_enabled_feature_sum_30h_fixture(feature_sum_30h):
     """
-    Feature sql fixture
+    Fixture for an online enabled feature sum_30h
     """
-    return f"""
-        SELECT
-          row_number() over (order by CUST_ID desc) as "cust_id",
-          CAST('sum_30h' AS STRING) AS {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
-          1 AS {InternalName.ONLINE_STORE_VALUE_COLUMN},
-          'test_quote'
-        FROM TEMP_TABLE
-        """
-
-
-@pytest.fixture(name="feature_store_table_name")
-def feature_store_table_name_fixture():
-    """
-    Feature store table name fixture
-    """
-    feature_store_table_name = "feature_store_table_1"
-    return feature_store_table_name
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_online_enabled__without_snowflake_scheduling(
-    session,
-    extended_feature_model,
-    tile_spec,
-    feature_manager_service,
-    feature_sql,
-    feature_store_table_name,
-    persistent,
-    task_manager,
-    tile_scheduler_service,
-):
-    with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
-        mock_precompute_queries = [
-            OnlineStoreComputeQueryModel(
-                sql=feature_sql,
-                tile_id=tile_spec.tile_id,
-                aggregation_id=tile_spec.aggregation_id,
-                table_name=feature_store_table_name,
-                result_name="sum_30h",
-                result_type="FLOAT",
-                serving_names=["cust_id"],
-            )
-        ]
-        online_feature_spec = OnlineFeatureSpec(
-            feature=extended_feature_model, precompute_queries=mock_precompute_queries
-        )
-        schedule_time = datetime.utcnow()
-
-        try:
-            await feature_manager_service.online_enable(
-                session, online_feature_spec, schedule_time=schedule_time
-            )
-
-            # check if the task is scheduled
-            job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
-            job_details = await tile_scheduler_service.get_job_details(job_id=job_id)
-            assert job_details is not None
-            assert job_details.name == job_id
-            assert job_details.interval == Interval(
-                every=tile_spec.frequency_minute * 60, period="seconds"
-            )
-
-            # check if the task is not scheduled in snowflake
-            tasks = await session.execute_query(
-                f"SHOW TASKS LIKE '%{extended_feature_model.tile_specs[0].aggregation_id}%'"
-            )
-            assert len(tasks) == 0
-
-        finally:
-            await feature_manager_service.online_disable(None, online_feature_spec)
-            await session.execute_query(
-                f"DELETE FROM {feature_store_table_name} WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = 'sum_30h'"
-            )
-
-
-@pytest_asyncio.fixture(name="online_enabled_feature_spec")
-async def online_enabled_feature_spec_fixture(
-    session,
-    extended_feature_model,
-    feature_manager_service,
-    feature_sql,
-    feature_store_table_name,
-    tile_spec,
-):
-    """
-    Fixture for an OnlineFeatureSpec corresponding to an online enabled feature
-    """
-    # this fixture supports only snowflake
-    assert session.source_type == "snowflake"
-
-    with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
-        mock_precompute_queries = [
-            OnlineStoreComputeQueryModel(
-                sql=feature_sql,
-                tile_id=tile_spec.tile_id,
-                aggregation_id=tile_spec.aggregation_id,
-                table_name=feature_store_table_name,
-                result_name="sum_30h",
-                result_type="FLOAT",
-                serving_names=["cust_id"],
-            )
-        ]
-        online_feature_spec = OnlineFeatureSpec(
-            feature=extended_feature_model, precompute_queries=mock_precompute_queries
-        )
-        schedule_time = datetime.utcnow()
-
-        await feature_manager_service.online_enable(
-            session, online_feature_spec, schedule_time=schedule_time
-        )
-
-        yield online_feature_spec, schedule_time
-
-        await feature_manager_service.online_disable(session, online_feature_spec)
+    with patch("featurebyte.service.feature_manager.datetime") as patched_datetime:
+        patched_datetime.utcnow.return_value = pd.Timestamp("2001-01-02 13:15:00").to_pydatetime()
+        with create_and_enable_deployment(feature_sum_30h):
+            yield feature_sum_30h.cached_model
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_enabled_feature_spec(
-    online_enabled_feature_spec,
+    online_enabled_feature_sum_30h,
     session,
-    tile_spec,
-    feature_sql,
-    feature_store_table_name,
+    tile_scheduler_service,
     online_store_compute_query_service,
 ):
     """
@@ -285,48 +171,45 @@ async def test_online_enabled_feature_spec(
     """
     assert session.source_type == "snowflake"
 
-    online_feature_spec, schedule_time = online_enabled_feature_spec
-    expected_tile_id = tile_spec.tile_id
-    expected_aggregation_id = tile_spec.aggregation_id
+    expected_online_store_table_name = "online_store_43c2b44924994bbe375c05427ac312cb1008a469"
+    expected_aggregation_id = online_enabled_feature_sum_30h.aggregation_ids[0]
 
+    # check if the tile task is scheduled
+    job_id = f"{TileType.ONLINE}_{expected_aggregation_id}"
+    job_details = await tile_scheduler_service.get_job_details(job_id=job_id)
+    assert job_details is not None
+    assert job_details.name == job_id
+    assert job_details.interval == Interval(every=3600, period="seconds")
+
+    # check online store precompute query
     result = [
         doc
         async for doc in online_store_compute_query_service.list_documents_iterator(
-            query_filter={"tile_id": expected_tile_id}
+            query_filter={"aggregation_id": expected_aggregation_id}
         )
     ]
     assert len(result) == 1
     result = result[0]
-    assert result.tile_id == expected_tile_id
     assert result.aggregation_id == expected_aggregation_id
-    assert result.result_name == "sum_30h"
+    assert result.result_name.startswith("_fb_internal_üser id_window_w108000_sum")
     assert result.result_type == "FLOAT"
-    assert result.sql == feature_sql
-    assert result.table_name == feature_store_table_name
-    assert result.serving_names == ["cust_id"]
+    assert result.table_name == expected_online_store_table_name
+    assert result.serving_names == ["üser id"]
 
     # validate generate historical tiles
-    sql = f"SELECT * FROM {expected_tile_id}"
+    sql = f"SELECT * FROM {result.tile_id}"
     result = await session.execute_query(sql)
-    assert len(result) == 100
-    expected_df = pd.DataFrame(
-        {
-            "INDEX": np.array([5514911, 5514910, 5514909]),
-            "PRODUCT_ACTION": ["view", "view", "view"],
-            "CUST_ID": np.array([1, 1, 1]),
-            "VALUE": np.array([5, 2, 2]),
-        }
-    )
-    result = result[:3].drop(columns=["CREATED_AT"])
-    assert_frame_equal(result, expected_df)
+    assert len(result) == 120
 
     # validate populate Online Store result
-    sql = f"SELECT * FROM {feature_store_table_name}"
+    sql = f"SELECT * FROM {expected_online_store_table_name}"
     result = await session.execute_query(sql)
-    assert len(result) == 100
-    expect_cols = online_feature_spec.precompute_queries[0].serving_names[:]
-    expect_cols.append(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN)
-    expect_cols.append(InternalName.ONLINE_STORE_VALUE_COLUMN)
+    assert len(result) == 9
+    expect_cols = [
+        "üser id",
+        InternalName.ONLINE_STORE_RESULT_NAME_COLUMN,
+        InternalName.ONLINE_STORE_VALUE_COLUMN,
+    ]
     assert list(result)[:3] == expect_cols
 
 
@@ -417,7 +300,7 @@ async def test_online_disable(
 async def test_online_enable__re_deploy_from_latest_tile_start(
     session,
     feature_manager_service,
-    online_enabled_feature_spec,
+    online_enabled_feature_sum_30h,
     tile_registry_service,
 ):
     """
@@ -425,7 +308,9 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     """
     assert session.source_type == "snowflake"
 
-    online_feature_spec, _ = online_enabled_feature_spec
+    online_feature_spec = OnlineFeatureSpec(
+        feature=ExtendedFeatureModel(**online_enabled_feature_sum_30h.dict(by_alias=True))
+    )
     tile_spec = online_feature_spec.feature.tile_specs[0]
 
     tile_model = await tile_registry_service.get_tile_model(
