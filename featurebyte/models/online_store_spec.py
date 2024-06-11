@@ -13,7 +13,6 @@ from featurebyte.models.online_store_compute_query import OnlineStoreComputeQuer
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.online_serving import is_online_store_eligible
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
@@ -106,18 +105,6 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
                     output.append(str(e_id))
 
         return output
-
-    @property
-    def is_online_store_eligible(self) -> bool:
-        """
-        Whether pre-computation with online store is eligible for the feature
-
-        Returns
-        -------
-        bool
-        """
-        # TODO: can be removed?
-        return is_online_store_eligible(graph=self.feature.graph, node=self.feature.node)
 
     @property
     def value_type(self) -> str:
