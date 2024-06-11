@@ -277,6 +277,22 @@ def test_deployment_with_unbounded_window(
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
+    feat_latest_model = feat_latest.cached_model
+    feat_latest_combined_model = feat_latest_combined.cached_model
+
+    # Check latest without window has no associated aggregation result names (not precomputed in
+    # internal online store)
+    assert feat_latest_model.aggregation_result_names == []
+    assert feat_latest_model.online_store_table_names == []
+
+    # Check latest with window has associated aggregation result names
+    assert feat_latest_combined_model.aggregation_result_names == [
+        "_fb_internal_cust_id_window_w604800_latest_ac7aa941d28f489e56c9ab50a583a8c6c88eebe5"
+    ]
+    assert feat_latest_combined_model.online_store_table_names == [
+        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+    ]
+
     offline_store_info = feat_latest.cached_model.offline_store_info
     assert offline_store_info.metadata.has_ttl is False
     assert offline_store_info.metadata.feature_job_setting == feature_group_feature_job_setting
@@ -324,3 +340,5 @@ def test_deployment_with_unbounded_window(
         offline_store_info_combined.odfv_info.codes.strip()
         == textwrap.dedent(expected_odfv_codes).strip()
     )
+
+    deployment.disable()
