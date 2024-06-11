@@ -24,6 +24,7 @@ from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -76,10 +77,11 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     op_struct = graph.extract_operation_structure(node, keep_all_source_columns=True)
     if not op_struct.is_time_based:
         return False
-    has_point_in_time_groupby = False
-    for _ in graph.iterate_nodes(node, NodeType.GROUPBY):
-        has_point_in_time_groupby = True
-    return has_point_in_time_groupby
+    for node in graph.iterate_nodes(node, NodeType.GROUPBY):
+        params = cast(GroupByNodeParameters, node.parameters)
+        if any(params.windows):
+            return True
+    return False
 
 
 def get_aggregation_result_names(

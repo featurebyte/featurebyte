@@ -245,13 +245,22 @@ def test_is_online_store_eligible__non_time_aware(global_graph, order_size_featu
     assert not is_online_store_eligible(global_graph, order_size_feature_node)
 
 
-def test_is_online_store_eligible__time_aware(
+def test_is_online_store_eligible__window_feature(
+    global_graph, window_aggregate_with_offset_feature_node
+):
+    """
+    Test is_online_store_eligible for latest value without window
+    """
+    assert is_online_store_eligible(global_graph, window_aggregate_with_offset_feature_node)
+
+
+def test_is_online_store_eligible__latest_without_window(
     global_graph, latest_value_without_window_feature_node
 ):
     """
-    Test is_online_store_eligible for a time-aware feature node
+    Test is_online_store_eligible for latest value without window
     """
-    assert is_online_store_eligible(global_graph, latest_value_without_window_feature_node)
+    assert not is_online_store_eligible(global_graph, latest_value_without_window_feature_node)
 
 
 def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures):

@@ -66,6 +66,7 @@ class LatestAggregator(TileBasedAggregator):
         all_agg_result_names = []
 
         for specs in self.specs_set.get_grouped_aggregation_specs():
+            # TODO: handle offset
             last_tile_index_expr = calculate_last_tile_index_expr(
                 adapter=self.adapter,
                 point_in_time_expr=quoted_identifier(point_in_time_column),

@@ -178,7 +178,7 @@ def test_latest_aggregator__online_retrieval(agg_specs_no_window, update_fixture
     )
     assert_equal_with_expected_fixture(
         result.updated_table_expr.sql(pretty=True),
-        "tests/fixtures/expected_latest_aggregator_update_online.sql",
+        "tests/fixtures/aggregator/expected_latest_aggregator_update_online.sql",
         update_fixture=update_fixtures,
     )
     assert result.column_names == [

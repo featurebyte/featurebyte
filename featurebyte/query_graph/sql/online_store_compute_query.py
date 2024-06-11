@@ -21,7 +21,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
-from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
 
@@ -289,6 +289,9 @@ class OnlineStorePrecomputePlan:
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
             for agg_spec in agg_specs:
+                if agg_spec.aggregation_type != AggregationType.WINDOW:
+                    # Skip aggregations without a bounded window
+                    continue
                 universe = self._construct_online_store_universe(agg_spec)
                 self.params_by_agg_result_name[agg_spec.agg_result_name] = PrecomputeQueryParams(
                     agg_spec=agg_spec,
