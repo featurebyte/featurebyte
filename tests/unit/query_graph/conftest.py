@@ -1169,9 +1169,12 @@ def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
     return feature_node
 
 
-@pytest.fixture(name="latest_value_without_window_feature_node")
-def latest_value_without_window_feature_node_fixture(global_graph, input_node):
-    node_params = {
+@pytest.fixture(name="latest_value_groupby_node_parameters")
+def latest_value_groupby_node_parameters_fixture():
+    """
+    Fixture for latest value groupby node parameters
+    """
+    return {
         "keys": ["cust_id", "biz_id"],
         "serving_names": ["CUSTOMER_ID", "BUSINESS_ID"],
         "value_by": None,
@@ -1187,10 +1190,34 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
         "windows": [None],
         "entity_ids": [ObjectId("637516ebc9c18f5a277a78db"), ObjectId("637516ebc9c18f5a277a78dc")],
     }
-    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+
+
+@pytest.fixture(name="latest_value_without_window_feature_node")
+def latest_value_without_window_feature_node_fixture(
+    global_graph, input_node, latest_value_groupby_node_parameters
+):
+    groupby_node = add_groupby_operation(
+        global_graph, latest_value_groupby_node_parameters, input_node
+    )
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_latest_value"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="latest_value_offset_without_window_feature_node")
+def latest_value_offset_without_window_feature_node_fixture(
+    global_graph, input_node, latest_value_groupby_node_parameters
+):
+    node_params = copy.deepcopy(latest_value_groupby_node_parameters)
+    node_params.update({"offset": "48h", "names": ["a_latest_value_offset_48h"]})
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_latest_value_offset_48h"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
     )

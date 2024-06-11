@@ -13,6 +13,7 @@ from datetime import datetime
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
@@ -382,12 +383,14 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
 
     def _get_entity_universe_from_source(self, node: GroupByNode) -> Expression:
         ts_col = node.parameters.timestamp
-        # TODO: handle offset
         last_tile_index_expr = calculate_last_tile_index_expr(
             adapter=self.adapter,
             point_in_time_expr=quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
             frequency=node.parameters.feature_job_setting.period_seconds,
             time_modulo_frequency=node.parameters.feature_job_setting.offset_seconds,
+            offset=(
+                parse_duration_string(node.parameters.offset) if node.parameters.offset else None
+            ),
         )
         last_tile_index_timestamp = expressions.Anonymous(
             this="F_INDEX_TO_TIMESTAMP",

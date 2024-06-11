@@ -227,7 +227,7 @@ def test_construct_universe_sql__window_offset(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
             ) / 3600
-          ) - 24 - 8
+          ) - 8 - 24
           AND INDEX < FLOOR(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800

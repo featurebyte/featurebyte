@@ -31,6 +31,24 @@ def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
     )
 
 
+@pytest.fixture
+def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_node):
+    """
+    Fixture of TileAggregationSpec with unbounded window and offset
+    """
+    parent_nodes = global_graph.get_input_node_names(
+        latest_value_offset_without_window_feature_node
+    )
+    assert len(parent_nodes) == 1
+    groupby_node = global_graph.get_node_by_name(parent_nodes[0])
+    return TileBasedAggregationSpec.from_groupby_query_node(
+        global_graph,
+        groupby_node,
+        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        agg_result_name_include_serving_names=True,
+    )
+
+
 def create_latest_aggregator(agg_specs, **kwargs):
     """
     Helper function to create a LatestAggregator
@@ -183,5 +201,29 @@ def test_latest_aggregator__online_retrieval(agg_specs_no_window, update_fixture
     )
     assert result.column_names == [
         "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+    ]
+    assert result.updated_index == 0
+
+
+def test_latest_aggregator_offset(agg_specs_offset, update_fixtures):
+    """
+    Test latest aggregation with offset
+    """
+    aggregator = create_latest_aggregator(agg_specs_offset, is_online_serving=True)
+    assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
+
+    result = aggregator.update_aggregation_table_expr(
+        table_expr=select("a", "b", "c").from_("my_table"),
+        point_in_time_column="POINT_IN_TIME",
+        current_columns=["a", "b", "c"],
+        current_query_index=0,
+    )
+    assert_equal_with_expected_fixture(
+        result.updated_table_expr.sql(pretty=True),
+        "tests/fixtures/aggregator/expected_latest_aggregator_update_offset.sql",
+        update_fixture=update_fixtures,
+    )
+    assert result.column_names == [
+        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e_o172800",
     ]
     assert result.updated_index == 0

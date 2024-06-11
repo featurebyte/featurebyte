@@ -252,6 +252,17 @@ def features_fixture(
             feature_names=["Latest Amount by User"],
         )["Latest Amount by User"]
     )
+    feature_17 = (
+        event_view[event_view["ÀMOUNT"].notnull()]
+        .groupby("ÜSER ID")
+        .aggregate_over(
+            "ÀMOUNT",
+            method="latest",
+            windows=[None],
+            offset="1d",
+            feature_names=["Latest Amount by User Offset 1d"],
+        )["Latest Amount by User Offset 1d"]
+    )
 
     # Save all features to be deployed
     features = [
@@ -273,6 +284,7 @@ def features_fixture(
             feature_14,
             feature_15,
             feature_16,
+            feature_17,
         ]
         if feature is not None
     ]
@@ -910,6 +922,7 @@ async def test_feast_registry(
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
         f"Relative Frequency 7d_{version}": [0.5652173757553101],
         f"Latest Amount by User_{version}": [91.31999969482422],
+        f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
         "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
@@ -949,6 +962,7 @@ async def test_feast_registry(
         # any null value in the input vector will result in 0 cosine similarity
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.0],
         f"Latest Amount by User_{version}": [91.31999969482422],
+        f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -1048,6 +1062,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "PRODUCT_ACTION": "detail",
         "User Status Feature": None,
         "Latest Amount by User": 41.08000183105469,
+        "Latest Amount by User Offset 1d": 78.93000030517578,
         "cust_id": 761,
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
@@ -1067,6 +1082,7 @@ def expected_features_order_id_T3850(source_type):
     expected = {
         "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
         "Latest Amount by User": 91.31999969482422,
+        "Latest Amount by User Offset 1d": 10.229999542236328,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
         "Current Number of Users With This Status": 1,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
