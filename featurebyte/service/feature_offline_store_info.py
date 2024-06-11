@@ -20,6 +20,7 @@ from featurebyte.query_graph.model.entity_relationship_info import EntityRelatio
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
@@ -263,14 +264,15 @@ class OfflineStoreInfoInitializationService:
                 graph=feature.graph
             ).extract_from_target_node(node=feature.node)
 
-            has_ttl = bool(
-                next(
-                    feature.graph.iterate_nodes(
-                        target_node=feature.node, node_type=NodeType.GROUPBY
-                    ),
-                    None,
-                )
-            )
+            has_ttl = False
+            for node in feature.graph.iterate_nodes(
+                target_node=feature.node, node_type=NodeType.GROUPBY
+            ):
+                assert isinstance(node.parameters, GroupByNodeParameters)
+                has_ttl = any(node.parameters.windows)
+                if any(node.parameters.windows):
+                    has_ttl = True
+                    break
             table_name = (
                 await self.offline_store_feature_table_creator(
                     primary_entity_ids=feature.primary_entity_ids,
@@ -318,6 +320,7 @@ class OfflineStoreInfoInitializationService:
                     setting.feature_job_setting for setting in feature.table_id_feature_job_settings
                 ],
                 feature_id=feature.id,
+                has_ttl=metadata.has_ttl if metadata else False,
                 null_filling_value=null_filling_value,
             )
 

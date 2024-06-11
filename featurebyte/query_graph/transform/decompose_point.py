@@ -44,6 +44,7 @@ class AggregationInfo:
     feature_job_settings: List[FeatureJobSetting]
     has_request_column: bool
     has_ingest_graph_node: bool
+    has_ttl_agg_type: bool
     extract_primary_entity_ids_only: bool
 
     def __init__(self, extract_primary_entity_ids_only: bool) -> None:
@@ -53,6 +54,7 @@ class AggregationInfo:
         self.feature_job_settings = []
         self.has_request_column = False
         self.has_ingest_graph_node = False
+        self.has_ttl_agg_type = False
         self.extract_primary_entity_ids_only = extract_primary_entity_ids_only
 
     @property
@@ -95,18 +97,8 @@ class AggregationInfo:
             )
             output.has_request_column = self.has_request_column or other.has_request_column
             output.has_ingest_graph_node = self.has_ingest_graph_node or other.has_ingest_graph_node
+            output.has_ttl_agg_type = self.has_ttl_agg_type or other.has_ttl_agg_type
         return output
-
-    @property
-    def has_ttl_agg_type(self) -> bool:
-        """
-        Check whether the aggregation info contains time-to-live aggregation type
-
-        Returns
-        -------
-        bool
-        """
-        return NodeType.GROUPBY in self.agg_node_types
 
 
 class FeatureJobSettingExtractor:
@@ -287,6 +279,8 @@ class DecomposePointState:
 
         if node.name in self.aggregation_node_names:
             aggregation_info.agg_node_types = [node.type]
+            if isinstance(node, GroupByNode):
+                aggregation_info.has_ttl_agg_type = any(node.parameters.windows)
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys

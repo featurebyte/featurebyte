@@ -17,7 +17,7 @@ def decompose_point_global_state_fixture():
 
 
 @pytest.mark.parametrize(
-    "input1_has_req_col,input1_has_graph," "input2_has_req_col,input2_has_graph," "expected",
+    "input1_has_req_col,input1_has_graph,input2_has_req_col,input2_has_graph,expected",
     [
         # do not split
         (False, False, False, False, False),

@@ -242,6 +242,17 @@ def features_fixture(
     feature_15 = dict_feature.cd.get_relative_frequency(key_feature)
     feature_15.name = "Relative Frequency 7d"
 
+    feature_16 = (
+        event_view[event_view["ÀMOUNT"].notnull()]
+        .groupby("ÜSER ID")
+        .aggregate_over(
+            "ÀMOUNT",
+            method="latest",
+            windows=[None],
+            feature_names=["Latest Amount by User"],
+        )["Latest Amount by User"]
+    )
+
     # Save all features to be deployed
     features = [
         feature
@@ -261,6 +272,7 @@ def features_fixture(
             feature_13,
             feature_14,
             feature_15,
+            feature_16,
         ]
         if feature is not None
     ]
@@ -652,6 +664,7 @@ def expected_feature_table_names_fixture():
         "cat1_product_action_1h",
         "cat1_cust_id_1h",
         "cat1_userid_1h",
+        "cat1_userid_1h_1",
         "cat1_userid_1d",
         "cat1_user_status_1d",
         "cat1_order_id_1d",
@@ -896,6 +909,7 @@ async def test_feast_registry(
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
         f"Relative Frequency 7d_{version}": [0.5652173757553101],
+        f"Latest Amount by User_{version}": [91.31999969482422],
         "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
@@ -934,6 +948,7 @@ async def test_feast_registry(
         # due to implementation in _get_vector_cosine_similarity_function_name,
         # any null value in the input vector will result in 0 cosine similarity
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.0],
+        f"Latest Amount by User_{version}": [91.31999969482422],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -1032,6 +1047,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "Relative Frequency 7d": None,
         "PRODUCT_ACTION": "detail",
         "User Status Feature": None,
+        "Latest Amount by User": 41.08000183105469,
         "cust_id": 761,
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
@@ -1050,6 +1066,7 @@ def expected_features_order_id_T3850(source_type):
     """
     expected = {
         "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
+        "Latest Amount by User": 91.31999969482422,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
         "Current Number of Users With This Status": 1,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
