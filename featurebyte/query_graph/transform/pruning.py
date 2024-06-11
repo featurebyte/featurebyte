@@ -4,8 +4,7 @@ This module contains graph pruning related classes.
 
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from pydantic import BaseModel
-
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -136,7 +135,7 @@ class NodeParametersPruningGlobalState(OperationStructureInfo):
 
 class NodeParametersPruningExtractor(
     OperationStructureExtractor,
-    BaseGraphExtractor[GraphNodeNameMap, BaseModel, NodeParametersPruningGlobalState],
+    BaseGraphExtractor[GraphNodeNameMap, FeatureByteBaseModel, NodeParametersPruningGlobalState],
 ):
     """
     NodeParametersPruningExtractor is used to prune the node parameters (remove redundant parameter values).
@@ -146,7 +145,7 @@ class NodeParametersPruningExtractor(
 
     def _post_compute(  # type: ignore[override]
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: NodeParametersPruningGlobalState,
         node: Node,
         inputs: List[OperationStructure],
@@ -227,7 +226,7 @@ class NodeParametersPruningExtractor(
         global_state = NodeParametersPruningGlobalState(**state_params)
         super()._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
@@ -261,7 +260,7 @@ class GraphPruningGlobalState(OperationStructureInfo):
 
 
 class GraphStructurePruningExtractor(
-    BaseGraphExtractor[GraphNodeNameMap, BaseModel, GraphPruningGlobalState]
+    BaseGraphExtractor[GraphNodeNameMap, FeatureByteBaseModel, GraphPruningGlobalState]
 ):
     """
     GraphStructurePruningExtractor is used to prune the graph structure (remove redundant nodes).
@@ -278,7 +277,7 @@ class GraphStructurePruningExtractor(
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -297,11 +296,11 @@ class GraphStructurePruningExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     def _prepare_target_columns(
@@ -355,7 +354,7 @@ class GraphStructurePruningExtractor(
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         inputs: List[Any],
@@ -443,7 +442,7 @@ class GraphStructurePruningExtractor(
         )
         self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

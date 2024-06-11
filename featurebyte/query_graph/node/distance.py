@@ -7,9 +7,10 @@ from typing_extensions import Literal
 
 import textwrap
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.config import (
@@ -32,7 +33,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 class HaversineNode(BaseSeriesOutputNode):
     """Haversine class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
     type: Literal[NodeType.HAVERSINE] = Field(NodeType.HAVERSINE, const=True)

@@ -21,10 +21,11 @@ from typing import (
 import copy
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.config import (
@@ -60,7 +61,7 @@ NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
 
 
-class BaseNodeParameters(BaseModel):
+class BaseNodeParameters(FeatureByteBaseModel):
     """
     BaseNodeParameters class
     """
@@ -72,7 +73,7 @@ class BaseNodeParameters(BaseModel):
         extra = "forbid"
 
 
-class BaseNode(BaseModel):
+class BaseNode(FeatureByteBaseModel):
     """
     BaseNode class
     """
@@ -80,7 +81,7 @@ class BaseNode(BaseModel):
     name: str
     type: NodeType
     output_type: NodeOutputType
-    parameters: BaseModel
+    parameters: FeatureByteBaseModel
 
     # class variables
     # _auto_convert_expression_to_variable: when the expression is long, it will convert to a new
@@ -951,7 +952,7 @@ class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
+    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
 
 
 class SingleValueNodeParameters(BaseNodeParameters):

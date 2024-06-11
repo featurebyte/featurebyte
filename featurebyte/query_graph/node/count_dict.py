@@ -10,9 +10,10 @@ import textwrap  # pylint: disable=wrong-import-order
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
@@ -146,14 +147,14 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 class CountDictTransformNode(BaseCountDictOpNode):
     """CountDictTransformNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         transform_type: Literal[
             "entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"
         ]
 
-    class UniqueCountParameters(BaseModel):
+    class UniqueCountParameters(FeatureByteBaseModel):
         """UniqueCountParameters"""
 
         transform_type: Literal["unique_count"]
@@ -448,7 +449,7 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 class BaseCountDictWithKeyOpNode(BaseCountDictOpNode, ABC):
     """Base class for count dictionary operation with key"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         value: Optional[Scalar]

@@ -23,10 +23,10 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 import dataclasses
 from collections import defaultdict
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -418,7 +418,7 @@ FeatureDataColumn = Annotated[
 ]
 
 
-class GroupOperationStructure(BaseModel):
+class GroupOperationStructure(FeatureByteBaseModel):
     """GroupOperationStructure class is used to construct feature/target info's metadata attribute."""
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)

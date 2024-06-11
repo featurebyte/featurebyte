@@ -6,10 +6,8 @@ from typing import List, Optional, Set
 
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
-
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.base import BaseNode
@@ -23,7 +21,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 
 
-class BaseGroupbyParameters(BaseModel):
+class BaseGroupbyParameters(FeatureByteBaseModel):
     """Common parameters related to groupby operation"""
 
     keys: List[InColumnStr]

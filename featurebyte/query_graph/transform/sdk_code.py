@@ -5,8 +5,9 @@ This module contains an extractor class to generate SDK codes from a query graph
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -28,7 +29,7 @@ from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
-class SDKCodeGlobalState(BaseModel):
+class SDKCodeGlobalState(FeatureByteBaseModel):
     """
     SDKCodeGlobalState class
 
@@ -185,14 +186,16 @@ class SDKCodeGlobalState(BaseModel):
             self._identify_required_copy_node(node, backward_nodes, query_graph.edges_map)
 
 
-class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCodeGlobalState]):
+class SDKCodeExtractor(
+    BaseGraphExtractor[SDKCodeGlobalState, FeatureByteBaseModel, SDKCodeGlobalState]
+):
     """
     SDKCodeExtractor class is responsible to generate SDK codes from a given query graph.
     """
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -205,16 +208,16 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
         inputs: List[VarNameExpressionInfo],
@@ -292,7 +295,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         )
         var_name_or_expr = self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

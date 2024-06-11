@@ -4,8 +4,9 @@ This module contains graph flattening related classes.
 
 from typing import Dict, List, Optional, Set
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -13,7 +14,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 
 
-class GraphFlatteningGlobalState(BaseModel):
+class GraphFlatteningGlobalState(FeatureByteBaseModel):
     """GraphFlatteningGlobalState class"""
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)

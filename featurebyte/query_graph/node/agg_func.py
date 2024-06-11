@@ -7,14 +7,15 @@ from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import BaseModel, Field, parse_obj_as
+from pydantic import Field, parse_obj_as
 
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 
 AGG_FUNCS = []
 
 
-class BaseAggFunc(BaseModel):
+class BaseAggFunc(FeatureByteBaseModel):
     """BaseAggMethod class"""
 
     type: AggFunc

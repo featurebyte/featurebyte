@@ -4,9 +4,10 @@ On demand function (for DataBricks) related classes and functions.
 
 from typing import Any, Dict, List, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
@@ -24,7 +25,7 @@ from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
 
-class InputArgumentInfo(BaseModel):
+class InputArgumentInfo(FeatureByteBaseModel):
     """
     Input argument info
     """
@@ -42,7 +43,7 @@ class SQLInputArgumentInfo(InputArgumentInfo):
     py_input_var_name: str
 
 
-class OnDemandFeatureFunctionGlobalState(BaseModel):
+class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
     """
     On demand feature function global state
     """
@@ -162,7 +163,7 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
 
 class OnDemandFeatureFunctionExtractor(
     BaseGraphExtractor[
-        OnDemandFeatureFunctionGlobalState, BaseModel, OnDemandFeatureFunctionGlobalState
+        OnDemandFeatureFunctionGlobalState, FeatureByteBaseModel, OnDemandFeatureFunctionGlobalState
     ]
 ):
     """
@@ -171,7 +172,7 @@ class OnDemandFeatureFunctionExtractor(
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -180,11 +181,11 @@ class OnDemandFeatureFunctionExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     @staticmethod
@@ -213,7 +214,7 @@ class OnDemandFeatureFunctionExtractor(
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
         inputs: List[Any],
@@ -260,7 +261,7 @@ class OnDemandFeatureFunctionExtractor(
         )
         output_expr = self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

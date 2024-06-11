@@ -5,9 +5,10 @@ This graph extractor is responsible for extracting null filling values from the 
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -20,7 +21,7 @@ from featurebyte.query_graph.transform.operation_structure import OperationStruc
 from featurebyte.typing import Scalar
 
 
-class NullFillingValueGlobalState(BaseModel):
+class NullFillingValueGlobalState(FeatureByteBaseModel):
     """
     NullFillingValueGlobalState encapsulates the global state for null filling value extraction.
     """
@@ -34,7 +35,9 @@ class NullFillingValueGlobalState(BaseModel):
 
 
 class NullFillingValueExtractor(
-    BaseGraphExtractor[NullFillingValueGlobalState, BaseModel, NullFillingValueGlobalState]
+    BaseGraphExtractor[
+        NullFillingValueGlobalState, FeatureByteBaseModel, NullFillingValueGlobalState
+    ]
 ):
     """
     NullFillingValueExtractor is responsible for extracting null filling values from the graph.
@@ -42,7 +45,7 @@ class NullFillingValueExtractor(
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: NullFillingValueGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -59,16 +62,16 @@ class NullFillingValueExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: NullFillingValueGlobalState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: NullFillingValueGlobalState,
         node: Node,
         inputs: List[Any],
@@ -114,7 +117,7 @@ class NullFillingValueExtractor(
         # construct query graph for constructing null filling value extraction function
         state: NullFillingValueGlobalState = self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=NullFillingValueGlobalState(
                 operation_structure_map=op_struct_info.operation_structure_map
             ),

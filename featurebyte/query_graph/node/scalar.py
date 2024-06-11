@@ -8,9 +8,10 @@ from typing import Union, cast
 from typing_extensions import Literal
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import StrEnum
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 
 
@@ -22,7 +23,7 @@ class NonNativeValueType(StrEnum):
     TIMESTAMP = "timestamp"
 
 
-class TimestampValue(BaseModel):
+class TimestampValue(FeatureByteBaseModel):
     """TimestampValue class"""
 
     iso_format_str: str

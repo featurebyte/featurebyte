@@ -6,10 +6,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dataclasses import dataclass
 
-from pydantic import BaseModel
-
 from featurebyte.enum import DBVarType, TableDataType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityAncestorDescendantMapper,
@@ -492,7 +490,7 @@ class DecomposePointState:
 
 
 class DecomposePointExtractor(
-    BaseGraphExtractor[DecomposePointState, BaseModel, DecomposePointState]
+    BaseGraphExtractor[DecomposePointState, FeatureByteBaseModel, DecomposePointState]
 ):
     """
     DecomposePointExtractor class is used to extract information about the decompose point
@@ -501,7 +499,7 @@ class DecomposePointExtractor(
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: DecomposePointState,
         node: Node,
         input_node_names: List[str],
@@ -514,16 +512,16 @@ class DecomposePointExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: DecomposePointState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: DecomposePointState,
         node: Node,
         inputs: List[Any],
@@ -575,7 +573,7 @@ class DecomposePointExtractor(
         )
         self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

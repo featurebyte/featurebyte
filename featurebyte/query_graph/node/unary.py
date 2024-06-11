@@ -6,9 +6,10 @@ This module contains unary operation node classes
 from typing import ClassVar, List, Type, Union
 from typing_extensions import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputWithSingleOperandNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
@@ -272,7 +273,7 @@ class IsNullNode(BaseSeriesOutputWithSingleOperandNode):
 class CastNode(BaseSeriesOutputWithSingleOperandNode):
     """CastNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         type: Literal["int", "float", "str"]

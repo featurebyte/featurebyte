@@ -5,9 +5,10 @@ Request data related node classes
 from typing import List, Sequence, Tuple
 from typing_extensions import Literal
 
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.config import (
@@ -36,7 +37,7 @@ from featurebyte.query_graph.node.utils import subset_frame_column_expr
 class RequestColumnNode(BaseNode):
     """Request column node used by on-demand features"""
 
-    class RequestColumnNodeParameters(BaseModel):
+    class RequestColumnNodeParameters(FeatureByteBaseModel):
         """Node parameters"""
 
         column_name: StrictStr
