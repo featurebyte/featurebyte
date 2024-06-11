@@ -1,6 +1,26 @@
 SELECT DISTINCT
-  "cust_id"
-FROM online_store_1d1bc6c6b7e37001082cdc2f77e909b292fa4e50
+  "cust_id" AS "cust_id"
+FROM (
+  SELECT
+    "col_int" AS "col_int",
+    "col_float" AS "col_float",
+    "col_char" AS "col_char",
+    "col_text" AS "col_text",
+    "col_binary" AS "col_binary",
+    "col_boolean" AS "col_boolean",
+    "event_timestamp" AS "event_timestamp",
+    "cust_id" AS "cust_id"
+  FROM "sf_database"."sf_schema"."sf_table"
+  WHERE
+    "event_timestamp" >= __fb_last_materialized_timestamp
+    AND "event_timestamp" < F_INDEX_TO_TIMESTAMP(
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+      ) / 1800),
+      300,
+      600,
+      30
+    )
+)
 WHERE
-  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_latest_d9b2a8ebb02e7a6916ae36e9cc223759433c01e2'
-  AND "cust_id" IS NOT NULL
+  "cust_id" IS NOT NULL
