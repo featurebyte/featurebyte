@@ -148,7 +148,6 @@ class FeatureManagerService:
 
         # populate feature store. if this is called when recreating the schema, we need to run all
         # the online store compute queries since the tables need to be regenerated.
-        # TODO: don't extract precompute_queries again here
         for query in self._filter_precompute_queries(
             feature_spec, None if is_recreating_schema else unscheduled_result_names
         ):
