@@ -41,6 +41,21 @@ class LatestAggregator(TileBasedAggregator):
         assert aggregation_spec.window is None
         self.specs_set.add_aggregation_spec(aggregation_spec)
 
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_query_index: int,
+    ) -> AggregationResult:
+        # Note: always retrieve from tile table, even for internal store online retrieval
+        return self.update_aggregation_table_expr_offline(
+            table_expr=table_expr,
+            point_in_time_column=point_in_time_column,
+            current_columns=current_columns,
+            current_query_index=current_query_index,
+        )
+
     def update_aggregation_table_expr_offline(
         self,
         table_expr: Select,

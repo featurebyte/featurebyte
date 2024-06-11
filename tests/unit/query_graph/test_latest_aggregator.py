@@ -12,6 +12,7 @@ from featurebyte import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
@@ -30,6 +31,16 @@ def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
     )
 
 
+def create_latest_aggregator(agg_specs, **kwargs):
+    """
+    Helper function to create a LatestAggregator
+    """
+    aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE, **kwargs)
+    for spec in agg_specs:
+        aggregator.update(spec)
+    return aggregator
+
+
 def test_get_required_serving_names(agg_specs_no_window):
     """
     Test get_required_serving_names method
@@ -44,10 +55,7 @@ def test_latest_aggregator(agg_specs_no_window):
     """
     Test LatestAggregator update_aggregation_table_expr
     """
-    aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE)
-    for spec in agg_specs_no_window:
-        aggregator.update(spec)
-
+    aggregator = create_latest_aggregator(agg_specs_no_window)
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
 
     result = aggregator.update_aggregation_table_expr(
@@ -137,12 +145,11 @@ def test_latest_aggregator(agg_specs_no_window):
     assert result.updated_index == 0
 
 
-def test_latest_aggregator__no_specs(agg_specs_no_window):
+def test_latest_aggregator__no_specs():
     """
     Test calling update_aggregation_table_expr when there are no unbounded windows (no specs)
     """
-    aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE)
-
+    aggregator = create_latest_aggregator([])
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 0
 
     result = aggregator.update_aggregation_table_expr(
@@ -153,4 +160,28 @@ def test_latest_aggregator__no_specs(agg_specs_no_window):
     )
     assert result.updated_table_expr.sql() == "SELECT a, b, c FROM my_table"
     assert result.column_names == []
+    assert result.updated_index == 0
+
+
+def test_latest_aggregator__online_retrieval(agg_specs_no_window, update_fixtures):
+    """
+    Test feature values should be calculated on demand from the tile table during online retrieval
+    """
+    aggregator = create_latest_aggregator(agg_specs_no_window, is_online_serving=True)
+    assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
+
+    result = aggregator.update_aggregation_table_expr(
+        table_expr=select("a", "b", "c").from_("my_table"),
+        point_in_time_column="POINT_IN_TIME",
+        current_columns=["a", "b", "c"],
+        current_query_index=0,
+    )
+    assert_equal_with_expected_fixture(
+        result.updated_table_expr.sql(pretty=True),
+        "tests/fixtures/expected_latest_aggregator_update_online.sql",
+        update_fixture=update_fixtures,
+    )
+    assert result.column_names == [
+        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+    ]
     assert result.updated_index == 0
