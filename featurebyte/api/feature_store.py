@@ -17,7 +17,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.schema.feature_store import DatabaseDetailsUpdate, FeatureStoreCreate
 
 
 class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
@@ -308,3 +308,32 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         >>> feature_store.delete()  # doctest: +SKIP
         """
         self._delete()
+
+    def update_details(
+        self, http_path: Optional[str] = None, warehouse: Optional[str] = None
+    ) -> None:
+        """
+        Updates the details of the feature store.
+
+        Parameters
+        ----------
+        http_path: Optional[str]
+            HTTP path to use.
+        warehouse: Optional[str]
+            Warehouse to use.
+
+        Examples
+        --------
+        Update the details of a feature store.
+
+        >>> feature_store = fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
+        >>> feature_store.update_details(warehouse="feature_engineering")  # doctest: +SKIP
+        """
+        self.update(
+            update_payload=DatabaseDetailsUpdate(
+                http_path=http_path, warehouse=warehouse
+            ).json_dict(),
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}/details",
+            skip_update_schema_check=True,
+        )

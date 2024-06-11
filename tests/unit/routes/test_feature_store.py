@@ -4,6 +4,7 @@ Test for FeatureStore route
 
 import copy
 import textwrap
+from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import Mock
 
@@ -928,3 +929,26 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         response = test_api_client.delete(f"{self.base_route}/{feature_store_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "FeatureStore is referenced by Catalog: grocery"
+
+    def test_update_database_details_200(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test update database details (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        update_payload = {
+            "warehouse": "new_warehouse",
+        }
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}/details", json=update_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["_id"] == doc_id
+        assert datetime.fromisoformat(response_dict["updated_at"]) < datetime.utcnow()
+        assert response_dict["user_id"] == str(user_id)
+        assert response_dict["name"] == self.payload["name"]
+        assert response_dict["details"]["warehouse"] == update_payload["warehouse"]

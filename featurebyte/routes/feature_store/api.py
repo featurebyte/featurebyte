@@ -29,6 +29,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.feature_store import (
+    DatabaseDetailsUpdate,
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
@@ -127,6 +128,12 @@ class FeatureStoreRouter(
             methods=["POST"],
             response_model=Task,
             status_code=HTTPStatus.CREATED,
+        )
+        self.router.add_api_route(
+            "/{feature_store_id}/details",
+            self.update_details,
+            methods=["PATCH"],
+            response_model=FeatureStoreModel,
         )
 
     async def create_object(
@@ -372,3 +379,10 @@ class FeatureStoreRouter(
         controller: FeatureStoreController = self.get_controller_for_request(request)
         await controller.delete(document_id=feature_store_id)
         return DeleteResponse()
+
+    async def update_details(
+        self, request: Request, feature_store_id: PydanticObjectId, data: DatabaseDetailsUpdate
+    ) -> FeatureStoreModel:
+        """Update details"""
+        controller: FeatureStoreController = self.get_controller_for_request(request)
+        return await controller.update_details(feature_store_id=feature_store_id, data=data)

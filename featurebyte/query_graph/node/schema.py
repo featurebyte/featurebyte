@@ -18,6 +18,18 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
 
     is_local_source: ClassVar[bool] = False
 
+    @property
+    def updatable_fields(self) -> set[str]:
+        """
+        Returns the fields that can be updated in the database details.
+
+        Returns
+        -------
+        set[str]
+            Set of fields that can be updated
+        """
+        return set()
+
 
 class SnowflakeDetails(BaseDatabaseDetails):
     """
@@ -71,6 +83,10 @@ class SnowflakeDetails(BaseDatabaseDetails):
             values["schema_name"] = sf_schema
         return values
 
+    @property
+    def updatable_fields(self) -> set[str]:
+        return {"warehouse"}
+
 
 class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """Model for SQLite data source information"""
@@ -98,6 +114,10 @@ class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-me
     schema_name: StrictStr = Field(
         description="The name of the schema to use for creation of output tables."
     )
+
+    @property
+    def updatable_fields(self) -> set[str]:
+        return {"http_path"}
 
 
 class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
