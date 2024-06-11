@@ -9,9 +9,10 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 import pymongo
-from pydantic import BaseModel, Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueValuesConstraint,
@@ -19,7 +20,7 @@ from featurebyte.models.base import (
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
-class LastRunMetadata(BaseModel):
+class LastRunMetadata(FeatureByteBaseModel):
     """
     LastRunMetadata class
 
@@ -44,7 +45,7 @@ class LastRunMetadata(BaseModel):
     index: int
 
 
-class BackfillMetadata(BaseModel):
+class BackfillMetadata(FeatureByteBaseModel):
     """
     BackfillMetadata class
 

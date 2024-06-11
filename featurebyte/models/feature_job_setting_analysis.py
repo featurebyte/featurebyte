@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import datetime
 
 import pymongo
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -26,7 +26,7 @@ from featurebyte.schema.feature_job_setting_analysis import (
 )
 
 
-class BlindSpotSearchResult(BaseModel):
+class BlindSpotSearchResult(FeatureByteBaseModel):
     """
     BlindSpotSearchResult with support for json deserialization
     """
@@ -48,7 +48,7 @@ class AnalysisResult(FeatureByteBaseModel):
     recommended_feature_job_setting: FeatureJobSetting
 
 
-class AnalysisPlots(BaseModel):
+class AnalysisPlots(FeatureByteBaseModel):
     """
     Analysis plots
     """
@@ -59,7 +59,7 @@ class AnalysisPlots(BaseModel):
     affected_jobs_record_age: Optional[Dict[str, Any]]
 
 
-class BackTestSummary(BaseModel):
+class BackTestSummary(FeatureByteBaseModel):
     """
     BackTestSummary model
     """
@@ -107,7 +107,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
 
-class BacktestResult(BaseModel):
+class BacktestResult(FeatureByteBaseModel):
     """
     Backtest result
     """
@@ -118,7 +118,7 @@ class BacktestResult(BaseModel):
     plot: Optional[str]
 
 
-class EventLandingTimeResult(BaseModel):
+class EventLandingTimeResult(FeatureByteBaseModel):
     """
     EventLandingTimeResult with support for json deserialization
     """
@@ -129,7 +129,7 @@ class EventLandingTimeResult(BaseModel):
     warnings: List[str]
 
 
-class AnalysisResultsData(BaseModel):
+class AnalysisResultsData(FeatureByteBaseModel):
     """
     Data heavy part of AnalysisResults
     """
@@ -140,7 +140,7 @@ class AnalysisResultsData(BaseModel):
     backtest_result: BacktestResult
 
 
-class MissingJobsInfo(BaseModel):
+class MissingJobsInfo(FeatureByteBaseModel):
     """
     MissingJobsInfo with support for json deserialization
     """
@@ -153,7 +153,7 @@ class MissingJobsInfo(BaseModel):
     affected_event_index: Optional[str]
 
 
-class AnalysisData(BaseModel):
+class AnalysisData(FeatureByteBaseModel):
     """
     Analysis Data with support for json serialization
     """
@@ -163,7 +163,7 @@ class AnalysisData(BaseModel):
     missing_jobs_info: MissingJobsInfo
 
 
-class FeatureJobSettingAnalysisData(BaseModel):
+class FeatureJobSettingAnalysisData(FeatureByteBaseModel):
     """
     Store large objects from the analysis
     """

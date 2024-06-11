@@ -7,17 +7,18 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from datetime import datetime
 
 import pymongo
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pymongo.operations import IndexModel
 
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 
 
-class Interval(BaseModel):
+class Interval(FeatureByteBaseModel):
     """
     Interval based job settings
     """
@@ -26,7 +27,7 @@ class Interval(BaseModel):
     period: Literal["days", "hours", "minutes", "seconds", "microseconds"]
 
 
-class Crontab(BaseModel):
+class Crontab(FeatureByteBaseModel):
     """
     Cron based job settings
     """

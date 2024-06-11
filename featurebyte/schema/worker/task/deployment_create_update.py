@@ -5,10 +5,10 @@ FeatureList Deploy Task Payload schema
 from typing import ClassVar, Optional, Union
 from typing_extensions import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
-from featurebyte.models.base import NameStr, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
@@ -20,7 +20,7 @@ class DeploymentPayloadType(StrEnum):
     UPDATE = "update"
 
 
-class CreateDeploymentPayload(BaseModel):
+class CreateDeploymentPayload(FeatureByteBaseModel):
     """Create deployment"""
 
     type: Literal[DeploymentPayloadType.CREATE] = Field(DeploymentPayloadType.CREATE, const=True)
@@ -31,7 +31,7 @@ class CreateDeploymentPayload(BaseModel):
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
-class UpdateDeploymentPayload(BaseModel):
+class UpdateDeploymentPayload(FeatureByteBaseModel):
     """Update deployment"""
 
     type: Literal[DeploymentPayloadType.UPDATE] = Field(DeploymentPayloadType.UPDATE, const=True)
