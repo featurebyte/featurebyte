@@ -27,7 +27,9 @@ class SCDTableCreate(TableCreate):
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr]
     current_flag_column: Optional[StrictStr]
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+        default=FeatureJobSetting(blind_spot="0h", offset="0h", period="24h")
+    )
 
     # pydantic validators
     _special_columns_validator = validator(

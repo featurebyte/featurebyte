@@ -283,18 +283,13 @@ def test_get_change_view__no_default_job_setting(snowflake_scd_table):
     """
     Test get_change_view - no default job setting provided
     """
-    datetime_mock = Mock(wraps=datetime)
-    mocked_hour = 11
-    mocked_minute = 15
-    datetime_mock.now.return_value = datetime(1999, 1, 1, mocked_hour, mocked_minute, 0)
-    with patch("featurebyte.api.change_view.datetime", new=datetime_mock):
-        change_view = snowflake_scd_table.get_change_view("col_int")
-        assert change_view.default_feature_job_setting == FeatureJobSetting(
-            blind_spot="0",
-            offset=f"{mocked_hour}h{mocked_minute}m",
-            period="24h",
-        )
-        change_view_test_helper(snowflake_scd_table, change_view)
+    change_view = snowflake_scd_table.get_change_view("col_int")
+    assert change_view.default_feature_job_setting == FeatureJobSetting(
+        blind_spot="0",
+        offset="0",
+        period="24h",
+    )
+    change_view_test_helper(snowflake_scd_table, change_view)
 
 
 def test_get_change_view__with_default_job_setting(snowflake_scd_table):
@@ -400,7 +395,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
         FROM (
           SELECT
             *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "new_effective_timestamp"), 40500, 0, 1440) AS index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "new_effective_timestamp"), 0, 0, 1440) AS index
           FROM (
             SELECT
               *

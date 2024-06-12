@@ -284,6 +284,10 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
                 col_info.pop("semantic_id")
             json_payload["columns_info"] = columns_info
 
+        if name == "scd_table":
+            # do not include default_feature_job_setting for SCD table
+            json_payload["default_feature_job_setting"] = None
+
         json_payload["_COMMENT"] = generated_comment
         update_or_check_payload_fixture(request_payload_dir, name, json_payload, update_fixtures)
 
