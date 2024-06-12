@@ -20,6 +20,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.query_graph.node.schema import SnowflakeDetails
+from featurebyte.schema.feature_store import DatabaseDetailsUpdate
 from featurebyte.session.manager import SessionManager
 
 
@@ -324,3 +325,12 @@ def test_delete_feature_store(saved_snowflake_feature_store):
     assert saved_snowflake_feature_store.saved is True
     saved_snowflake_feature_store.delete()
     assert saved_snowflake_feature_store.saved is False
+
+
+def test_update_details(saved_snowflake_feature_store):
+    """
+    Test update feature store details
+    """
+    assert saved_snowflake_feature_store.details.warehouse == "sf_warehouse"
+    saved_snowflake_feature_store.update_details(warehouse="new_warehouse")
+    assert saved_snowflake_feature_store.details.warehouse == "new_warehouse"

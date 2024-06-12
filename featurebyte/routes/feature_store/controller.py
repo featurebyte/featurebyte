@@ -18,6 +18,8 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
+    DatabaseDetailsServiceUpdate,
+    DatabaseDetailsUpdate,
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
@@ -450,3 +452,36 @@ class FeatureStoreController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+    async def update_details(
+        self, feature_store_id: ObjectId, data: DatabaseDetailsUpdate
+    ) -> FeatureStoreModel:
+        """
+        Update feature store details
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+        data: DatabaseDetailsUpdate
+            DatabaseDetailsUpdate object
+
+        Returns
+        -------
+        FeatureStoreModel
+            Updated feature store document
+        """
+        document: FeatureStoreModel = await self.service.get_document(feature_store_id)
+        # ensure fields are updatable
+        details_dict = data.dict(exclude_none=True)
+        for key, _ in details_dict.items():
+            assert key in document.details.updatable_fields, f"Field is not updatable: {key}"
+        updated_details = {**document.details.dict(by_alias=True), **details_dict}
+
+        # test connection
+        update_data = DatabaseDetailsServiceUpdate(details=updated_details)
+        document.details = update_data.details
+        _ = await self.session_manager_service.get_feature_store_session(feature_store=document)
+
+        await self.service.update_document(document_id=feature_store_id, data=update_data)
+        return await self.service.get_document(feature_store_id)

@@ -16,7 +16,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class FeatureStoreCreate(FeatureByteBaseModel):
@@ -118,3 +118,20 @@ class FeatureStoreShape(FeatureByteBaseModel):
 
     num_rows: int
     num_cols: int
+
+
+class DatabaseDetailsUpdate(FeatureByteBaseModel):
+    """
+    Database details update schema
+    """
+
+    http_path: Optional[str] = Field(default=None)
+    warehouse: Optional[str] = Field(default=None)
+
+
+class DatabaseDetailsServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Database details update schema for service
+    """
+
+    details: DatabaseDetails
