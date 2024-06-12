@@ -10,6 +10,8 @@ from sqlglot import expressions
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 
+TEST_TABLE_NAME = "OBJECT_AGG_TEST_TABLE"
+
 
 @pytest_asyncio.fixture(name="setup_test_data", scope="module")
 async def setup_test_data_fixture(session):
@@ -23,10 +25,10 @@ async def setup_test_data_fixture(session):
             "val_col": [None, -1.5],
         }
     )
-    await session.register_table(table_name="test_table", dataframe=table)
+    await session.register_table(table_name=TEST_TABLE_NAME, dataframe=table)
     yield
     await session.drop_table(
-        "test_table", schema_name=session.schema_name, database_name=session.database_name
+        TEST_TABLE_NAME, schema_name=session.schema_name, database_name=session.database_name
     )
 
 
@@ -44,7 +46,7 @@ async def test_object_agg_udf(source_type, session, setup_test_data):
             alias="OUT",
             quoted=True,
         )
-    ).from_(quoted_identifier("test_table"))
+    ).from_(quoted_identifier(TEST_TABLE_NAME))
     df = await session.execute_query(sql_to_string(select_expr, source_type))
     actual = df.iloc[0]["OUT"]
     assert actual == {"2": -1.5}
