@@ -26,7 +26,6 @@ from featurebyte.query_graph.sql.online_serving import (
     get_aggregation_result_names,
     get_online_features_query_set,
     get_online_store_retrieval_expr,
-    is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.online_store_compute_query import (
     OnlineStorePrecomputePlan,
@@ -227,7 +226,7 @@ def test_construct_universe_sql__window_offset(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
             ) / 3600
-          ) - 24 - 8
+          ) - 8 - 24
           AND INDEX < FLOOR(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
@@ -236,22 +235,6 @@ def test_construct_universe_sql__window_offset(
         """
     ).strip()
     assert universe.expr.sql(pretty=True) == expected_sql
-
-
-def test_is_online_store_eligible__non_time_aware(global_graph, order_size_feature_node):
-    """
-    Test is_online_store_eligible for a non-time-aware feature node
-    """
-    assert not is_online_store_eligible(global_graph, order_size_feature_node)
-
-
-def test_is_online_store_eligible__time_aware(
-    global_graph, latest_value_without_window_feature_node
-):
-    """
-    Test is_online_store_eligible for a time-aware feature node
-    """
-    assert is_online_store_eligible(global_graph, latest_value_without_window_feature_node)
 
 
 def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures):

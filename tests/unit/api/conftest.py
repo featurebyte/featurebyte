@@ -428,40 +428,6 @@ def deployment_fixture(float_feature, use_case):
     return deployment
 
 
-@pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
-    """
-    Fixture for a timestamp feature
-    """
-    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
-        value_column="event_timestamp",
-        method="latest",
-        windows=["90d"],
-        feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=feature_group_feature_job_setting,
-    )["latest_event_timestamp_90d"]
-    return feature
-
-
-@pytest.fixture(name="latest_event_timestamp_overall_feature")
-def latest_event_timestamp_overall_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
-    """
-    Fixture for a timestamp feature
-    """
-    feature = snowflake_event_view_with_entity.groupby([]).aggregate_over(
-        value_column="event_timestamp",
-        method="latest",
-        windows=["90d"],
-        feature_names=["latest_event_timestamp_overall_90d"],
-        feature_job_setting=feature_group_feature_job_setting,
-    )["latest_event_timestamp_overall_90d"]
-    return feature
-
-
 @pytest.fixture(name="ttl_non_ttl_composite_feature")
 def ttl_non_ttl_composite_feature_fixture(float_feature, non_time_based_feature):
     """Fixture for a composite feature"""

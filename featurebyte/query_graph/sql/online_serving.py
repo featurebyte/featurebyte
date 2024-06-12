@@ -21,7 +21,6 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -56,30 +55,6 @@ from featurebyte.session.session_helper import execute_feature_query_set
 logger = get_logger(__name__)
 
 PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES = "Computing online features"
-
-
-def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
-    """
-    Check whether the feature represented by the given node is eligible for online store lookup
-
-    Parameters
-    ----------
-    graph : QueryGraph
-        Query graph
-    node : Node
-        Query graph node
-
-    Returns
-    -------
-    bool
-    """
-    op_struct = graph.extract_operation_structure(node, keep_all_source_columns=True)
-    if not op_struct.is_time_based:
-        return False
-    has_point_in_time_groupby = False
-    for _ in graph.iterate_nodes(node, NodeType.GROUPBY):
-        has_point_in_time_groupby = True
-    return has_point_in_time_groupby
 
 
 def get_aggregation_result_names(

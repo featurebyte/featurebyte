@@ -377,18 +377,18 @@ class TileManagerService:
 
         return None
 
-    async def remove_tile_jobs(self, tile_spec: TileSpec) -> None:
+    async def remove_tile_jobs(self, aggregation_id: str) -> None:
         """
         Remove tiles
 
         Parameters
         ----------
-        tile_spec: TileSpec
-            the input TileSpec
+        aggregation_id: str
+            Aggregation id that identifies the tile job to be removed
         """
         async for _ in self.feature_service.list_documents_as_dict_iterator(
             query_filter={
-                "aggregation_ids": tile_spec.aggregation_id,
+                "aggregation_ids": aggregation_id,
                 "online_enabled": True,
             }
         ):
@@ -398,6 +398,4 @@ class TileManagerService:
             # online enabled features
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
-                await self.tile_scheduler_service.stop_job(
-                    job_id=f"{t_type}_{tile_spec.aggregation_id}"
-                )
+                await self.tile_scheduler_service.stop_job(job_id=f"{t_type}_{aggregation_id}")

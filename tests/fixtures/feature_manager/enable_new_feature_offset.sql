@@ -61,7 +61,7 @@ FROM (
         (
           DATE_PART(EPOCH_SECOND, CAST('2022-05-15 09:15:00' AS TIMESTAMPNTZ)) - 900
         ) / 3600
-      ) - 2 - 4
+      ) - 4 - 2
       AND INDEX < FLOOR(
         (
           DATE_PART(EPOCH_SECOND, CAST('2022-05-15 09:15:00' AS TIMESTAMPNTZ)) - 900
@@ -76,7 +76,7 @@ FROM (
       ) / 3600) - 4 AS "__FB_LAST_TILE_INDEX",
       FLOOR((
         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 900
-      ) / 3600) - 2 - 4 AS "__FB_FIRST_TILE_INDEX"
+      ) / 3600) - 4 - 2 AS "__FB_FIRST_TILE_INDEX"
     FROM (
       SELECT DISTINCT
         "POINT_IN_TIME",

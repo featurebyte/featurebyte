@@ -114,13 +114,6 @@ class FeatureManagerService:
             assert isinstance(session, DatabricksUnitySession)
             await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
 
-        if not feature_spec.is_online_store_eligible:
-            logger.info(
-                "Skipping scheduling both online and offline tile jobs",
-                extra={"feature_name": feature_spec.feature.name},
-            )
-            return
-
         if schedule_time is None:
             schedule_time = datetime.utcnow()
 
@@ -453,28 +446,32 @@ class FeatureManagerService:
             assert isinstance(session, DatabricksUnitySession)
             await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
 
-        if not feature_spec.is_online_store_eligible:
-            return
-
         # cleaning online store compute queries
-        await self.remove_online_store_compute_queries(feature_spec)
+        await self.remove_online_store_compute_queries(
+            feature_spec.feature.aggregation_result_names
+        )
 
         # disable tile scheduled jobs
-        for tile_spec in feature_spec.feature.tile_specs:
-            await self.tile_manager_service.remove_tile_jobs(tile_spec)
+        for aggregation_id in feature_spec.feature.aggregation_ids:
+            await self.tile_manager_service.remove_tile_jobs(aggregation_id)
 
-        await self.remove_online_store_cleanup_jobs(session, feature_spec)
+        await self.remove_online_store_cleanup_jobs(
+            session, feature_spec.feature.online_store_table_names
+        )
 
-    async def remove_online_store_compute_queries(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def remove_online_store_compute_queries(
+        self, aggregation_result_names: List[str]
+    ) -> None:
         """
         Update the list of currently active online store compute queries
 
         Parameters
         ----------
-        feature_spec: OnlineFeatureSpec
-            Specification of the feature that is currently being online disabled
+        aggregation_result_names: List[str]
+            Aggregation result names that identify the online store compute queries to be removed
         """
-        aggregation_result_names = {query.result_name for query in feature_spec.precompute_queries}
+        if not aggregation_result_names:
+            return
         query_filter = {
             "online_enabled": True,
             "aggregation_result_names": {
@@ -498,7 +495,7 @@ class FeatureManagerService:
                     pass
 
     async def remove_online_store_cleanup_jobs(
-        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
+        self, session: Optional[BaseSession], online_store_table_names: List[str]
     ) -> None:
         """
         Stop online store cleanup jobs if no longer referenced by other online enabled features
@@ -507,10 +504,11 @@ class FeatureManagerService:
         ----------
         session: Optional[BaseSession]
             Instance of BaseSession to interact with the data warehouse
-        feature_spec: OnlineFeatureSpec
-            Specification of the feature that is currently being online disabled
+        online_store_table_names: List[str]
+            List of online store tables to be cleaned up if no longer in use
         """
-        online_store_table_names = {query.table_name for query in feature_spec.precompute_queries}
+        if not online_store_table_names:
+            return
         query_filter = {
             "online_enabled": True,
             "online_store_table_names": {

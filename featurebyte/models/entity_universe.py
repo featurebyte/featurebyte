@@ -13,6 +13,7 @@ from datetime import datetime
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
@@ -41,8 +42,9 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
-from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
@@ -344,9 +346,16 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             adapter=self.adapter,
             agg_result_name_include_serving_names=True,
         )
-        return [self._get_universe_expr_from_agg_spec(node, agg_spec) for agg_spec in agg_specs]
+        out = []
+        for agg_spec in agg_specs:
+            if agg_spec.aggregation_type == AggregationType.WINDOW:
+                universe = self._get_universe_expr_from_internal_online_store(node, agg_spec)
+            else:
+                universe = self._get_entity_universe_from_source(node)
+            out.append(universe)
+        return out
 
-    def _get_universe_expr_from_agg_spec(
+    def _get_universe_expr_from_internal_online_store(
         self, node: GroupByNode, agg_spec: TileBasedAggregationSpec
     ) -> Expression:
         result_type = self.adapter.get_physical_type_from_dtype(agg_spec.dtype)
@@ -369,6 +378,52 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                     online_store_table_condition, columns_not_null(node.parameters.serving_names)
                 )
             )
+        )
+        return universe_expr
+
+    def _get_entity_universe_from_source(self, node: GroupByNode) -> Expression:
+        ts_col = node.parameters.timestamp
+        last_tile_index_expr = calculate_last_tile_index_expr(
+            adapter=self.adapter,
+            point_in_time_expr=quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+            frequency=node.parameters.feature_job_setting.period_seconds,
+            time_modulo_frequency=node.parameters.feature_job_setting.offset_seconds,
+            offset=(
+                parse_duration_string(node.parameters.offset) if node.parameters.offset else None
+            ),
+        )
+        last_tile_index_timestamp = expressions.Anonymous(
+            this="F_INDEX_TO_TIMESTAMP",
+            expressions=[
+                last_tile_index_expr,
+                make_literal_value(node.parameters.feature_job_setting.offset_seconds),
+                make_literal_value(node.parameters.feature_job_setting.blind_spot_seconds),
+                make_literal_value(node.parameters.feature_job_setting.period_seconds // 60),
+            ],
+        )
+        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
+            expressions.and_(
+                expressions.GTE(
+                    this=quoted_identifier(ts_col),
+                    expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
+                ),
+                expressions.LT(
+                    this=quoted_identifier(ts_col), expression=last_tile_index_timestamp
+                ),
+            )
+        )
+        universe_expr = (
+            select(
+                *[
+                    expressions.alias_(quoted_identifier(key), alias=serving_name, quoted=True)
+                    for key, serving_name in zip(
+                        node.parameters.keys, node.parameters.serving_names
+                    )
+                ]
+            )
+            .distinct()
+            .from_(filtered_aggregate_input_expr.subquery())
+            .where(columns_not_null(node.parameters.keys))
         )
         return universe_expr
 

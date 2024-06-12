@@ -59,6 +59,7 @@ def calculate_first_and_last_tile_indices(
         point_in_time_expr=point_in_time_expr,
         frequency=frequency,
         time_modulo_frequency=time_modulo_frequency,
+        offset=offset,
     )
     if window_size is not None:
         num_tiles = window_size // frequency
@@ -67,15 +68,6 @@ def calculate_first_and_last_tile_indices(
         )
     else:
         first_tile_index_expr = None
-    if offset is not None:
-        offset_num_tiles = offset // frequency
-        last_tile_index_expr = expressions.Sub(
-            this=last_tile_index_expr, expression=make_literal_value(offset_num_tiles)
-        )
-        if first_tile_index_expr is not None:
-            first_tile_index_expr = expressions.Sub(
-                this=first_tile_index_expr, expression=make_literal_value(offset_num_tiles)
-            )
     return first_tile_index_expr, last_tile_index_expr
 
 
@@ -84,6 +76,7 @@ def calculate_last_tile_index_expr(
     point_in_time_expr: Expression,
     frequency: int,
     time_modulo_frequency: int,
+    offset: Optional[int],
 ) -> Expression:
     """
     Calculate the last tile index (exclusive) required to compute a feature
@@ -98,6 +91,8 @@ def calculate_last_tile_index_expr(
         Frequency in feature job setting
     time_modulo_frequency : int
         Time modulo frequency in feature job setting
+    offset : Optional[int]
+        Feature window offset
 
     Returns
     -------
@@ -110,6 +105,11 @@ def calculate_last_tile_index_expr(
             f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
         ),
     )
+    if offset is not None:
+        offset_num_tiles = offset // frequency
+        last_tile_index_expr = expressions.Sub(
+            this=last_tile_index_expr, expression=make_literal_value(offset_num_tiles)
+        )
     return last_tile_index_expr
 
 
