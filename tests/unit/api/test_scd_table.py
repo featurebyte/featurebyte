@@ -11,6 +11,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
@@ -240,6 +241,12 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     scd_table_dict["created_at"] = scd_table.created_at
     scd_table_dict["updated_at"] = scd_table.updated_at
     scd_table_dict["block_modification_by"] = []
+    scd_table_dict["default_feature_job_setting"] = {
+        "blind_spot": "0s",
+        "offset": "0s",
+        "period": "86400s",
+        "execution_buffer": "0s",
+    }
     for column_idx in [0, 2, 3, 6, 7, 9]:
         scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[
             column_idx
@@ -440,7 +447,9 @@ def test_sdk_code_generation_on_saved_data(saved_scd_table, update_fixtures):
 
 def test_update_default_feature_job_setting(saved_scd_table, feature_group_feature_job_setting):
     """Test update feature job setting"""
-    assert saved_scd_table.default_feature_job_setting is None
+    assert saved_scd_table.default_feature_job_setting == FeatureJobSetting(
+        blind_spot="0h", offset="0h", period="24h"
+    )
     saved_scd_table.update_default_feature_job_setting(
         feature_job_setting=feature_group_feature_job_setting
     )
