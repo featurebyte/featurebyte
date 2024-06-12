@@ -9,9 +9,10 @@ from typing_extensions import Literal
 import textwrap
 from abc import ABC
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithSingleOperandNode,
@@ -47,7 +48,7 @@ class LengthNode(BaseStringAccessorOpNode):
     """LengthNode class"""
 
     type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
+    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
@@ -65,7 +66,7 @@ class LengthNode(BaseStringAccessorOpNode):
 class TrimNode(BaseStringAccessorOpNode):
     """TrimNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         character: Optional[str]
@@ -111,7 +112,7 @@ class TrimNode(BaseStringAccessorOpNode):
 class ReplaceNode(BaseStringAccessorOpNode):
     """ReplaceNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         pattern: str
@@ -142,7 +143,7 @@ class ReplaceNode(BaseStringAccessorOpNode):
 class PadNode(BaseStringAccessorOpNode):
     """PadNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         side: Side
@@ -212,7 +213,7 @@ class PadNode(BaseStringAccessorOpNode):
 class StringCaseNode(BaseStringAccessorOpNode):
     """StringCaseNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters class"""
 
         case: Case
@@ -238,7 +239,7 @@ class StringCaseNode(BaseStringAccessorOpNode):
 class StringContainsNode(BaseStringAccessorOpNode):
     """StringContainsNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         pattern: str
@@ -268,7 +269,7 @@ class StringContainsNode(BaseStringAccessorOpNode):
 class SubStringNode(BaseStringAccessorOpNode):
     """SubStringNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         start: Optional[int]

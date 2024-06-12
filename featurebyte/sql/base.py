@@ -4,8 +4,7 @@ Base Class for SQL related operations
 
 from typing import Any
 
-from pydantic.fields import PrivateAttr
-from pydantic.main import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string

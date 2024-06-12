@@ -6,11 +6,13 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.models.base import FeatureByteBaseModel
 
-class DictProject(BaseModel):
+
+class DictProject(FeatureByteBaseModel):
     """
     Dictionary projection class based on given projection rule
     """
@@ -59,7 +61,7 @@ class DictProject(BaseModel):
         return self._project(self.rule, input_value)
 
 
-class DictTransform(BaseModel):
+class DictTransform(FeatureByteBaseModel):
     """
     Dictionary transform class
     """

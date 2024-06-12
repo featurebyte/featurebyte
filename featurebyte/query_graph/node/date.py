@@ -6,9 +6,10 @@ This module contains datetime operation related node classes
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 from typing_extensions import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
@@ -37,7 +38,7 @@ from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupported
 class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         property: DatetimeSupportedPropertyType
@@ -156,7 +157,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
     """TimeDeltaExtractNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         property: TimedeltaSupportedUnitType
@@ -278,7 +279,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
 class TimeDeltaNode(BaseSeriesOutputNode):
     """TimeDeltaNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         unit: TimedeltaSupportedUnitType
@@ -374,7 +375,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 class DateAddNode(BaseSeriesOutputNode):
     """DateAddNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         value: Optional[int]

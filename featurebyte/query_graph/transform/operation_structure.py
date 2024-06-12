@@ -4,8 +4,7 @@ This module contains operation structure extraction related classes.
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
-
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import (
@@ -17,13 +16,13 @@ from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
 
 class OperationStructureExtractor(
-    BaseGraphExtractor[OperationStructureInfo, BaseModel, OperationStructureInfo],
+    BaseGraphExtractor[OperationStructureInfo, FeatureByteBaseModel, OperationStructureInfo],
 ):
     """OperationStructureExtractor class"""
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OperationStructureInfo,
         node: Node,
         input_node_names: List[str],
@@ -32,11 +31,11 @@ class OperationStructureExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OperationStructureInfo,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         global_state.edges_map[input_node.name].add(node.name)
         return branch_state
 
@@ -110,7 +109,7 @@ class OperationStructureExtractor(
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OperationStructureInfo,
         node: Node,
         inputs: List[OperationStructure],
@@ -152,7 +151,7 @@ class OperationStructureExtractor(
         global_state = OperationStructureInfo(**state_params)
         self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

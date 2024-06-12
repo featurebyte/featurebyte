@@ -6,9 +6,10 @@ from typing import Any, Dict, List, Tuple
 
 import textwrap
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import SpecialColumnName
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
@@ -25,7 +26,7 @@ from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.typing import Scalar
 
 
-class OnDemandFeatureViewGlobalState(BaseModel):
+class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     """
     On demand feature view global state
     """
@@ -41,7 +42,9 @@ class OnDemandFeatureViewGlobalState(BaseModel):
 
 
 class OnDemandFeatureViewExtractor(
-    BaseGraphExtractor[OnDemandFeatureViewGlobalState, BaseModel, OnDemandFeatureViewGlobalState]
+    BaseGraphExtractor[
+        OnDemandFeatureViewGlobalState, FeatureByteBaseModel, OnDemandFeatureViewGlobalState
+    ]
 ):
     """
     On demand feature view extractor
@@ -49,7 +52,7 @@ class OnDemandFeatureViewExtractor(
 
     def _pre_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -58,16 +61,16 @@ class OnDemandFeatureViewExtractor(
 
     def _in_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
         input_node: Node,
-    ) -> BaseModel:
+    ) -> FeatureByteBaseModel:
         return branch_state
 
     def _post_compute(
         self,
-        branch_state: BaseModel,
+        branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
         inputs: List[Any],
@@ -205,7 +208,7 @@ class OnDemandFeatureViewExtractor(
         )
         var_name_or_expr = self._extract(
             node=node,
-            branch_state=BaseModel(),
+            branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

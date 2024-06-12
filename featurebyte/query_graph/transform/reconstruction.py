@@ -6,8 +6,9 @@ from typing import Any, Dict, Optional, Type, TypeVar, cast
 
 from abc import abstractmethod
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -216,7 +217,7 @@ def add_pruning_sensitive_operation(
     return cast(PruningSensitiveNodeT, node)
 
 
-class GraphReconstructionGlobalState(BaseModel):
+class GraphReconstructionGlobalState(FeatureByteBaseModel):
     """GraphReconstructionGlobalState class"""
 
     node_name_to_replacement_node: Dict[str, Node]

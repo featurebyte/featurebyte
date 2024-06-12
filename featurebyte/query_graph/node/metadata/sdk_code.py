@@ -15,9 +15,9 @@ from enum import Enum
 from black import FileMode, format_str
 from bson import ObjectId
 from jinja2 import Template
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 
@@ -119,7 +119,7 @@ class CommentStr(str):
 ImportPathPair = Tuple[str, str]
 
 
-class ObjectClass(BaseModel):
+class ObjectClass(FeatureByteBaseModel):
     """
     ObjectClass is used as a mock class object which are used to
     - capture the method/function input parameters
@@ -309,7 +309,7 @@ StatementT = Union[  # pylint: disable=invalid-name
 ]
 
 
-class CodeGenerationContext(BaseModel):
+class CodeGenerationContext(FeatureByteBaseModel):
     """
     CodeGenerationContext is used to store the context information during code generation. Code generation context
     include information that need to be passed to the next code generation step.
@@ -326,7 +326,7 @@ class CodeGenerationContext(BaseModel):
     required_copy: bool
 
 
-class VariableNameGenerator(BaseModel):
+class VariableNameGenerator(FeatureByteBaseModel):
     """
     VariableNameGenerator class is used to generate the variable name given the characteristics of the
     value to be stored.
@@ -505,7 +505,7 @@ class UnusedVariableFinder(ast.NodeVisitor):
         return self.variables - self.used_variables
 
 
-class CodeGenerator(BaseModel):
+class CodeGenerator(FeatureByteBaseModel):
     """
     SDKCodeGenerator class is used to generate the SDK codes from a list of import tags and statements.
 

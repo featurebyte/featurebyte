@@ -8,10 +8,10 @@ from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.config import (
@@ -43,7 +43,7 @@ from featurebyte.typing import Scalar
 SDKFunctionArgument = Union[VarNameExpressionInfo, Scalar, ObjectClass]
 
 
-class BaseFunctionParameterInput(BaseModel):
+class BaseFunctionParameterInput(FeatureByteBaseModel):
     """BaseFunctionParameterInput class"""
 
     dtype: DBVarType
@@ -129,7 +129,7 @@ FunctionParameterInput = Annotated[
 ]
 
 
-class GenericFunctionNodeParameters(BaseModel):
+class GenericFunctionNodeParameters(FeatureByteBaseModel):
     """GenericFunctionNodeParameters class"""
 
     name: str

@@ -12,12 +12,13 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import BaseModel, Field, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueValuesConstraint,
@@ -34,7 +35,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
-class OnlineStoreLastMaterializedAt(BaseModel):
+class OnlineStoreLastMaterializedAt(FeatureByteBaseModel):
     """
     Last materialized timestamp for an online store
     """
@@ -43,7 +44,7 @@ class OnlineStoreLastMaterializedAt(BaseModel):
     value: datetime
 
 
-class PrecomputedLookupMapping(BaseModel):
+class PrecomputedLookupMapping(FeatureByteBaseModel):
     """
     Track entities before and after lookup
     """
@@ -52,7 +53,7 @@ class PrecomputedLookupMapping(BaseModel):
     source_feature_table_serving_name: str
 
 
-class PrecomputedLookupFeatureTableInfo(BaseModel):
+class PrecomputedLookupFeatureTableInfo(FeatureByteBaseModel):
     """
     Metadata for a feature table that is derived from a source feature table in order to support
     precomputed lookup using a related entity

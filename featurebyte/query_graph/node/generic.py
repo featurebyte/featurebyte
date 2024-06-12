@@ -7,11 +7,11 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Literal
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import (
@@ -66,7 +66,7 @@ from featurebyte.query_graph.util import (
 class ProjectNode(BaseNode):
     """ProjectNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         columns: List[InColumnStr]
@@ -191,7 +191,7 @@ class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
+    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
 
     # feature definition hash generation configuration
     _inherit_first_input_column_name_mapping: ClassVar[bool] = True
@@ -400,7 +400,7 @@ class AssignColumnMixin:
 class AssignNode(AssignColumnMixin, BasePrunableNode):
     """AssignNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         name: OutColumnStr
@@ -512,7 +512,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
 class LagNode(BaseSeriesOutputNode):
     """LagNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         entity_columns: List[InColumnStr]
@@ -956,7 +956,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
-class SCDBaseParameters(BaseModel):
+class SCDBaseParameters(FeatureByteBaseModel):
     """Parameters common to SCD table"""
 
     effective_timestamp_column: InColumnStr
@@ -985,13 +985,13 @@ class SCDLookupParameters(SCDBaseParameters):
     offset: Optional[str]
 
 
-class EventLookupParameters(BaseModel):
+class EventLookupParameters(FeatureByteBaseModel):
     """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
 
 
-class LookupParameters(BaseModel):
+class LookupParameters(FeatureByteBaseModel):
     """Lookup NOde Parameters"""
 
     input_column_names: List[InColumnStr]
@@ -1190,7 +1190,7 @@ class LookupTargetNode(BaseLookupNode):
         return statements, ExpressionStr(lookup_target_str)
 
 
-class JoinMetadata(BaseModel):
+class JoinMetadata(FeatureByteBaseModel):
     """Metadata to track general `view.join(...)` operation"""
 
     type: str = Field("join", const=True)
@@ -1205,7 +1205,7 @@ class JoinMetadata(BaseModel):
         return values
 
 
-class JoinEventTableAttributesMetadata(BaseModel):
+class JoinEventTableAttributesMetadata(FeatureByteBaseModel):
     """Metadata to track `item_view.join_event_table_attributes(...)` operation"""
 
     type: str = Field("join_event_table_attributes", const=True)
@@ -1213,7 +1213,7 @@ class JoinEventTableAttributesMetadata(BaseModel):
     event_suffix: Optional[str]
 
 
-class JoinNodeParameters(BaseModel):
+class JoinNodeParameters(FeatureByteBaseModel):
     """JoinNodeParameters"""
 
     left_on: str
@@ -1522,7 +1522,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     input node is the Feature's node.
     """
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """
         Parameters for JoinFeatureNode
 
@@ -1639,7 +1639,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         return statements, out_var_name
 
 
-class TrackChangesNodeParameters(BaseModel):
+class TrackChangesNodeParameters(FeatureByteBaseModel):
     """Parameters for TrackChangesNode"""
 
     natural_key_column: InColumnStr
@@ -1913,7 +1913,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
 class AliasNode(BaseNode):
     """AliasNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
         name: OutColumnStr

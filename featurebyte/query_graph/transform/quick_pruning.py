@@ -4,14 +4,15 @@ This module contains graph quick pruning related classes.
 
 from typing import Any, Dict, List, Set
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 
 
-class QuickGraphPruningGlobalState(BaseModel):
+class QuickGraphPruningGlobalState(FeatureByteBaseModel):
     """QuickGraphPruningGlobalState class"""
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)

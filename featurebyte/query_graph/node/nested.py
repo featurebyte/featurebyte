@@ -20,7 +20,7 @@ from typing_extensions import Annotated, Literal
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -62,7 +62,7 @@ from featurebyte.typing import Scalar
 class ProxyInputNode(BaseNode):
     """Proxy input node used by nested graph"""
 
-    class ProxyInputNodeParameters(BaseModel):
+    class ProxyInputNodeParameters(FeatureByteBaseModel):
         """Proxy input node parameters"""
 
         input_order: int
@@ -103,7 +103,7 @@ class ProxyInputNode(BaseNode):
         )
 
 
-class BaseGraphNodeParameters(BaseModel):
+class BaseGraphNodeParameters(FeatureByteBaseModel):
     """Graph node parameters"""
 
     graph: "QueryGraphModel"  # type: ignore[name-defined]
@@ -207,7 +207,7 @@ class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraph
 ViewMetadataT = TypeVar("ViewMetadataT", bound="ViewMetadata")
 
 
-class ViewMetadata(BaseModel):
+class ViewMetadata(FeatureByteBaseModel):
     """View metadata (used by event, scd & dimension view)"""
 
     view_mode: ViewMode

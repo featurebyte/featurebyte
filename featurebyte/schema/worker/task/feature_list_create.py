@@ -6,22 +6,22 @@ from __future__ import annotations
 
 from typing import ClassVar, List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import ConflictResolution, WorkerCommand
-from featurebyte.models.base import NameStr, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
-class FeatureParameters(BaseModel):
+class FeatureParameters(FeatureByteBaseModel):
     """Feature parameters"""
 
     id: PydanticObjectId
     name: NameStr
 
 
-class FeaturesParameters(BaseModel):
+class FeaturesParameters(FeatureByteBaseModel):
     """Feature list feature parameters"""
 
     features: Union[List[FeatureParameters], List[PydanticObjectId]]

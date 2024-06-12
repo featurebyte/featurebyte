@@ -9,10 +9,10 @@ from typing_extensions import Annotated, Literal
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr
@@ -40,7 +40,7 @@ from featurebyte.query_graph.node.schema import (
 )
 
 
-class BaseInputNodeParameters(BaseModel):
+class BaseInputNodeParameters(FeatureByteBaseModel):
     """BaseInputNodeParameters"""
 
     columns: List[ColumnSpec]
@@ -368,17 +368,6 @@ class InputNode(BaseNode):
         TableDataType.DIMENSION_TABLE: ClassEnum.DIMENSION_TABLE,
         TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
     }
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # DEV-556: set default table type when it is not present
-        if values.get("type") == NodeType.INPUT:
-            # only attempt to fix this if it is an INPUT node
-            # otherwise, it may cause issue when deserializing the graph in fastapi response
-            if "parameters" in values and "type" not in values["parameters"]:
-                values["parameters"]["type"] = TableDataType.EVENT_TABLE
-        return values
 
     @property
     def max_input_count(self) -> int:
