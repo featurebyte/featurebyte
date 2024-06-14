@@ -20,7 +20,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.query_graph.node.schema import SnowflakeDetails
-from featurebyte.schema.feature_store import DatabaseDetailsUpdate
 from featurebyte.session.manager import SessionManager
 
 
