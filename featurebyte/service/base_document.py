@@ -1057,7 +1057,7 @@ class BaseDocumentService(
             )
 
         # perform validation first before actual update
-        update_dict = data.dict(exclude_none=exclude_none)
+        update_dict = data.dict(exclude_none=exclude_none, by_alias=True)
 
         # update document to persistent
         await self._update_document(
