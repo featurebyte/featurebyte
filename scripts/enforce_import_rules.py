@@ -117,6 +117,7 @@ if __name__ == "__main__":
         "json",
         "operator",
         "os",
+        "packaging.version",
         "pathlib",
         "re",
         "shutil",

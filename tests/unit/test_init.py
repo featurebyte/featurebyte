@@ -148,3 +148,22 @@ def test_register_profile(noop_check_sdk_versions, noop_log_env_summary, config)
     finally:
         # Reset back to original profile
         config.use_profile(original_profile_name)
+
+
+@pytest.mark.parametrize(
+    "first_version,second_version,expected",
+    [
+        ("1.1.0", "1.1.1", True),
+        ("1.1.0", "1.1.0", True),
+        ("1.1.0", "1.1.0.dev7", True),
+        ("1.1.0", "1.0.0", False),
+        ("1.1.0", "1.2.0.dev7", False),
+    ],
+)
+def test_versions_compatible(first_version, second_version, expected):
+    """
+    Test versions_compatible function
+    """
+    assert (
+        fb._versions_compatible(first_version, second_version) is expected
+    )  # pylint: disable=protected-access

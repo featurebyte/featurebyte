@@ -8,6 +8,7 @@ import sys
 
 import pandas as pd
 import yaml
+from packaging.version import Version
 
 from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -118,6 +119,27 @@ def list_profiles() -> pd.DataFrame:
     return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
 
 
+def _versions_compatible(first_version: str, second_version: str) -> bool:
+    """
+    Check if two versions are compatible.
+
+    Parameters
+    ----------
+    first_version: str
+        First version
+    second_version: str
+        Second version
+
+    Returns
+    -------
+    bool
+        True if versions are compatible, False otherwise
+    """
+    _version_a = Version(first_version)
+    _version_b = Version(second_version)
+    return _version_a.major == _version_b.major and _version_a.minor == _version_b.minor
+
+
 def get_active_profile() -> Profile:
     """
     Get active profile from configuration file.
@@ -141,7 +163,7 @@ def get_active_profile() -> Profile:
 
     logger.info(f"Active profile: {conf.profile.name} ({conf.profile.api_url})")
     versions = Configurations().check_sdk_versions()
-    if versions["remote sdk"] != versions["local sdk"]:
+    if not _versions_compatible(versions["remote sdk"], versions["local sdk"]):
         logger.warning(
             f"Remote SDK version ({versions['remote sdk']}) is different from local ({versions['local sdk']}). "
             "Update local SDK to avoid unexpected behavior."
