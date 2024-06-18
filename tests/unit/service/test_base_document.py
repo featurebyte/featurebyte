@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 import pytest_asyncio
 from bson import ObjectId
+from pydantic import Field
 
 from featurebyte.exception import (
     CatalogNotSpecifiedError,
@@ -26,6 +27,7 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
@@ -425,6 +427,28 @@ async def test_list_documents_iterator(document_service):
         )
     ]
     assert doc_ids == sorted(list(doc_ids), reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_update_document_using_alias(document_service):
+    """Test update document using alias"""
+    # create document
+    document = await document_service.create_document(data=Document(name="name1"))
+    assert document.name == "name1"
+
+    class UpdateDocument(BaseDocumentServiceUpdateSchema):
+        """UpdateDocument class"""
+
+        value: str = Field(alias="name")
+
+        class Settings(BaseDocumentServiceUpdateSchema.Settings):
+            """Settings class"""
+
+    # update document using alias
+    update_data = UpdateDocument(name="name2")
+    assert update_data.value == "name2"
+    document = await document_service.update_document(document_id=document.id, data=update_data)
+    assert document.name == "name2"
 
 
 @pytest.mark.asyncio
