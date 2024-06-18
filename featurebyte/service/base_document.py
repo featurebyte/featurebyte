@@ -1057,7 +1057,11 @@ class BaseDocumentService(
             )
 
         # perform validation first before actual update
-        update_dict = data.dict(exclude_none=exclude_none, by_alias=True)
+        update_dict = data.dict(
+            exclude_none=exclude_none,
+            exclude={"id": True},  # exclude id to avoid updating original document ID
+            by_alias=True,  # use alias when getting update data dictionary
+        )
 
         # update document to persistent
         await self._update_document(
