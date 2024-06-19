@@ -16,6 +16,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.mark.parametrize(
@@ -44,7 +45,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
 def test_critical_data_info__valid_imputations(imputations):
     """Test multiple imputations (valid)"""
     cdi = CriticalDataInfo(cleaning_operations=imputations)
-    assert cdi.dict() == {"cleaning_operations": imputations}
+    compare_pydantic_obj(cdi, {"cleaning_operations": imputations})
 
 
 @pytest.mark.parametrize(
@@ -195,26 +196,35 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
     )
     assert node_op.type == NodeType.CAST
     nested_graph = graph_node.parameters.graph
-    assert nested_graph.nodes[0] == {
-        "name": "proxy_input_1",
-        "type": "proxy_input",
-        "output_type": "frame",
-        "parameters": {"input_order": 0},
-    }
-    assert nested_graph.nodes[1] == {
-        "name": "project_1",
-        "type": "project",
-        "output_type": "series",
-        "parameters": {"columns": ["a"]},
-    }
+    compare_pydantic_obj(
+        nested_graph.nodes[0],
+        expected={
+            "name": "proxy_input_1",
+            "type": "proxy_input",
+            "output_type": "frame",
+            "parameters": {"input_order": 0},
+        },
+    )
+    compare_pydantic_obj(
+        nested_graph.nodes[1],
+        expected={
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {"columns": ["a"]},
+        },
+    )
     end_idx = 2 + len(expected_nodes)
-    assert nested_graph.nodes[2:end_idx] == expected_nodes
-    assert nested_graph.nodes[end_idx] == {
-        "name": "cast_1",
-        "type": "cast",
-        "output_type": "series",
-        "parameters": {"type": "float", "from_dtype": "FLOAT"},
-    }
+    compare_pydantic_obj(nested_graph.nodes[2:end_idx], expected=expected_nodes)
+    compare_pydantic_obj(
+        nested_graph.nodes[end_idx],
+        expected={
+            "name": "cast_1",
+            "type": "cast",
+            "output_type": "series",
+            "parameters": {"type": "float", "from_dtype": "FLOAT"},
+        },
+    )
 
 
 @pytest.mark.parametrize(

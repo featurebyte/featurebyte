@@ -23,6 +23,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId, json_util
 from pandas.core.dtypes.common import is_numeric_dtype
+from pydantic import BaseModel
 from sqlglot import expressions
 
 import featurebyte as fb
@@ -1013,3 +1014,18 @@ async def manage_document(doc_service, create_data, storage):
             for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
                 full_path = os.path.join(storage.base_path, path)
                 assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"
+
+
+def compare_pydantic_obj(maybe_pydantic_obj, expected):
+    """Compare pydantic object with dict"""
+    if isinstance(maybe_pydantic_obj, BaseModel):
+        maybe_pydantic_obj = maybe_pydantic_obj.dict(by_alias=True)
+    if isinstance(expected, BaseModel):
+        expected = expected.dict(by_alias=True)
+
+    if isinstance(maybe_pydantic_obj, list) and isinstance(expected, list):
+        assert len(maybe_pydantic_obj) == len(expected)
+        for left, right in zip(maybe_pydantic_obj, expected):
+            compare_pydantic_obj(left, right)
+    else:
+        assert maybe_pydantic_obj == expected, f"Expected {expected}, got {maybe_pydantic_obj}"
