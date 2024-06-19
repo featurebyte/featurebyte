@@ -7,6 +7,7 @@ import pytest
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from tests.unit.query_graph.util import to_dict
+from tests.util.helper import compare_pydantic_obj
 
 
 def extract_column_parameters(input_node, other_node_names=None, node_name=None):
@@ -907,8 +908,14 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
 
     # assign_2 is not included in the lineage as `dataframe["diff"] = 123` does not affect
     # final value of NEW_TIMESTAMP column
-    assert graph.get_node_by_name("assign_1").parameters == {"name": "diff", "value": None}
-    assert graph.get_node_by_name("assign_3").parameters == {"name": "NEW_TIMESTAMP", "value": None}
+    compare_pydantic_obj(
+        graph.get_node_by_name("assign_1").parameters,
+        expected={"name": "diff", "value": None},
+    )
+    compare_pydantic_obj(
+        graph.get_node_by_name("assign_3").parameters,
+        expected={"name": "NEW_TIMESTAMP", "value": None},
+    )
     # check on constant value assignment
     op_struct = graph.extract_operation_structure(
         node=dataframe["diff"].node, keep_all_source_columns=True
@@ -925,7 +932,10 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "dtype": "INT",
         }
     ]
-    assert graph.get_node_by_name("assign_2").parameters == {"name": "diff", "value": 123}
+    compare_pydantic_obj(
+        graph.get_node_by_name("assign_2").parameters,
+        expected={"name": "diff", "value": 123},
+    )
     assert op_struct.row_index_lineage == ("input_1",)
 
     # check frame

@@ -6,6 +6,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from tests.unit.query_graph.util import to_dict
+from tests.util.helper import compare_pydantic_obj
 
 
 def add_input_node(query_graph, input_details):
@@ -203,17 +204,20 @@ def test_graph_node__when_graph_node_is_output_node(input_details):
     # check nested graph edges (check all the unused nested nodes get pruned)
     nested_graph = pruned_graph.nodes_map["graph_1"].parameters.graph
     assert nested_graph.edges_map == {"proxy_input_1": ["assign_1"]}
-    assert nested_graph.nodes == [
-        {
-            "name": "proxy_input_1",
-            "type": "proxy_input",
-            "output_type": "frame",
-            "parameters": {"input_order": 0},
-        },
-        {
-            "name": "assign_1",
-            "type": "assign",
-            "output_type": "frame",
-            "parameters": {"name": "a", "value": 100},
-        },
-    ]
+    compare_pydantic_obj(
+        nested_graph.nodes,
+        expected=[
+            {
+                "name": "proxy_input_1",
+                "type": "proxy_input",
+                "output_type": "frame",
+                "parameters": {"input_order": 0},
+            },
+            {
+                "name": "assign_1",
+                "type": "assign",
+                "output_type": "frame",
+                "parameters": {"name": "a", "value": 100},
+            },
+        ],
+    )

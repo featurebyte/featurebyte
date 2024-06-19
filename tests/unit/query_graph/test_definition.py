@@ -8,7 +8,7 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
-from tests.util.helper import add_groupby_operation, add_project_operation
+from tests.util.helper import add_groupby_operation, add_project_operation, compare_pydantic_obj
 
 
 @pytest.fixture(name="query_graph_and_assign_nodes")
@@ -603,17 +603,20 @@ def test_extract_definition__lookup_on_assign(global_graph, lookup_assign_featur
     definition_lookup_node = output.graph.get_node_by_name("lookup_1")
 
     # check that input_column_names, feature_names, entity_column are remapped
-    assert definition_lookup_node.parameters.dict() == {
-        "input_column_names": ["column_c75864236e441dfade8987dcfaeec31166850b0c"],
-        "feature_names": [
-            "feat_97c9784cb6aee097a5fc6590c82aa72da6a46275_column_c75864236e441dfade8987dcfaeec31166850b0c"
-        ],
-        "entity_column": "column_2e659eb6bcbf83ef47f54dc5b316d5aa657b9fed",
-        "serving_name": "CUSTOMER_ID",
-        "entity_id": entity_id,
-        "scd_parameters": None,
-        "event_parameters": None,
-    }
+    compare_pydantic_obj(
+        definition_lookup_node.parameters,
+        expected={
+            "input_column_names": ["column_c75864236e441dfade8987dcfaeec31166850b0c"],
+            "feature_names": [
+                "feat_97c9784cb6aee097a5fc6590c82aa72da6a46275_column_c75864236e441dfade8987dcfaeec31166850b0c"
+            ],
+            "entity_column": "column_2e659eb6bcbf83ef47f54dc5b316d5aa657b9fed",
+            "serving_name": "CUSTOMER_ID",
+            "entity_id": entity_id,
+            "scd_parameters": None,
+            "event_parameters": None,
+        },
+    )
 
 
 def test_extract_definition__join_on_assign(global_graph, assign_join_feature_node):
@@ -625,26 +628,38 @@ def test_extract_definition__join_on_assign(global_graph, assign_join_feature_no
     definition_join_node = output.graph.get_node_by_name("join_1")
 
     # check that user specified column names are remapped
-    assert definition_join_node.parameters.dict() == {
-        "join_type": "inner",
-        "left_input_columns": ["column_e007333d31736e39a0c148e730a98bbc4cc6f823", "order_method"],
-        "left_on": "order_id",
-        "left_output_columns": [
-            "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-            "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_method",
-        ],
-        "metadata": None,
-        "right_input_columns": ["item_assign_col", "item_id", "item_name", "item_type", "order_id"],
-        "right_on": "order_id",
-        "right_output_columns": [
-            "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_assign_col",
-            "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_id",
-            "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_name",
-            "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_type",
-            "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_id",
-        ],
-        "scd_parameters": None,
-    }
+    compare_pydantic_obj(
+        definition_join_node.parameters,
+        expected={
+            "join_type": "inner",
+            "left_input_columns": [
+                "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "order_method",
+            ],
+            "left_on": "order_id",
+            "left_output_columns": [
+                "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_method",
+            ],
+            "metadata": None,
+            "right_input_columns": [
+                "item_assign_col",
+                "item_id",
+                "item_name",
+                "item_type",
+                "order_id",
+            ],
+            "right_on": "order_id",
+            "right_output_columns": [
+                "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_assign_col",
+                "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_id",
+                "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_name",
+                "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_item_type",
+                "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_id",
+            ],
+            "scd_parameters": None,
+        },
+    )
 
 
 def test_extract_definition__lag(query_graph_with_lag_node):
@@ -655,11 +670,14 @@ def test_extract_definition__lag(query_graph_with_lag_node):
     definition_lag_node = output.graph.get_node_by_name("lag_1")
 
     # check that input column parameters are removed
-    assert definition_lag_node.parameters.dict() == {
-        "entity_columns": [],
-        "timestamp_column": "",
-        "offset": 1,
-    }
+    compare_pydantic_obj(
+        definition_lag_node.parameters,
+        expected={
+            "entity_columns": [],
+            "timestamp_column": "",
+            "offset": 1,
+        },
+    )
 
 
 def test_extract_definition__forward_aggregate(query_graph_and_assign_node, event_table_details):
@@ -700,18 +718,21 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
 
     # check forward aggregate definition
     definition_forward_node = output.graph.get_node_by_name("forward_aggregate_1")
-    assert definition_forward_node.parameters.dict() == {
-        "agg_func": "sum",
-        "entity_ids": None,
-        "keys": ["column_cc5a2868a817488c4a97385f271ea8e459e297eb"],
-        "name": "target_fd6dbe7f77a1fad176370bdb7712f82d794c23af",
-        "offset": None,
-        "parent": "column_feea481253974aea85c8250764a2e885f03851de",
-        "serving_names": ["CUST_ID"],
-        "timestamp_col": "column_d53dbf58718c6cf914d5fa867d92c36d6baadbee",
-        "value_by": None,
-        "window": "604800s",
-    }
+    compare_pydantic_obj(
+        definition_forward_node.parameters,
+        expected={
+            "agg_func": "sum",
+            "entity_ids": None,
+            "keys": ["column_cc5a2868a817488c4a97385f271ea8e459e297eb"],
+            "name": "target_fd6dbe7f77a1fad176370bdb7712f82d794c23af",
+            "offset": None,
+            "parent": "column_feea481253974aea85c8250764a2e885f03851de",
+            "serving_names": ["CUST_ID"],
+            "timestamp_col": "column_d53dbf58718c6cf914d5fa867d92c36d6baadbee",
+            "value_by": None,
+            "window": "604800s",
+        },
+    )
     project_node = output.graph.get_node_by_name("project_3")
     assert project_node.parameters.dict() == {
         "columns": ["target_fd6dbe7f77a1fad176370bdb7712f82d794c23af"]
@@ -754,12 +775,15 @@ def test_extract_definition__join_feature(
 
     # check join feature definition
     definition_join_feature_node = output.graph.get_node_by_name("join_feature_1")
-    assert definition_join_feature_node.parameters.dict() == {
-        "feature_entity_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-        "name": "column_6a498e40eed9cef70637059e0102a855fad060e1",
-        "view_entity_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-        "view_point_in_time_column": "column_20c47fd6cb36426d79002d228b3ed70644b7800e",
-    }
+    compare_pydantic_obj(
+        definition_join_feature_node.parameters,
+        expected={
+            "feature_entity_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+            "name": "column_6a498e40eed9cef70637059e0102a855fad060e1",
+            "view_entity_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+            "view_point_in_time_column": "column_20c47fd6cb36426d79002d228b3ed70644b7800e",
+        },
+    )
 
 
 def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_table_input_node):
@@ -800,28 +824,31 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
 
     # check scd join definition
     definition_scd_join_node = output.graph.get_node_by_name("join_1")
-    assert definition_scd_join_node.parameters.dict() == {
-        "join_type": "left",
-        "left_input_columns": ["column_e007333d31736e39a0c148e730a98bbc4cc6f823", "cust_id"],
-        "left_on": "cust_id",
-        "left_output_columns": [
-            "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-            "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_cust_id",
-        ],
-        "metadata": None,
-        "right_input_columns": ["membership_status"],
-        "right_on": "cust_id",
-        "right_output_columns": [
-            "right_12df77dffe89c83f748c1f45ab846022d67d6ddd_membership_status"
-        ],
-        "scd_parameters": {
-            "current_flag_column": None,
-            "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
-            "end_timestamp_column": None,
-            "left_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-            "natural_key_column": None,
+    compare_pydantic_obj(
+        definition_scd_join_node.parameters,
+        expected={
+            "join_type": "left",
+            "left_input_columns": ["column_e007333d31736e39a0c148e730a98bbc4cc6f823", "cust_id"],
+            "left_on": "cust_id",
+            "left_output_columns": [
+                "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_cust_id",
+            ],
+            "metadata": None,
+            "right_input_columns": ["membership_status"],
+            "right_on": "cust_id",
+            "right_output_columns": [
+                "right_12df77dffe89c83f748c1f45ab846022d67d6ddd_membership_status"
+            ],
+            "scd_parameters": {
+                "current_flag_column": None,
+                "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
+                "end_timestamp_column": None,
+                "left_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "natural_key_column": None,
+            },
         },
-    }
+    )
 
 
 def test_extract_definition__scd_lookup(
@@ -845,21 +872,24 @@ def test_extract_definition__scd_lookup(
 
     # check scd lookup definition
     definition_scd_lookup_node = output.graph.get_node_by_name("lookup_1")
-    assert definition_scd_lookup_node.parameters.dict() == {
-        "entity_column": "cust_id",
-        "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
-        "event_parameters": None,
-        "feature_names": ["feat_28263b6bf3bd8a82f76fbbc4d5ee43c3d05833dc_membership_status"],
-        "input_column_names": ["membership_status"],
-        "scd_parameters": {
-            "current_flag_column": "is_record_current",
-            "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
-            "end_timestamp_column": None,
-            "natural_key_column": "cust_id",
-            "offset": None,
+    compare_pydantic_obj(
+        definition_scd_lookup_node.parameters,
+        expected={
+            "entity_column": "cust_id",
+            "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+            "event_parameters": None,
+            "feature_names": ["feat_28263b6bf3bd8a82f76fbbc4d5ee43c3d05833dc_membership_status"],
+            "input_column_names": ["membership_status"],
+            "scd_parameters": {
+                "current_flag_column": "is_record_current",
+                "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
+                "end_timestamp_column": None,
+                "natural_key_column": "cust_id",
+                "offset": None,
+            },
+            "serving_name": "CUSTOMER_ID",
         },
-        "serving_name": "CUSTOMER_ID",
-    }
+    )
 
 
 def test_extract_definition__event_lookup(global_graph, event_table_input_node, entity_id):
@@ -889,14 +919,17 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
 
     # check event lookup definition
     definition_event_lookup_node = output.graph.get_node_by_name("lookup_1")
-    assert definition_event_lookup_node.parameters.dict() == {
-        "entity_column": "order_id",
-        "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
-        "event_parameters": {
-            "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823"
+    compare_pydantic_obj(
+        definition_event_lookup_node.parameters,
+        expected={
+            "entity_column": "order_id",
+            "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+            "event_parameters": {
+                "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823"
+            },
+            "feature_names": ["feat_98d843176d15410f62195cdc6698331e04d6a1dd_order_method"],
+            "input_column_names": ["order_method"],
+            "scd_parameters": None,
+            "serving_name": "ORDER_ID",
         },
-        "feature_names": ["feat_98d843176d15410f62195cdc6698331e04d6a1dd_order_method"],
-        "input_column_names": ["order_method"],
-        "scd_parameters": None,
-        "serving_name": "ORDER_ID",
-    }
+    )

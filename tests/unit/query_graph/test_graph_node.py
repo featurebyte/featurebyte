@@ -11,6 +11,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from tests.unit.query_graph.util import to_dict
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.fixture(name="input_node_params")
@@ -44,8 +45,10 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
         "output_type": "frame",
     }
     assert nested_input_nodes == []
-    assert graph_node.output_node == expected_nested_input_node
-    assert graph_node.parameters.graph == {"nodes": [expected_nested_input_node], "edges": []}
+    compare_pydantic_obj(graph_node.output_node, expected=expected_nested_input_node)
+    compare_pydantic_obj(
+        graph_node.parameters.graph, expected={"nodes": [expected_nested_input_node], "edges": []}
+    )
     assert graph_node.parameters.output_node_name == "input_1"
 
     # test further operate on the graph node
@@ -55,11 +58,14 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node.output_node],
     )
-    assert graph_node.output_node == project_node
-    assert graph_node.parameters.graph == {
-        "nodes": [expected_nested_input_node, project_node],
-        "edges": [{"source": "input_1", "target": project_node.name}],
-    }
+    compare_pydantic_obj(graph_node.output_node, project_node)
+    compare_pydantic_obj(
+        graph_node.parameters.graph,
+        expected={
+            "nodes": [expected_nested_input_node, project_node.dict(by_alias=True)],
+            "edges": [{"source": "input_1", "target": project_node.name}],
+        },
+    )
 
 
 def test_graph_node_create__non_empty_input_nodes(input_node_params):
@@ -99,21 +105,24 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         }
         for i in range(2)
     ]
-    assert nested_input_nodes == expected_proxy_nodes
+    compare_pydantic_obj(nested_input_nodes, expected=expected_proxy_nodes)
     expected_nested_node = {
         "name": "add_1",
         "type": "add",
         "output_type": "series",
         "parameters": {"value": None, "right_op": False},
     }
-    assert graph_node.output_node == expected_nested_node
-    assert graph_node.parameters.graph == {
-        "nodes": expected_proxy_nodes + [expected_nested_node],
-        "edges": [
-            {"source": "proxy_input_1", "target": "add_1"},
-            {"source": "proxy_input_2", "target": "add_1"},
-        ],
-    }
+    compare_pydantic_obj(graph_node.output_node, expected=expected_nested_node)
+    compare_pydantic_obj(
+        graph_node.parameters.graph,
+        expected={
+            "nodes": expected_proxy_nodes + [expected_nested_node],
+            "edges": [
+                {"source": "proxy_input_1", "target": "add_1"},
+                {"source": "proxy_input_2", "target": "add_1"},
+            ],
+        },
+    )
     assert graph_node.parameters.output_node_name == "add_1"
 
     # insert graph node into the graph & check operation structure output
@@ -199,7 +208,7 @@ def nested_input_graph_fixture(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[inserted_graph_node],
     )
-    assert graph.edges == [{"source": "graph_1", "target": "add_1"}]
+    compare_pydantic_obj(graph.edges, expected=[{"source": "graph_1", "target": "add_1"}])
 
     # internal node names should not be included (node_names: input_1, project_1)
     operation_structure = graph.extract_operation_structure(
@@ -235,9 +244,10 @@ def nested_input_graph_fixture(input_node_params):
         "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
+
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=add_node)
-    assert pruned_graph == graph
+    compare_pydantic_obj(pruned_graph, expected=graph)
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
@@ -269,7 +279,7 @@ def nested_output_graph_fixture(input_node_params):
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested project node
     )
     inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[input_node])
-    assert graph.edges == [{"source": "input_1", "target": "graph_1"}]
+    compare_pydantic_obj(graph.edges, expected=[{"source": "input_1", "target": "graph_1"}])
 
     # internal node names should not be included (node_names: project_1, add_1)
     operation_structure = graph.extract_operation_structure(
@@ -305,9 +315,10 @@ def nested_output_graph_fixture(input_node_params):
         "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
+
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
-    assert pruned_graph == graph
+    compare_pydantic_obj(pruned_graph, expected=graph)
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
@@ -359,9 +370,13 @@ def deep_nested_graph_fixture(input_node_params):
     inserted_inner_graph = graph.nodes[0].parameters.graph
     inserted_deeper_graph = inserted_inner_graph.nodes[0].parameters.graph
     inserted_deepest_graph = inserted_deeper_graph.nodes[0].parameters.graph
-    assert inserted_inner_graph.edges == [{"source": "graph_1", "target": "add_1"}]
-    assert inserted_deeper_graph.edges == [{"source": "graph_1", "target": "project_1"}]
-    assert inserted_deepest_graph.edges == []
+    compare_pydantic_obj(
+        inserted_inner_graph.edges, expected=[{"source": "graph_1", "target": "add_1"}]
+    )
+    compare_pydantic_obj(
+        inserted_deeper_graph.edges, expected=[{"source": "graph_1", "target": "project_1"}]
+    )
+    compare_pydantic_obj(inserted_deepest_graph.edges, expected=[])
 
     # internal node names should not be included (node_names: project_1, add_1)
     operation_structure = graph.extract_operation_structure(
@@ -397,9 +412,10 @@ def deep_nested_graph_fixture(input_node_params):
         "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
+
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
-    assert pruned_graph == graph
+    compare_pydantic_obj(pruned_graph, expected=graph)
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
@@ -434,9 +450,9 @@ def test_flatten_nested_graph(
             },
         ],
     }
-    assert nested_input_graph.flatten()[0] == expected_flattened_graph
-    assert nested_output_graph.flatten()[0] == expected_flattened_graph
-    assert deep_nested_graph.flatten()[0] == expected_flattened_graph
+    compare_pydantic_obj(nested_input_graph.flatten()[0], expected=expected_flattened_graph)
+    compare_pydantic_obj(nested_output_graph.flatten()[0], expected=expected_flattened_graph)
+    compare_pydantic_obj(deep_nested_graph.flatten()[0], expected=expected_flattened_graph)
 
 
 def test_graph_node__redundant_graph_node(input_node_params):
@@ -653,4 +669,6 @@ def test_graph_node_keep_only_required_target_columns(input_node_params):
     pruned_graph, _ = graph.prune(target_node=filter_node)
     graph_node = pruned_graph.get_node_by_name("graph_1")
     assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1", "assign_1"]
-    assert graph_node.parameters.graph.edges == [{"source": "input_1", "target": "assign_1"}]
+    compare_pydantic_obj(
+        graph_node.parameters.graph.edges, expected=[{"source": "input_1", "target": "assign_1"}]
+    )

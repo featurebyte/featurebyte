@@ -12,7 +12,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 from tests.unit.query_graph.util import to_dict
-from tests.util.helper import add_groupby_operation
+from tests.util.helper import add_groupby_operation, compare_pydantic_obj
 
 
 def test_prune__redundant_assign_nodes(dataframe):
@@ -35,12 +35,15 @@ def test_prune__redundant_assign_nodes(dataframe):
         "project_2": ["mul_1"],
         "mul_1": ["assign_1"],
     }
-    assert pruned_graph.nodes_map["assign_1"] == {
-        "name": "assign_1",
-        "type": "assign",
-        "parameters": {"name": "target", "value": None},
-        "output_type": "frame",
-    }
+    compare_pydantic_obj(
+        pruned_graph.nodes_map["assign_1"],
+        expected={
+            "name": "assign_1",
+            "type": "assign",
+            "parameters": {"name": "target", "value": None},
+            "output_type": "frame",
+        },
+    )
     assert mapped_node.name == "assign_1"
 
 
@@ -52,12 +55,15 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     dataframe["VALUE"] = dataframe["CUST_ID"] * 10
     # convert the dataframe into dictionary & compare some attribute values (non-aggressive pruning)
     pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
-    assert pruned_graph.edges == [
-        {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "mul_1"},
-        {"source": "input_1", "target": "assign_1"},
-        {"source": "mul_1", "target": "assign_1"},
-    ]
+    compare_pydantic_obj(
+        pruned_graph.edges,
+        expected=[
+            {"source": "input_1", "target": "project_1"},
+            {"source": "project_1", "target": "mul_1"},
+            {"source": "input_1", "target": "assign_1"},
+            {"source": "mul_1", "target": "assign_1"},
+        ],
+    )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.nodes_map["assign_1"].parameters.dict() == {"name": "VALUE", "value": None}
     assert mapped_node.name == "assign_1"
@@ -163,12 +169,15 @@ def test_join_feature_node_is_prunable(global_graph, order_size_feature_join_nod
     )
     pruned_graph, _ = global_graph.prune(target_node=project_ts)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
-    assert pruned_graph.get_node_by_name("project_1") == {
-        "name": "project_1",
-        "type": "project",
-        "output_type": "series",
-        "parameters": {"columns": ["ts"]},
-    }
+    compare_pydantic_obj(
+        pruned_graph.get_node_by_name("project_1"),
+        expected={
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {"columns": ["ts"]},
+        },
+    )
 
 
 def test_join_with_assign_node__join_node_parameters_pruning(
@@ -290,7 +299,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
     # check pruned join node
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
-    assert pruned_join_node.parameters == join_node_parameters
+    compare_pydantic_obj(pruned_join_node.parameters, expected=join_node_parameters)
 
     # check aggressive mode (node could be removed and its parameters could be pruned)
     pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node)
@@ -318,7 +327,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "scd_parameters": None,
         "metadata": join_node_parameters["metadata"],
     }
-    assert pruned_join_node.parameters == expected_pruned_join_node_params
+    compare_pydantic_obj(pruned_join_node.parameters, expected_pruned_join_node_params)
 
     # check pruning using target columns
     pruned_graph, _, _ = prune_query_graph(
@@ -329,7 +338,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         ),
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
-    assert pruned_join_node.parameters == expected_pruned_join_node_params
+    compare_pydantic_obj(pruned_join_node.parameters, expected=expected_pruned_join_node_params)
 
 
 def test_join_is_prunable(
