@@ -9,7 +9,7 @@ from typing import Any, List, Tuple
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
-from featurebyte.models import EventTableModel
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.event_table import EventTableList, EventTableServiceUpdate
