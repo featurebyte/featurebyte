@@ -172,12 +172,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
         update_response_dict.pop("updated_at")
 
         # default_feature_job_setting should be updated
-        assert update_response_dict.pop("default_feature_job_setting") == {
-            **data_update_dict["default_feature_job_setting"],
-            # old fields
-            "frequency": data_model_dict["default_feature_job_setting"]["period"],
-            "time_modulo_frequency": data_model_dict["default_feature_job_setting"]["offset"],
-        }
+        assert (
+            update_response_dict.pop("default_feature_job_setting")
+            == data_update_dict["default_feature_job_setting"]
+        )
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
@@ -215,18 +213,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "period": "1800s",
                 "offset": "300s",
                 "execution_buffer": "0s",
-                # old fields
-                "frequency": "1800s",
-                "time_modulo_frequency": "300s",
             },
             {
                 "blind_spot": "600s",
                 "period": "1800s",
                 "offset": "300s",
                 "execution_buffer": "0s",
-                # old fields
-                "frequency": "1800s",
-                "time_modulo_frequency": "300s",
             },
         ]
 
@@ -259,12 +251,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
         data.pop("updated_at")
 
         # default_feature_job_setting should be updated
-        assert data.pop("default_feature_job_setting") == {
-            **data_update_dict["default_feature_job_setting"],
-            # old fields
-            "frequency": data_model_dict["default_feature_job_setting"]["period"],
-            "time_modulo_frequency": data_model_dict["default_feature_job_setting"]["offset"],
-        }
+        assert (
+            data.pop("default_feature_job_setting")
+            == data_update_dict["default_feature_job_setting"]
+        )
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")

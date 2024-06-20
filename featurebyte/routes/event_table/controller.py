@@ -9,13 +9,10 @@ from typing import Any, List, Tuple
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_table import BaseTableDocumentController
-from featurebyte.schema.backward_compatible.table import (
-    EventTableListResponse,
-    EventTableModelResponse,
-)
-from featurebyte.schema.event_table import EventTableServiceUpdate
+from featurebyte.schema.event_table import EventTableList, EventTableServiceUpdate
 from featurebyte.schema.info import EventTableInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -34,13 +31,13 @@ from featurebyte.service.target import TargetService
 
 
 class EventTableController(
-    BaseTableDocumentController[EventTableModelResponse, EventTableService, EventTableListResponse]
+    BaseTableDocumentController[EventTableModel, EventTableService, EventTableList]
 ):
     """
     EventTable controller
     """
 
-    paginated_document_class = EventTableListResponse
+    paginated_document_class = EventTableList
     document_update_schema_class = EventTableServiceUpdate
     semantic_tag_rules = {
         **BaseTableDocumentController.semantic_tag_rules,

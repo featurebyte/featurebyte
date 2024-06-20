@@ -11,15 +11,13 @@ from bson.objectid import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
 from featurebyte.models.dimension_table import DimensionTableModel
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
-from featurebyte.schema.backward_compatible.table import (
-    EventTableModelResponse,
-    SCDTableModelResponse,
-)
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
 from featurebyte.service.base_table_document import DocumentCreate
 from featurebyte.service.dimension_table import DimensionTableService
@@ -39,10 +37,10 @@ from featurebyte.service.target import TargetService
 
 TableDocumentT = TypeVar(
     "TableDocumentT",
-    EventTableModelResponse,
+    EventTableModel,
     ItemTableModel,
     DimensionTableModel,
-    SCDTableModelResponse,
+    SCDTableModel,
 )
 TableDocumentServiceT = TypeVar(
     "TableDocumentServiceT",
