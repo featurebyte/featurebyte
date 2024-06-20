@@ -774,8 +774,5 @@ def test_change_view__aggregate_over(saved_scd_table, cust_id_entity):
             "offset": "10800s",
             "period": "86400s",
             "execution_buffer": "0s",
-            # backward compatibility
-            "frequency": "86400s",
-            "time_modulo_frequency": "10800s",
         },
     }

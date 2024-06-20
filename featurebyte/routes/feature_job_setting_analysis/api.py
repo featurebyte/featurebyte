@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -25,14 +26,11 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.backward_compatible.feature_job_setting_analysis import (
-    FeatureJobSettingAnalysisListResponse,
-    FeatureJobSettingAnalysisModelResponse,
-)
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
+    FeatureJobSettingAnalysisList,
 )
 from featurebyte.schema.info import FeatureJobSettingAnalysisInfo
 from featurebyte.schema.task import Task
@@ -64,7 +62,7 @@ async def create_feature_job_setting_analysis(
     return task_submit
 
 
-@router.get("", response_model=FeatureJobSettingAnalysisListResponse)
+@router.get("", response_model=FeatureJobSettingAnalysisList)
 async def list_feature_job_setting_analysis(
     request: Request,
     page: int = PageQuery,
@@ -74,7 +72,7 @@ async def list_feature_job_setting_analysis(
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
     event_table_id: Optional[PydanticObjectId] = None,
-) -> FeatureJobSettingAnalysisListResponse:
+) -> FeatureJobSettingAnalysisList:
     """
     List Feature Job Setting Analysis
     """
@@ -83,7 +81,7 @@ async def list_feature_job_setting_analysis(
         params["query_filter"] = {"event_table_id": event_table_id}
 
     controller = request.state.app_container.feature_job_setting_analysis_controller
-    analysis_list: FeatureJobSettingAnalysisListResponse = await controller.list(
+    analysis_list: FeatureJobSettingAnalysisList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -94,18 +92,16 @@ async def list_feature_job_setting_analysis(
     return analysis_list
 
 
-@router.get(
-    "/{feature_job_setting_analysis_id}", response_model=FeatureJobSettingAnalysisModelResponse
-)
+@router.get("/{feature_job_setting_analysis_id}", response_model=FeatureJobSettingAnalysisModel)
 async def get_feature_job_setting_analysis(
     request: Request,
     feature_job_setting_analysis_id: PydanticObjectId,
-) -> FeatureJobSettingAnalysisModelResponse:
+) -> FeatureJobSettingAnalysisModel:
     """
     Retrieve Feature Job Setting Analysis
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
-    analysis: FeatureJobSettingAnalysisModelResponse = await controller.get(
+    analysis: FeatureJobSettingAnalysisModel = await controller.get(
         document_id=feature_job_setting_analysis_id,
     )
     return analysis
@@ -190,18 +186,18 @@ async def run_backtest(
 
 @router.patch(
     "/{feature_job_setting_analysis_id}/description",
-    response_model=FeatureJobSettingAnalysisModelResponse,
+    response_model=FeatureJobSettingAnalysisModel,
 )
 async def update_feature_job_setting_analysis_description(
     request: Request,
     feature_job_setting_analysis_id: PydanticObjectId,
     data: DescriptionUpdate,
-) -> FeatureJobSettingAnalysisModelResponse:
+) -> FeatureJobSettingAnalysisModel:
     """
     Update feature_job_setting_analysis description
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
-    feature_job_setting_analysis: FeatureJobSettingAnalysisModelResponse = (
+    feature_job_setting_analysis: FeatureJobSettingAnalysisModel = (
         await controller.update_description(
             document_id=feature_job_setting_analysis_id,
             description=data.description,

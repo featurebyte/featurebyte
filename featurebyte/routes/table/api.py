@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
@@ -19,7 +20,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.backward_compatible.table import ProxyTableModelResponse, TableListResponse
+from featurebyte.schema.table import TableList
 
 router = APIRouter(prefix="/table")
 
@@ -33,7 +34,7 @@ class TableRouter(BaseRouter):
         super().__init__(router=router)
 
 
-@router.get("", response_model=TableListResponse)
+@router.get("", response_model=TableList)
 async def list_table(
     request: Request,
     page: int = PageQuery,
@@ -42,12 +43,12 @@ async def list_table(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-) -> TableListResponse:
+) -> TableList:
     """
     List Table
     """
     controller = request.state.app_container.table_controller
-    table_list: TableListResponse = await controller.list(
+    table_list: TableList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -57,13 +58,13 @@ async def list_table(
     return table_list
 
 
-@router.get("/{table_id}", response_model=ProxyTableModelResponse)
-async def get_table(request: Request, table_id: PydanticObjectId) -> ProxyTableModelResponse:
+@router.get("/{table_id}", response_model=ProxyTableModel)
+async def get_table(request: Request, table_id: PydanticObjectId) -> ProxyTableModel:
     """
     Retrieve Table
     """
     controller = request.state.app_container.table_controller
-    table: ProxyTableModelResponse = await controller.get(
+    table: ProxyTableModel = await controller.get(
         document_id=table_id,
     )
     return table
