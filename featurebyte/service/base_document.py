@@ -244,6 +244,34 @@ class BaseDocumentService(
         -------
         Document
         """
+        document_dict = await self._get_document_dict_to_insert(data)
+        insert_id = await self.persistent.insert_one(
+            collection_name=self.collection_name,
+            document=document_dict,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        assert insert_id == document_dict["_id"]
+        return await self.get_document(document_id=insert_id)
+
+    async def create_many(self, data_list: List[DocumentCreateSchema]) -> None:
+        """
+        Create multiple documents in the persistent
+        """
+        documents = []
+        for data in data_list:
+            document_dict = await self._get_document_dict_to_insert(data)
+            documents.append(document_dict)
+
+        insert_ids = await self.persistent.insert_many(
+            collection_name=self.collection_name,
+            documents=documents,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        assert set(insert_ids) == set([doc["_id"] for doc in documents])
+
+    async def _get_document_dict_to_insert(self, data: DocumentCreateSchema) -> Dict[str, Any]:
         kwargs = self._extract_additional_creation_kwargs(data)
         if self.is_catalog_specific:
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
@@ -261,46 +289,7 @@ class BaseDocumentService(
             document=document,
             document_class=self.document_class,
         )
-        insert_id = await self.persistent.insert_one(
-            collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
-        assert insert_id == document.id
-        return await self.get_document(document_id=insert_id)
-
-    async def create_many(self, data_list: List[DocumentCreateSchema]) -> None:
-        """
-        Create multiple documents in the persistent
-        """
-        documents = []
-        for data in data_list:
-            kwargs = self._extract_additional_creation_kwargs(data)
-            if self.is_catalog_specific:
-                kwargs = {**kwargs, "catalog_id": self.catalog_id}
-            document = self.document_class(
-                **{
-                    **data.dict(by_alias=True),
-                    **kwargs,
-                    "user_id": self.user.id,
-                },
-            )
-            # check any conflict with existing documents
-            await self._check_document_unique_constraints(
-                document=document,
-                document_class=self.document_class,
-            )
-            document_dict = document.dict(by_alias=True)
-            documents.append(document_dict)
-
-        insert_ids = await self.persistent.insert_many(
-            collection_name=self.collection_name,
-            documents=documents,
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
-        assert set(insert_ids) == set([doc["_id"] for doc in documents])
+        return document.dict(by_alias=True)
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
