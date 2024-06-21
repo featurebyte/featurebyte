@@ -563,6 +563,7 @@ def get_training_events_and_expected_result():
 @pytest.mark.asyncio
 async def test_get_historical_features(
     session,
+    event_table,
     data_source,
     feature_group,
     feature_group_per_category,
@@ -573,6 +574,7 @@ async def test_get_historical_features(
     """
     Test getting historical features from FeatureList
     """
+    event_view = event_table.get_view()
     _ = user_entity, new_user_id_entity
     input_format, output_format = in_out_formats
     assert input_format in {"dataframe", "table", "uploaded_table"}

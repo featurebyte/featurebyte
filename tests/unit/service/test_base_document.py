@@ -460,9 +460,27 @@ async def test_delete_document(document_service):
     # delete document
     await document_service.delete_document(document_id=document.id)
 
-    # try to delete document - expect an error
+    # try to get document - expect an error
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document.id)
+
+
+@pytest.mark.asyncio
+async def test_delete_many(document_service):
+    """Test delete document"""
+    # create document
+    documents = [
+        await document_service.create_document(data=Document()),
+        await document_service.create_document(data=Document()),
+    ]
+
+    # delete documents
+    await document_service.delete_many(query_filter={"_id": {"$in": [doc.id for doc in documents]}})
+
+    # try to get document - expect an error
+    for document in documents:
+        with pytest.raises(DocumentNotFoundError):
+            await document_service.get_document(document_id=document.id)
 
 
 @pytest_asyncio.fixture(name="document_with_block_modification")

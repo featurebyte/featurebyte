@@ -445,13 +445,58 @@ class BaseDocumentService(
         )
 
         # remove remote attributes
+        await self._delete_remote_attributes_in_storage(document_dict)
+        return int(num_of_records_deleted)
+
+    async def delete_many(
+        self,
+        query_filter: QueryFilter,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """
+        Delete multiple documents identified by their ids
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Filter to retrieve documents to be deleted
+        use_raw_query_filter: bool
+            Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments
+        """
+        query_filter = self.construct_list_query_filter(
+            query_filter=query_filter,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+
+        document_dicts = []
+        async for document_dict in self.list_documents_as_dict_iterator(query_filter=query_filter):
+            # check if document is modifiable
+            self._check_document_modifiable(document=document_dict)
+            document_dicts.append(document_dict)
+
+        num_of_records_deleted = await self.persistent.delete_many(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+
+        for document_dict in document_dicts:
+            await self._delete_remote_attributes_in_storage(document_dict)
+
+        return int(num_of_records_deleted)
+
+    async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
         for (
             remote_path
         ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
             document_dict
         ):
             await self.storage.try_delete_if_exists(remote_path)
-        return int(num_of_records_deleted)
 
     def construct_list_query_filter(
         self,
