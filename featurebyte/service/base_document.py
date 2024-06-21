@@ -257,6 +257,11 @@ class BaseDocumentService(
     async def create_many(self, data_list: List[DocumentCreateSchema]) -> None:
         """
         Create multiple documents in the persistent
+
+        Parameters
+        ----------
+        data_list: List[DocumentCreateSchema]
+            Document creation payload objects
         """
         documents = []
         for data in data_list:
@@ -269,7 +274,7 @@ class BaseDocumentService(
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
-        assert set(insert_ids) == set([doc["_id"] for doc in documents])
+        assert set(insert_ids) == {doc["_id"] for doc in documents}
 
     async def _get_document_dict_to_insert(self, data: DocumentCreateSchema) -> Dict[str, Any]:
         kwargs = self._extract_additional_creation_kwargs(data)
@@ -486,6 +491,11 @@ class BaseDocumentService(
             Use only provided query filter
         kwargs: Any
             Additional keyword arguments
+
+        Returns
+        -------
+        int
+            number of records deleted
         """
         query_filter = self.construct_list_query_filter(
             query_filter=query_filter,
