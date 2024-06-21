@@ -528,7 +528,7 @@ async def test_create_many(document_service):
 
 
 @pytest.mark.asyncio
-async def test_create_many(document_service):
+async def test_create_many_empty_list(document_service):
     """Test calling create_many with empty list should not error"""
     await document_service.create_many([])
 
