@@ -467,7 +467,7 @@ async def test_delete_document(document_service):
 
 @pytest.mark.asyncio
 async def test_delete_many(document_service):
-    """Test delete document"""
+    """Test delete documents using delete_many"""
     # create document
     documents = [
         await document_service.create_document(data=Document()),
@@ -481,6 +481,19 @@ async def test_delete_many(document_service):
     for document in documents:
         with pytest.raises(DocumentNotFoundError):
             await document_service.get_document(document_id=document.id)
+
+
+@pytest.mark.asyncio
+async def test_create_many(document_service):
+    """Test create documents using create_many"""
+    data_list = [
+        Document(),
+        Document(),
+    ]
+    await document_service.create_many(data_list)
+    for data in data_list:
+        retrieved = await document_service.get_document(data.id)
+        assert retrieved.id == data.id
 
 
 @pytest_asyncio.fixture(name="document_with_block_modification")
