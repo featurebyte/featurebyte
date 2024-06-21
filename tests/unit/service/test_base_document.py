@@ -95,6 +95,24 @@ def non_auditable_document_service_fixture(user, persistent, storage):
     )
 
 
+@pytest.fixture(name="to_use_create_many", params=[False, True])
+def to_use_create_many_fixture(request):
+    """
+    Fixture to determine whether to use create_many to create document
+    """
+    return request.param
+
+
+async def create_document(document_service, to_use_create_many, data):
+    """
+    Helper function to create a document
+    """
+    if to_use_create_many:
+        await document_service.create_many([data])
+        return await document_service.get_document(data.id)
+    return await document_service.create_document(data)
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "query_filter, conflict_signature, resolution_signature, expected_msg",
@@ -385,11 +403,18 @@ def test_construct_list_query_filter(kwargs, expected):
 
 
 @pytest.mark.asyncio
-async def test_list_documents_iterator(document_service):
+async def test_list_documents_iterator(document_service, to_use_create_many):
     """Test list document iterator"""
     total = 15
+    docs = []
     for _ in range(total):
-        await document_service.create_document(data=Document())
+        docs.append(Document())
+
+    if to_use_create_many:
+        await document_service.create_many(data_list=docs)
+    else:
+        for data in docs:
+            await document_service.create_document(data=data)
 
     list_results = await document_service.list_documents_as_dict(
         page_size=0, page=1, query_filter={}
@@ -430,10 +455,10 @@ async def test_list_documents_iterator(document_service):
 
 
 @pytest.mark.asyncio
-async def test_update_document_using_alias(document_service):
+async def test_update_document_using_alias(document_service, to_use_create_many):
     """Test update document using alias"""
     # create document
-    document = await document_service.create_document(data=Document(name="name1"))
+    document = await create_document(document_service, to_use_create_many, Document(name="name1"))
     assert document.name == "name1"
 
     class UpdateDocument(BaseDocumentServiceUpdateSchema):
@@ -452,24 +477,61 @@ async def test_update_document_using_alias(document_service):
 
 
 @pytest.mark.asyncio
-async def test_delete_document(document_service):
+async def test_delete_document(document_service, to_use_create_many):
     """Test delete document"""
     # create document
-    document = await document_service.create_document(data=Document())
+    document = await create_document(document_service, to_use_create_many, data=Document())
 
     # delete document
     await document_service.delete_document(document_id=document.id)
 
-    # try to delete document - expect an error
+    # try to get document - expect an error
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document.id)
 
 
+@pytest.mark.asyncio
+async def test_delete_many(document_service):
+    """Test delete documents using delete_many"""
+    # create documents
+    documents = [
+        await document_service.create_document(data=Document()),
+        await document_service.create_document(data=Document()),
+        await document_service.create_document(data=Document()),
+    ]
+
+    # delete documents except the last one
+    await document_service.delete_many(
+        query_filter={"_id": {"$in": [doc.id for doc in documents[:2]]}}
+    )
+
+    # try to get document - expect an error
+    for document in documents[:2]:
+        with pytest.raises(DocumentNotFoundError):
+            await document_service.get_document(document_id=document.id)
+
+    # last document still exist
+    await document_service.get_document(document_id=documents[-1].id)
+
+
+@pytest.mark.asyncio
+async def test_create_many(document_service):
+    """Test create documents using create_many"""
+    data_list = [
+        Document(),
+        Document(),
+    ]
+    await document_service.create_many(data_list)
+    for data in data_list:
+        retrieved = await document_service.get_document(data.id)
+        assert retrieved.id == data.id
+
+
 @pytest_asyncio.fixture(name="document_with_block_modification")
-async def document_with_block_modification_fixture(document_service):
+async def document_with_block_modification_fixture(document_service, to_use_create_many):
     """Create a document with block_modification_by"""
     # create document
-    document = await document_service.create_document(data=Document())
+    document = await create_document(document_service, to_use_create_many, Document())
 
     # add block_by_modification
     reference_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())
@@ -647,12 +709,12 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent, storage)
 
 
 @pytest.mark.asyncio
-async def test_non_auditable_document_service(non_auditable_document_service):
+async def test_non_auditable_document_service(non_auditable_document_service, to_use_create_many):
     """Test modifying non-auditable documents"""
     document = NonAuditableDocument()
     service = non_auditable_document_service
 
-    await service.create_document(data=document)
+    await create_document(service, to_use_create_many, document)
     await service.update_document(
         document_id=document.id, data=NonAuditableDocument(name="new_name")
     )
