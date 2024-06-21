@@ -263,6 +263,9 @@ class BaseDocumentService(
         data_list: List[DocumentCreateSchema]
             Document creation payload objects
         """
+        if not data_list:
+            return
+
         documents = []
         for data in data_list:
             document_dict = await self._get_document_dict_to_insert(data)

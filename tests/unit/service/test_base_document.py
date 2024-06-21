@@ -527,6 +527,12 @@ async def test_create_many(document_service):
         assert retrieved.id == data.id
 
 
+@pytest.mark.asyncio
+async def test_create_many(document_service):
+    """Test calling create_many with empty list should not error"""
+    await document_service.create_many([])
+
+
 @pytest_asyncio.fixture(name="document_with_block_modification")
 async def document_with_block_modification_fixture(document_service, to_use_create_many):
     """Create a document with block_modification_by"""
