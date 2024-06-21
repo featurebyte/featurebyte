@@ -129,6 +129,11 @@ jobs:
       matrix:
         python-version:
           - 3.10.14
+        pytest-group:
+          - 1
+          - 2
+    env:
+      PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -160,10 +165,13 @@ jobs:
           name: hive-udf
           path: featurebyte/sql/spark/
       - name: Run tests
+        env:
+          PYTEST_GROUP: ${{ matrix.pytest-group }}
         run: task test-integration-snowflake
       - name: Renaming test assets
         run: |
-          mv .coverage .coverage.1
+          mv .coverage .coverage.1.${{ matrix.pytest-group }}
+          mv pytest.xml.1 pytest.xml.1.${{ matrix.pytest-group }}
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
