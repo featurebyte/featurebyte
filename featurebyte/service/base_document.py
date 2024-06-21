@@ -244,6 +244,39 @@ class BaseDocumentService(
         -------
         Document
         """
+        document_dict = await self._get_document_dict_to_insert(data)
+        insert_id = await self.persistent.insert_one(
+            collection_name=self.collection_name,
+            document=document_dict,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        assert insert_id == document_dict["_id"]
+        return await self.get_document(document_id=insert_id)
+
+    async def create_many(self, data_list: List[DocumentCreateSchema]) -> None:
+        """
+        Create multiple documents in the persistent
+
+        Parameters
+        ----------
+        data_list: List[DocumentCreateSchema]
+            Document creation payload objects
+        """
+        documents = []
+        for data in data_list:
+            document_dict = await self._get_document_dict_to_insert(data)
+            documents.append(document_dict)
+
+        insert_ids = await self.persistent.insert_many(
+            collection_name=self.collection_name,
+            documents=documents,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+        assert set(insert_ids) == {doc["_id"] for doc in documents}
+
+    async def _get_document_dict_to_insert(self, data: DocumentCreateSchema) -> Dict[str, Any]:
         kwargs = self._extract_additional_creation_kwargs(data)
         if self.is_catalog_specific:
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
@@ -261,14 +294,7 @@ class BaseDocumentService(
             document=document,
             document_class=self.document_class,
         )
-        insert_id = await self.persistent.insert_one(
-            collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=self.user.id,
-            disable_audit=self.should_disable_audit,
-        )
-        assert insert_id == document.id
-        return await self.get_document(document_id=insert_id)
+        return document.dict(by_alias=True)
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
@@ -445,13 +471,63 @@ class BaseDocumentService(
         )
 
         # remove remote attributes
+        await self._delete_remote_attributes_in_storage(document_dict)
+        return int(num_of_records_deleted)
+
+    async def delete_many(
+        self,
+        query_filter: QueryFilter,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """
+        Delete multiple documents
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Filter to retrieve documents to be deleted
+        use_raw_query_filter: bool
+            Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        int
+            number of records deleted
+        """
+        query_filter = self.construct_list_query_filter(
+            query_filter=query_filter,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+
+        document_dicts = []
+        async for document_dict in self.list_documents_as_dict_iterator(query_filter=query_filter):
+            # check if document is modifiable
+            self._check_document_modifiable(document=document_dict)
+            document_dicts.append(document_dict)
+
+        num_of_records_deleted = await self.persistent.delete_many(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
+
+        for document_dict in document_dicts:
+            await self._delete_remote_attributes_in_storage(document_dict)
+
+        return int(num_of_records_deleted)
+
+    async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
         for (
             remote_path
         ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
             document_dict
         ):
             await self.storage.try_delete_if_exists(remote_path)
-        return int(num_of_records_deleted)
 
     def construct_list_query_filter(
         self,
