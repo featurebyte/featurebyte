@@ -468,19 +468,25 @@ async def test_delete_document(document_service):
 @pytest.mark.asyncio
 async def test_delete_many(document_service):
     """Test delete documents using delete_many"""
-    # create document
+    # create documents
     documents = [
+        await document_service.create_document(data=Document()),
         await document_service.create_document(data=Document()),
         await document_service.create_document(data=Document()),
     ]
 
-    # delete documents
-    await document_service.delete_many(query_filter={"_id": {"$in": [doc.id for doc in documents]}})
+    # delete documents except the last one
+    await document_service.delete_many(
+        query_filter={"_id": {"$in": [doc.id for doc in documents[:2]]}}
+    )
 
     # try to get document - expect an error
-    for document in documents:
+    for document in documents[:2]:
         with pytest.raises(DocumentNotFoundError):
             await document_service.get_document(document_id=document.id)
+
+    # last document still exist
+    await document_service.get_document(document_id=documents[-1].id)
 
 
 @pytest.mark.asyncio
