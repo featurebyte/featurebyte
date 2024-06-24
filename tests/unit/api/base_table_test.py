@@ -7,6 +7,7 @@ import textwrap
 import pandas as pd
 import pytest
 
+from featurebyte import Entity
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
 from featurebyte.models.feature_store import TableStatus
@@ -218,3 +219,15 @@ class BaseTableTestSuite:
         """Test special columns"""
         table_model = table_under_test.cached_model
         assert table_model.special_columns == self.expected_special_columns
+
+    def test_table_primary_key_entity_ids(self, table_under_test):
+        """Test table primary key entity ids"""
+        table_model = table_under_test.cached_model
+        assert table_model.table_primary_key_entity_ids == []
+
+        # test when primary key entity is set
+        primary_key_entity = Entity.create(name="id_col", serving_names=["id_col"])
+        primary_key_col = table_under_test.primary_key_columns[0]
+        table_under_test[primary_key_col].as_entity(primary_key_entity.name)
+        table_model = table_under_test.cached_model
+        assert table_model.table_primary_key_entity_ids == [primary_key_entity.id]

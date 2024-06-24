@@ -180,6 +180,21 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         return self._table_data_class(**self.dict(by_alias=True))
 
     @property
+    def table_primary_key_entity_ids(self) -> List[PydanticObjectId]:
+        """
+        List of entity IDs that are primary key in the table model
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return [
+            col.entity_id
+            for col in self.columns_info
+            if col.entity_id and col.name in self.primary_key_columns
+        ]
+
+    @property
     @abstractmethod
     def primary_key_columns(self) -> List[str]:
         """
