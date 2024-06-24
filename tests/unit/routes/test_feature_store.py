@@ -952,3 +952,20 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response_dict["user_id"] == str(user_id)
         assert response_dict["name"] == self.payload["name"]
         assert response_dict["details"]["warehouse"] == update_payload["warehouse"]
+
+    def test_update_database_details_422(
+        self, test_api_client_persistent, create_success_response, snowflake_execute_query
+    ):
+        """Test update database details (failure)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        snowflake_execute_query.side_effect = ProgrammingError("Some Error")
+
+        update_payload = {
+            "warehouse": "new_warehouse",
+        }
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}/details", json=update_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json() == {"detail": "Invalid details: Some Error"}

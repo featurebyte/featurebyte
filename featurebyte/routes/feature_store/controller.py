@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -470,6 +471,11 @@ class FeatureStoreController(
         -------
         FeatureStoreModel
             Updated feature store document
+
+        Raises
+        ------
+        DataWarehouseConnectionError
+            If invalid details
         """
         document: FeatureStoreModel = await self.service.get_document(feature_store_id)
         # ensure fields are updatable
@@ -481,7 +487,13 @@ class FeatureStoreController(
         # test connection
         update_data = DatabaseDetailsServiceUpdate(details=updated_details)
         document.details = update_data.details
-        _ = await self.session_manager_service.get_feature_store_session(feature_store=document)
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store=document, skip_validation=True
+        )
+        try:
+            await session.list_databases()
+        except session.no_schema_error as exc:
+            raise DataWarehouseConnectionError(f"Invalid details: {exc}") from exc
 
         await self.service.update_document(document_id=feature_store_id, data=update_data)
         return await self.service.get_document(feature_store_id)

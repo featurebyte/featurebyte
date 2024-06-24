@@ -12,14 +12,6 @@ from featurebyte.service.offline_store_feature_table_comment import ColumnCommen
 from tests.util.helper import deploy_feature, deploy_feature_ids
 
 
-@pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """
-    Enable feast integration for all tests in this module
-    """
-    _ = enable_feast_integration
-
-
 @pytest.fixture(autouse=True)
 def mock_service_get_version():
     """

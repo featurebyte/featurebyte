@@ -36,6 +36,7 @@ class SessionManagerService:
         get_credential: Any = None,
         user_override: Optional[User] = None,
         timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        skip_validation: bool = False,
     ) -> BaseSession:
         """
         Get session for feature store
@@ -50,6 +51,8 @@ class SessionManagerService:
             User object to override
         timeout: float
             timeout for session creation
+        skip_validation: bool
+            Skip validation
 
         Returns
         -------
@@ -76,9 +79,10 @@ class SessionManagerService:
             credentials = {feature_store.name: credential}
             session_manager = SessionManager(credentials=credentials)
             session = await session_manager.get_session(feature_store, timeout=timeout)
-            await self.session_validator_service.validate_feature_store_exists(
-                feature_store.details
-            )
+            if not skip_validation:
+                await self.session_validator_service.validate_feature_store_exists(
+                    feature_store.details
+                )
             return session
         except ValidationError as exc:
             raise CredentialsError(

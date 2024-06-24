@@ -7,8 +7,10 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.models.credential import CredentialModel, UsernamePasswordCredential
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -52,6 +54,27 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         ),
     ]
 
+    @pytest_asyncio.fixture(autouse=True)
+    async def insert_credential(self, persistent, user_id):
+        """
+        Calling this fixture will insert the credential into the database.
+        """
+        credential_model = CredentialModel(
+            name="sf_featurestore",
+            feature_store_id=ObjectId("646f6c190ed28a5271fb02a1"),
+            database_credential=UsernamePasswordCredential(
+                username="sf_user",
+                password="sf_password",
+            ),
+            user_id=user_id,
+        )
+        credential_model.encrypt_credentials()
+        await persistent.insert_one(
+            collection_name=CredentialModel.collection_name(),
+            document=credential_model.dict(by_alias=True),
+            user_id=user_id,
+        )
+
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self, mock_deployment_flow):
         """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
@@ -78,14 +101,13 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             if api_object in {"batch_request_table", "deployment"}:
                 response = self.wait_for_results(api_client, response)
-                assert response.json()["status"] == "SUCCESS"
+                assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
             else:
                 assert response.status_code == HTTPStatus.CREATED
 
             if api_object == "feature":
                 self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
             if api_object == "deployment":
-                assert response.json()["status"] == "SUCCESS"
                 deployment_id = response.json()["payload"]["output_document_id"]
                 self.update_deployment_enabled(api_client, deployment_id, catalog_id)
 

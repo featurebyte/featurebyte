@@ -918,12 +918,12 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
 
 
 def test_as_feature__from_view_column(
-    saved_item_table, item_entity, update_fixtures, enable_feast_integration, mock_deployment_flow
+    saved_item_table, item_entity, update_fixtures, mock_deployment_flow
 ):
     """
     Test calling as_feature() from ItemView column
     """
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
 
     view = saved_item_table.get_view(event_suffix="_event_table")
     feature = view["item_amount"].as_feature("ItemAmountFeature")

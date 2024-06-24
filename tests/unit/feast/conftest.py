@@ -16,11 +16,9 @@ from tests.util.helper import get_relationship_info
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(
-    enable_feast_integration, patched_catalog_get_create_payload
-):
+def always_enable_feast_integration_fixture(patched_catalog_get_create_payload):
     """Enable feast integration & patch catalog ID for all tests in this directory"""
-    _ = enable_feast_integration, patched_catalog_get_create_payload
+    _ = patched_catalog_get_create_payload
     yield
 
 

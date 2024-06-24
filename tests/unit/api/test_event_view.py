@@ -1063,11 +1063,10 @@ def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
 def test_event_view_as_feature(
     snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
-    enable_feast_integration,
     mock_deployment_flow,
 ):
     """Test offline store table name for event view lookup features"""
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
 
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=feature_group_feature_job_setting,

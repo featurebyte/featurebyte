@@ -31,12 +31,11 @@ def default_feature_job_setting_fixture():
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
 def always_enable_feast_integration_fixture(
-    enable_feast_integration,
     patched_catalog_get_create_payload,
     mock_deployment_flow,
 ):
     """Enable feast integration & patch catalog ID for all tests in this module"""
-    _ = enable_feast_integration, patched_catalog_get_create_payload, mock_deployment_flow
+    _ = patched_catalog_get_create_payload, mock_deployment_flow
     yield
 
 

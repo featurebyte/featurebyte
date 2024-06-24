@@ -2140,20 +2140,6 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="noop_session_validator", autouse=True)
-def get_noop_session_validator_fixture():
-    """
-    Set a no-op validator by default.
-
-    Functions that want to test the validation should inject an actual instance of the session validator.
-    """
-    with mock.patch(
-        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_exists"
-    ) as mocked_exists:
-        mocked_exists.return_value = None
-        yield
-
-
 @pytest.fixture(name="api_object_to_id")
 def api_object_to_id_fixture():
     """

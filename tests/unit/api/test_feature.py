@@ -908,11 +908,10 @@ def check_offline_store_ingest_graph_on_composite_feature(
 def test_composite_features(
     snowflake_event_table_with_entity,
     cust_id_entity,
-    enable_feast_integration,
     mock_deployment_flow,
 ):
     """Test composite features' property"""
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
     entity = Entity(name="bool", serving_names=["col_bool"])
     entity.save()
 
@@ -976,10 +975,10 @@ def test_composite_features(
 
 
 def test_offline_store_ingest_query_graphs__without_graph_decomposition(
-    enable_feast_integration, saved_feature, mock_deployment_flow
+    saved_feature, mock_deployment_flow
 ):
     """Test offline store ingest query graphs"""
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
 
     deploy_features_through_api([saved_feature])
     feature_model = saved_feature.cached_model

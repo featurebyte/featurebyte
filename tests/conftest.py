@@ -114,10 +114,10 @@ def index_to_timestamp_fixture(request):
     return request.param
 
 
-@pytest.fixture(name="enable_feast_integration")
-def enable_feast_integration_fixture():
+@pytest.fixture(autouse=True)
+def disable_feast_usage():
     """
-    Enable feast integration
+    Enable feast usage reporting
     """
-    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+    with patch.dict(os.environ, {"FEAST_USAGE": "False"}):
         yield

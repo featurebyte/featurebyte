@@ -149,13 +149,12 @@ def test_as_features__with_primary_key_column(
     snowflake_dimension_view_with_entity,
     snowflake_dimension_table,
     cust_id_entity,
-    enable_feast_integration,
     mock_deployment_flow,
 ):
     """
     Test calling as_features() when including primary column works correctly
     """
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
 
     # Set entity
     view = snowflake_dimension_view_with_entity
