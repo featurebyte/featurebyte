@@ -17,7 +17,7 @@ from sqlglot import expressions, parse_one
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.metadata.operation import ViewDataColumn
+from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
@@ -160,9 +160,7 @@ class PreviewMixin(BaseGraphInterpreter):
         assert isinstance(sql_tree, expressions.Select)
 
         # apply type conversions
-        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
-        )
+        operation_structure = self.extract_operation_structure_for_node(node_name)
         if skip_conversion:
             type_conversions: dict[Optional[str], DBVarType] = {}
         else:
@@ -556,6 +554,7 @@ class PreviewMixin(BaseGraphInterpreter):
     def _get_cat_counts(
         col_expr: expressions.Expression,
         num_categories_limit: int = 500,
+        use_casted_data: bool = True,
     ) -> expressions.Select:
         return (
             expressions.select(
@@ -566,7 +565,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     quoted=True,
                 ),
             )
-            .from_(CASTED_DATA_TABLE_NAME)
+            .from_(CASTED_DATA_TABLE_NAME if use_casted_data else "data")
             .group_by(col_expr)
             .order_by(
                 expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
@@ -884,6 +883,25 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree
 
+    def extract_operation_structure_for_node(self, node_name: str) -> OperationStructure:
+        """
+        Extract operation structure for a given node
+
+        Parameters
+        ----------
+        node_name: str
+            Query graph node name
+
+        Returns
+        -------
+        OperationStructure
+        """
+        flat_node = self.get_flattened_node(node_name)
+        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
+            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
+        )
+        return operation_structure
+
     def construct_describe_queries(
         self,
         node_name: str,
@@ -925,10 +943,7 @@ class PreviewMixin(BaseGraphInterpreter):
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
-        flat_node = self.get_flattened_node(node_name)
-        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
-        )
+        operation_structure = self.extract_operation_structure_for_node(node_name)
 
         sample_sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
@@ -993,14 +1008,15 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         cte_statements: List[CteStatement] = [
             ("data", sql_tree),
-            self._get_cte_with_casted_data(sql_tree),
         ]
         # It's expected that this function is called on a node that is associated with a column and
         # not a frame, so here we simply take the first column.
         col_expr = sql_tree.expressions[0]
         col_name = col_expr.alias_or_name
         cat_counts = self._get_cat_counts(
-            quoted_identifier(col_name), num_categories_limit=num_categories_limit
+            quoted_identifier(col_name),
+            num_categories_limit=num_categories_limit,
+            use_casted_data=False,
         )
         output_expr = (
             construct_cte_sql(cte_statements)

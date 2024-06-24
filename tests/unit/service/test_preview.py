@@ -240,8 +240,8 @@ async def test_value_counts(
     """
     mock_snowflake_session.execute_query.return_value = pd.DataFrame(
         {
-            "key": ["a", "b"],
-            "count": [100, 50],
+            "key": [1, 2, None],
+            "count": [100, 50, 3],
         }
     )
     result = await preview_service.value_counts(
@@ -249,4 +249,4 @@ async def test_value_counts(
         num_rows=100000,
         num_categories_limit=500,
     )
-    assert result == {"a": 100, "b": 50}
+    assert result == {1: 100, 2: 50, None: 3}

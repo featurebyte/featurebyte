@@ -5,10 +5,6 @@ WITH data AS (
   ORDER BY
     RANDOM(1234)
   LIMIT 50000
-), casted_data AS (
-  SELECT
-    CAST("a" AS STRING) AS "a"
-  FROM data
 )
 SELECT
   "a" AS "key",
@@ -17,7 +13,7 @@ FROM (
   SELECT
     "a",
     COUNT(*) AS "__FB_COUNTS"
-  FROM casted_data
+  FROM data
   GROUP BY
     "a"
   ORDER BY
