@@ -5,7 +5,7 @@ Integration tests related to DimensionView
 import pandas as pd
 import pytest
 
-from featurebyte import Feature
+from featurebyte import Feature, RequestColumn
 from featurebyte.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -245,6 +245,39 @@ def test_get_value_in_dictionary__target_is_non_lookup(event_table, source_type)
     assert get_value_feature_preview.iloc[0].to_dict() == {
         feature_name: 22.05,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_value_in_dictionary__target_derived_from_request_column(event_table, source_type):
+    """
+    Test is in dictionary when the key is derived from request column
+    """
+    # Dictionary feature with day of week as category
+    event_view = event_table.get_view()
+    feature_name = "SUM_AMOUNT_DICT_30d"
+    event_view["day_of_week"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
+    feature_group = event_view.groupby("CUST_ID", category="day_of_week").aggregate_over(
+        value_column="ÀMOUNT",
+        method="sum",
+        windows=["30d"],
+        feature_names=[feature_name],
+    )
+    dictionary_feature = feature_group[feature_name]
+
+    # Use a key derived from request point in time to access the dictionary
+    key = RequestColumn.point_in_time().dt.day_of_week.astype(str)
+    get_value_feature = dictionary_feature.cd.get_value(key)
+    feature_name = "get_value_in_dictionary"
+    get_value_feature.name = feature_name
+
+    # Check output
+    preview_params = [{"POINT_IN_TIME": "2001-01-02 12:00:00", "cust_id": "350"}]
+    get_value_feature_preview = get_value_feature.preview(pd.DataFrame(preview_params))
+    tz_localize_if_needed(get_value_feature_preview, source_type)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        feature_name: 44.21,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params[0]),
     }
 
 
