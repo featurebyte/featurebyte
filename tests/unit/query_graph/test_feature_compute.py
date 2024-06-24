@@ -468,8 +468,7 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
         "event_timestamp_column": None,
     }
 
-    # Check required serving names
-    assert plan.required_serving_names == {"CUSTOMER_ID"}
+    assert plan.required_entity_ids == {ObjectId("63dbe68cd918ef71acffd127")}
 
 
 def test_feature_execution_planner__query_graph_with_graph_node(
