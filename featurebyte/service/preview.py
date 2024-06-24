@@ -331,9 +331,7 @@ class PreviewService:
                 return cast_type(key)
             return key
 
-        if cast_type:
-            output = {_cast_key(key): value for (key, value) in output.items()}
-
+        output = {_cast_key(key): value for (key, value) in output.items()}
         return output  # type: ignore
 
     @staticmethod
