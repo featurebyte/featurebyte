@@ -270,6 +270,9 @@ def test_get_value_in_dictionary__target_derived_from_request_column(event_table
     feature_name = "get_value_in_dictionary"
     get_value_feature.name = feature_name
 
+    # Check feature can be saved
+    get_value_feature.save()
+
     # Check output
     preview_params = [{"POINT_IN_TIME": "2001-01-02 12:00:00", "cust_id": "350"}]
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame(preview_params))

@@ -4,7 +4,7 @@ Utilities for building SQLNode
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
@@ -58,7 +58,7 @@ def prepare_binary_op_input_nodes(
 
 def prepare_unary_input_nodes(
     context: SQLNodeContext,
-) -> tuple[TableNode, ExpressionNode, dict[str, Any]]:
+) -> tuple[Optional[TableNode], ExpressionNode, dict[str, Any]]:
     """Extract TableNode and ExpressionNode in a unary operation
 
     Parameters
@@ -73,5 +73,4 @@ def prepare_unary_input_nodes(
     input_expr_node = context.input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode), "Input node must be an expression node"
     table_node = input_expr_node.table_node
-    assert table_node is not None
     return table_node, input_expr_node, context.parameters

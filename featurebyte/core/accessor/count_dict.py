@@ -14,12 +14,17 @@ from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.count_dict import GetValueFromDictionaryNode
-from featurebyte.typing import Scalar
+from featurebyte.typing import Scalar, is_scalar
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
+    from featurebyte.api.request_column import RequestColumn
 else:
     Feature = TypeVar("Feature")
+    RequestColumn = TypeVar("RequestColumn")
+
+
+KeyType = Union[Union[Scalar, Feature, RequestColumn]]
 
 
 class CdAccessorMixin:
@@ -349,14 +354,14 @@ class CountDictAccessor:
             output_var_type=DBVarType.FLOAT,
         )
 
-    def get_value(self, key: Union[Scalar, Feature]) -> Feature:
+    def get_value(self, key: KeyType) -> Feature:
         """
         Retrieves the value of a specific key in the Cross Aggregate feature. The key may either be a
         lookup feature or a scalar value.
 
         Parameters
         ----------
-        key: Union[Scalar, Feature]
+        key: KeyType
             key to lookup the value for
 
         Returns
@@ -391,7 +396,7 @@ class CountDictAccessor:
         1
         """
         additional_node_params = {}
-        if not isinstance(key, type(self._feature_obj)):
+        if is_scalar(key):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
         # construct operation structure of the get value node output
@@ -407,7 +412,7 @@ class CountDictAccessor:
             additional_node_params=additional_node_params,
         )
 
-    def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
+    def get_rank(self, key: KeyType, descending: bool = False) -> Feature:
         """
         Computes the rank of a specific key in the Cross Aggregate feature. If there are multiple keys with the same
         value, those keys will have the same rank, which equals the smallest rank among those keys. The key that is
@@ -415,7 +420,7 @@ class CountDictAccessor:
 
         Parameters
         ----------
-        key: Union[Scalar, Feature]
+        key: KeyType
             Key to lookup the value for.
         descending: bool
             Defaults to ranking in ascending order. Set to true to rank in descending order.
@@ -454,7 +459,7 @@ class CountDictAccessor:
         additional_node_params: Dict[str, Any] = {
             "descending": descending,
         }
-        if not isinstance(key, type(self._feature_obj)):
+        if is_scalar(key):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
@@ -465,7 +470,7 @@ class CountDictAccessor:
             additional_node_params=additional_node_params,
         )
 
-    def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
+    def get_relative_frequency(self, key: KeyType) -> Feature:
         """
         Computes the relative frequency of a specific key in the Cross Aggregate feature. The key
         may either be a lookup feature or a scalar value. If the key does not exist, the relative
@@ -473,7 +478,7 @@ class CountDictAccessor:
 
         Parameters
         ----------
-        key: Union[Scalar, Feature]
+        key: KeyType
             Key to lookup the value for.
 
         Returns
@@ -509,7 +514,7 @@ class CountDictAccessor:
         0.14285714285714302
         """
         additional_node_params = {}
-        if not isinstance(key, type(self._feature_obj)):
+        if is_scalar(key):
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
