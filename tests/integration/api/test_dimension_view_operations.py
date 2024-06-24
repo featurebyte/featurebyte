@@ -10,7 +10,11 @@ from featurebyte.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
-from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
+from tests.util.helper import (
+    assert_preview_result_equal,
+    fb_assert_frame_equal,
+    tz_localize_if_needed,
+)
 
 
 @pytest.fixture(name="item_type_dimension_lookup_feature")
@@ -265,23 +269,28 @@ def test_get_value_in_dictionary__target_derived_from_request_column(event_table
     dictionary_feature = feature_group[feature_name]
 
     # Use a key derived from request point in time to access the dictionary
-    key = RequestColumn.point_in_time().dt.day_of_week.astype(str)
-    get_value_feature = dictionary_feature.cd.get_value(key)
+    key_1 = RequestColumn.point_in_time().dt.day_of_week.astype(str)
+    key_2 = (RequestColumn.point_in_time().dt.day_of_week + 1).astype(str)
+    get_value_feature_1 = dictionary_feature.cd.get_value(key_1)
+    get_value_feature_2 = dictionary_feature.cd.get_value(key_2)
+    final_feature = get_value_feature_2 / get_value_feature_1
     feature_name = "get_value_in_dictionary"
-    get_value_feature.name = feature_name
+    final_feature.name = feature_name
 
     # Check feature can be saved
-    get_value_feature.save()
+    final_feature.save()
 
     # Check output
-    preview_params = [{"POINT_IN_TIME": "2001-01-02 12:00:00", "cust_id": "350"}]
-    get_value_feature_preview = get_value_feature.preview(pd.DataFrame(preview_params))
+    preview_params = [{"POINT_IN_TIME": "2001-01-09 12:00:00", "cust_id": "350"}]
+    get_value_feature_preview = final_feature.preview(pd.DataFrame(preview_params))
     tz_localize_if_needed(get_value_feature_preview, source_type)
-    assert get_value_feature_preview.shape[0] == 1
-    assert get_value_feature_preview.iloc[0].to_dict() == {
-        feature_name: 44.21,
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params[0]),
-    }
+    assert_preview_result_equal(
+        get_value_feature_preview,
+        {
+            feature_name: 0.423660,
+            **convert_preview_param_dict_to_feature_preview_resp(preview_params[0]),
+        },
+    )
 
 
 def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(

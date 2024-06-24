@@ -13,7 +13,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 def prepare_binary_op_input_nodes(
     context: SQLNodeContext,
-) -> tuple[TableNode, ExpressionNode, ExpressionNode]:
+) -> tuple[Optional[TableNode], ExpressionNode, ExpressionNode]:
     """
     Perform common preparation on binary ops input nodes, such as constructing literal value
     expression and swapping left right operands when applicable
@@ -25,7 +25,7 @@ def prepare_binary_op_input_nodes(
 
     Returns
     -------
-    tuple[TableNode, ExpressionNode, ExpressionNode]
+    tuple[Optional[TableNode], ExpressionNode, ExpressionNode]
     """
     input_sql_nodes = context.input_sql_nodes
     parameters = context.parameters
@@ -48,9 +48,7 @@ def prepare_binary_op_input_nodes(
         left_node, right_node = right_node, left_node
 
     if table_node is None:
-        # In this case, the left node is a column from the request data. The right node must be from
-        # a feature and has a valid table node.
-        assert right_node.table_node is not None, "Right node must have a table node"
+        # Table node can be None if both sides are derived from request column
         table_node = right_node.table_node
 
     return table_node, left_node, right_node
