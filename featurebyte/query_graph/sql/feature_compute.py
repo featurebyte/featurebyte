@@ -111,19 +111,6 @@ class FeatureExecutionPlan:
         self.feature_store_details = feature_store_details
 
     @property
-    def required_serving_names(self) -> set[str]:
-        """Returns the list of required serving names
-
-        Returns
-        -------
-        set[str]
-        """
-        out = set()
-        for aggregator in self.iter_aggregators():
-            out.update(aggregator.get_required_serving_names())
-        return out
-
-    @property
     def required_entity_ids(self) -> set[ObjectId]:
         """Returns the list of required entity_ids
 
