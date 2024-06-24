@@ -46,14 +46,6 @@ def mock_service_get_version():
         yield
 
 
-@pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """
-    Enable feast integration for all tests in this module
-    """
-    _ = enable_feast_integration
-
-
 @pytest.fixture(name="float_feat_deployment_id")
 def float_feat_deployment_id_fixture():
     """

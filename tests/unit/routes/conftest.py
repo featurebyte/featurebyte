@@ -68,7 +68,7 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
     """
     _, _ = session_manager, snowflake_execute_query
     with patch(
-        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
+        "featurebyte.service.session_manager.SessionManager.get_session"
     ) as mocked_get_session:
         mocked_get_session.return_value = SnowflakeSession(
             source_type=SourceType.SNOWFLAKE,

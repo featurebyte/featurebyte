@@ -225,12 +225,12 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
 
 
 def test_scd_view_as_feature__special_column(
-    snowflake_scd_table, cust_id_entity, enable_feast_integration, mock_deployment_flow
+    snowflake_scd_table, cust_id_entity, mock_deployment_flow
 ):
     """
     Test SCDView as_feature selects a special column that is excluded by default
     """
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
 
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()

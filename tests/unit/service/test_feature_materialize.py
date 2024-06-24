@@ -29,14 +29,6 @@ from tests.util.helper import (
 )
 
 
-@pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """
-    Enable feast integration for all tests in this module
-    """
-    _ = enable_feast_integration
-
-
 @pytest.fixture(name="mock_get_feature_store_session")
 def mock_get_feature_store_session_fixture(mock_snowflake_session):
     """

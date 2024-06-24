@@ -7,13 +7,6 @@ from bson import ObjectId
 from featurebyte.feast.schema.registry import FeastRegistryUpdate
 
 
-@pytest.fixture(autouse=True)
-def enable_feast_integration(enable_feast_integration):
-    """Enable feast integration"""
-    _ = enable_feast_integration
-    yield
-
-
 @pytest.fixture(name="registry_service")
 def registry_service_fixture(app_container):
     """Fixture for registry service"""

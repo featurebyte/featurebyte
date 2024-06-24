@@ -23,7 +23,6 @@ def always_enable_feast_integration_fixture():
     with patch.dict(
         os.environ,
         {
-            "FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True",
             "FEATUREBYTE_GRAPH_CLEAR_PERIOD": "1000",
         },
     ):

@@ -37,12 +37,12 @@ def test_point_in_time_request_column():
 
 
 def test_point_in_time_minus_timestamp_feature(
-    latest_event_timestamp_feature, update_fixtures, enable_feast_integration, mock_deployment_flow
+    latest_event_timestamp_feature, update_fixtures, mock_deployment_flow
 ):
     """
     Test an on-demand feature involving point in time
     """
-    _ = enable_feast_integration, mock_deployment_flow
+    _ = mock_deployment_flow
     new_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     new_feature.name = "Time Since Last Event (days)"
     assert isinstance(new_feature, Feature)
