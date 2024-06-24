@@ -88,6 +88,9 @@ def feature_store_preview_fixture(feature_store):
 
 @pytest.fixture(name="feature_store_preview_project_column")
 def feature_store_preview_project_column_fixture(feature_store_preview, project_column):
+    """
+    Fixture for a FeatureStorePreview with a project column
+    """
     project_node = next(
         node for node in feature_store_preview.graph.nodes if node.type == "project"
     )
