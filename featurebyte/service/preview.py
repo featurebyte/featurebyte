@@ -273,6 +273,7 @@ class PreviewService:
         preview: FeatureStorePreview,
         num_rows: int,
         num_categories_limit: int,
+        convert_keys_to_string: bool = True,
         seed: int = 1234,
     ) -> dict[Any, int]:
         """
@@ -287,6 +288,8 @@ class PreviewService:
         num_categories_limit : int
             Maximum number of categories to include in the result. If there are more categories in
             the data, the result will include the most frequent categories up to this number.
+        convert_keys_to_string : bool
+            Whether to convert keys to string
         seed: int
             Random seed to use for sampling
 
@@ -304,6 +307,7 @@ class PreviewService:
             node_name=preview.node_name,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
+            convert_keys_to_string=convert_keys_to_string,
             seed=seed,
         )
 
@@ -311,6 +315,9 @@ class PreviewService:
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
         output = df_result.set_index("key")["count"].to_dict()  # type: ignore
+
+        if convert_keys_to_string:
+            return output  # type: ignore
 
         # Cast int and float to native types
         column_dtype = (

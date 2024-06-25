@@ -981,6 +981,7 @@ class PreviewMixin(BaseGraphInterpreter):
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        convert_keys_to_string: bool = True,
     ) -> str:
         """
         Construct SQL to get value counts for a given node.
@@ -994,6 +995,8 @@ class PreviewMixin(BaseGraphInterpreter):
         num_categories_limit : int
             Maximum number of categories to include in the result. If there are more categories in
             the data, the result will include the most frequent categories up to this number.
+        convert_keys_to_string: bool
+            Whether to convert keys to string
         seed: int
             Random seed to use for sampling
 
@@ -1009,6 +1012,10 @@ class PreviewMixin(BaseGraphInterpreter):
         cte_statements: List[CteStatement] = [
             ("data", sql_tree),
         ]
+        if convert_keys_to_string:
+            cte_statements.append(
+                self._get_cte_with_casted_data(sql_tree),
+            )
         # It's expected that this function is called on a node that is associated with a column and
         # not a frame, so here we simply take the first column.
         col_expr = sql_tree.expressions[0]
@@ -1016,7 +1023,7 @@ class PreviewMixin(BaseGraphInterpreter):
         cat_counts = self._get_cat_counts(
             quoted_identifier(col_name),
             num_categories_limit=num_categories_limit,
-            use_casted_data=False,
+            use_casted_data=convert_keys_to_string,
         )
         output_expr = (
             construct_cte_sql(cte_statements)

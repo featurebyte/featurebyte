@@ -196,3 +196,17 @@ def test_value_counts_sql(project_from_simple_graph, update_fixtures):
     )
     expected_filename = f"tests/fixtures/query_graph/expected_value_counts.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+
+
+def test_value_counts_sql_no_casting(project_from_simple_graph, update_fixtures):
+    """Test value counts sql"""
+    graph, node = project_from_simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    sql_code = interpreter.construct_value_counts_sql(
+        node.name,
+        num_rows=50000,
+        num_categories_limit=1000,
+        convert_keys_to_string=False,
+    )
+    expected_filename = f"tests/fixtures/query_graph/expected_value_counts_no_casting.sql"
+    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)

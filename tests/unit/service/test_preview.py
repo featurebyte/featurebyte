@@ -242,6 +242,29 @@ async def test_preview_featurelist__missing_entity(
     assert str(exc.value) == expected
 
 
+async def test_value_counts(
+    preview_service,
+    feature_store_preview,
+    mock_snowflake_session,
+):
+    """
+    Test value counts
+    """
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "key": ["1", "2", None],
+            "count": [100, 50, 3],
+        }
+    )
+    result = await preview_service.value_counts(
+        feature_store_preview,
+        num_rows=100000,
+        num_categories_limit=500,
+        convert_keys_to_string=True,
+    )
+    assert result == {"1": 100, "2": 50, None: 3}
+
+
 @pytest.mark.parametrize(
     "project_column,keys,expected",
     [
@@ -263,7 +286,7 @@ async def test_preview_featurelist__missing_entity(
     ],
 )
 @pytest.mark.asyncio
-async def test_value_counts(
+async def test_value_counts_not_convert_keys_to_string(
     preview_service,
     feature_store_preview_project_column,
     keys,
@@ -283,5 +306,6 @@ async def test_value_counts(
         feature_store_preview_project_column,
         num_rows=100000,
         num_categories_limit=500,
+        convert_keys_to_string=False,
     )
     assert result == expected
