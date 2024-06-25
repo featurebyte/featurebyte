@@ -4,6 +4,8 @@ Unit tests for core/accessor/count_dict.py
 
 import pytest
 
+from featurebyte.api.feature import Feature
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.util.helper import check_sdk_code_generation, get_node
@@ -220,3 +222,41 @@ def test_get_relative_frequency_from_dictionary__validation_fails(
     with pytest.raises(AttributeError) as exc:
         float_feature.cd.get_relative_frequency(float_feature)
     assert "Can only use .cd accessor with count per category features" in str(exc)
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["get_value", "get_rank", "get_relative_frequency"],
+)
+@pytest.mark.parametrize(
+    "key_type,expected_ok",
+    [
+        ("scalar", True),
+        ("feature", True),
+        ("request_column", True),
+        ("series", False),
+    ],
+)
+def test_key_type_validation(
+    count_per_category_feature,
+    scd_lookup_feature,
+    varchar_series,
+    request_column_point_in_time,
+    method,
+    key_type,
+    expected_ok,
+):
+    func = getattr(count_per_category_feature.cd, method)
+    key_type_mapping = {
+        "scalar": "my_key",
+        "feature": scd_lookup_feature,
+        "request_column": request_column_point_in_time,
+        "series": varchar_series,
+    }
+    key = key_type_mapping[key_type]
+    if expected_ok:
+        _ = func(key)
+    else:
+        with pytest.raises(TypeError) as exc_info:
+            func(key)
+        assert str(exc_info.value) == "Operation between Feature and Series is not supported"

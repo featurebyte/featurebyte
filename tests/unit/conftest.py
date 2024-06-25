@@ -41,6 +41,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.online_store import OnlineStore
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
@@ -2028,6 +2029,14 @@ def latest_event_timestamp_unbounded_feature_fixture(
         feature_job_setting=feature_group_feature_job_setting,
     )["latest_event_timestamp"]
     return feature
+
+
+@pytest.fixture(name="request_column_point_in_time")
+def request_column_point_in_time():
+    """
+    Fixture for a RequestColumn object for the point in time
+    """
+    return RequestColumn.point_in_time()
 
 
 @pytest.fixture(name="session_manager")

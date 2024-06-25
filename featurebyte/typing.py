@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, Sequence, Type, Union, cast
 from typing_extensions import Literal
 
 import pandas as pd
-from pandas.api.types import is_scalar
+from pandas.api.types import is_scalar as pd_is_scalar
 from pydantic import StrictFloat, StrictInt, StrictStr
 
 DatetimeSupportedPropertyType = Literal[
@@ -38,6 +38,22 @@ Timestamp = Union[pd.Timestamp]
 AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
 
 Func = Callable[..., Any]
+
+
+def is_scalar(value: Any) -> bool:
+    """
+    Returns whether the provided value is a Scalar value
+
+    Parameters
+    ----------
+    value : Any
+        Value to check
+
+    Returns
+    -------
+    bool
+    """
+    return cast(bool, pd_is_scalar(value))
 
 
 def is_scalar_nan(value: Any) -> bool:
