@@ -4,12 +4,13 @@ PreviewService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json, timer
+from featurebyte.enum import DBVarType
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -272,8 +273,9 @@ class PreviewService:
         preview: FeatureStorePreview,
         num_rows: int,
         num_categories_limit: int,
+        convert_keys_to_string: bool = True,
         seed: int = 1234,
-    ) -> dict[str, int]:
+    ) -> dict[Any, int]:
         """
         Get value counts for a column
 
@@ -286,29 +288,58 @@ class PreviewService:
         num_categories_limit : int
             Maximum number of categories to include in the result. If there are more categories in
             the data, the result will include the most frequent categories up to this number.
+        convert_keys_to_string : bool
+            Whether to convert keys to string
         seed: int
             Random seed to use for sampling
 
         Returns
         -------
-        dict[str, int]
+        dict[Any, int]
         """
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_id=preview.feature_store_id,
         )
-        value_counts_sql = GraphInterpreter(
-            preview.graph, source_type=feature_store.type
-        ).construct_value_counts_sql(
+        interpreter = GraphInterpreter(preview.graph, source_type=feature_store.type)
+        value_counts_sql = interpreter.construct_value_counts_sql(
             node_name=preview.node_name,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
+            convert_keys_to_string=convert_keys_to_string,
             seed=seed,
         )
+
         df_result = await session.execute_query(value_counts_sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
-        return df_result.set_index("key")["count"].to_dict()  # type: ignore
+        df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
+        output = df_result.set_index("key")["count"].to_dict()  # type: ignore
+
+        if convert_keys_to_string:
+            return output  # type: ignore
+
+        # Cast int and float to native types
+        column_dtype = (
+            interpreter.extract_operation_structure_for_node(preview.node_name).columns[0].dtype
+        )
+        cast_type: Optional[Type[int] | Type[float]]
+        if column_dtype == DBVarType.INT:
+            cast_type = int
+        elif column_dtype == DBVarType.FLOAT:
+            cast_type = float
+        else:
+            cast_type = None
+
+        def _cast_key(key: Any) -> Any:
+            if pd.isna(key):
+                return None
+            if cast_type is not None:
+                return cast_type(key)
+            return key
+
+        output = {_cast_key(key): value for (key, value) in output.items()}
+        return output  # type: ignore
 
     @staticmethod
     async def _get_row_count(session: BaseSession, sample: FeatureStoreSample) -> int:

@@ -2,6 +2,7 @@
 Test preview service module
 """
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -83,6 +84,18 @@ def feature_store_preview_fixture(feature_store):
         },
         node_name="project_1",
     )
+
+
+@pytest.fixture(name="feature_store_preview_project_column")
+def feature_store_preview_project_column_fixture(feature_store_preview, project_column):
+    """
+    Fixture for a FeatureStorePreview with a project column
+    """
+    project_node = next(
+        node for node in feature_store_preview.graph.nodes if node.type == "project"
+    )
+    project_node.parameters.columns = [project_column]
+    return feature_store_preview
 
 
 @pytest.mark.asyncio
@@ -229,7 +242,6 @@ async def test_preview_featurelist__missing_entity(
     assert str(exc.value) == expected
 
 
-@pytest.mark.asyncio
 async def test_value_counts(
     preview_service,
     feature_store_preview,
@@ -240,13 +252,60 @@ async def test_value_counts(
     """
     mock_snowflake_session.execute_query.return_value = pd.DataFrame(
         {
-            "key": ["a", "b"],
-            "count": [100, 50],
+            "key": ["1", "2", None],
+            "count": [100, 50, 3],
         }
     )
     result = await preview_service.value_counts(
         feature_store_preview,
         num_rows=100000,
         num_categories_limit=500,
+        convert_keys_to_string=True,
     )
-    assert result == {"a": 100, "b": 50}
+    assert result == {"1": 100, "2": 50, None: 3}
+
+
+@pytest.mark.parametrize(
+    "project_column,keys,expected",
+    [
+        (
+            "col_int",
+            [1, 2, None],
+            {1: 100, 2: 50, None: 3},
+        ),
+        (
+            "col_float",
+            np.float32([1.0, 2.0, np.nan]),
+            {1.0: 100, 2.0: 50, None: 3},
+        ),
+        (
+            "col_text",
+            ["a", "b", None],
+            {"a": 100, "b": 50, None: 3},
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_value_counts_not_convert_keys_to_string(
+    preview_service,
+    feature_store_preview_project_column,
+    keys,
+    expected,
+    mock_snowflake_session,
+):
+    """
+    Test value counts
+    """
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "key": keys,
+            "count": [100, 50, 3],
+        }
+    )
+    result = await preview_service.value_counts(
+        feature_store_preview_project_column,
+        num_rows=100000,
+        num_categories_limit=500,
+        convert_keys_to_string=False,
+    )
+    assert result == expected
