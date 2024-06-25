@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.2 (2024-06-25)
+
+### 💡 Enhancements
+
++ `service` Improve feature job efficiency for latest aggregation features without window
++ `service` Add support for updating feature store details
+
+### 🐛 Bug Fixes
+
++ `service` Fix error when using request column as key in dictionary feature operations
+
 ## v1.1.1 (2024-06-10)
 
 ### 💡 Enhancements
