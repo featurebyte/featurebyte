@@ -592,7 +592,10 @@ class PreviewMixin(BaseGraphInterpreter):
         -------
         expressions.Select
         """
-        cat_counts = self._get_cat_counts(col_expr)
+        entropy_required = self._is_dtype_supported(col_dtype, self.stats_expressions["entropy"][1])
+        cat_counts = self._get_cat_counts(
+            col_expr, num_categories_limit=500 if entropy_required else 1
+        )
         col_expr_filled_null = expressions.Case(
             ifs=[
                 expressions.If(

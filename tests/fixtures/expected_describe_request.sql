@@ -30,7 +30,7 @@ WITH data AS (
         "col_float"
       ORDER BY
         "__FB_COUNTS" DESC NULLS LAST
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), counts__1 AS (

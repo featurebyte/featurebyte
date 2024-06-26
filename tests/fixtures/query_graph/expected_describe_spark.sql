@@ -38,7 +38,7 @@ WITH data AS (
         `ts`
       ORDER BY
         `__FB_COUNTS` DESC
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), counts__1 AS (
@@ -89,7 +89,7 @@ WITH data AS (
         `a`
       ORDER BY
         `__FB_COUNTS` DESC
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), counts__3 AS (
@@ -113,7 +113,7 @@ WITH data AS (
         `b`
       ORDER BY
         `__FB_COUNTS` DESC
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), counts__4 AS (
@@ -139,7 +139,7 @@ WITH data AS (
         `a_copy`
       ORDER BY
         `__FB_COUNTS` DESC
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), stats AS (
