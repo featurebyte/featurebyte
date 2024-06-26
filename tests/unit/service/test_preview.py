@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import parse_one
 
 from featurebyte import FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
-from featurebyte.schema.feature_store import FeatureStorePreview
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 
@@ -96,6 +97,14 @@ def feature_store_preview_project_column_fixture(feature_store_preview, project_
     )
     project_node.parameters.columns = [project_column]
     return feature_store_preview
+
+
+@pytest.fixture(name="feature_store_sample")
+def feature_store_sample_fixture(feature_store_preview):
+    """
+    Fixture for a FeatureStoreSample
+    """
+    return FeatureStoreSample(**feature_store_preview.dict())
 
 
 @pytest.mark.asyncio
@@ -242,6 +251,55 @@ async def test_preview_featurelist__missing_entity(
     assert str(exc.value) == expected
 
 
+@pytest.mark.parametrize("drop_all_null_stats", [False, True])
+@pytest.mark.asyncio
+async def test_describe_drop_all_null_stats(
+    preview_service,
+    feature_store_sample,
+    mock_snowflake_session,
+    drop_all_null_stats,
+):
+    """
+    Test describe
+    """
+
+    async def mock_execute_query(query):
+        if "%missing" not in query:
+            return pd.DataFrame({"count": [100]})
+        stats_names = [col.alias_or_name for col in parse_one(query, read="snowflake").expressions]
+        column_names = [
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id",
+        ]
+        result = pd.DataFrame(
+            {col: ["some_val"] * len(stats_names) for col in column_names},
+            index=stats_names,
+        )
+        result.loc["%missing"] = None
+        return result.T
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    result = await preview_service.describe(
+        feature_store_sample,
+        size=5000,
+        seed=0,
+        drop_all_null_stats=drop_all_null_stats,
+    )
+    if drop_all_null_stats:
+        assert "%missing" not in result.index
+    else:
+        assert "%missing" in result.index
+
+
+@pytest.mark.asyncio
 async def test_value_counts(
     preview_service,
     feature_store_preview,
