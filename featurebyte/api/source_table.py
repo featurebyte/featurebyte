@@ -384,8 +384,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         %missing                                   0.0                                   0.0                            0.0                            0.0        0.0
         %empty                                       0                                     0                            NaN                            NaN        NaN
         entropy                               6.214608                              5.784261                            NaN                            NaN        NaN
-        top       018f0163-249b-4cbc-ab4d-e933ce3786c1  c5820998-e779-4d62-ab8b-79ef0dfd841b            2022-04-29 18:17:17            2022-02-02 17:01:00        1.0
-        freq                                       1.0                                 692.0                            2.0                           18.0      406.0
+        top       018f0163-249b-4cbc-ab4d-e933ce3786c1  c5820998-e779-4d62-ab8b-79ef0dfd841b                            NaN                            NaN        NaN
+        freq                                       1.0                                 692.0                            NaN                            NaN        NaN
         mean                                       NaN                                   NaN                            NaN                            NaN  19.966062
         std                                        NaN                                   NaN                            NaN                            NaN  25.027878
         min                                        NaN                                   NaN  2022-01-01T00:24:14.000000000  2022-01-01T01:01:00.000000000        0.0

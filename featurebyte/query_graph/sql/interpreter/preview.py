@@ -451,10 +451,7 @@ class PreviewMixin(BaseGraphInterpreter):
             None,
             {
                 DBVarType.BOOL,
-                DBVarType.FLOAT,
                 DBVarType.INT,
-                DBVarType.TIMESTAMP,
-                DBVarType.TIMESTAMP_TZ,
                 DBVarType.CHAR,
                 DBVarType.VARCHAR,
             },
@@ -463,10 +460,7 @@ class PreviewMixin(BaseGraphInterpreter):
             None,
             {
                 DBVarType.BOOL,
-                DBVarType.FLOAT,
                 DBVarType.INT,
-                DBVarType.TIMESTAMP,
-                DBVarType.TIMESTAMP_TZ,
                 DBVarType.CHAR,
                 DBVarType.VARCHAR,
             },

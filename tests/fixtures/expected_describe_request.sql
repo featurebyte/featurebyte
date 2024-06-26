@@ -11,28 +11,6 @@ WITH data AS (
     CAST("col_float" AS STRING) AS "col_float",
     CAST("col_text" AS STRING) AS "col_text"
   FROM data
-), counts__0 AS (
-  SELECT
-    F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__0",
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__0"
-  FROM (
-    SELECT
-      OBJECT_AGG(
-        CASE WHEN "col_float" IS NULL THEN '__MISSING__' ELSE "col_float" END,
-        TO_VARIANT("__FB_COUNTS")
-      ) AS "COUNT_DICT"
-    FROM (
-      SELECT
-        "col_float",
-        COUNT(*) AS "__FB_COUNTS"
-      FROM casted_data
-      GROUP BY
-        "col_float"
-      ORDER BY
-        "__FB_COUNTS" DESC NULLS LAST
-      LIMIT 1
-    ) AS cat_counts
-  ) AS count_dict
 ), counts__1 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__1",
@@ -94,7 +72,6 @@ WITH data AS (
   SELECT
     *
   FROM stats
-  LEFT JOIN counts__0
   LEFT JOIN counts__1
 )
 SELECT
@@ -103,8 +80,8 @@ SELECT
   "%missing__0",
   "%empty__0",
   NULL AS "entropy__0",
-  "top__0",
-  "freq__0",
+  NULL AS "top__0",
+  NULL AS "freq__0",
   "mean__0",
   "std__0",
   "min__0",
