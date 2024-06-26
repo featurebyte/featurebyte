@@ -118,8 +118,6 @@ def test_event_view_describe_with_date_range(event_table):
                 "dtype",
                 "unique",
                 "%missing",
-                "top",
-                "freq",
                 "mean",
                 "std",
                 "min",
@@ -152,8 +150,6 @@ def test_event_view_describe_with_date_range_and_size(event_table):
                 "dtype",
                 "unique",
                 "%missing",
-                "top",
-                "freq",
                 "mean",
                 "std",
                 "min",
@@ -333,12 +329,6 @@ async def test_describe_invalid_dates(session, feature_store, catalog):
         "dtype": "TIMESTAMP",
         "unique": 4,
         "%missing": 0.0,
-        "top": (
-            "0019-01-01 10:00:00.000"
-            if session.source_type == "snowflake"
-            else "0019-01-01 10:00:00"
-        ),
-        "freq": 3.0,
         "min": "2021-01-01T10:00:00.000000000",
         "max": "2023-01-01T10:00:00.000000000",
     }

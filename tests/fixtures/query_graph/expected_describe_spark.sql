@@ -17,30 +17,6 @@ WITH data AS (
     CAST(`b` AS STRING) AS `b`,
     CAST(`a_copy` AS STRING) AS `a_copy`
   FROM data
-), counts__0 AS (
-  SELECT
-    F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__0`,
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__0`
-  FROM (
-    SELECT
-      MAP_FILTER(
-        MAP_FROM_ENTRIES(
-          COLLECT_LIST(STRUCT(CASE WHEN `ts` IS NULL THEN '__MISSING__' ELSE `ts` END, `__FB_COUNTS`))
-        ),
-        (k, v) -> NOT v IS NULL
-      ) AS `COUNT_DICT`
-    FROM (
-      SELECT
-        `ts`,
-        COUNT(*) AS `__FB_COUNTS`
-      FROM casted_data
-      GROUP BY
-        `ts`
-      ORDER BY
-        `__FB_COUNTS` DESC
-      LIMIT 500
-    ) AS cat_counts
-  ) AS count_dict
 ), counts__1 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict.`COUNT_DICT`) AS `entropy__1`,
@@ -68,30 +44,6 @@ WITH data AS (
       LIMIT 500
     ) AS cat_counts
   ) AS count_dict
-), counts__2 AS (
-  SELECT
-    F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__2`,
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__2`
-  FROM (
-    SELECT
-      MAP_FILTER(
-        MAP_FROM_ENTRIES(
-          COLLECT_LIST(STRUCT(CASE WHEN `a` IS NULL THEN '__MISSING__' ELSE `a` END, `__FB_COUNTS`))
-        ),
-        (k, v) -> NOT v IS NULL
-      ) AS `COUNT_DICT`
-    FROM (
-      SELECT
-        `a`,
-        COUNT(*) AS `__FB_COUNTS`
-      FROM casted_data
-      GROUP BY
-        `a`
-      ORDER BY
-        `__FB_COUNTS` DESC
-      LIMIT 500
-    ) AS cat_counts
-  ) AS count_dict
 ), counts__3 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__3`,
@@ -113,33 +65,7 @@ WITH data AS (
         `b`
       ORDER BY
         `__FB_COUNTS` DESC
-      LIMIT 500
-    ) AS cat_counts
-  ) AS count_dict
-), counts__4 AS (
-  SELECT
-    F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__4`,
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__4`
-  FROM (
-    SELECT
-      MAP_FILTER(
-        MAP_FROM_ENTRIES(
-          COLLECT_LIST(
-            STRUCT(CASE WHEN `a_copy` IS NULL THEN '__MISSING__' ELSE `a_copy` END, `__FB_COUNTS`)
-          )
-        ),
-        (k, v) -> NOT v IS NULL
-      ) AS `COUNT_DICT`
-    FROM (
-      SELECT
-        `a_copy`,
-        COUNT(*) AS `__FB_COUNTS`
-      FROM casted_data
-      GROUP BY
-        `a_copy`
-      ORDER BY
-        `__FB_COUNTS` DESC
-      LIMIT 500
+      LIMIT 1
     ) AS cat_counts
   ) AS count_dict
 ), stats AS (
@@ -231,17 +157,11 @@ WITH data AS (
   SELECT
     *
   FROM stats
-  LEFT JOIN counts__0
+  LEFT JOIN counts__1
 ), joined_tables_1 AS (
   SELECT
     *
-  FROM counts__1
-  LEFT JOIN counts__2
-), joined_tables_2 AS (
-  SELECT
-    *
   FROM counts__3
-  LEFT JOIN counts__4
 )
 SELECT
   'TIMESTAMP' AS `dtype__0`,
@@ -249,8 +169,8 @@ SELECT
   `%missing__0`,
   `%empty__0`,
   NULL AS `entropy__0`,
-  `top__0`,
-  `freq__0`,
+  NULL AS `top__0`,
+  NULL AS `freq__0`,
   `mean__0`,
   `std__0`,
   `min__0`,
@@ -281,8 +201,8 @@ SELECT
   `%missing__2`,
   `%empty__2`,
   NULL AS `entropy__2`,
-  `top__2`,
-  `freq__2`,
+  NULL AS `top__2`,
+  NULL AS `freq__2`,
   `mean__2`,
   `std__2`,
   `min__2`,
@@ -313,8 +233,8 @@ SELECT
   `%missing__4`,
   `%empty__4`,
   NULL AS `entropy__4`,
-  `top__4`,
-  `freq__4`,
+  NULL AS `top__4`,
+  NULL AS `freq__4`,
   `mean__4`,
   `std__4`,
   `min__4`,
@@ -326,4 +246,3 @@ SELECT
   `max TZ offset__4`
 FROM joined_tables_0
 LEFT JOIN joined_tables_1
-LEFT JOIN joined_tables_2
