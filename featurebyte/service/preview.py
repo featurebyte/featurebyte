@@ -222,7 +222,7 @@ class PreviewService:
             be described in multiple queries. If None, a default value will be used. If 0, batching
             will be disabled.
         drop_all_null_stats: bool
-            Whether to drop the result of a statisticss if all values across all columns are null
+            Whether to drop the result of a statistics if all values across all columns are null
 
         Returns
         -------
