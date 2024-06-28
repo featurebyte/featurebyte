@@ -74,7 +74,11 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         elif fl_get_historical_features.feature_clusters:
             num_features = 0
             for cluster in fl_get_historical_features.feature_clusters:
-                num_features += len(cluster.feature_node_definition_hashes)
+                if cluster.feature_node_definition_hashes:
+                    num_features += len(cluster.feature_node_definition_hashes)
+
+            # reset num_features to None if it is 0
+            num_features = num_features or None
 
         async with self.drop_table_on_error(
             db_session=db_session,

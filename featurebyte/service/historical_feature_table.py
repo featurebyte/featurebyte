@@ -89,6 +89,11 @@ class HistoricalFeatureTableService(
         Returns
         -------
         HistoricalFeatureTableTaskPayload
+
+        Raises
+        ------
+        ValueError
+            If the number of features exceeds the limit
         """
 
         # Check any conflict with existing documents
@@ -108,6 +113,7 @@ class HistoricalFeatureTableService(
             observation_set_storage_path = None
 
         # check number of features whether exceeds the limit
+        # if the task is triggered by a feature list, this limit is not applied
         feature_clusters = data.featurelist_get_historical_features.feature_clusters
         if feature_clusters:
             num_features = 0
