@@ -57,9 +57,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             {key: val for key, val in payload.items() if key != "name"},
             [
                 {
+                    "input": {key: val for key, val in payload.items() if key != "name"},
                     "loc": ["body", "name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
             ],
         )
@@ -153,11 +154,12 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response.json() == {
             "detail": [
                 {
+                    "input": None,
                     "loc": ["query", "database_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
-            ],
+            ]
         }
 
     def test_list_schemas__424(
@@ -212,16 +214,18 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response.json() == {
             "detail": [
                 {
+                    "input": None,
                     "loc": ["query", "database_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 },
                 {
+                    "input": None,
                     "loc": ["query", "schema_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 },
-            ],
+            ]
         }
 
     def test_list_tables__424(
@@ -286,21 +290,24 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response.json() == {
             "detail": [
                 {
+                    "input": None,
                     "loc": ["query", "database_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 },
                 {
+                    "input": None,
                     "loc": ["query", "schema_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 },
                 {
+                    "input": None,
                     "loc": ["query", "table_name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 },
-            ],
+            ]
         }
 
     def test_list_columns__424(
@@ -516,21 +523,21 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
     def test_sample_422__no_timestamp_column(self, test_api_client_persistent, data_sample_payload):
         """Test table sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post(
-            "/feature_store/sample",
-            json={
-                **data_sample_payload,
-                "from_timestamp": "2012-11-24T11:00:00",
-                "to_timestamp": None,
-                "timestamp_column": None,
-            },
-        )
+        payload = {
+            **data_sample_payload,
+            "from_timestamp": "2012-11-24T11:00:00",
+            "to_timestamp": None,
+            "timestamp_column": None,
+        }
+        response = test_api_client.post("/feature_store/sample", json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
                 {
-                    "loc": ["body", "__root__"],
-                    "msg": "timestamp_column must be specified.",
+                    "ctx": {"error": {}},
+                    "input": payload,
+                    "loc": ["body"],
+                    "msg": "Value error, timestamp_column must be specified.",
                     "type": "value_error",
                 }
             ]
@@ -541,21 +548,21 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
     ):
         """Test table sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post(
-            "/feature_store/sample",
-            json={
-                **data_sample_payload,
-                "from_timestamp": "2012-11-24T11:00:00",
-                "to_timestamp": "2012-11-20T11:00:00",
-            },
-        )
+        payload = {
+            **data_sample_payload,
+            "from_timestamp": "2012-11-24T11:00:00",
+            "to_timestamp": "2012-11-20T11:00:00",
+        }
+        response = test_api_client.post("/feature_store/sample", json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
                 {
-                    "loc": ["body", "__root__"],
-                    "msg": "from_timestamp must be smaller than to_timestamp.",
-                    "type": "assertion_error",
+                    "ctx": {"error": {}},
+                    "input": payload,
+                    "loc": ["body"],
+                    "msg": "Value error, from_timestamp must be smaller than to_timestamp.",
+                    "type": "value_error",
                 }
             ]
         }

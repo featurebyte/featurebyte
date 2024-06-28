@@ -23,7 +23,7 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 import dataclasses
 from collections import defaultdict
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -424,9 +424,12 @@ class GroupOperationStructure(FeatureByteBaseModel):
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
     aggregations: List[AggregationColumn] = Field(default_factory=list)
-    post_aggregation: Optional[PostAggregationColumn]
+    post_aggregation: Optional[PostAggregationColumn] = None
     row_index_lineage: Tuple[str, ...]
     is_time_based: bool = Field(default=False)
+
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
     def table_ids(self) -> List[PydanticObjectId]:

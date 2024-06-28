@@ -25,11 +25,11 @@ class BaseGroupbyParameters(FeatureByteBaseModel):
     """Common parameters related to groupby operation"""
 
     keys: List[InColumnStr]
-    parent: Optional[InColumnStr]
+    parent: Optional[InColumnStr] = None
     agg_func: AggFunc
-    value_by: Optional[InColumnStr]
+    value_by: Optional[InColumnStr] = None
     serving_names: List[str]
-    entity_ids: Optional[List[PydanticObjectId]]
+    entity_ids: Optional[List[PydanticObjectId]] = None
 
 
 class AggregationOpStructMixin(BaseNode, ABC):

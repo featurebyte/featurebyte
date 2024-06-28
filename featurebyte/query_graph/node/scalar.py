@@ -4,11 +4,9 @@ Models for the value parameter used by SingleValueNodeParameters
 
 from __future__ import annotations
 
-from typing import Union, cast
-from typing_extensions import Literal
+from typing import Literal, Union, cast
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel
@@ -27,7 +25,7 @@ class TimestampValue(FeatureByteBaseModel):
     """TimestampValue class"""
 
     iso_format_str: str
-    type: Literal[NonNativeValueType.TIMESTAMP] = Field(NonNativeValueType.TIMESTAMP, const=True)
+    type: Literal[NonNativeValueType.TIMESTAMP] = NonNativeValueType.TIMESTAMP
 
     @classmethod
     def from_pandas_timestamp(cls, timestamp: pd.Timestamp) -> TimestampValue:

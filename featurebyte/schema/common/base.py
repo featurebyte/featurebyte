@@ -27,8 +27,8 @@ class BaseInfo(BaseBriefInfo):
     """
 
     created_at: datetime
-    updated_at: Optional[datetime]
-    description: Optional[str]
+    updated_at: Optional[datetime] = None
+    description: Optional[str] = None
 
 
 class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
@@ -66,4 +66,4 @@ class DescriptionUpdate(FeatureByteBaseModel):
     Description update schema
     """
 
-    description: Optional[str]
+    description: Optional[str] = None

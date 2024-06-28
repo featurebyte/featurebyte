@@ -162,11 +162,11 @@ def test_use_profile(mock_requests_get):
 
     config = Configurations("tests/fixtures/config/config.yaml")
     assert config.profile.name == "featurebyte1"
-    assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
+    assert str(config.get_client().base_url) == "https://app1.featurebyte.com/api/v1"
 
     config.use_profile("featurebyte2")
     assert config.profile.name == "featurebyte2"
-    assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+    assert str(config.get_client().base_url) == "https://app2.featurebyte.com/api/v1"
 
 
 def test_use_profile_non_existent():

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import (
@@ -60,12 +60,12 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     Catalog service update schema
     """
 
-    name: Optional[NameStr]
-    is_deleted: Optional[bool]
+    name: Optional[NameStr] = None
+    is_deleted: Optional[bool] = None
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
-        Unique contraints checking
+        Unique constraints for Catalog
         """
 
         unique_constraints: List[UniqueValuesConstraint] = [

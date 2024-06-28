@@ -4,8 +4,7 @@ UserDefinedFunction API object
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union, cast
-from typing_extensions import Literal
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 

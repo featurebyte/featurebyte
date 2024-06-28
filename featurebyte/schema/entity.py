@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import (
@@ -51,11 +51,11 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     Entity service update schema
     """
 
-    name: Optional[NameStr]
-    ancestor_ids: Optional[List[PydanticObjectId]]
-    parents: Optional[List[ParentEntity]]
-    table_ids: Optional[List[PydanticObjectId]]
-    primary_table_ids: Optional[List[PydanticObjectId]]
+    name: Optional[NameStr] = None
+    ancestor_ids: Optional[List[PydanticObjectId]] = None
+    parents: Optional[List[ParentEntity]] = None
+    table_ids: Optional[List[PydanticObjectId]] = None
+    primary_table_ids: Optional[List[PydanticObjectId]] = None
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

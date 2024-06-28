@@ -11,7 +11,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -21,6 +20,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -60,7 +60,7 @@ async def create_batch_request_table(
 
 @router.get("/{batch_request_table_id}", response_model=BatchRequestTableModel)
 async def get_batch_request_table(
-    request: Request, batch_request_table_id: PydanticObjectId
+    request: Request, batch_request_table_id: PyObjectId
 ) -> BatchRequestTableModel:
     """
     Get BatchRequestTable
@@ -73,9 +73,7 @@ async def get_batch_request_table(
 
 
 @router.delete("/{batch_request_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
-async def delete_batch_request_table(
-    request: Request, batch_request_table_id: PydanticObjectId
-) -> Task:
+async def delete_batch_request_table(request: Request, batch_request_table_id: PyObjectId) -> Task:
     """
     Delete BatchRequestTable
     """
@@ -113,7 +111,7 @@ async def list_batch_request_tables(
 @router.get("/audit/{batch_request_table_id}", response_model=AuditDocumentList)
 async def list_batch_request_table_audit_logs(
     request: Request,
-    batch_request_table_id: PydanticObjectId,
+    batch_request_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -136,7 +134,7 @@ async def list_batch_request_table_audit_logs(
 
 @router.get("/{batch_request_table_id}/info", response_model=BatchRequestTableInfo)
 async def get_batch_request_table_info(
-    request: Request, batch_request_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    request: Request, batch_request_table_id: PyObjectId, verbose: bool = VerboseQuery
 ) -> BatchRequestTableInfo:
     """
     Get BatchRequestTable info
@@ -148,7 +146,7 @@ async def get_batch_request_table_info(
 
 @router.get("/pyarrow_table/{batch_request_table_id}")
 async def download_table_as_pyarrow_table(
-    request: Request, batch_request_table_id: PydanticObjectId
+    request: Request, batch_request_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download BatchRequestTable as pyarrow table
@@ -162,7 +160,7 @@ async def download_table_as_pyarrow_table(
 
 @router.get("/parquet/{batch_request_table_id}")
 async def download_table_as_parquet(
-    request: Request, batch_request_table_id: PydanticObjectId
+    request: Request, batch_request_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download BatchRequestTable as parquet file
@@ -177,7 +175,7 @@ async def download_table_as_parquet(
 @router.patch("/{batch_request_table_id}/description", response_model=BatchRequestTableModel)
 async def update_batch_request_table_description(
     request: Request,
-    batch_request_table_id: PydanticObjectId,
+    batch_request_table_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> BatchRequestTableModel:
     """

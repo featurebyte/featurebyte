@@ -9,7 +9,7 @@ import os
 from uuid import UUID
 
 import redis
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.logging import get_logger
 

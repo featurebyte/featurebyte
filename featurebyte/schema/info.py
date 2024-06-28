@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, RootModel, field_validator, model_validator
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
@@ -65,12 +65,12 @@ class EntityInfo(EntityBriefInfo, BaseInfo):
     """
 
 
-class EntityBriefInfoList(FeatureByteBaseModel):
+class EntityBriefInfoList(RootModel):
     """
     Paginated list of entity brief info
     """
 
-    __root__: List[EntityBriefInfo]
+    root: List[EntityBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
@@ -87,7 +87,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         EntityBriefInfoList
         """
         entity_project = DictProject(rule=("data", ["name", "serving_names", "catalog_name"]))
-        return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
+        return EntityBriefInfoList(entity_project.project(paginated_data))
 
 
 class TableBriefInfo(BaseBriefInfo):
@@ -99,12 +99,12 @@ class TableBriefInfo(BaseBriefInfo):
     catalog_name: str
 
 
-class TableBriefInfoList(FeatureByteBaseModel):
+class TableBriefInfoList(RootModel):
     """
     Paginated list of table brief info
     """
 
-    __root__: List[TableBriefInfo]
+    root: List[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
@@ -121,15 +121,15 @@ class TableBriefInfoList(FeatureByteBaseModel):
         TableBriefInfoList
         """
         data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
-        return TableBriefInfoList(__root__=data_project.project(paginated_data))
+        return TableBriefInfoList(data_project.project(paginated_data))
 
 
-class EventTableBriefInfoList(FeatureByteBaseModel):
+class EventTableBriefInfoList(RootModel):
     """
     Paginated list of event table brief info
     """
 
-    __root__: List[TableBriefInfo]
+    root: List[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
@@ -146,7 +146,7 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
         EventTableBriefInfoList
         """
         event_table_project = DictProject(rule=("data", ["name", "status"]))
-        return EventTableBriefInfoList(__root__=event_table_project.project(paginated_data))
+        return EventTableBriefInfoList(event_table_project.project(paginated_data))
 
 
 class TableColumnInfo(FeatureByteBaseModel):
@@ -261,9 +261,9 @@ class FeatureInfo(FeatureNamespaceInfo):
     readiness: ReadinessComparison
     table_feature_job_setting: TableFeatureJobSettingComparison
     table_cleaning_operation: TableCleaningOperationComparison
-    versions_info: Optional[FeatureBriefInfoList]
+    versions_info: Optional[FeatureBriefInfoList] = None
     metadata: Any
-    namespace_description: Optional[str]
+    namespace_description: Optional[str] = None
 
 
 class FeatureListBriefInfo(FeatureByteBaseModel):
@@ -276,22 +276,20 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     created_at: datetime
     production_ready_fraction: Optional[float] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
-        if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
-            values["production_ready_fraction"] = values[
-                "readiness_distribution"
-            ].derive_production_ready_fraction()
-        return values
+    @model_validator(mode="after")
+    def _derive_production_ready_fraction(self) -> "FeatureListBriefInfo":
+        self.production_ready_fraction = (
+            self.readiness_distribution.derive_production_ready_fraction()
+        )
+        return self
 
 
-class FeatureListBriefInfoList(FeatureByteBaseModel):
+class FeatureListBriefInfoList(RootModel):
     """
     Paginated list of feature brief info
     """
 
-    __root__: List[FeatureListBriefInfo]
+    root: List[FeatureListBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureListBriefInfoList:
@@ -310,7 +308,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         feature_list_project = DictProject(
             rule=("data", ["version", "readiness_distribution", "created_at", "catalog_id"])
         )
-        return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
+        return FeatureListBriefInfoList(feature_list_project.project(paginated_data))
 
 
 class BaseFeatureListNamespaceInfo(NamespaceInfo):
@@ -350,9 +348,9 @@ class FeatureListInfo(BaseFeatureListNamespaceInfo):
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
     default_feature_fraction: DefaultFeatureFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList]
+    versions_info: Optional[FeatureListBriefInfoList] = None
     deployed: bool
-    namespace_description: Optional[str]
+    namespace_description: Optional[str] = None
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
@@ -378,8 +376,8 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     Catalog info schema
     """
 
-    feature_store_name: Optional[str]
-    online_store_name: Optional[str]
+    feature_store_name: Optional[str] = None
+    online_store_name: Optional[str] = None
 
 
 class CredentialBriefInfo(BaseBriefInfo):
@@ -387,8 +385,8 @@ class CredentialBriefInfo(BaseBriefInfo):
     Credential brief info schema
     """
 
-    database_credential_type: Optional[DatabaseCredentialType]
-    storage_credential_type: Optional[StorageCredentialType]
+    database_credential_type: Optional[DatabaseCredentialType] = None
+    storage_credential_type: Optional[StorageCredentialType] = None
 
 
 class CredentialInfo(CredentialBriefInfo, BaseInfo):
@@ -407,7 +405,7 @@ class ObservationTableInfo(BaseInfo):
     type: RequestInputType
     feature_store_name: str
     table_details: TableDetails
-    target_name: Optional[str]
+    target_name: Optional[str] = None
 
 
 class BaseFeatureOrTargetTableInfo(BaseInfo):
@@ -415,7 +413,7 @@ class BaseFeatureOrTargetTableInfo(BaseInfo):
     BaseFeatureOrTargetTable info schema
     """
 
-    observation_table_name: Optional[str]
+    observation_table_name: Optional[str] = None
     table_details: TableDetails
 
 
@@ -424,8 +422,8 @@ class HistoricalFeatureTableInfo(BaseFeatureOrTargetTableInfo):
     Schema for historical feature table info
     """
 
-    feature_list_name: Optional[str]
-    feature_list_version: Optional[str]
+    feature_list_name: Optional[str] = None
+    feature_list_version: Optional[str] = None
 
 
 class TargetTableInfo(BaseFeatureOrTargetTableInfo):
@@ -445,8 +443,8 @@ class DeploymentInfo(BaseInfo):
     feature_list_version: str
     num_feature: int
     enabled: bool
-    serving_endpoint: Optional[str]
-    use_case_name: Optional[str]
+    serving_endpoint: Optional[str] = None
+    use_case_name: Optional[str] = None
 
 
 class DeploymentRequestCodeTemplate(FeatureByteBaseModel):
@@ -543,7 +541,7 @@ class OnlineStoreInfo(BaseInfo):
     details: OnlineStoreDetails
     catalogs: List[CatalogBriefInfo]
 
-    @validator("details")
+    @field_validator("details", mode="after")
     @classmethod
     def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
         """

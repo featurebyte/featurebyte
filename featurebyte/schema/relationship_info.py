@@ -25,10 +25,10 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
-    entity_column_name: Optional[str]
-    related_entity_column_name: Optional[str]
+    entity_column_name: Optional[str] = None
+    related_entity_column_name: Optional[str] = None
     enabled: bool
-    updated_by: Optional[PydanticObjectId]
+    updated_by: Optional[PydanticObjectId] = None
 
 
 class RelationshipInfoList(PaginationMixin):
@@ -59,5 +59,5 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     table_name: str
     data_type: str
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     updated_by: str

@@ -51,11 +51,11 @@ class SCDView(View, GroupByMixin, RawMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.SCD_VIEW
 
     # pydantic instance variables
-    natural_key_column: str = Field(allow_mutation=False)
-    effective_timestamp_column: str = Field(allow_mutation=False)
-    surrogate_key_column: Optional[str] = Field(allow_mutation=False)
-    end_timestamp_column: Optional[str] = Field(allow_mutation=False)
-    current_flag_column: Optional[str] = Field(allow_mutation=False)
+    natural_key_column: str = Field(frozen=True)
+    effective_timestamp_column: str = Field(frozen=True)
+    surrogate_key_column: Optional[str] = Field(frozen=True)
+    end_timestamp_column: Optional[str] = Field(frozen=True)
+    current_flag_column: Optional[str] = Field(frozen=True)
 
     @property
     def timestamp_column(self) -> Optional[str]:

@@ -23,8 +23,8 @@ from typing_extensions import Literal
 from http import HTTPStatus
 
 import pandas as pd
-from bson.objectid import ObjectId
-from pydantic import Field, root_validator
+from bson import ObjectId
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -98,7 +98,7 @@ class FeatureListNamespaceListHandler(ListHandler):
         feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(
-                __root__=readiness_distribution
+                readiness_distribution
             ).derive_production_ready_fraction()
         )
         return feature_lists
@@ -319,14 +319,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
-    @root_validator
-    @classmethod
-    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _initialize_feature_list_parameters(self) -> "FeatureList":
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
-        features = list(values["feature_objects"].values())
-        values["internal_feature_ids"] = [feature.id for feature in features]
-        return values
+        self.internal_feature_ids = [feature.id for feature in self.feature_objects.values()]
+        return self
 
     @typechecked
     def __init__(self, items: Sequence[Item], name: str, **kwargs: Any):
@@ -1373,7 +1371,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
-    def update_status(self, status: Literal[tuple(FeatureListStatus)]) -> None:  # type: ignore[misc]
+    def update_status(self, status: str) -> None:
         """
         A FeatureList can have one of five statuses:
 
@@ -1403,6 +1401,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
+        if isinstance(status, str):
+            status = FeatureListStatus(status)
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False
         )

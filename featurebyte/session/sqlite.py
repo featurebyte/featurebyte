@@ -4,14 +4,13 @@ SQLiteSession class
 
 from __future__ import annotations
 
-from typing import Optional, OrderedDict
+from typing import Literal, Optional, OrderedDict
 
 import collections
 import os
 import sqlite3
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -29,7 +28,7 @@ class SQLiteSession(BaseSession):
     """
 
     filename: str
-    source_type: SourceType = Field(SourceType.SQLITE, const=True)
+    source_type: Literal[SourceType.SQLITE] = SourceType.SQLITE
 
     def initializer(self) -> Optional[BaseSchemaInitializer]:
         return None

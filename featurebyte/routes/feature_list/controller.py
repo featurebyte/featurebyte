@@ -9,8 +9,7 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, U
 import copy
 from http import HTTPStatus
 
-from bson import json_util
-from bson.objectid import ObjectId
+from bson import ObjectId, json_util
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
 
@@ -409,9 +408,7 @@ class FeatureListController(
             return VersionIdentifier(**version_dict).to_str()
 
         def _to_prod_ready_fraction(readiness_dist: List[Dict[str, Any]]) -> float:
-            return FeatureReadinessDistribution(
-                __root__=readiness_dist
-            ).derive_production_ready_fraction()
+            return FeatureReadinessDistribution(readiness_dist).derive_production_ready_fraction()
 
         def _to_default_feature_fraction(
             feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]

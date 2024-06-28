@@ -5,8 +5,7 @@ Catalog module
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
-from typing_extensions import Literal
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 import pandas as pd
 from bson import ObjectId

@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from abc import ABC, abstractmethod
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel

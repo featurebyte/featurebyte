@@ -18,8 +18,8 @@ class UseCaseOrContextMixin(ApiObject):
     Base UseCase and Context mixin
     """
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = None
+    default_eda_table_id: Optional[PydanticObjectId] = None
 
     @property
     def default_eda_table(self) -> Optional[ObservationTable]:

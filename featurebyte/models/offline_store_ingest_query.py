@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
-import datetime
+from datetime import timedelta
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
@@ -89,7 +89,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # aggregation nodes info of the offline store ingest query graph
     graph: QueryGraphModel
     node_name: str
-    ref_node_name: Optional[str]
+    ref_node_name: Optional[str] = None
     aggregation_nodes_info: List[AggregationNodeInfo]
 
     # table related info
@@ -103,11 +103,11 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = None
     has_ttl: bool
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+    _sort_ids_validator = field_validator("primary_entity_ids", mode="after")(
         construct_sort_validator()
     )
 
@@ -291,28 +291,28 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     is_decomposed: bool
 
     # if the feature's or target's query graph is not decomposed, metadata will be populated.
-    metadata: Optional[OfflineStoreInfoMetadata]
+    metadata: Optional[OfflineStoreInfoMetadata] = None
 
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
     serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
-    time_to_live_in_secs: Optional[int] = Field(default=None)
-    null_filling_value: Optional[Scalar] = Field(default=None)
-    odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
-    udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
+    time_to_live_in_secs: Optional[int] = None
+    null_filling_value: Optional[Scalar] = None
+    odfv_info: Optional[OnDemandFeatureViewInfo] = None
+    udf_info: Optional[UserDefinedFunctionInfo] = None
 
     @property
-    def time_to_live_delta(self) -> Optional[datetime.timedelta]:
+    def time_to_live_delta(self) -> Optional[timedelta]:
         """
-        Time-to-live (TTL) in datetime.timedelta
+        Time-to-live (TTL) in timedelta
 
         Returns
         -------
-        Optional[datetime.timedelta]
-            Time-to-live (TTL) in datetime.timedelta
+        Optional[timedelta]
+            Time-to-live (TTL) in timedelta
         """
         if not self.time_to_live_in_secs:
             return None
-        return datetime.timedelta(seconds=self.time_to_live_in_secs)
+        return timedelta(seconds=self.time_to_live_in_secs)
 
     def initialize(
         self,

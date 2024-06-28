@@ -491,8 +491,8 @@ def test_scd_join(global_graph, scd_join_node):
 def test_join_node_parameters_validation__duplicated_columns(param_name, join_node_params):
     """Test join node parameter validation logic"""
     with pytest.raises(ValidationError) as exc:
-        JoinNode(parameters={**join_node_params, param_name: ["a", "a"]})
-    expected_msg = "Column names (values: ['a', 'a']) must be unique! (type=value_error)"
+        JoinNode(name="join1", parameters={**join_node_params, param_name: ["a", "a"]})
+    expected_msg = "Column names (values: ['a', 'a']) must be unique!"
     assert expected_msg in str(exc.value)
 
 
@@ -500,12 +500,11 @@ def test_join_node_parameters_validation__overlapped_columns(join_node_params):
     """Test join node parameter validation logic"""
     with pytest.raises(ValidationError) as exc:
         JoinNode(
+            name="join1",
             parameters={
                 **join_node_params,
                 "right_output_columns": join_node_params["left_output_columns"],
-            }
+            },
         )
-    expected_msg = (
-        "Left and right output columns should not have common item(s). (type=value_error)"
-    )
+    expected_msg = "Left and right output columns should not have common item(s)."
     assert expected_msg in str(exc.value)

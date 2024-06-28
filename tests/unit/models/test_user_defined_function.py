@@ -5,6 +5,7 @@ Unit tests for the UserDefinedFunction model.
 import pandas as pd
 import pytest
 from bson import ObjectId
+from typeguard import TypeCheckError
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.user_defined_function import (
@@ -13,6 +14,7 @@ from featurebyte.models.user_defined_function import (
     function_parameter_dtype_to_python_type,
     get_default_test_value,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.mark.parametrize(
@@ -26,9 +28,9 @@ from featurebyte.models.user_defined_function import (
         (DBVarType.INT, 1, 0, None),
         (DBVarType.TIMESTAMP, pd.Timestamp.now(), pd.Timestamp.now(), None),
         (DBVarType.TIMESTAMP_TZ, pd.Timestamp.now(), pd.Timestamp.now(), None),
-        (DBVarType.INT, "value", 0.0, "type of default_value must be int; got str instead"),
-        (DBVarType.INT, 1, "value", "type of test_value must be int; got str instead"),
-        (DBVarType.INT, 1.1, 0, "type of default_value must be int; got float instead"),
+        (DBVarType.INT, "value", 0.0, "str is not an instance of int"),
+        (DBVarType.INT, 1, "value", "str is not an instance of int"),
+        (DBVarType.INT, 1.1, 0, "float is not an instance of int"),
         (
             DBVarType.VOID,
             None,
@@ -40,7 +42,10 @@ from featurebyte.models.user_defined_function import (
 def test_function_parameter(dtype, default_value, test_value, expected_error_message):
     """Test function parameter constructor"""
     if expected_error_message:
-        with pytest.raises(TypeError) as exc:
+        expected_error_type = TypeCheckError
+        if dtype == DBVarType.VOID:
+            expected_error_type = TypeError
+        with pytest.raises(expected_error_type) as exc:
             FunctionParameter(
                 name="x", dtype=dtype, default_value=default_value, test_value=test_value
             )
@@ -88,7 +93,7 @@ def test_user_defined_function_model(
         feature_store_id=feature_store_id,
     )
     assert user_defined_function.sql_function_name == "sql_func"
-    assert user_defined_function.function_parameters == function_parameters
+    compare_pydantic_obj(user_defined_function.function_parameters, function_parameters)
     assert user_defined_function.catalog_id == catalog_id
     assert user_defined_function.output_dtype == DBVarType.FLOAT
     assert user_defined_function.signature == expected_signature

@@ -4,7 +4,7 @@ SqlglotExpressionModel class
 
 from __future__ import annotations
 
-from typing import cast
+from typing import ClassVar, cast
 
 import sqlglot
 from sqlglot.expressions import Expression
@@ -22,7 +22,7 @@ class SqlglotExpressionModel(FeatureByteBaseModel):
     # The sqlglot expression will be serialized as a string using this format. Upon deserialization,
     # the string will be parsed using the same format. But this model can be used for different
     # dialects not necessarily the same as this.
-    _DIALECT_FORMAT = "snowflake"
+    _DIALECT_FORMAT: ClassVar[str] = "snowflake"
 
     @classmethod
     def create(cls, expr: Expression) -> SqlglotExpressionModel:

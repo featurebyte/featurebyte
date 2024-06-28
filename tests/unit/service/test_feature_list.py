@@ -371,7 +371,7 @@ async def test_update_readiness_distribution(feature_list_service, feature_list)
     with pytest.raises(DocumentModificationBlockedError):
         await feature_list_service.update_readiness_distribution(
             document_id=feature_list.id,
-            readiness_distribution=FeatureReadinessDistribution(__root__=[]),
+            readiness_distribution=FeatureReadinessDistribution([]),
         )
 
     # remove block modification by so that the feature list can be removed later

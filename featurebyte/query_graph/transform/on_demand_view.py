@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import textwrap
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
@@ -39,6 +39,9 @@ class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     code_generator: CodeGenerator = Field(
         default_factory=lambda: CodeGenerator(template="on_demand_view.tpl")
     )
+
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class OnDemandFeatureViewExtractor(

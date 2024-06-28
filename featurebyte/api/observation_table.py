@@ -5,8 +5,7 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Sequence, Union
-from typing_extensions import Literal
+from typing import Any, ClassVar, List, Literal, Optional, Sequence, Union
 
 import os
 from pathlib import Path
@@ -392,7 +391,7 @@ class ObservationTable(
         super().update_description(description)
 
     @typechecked
-    def update_purpose(self, purpose: Literal[tuple(Purpose)]) -> None:  # type: ignore[misc]
+    def update_purpose(self, purpose: Union[str, Purpose]) -> None:  # type: ignore[misc]
         """
         Update purpose for the observation table.
 
@@ -406,8 +405,10 @@ class ObservationTable(
         >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
         >>> observation_table.update_purpose(fb.Purpose.EDA)  # doctest: +SKIP
         """
+        if isinstance(purpose, str):
+            purpose = Purpose(purpose)
         self.update(
-            update_payload={"purpose": purpose},
+            update_payload={"purpose": purpose.value},
             allow_update_local=False,
             url=f"{self._route}/{self.id}",
             skip_update_schema_check=True,

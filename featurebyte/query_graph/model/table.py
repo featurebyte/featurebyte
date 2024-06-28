@@ -2,7 +2,7 @@
 This module contains specialized table related models.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
 from typing_extensions import Annotated, Literal
 
 from dataclasses import dataclass
@@ -41,7 +41,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 class SourceTableData(BaseTableData):
     """SourceTableData class"""
 
-    type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE, const=True)
+    type: Literal[TableDataType.SOURCE_TABLE] = TableDataType.SOURCE_TABLE
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -61,7 +61,7 @@ class SourceTableData(BaseTableData):
 class EventTableData(BaseTableData):
     """EventTableData class"""
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
     event_id_column: StrictStr
@@ -124,7 +124,7 @@ class EventTableData(BaseTableData):
 class ItemTableData(BaseTableData):
     """ItemTableData class"""
 
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_id_column: StrictStr
     item_id_column: StrictStr
@@ -332,7 +332,7 @@ class ItemTableData(BaseTableData):
 class DimensionTableData(BaseTableData):
     """DimensionTableData class"""
 
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     dimension_id_column: StrictStr
 
@@ -399,7 +399,7 @@ class ChangeViewColumnNames:
 class SCDTableData(BaseTableData):
     """SCDTableData class"""
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     natural_key_column: StrictStr
     effective_timestamp_column: StrictStr

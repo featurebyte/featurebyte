@@ -5,10 +5,12 @@ This module contains nested graph related node classes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -16,7 +18,6 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Annotated, Literal
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
@@ -67,7 +68,7 @@ class ProxyInputNode(BaseNode):
 
         input_order: int
 
-    type: Literal[NodeType.PROXY_INPUT] = Field(NodeType.PROXY_INPUT, const=True)
+    type: Literal[NodeType.PROXY_INPUT] = NodeType.PROXY_INPUT
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
@@ -144,7 +145,7 @@ class BaseGraphNodeParameters(FeatureByteBaseModel):
 class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:cleaning) parameters"""
 
-    type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
+    type: Literal[GraphNodeType.CLEANING] = GraphNodeType.CLEANING
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
@@ -187,8 +188,8 @@ class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraph
     Class used for offline store ingest query graph node parameters
     """
 
-    type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
-        GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
+    type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = (
+        GraphNodeType.OFFLINE_STORE_INGEST_QUERY
     )
     output_column_name: str
     primary_entity_ids: List[PydanticObjectId]
@@ -312,7 +313,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:event_view) parameters"""
 
-    type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
+    type: Literal[GraphNodeType.EVENT_VIEW] = GraphNodeType.EVENT_VIEW
 
     def derive_sdk_code(
         self,
@@ -342,7 +343,7 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
 class ItemViewMetadata(ViewMetadata):
     """Item view metadata"""
 
-    event_suffix: Optional[str]
+    event_suffix: Optional[str] = None
     event_drop_column_names: List[str]
     event_column_cleaning_operations: List[ColumnCleaningOperation]
     event_join_column_names: List[str]
@@ -352,7 +353,7 @@ class ItemViewMetadata(ViewMetadata):
 class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:item_view) parameters"""
 
-    type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
+    type: Literal[GraphNodeType.ITEM_VIEW] = GraphNodeType.ITEM_VIEW
     metadata: ItemViewMetadata
 
     def derive_sdk_code(
@@ -404,7 +405,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
 class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:dimension_view) parameters"""
 
-    type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
+    type: Literal[GraphNodeType.DIMENSION_VIEW] = GraphNodeType.DIMENSION_VIEW
 
     def derive_sdk_code(
         self,
@@ -434,7 +435,7 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
 class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:scd_view) parameters"""
 
-    type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
+    type: Literal[GraphNodeType.SCD_VIEW] = GraphNodeType.SCD_VIEW
 
     def derive_sdk_code(
         self,
@@ -465,14 +466,14 @@ class ChangeViewMetadata(ViewMetadata):
     """Change view metadata"""
 
     track_changes_column: str
-    default_feature_job_setting: Optional[Dict[str, Any]]
-    prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+    default_feature_job_setting: Optional[FeatureJobSetting] = None
+    prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None
 
 
 class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:change_view) parameters"""
 
-    type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
+    type: Literal[GraphNodeType.CHANGE_VIEW] = GraphNodeType.CHANGE_VIEW
     metadata: ChangeViewMetadata
 
     def derive_sdk_code(
@@ -491,7 +492,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
         feature_job_setting: Optional[ObjectClass] = None
         if self.metadata.default_feature_job_setting:
             feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(
-                **self.metadata.default_feature_job_setting
+                **self.metadata.default_feature_job_setting.dict(by_alias=True)
             )
 
         assert len(input_var_name_expressions) == 1
@@ -530,12 +531,12 @@ else:
 class BaseGraphNode(BasePrunableNode):
     """Graph node"""
 
-    type: Literal[NodeType.GRAPH] = Field(NodeType.GRAPH, const=True)
+    type: Literal[NodeType.GRAPH] = NodeType.GRAPH
     output_type: NodeOutputType
     parameters: GraphNodeParameters
 
     @property
-    def transform_info(self) -> str:
+    def get_transform_info(self) -> str:
         return ""
 
     @property

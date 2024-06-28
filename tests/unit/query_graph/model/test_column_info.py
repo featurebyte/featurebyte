@@ -182,7 +182,7 @@ def test_column_info__not_supported_casting(data_types, clean_op):
 
 def test_imputation_validation():
     """Test imputation validation"""
-    with pytest.raises(ValueError, match="none is not an allowed value"):
+    with pytest.raises(ValueError, match="Input should be a valid"):
         MissingValueImputation(imputed_value=None)
 
     with pytest.raises(ValueError, match="disguised_values cannot be empty"):

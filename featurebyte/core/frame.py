@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, List, Tuple, TypeVar, Union
 
 import pandas as pd
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
@@ -32,7 +32,7 @@ class BaseFrame(QueryObject):
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
 
     # pydantic validator
-    _validate_column_names = validator("columns_info", allow_reuse=True)(
+    _validate_column_names = field_validator("columns_info", mode="after")(
         construct_unique_name_validator(field="name")
     )
 

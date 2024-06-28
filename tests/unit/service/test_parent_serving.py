@@ -7,6 +7,7 @@ import pytest
 from featurebyte.exception import RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 
 
 @pytest.mark.asyncio
@@ -341,7 +342,8 @@ async def test_get_join_steps__use_provided_relationships(
 
     # Use [b_is_parent_of_a] as the relationships
     join_steps = await parent_entity_lookup_service.get_required_join_steps(
-        entity_info, relationships_info=[relationship_info_1]
+        entity_info,
+        relationships_info=[EntityRelationshipInfo(**relationship_info_1.dict(by_alias=True))],
     )
     assert join_steps == [
         EntityLookupStep(

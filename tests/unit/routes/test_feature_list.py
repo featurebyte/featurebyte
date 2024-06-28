@@ -63,20 +63,23 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             {**payload, "feature_ids": []},
             [
                 {
-                    "loc": ["body", "feature_ids"],
-                    "msg": "ensure this value has at least 1 items",
-                    "type": "value_error.list.min_items",
-                    "ctx": {"limit_value": 1},
+                    "input": [],
+                    "loc": ["body", "FeatureListCreate", "feature_ids"],
+                    "msg": "List should have at least 1 item after validation, not 0",
+                    "type": "too_short",
+                    "ctx": {"actual_length": 0, "field_type": "List", "min_length": 1},
                 },
                 {
-                    "loc": ["body", "source_feature_list_id"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "input": {**payload, "feature_ids": []},
+                    "loc": ["body", "FeatureListNewVersionCreate", "source_feature_list_id"],
+                    "msg": "Field required",
+                    "type": "missing",
                 },
                 {
-                    "loc": ["body", "features"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "input": {**payload, "feature_ids": []},
+                    "loc": ["body", "FeatureListNewVersionCreate", "features"],
+                    "msg": "Field required",
+                    "type": "missing",
                 },
             ],
         ),
@@ -351,27 +354,36 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.json()["detail"] == "No change detected on the new feature list version."
 
         # test create a new version with duplicated feature name
+        payload = {
+            "source_feature_list_id": create_response_dict["_id"],
+            "features": [
+                {"name": "dup_feat_name", "version": "V230330"},
+                {"name": "dup_feat_name", "version": "V230330"},
+            ],
+        }
         response = test_api_client.post(
             self.base_route,
-            json={
-                "source_feature_list_id": create_response_dict["_id"],
-                "features": [
-                    {"name": "dup_feat_name", "version": "V230330"},
-                    {"name": "dup_feat_name", "version": "V230330"},
-                ],
-            },
+            json=payload,
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
-            {"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"},
             {
-                "loc": ["body", "feature_ids"],
-                "msg": "field required",
-                "type": "value_error.missing",
+                "input": payload,
+                "loc": ["body", "FeatureListCreate", "name"],
+                "msg": "Field required",
+                "type": "missing",
             },
             {
-                "loc": ["body", "features"],
-                "msg": 'Name "dup_feat_name" is duplicated (field: name).',
+                "input": payload,
+                "loc": ["body", "FeatureListCreate", "feature_ids"],
+                "msg": "Field required",
+                "type": "missing",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": payload["features"],
+                "loc": ["body", "FeatureListNewVersionCreate", "features"],
+                "msg": 'Value error, Name "dup_feat_name" is duplicated (field: name).',
                 "type": "value_error",
             },
         ]
@@ -1182,7 +1194,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             f"{self.base_route}/job", json=feature_list_create_payload
         )
         assert task_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert task_response.json()["detail"][0]["msg"] == "ensure this value has at least 1 items"
+        assert (
+            task_response.json()["detail"][0]["msg"]
+            == "Value should have at least 1 item after validation, not 0"
+        )
 
     def test_request_sample_entity_serving_names(
         self,

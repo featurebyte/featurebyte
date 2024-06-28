@@ -9,7 +9,7 @@ from typing import Any, Optional
 import datetime
 from uuid import UUID
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from celery import Celery
 from redis import Redis
 

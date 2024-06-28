@@ -5,8 +5,7 @@ Series class
 # pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
-from typing_extensions import Literal
+from typing import Any, Callable, ClassVar, Literal, Optional, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -132,7 +131,7 @@ class FrozenSeries(
 
     # instance variables
     name: Optional[StrictStr] = Field(default=None)
-    dtype: DBVarType = Field(allow_mutation=False, description="variable type of the series")
+    dtype: DBVarType = Field(frozen=True, description="variable type of the series")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.dtype}](name={self.name}, node_name={self.node_name})"

@@ -11,6 +11,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Type,
@@ -18,7 +19,6 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from datetime import datetime

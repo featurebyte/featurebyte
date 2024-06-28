@@ -3,6 +3,7 @@ Unit test for Frame
 """
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
@@ -145,11 +146,12 @@ def test__getitem__type_not_supported(dataframe):
     """
     Test retrieval with non-supported type
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = dataframe[True]
     expected_msg = (
-        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.FrozenSeries); '
-        "got bool instead"
+        'argument "item" (bool) did not match any element in the union:\n'
+        "  str: is not an instance of str\n  List[str]: is not a list\n"
+        "  featurebyte.core.series.FrozenSeries: is not an instance of featurebyte.core.series.FrozenSeries"
     )
     assert expected_msg in str(exc.value)
 
@@ -266,12 +268,14 @@ def test__setitem__type_not_supported(dataframe):
     """
     Test assignment with non-supported key type
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         dataframe[1.234] = True
-    assert (
-        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.FrozenSeries, str]); got float '
-        "instead" in str(exc.value)
+    expected_msg = (
+        'argument "key" (float) did not match any element in the union:\n'
+        "  str: is not an instance of str\n"
+        "  Tuple[featurebyte.core.series.FrozenSeries, str]: is not a tuple"
     )
+    assert expected_msg in str(exc.value)
 
 
 def test__set_item__assigning_feature_not_supported(dataframe, production_ready_feature):

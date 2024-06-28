@@ -124,12 +124,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = None
     has_ttl: bool
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     primary_entity_info: List[OfflineStoreEntityInfo]
-    source_feature_table_name: Optional[str]
+    source_feature_table_name: Optional[str] = None
 
     @property
     def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
@@ -756,7 +756,6 @@ class FeastRegistryBuilder:
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
-            request_feature_views=[],
         )
         for data_source in feast_data_sources + feast_request_sources:
             repo_content.data_sources.append(data_source)
@@ -924,7 +923,6 @@ class FeastRegistryBuilder:
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
-            request_feature_views=[],
         )
 
         first_store = feast_stores[0]

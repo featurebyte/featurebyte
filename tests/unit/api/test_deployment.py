@@ -92,7 +92,7 @@ def test_get_online_serving_code_unsupported_language(deployment):
     assert deployment.enabled is True
     with pytest.raises(NotImplementedError) as exc:
         deployment.get_online_serving_code(language="java")
-    assert "Supported languages: ['python', 'sh']" in str(exc.value)
+    assert "Supported languages: 'python' or 'sh'" in str(exc.value)
 
 
 def test_list_deployment(deployment, snowflake_feature_store):

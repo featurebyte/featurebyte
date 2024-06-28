@@ -20,7 +20,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
     ObservationTableModel creation schema
     """
 
-    sample_rows: Optional[int] = Field(ge=0)
+    sample_rows: Optional[int] = Field(ge=0, default=None)
     request_input: ObservationInput
     skip_entity_validation_checks: bool = Field(default=False)
     purpose: Optional[Purpose] = Field(default=None)
@@ -59,12 +59,12 @@ class ObservationTableUpdate(FeatureByteBaseModel):
     ObservationTable Update schema
     """
 
-    context_id: Optional[PydanticObjectId]
-    context_id_to_remove: Optional[PydanticObjectId]
-    use_case_id_to_add: Optional[PydanticObjectId]
-    use_case_id_to_remove: Optional[PydanticObjectId]
-    purpose: Optional[Purpose]
-    name: Optional[NameStr]
+    context_id: Optional[PydanticObjectId] = None
+    context_id_to_remove: Optional[PydanticObjectId] = None
+    use_case_id_to_add: Optional[PydanticObjectId] = None
+    use_case_id_to_remove: Optional[PydanticObjectId] = None
+    purpose: Optional[Purpose] = None
+    name: Optional[NameStr] = None
 
 
 class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, ObservationTableUpdate):
@@ -72,4 +72,4 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     ObservationTable Update schema for service
     """
 
-    use_case_ids: Optional[List[PydanticObjectId]]
+    use_case_ids: Optional[List[PydanticObjectId]] = None

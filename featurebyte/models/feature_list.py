@@ -7,12 +7,22 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set
 
 import functools
+import json
 from collections import defaultdict
 from pathlib import Path
 
 import pymongo
-from bson.objectid import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, parse_obj_as, root_validator, validator
+from bson import ObjectId
+from pydantic import (
+    Field,
+    PrivateAttr,
+    RootModel,
+    StrictStr,
+    field_serializer,
+    field_validator,
+    model_validator,
+    parse_obj_as,
+)
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -84,12 +94,12 @@ class FeatureReadinessTransition(FeatureByteBaseModel):
 
 
 @functools.total_ordering
-class FeatureReadinessDistribution(FeatureByteBaseModel):
+class FeatureReadinessDistribution(RootModel):
     """
     Feature readiness distribution
     """
 
-    __root__: List[FeatureReadinessCount]
+    root: List[FeatureReadinessCount]
 
     @property
     def total_count(self) -> int:
@@ -100,7 +110,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         -------
         int
         """
-        return sum(readiness_count.count for readiness_count in self.__root__)
+        return sum(readiness_count.count for readiness_count in self.root)
 
     @staticmethod
     def _to_count_per_readiness_map(
@@ -110,7 +120,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         for feature_readiness in FeatureReadiness:
             output[feature_readiness] = 0
 
-        for feature_readiness_count in feature_readiness_dist.__root__:
+        for feature_readiness_count in feature_readiness_dist.root:
             output[feature_readiness_count.readiness] += feature_readiness_count.count
         return output
 
@@ -166,7 +176,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         Fraction of production ready features
         """
         production_ready_cnt = 0
-        for readiness_count in self.__root__:
+        for readiness_count in self.root:
             if readiness_count.readiness == FeatureReadiness.PRODUCTION_READY:
                 production_ready_cnt += readiness_count.count
         return production_ready_cnt / max(self.total_count, 1)
@@ -203,7 +213,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
                 readiness_dist.append(
                     FeatureReadinessCount(readiness=feature_readiness, count=count)
                 )
-        return FeatureReadinessDistribution(__root__=readiness_dist)
+        return FeatureReadinessDistribution(readiness_dist)
 
     def worst_case(self) -> FeatureReadinessDistribution:
         """
@@ -214,9 +224,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         FeatureReadinessDistribution
         """
         return FeatureReadinessDistribution(
-            __root__=[
-                FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
-            ]
+            [FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)]
         )
 
 
@@ -226,7 +234,7 @@ class FeatureNodeDefinitionHash(FeatureByteBaseModel):
     """
 
     node_name: str
-    definition_hash: Optional[str]
+    definition_hash: Optional[str] = None
 
 
 class FeatureCluster(FeatureByteBaseModel):
@@ -237,11 +245,11 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
-    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]]
-    combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]] = None
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = None
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(frozen=True)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "combined_relationships_info" in values:
@@ -319,60 +327,59 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Store specific info for the feature list
     """
 
-    version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
+    version: VersionIdentifier = Field(frozen=True, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None  # DEV-556
+        frozen=True, default=None  # DEV-556
     )
     features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
-        allow_mutation=False, default=None
+        frozen=True, default=None
     )
-    supported_serving_entity_ids: List[ServingEntity] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    supported_serving_entity_ids: List[ServingEntity] = Field(frozen=True, default_factory=list)
     readiness_distribution: FeatureReadinessDistribution = Field(
-        allow_mutation=False, default_factory=list
+        frozen=True, default=FeatureReadinessDistribution(root=[])
     )
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    deployed: bool = Field(allow_mutation=False, default=False)
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(frozen=True, default_factory=list)
+    deployed: bool = Field(frozen=True, default=False)
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    feature_clusters_path: Optional[str] = Field(default=None)
-    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters")
+    feature_clusters_path: Optional[str] = None
+    internal_feature_clusters: Optional[List[Any]] = Field(None, alias="feature_clusters")
     _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
-    primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    primary_entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
-        allow_mutation=False, default_factory=list
+        frozen=True, default_factory=list
     )
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    feature_list_namespace_id: PydanticObjectId = Field(
-        allow_mutation=False, default_factory=ObjectId
-    )
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    feature_list_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
 
     # pydantic validators
-    _sort_ids_validator = validator(
+    _sort_ids_validator = field_validator(
         "online_enabled_feature_ids",
         "features_primary_entity_ids",
         "primary_entity_ids",
         "entity_ids",
         "table_ids",
-        allow_reuse=True,
+        mode="after",
     )(construct_sort_validator())
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+    _version_validator = field_validator("version", mode="before")(version_validator)
 
-    @validator("supported_serving_entity_ids")
+    @field_serializer("internal_feature_clusters", when_used="json")
+    def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
+        _ = clusters
+        if clusters:
+            return [json.loads(cluster.model_dump_json()) for cluster in self.feature_clusters]
+        return None
+
+    @field_validator("supported_serving_entity_ids")
     @classmethod
     def _validate_supported_serving_entity_ids(
         cls, value: List[ServingEntity]
@@ -382,7 +389,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             for serving_entity in sorted(value, key=lambda e: (len(e), e))
         ]
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
@@ -413,7 +420,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
             # some sanity check
             total_count = sum(
-                read_count.count for read_count in values["readiness_distribution"].__root__
+                read_count.count for read_count in values["readiness_distribution"].root
             )
             if total_count != len(values["feature_ids"]):
                 raise ValueError(
@@ -439,7 +446,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         for feature in features:
             readiness_count_map[feature.readiness] += 1
         return FeatureReadinessDistribution(
-            __root__=[
+            [
                 FeatureReadinessCount(readiness=readiness, count=count)
                 for readiness, count in readiness_count_map.items()
             ]

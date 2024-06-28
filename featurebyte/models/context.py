@@ -5,7 +5,7 @@ This module contains context related models.
 from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import root_validator, validator
+from pydantic import field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
@@ -30,18 +30,18 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     # TODO: make graph attribute lazy
 
     primary_entity_ids: List[PydanticObjectId]
-    graph: Optional[QueryGraph]
-    node_name: Optional[str]
+    graph: Optional[QueryGraph] = None
+    node_name: Optional[str] = None
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = None
+    default_eda_table_id: Optional[PydanticObjectId] = None
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+    _sort_ids_validator = field_validator("primary_entity_ids", mode="after")(
         construct_sort_validator()
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _set_primary_entity_ids(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         entity_ids = values.get("entity_ids", None)

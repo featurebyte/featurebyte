@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
@@ -22,17 +22,17 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     TargetTable creation payload
     """
 
-    serving_names_mapping: Optional[Dict[str, str]]
-    target_id: Optional[PydanticObjectId]
-    graph: Optional[QueryGraph] = Field(default=None)
+    serving_names_mapping: Optional[Dict[str, str]] = None
+    target_id: Optional[PydanticObjectId] = None
+    graph: Optional[QueryGraph] = None
     # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
     # for backwards compatibility reasons.
-    node_names: Optional[List[StrictStr]] = Field(default=None)
-    request_input: Optional[TargetInput]
-    context_id: Optional[PydanticObjectId]
+    node_names: Optional[List[StrictStr]] = None
+    request_input: Optional[TargetInput] = None
+    context_id: Optional[PydanticObjectId] = None
     skip_entity_validation_checks: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         graph = values.get("graph", None)
@@ -91,7 +91,7 @@ class TargetTableListRecord(BaseMaterializedTableListRecord):
     feature_store_id: PydanticObjectId
     observation_table_id: PydanticObjectId
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["feature_store_id"] = values["location"]["feature_store_id"]

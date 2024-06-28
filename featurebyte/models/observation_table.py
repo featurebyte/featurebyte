@@ -11,7 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -46,8 +46,8 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: Optional[PydanticObjectId]
-    observation_table_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = None
+    observation_table_id: Optional[PydanticObjectId] = None
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
     async def materialize(
@@ -139,17 +139,17 @@ class ObservationTableModel(MaterializedTableModel):
 
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
-    context_id: Optional[PydanticObjectId] = Field(default=None)
+    context_id: Optional[PydanticObjectId] = None
     use_case_ids: List[PydanticObjectId] = Field(default_factory=list)
-    purpose: Optional[Purpose] = Field(default=None)
-    least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
+    purpose: Optional[Purpose] = None
+    least_recent_point_in_time: Optional[StrictStr] = None
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
-    min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
+    min_interval_secs_between_entities: Optional[float] = None
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
     has_row_index: Optional[bool] = Field(default=False)
-    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    target_namespace_id: Optional[PydanticObjectId] = None
 
-    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+    _sort_primary_entity_ids_validator = field_validator("primary_entity_ids", mode="after")(
         construct_sort_validator()
     )
 
@@ -167,7 +167,7 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
-    @validator("most_recent_point_in_time", "least_recent_point_in_time")
+    @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
     def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
         if value is None:

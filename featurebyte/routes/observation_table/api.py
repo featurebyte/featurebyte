@@ -12,7 +12,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -22,6 +21,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -84,7 +84,7 @@ async def upload_observation_table(
 
 @router.get("/{observation_table_id}", response_model=ObservationTableModel)
 async def get_observation_table(
-    request: Request, observation_table_id: PydanticObjectId
+    request: Request, observation_table_id: PyObjectId
 ) -> ObservationTableModel:
     """
     Get ObservationTable
@@ -97,9 +97,7 @@ async def get_observation_table(
 
 
 @router.delete("/{observation_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
-async def delete_observation_table(
-    request: Request, observation_table_id: PydanticObjectId
-) -> Task:
+async def delete_observation_table(request: Request, observation_table_id: PyObjectId) -> Task:
     """
     Delete ObservationTable by submitting a deletion task
     """
@@ -135,7 +133,7 @@ async def list_observation_tables(
 @router.get("/audit/{observation_table_id}", response_model=AuditDocumentList)
 async def list_observation_table_audit_logs(
     request: Request,
-    observation_table_id: PydanticObjectId,
+    observation_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -158,7 +156,7 @@ async def list_observation_table_audit_logs(
 
 @router.get("/{observation_table_id}/info", response_model=ObservationTableInfo)
 async def get_observation_table_info(
-    request: Request, observation_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    request: Request, observation_table_id: PyObjectId, verbose: bool = VerboseQuery
 ) -> ObservationTableInfo:
     """
     Get ObservationTable info
@@ -170,7 +168,7 @@ async def get_observation_table_info(
 
 @router.get("/pyarrow_table/{observation_table_id}")
 async def download_table_as_pyarrow_table(
-    request: Request, observation_table_id: PydanticObjectId
+    request: Request, observation_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download ObservationTable as pyarrow table
@@ -184,7 +182,7 @@ async def download_table_as_pyarrow_table(
 
 @router.get("/parquet/{observation_table_id}")
 async def download_table_as_parquet(
-    request: Request, observation_table_id: PydanticObjectId
+    request: Request, observation_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download ObservationTable as parquet file
@@ -199,7 +197,7 @@ async def download_table_as_parquet(
 @router.patch("/{observation_table_id}/description", response_model=ObservationTableModel)
 async def update_observation_table_description(
     request: Request,
-    observation_table_id: PydanticObjectId,
+    observation_table_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> ObservationTableModel:
     """
@@ -216,7 +214,7 @@ async def update_observation_table_description(
 @router.patch("/{observation_table_id}", response_model=ObservationTableModel)
 async def update_observation_table(
     request: Request,
-    observation_table_id: PydanticObjectId,
+    observation_table_id: PyObjectId,
     data: ObservationTableUpdate,
 ) -> ObservationTableModel:
     """

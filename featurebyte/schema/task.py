@@ -3,17 +3,19 @@ TaskStatus API payload schema
 """
 
 from typing import Any, Dict, List, Optional, Set, Union
+from typing_extensions import Annotated
 
-import datetime
-from uuid import UUID
+import uuid
+from datetime import datetime
 
-from pydantic import Field
+from pydantic import AfterValidator, Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.schema.common.base import PaginationMixin
 
-TaskId = Union[PydanticObjectId, UUID]
+UUID4 = Union[uuid.UUID, Annotated[str, AfterValidator(lambda x: uuid.UUID(x, version=4))]]
+TaskId = Union[UUID4, PydanticObjectId]
 
 
 class TaskStatus(StrEnum):
@@ -59,13 +61,13 @@ class Task(FeatureByteBaseModel):
     TaskStatus retrieval schema
     """
 
-    id: TaskId = Field(allow_mutation=False)
-    status: TaskStatus = Field(allow_mutation=False)
+    id: TaskId = Field(frozen=True)
+    status: TaskStatus = Field(frozen=True)
     output_path: Optional[str]
     payload: Dict[str, Any]
     traceback: Optional[str]
-    start_time: Optional[datetime.datetime]
-    date_done: Optional[datetime.datetime]
+    start_time: Optional[datetime]
+    date_done: Optional[datetime]
     progress: Optional[Dict[str, Any]] = Field(default=None)
 
 

@@ -40,6 +40,7 @@ from featurebyte.models.observation_table import ObservationTableModel, TargetIn
 from featurebyte.models.request_input import BaseRequestInput
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -603,7 +604,7 @@ class ObservationTableService(
         )
         graph, node = source_table.frame.extract_pruned_graph_and_node()
         sample = FeatureStoreSample(
-            graph=graph,
+            graph=QueryGraph(**graph.dict(by_alias=True)),
             node_name=node.name,
             stats_names=["unique", "max", "min", "%missing"],
             feature_store_id=feature_store.id,

@@ -18,7 +18,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     MissingValueImputation,
 )
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 class ViewType(StrEnum):
@@ -121,12 +121,15 @@ class BaseViewTestSuite:
             )
         assert metadata.view_mode == "auto"
         assert metadata.drop_column_names == expected_drop_column_names
-        assert metadata.column_cleaning_operations == [
-            {
-                "column_name": self.col,
-                "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
-            }
-        ]
+        compare_pydantic_obj(
+            metadata.column_cleaning_operations,
+            expected=[
+                {
+                    "column_name": self.col,
+                    "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
+                }
+            ],
+        )
         assert metadata.table_id == data_under_test_with_imputation.id
         assert (
             view.column_cleaning_operations

@@ -4,7 +4,7 @@ ItemTable API payload schema
 
 from typing import List, Literal
 
-from pydantic import Field, StrictStr, validator
+from pydantic import StrictStr, field_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -18,14 +18,14 @@ class ItemTableCreate(TableCreate):
     ItemTable creation schema
     """
 
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     event_id_column: StrictStr
     item_id_column: StrictStr
     event_table_id: PydanticObjectId
 
     # pydantic validators
-    _special_columns_validator = validator(
-        "record_creation_timestamp_column", "event_id_column", "item_id_column", allow_reuse=True
+    _special_columns_validator = field_validator(
+        "record_creation_timestamp_column", "event_id_column", "item_id_column", mode="after"
     )(TableCreate._special_column_validator)
 
 

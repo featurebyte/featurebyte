@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.enum import DBVarType
@@ -57,8 +57,8 @@ class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseMod
     FeatureNamespace update schema - exposed to client
     """
 
-    default_version_mode: Optional[DefaultVersionMode]
-    default_feature_id: Optional[PydanticObjectId]
+    default_version_mode: Optional[DefaultVersionMode] = None
+    default_feature_id: Optional[PydanticObjectId] = None
 
 
 class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
@@ -66,7 +66,7 @@ class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     FeatureNamespace service update schema - used by server side only, not exposed to client
     """
 
-    feature_ids: Optional[List[PydanticObjectId]]
-    online_enabled_feature_ids: Optional[List[PydanticObjectId]]
-    readiness: Optional[FeatureReadiness]
-    default_feature_id: Optional[PydanticObjectId]
+    feature_ids: Optional[List[PydanticObjectId]] = None
+    online_enabled_feature_ids: Optional[List[PydanticObjectId]] = None
+    readiness: Optional[FeatureReadiness] = None
+    default_feature_id: Optional[PydanticObjectId] = None

@@ -4,8 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
-from typing_extensions import Literal
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from http import HTTPStatus
 
@@ -319,7 +318,7 @@ class Deployment(DeletableApiObject):
         if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY and response_dict["detail"][
             0
         ].get("loc") == ["query", "language"]:
-            message = response_dict["detail"][0]["ctx"]["permitted"]
+            message = response_dict["detail"][0]["ctx"]["expected"]
             raise NotImplementedError(f"Supported languages: {message}")
         if (
             response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
@@ -332,7 +331,7 @@ class Deployment(DeletableApiObject):
         code_template = response_dict["code_template"]
         return CodeStr(
             code_template.replace(
-                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url)
+                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url).rstrip("/")
             ).replace("<API_TOKEN>", str(current_profile.api_token)),
         )
 

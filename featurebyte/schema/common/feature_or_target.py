@@ -18,7 +18,7 @@ class FeatureOrTargetTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    observation_table_id: Optional[PydanticObjectId]
+    observation_table_id: Optional[PydanticObjectId] = None
 
 
 class ComputeRequest(FeatureByteBaseModel):
@@ -26,4 +26,4 @@ class ComputeRequest(FeatureByteBaseModel):
     Compute request
     """
 
-    serving_names_mapping: Optional[Dict[str, str]]
+    serving_names_mapping: Optional[Dict[str, str]] = None

@@ -17,7 +17,7 @@ class FeatureOrTargetPreview(ComputeRequest, PreviewObservationSet):
 
     graph: QueryGraph
     node_name: str
-    feature_store_id: Optional[PydanticObjectId]
+    feature_store_id: Optional[PydanticObjectId] = None
 
 
 class FeaturePreview(ComputeRequest, PreviewObservationSet):
@@ -25,10 +25,10 @@ class FeaturePreview(ComputeRequest, PreviewObservationSet):
     Feature Preview schema
     """
 
-    graph: Optional[QueryGraph]
-    node_name: Optional[str]
-    feature_id: Optional[PydanticObjectId]
-    feature_store_id: Optional[PydanticObjectId]
+    graph: Optional[QueryGraph] = None
+    node_name: Optional[str] = None
+    feature_id: Optional[PydanticObjectId] = None
+    feature_store_id: Optional[PydanticObjectId] = None
 
 
 class TargetPreview(ComputeRequest, PreviewObservationSet):
@@ -36,7 +36,7 @@ class TargetPreview(ComputeRequest, PreviewObservationSet):
     Target Preview schema
     """
 
-    graph: Optional[QueryGraph]
-    node_name: Optional[str]
-    target_id: Optional[PydanticObjectId]
-    feature_store_id: Optional[PydanticObjectId]
+    graph: Optional[QueryGraph] = None
+    node_name: Optional[str] = None
+    target_id: Optional[PydanticObjectId] = None
+    feature_store_id: Optional[PydanticObjectId] = None

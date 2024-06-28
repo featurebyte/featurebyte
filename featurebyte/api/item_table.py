@@ -4,21 +4,22 @@ ItemTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast
 from typing_extensions import Literal
 
 import operator
 
 from bson import ObjectId
 from cachetools import cachedmethod
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.api.api_object import ApiObjectT, get_api_object_cache_key
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import apply_column_name_modifiers
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -94,9 +95,9 @@ class ItemTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     event_table_id: PydanticObjectId = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Returns the ID of the event table that " "is associated with the item table.",
     )
 
@@ -105,8 +106,8 @@ class ItemTable(TableApiObject):
     internal_item_id_column: StrictStr = Field(alias="item_id_column")
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (
@@ -391,3 +392,6 @@ class ItemTable(TableApiObject):
         >>> fb.ItemTable.get_by_id(<item_table_id>)  # doctest: +SKIP
         """
         return cls._get_by_id(id=id)
+
+
+ItemTable.__getattr__ = GetAttrMixin.__getattr__

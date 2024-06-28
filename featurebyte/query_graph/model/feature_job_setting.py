@@ -4,7 +4,7 @@ Feature Job Setting Model
 
 from typing import Any, ClassVar, Dict
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
@@ -67,7 +67,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
         default="0s",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate feature job setting parameters
@@ -87,10 +87,13 @@ class FeatureJobSetting(FeatureByteBaseModel):
             If execution_buffer is set (not supported)
         """
         _ = cls
+        if isinstance(values, FeatureJobSetting):
+            values = values.dict(by_alias=True)
+
         # handle backward compatibility
-        if "frequency" in values:
+        if "frequency" in values and "period" not in values:
             values["period"] = values.pop("frequency")
-        if "time_modulo_frequency" in values:
+        if "time_modulo_frequency" in values and "offset" not in values:
             values["offset"] = values.pop("time_modulo_frequency")
         exec_buffer = values.get("execution_buffer")
         if exec_buffer and exec_buffer != "0s":

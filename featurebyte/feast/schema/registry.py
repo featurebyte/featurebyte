@@ -23,8 +23,8 @@ class FeastRegistryUpdate(BaseDocumentServiceUpdateSchema):
     Feast registry update schema
     """
 
-    feature_lists: Optional[List[FeatureListModel]]
+    feature_lists: Optional[List[FeatureListModel]] = None
 
     # these fields are not expected to be updated directly
-    feature_store_id: Optional[PydanticObjectId]
-    registry_path: Optional[str]
+    feature_store_id: Optional[PydanticObjectId] = None
+    registry_path: Optional[str] = None

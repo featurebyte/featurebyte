@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from cachetools import LRUCache
 from pymongo.errors import OperationFailure
 from redis import Redis
@@ -1079,7 +1079,9 @@ class BaseDocumentService(
             self._check_document_modifiable(document=document.dict(by_alias=True))
 
         # check any conflict with existing documents
-        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
+        updated_document = self.document_class(
+            **{**document.dict(by_alias=True), **copy.deepcopy(update_dict)}
+        )
         await self._check_document_unique_constraints(
             document=updated_document,
             document_class=update_document_class,
@@ -1136,7 +1138,7 @@ class BaseDocumentService(
             )
 
         # perform validation first before actual update
-        update_dict = data.dict(
+        update_dict = data.model_dump(
             exclude_none=exclude_none,
             exclude={"id": True},  # exclude id to avoid updating original document ID
             by_alias=True,  # use alias when getting update data dictionary

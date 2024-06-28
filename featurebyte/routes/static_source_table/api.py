@@ -11,7 +11,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.persistent.base import SortDir
@@ -21,6 +20,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -49,7 +49,7 @@ class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel
         self.add_router(router)
 
     async def get_table(
-        self, request: Request, static_source_table_id: PydanticObjectId
+        self, request: Request, static_source_table_id: PyObjectId
     ) -> StaticSourceTableModel:
         return await super().get_table(request, static_source_table_id)
 
@@ -70,9 +70,7 @@ async def create_static_source_table(
 
 
 @router.delete("/{static_source_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
-async def delete_static_source_table(
-    request: Request, static_source_table_id: PydanticObjectId
-) -> Task:
+async def delete_static_source_table(request: Request, static_source_table_id: PyObjectId) -> Task:
     """
     Delete StaticSourceTable by submitting a deletion task
     """
@@ -108,7 +106,7 @@ async def list_static_source_tables(
 @router.get("/audit/{static_source_table_id}", response_model=AuditDocumentList)
 async def list_static_source_table_audit_logs(
     request: Request,
-    static_source_table_id: PydanticObjectId,
+    static_source_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -131,7 +129,7 @@ async def list_static_source_table_audit_logs(
 
 @router.get("/{static_source_table_id}/info", response_model=StaticSourceTableInfo)
 async def get_static_source_table_info(
-    request: Request, static_source_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    request: Request, static_source_table_id: PyObjectId, verbose: bool = VerboseQuery
 ) -> StaticSourceTableInfo:
     """
     Get StaticSourceTable info
@@ -143,7 +141,7 @@ async def get_static_source_table_info(
 
 @router.get("/pyarrow_table/{static_source_table_id}")
 async def download_table_as_pyarrow_table(
-    request: Request, static_source_table_id: PydanticObjectId
+    request: Request, static_source_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download StaticSourceTable as pyarrow table
@@ -157,7 +155,7 @@ async def download_table_as_pyarrow_table(
 
 @router.get("/parquet/{static_source_table_id}")
 async def download_table_as_parquet(
-    request: Request, static_source_table_id: PydanticObjectId
+    request: Request, static_source_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download StaticSourceTable as parquet file
@@ -172,7 +170,7 @@ async def download_table_as_parquet(
 @router.patch("/{static_source_table_id}/description", response_model=StaticSourceTableModel)
 async def update_static_source_table_description(
     request: Request,
-    static_source_table_id: PydanticObjectId,
+    static_source_table_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> StaticSourceTableModel:
     """

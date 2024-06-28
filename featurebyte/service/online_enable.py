@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.feature_manager.model import ExtendedFeatureModel

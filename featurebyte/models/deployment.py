@@ -7,7 +7,8 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import BaseSettings, Field, StrictStr
+from pydantic import StrictStr
+from pydantic_settings import BaseSettings
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -28,14 +29,14 @@ class FeastRegistryInfo(FeatureByteBaseModel):
 class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     """Model for a deployment"""
 
-    name: Optional[StrictStr]
+    name: Optional[StrictStr] = None
     feature_list_id: PydanticObjectId
-    feature_list_namespace_id: Optional[PydanticObjectId]
+    feature_list_namespace_id: Optional[PydanticObjectId] = None
     enabled: bool
-    context_id: Optional[PydanticObjectId] = Field(default=None)
-    use_case_id: Optional[PydanticObjectId] = Field(default=None)
-    registry_info: Optional[FeastRegistryInfo] = Field(default=None)
-    serving_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    context_id: Optional[PydanticObjectId] = None
+    use_case_id: Optional[PydanticObjectId] = None
+    registry_info: Optional[FeastRegistryInfo] = None
+    serving_entity_ids: Optional[List[PydanticObjectId]] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

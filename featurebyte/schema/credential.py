@@ -5,7 +5,7 @@ Pydantic schemas for handling API payloads for credential routes
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -32,10 +32,10 @@ class CredentialCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[NameStr]
+    name: Optional[NameStr] = None
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
 
 class CredentialRead(FeatureByteBaseDocumentModel):
@@ -44,10 +44,10 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
-    @validator("database_credential", "storage_credential")
+    @field_validator("database_credential", "storage_credential")
     @classmethod
     def hide_credentials(cls, credential: Optional[BaseCredential]) -> Optional[BaseCredential]:
         """
@@ -87,8 +87,8 @@ class CredentialUpdate(FeatureByteBaseModel):
     Schema for credential update
     """
 
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
 
 class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -96,8 +96,8 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
     Credential service update schema
     """
 
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
     def encrypt(self) -> None:
         """

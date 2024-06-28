@@ -5,7 +5,7 @@ Base class for all request tables.
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.request_input import RequestInputType
@@ -20,7 +20,7 @@ class BaseRequestTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    context_id: Optional[PydanticObjectId]
+    context_id: Optional[PydanticObjectId] = None
 
 
 class BaseRequestTableListRecord(BaseMaterializedTableListRecord):
@@ -31,7 +31,7 @@ class BaseRequestTableListRecord(BaseMaterializedTableListRecord):
     feature_store_id: PydanticObjectId
     type: RequestInputType
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _extract_base_request_table_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["type"] = values["request_input"]["type"]

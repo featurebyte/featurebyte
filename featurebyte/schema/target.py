@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
@@ -55,14 +55,14 @@ class TargetInfo(FeatureByteBaseModel):
     id: PydanticObjectId
     target_name: str
     entities: EntityBriefInfoList
-    window: Optional[str]
+    window: Optional[str] = None
     has_recipe: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     primary_table: TableBriefInfoList
     metadata: Any
-    namespace_description: Optional[str]
-    description: Optional[str]
+    namespace_description: Optional[str] = None
+    description: Optional[str] = None
 
 
 class ComputeTargetRequest(ComputeRequest):
@@ -73,7 +73,7 @@ class ComputeTargetRequest(ComputeRequest):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    target_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = None
 
     @property
     def nodes(self) -> List[Node]:
@@ -92,7 +92,7 @@ class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):
     Target service update schema
     """
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = None
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

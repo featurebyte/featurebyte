@@ -4,7 +4,8 @@ FeatureByte specific BaseModel
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing_extensions import Annotated
 
 import json
 import re
@@ -12,12 +13,21 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+from bson import ObjectId
 from bson.errors import InvalidId
-from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr, root_validator, validator
-from pydantic.errors import DictError, PydanticTypeError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictStr,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import core_schema
 from pymongo.operations import IndexModel
 
+from featurebyte.common.model_util import get_version
 from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
@@ -27,17 +37,7 @@ ACTIVE_CATALOG_ID: Optional[ObjectId] = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
-if TYPE_CHECKING:
-    NameStr = str
-else:
-
-    class NameStr(StrictStr):
-        """
-        Name string type
-        """
-
-        min_length = 0
-        max_length = 255
+NameStr = Annotated[str, StringConstraints(min_length=0, max_length=255)]
 
 
 def get_active_catalog_id() -> Optional[ObjectId]:
@@ -64,67 +64,38 @@ def activate_catalog(catalog_id: Optional[ObjectId]) -> None:
     ACTIVE_CATALOG_ID = catalog_id
 
 
-class PydanticObjectId(ObjectId):
-    """
-    Pydantic-compatible Object Id type
-    """
+class _ObjectIdPydanticAnnotation:
+    # Based on https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types.
 
     @classmethod
-    def __get_validators__(cls) -> Any:
-        yield cls.validate
+    def __get_pydantic_core_schema__(
+        cls,
+        _source_type: Any,
+        _handler: Callable[[Any], core_schema.CoreSchema],
+    ) -> core_schema.CoreSchema:
+        def validate_from_str(input_value: str) -> ObjectId:
+            try:
+                return ObjectId(input_value)
+            except InvalidId:
+                raise ValueError(f"Invalid ObjectId: {input_value}")
 
-    @classmethod
-    def validate(cls, value: Union[str, bytes, ObjectId]) -> ObjectId:
-        """
-        Validate value is ObjectID type and convert Object ID string to ObjectID
-
-        Parameters
-        ----------
-        value: Union[str, bytes, ObjectId]
-            value to validate / convert
-
-        Returns
-        -------
-        ObjectId
-            Converted / validated value
-
-        Raises
-        ------
-        TypeError
-            Input string is not a valid ObjectId value
-        """
-        if isinstance(value, bytes):
-            value = value.decode("utf-8")
-        try:
-            return ObjectId(value)
-        except InvalidId as exc:
-            raise TypeError("Id must be of type PydanticObjectId") from exc
-
-    @classmethod
-    def __modify_schema__(cls, field_schema: Dict[str, Any]) -> Any:
-        field_schema.update(type="string")
+        return core_schema.union_schema(
+            [
+                # check if it's an instance first before doing any further work
+                core_schema.is_instance_schema(ObjectId),
+                core_schema.no_info_plain_validator_function(validate_from_str),
+            ],
+            serialization=core_schema.to_string_ser_schema(),
+        )
 
 
-class FeatureByteTypeError(PydanticTypeError):
-    """
-    FeatureByte specific type error
-    """
-
-    object_type: str
-    msg_template = "value is not a valid {object_type} type"
+PydanticObjectId = Annotated[ObjectId, _ObjectIdPydanticAnnotation]
 
 
 class FeatureByteBaseModel(BaseModel):
     """
     FeatureByte specific BaseModel
     """
-
-    @classmethod
-    def validate(cls: Type[Model], value: Any) -> Model:
-        try:
-            return super().validate(value)
-        except DictError as exc:
-            raise FeatureByteTypeError(object_type=cls.__name__) from exc
 
     def json_dict(self, **kwargs: Any) -> dict[str, Any]:
         """
@@ -142,24 +113,13 @@ class FeatureByteBaseModel(BaseModel):
         output: dict[str, Any] = json.loads(self.json(by_alias=True, **kwargs))
         return output
 
-    class Config:
-        """
-        Configurations for FeatureByteBaseModel
-        """
-
-        # With `validate_assignment` flag enabled, pydantic model runs validation check during attribute assignment.
-        # This also enables the feature to make attribute immutable by using Field(allow_mutation=False).
-        validate_assignment = True
-
-        # With `use_enum_values` flag enabled, pydantic model converts the enum attribute to the enum's value when
-        # storing the value in the model (`<model>.<enum_attribute>` should return enum's value rather than enum type).
-        use_enum_values = True
-
-        # With this mapping, `ObjectId` type attribute is converted to string during json serialization.
-        json_encoders = {
-            ObjectId: str,
-            np.ndarray: lambda arr: arr.tolist(),
-        }
+    # pydantic model configuration
+    model_config = ConfigDict(
+        validate_assignment=False,
+        use_enum_values=True,
+        json_encoders={np.ndarray: lambda arr: arr.tolist(), ObjectId: str},
+        arbitrary_types_allowed=True,
+    )
 
 
 class UniqueConstraintResolutionSignature(StrEnum):
@@ -233,7 +193,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
 
     fields: List[str]
     conflict_fields_signature: Dict[str, Any]
-    resolution_signature: Optional[UniqueConstraintResolutionSignature]
+    resolution_signature: Optional[UniqueConstraintResolutionSignature] = None
     extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
 
 
@@ -276,26 +236,26 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId = Field(
-        default_factory=ObjectId, alias="_id", allow_mutation=False, description="Record identifier"
+        default_factory=ObjectId, alias="_id", frozen=True, description="Record identifier"
     )
     user_id: Optional[PydanticObjectId] = Field(
-        default=None, allow_mutation=False, description="User identifier"
+        default=None, frozen=True, description="User identifier"
     )
-    name: Optional[NameStr] = Field(description="Record name")
+    name: Optional[NameStr] = Field(None, description="Record name")
     created_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record creation time"
+        default=None, frozen=True, description="Record creation time"
     )
     updated_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record last updated time"
+        default=None, frozen=True, description="Record last updated time"
     )
     block_modification_by: List[ReferenceInfo] = Field(
         default_factory=list,
-        allow_mutation=False,
+        frozen=True,
         description="List of reference information that blocks modifications to the document",
     )
     description: Optional[StrictStr] = Field(default=None, description="Record description")
 
-    @validator("id", pre=True)
+    @field_validator("id", mode="before")
     @classmethod
     def validate_id(cls, value: Any) -> Any:
         """
@@ -386,6 +346,17 @@ class VersionIdentifier(BaseModel):
     name: str
     suffix: Optional[int] = Field(default=None)
 
+    @classmethod
+    def create(cls) -> "VersionIdentifier":
+        """
+        Create a new VersionIdentifier object
+
+        Returns
+        -------
+        VersionIdentifier object
+        """
+        return cls(name=get_version())
+
     def to_str(self) -> str:
         """
         Convert the VersionIdentifier object into string
@@ -426,9 +397,11 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
 
     catalog_id: PydanticObjectId
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_catalog_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
         catalog_id = values.get("catalog_id")
         if catalog_id is None:
             values["catalog_id"] = DEFAULT_CATALOG_ID

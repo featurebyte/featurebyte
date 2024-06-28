@@ -23,7 +23,7 @@ class StaticSourceTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    sample_rows: Optional[int] = Field(ge=0)
+    sample_rows: Optional[int] = Field(ge=0, default=None)
     request_input: StaticSourceInput
 
 

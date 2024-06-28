@@ -11,6 +11,7 @@ import pytest
 from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
+from typeguard import TypeCheckError
 
 from featurebyte import list_deployments
 from featurebyte.api.entity import Entity
@@ -28,7 +29,7 @@ from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture, compare_pydantic_obj
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -160,12 +161,12 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
 
 def test_feature_list_creation__not_a_list():
     """Test FeatureList must be created from a list"""
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(TypeCheckError) as exc_info:
         FeatureList("my_feature", name="my_feature_list")
     expected_errors = (
-        "featurebyte.api.feature.Feature",
-        "BaseFeatureGroup",
-        "got str instead",
+        'item 0 of argument "items" (str) did not match any element in the union:\n'
+        "  featurebyte.api.feature.Feature: is not an instance of featurebyte.api.feature.Feature\n"
+        "  BaseFeatureGroup: is not an instance of featurebyte.api.feature_group.BaseFeatureGroup"
     )
     for expected_error in expected_errors:
         assert expected_error in str(exc_info.value)
@@ -173,20 +174,19 @@ def test_feature_list_creation__not_a_list():
 
 def test_feature_list_creation__not_a_sequence():
     """Test FeatureList must be created from a list"""
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(TypeCheckError) as exc_info:
         FeatureList(123, name="my_feature_list")
-    assert 'type of argument "items" must be a sequence; got int instead' == str(exc_info.value)
+    assert 'argument "items" (int) is not a sequence' == str(exc_info.value)
 
 
 def test_feature_list_creation__invalid_item():
     """Test FeatureList creation list cannot have invalid types"""
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(TypeCheckError) as exc_info:
         FeatureList(["my_feature"], name="my_feature_list")
     expected_errors = (
-        'type of argument "items"[0] must be one of ',
-        "featurebyte.api.feature.Feature",
-        "BaseFeatureGroup",
-        "got str instead",
+        "did not match any element in the union:\n  "
+        "featurebyte.api.feature.Feature: is not an instance of featurebyte.api.feature.Feature\n  "
+        "BaseFeatureGroup: is not an instance of featurebyte.api.feature_group.BaseFeatureGroup"
     )
     for expected_error in expected_errors:
         assert expected_error in str(exc_info.value)
@@ -268,9 +268,12 @@ def test_feature_group__getitem__type_not_supported(production_ready_feature):
     Test FeatureGroup.__getitem__ with not supported key type
     """
     feature_group = FeatureGroup([production_ready_feature])
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = feature_group[True]
-    expected_msg = 'type of argument "item" must be one of (str, List[str]); got bool instead'
+    expected_msg = (
+        'argument "item" (bool) did not match any element in the union:\n'
+        "  str: is not an instance of str\n  List[str]: is not a list"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -285,7 +288,7 @@ def test_feature_group__setitem__unnamed_feature(production_ready_feature, featu
     feature_object = feature_group.feature_objects["sum_30m_plus_456"]
     feature_node = feature_object.node
     assert feature_node.type == NodeType.ALIAS
-    assert feature_node.parameters == {"name": "sum_30m_plus_456"}
+    compare_pydantic_obj(feature_node.parameters, expected={"name": "sum_30m_plus_456"})
 
     # check name of the feature in FeatureGroup is updated
     assert feature_object.name == "sum_30m_plus_456"
@@ -308,13 +311,13 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     """
     feature_group = FeatureGroup([production_ready_feature])
     new_feature = production_ready_feature + 123
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(TypeCheckError) as exc_info:
         feature_group[None] = new_feature
-    assert (
-        str(exc_info.value)
-        == 'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, '
-        "str]); got NoneType instead"
+    expected_error = (
+        'argument "key" (None) did not match any element in the union:\n'
+        "  str: is not an instance of str\n  Tuple[featurebyte.api.feature.Feature, str]: is not a tuple"
     )
+    assert expected_error in str(exc_info.value)
 
 
 def test_feature_group__setitem__with_series_not_allowed(production_ready_feature, saved_scd_table):
@@ -324,12 +327,14 @@ def test_feature_group__setitem__with_series_not_allowed(production_ready_featur
     scd_view = saved_scd_table.get_view()
     series = scd_view["col_int"]
     feature_group = FeatureGroup([production_ready_feature])
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         feature_group[series, "production_ready_feature"] = 900
-    assert (
-        'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, str]); got tuple instead'
-        in str(exc)
+    expected_error = (
+        'argument "key" (tuple) did not match any element in the union:\n'
+        "  str: is not an instance of str\n  "
+        "Tuple[featurebyte.api.feature.Feature, str]: item 0 is not an instance of featurebyte.api.feature.Feature"
     )
+    assert expected_error in str(exc.value)
 
 
 def test_feature_group__preview_zero_feature():
@@ -1022,9 +1027,9 @@ def test_save_feature_group(saved_feature_list):
 def test_feature_list_constructor():
     """Test FeatureList constructor"""
     _ = FeatureList([], "my_fl")  # ok
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         FeatureList([])
-    assert "missing a required argument: 'name'" in str(exc.value)
+    assert "missing 1 required positional argument: 'name'" in str(exc.value)
 
 
 def test_list_features(saved_feature_list, float_feature):
@@ -1161,27 +1166,23 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_a
 
     feature_list = FeatureList([new_feat], name="my_fl")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
 
     new_feat.update_readiness(readiness="PRODUCTION_READY")
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [
+        {"readiness": "PRODUCTION_READY", "count": 1}
+    ]
 
     feature_list.save()
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [
+        {"readiness": "PRODUCTION_READY", "count": 1}
+    ]
 
     new_feat.update_readiness(readiness="PUBLIC_DRAFT")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PUBLIC_DRAFT", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "PUBLIC_DRAFT", "count": 1}]
 
 
 def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
@@ -1218,9 +1219,7 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     # check properties derived from feature list model directly
     assert feature_list.saved is False
     assert feature_list.online_enabled_feature_ids == []
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 3}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 3}]
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.deployed is False
 
@@ -1236,9 +1235,7 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     # check properties derived from feature list model directly
     assert saved_feature_list.saved
     assert saved_feature_list.online_enabled_feature_ids == []
-    assert saved_feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 1}]
-    }
+    assert saved_feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
     assert saved_feature_list.production_ready_fraction == 0.0
     assert saved_feature_list.deployed is False
 

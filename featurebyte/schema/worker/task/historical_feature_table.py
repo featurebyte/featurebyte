@@ -26,4 +26,4 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
-    observation_set_storage_path: Optional[str]
+    observation_set_storage_path: Optional[str] = None

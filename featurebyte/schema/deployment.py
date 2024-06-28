@@ -20,9 +20,9 @@ class DeploymentCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[NameStr]
+    name: Optional[NameStr] = None
     feature_list_id: PydanticObjectId
-    use_case_id: Optional[PydanticObjectId]
+    use_case_id: Optional[PydanticObjectId] = None
 
 
 class DeploymentList(PaginationMixin):
@@ -38,7 +38,7 @@ class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
     Schema for deployment update
     """
 
-    enabled: Optional[bool]
+    enabled: Optional[bool] = None
 
 
 class DeploymentServiceUpdate(DeploymentUpdate):
@@ -46,7 +46,7 @@ class DeploymentServiceUpdate(DeploymentUpdate):
     Schema for deployment service update
     """
 
-    registry_info: Optional[FeastRegistryInfo]
+    registry_info: Optional[FeastRegistryInfo] = None
 
 
 class DeploymentSummary(FeatureByteBaseModel):

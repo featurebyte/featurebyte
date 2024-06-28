@@ -23,7 +23,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     MissingValueImputation,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 @pytest.fixture
@@ -64,12 +64,15 @@ def test_auto_view_mode(snowflake_scd_table_with_imputation):
     assert snowflake_scd_table_with_imputation.record_creation_timestamp_column is None
     assert metadata.view_mode == "auto"
     assert metadata.drop_column_names == []
-    assert metadata.column_cleaning_operations == [
-        {
-            "column_name": "col_int",
-            "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
-        }
-    ]
+    compare_pydantic_obj(
+        metadata.column_cleaning_operations,
+        expected=[
+            {
+                "column_name": "col_int",
+                "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
+            }
+        ],
+    )
     assert metadata.table_id == snowflake_scd_table_with_imputation.id
 
     # check that cleaning graph is created
@@ -509,9 +512,10 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     ).strip()
     assert change_view.preview_sql() == expected_sql
     assert change_view.node.type == NodeType.GRAPH
-    assert change_view.node.parameters.graph.edges[:1] == [
-        {"source": "proxy_input_1", "target": "project_1"},  # no cleaning operation
-    ]
+    compare_pydantic_obj(
+        change_view.node.parameters.graph.edges[:1],
+        expected=[{"source": "proxy_input_1", "target": "project_1"}],  # no cleaning operation
+    )
 
     # check the case when the table has cleaning operations
     # cleaned table should be used to generate the change view
@@ -574,10 +578,13 @@ def test_get_change_view__keep_record_creation_timestamp_column(
 
     # check the change view graph node
     assert change_view.node.type == NodeType.GRAPH
-    assert change_view.node.parameters.graph.edges[:2] == [
-        {"source": "proxy_input_1", "target": "project_1"},
-        {"source": "project_1", "target": "graph_1"},
-    ]
+    compare_pydantic_obj(
+        change_view.node.parameters.graph.edges[:2],
+        expected=[
+            {"source": "proxy_input_1", "target": "project_1"},
+            {"source": "project_1", "target": "graph_1"},
+        ],
+    )
     nested_graph_node = change_view.node.parameters.graph.get_node_by_name("graph_1")
     assert nested_graph_node.parameters.type == "cleaning"
 

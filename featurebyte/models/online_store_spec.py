@@ -4,7 +4,7 @@ This module contains Tile related models
 
 from typing import Any, Dict, List, cast
 
-from pydantic import validator
+from pydantic import field_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -37,7 +37,8 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     feature: ExtendedFeatureModel
     precompute_queries: List[OnlineStoreComputeQueryModel] = []
 
-    @validator("precompute_queries", always=True)
+    @field_validator("precompute_queries", mode="before")
+    @classmethod
     def _generate_precompute_queries(  # pylint: disable=no-self-argument
         cls,
         val: List[OnlineStoreComputeQueryModel],

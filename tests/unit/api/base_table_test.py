@@ -6,11 +6,13 @@ import textwrap
 
 import pandas as pd
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte import Entity
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     MissingValueImputation,
@@ -168,6 +170,7 @@ class BaseTableTestSuite:
         else:
             with pytest.raises(ValueError) as exc:
                 table_under_test.frame._get_sample_payload(
+                    graph=QueryGraph(),
                     from_timestamp="2020-01-01",
                     to_timestamp="2020-01-02",
                 )
@@ -203,9 +206,11 @@ class BaseTableTestSuite:
         assert table_col.description == "new description"
 
         expected_error = (
-            'type of argument "description" must be one of (str, NoneType); got float instead'
+            "did not match any element in the union:\n"
+            "  str: is not an instance of str\n"
+            "  NoneType: is not an instance of NoneType"
         )
-        with pytest.raises(TypeError) as exc:
+        with pytest.raises(TypeCheckError) as exc:
             table_under_test.update_column_description(self.col, 1.0)
         assert expected_error in str(exc.value)
 

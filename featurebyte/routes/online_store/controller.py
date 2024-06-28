@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple, cast
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineStoreModel

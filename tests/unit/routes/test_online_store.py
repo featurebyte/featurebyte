@@ -37,9 +37,10 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             {key: val for key, val in payload.items() if key != "name"},
             [
                 {
+                    "input": {key: val for key, val in payload.items() if key != "name"},
                     "loc": ["body", "name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
             ],
         )

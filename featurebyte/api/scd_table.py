@@ -4,16 +4,17 @@ SCDTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Tuple, Type, cast
 from typing_extensions import Literal
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.scd_table import SCDTableModel
@@ -70,15 +71,17 @@ class SCDTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        alias="default_feature_job_setting"
+        default=None, alias="default_feature_job_setting"
     )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
+    internal_surrogate_key_column: Optional[StrictStr] = Field(
+        default=None, alias="surrogate_key_column"
+    )
     internal_end_timestamp_column: Optional[StrictStr] = Field(
         default=None, alias="end_timestamp_column"
     )
@@ -87,8 +90,8 @@ class SCDTable(TableApiObject):
     )
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (
@@ -533,3 +536,6 @@ class SCDTable(TableApiObject):
             allow_update_local=True,
             add_internal_prefix=True,
         )
+
+
+SCDTable.__getattr__ = GetAttrMixin.__getattr__

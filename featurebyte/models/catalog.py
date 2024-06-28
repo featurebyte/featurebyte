@@ -9,7 +9,7 @@ from typing import List, Optional
 from datetime import datetime
 
 import pymongo
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
@@ -66,7 +66,7 @@ class CatalogModel(FeatureByteBaseDocumentModel):
     )
 
     # pydantic validators
-    _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(
+    _sort_ids_validator = field_validator("default_feature_store_ids", mode="after")(
         construct_sort_validator()
     )
 

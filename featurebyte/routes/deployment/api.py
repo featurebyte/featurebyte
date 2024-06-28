@@ -9,7 +9,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -19,6 +18,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -59,7 +59,7 @@ async def create_deployment(request: Request, data: DeploymentCreate) -> Task:
 
 
 @router.get("/{deployment_id}", response_model=DeploymentModel)
-async def get_deployment(request: Request, deployment_id: PydanticObjectId) -> DeploymentModel:
+async def get_deployment(request: Request, deployment_id: PyObjectId) -> DeploymentModel:
     """
     Get Deployment
     """
@@ -70,7 +70,7 @@ async def get_deployment(request: Request, deployment_id: PydanticObjectId) -> D
 
 @router.patch("/{deployment_id}")
 async def update_deployment(
-    request: Request, deployment_id: PydanticObjectId, data: DeploymentUpdate, response: Response
+    request: Request, deployment_id: PyObjectId, data: DeploymentUpdate, response: Response
 ) -> Optional[Task]:
     """
     Update Deployment
@@ -92,7 +92,7 @@ async def list_deployments(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-    feature_list_id: Optional[PydanticObjectId] = None,
+    feature_list_id: Optional[PyObjectId] = None,
 ) -> DeploymentList:
     """
     List Deployments
@@ -113,7 +113,7 @@ async def list_deployments(
 
 
 @router.delete("/{deployment_id}")
-async def delete_deployment(request: Request, deployment_id: PydanticObjectId) -> None:
+async def delete_deployment(request: Request, deployment_id: PyObjectId) -> None:
     """
     Delete Deployment
     """
@@ -124,7 +124,7 @@ async def delete_deployment(request: Request, deployment_id: PydanticObjectId) -
 @router.get("/audit/{deployment_id}", response_model=AuditDocumentList)
 async def list_deployment_audit_logs(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -148,7 +148,7 @@ async def list_deployment_audit_logs(
 @router.get("/{deployment_id}/info", response_model=DeploymentInfo)
 async def get_deployment_info(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     verbose: bool = False,
 ) -> DeploymentInfo:
     """
@@ -168,7 +168,7 @@ async def get_deployment_info(
 )
 async def compute_online_features(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     data: OnlineFeaturesRequestPayload,
 ) -> OnlineFeaturesResponseModel:
     """
@@ -219,7 +219,7 @@ async def get_deployment_summary(
 @router.patch("/{deployment_id}/description", response_model=DeploymentModel)
 async def update_deployment_description(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> DeploymentModel:
     """
@@ -236,7 +236,7 @@ async def update_deployment_description(
 @router.get("/{deployment_id}/request_code_template", response_model=DeploymentRequestCodeTemplate)
 async def get_deployment_request_code_template(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     language: Literal["python", "sh"] = Query(default="python"),
 ) -> DeploymentRequestCodeTemplate:
     """
@@ -258,7 +258,7 @@ async def get_deployment_request_code_template(
 )
 async def get_deployment_sample_entity_serving_names(
     request: Request,
-    deployment_id: PydanticObjectId,
+    deployment_id: PyObjectId,
     count: int = Query(default=1, gt=0, le=10),
 ) -> SampleEntityServingNames:
     """

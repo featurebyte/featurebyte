@@ -9,6 +9,7 @@ from datetime import datetime
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.common.model_util import get_version
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel, FeatureReadiness
@@ -115,7 +116,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         },
         "updated_at": None,
         "user_id": None,
-        "version": None,
+        "version": {"name": get_version(), "suffix": None},
         "definition": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "primary_entity_ids": [],

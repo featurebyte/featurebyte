@@ -12,7 +12,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -59,7 +59,7 @@ from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureRead
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
@@ -122,7 +122,7 @@ class Feature(
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
-        allow_mutation=False,
+        frozen=True,
         description="Provides information about the feature store that the feature is connected to.",
     )
 
@@ -145,10 +145,10 @@ class Feature(
         # of their lineage.
         return tuple()
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_store" not in values:
+    def _set_feature_store(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "feature_store" not in values:
             tabular_source = values.get("tabular_source")
             if isinstance(tabular_source, dict):
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
@@ -971,7 +971,7 @@ class Feature(
     @typechecked
     def update_readiness(
         self,
-        readiness: Literal[tuple(FeatureReadiness)],  # type: ignore[misc]
+        readiness: str,
         ignore_guardrails: bool = False,
     ) -> None:
         """
@@ -1008,6 +1008,8 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
         """
+        if isinstance(readiness, str):
+            readiness = FeatureReadiness(readiness)
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
             allow_update_local=False,
@@ -1088,7 +1090,7 @@ class Feature(
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureSQL(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
         )
 

@@ -114,7 +114,7 @@ class Profile(BaseModel):
 
     name: str
     api_url: AnyHttpUrl
-    api_token: Optional[str]
+    api_token: Optional[str] = None
     ssl_verify: bool = True
 
 
@@ -214,9 +214,10 @@ class APIClient(BaseAPIClient):
             kwargs["timeout"] = HTTP_REQUEST_TIMEOUT
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
+            full_url = f"{str(self.base_url).rstrip('/')}{url}"
             return super().request(
                 method,
-                self.base_url + str(url),
+                full_url,
                 *args,
                 **kwargs,
             )
@@ -559,7 +560,7 @@ class Configurations:
         WebsocketClient
             Websocket client
         """
-        url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
+        url = str(self.profile.api_url).replace("http://", "ws://").replace("https://", "wss://")
         url = f"{url}/ws/{task_id}"
         websocket_client = WebsocketClient(
             url=url, access_token=self.profile.api_token, ssl_verify=self.profile.ssl_verify

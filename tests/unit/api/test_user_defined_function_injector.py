@@ -10,6 +10,7 @@ import textwrap
 import pandas as pd
 import pytest
 from bson import ObjectId
+from typeguard import TypeCheckError
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.user_defined_function_injector import (
@@ -87,7 +88,7 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
     function_parameter_processor = FunctionParameterProcessor(function_parameters)
 
     # check invalid scalar type
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         function_parameter_processor._extract_node_parameters("a", 2)
     expected_error = (
         "type of x must be one of (int, featurebyte.api.view.ViewColumn, featurebyte.api.feature.Feature); "
@@ -96,13 +97,13 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
     assert expected_error in str(exc.value)
 
     # check invalid view column type
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         function_parameter_processor._extract_node_parameters(1, snowflake_event_view.col_char)
     expected_error = 'Parameter "y" has dtype FLOAT but input ViewColumn or Feature (name: col_char) has dtype CHAR.'
     assert expected_error in str(exc.value)
 
     # check mis-matched series type
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         function_parameter_processor._extract_node_parameters(
             snowflake_event_view.col_int, float_feature
         )

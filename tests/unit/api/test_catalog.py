@@ -382,7 +382,7 @@ def test_catalog_creation__input_validation():
     """
     with pytest.raises(ValidationError) as exc:
         Catalog(name=123)
-    assert "str type expected (type=type_error.str)" in str(exc.value)
+    assert "Catalog\nname\n  Input should be a valid string" in str(exc.value)
 
 
 def test_catalog__update_name(new_catalog):

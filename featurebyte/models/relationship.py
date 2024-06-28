@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
@@ -33,12 +33,12 @@ class Relationship(FeatureByteBaseDocumentModel):
     Catalog-agnostic relationship model
     """
 
-    parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
-    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parents: List[Parent] = Field(default_factory=list, frozen=True)
+    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, frozen=True)
 
     # pydantic validators
-    _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
-    _sort_parent_validator = validator("parents", allow_reuse=True)(
+    _sort_ids_validator = field_validator("ancestor_ids", mode="after")(construct_sort_validator())
+    _sort_parent_validator = field_validator("parents", mode="after")(
         construct_sort_validator(field="id")
     )
 
@@ -86,15 +86,15 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
     The Relationship class above stores all relationships for a given child in a single document.
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     relationship_type: RelationshipType
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
-    entity_column_name: Optional[str]
-    related_entity_column_name: Optional[str]
+    entity_column_name: Optional[str] = None
+    related_entity_column_name: Optional[str] = None
     enabled: bool
-    updated_by: Optional[PydanticObjectId]
+    updated_by: Optional[PydanticObjectId] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -129,7 +129,7 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
             ],
         ]
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         child_id = values.get("entity_id")

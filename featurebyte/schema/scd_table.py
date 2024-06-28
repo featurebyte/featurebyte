@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -21,7 +21,7 @@ class SCDTableCreate(TableCreate):
     SCDTable Creation Schema
     """
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     natural_key_column: StrictStr
     surrogate_key_column: Optional[StrictStr]
     effective_timestamp_column: StrictStr
@@ -32,14 +32,14 @@ class SCDTableCreate(TableCreate):
     )
 
     # pydantic validators
-    _special_columns_validator = validator(
+    _special_columns_validator = field_validator(
         "record_creation_timestamp_column",
         "natural_key_column",
         "surrogate_key_column",
         "effective_timestamp_column",
         "end_timestamp_column",
         "current_flag_column",
-        allow_reuse=True,
+        mode="after",
     )(TableCreate._special_column_validator)
 
 
@@ -56,9 +56,9 @@ class SCDDataUpdateMixin(FeatureByteBaseModel):
     SCDTable specific update schema
     """
 
-    end_timestamp_column: Optional[StrictStr]
-    current_flag_column: Optional[StrictStr]
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    end_timestamp_column: Optional[StrictStr] = None
+    current_flag_column: Optional[StrictStr] = None
+    default_feature_job_setting: Optional[FeatureJobSetting] = None
 
 
 class SCDTableUpdate(SCDDataUpdateMixin, TableUpdate):

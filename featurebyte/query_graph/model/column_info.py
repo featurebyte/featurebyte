@@ -4,7 +4,7 @@ This module contains column info related models.
 
 from typing import Any, Dict, Optional
 
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
@@ -41,9 +41,12 @@ class ColumnInfo(ColumnSpecWithDescription):
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
     description: Optional[str] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_column_info(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         critical_data_info = values.get("critical_data_info")
         dtype = DBVarType(values.get("dtype"))  # type: ignore
         if critical_data_info:

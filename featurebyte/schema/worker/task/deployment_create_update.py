@@ -2,8 +2,7 @@
 FeatureList Deploy Task Payload schema
 """
 
-from typing import ClassVar, Optional, Union
-from typing_extensions import Annotated, Literal
+from typing import Annotated, ClassVar, Literal, Optional, Union
 
 from pydantic import Field
 
@@ -23,7 +22,7 @@ class DeploymentPayloadType(StrEnum):
 class CreateDeploymentPayload(FeatureByteBaseModel):
     """Create deployment"""
 
-    type: Literal[DeploymentPayloadType.CREATE] = Field(DeploymentPayloadType.CREATE, const=True)
+    type: Literal[DeploymentPayloadType.CREATE] = DeploymentPayloadType.CREATE
     name: Optional[NameStr] = Field(default=None)
     feature_list_id: PydanticObjectId
     enabled: bool
@@ -34,7 +33,7 @@ class CreateDeploymentPayload(FeatureByteBaseModel):
 class UpdateDeploymentPayload(FeatureByteBaseModel):
     """Update deployment"""
 
-    type: Literal[DeploymentPayloadType.UPDATE] = Field(DeploymentPayloadType.UPDATE, const=True)
+    type: Literal[DeploymentPayloadType.UPDATE] = DeploymentPayloadType.UPDATE
     enabled: bool
 
 

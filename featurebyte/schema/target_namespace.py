@@ -27,10 +27,10 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
     name: NameStr
     dtype: DBVarType
     target_ids: List[PydanticObjectId] = Field(default_factory=list)
-    default_target_id: Optional[PydanticObjectId]
+    default_target_id: Optional[PydanticObjectId] = None
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
     entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    window: Optional[str]
+    window: Optional[str] = None
 
 
 class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
@@ -38,9 +38,9 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     TargetNamespace update schema - exposed to client
     """
 
-    default_version_mode: Optional[DefaultVersionMode]
-    default_target_id: Optional[PydanticObjectId]
-    window: Optional[str]
+    default_version_mode: Optional[DefaultVersionMode] = None
+    default_target_id: Optional[PydanticObjectId] = None
+    window: Optional[str] = None
 
 
 class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
@@ -48,7 +48,7 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     TargetNamespaceService update schema - used by server side only, not exposed to client
     """
 
-    target_ids: Optional[List[PydanticObjectId]]
+    target_ids: Optional[List[PydanticObjectId]] = None
 
 
 class TargetNamespaceList(PaginationMixin):

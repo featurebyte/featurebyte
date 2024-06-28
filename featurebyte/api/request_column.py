@@ -27,10 +27,10 @@ class RequestColumn(Series):
 
     # instance variables
     tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
-        allow_mutation=False, default=None
+        frozen=True, default=None
     )
     feature_store: Optional[FeatureStoreModel] = Field(  # type: ignore[assignment]
-        exclude=True, allow_mutation=False, default=None
+        exclude=True, frozen=True, default=None
     )
 
     @classmethod

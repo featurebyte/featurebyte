@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, List
 
 import pymongo
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -52,20 +52,18 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         Feature list status
     """
 
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
+    feature_list_ids: List[PydanticObjectId] = Field(frozen=True)
+    feature_namespace_ids: List[PydanticObjectId] = Field(frozen=True)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    default_feature_list_id: PydanticObjectId = Field(frozen=True)
+    status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_ids_validator = validator(
-        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
+    _sort_ids_validator = field_validator(
+        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", mode="after"
     )(construct_sort_validator())
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
         # "features" is not an attribute to the FeatureList model, when it appears in the input to

@@ -4,9 +4,10 @@ Feature list creation creation schema
 
 from __future__ import annotations
 
-from typing import ClassVar, List, Union
+from typing import Any, ClassVar, List, Literal, Union
+from typing_extensions import Annotated
 
-from pydantic import Field
+from pydantic import Discriminator, Field, Tag
 
 from featurebyte.enum import ConflictResolution, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -21,10 +22,35 @@ class FeatureParameters(FeatureByteBaseModel):
     name: NameStr
 
 
+def feature_params_discriminator(x: Any) -> Literal["feature_ids", "feature_params"]:
+    """
+    Discriminator for feature parameters
+
+    Parameters
+    ----------
+    x: Any
+        Input value
+
+    Returns
+    -------
+    Literal["feature_ids", "feature_params"]
+    """
+    if isinstance(x, list):
+        if x:
+            return feature_params_discriminator(x[0])  # type: ignore
+        return "feature_ids"
+    if isinstance(x, (dict, FeatureParameters)):
+        return "feature_params"
+    return "feature_ids"
+
+
 class FeaturesParameters(FeatureByteBaseModel):
     """Feature list feature parameters"""
 
-    features: Union[List[FeatureParameters], List[PydanticObjectId]]
+    features: Union[
+        Annotated[List[FeatureParameters], Tag("feature_params")],
+        Annotated[List[PydanticObjectId], Tag("feature_ids")],
+    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
 
 
 class FeatureListCreateTaskPayload(BaseTaskPayload):

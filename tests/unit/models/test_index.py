@@ -30,7 +30,7 @@ def test_indexes():
         fields = attribute.split(".")
         assert fields[0] in resource.__fields__, f"{fields[0]} not in {resource}"
         if len(fields) > 1:
-            check_field(resource.__fields__[fields[0]].type_, ".".join(fields[1:]))
+            check_field(resource.__fields__[fields[0]].annotation, ".".join(fields[1:]))
 
     def get_verified_indexes(model):
         """

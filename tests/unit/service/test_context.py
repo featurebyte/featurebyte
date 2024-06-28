@@ -11,6 +11,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.context import ContextUpdate
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest_asyncio.fixture(name="input_event_table_node")
@@ -179,7 +180,7 @@ async def test_context_update__success(context_service, context, view_graph, joi
         document_id=context.id,
         data=ContextUpdate(graph=view_graph, node_name=join_node["name"]),
     )
-    assert context.graph == view_graph
+    compare_pydantic_obj(context.graph, expected=QueryGraph(**view_graph))
     assert context.node_name == join_node["name"]
 
 

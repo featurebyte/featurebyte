@@ -4,15 +4,16 @@ Table model's attribute payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
-from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from bson import ObjectId
+from pydantic import Field, StrictStr, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_store import TableStatus
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -28,14 +29,14 @@ class TableCreate(FeatureByteBaseModel):
     name: NameStr
     tabular_source: TabularSource
     columns_info: List[ColumnSpecWithDescription]
-    record_creation_timestamp_column: Optional[StrictStr]
-    description: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr] = None
+    description: Optional[StrictStr] = None
 
     # pydantic validators
-    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+    _columns_info_validator = field_validator("columns_info", mode="after")(columns_info_validator)
 
-    @classmethod
-    def _special_column_validator(cls, column_name: str, values: Dict[str, Any]) -> str:
+    @staticmethod
+    def _special_column_validator(column_name: str, info: ValidationInfo) -> str:
         """
         Check if column name specified for a special column field exists in the table create columns info
 
@@ -43,8 +44,8 @@ class TableCreate(FeatureByteBaseModel):
         ----------
         column_name: str
             Special column name
-        values: Dict[str, Any]
-            Dict of values
+        info: ValidationInfo
+            Validation info
 
         Raises
         ------
@@ -55,7 +56,7 @@ class TableCreate(FeatureByteBaseModel):
         -------
         str
         """
-        columns_info = values.get("columns_info")
+        columns_info = info.data.get("columns_info")
         # columns_info is None if validation failed for columns_info - skip validation in this case
         if column_name is not None and columns_info is not None:
             columns_info = set(column_info.name for column_info in columns_info)
@@ -69,12 +70,12 @@ class TableUpdate(FeatureByteBaseModel):
     Update table payload schema
     """
 
-    status: Optional[TableStatus]
-    record_creation_timestamp_column: Optional[StrictStr]
+    status: Optional[TableStatus] = None
+    record_creation_timestamp_column: Optional[StrictStr] = None
 
     # Update of columns info is deprecated and will be removed in release 0.5.0
     # See https://featurebyte.atlassian.net/browse/DEV-2000
-    columns_info: Optional[List[ColumnInfo]]
+    columns_info: Optional[List[ColumnInfo]] = None
 
 
 class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
@@ -82,10 +83,10 @@ class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
     TableService update schema
     """
 
-    columns_info: Optional[List[ColumnInfo]]
+    columns_info: Optional[List[ColumnInfo]] = None
 
     # pydantic validators
-    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+    _columns_info_validator = field_validator("columns_info", mode="after")(columns_info_validator)
 
 
 class TableList(PaginationMixin):
@@ -93,7 +94,7 @@ class TableList(PaginationMixin):
     TableList used to deserialize list document output
     """
 
-    data: Sequence[ProxyTableModel]
+    data: List[TableModel]
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:

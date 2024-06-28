@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, BinaryIO, Literal
 
 import pandas as pd
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 from sqlglot.expressions import Select
 
 from featurebyte import SourceType
@@ -98,7 +98,7 @@ class DatabricksUnitySession(DatabricksSession):
 
     _files_client: FilesAPI = PrivateAttr()
 
-    source_type: SourceType = Field(SourceType.DATABRICKS_UNITY, const=True)
+    source_type: Literal[SourceType.DATABRICKS_UNITY] = SourceType.DATABRICKS_UNITY
     group_name: str
 
     def __init__(self, **data: Any) -> None:

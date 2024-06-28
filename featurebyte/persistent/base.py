@@ -11,7 +11,7 @@ import copy
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.models.persistent import (

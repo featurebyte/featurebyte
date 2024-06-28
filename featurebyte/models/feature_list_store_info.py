@@ -74,7 +74,7 @@ class UninitializedStoreInfo(BaseStoreInfo):
     Uninitialized store info
     """
 
-    type: Literal["uninitialized"] = Field("uninitialized", const=True)
+    type: Literal["uninitialized"] = "uninitialized"
 
     @classmethod
     def create(
@@ -92,7 +92,7 @@ class SnowflakeStoreInfo(BaseStoreInfo):
     Snowflake store info
     """
 
-    type: Literal["snowflake"] = Field("snowflake", const=True)
+    type: Literal["snowflake"] = "snowflake"
 
 
 class DataBricksStoreInfo(BaseStoreInfo):
@@ -100,7 +100,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: Literal["databricks"] = Field(default="databricks", const=True)
+    type: Literal["databricks"] = "databricks"
 
 
 class SparkStoreInfo(BaseStoreInfo):
@@ -108,7 +108,7 @@ class SparkStoreInfo(BaseStoreInfo):
     Spark store info
     """
 
-    type: Literal["spark"] = Field(default="spark", const=True)
+    type: Literal["spark"] = "spark"
 
 
 class DataBricksFeatureLookup(FeatureByteBaseModel):
@@ -118,8 +118,8 @@ class DataBricksFeatureLookup(FeatureByteBaseModel):
 
     table_name: str
     lookup_key: List[str]
-    timestamp_lookup_key: Optional[str]
-    lookback_window: Optional[str]
+    timestamp_lookup_key: Optional[str] = None
+    lookback_window: Optional[str] = None
     feature_names: List[str]
     rename_outputs: Dict[str, str]
 
@@ -155,7 +155,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: Literal["databricks_unity"] = Field(default="databricks_unity", const=True)
+    type: Literal["databricks_unity"] = "databricks_unity"
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]

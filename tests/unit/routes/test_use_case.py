@@ -31,10 +31,19 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             {**payload, "context_id": "test_id"},
             [
                 {
-                    "loc": ["body", "context_id"],
-                    "msg": "Id must be of type PydanticObjectId",
-                    "type": "type_error",
-                }
+                    "ctx": {"class": "ObjectId"},
+                    "input": "test_id",
+                    "loc": ["body", "context_id", "is-instance[ObjectId]"],
+                    "msg": "Input should be an instance of ObjectId",
+                    "type": "is_instance_of",
+                },
+                {
+                    "ctx": {"error": {}},
+                    "input": "test_id",
+                    "loc": ["body", "context_id", "function-plain[validate_from_str()]"],
+                    "msg": "Value error, Invalid ObjectId: test_id",
+                    "type": "value_error",
+                },
             ],
         )
     ]

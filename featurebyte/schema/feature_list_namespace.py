@@ -35,7 +35,7 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     FeatureListNamespace update schema
     """
 
-    status: Optional[FeatureListStatus]
+    status: Optional[FeatureListStatus] = None
 
 
 class FeatureListNamespaceServiceUpdate(
@@ -45,6 +45,6 @@ class FeatureListNamespaceServiceUpdate(
     FeatureListNamespace service update schema
     """
 
-    feature_list_ids: Optional[List[PydanticObjectId]]
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]]
-    default_feature_list_id: Optional[PydanticObjectId]
+    feature_list_ids: Optional[List[PydanticObjectId]] = None
+    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = None
+    default_feature_list_id: Optional[PydanticObjectId] = None

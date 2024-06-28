@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -19,6 +18,7 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,
@@ -104,14 +104,14 @@ class DimensionTableRouter(
         )
 
     async def get_object(
-        self, request: Request, dimension_table_id: PydanticObjectId
+        self, request: Request, dimension_table_id: PyObjectId
     ) -> DimensionTableModel:
         return await super().get_object(request, dimension_table_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        dimension_table_id: PydanticObjectId,
+        dimension_table_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -129,7 +129,7 @@ class DimensionTableRouter(
         )
 
     async def update_description(
-        self, request: Request, dimension_table_id: PydanticObjectId, data: DescriptionUpdate
+        self, request: Request, dimension_table_id: PyObjectId, data: DescriptionUpdate
     ) -> DimensionTableModel:
         return await super().update_description(request, dimension_table_id, data)
 
@@ -140,7 +140,7 @@ class DimensionTableRouter(
         return await controller.create_table(data=data)
 
     async def get_dimension_table_info(
-        self, request: Request, dimension_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+        self, request: Request, dimension_table_id: PyObjectId, verbose: bool = VerboseQuery
     ) -> DimensionTableInfo:
         """
         Retrieve dimension table info
@@ -153,7 +153,7 @@ class DimensionTableRouter(
         return info
 
     async def update_dimension_table(
-        self, request: Request, dimension_table_id: PydanticObjectId, data: DimensionTableUpdate
+        self, request: Request, dimension_table_id: PyObjectId, data: DimensionTableUpdate
     ) -> DimensionTableModel:
         """
         Update dimension table
@@ -166,7 +166,7 @@ class DimensionTableRouter(
         return dimension_table
 
     async def update_column_entity(
-        self, request: Request, dimension_table_id: PydanticObjectId, data: ColumnEntityUpdate
+        self, request: Request, dimension_table_id: PyObjectId, data: ColumnEntityUpdate
     ) -> DimensionTableModel:
         """
         Update column entity
@@ -182,7 +182,7 @@ class DimensionTableRouter(
     async def update_column_critical_data_info(
         self,
         request: Request,
-        dimension_table_id: PydanticObjectId,
+        dimension_table_id: PyObjectId,
         data: ColumnCriticalDataInfoUpdate,
     ) -> DimensionTableModel:
         """
@@ -199,7 +199,7 @@ class DimensionTableRouter(
     async def update_column_description(
         self,
         request: Request,
-        dimension_table_id: PydanticObjectId,
+        dimension_table_id: PyObjectId,
         data: ColumnDescriptionUpdate,
     ) -> DimensionTableModel:
         """
@@ -214,7 +214,7 @@ class DimensionTableRouter(
         return dimension_table
 
     async def delete_object(
-        self, request: Request, dimension_table_id: PydanticObjectId
+        self, request: Request, dimension_table_id: PyObjectId
     ) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=dimension_table_id)

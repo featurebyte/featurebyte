@@ -5,7 +5,7 @@ This module contains an extractor class to generate SDK codes from a query graph
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
@@ -53,6 +53,9 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
     no_op_node_names: Set[str] = Field(default_factory=set)
     as_info_dict_node_names: Set[str] = Field(default_factory=set)
     required_copy_node_names: Set[str] = Field(default_factory=set)
+
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _identify_output_as_info_dict(
         self,

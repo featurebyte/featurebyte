@@ -5,6 +5,7 @@ Test dimension table API object
 from unittest.mock import patch
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.enum import TableDataType
@@ -210,13 +211,13 @@ def test_create_dimension_table(snowflake_database_table, dimension_table_dict, 
     assert output == dimension_table_dict
 
     # user input validation
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_database_table.create_dimension_table(
             name=123,
             dimension_id_column="col_int",
             record_creation_timestamp_column=345,
         )
-    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
+    assert 'argument "name" (int) is not an instance of str' in str(exc.value)
 
 
 def test_create_dimension_table__duplicated_record(saved_dimension_table, snowflake_database_table):

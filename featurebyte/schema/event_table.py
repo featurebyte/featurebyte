@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import StrictStr, field_validator, model_validator
 
 from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.enum import TableDataType
@@ -22,42 +22,39 @@ class EventTableCreate(TableCreate):
     EventTable Creation Schema
     """
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
-    event_timestamp_timezone_offset: Optional[StrictStr]
-    event_timestamp_timezone_offset_column: Optional[StrictStr]
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    event_timestamp_timezone_offset: Optional[StrictStr] = None
+    event_timestamp_timezone_offset_column: Optional[StrictStr] = None
+    default_feature_job_setting: Optional[FeatureJobSetting] = None
 
     # pydantic validators
-    _special_columns_validator = validator(
+    _special_columns_validator = field_validator(
         "record_creation_timestamp_column",
         "event_id_column",
         "event_timestamp_column",
         "event_timestamp_timezone_offset_column",
-        allow_reuse=True,
+        mode="after",
     )(TableCreate._special_column_validator)
 
-    @validator("event_timestamp_timezone_offset")
-    @classmethod
-    def _validate_event_timestamp_timezone_offset(cls, value: Optional[str]) -> Optional[str]:
+    @field_validator("event_timestamp_timezone_offset")
+    @staticmethod
+    def _validate_event_timestamp_timezone_offset(value: Optional[str]) -> Optional[str]:
         if value is not None:
             validate_timezone_offset_string(value)
         return value
 
-    @root_validator()
-    @classmethod
-    def _validate_event_timestamp_timezone_offset_parameters(
-        cls, values: dict[str, Any]
-    ) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_event_timestamp_timezone_offset_parameters(self) -> "EventTableCreate":
         if (
-            values.get("event_timestamp_timezone_offset") is not None
-            and values.get("event_timestamp_timezone_offset_column") is not None
+            self.event_timestamp_timezone_offset is not None
+            and self.event_timestamp_timezone_offset_column is not None
         ):
             raise ValueError(
                 "Cannot specify both event_timestamp_timezone_offset and event_timestamp_timezone_offset_column"
             )
-        return values
+        return self
 
 
 class EventTableList(PaginationMixin):
@@ -73,7 +70,7 @@ class EventTableUpdateMixin(FeatureByteBaseModel):
     EventTable specific update schema
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    default_feature_job_setting: Optional[FeatureJobSetting] = None
 
 
 class EventTableUpdate(EventTableUpdateMixin, TableUpdate):

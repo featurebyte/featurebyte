@@ -5,14 +5,13 @@ DataColumn class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
-from typing_extensions import Literal
+from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
 
 from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
@@ -756,7 +755,9 @@ class TableApiObject(
                     feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
+                assert table.id == data_id_value
                 table.save()
+                assert table.id == data_id_value
                 return table
             existing_record = response_dict["data"][0]
             raise DuplicatedRecordException(

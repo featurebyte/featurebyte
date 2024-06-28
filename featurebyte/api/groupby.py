@@ -4,8 +4,7 @@ This module contains groupby related class
 
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, Union
-from typing_extensions import Literal
+from typing import ClassVar, List, Literal, Optional, Union
 
 import warnings
 
@@ -131,7 +130,7 @@ class GroupBy:
     def aggregate_over(
         self,
         value_column: Optional[str] = None,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: Optional[Union[AggFunc, str]] = None,
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
@@ -165,7 +164,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: Optional[Union[AggFunc, str]]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes. Use `None` to indicated unbounded window size (only
@@ -260,7 +259,7 @@ class GroupBy:
     def aggregate_asat(
         self,
         value_column: Optional[str] = None,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: Optional[Union[AggFunc, str]] = None,
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
@@ -297,7 +296,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: Optional[Union[AggFunc, str]]
             Aggregation method
         feature_name: str
             Output feature name
@@ -374,7 +373,7 @@ class GroupBy:
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: Optional[Union[AggFunc, str]] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
@@ -403,7 +402,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: Optional[Union[AggFunc, str]]
             Aggregation method
         feature_name: Optional[str]
             Output feature name
@@ -507,7 +506,7 @@ class GroupBy:
     def forward_aggregate_asat(
         self,
         value_column: Optional[str] = None,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: Optional[Union[AggFunc, str]] = None,
         target_name: Optional[str] = None,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
@@ -544,7 +543,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: Optional[Union[AggFunc, str]]
             Aggregation method
         target_name: str
             Output feature name

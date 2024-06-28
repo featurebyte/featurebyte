@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
@@ -20,6 +19,7 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortDirQuery,
 )
@@ -59,9 +59,7 @@ class SemanticRouter(
         )
 
     @staticmethod
-    async def add_parent(
-        request: Request, semantic_id: PydanticObjectId, data: Parent
-    ) -> SemanticModel:
+    async def add_parent(request: Request, semantic_id: PyObjectId, data: Parent) -> SemanticModel:
         """
         Create semantic relationship
         """
@@ -73,7 +71,7 @@ class SemanticRouter(
 
     @staticmethod
     async def remove_parent(
-        request: Request, semantic_id: PydanticObjectId, parent_semantic_id: PydanticObjectId
+        request: Request, semantic_id: PyObjectId, parent_semantic_id: PyObjectId
     ) -> SemanticModel:
         """
         Remove semantic relationship
@@ -87,13 +85,13 @@ class SemanticRouter(
     async def create_object(self, request: Request, data: SemanticCreate) -> SemanticModel:
         return await super().create_object(request=request, data=data)
 
-    async def get_object(self, request: Request, semantic_id: PydanticObjectId) -> SemanticModel:
+    async def get_object(self, request: Request, semantic_id: PyObjectId) -> SemanticModel:
         return await super().get_object(request=request, object_id=semantic_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        semantic_id: PydanticObjectId,
+        semantic_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -111,11 +109,9 @@ class SemanticRouter(
         )
 
     async def update_description(
-        self, request: Request, semantic_id: PydanticObjectId, data: DescriptionUpdate
+        self, request: Request, semantic_id: PyObjectId, data: DescriptionUpdate
     ) -> SemanticModel:
         return await super().update_description(request, semantic_id, data)
 
-    async def delete_object(
-        self, request: Request, semantic_id: PydanticObjectId
-    ) -> DeleteResponse:
+    async def delete_object(self, request: Request, semantic_id: PyObjectId) -> DeleteResponse:
         return await super().delete_object(request, semantic_id)

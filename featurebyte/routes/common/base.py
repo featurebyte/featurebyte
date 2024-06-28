@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Generic, List, Optional, Tuple, Type, TypeVar, Union, cast
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter

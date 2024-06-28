@@ -6,8 +6,8 @@ from typing import List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from bson import ObjectId
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.online_store import OnlineStoreDetails
@@ -29,8 +29,8 @@ class OnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
     Online Store Creation Schema
     """
 
-    name: Optional[StrictStr]
-    details: Optional[OnlineStoreDetails]
+    name: Optional[StrictStr] = None
+    details: Optional[OnlineStoreDetails] = None
 
 
 class OnlineStoreRead(FeatureByteBaseModel):
@@ -39,14 +39,14 @@ class OnlineStoreRead(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId = Field(alias="_id")
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = None
     name: StrictStr
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
-    description: Optional[StrictStr]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    description: Optional[StrictStr] = None
     details: OnlineStoreDetails
 
-    @validator("details")
+    @field_validator("details", mode="after")
     @classmethod
     def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
         """

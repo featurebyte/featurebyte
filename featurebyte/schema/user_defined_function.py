@@ -5,7 +5,7 @@ UserDefinedFunction API payload schema
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -27,7 +27,7 @@ class UserDefinedFunctionCreateBase(FeatureByteBaseModel):
     output_dtype: DBVarType
 
     # pydantic validator
-    _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
+    _validate_unique_function_parameter_name = field_validator("function_parameters", mode="after")(
         construct_unique_name_validator(field="name")
     )
 
@@ -54,12 +54,12 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     UserDefinedFunction update schema
     """
 
-    sql_function_name: Optional[NameStr]
-    function_parameters: Optional[List[FunctionParameter]]
-    output_dtype: Optional[DBVarType]
+    sql_function_name: Optional[NameStr] = None
+    function_parameters: Optional[List[FunctionParameter]] = None
+    output_dtype: Optional[DBVarType] = None
 
-    # pydanctic validator
-    _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
+    # pydantic validator
+    _validate_unique_function_parameter_name = field_validator("function_parameters", mode="after")(
         construct_unique_name_validator(field="name")
     )
 
@@ -79,11 +79,10 @@ class UserDefinedFunctionResponse(UserDefinedFunctionModel):
 
     is_global: bool = Field(default=False)
 
-    @root_validator(pre=True)
-    @classmethod
-    def _derive_is_global(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["is_global"] = values.get("catalog_id") is None
-        return values
+    @model_validator(mode="after")
+    def _derive_is_global(self) -> "UserDefinedFunctionResponse":
+        self.is_global = self.catalog_id is None
+        return self
 
 
 class UserDefinedFunctionList(PaginationMixin):

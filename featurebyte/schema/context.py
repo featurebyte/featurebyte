@@ -5,7 +5,7 @@ Context API payload schema
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
@@ -21,7 +21,7 @@ class ContextCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     primary_entity_ids: List[PydanticObjectId]
-    description: Optional[StrictStr]
+    description: Optional[StrictStr] = None
 
 
 class ContextList(PaginationMixin):
@@ -37,19 +37,18 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     Context update schema
     """
 
-    graph: Optional[QueryGraph]
-    node_name: Optional[StrictStr]
+    name: Optional[NameStr] = None
+    graph: Optional[QueryGraph] = None
+    node_name: Optional[StrictStr] = None
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
-    observation_table_id_to_remove: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = None
+    default_eda_table_id: Optional[PydanticObjectId] = None
+    observation_table_id_to_remove: Optional[PydanticObjectId] = None
 
-    remove_default_eda_table: Optional[bool]
-    remove_default_preview_table: Optional[bool]
+    remove_default_eda_table: Optional[bool] = None
+    remove_default_preview_table: Optional[bool] = None
 
-    name: Optional[NameStr]
-
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # check xor between graph & node_name

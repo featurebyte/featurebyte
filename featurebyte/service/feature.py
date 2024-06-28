@@ -233,6 +233,8 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 user_id=self.user.id,
             )
             assert insert_id == document.id
+            if data.id:
+                assert insert_id == data.id
 
             try:
                 feature_namespace = await self.feature_namespace_service.get_document(

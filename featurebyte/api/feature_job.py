@@ -5,15 +5,16 @@ FeatureJobMixin class
 from typing import Any, Dict, List, Tuple
 
 import base64
-import datetime
 import textwrap
 from abc import abstractmethod
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from io import BytesIO
 
 import humanize
 import numpy as np
 import pandas as pd
+from pydantic import ConfigDict
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
@@ -33,19 +34,15 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     FeatureJobStatusResult class
     """
 
-    request_date: datetime.datetime
+    request_date: datetime
     job_history_window: int
     job_duration_tolerance: int
     feature_tile_table: pd.DataFrame
     feature_job_summary: pd.DataFrame
     job_session_logs: pd.DataFrame
 
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
     def request_parameters(self) -> Dict[str, Any]:
@@ -111,7 +108,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
                 freq_min = 1440
                 bin_size = "1 day"
             bins = pd.date_range(
-                start=self.request_date - datetime.timedelta(hours=self.job_history_window),
+                start=self.request_date - timedelta(hours=self.job_history_window),
                 end=self.request_date,
                 freq=f"{freq_min} min",
             ).to_list()
@@ -221,7 +218,7 @@ class FeatureJobMixin(ApiObject):
         -------
         FeatureJobStatusResult
         """
-        utc_now = datetime.datetime.utcnow()
+        utc_now = datetime.utcnow()
 
         # identify jobs with duration that exceeds job period
         logs = logs.merge(
@@ -277,7 +274,7 @@ class FeatureJobMixin(ApiObject):
                 ),
                 axis=1,
             ) - pd.to_timedelta(feature_stats.frequency_minute, unit="minute")
-            window_start = utc_now - datetime.timedelta(hours=job_history_window)
+            window_start = utc_now - timedelta(hours=job_history_window)
             last_job_expected_to_complete_in_window = (
                 (utc_now - last_job_times).dt.total_seconds() > job_duration_tolerance
             ) & (last_job_times > window_start)

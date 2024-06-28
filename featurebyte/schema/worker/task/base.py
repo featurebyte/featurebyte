@@ -9,8 +9,8 @@ from typing import Any, ClassVar, Optional
 import json
 from enum import IntEnum
 
-from bson.objectid import ObjectId
-from pydantic import Field
+from bson import ObjectId
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -51,16 +51,11 @@ class BaseTaskPayload(FeatureByteBaseModel):
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
     is_scheduled_task: Optional[bool] = Field(default=False)
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = Field(default=None)
     catalog_id: PydanticObjectId
 
-    class Config:
-        """
-        Configurations for BaseTaskPayload
-        """
-
-        # With `frozen` flag enable, all the object attributes are immutable.
-        frozen = True
+    # pydantic model configuration
+    model_config = ConfigDict(frozen=True)
 
     @property
     def task(self) -> str:

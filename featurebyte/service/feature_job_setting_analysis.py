@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from redis import Redis
 
 from featurebyte.exception import DocumentError

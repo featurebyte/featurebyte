@@ -9,17 +9,17 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
-def construct_data_model_root_validator(
+def construct_data_model_validator(
     columns_info_key: str,
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
 ) -> Any:
     """
-    Construct table model root_validator used to validate model input table
+    Construct table model model_validator used to validate model input table
 
     Parameters
     ----------
     columns_info_key: str
-        Column info key name
+        Key to access columns_info in the model
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]]
         List of expected column name & type pairs (if type is None, type check will be skipped)
 
@@ -27,17 +27,16 @@ def construct_data_model_root_validator(
     -------
     Any
     """
-    # Note: When `root_validator(pre=True)` is used to decorate this validator, alias key should be used.
-    # When `root_validator(pre=False)` is used to decorate, non-alias key should be used.
+    # Note: When `model_validator(mode="before")` is used to decorate this validator, alias key should be used.
+    # When `model_validator(mode="after")` is used to decorate, non-alias key should be used.
 
     def _sanitize_field_name(field_name: str) -> str:
         if field_name.startswith("internal_"):
             return field_name[len("internal_") :]
         return field_name
 
-    def _root_validator(cls: Any, values: dict[str, Any]) -> dict[str, Any]:
-        _ = cls
-        columns_info = values[columns_info_key]
+    def _model_validator(self: Any) -> Any:
+        columns_info = getattr(self, columns_info_key)
         col_info_map = {}
         for col_info in columns_info:
             col_dict = dict(col_info)
@@ -45,7 +44,7 @@ def construct_data_model_root_validator(
 
         col_name_to_field_name_map: dict[str, str] = {}
         for field_name, expected_db_types in expected_column_field_name_type_pairs:
-            col_name = values.get(field_name)
+            col_name = getattr(self, field_name)
             if col_name:
                 if col_name not in col_info_map:
                     raise ValueError(f'Column "{col_name}" not found in the table!')
@@ -60,9 +59,9 @@ def construct_data_model_root_validator(
                         f'have to be different columns in the table but "{col_name}" is specified for both.'
                     )
                 col_name_to_field_name_map[col_name] = field_name
-        return values
+        return self
 
-    return _root_validator
+    return _model_validator
 
 
 def construct_sort_validator(field: Optional[str] = None) -> Any:

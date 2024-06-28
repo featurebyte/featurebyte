@@ -79,7 +79,7 @@ async def observation_table_fixture(event_table, user, observation_table_service
     observation_table = ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        request_input=request_input,
+        request_input=request_input.dict(by_alias=True),
         columns_info=[
             {"name": "cust_id", "dtype": "INT"},
             {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},

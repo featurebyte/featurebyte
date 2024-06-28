@@ -3,8 +3,19 @@ This module contains datetime operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union
-from typing_extensions import Annotated, Literal
+from typing import (
+    Annotated,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import textwrap  # pylint: disable=wrong-import-order
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
@@ -160,7 +171,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
         transform_type: Literal["unique_count"]
         include_missing: bool
 
-    type: Literal[NodeType.COUNT_DICT_TRANSFORM] = Field(NodeType.COUNT_DICT_TRANSFORM, const=True)
+    type: Literal[NodeType.COUNT_DICT_TRANSFORM] = NodeType.COUNT_DICT_TRANSFORM
     parameters: Annotated[
         Union[Parameters, UniqueCountParameters], Field(discriminator="transform_type")
     ]
@@ -323,7 +334,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
 class CosineSimilarityNode(BaseCountDictOpNode):
     """CosineSimilarityNode class"""
 
-    type: Literal[NodeType.COSINE_SIMILARITY] = Field(NodeType.COSINE_SIMILARITY, const=True)
+    type: Literal[NodeType.COSINE_SIMILARITY] = NodeType.COSINE_SIMILARITY
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -394,7 +405,7 @@ class CosineSimilarityNode(BaseCountDictOpNode):
 class DictionaryKeysNode(BaseSeriesOutputNode):
     """Dictionary keys node class"""
 
-    type: Literal[NodeType.DICTIONARY_KEYS] = Field(NodeType.DICTIONARY_KEYS, const=True)
+    type: Literal[NodeType.DICTIONARY_KEYS] = NodeType.DICTIONARY_KEYS
 
     @property
     def max_input_count(self) -> int:
@@ -452,7 +463,7 @@ class BaseCountDictWithKeyOpNode(BaseCountDictOpNode, ABC):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        value: Optional[Scalar]
+        value: Optional[Scalar] = None
 
     parameters: Parameters
 
@@ -507,7 +518,7 @@ class BaseCountDictWithKeyOpNode(BaseCountDictOpNode, ABC):
 class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
     """Get value from dictionary node class"""
 
-    type: Literal[NodeType.GET_VALUE] = Field(NodeType.GET_VALUE, const=True)
+    type: Literal[NodeType.GET_VALUE] = NodeType.GET_VALUE
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         aggregations = inputs[0].aggregations
@@ -586,7 +597,7 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
         descending: bool = False
 
-    type: Literal[NodeType.GET_RANK] = Field(NodeType.GET_RANK, const=True)
+    type: Literal[NodeType.GET_RANK] = NodeType.GET_RANK
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -676,9 +687,7 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
 class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
     """Get relative frequency from dictionary node class"""
 
-    type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = Field(
-        NodeType.GET_RELATIVE_FREQUENCY, const=True
-    )
+    type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = NodeType.GET_RELATIVE_FREQUENCY
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT

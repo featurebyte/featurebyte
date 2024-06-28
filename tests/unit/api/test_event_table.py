@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pydantic import ValidationError
+from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -171,7 +172,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     assert output == event_table_dict
 
     # user input validation
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_database_table.create_event_table(
             name=123,
             event_id_column="col_int",

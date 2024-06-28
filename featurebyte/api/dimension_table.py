@@ -4,15 +4,16 @@ DimensionTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
 from typing_extensions import Literal
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.dimension_table import DimensionTableModel
@@ -61,14 +62,14 @@ class DimensionTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
 
     # pydantic instance variable (internal use)
     internal_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (
@@ -234,3 +235,6 @@ class DimensionTable(TableApiObject):
         >>> fb.DimensionTable.get_by_id(<dimension_table_id>)  # doctest: +SKIP
         """
         return cls._get_by_id(id=id)
+
+
+DimensionTable.__getattr__ = GetAttrMixin.__getattr__

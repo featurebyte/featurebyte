@@ -8,8 +8,8 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
-from pydantic import Field, validator
+from bson import ObjectId
+from pydantic import Field, RootModel, field_validator
 
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import (
@@ -72,7 +72,7 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # since their serialization output is the same, QueryGraphModel is used here to avoid
     # additional serialization/deserialization
     graph: QueryGraphModel
-    features: List[BatchFeatureItem] = Field(max_items=MAX_BATCH_FEATURE_ITEM_COUNT)
+    features: List[BatchFeatureItem] = Field(max_length=MAX_BATCH_FEATURE_ITEM_COUNT)
     conflict_resolution: ConflictResolution = Field(default="raise")
 
 
@@ -92,16 +92,16 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
-    table_cleaning_operations: Optional[List[TableCleaningOperation]]
+    table_feature_job_settings: Optional[List[TableFeatureJobSetting]] = None
+    table_cleaning_operations: Optional[List[TableCleaningOperation]] = None
 
     # pydantic validators
-    _validate_unique_feat_job_data_name = validator("table_feature_job_settings", allow_reuse=True)(
-        construct_unique_name_validator(field="table_name")
-    )
-    _validate_unique_clean_ops_data_name = validator("table_cleaning_operations", allow_reuse=True)(
-        construct_unique_name_validator(field="table_name")
-    )
+    _validate_unique_feat_job_data_name = field_validator(
+        "table_feature_job_settings", mode="after"
+    )(construct_unique_name_validator(field="table_name"))
+    _validate_unique_clean_ops_data_name = field_validator(
+        "table_cleaning_operations", mode="after"
+    )(construct_unique_name_validator(field="table_name"))
 
 
 class FeatureModelResponse(FeatureModel):
@@ -125,8 +125,8 @@ class FeatureUpdate(FeatureByteBaseModel):
     Feature update schema
     """
 
-    readiness: Optional[FeatureReadiness]
-    ignore_guardrails: Optional[bool]
+    readiness: Optional[FeatureReadiness] = None
+    ignore_guardrails: Optional[bool] = None
 
 
 class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
@@ -134,9 +134,9 @@ class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
     Feature service update schema
     """
 
-    online_enabled: Optional[bool]
-    feature_list_ids: Optional[List[PydanticObjectId]]
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]]
+    online_enabled: Optional[bool] = None
+    feature_list_ids: Optional[List[PydanticObjectId]] = None
+    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = None
 
 
 class ReadinessComparison(FeatureByteBaseModel):
@@ -205,12 +205,12 @@ class FeatureBriefInfo(FeatureByteBaseModel):
     created_at: datetime
 
 
-class FeatureBriefInfoList(FeatureByteBaseModel):
+class FeatureBriefInfoList(RootModel):
     """
     Paginated list of feature brief info
     """
 
-    __root__: List[FeatureBriefInfo]
+    root: List[FeatureBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureBriefInfoList:
@@ -227,7 +227,7 @@ class FeatureBriefInfoList(FeatureByteBaseModel):
         FeatureBriefInfoList
         """
         feature_project = DictProject(rule=("data", ["version", "readiness", "created_at"]))
-        return FeatureBriefInfoList(__root__=feature_project.project(paginated_data))
+        return FeatureBriefInfoList(feature_project.project(paginated_data))
 
 
 class FeatureSQL(FeatureByteBaseModel):

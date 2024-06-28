@@ -4,7 +4,7 @@ Use Case API payload schema
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
@@ -18,12 +18,12 @@ class UseCaseCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=PydanticObjectId, alias="_id")
     name: NameStr
-    target_id: Optional[PydanticObjectId]
-    target_namespace_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = None
+    target_namespace_id: Optional[PydanticObjectId] = None
     context_id: PydanticObjectId
-    description: Optional[StrictStr]
+    description: Optional[StrictStr] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_target(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         target_id = values.get("target_id", None)
@@ -38,16 +38,16 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     Use Case update schema
     """
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
-    observation_table_id_to_remove: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = None
+    default_eda_table_id: Optional[PydanticObjectId] = None
+    observation_table_id_to_remove: Optional[PydanticObjectId] = None
 
-    remove_default_eda_table: Optional[bool]
-    remove_default_preview_table: Optional[bool]
+    remove_default_eda_table: Optional[bool] = None
+    remove_default_preview_table: Optional[bool] = None
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         default_preview_table_id = values.get("default_preview_table_id", None)

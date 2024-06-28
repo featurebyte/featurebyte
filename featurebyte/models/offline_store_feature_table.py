@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -60,8 +60,8 @@ class PrecomputedLookupFeatureTableInfo(FeatureByteBaseModel):
     """
 
     lookup_steps: List[EntityRelationshipInfo]
-    source_feature_table_id: Optional[PydanticObjectId]
-    lookup_mapping: Optional[List[PrecomputedLookupMapping]]
+    source_feature_table_id: Optional[PydanticObjectId] = None
+    lookup_mapping: Optional[List[PrecomputedLookupMapping]] = None
 
     def get_lookup_feature_table_serving_name(
         self, source_feature_table_serving_name: str
@@ -92,48 +92,42 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     name: str
-    base_name: Optional[str] = Field(default=None)
-    name_prefix: Optional[str] = Field(default=None)
-    name_suffix: Optional[str] = Field(default=None)
+    base_name: Optional[str] = None
+    name_prefix: Optional[str] = None
+    name_suffix: Optional[str] = None
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = None
     has_ttl: bool
-    last_materialized_at: Optional[datetime]
+    last_materialized_at: Optional[datetime] = None
     online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt] = Field(
         default_factory=list
     )
 
-    feature_cluster_path: Optional[str] = Field(default=None)
-    feature_cluster: Optional[FeatureCluster]
+    feature_cluster_path: Optional[str] = None
+    feature_cluster: Optional[FeatureCluster] = None
 
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
-    entity_lookup_info: Optional[EntityRelationshipInfo]  # Note: deprecated
-    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
-    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    internal_entity_universe: Optional[Dict[str, Any]] = Field(None, alias="entity_universe")
+    entity_lookup_info: Optional[EntityRelationshipInfo] = None  # Note: deprecated
+    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo] = None
+    feature_store_id: Optional[PydanticObjectId] = None
     deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
 
-    @root_validator
-    @classmethod
-    def _set_feature_store_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _set_feature_store_id(self) -> "OfflineStoreFeatureTableModel":
         """
         Set feature_store_id
 
-        Parameters
-        ----------
-        values : Dict[str, Any]
-            Values
-
         Returns
         -------
-        Dict[str, Any]
+        OfflineStoreFeatureTableModel
         """
-        if not values.get("feature_store_id", None) and values.get("feature_cluster"):
-            values["feature_store_id"] = values["feature_cluster"].feature_store_id
-        return values
+        if not self.feature_store_id and self.feature_cluster:
+            self.feature_store_id = self.feature_cluster.feature_store_id
+        return self
 
     @classmethod
     def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
@@ -356,8 +350,8 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     feature_ids: List[PydanticObjectId]
-    feature_cluster: Optional[FeatureCluster]
-    feature_cluster_path: Optional[str]
+    feature_cluster: Optional[FeatureCluster] = None
+    feature_cluster_path: Optional[str] = None
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel

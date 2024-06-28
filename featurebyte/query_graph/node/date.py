@@ -3,10 +3,7 @@ This module contains datetime operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
-from typing_extensions import Literal
-
-from pydantic import Field
+from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -42,9 +39,9 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         """Parameters"""
 
         property: DatetimeSupportedPropertyType
-        timezone_offset: Optional[str]
+        timezone_offset: Optional[str] = None
 
-    type: Literal[NodeType.DT_EXTRACT] = Field(NodeType.DT_EXTRACT, const=True)
+    type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -162,7 +159,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
         property: TimedeltaSupportedUnitType
 
-    type: Literal[NodeType.TIMEDELTA_EXTRACT] = Field(NodeType.TIMEDELTA_EXTRACT, const=True)
+    type: Literal[NodeType.TIMEDELTA_EXTRACT] = NodeType.TIMEDELTA_EXTRACT
     parameters: Parameters
 
     @property
@@ -211,7 +208,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 class DateDifferenceNode(BaseSeriesOutputNode):
     """DateDifferenceNode class"""
 
-    type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
+    type: Literal[NodeType.DATE_DIFF] = NodeType.DATE_DIFF
 
     @property
     def max_input_count(self) -> int:
@@ -284,7 +281,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 
         unit: TimedeltaSupportedUnitType
 
-    type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
+    type: Literal[NodeType.TIMEDELTA] = NodeType.TIMEDELTA
     parameters: Parameters
 
     @property
@@ -378,9 +375,9 @@ class DateAddNode(BaseSeriesOutputNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        value: Optional[int]
+        value: Optional[int] = None
 
-    type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
+    type: Literal[NodeType.DATE_ADD] = NodeType.DATE_ADD
     parameters: Parameters
 
     @property

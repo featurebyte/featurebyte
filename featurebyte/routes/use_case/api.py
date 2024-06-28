@@ -8,7 +8,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent.base import SortDir
@@ -18,6 +17,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -57,7 +57,7 @@ async def create_use_case(
 
 
 @router.get("/{use_case_id}", response_model=UseCaseModel)
-async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCaseModel:
+async def get_use_case(request: Request, use_case_id: PyObjectId) -> UseCaseModel:
     """
     Get Use Case
     """
@@ -69,7 +69,7 @@ async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCa
 @router.get("/{use_case_id}/observation_tables", response_model=ObservationTableList)
 async def list_use_case_observation_tables(
     request: Request,
-    use_case_id: PydanticObjectId,
+    use_case_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
 ) -> ObservationTableList:
@@ -94,7 +94,7 @@ async def list_use_case_observation_tables(
 @router.get("/{use_case_id}/feature_tables", response_model=HistoricalFeatureTableList)
 async def list_use_case_feature_tables(
     request: Request,
-    use_case_id: PydanticObjectId,
+    use_case_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
 ) -> HistoricalFeatureTableList:
@@ -112,7 +112,7 @@ async def list_use_case_feature_tables(
 @router.get("/{use_case_id}/deployments", response_model=DeploymentList)
 async def list_use_case_deployments(
     request: Request,
-    use_case_id: PydanticObjectId,
+    use_case_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
 ) -> DeploymentList:
@@ -133,7 +133,7 @@ async def list_use_case_deployments(
 
 @router.patch("/{use_case_id}", response_model=UseCaseModel)
 async def update_use_case(
-    request: Request, use_case_id: PydanticObjectId, data: UseCaseUpdate
+    request: Request, use_case_id: PyObjectId, data: UseCaseUpdate
 ) -> UseCaseModel:
     """
     Update Use Case
@@ -144,7 +144,7 @@ async def update_use_case(
 
 
 @router.delete("/{use_case_id}", status_code=HTTPStatus.OK)
-async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> None:
+async def delete_use_case(request: Request, use_case_id: PyObjectId) -> None:
     """
     Update Use Case
     """
@@ -153,7 +153,7 @@ async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> No
 
 
 @router.get("/{use_case_id}/info", response_model=UseCaseInfo, status_code=HTTPStatus.OK)
-async def use_case_info(request: Request, use_case_id: PydanticObjectId) -> UseCaseInfo:
+async def use_case_info(request: Request, use_case_id: PyObjectId) -> UseCaseInfo:
     """
     Get Use Case Info
     """
@@ -170,7 +170,7 @@ async def list_use_cases(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-    feature_list_id: Optional[PydanticObjectId] = None,
+    feature_list_id: Optional[PyObjectId] = None,
 ) -> UseCaseList:
     """
     List Use Case
@@ -190,7 +190,7 @@ async def list_use_cases(
 @router.get("/audit/{use_case_id}", response_model=AuditDocumentList)
 async def list_use_case_audit_logs(
     request: Request,
-    use_case_id: PydanticObjectId,
+    use_case_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -214,7 +214,7 @@ async def list_use_case_audit_logs(
 @router.patch("/{use_case_id}/description", response_model=UseCaseModel)
 async def update_use_case_description(
     request: Request,
-    use_case_id: PydanticObjectId,
+    use_case_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> UseCaseModel:
     """

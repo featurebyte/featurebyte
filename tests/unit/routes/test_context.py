@@ -30,9 +30,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"name": "some_context"},
             [
                 {
+                    "input": {"name": "some_context"},
                     "loc": ["body", "primary_entity_ids"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
             ],
         ),
@@ -46,8 +47,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"graph": {"nodes": [], "edges": []}},
             [
                 {
-                    "loc": ["body", "__root__"],
-                    "msg": "graph & node_name parameters must be specified together.",
+                    "input": {"graph": {"nodes": [], "edges": []}},
+                    "ctx": {"error": {}},
+                    "loc": ["body"],
+                    "msg": "Value error, graph & node_name parameters must be specified together.",
                     "type": "value_error",
                 }
             ],
@@ -56,8 +59,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"node_name": "random_node"},
             [
                 {
-                    "loc": ["body", "__root__"],
-                    "msg": "graph & node_name parameters must be specified together.",
+                    "input": {"node_name": "random_node"},
+                    "ctx": {"error": {}},
+                    "loc": ["body"],
+                    "msg": "Value error, graph & node_name parameters must be specified together.",
                     "type": "value_error",
                 }
             ],
@@ -66,8 +71,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"graph": {"nodes": [], "edges": []}, "node_name": "input_1"},
             [
                 {
-                    "loc": ["body", "__root__"],
-                    "msg": "node_name not exists in the graph.",
+                    "input": {"graph": {"nodes": [], "edges": []}, "node_name": "input_1"},
+                    "ctx": {"error": {}},
+                    "loc": ["body"],
+                    "msg": "Value error, node_name not exists in the graph.",
                     "type": "value_error",
                 }
             ],

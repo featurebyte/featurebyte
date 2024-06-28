@@ -49,31 +49,31 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     cls: str = Field(default="PeriodicTask", alias="_cls")
     name: str
     task: str
-    interval: Optional[Interval]
-    crontab: Optional[Crontab]
+    interval: Optional[Interval] = None
+    crontab: Optional[Crontab] = None
     args: List[Any]
     kwargs: Dict[str, Any]
 
-    queue: Optional[str]
-    exchange: Optional[str]
-    routing_key: Optional[str]
-    soft_time_limit: Optional[int]
+    queue: Optional[str] = None
+    exchange: Optional[str] = None
+    routing_key: Optional[str] = None
+    soft_time_limit: Optional[int] = None
 
-    expires: Optional[datetime]
-    start_after: Optional[datetime]
-    last_run_at: Optional[datetime]
-    time_modulo_frequency_second: Optional[int]
+    expires: Optional[datetime] = None
+    start_after: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
+    time_modulo_frequency_second: Optional[int] = None
     enabled: Optional[bool] = Field(default=True)
 
     total_run_count: Optional[int] = Field(default=0, min=0)
     max_run_count: Optional[int] = Field(default=0, min=0)
-    run_immediately: Optional[bool]
+    run_immediately: Optional[bool] = None
 
     date_changed: Optional[datetime] = Field(default_factory=datetime.now)
     date_creation: Optional[datetime] = Field(default_factory=datetime.now)
-    description: Optional[str]
+    description: Optional[str] = None
 
-    no_changes: Optional[bool]
+    no_changes: Optional[bool] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

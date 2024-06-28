@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 import pymongo
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
@@ -134,8 +134,8 @@ class FunctionParameter(FeatureByteBaseModel):
     # instance variables
     name: str
     dtype: DBVarType
-    default_value: Optional[Union[Scalar, Timestamp]]
-    test_value: Optional[Union[Scalar, Timestamp]]
+    default_value: Optional[Union[Scalar, Timestamp]] = None
+    test_value: Optional[Union[Scalar, Timestamp]] = None
 
     @property
     def has_default_value(self) -> bool:
@@ -178,8 +178,8 @@ class FunctionParameter(FeatureByteBaseModel):
         self,
         name: str,
         dtype: Union[DBVarType, str],
-        default_value: Optional[Scalar] = None,
-        test_value: Optional[Scalar] = None,
+        default_value: Optional[Union[Scalar, pd.Timestamp]] = None,
+        test_value: Optional[Union[Scalar, pd.Timestamp]] = None,
     ) -> None:
         expected_type = function_parameter_dtype_to_python_type.get(DBVarType(dtype))
         if expected_type is None:
@@ -188,10 +188,10 @@ class FunctionParameter(FeatureByteBaseModel):
 
         # check default value and test value type
         if default_value is not None:
-            check_type("default_value", value=default_value, expected_type=expected_type)
+            check_type(value=default_value, expected_type=expected_type)
 
         if test_value is not None:
-            check_type("test_value", value=test_value, expected_type=expected_type)
+            check_type(value=test_value, expected_type=expected_type)
 
         super().__init__(
             name=name,
@@ -220,10 +220,10 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     signature: str = Field(default_factory=str)
-    catalog_id: Optional[PydanticObjectId]
+    catalog_id: Optional[PydanticObjectId] = None
     feature_store_id: PydanticObjectId
 
-    @validator("name", "sql_function_name")
+    @field_validator("name", "sql_function_name")
     @classmethod
     def _validate_function_name(cls, value: str) -> str:
         # check that name or function name is a valid identifier
@@ -231,7 +231,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
             raise ValueError(f'"{value}" is not a valid identifier')
         return value
 
-    @validator("function_parameters")
+    @field_validator("function_parameters")
     @classmethod
     def _validate_function_parameters(
         cls, value: List[FunctionParameter]
@@ -273,7 +273,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         str
         """
         function_parameters = []
-        value: Optional[Union[Scalar, TimestampValue]]
+        value: Optional[Union[Scalar, TimestampValue]] = None
         for param in self.function_parameters:
             if param.has_test_value:
                 test_value = param.test_value

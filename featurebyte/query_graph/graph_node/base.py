@@ -18,7 +18,7 @@ from featurebyte.query_graph.node.nested import (
 
 # update forward references after QueryGraph is defined
 for graph_node_parameters_type in GRAPH_NODE_PARAMETERS_TYPES:
-    graph_node_parameters_type.update_forward_refs(QueryGraphModel=QueryGraphModel)
+    graph_node_parameters_type.model_rebuild()
 
 
 class GraphNode(BaseGraphNode):

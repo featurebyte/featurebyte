@@ -4,20 +4,21 @@ EventTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast
 from typing_extensions import Literal
 
 from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_table import EventTableModel
@@ -70,24 +71,26 @@ class EventTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        alias="default_feature_job_setting"
+        alias="default_feature_job_setting", default=None
     )
-    internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+    internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column", default=None)
+    internal_event_id_column: Optional[StrictStr] = Field(
+        alias="event_id_column", default=None
+    )  # DEV-556
     internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
-        alias="event_timestamp_timezone_offset"
+        alias="event_timestamp_timezone_offset", default=None
     )
     internal_event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(
-        alias="event_timestamp_timezone_offset_column"
+        alias="event_timestamp_timezone_offset_column", default=None
     )
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (
@@ -458,7 +461,7 @@ class EventTable(TableApiObject):
             late_data_allowance=late_data_allowance,
         )
         job_setting_analysis = self.post_async_task(
-            route="/feature_job_setting_analysis", payload=payload.json_dict()
+            route="feature_job_setting_analysis", payload=payload.json_dict()
         )
         analysis = FeatureJobSettingAnalysis.get_by_id(job_setting_analysis["_id"])
         analysis.display_report()
@@ -531,3 +534,6 @@ class EventTable(TableApiObject):
 
         """
         return FeatureJobSettingAnalysis.list(event_table_id=self.id)
+
+
+EventTable.__getattr__ = GetAttrMixin.__getattr__

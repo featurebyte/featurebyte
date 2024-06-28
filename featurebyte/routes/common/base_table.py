@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
@@ -189,7 +189,8 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         document = await self.service.create_document(data)  # type: ignore[arg-type]
         document = await self._add_table_description_from_warehouse(document)  # type: ignore
         await self.specialized_dtype_detection_service.detect_and_update_column_dtypes(document)
-        return await self._add_semantic_tags(document=document)  # type: ignore
+        output = await self._add_semantic_tags(document=document)
+        return output
 
     async def update_table(self, document_id: ObjectId, data: TableUpdate) -> TableDocumentT:
         """

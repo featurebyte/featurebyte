@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
@@ -19,6 +18,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -69,18 +69,17 @@ class CredentialRouter(
             response_model=CredentialInfo,
         )
 
-    async def get_object(self, request: Request, credential_id: PydanticObjectId) -> CredentialRead:
-        return await super().get_object(request, credential_id)
+    async def get_object(self, request: Request, credential_id: PyObjectId) -> CredentialRead:
+        credential = await super().get_object(request, credential_id)
+        return CredentialRead(**credential.dict(by_alias=True))
 
-    async def delete_object(
-        self, request: Request, credential_id: PydanticObjectId
-    ) -> DeleteResponse:
+    async def delete_object(self, request: Request, credential_id: PyObjectId) -> DeleteResponse:
         return await super().delete_object(request, credential_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        credential_id: PydanticObjectId,
+        credential_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -98,9 +97,10 @@ class CredentialRouter(
         )
 
     async def update_description(
-        self, request: Request, credential_id: PydanticObjectId, data: DescriptionUpdate
+        self, request: Request, credential_id: PyObjectId, data: DescriptionUpdate
     ) -> CredentialRead:
-        return await super().update_description(request, credential_id, data)
+        credentials = await super().update_description(request, credential_id, data)
+        return CredentialRead(**credentials.dict(by_alias=True))
 
     async def list_objects(
         self,
@@ -111,7 +111,7 @@ class CredentialRouter(
         sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
-        feature_store_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PyObjectId] = None,
     ) -> CredentialList:
         """
         List credentials
@@ -134,27 +134,29 @@ class CredentialRouter(
         """
         Create credential
         """
-        return await super().create_object(request, data)
+        credential = await super().create_object(request, data)
+        return CredentialRead(**credential.dict(by_alias=True))
 
     async def update_credential(
         self,
         request: Request,
-        credential_id: PydanticObjectId,
+        credential_id: PyObjectId,
         data: CredentialUpdate,
     ) -> CredentialRead:
         """
         Update credential
         """
         controller = self.get_controller_for_request(request)
-        return await controller.update_credential(
+        credential = await controller.update_credential(
             credential_id=credential_id,
             data=data,
         )
+        return CredentialRead(**credential.dict(by_alias=True))
 
     async def get_credential_info(
         self,
         request: Request,
-        credential_id: PydanticObjectId,
+        credential_id: PyObjectId,
         verbose: bool = VerboseQuery,
     ) -> CredentialInfo:
         """

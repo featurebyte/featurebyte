@@ -44,9 +44,10 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             {**payload, "node_name": ["cust_id"]},
             [
                 {
+                    "input": ["cust_id"],
                     "loc": ["body", "node_name"],
-                    "msg": "str type expected",
-                    "type": "type_error.str",
+                    "msg": "Input should be a valid string",
+                    "type": "string_type",
                 }
             ],
         )
