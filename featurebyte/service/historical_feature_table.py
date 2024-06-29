@@ -113,7 +113,9 @@ class HistoricalFeatureTableService(
             observation_set_storage_path = None
 
         # check number of features whether exceeds the limit
-        # if the task is triggered by a feature list, this limit is not applied
+        # if the task is triggered by a saved feature list, this limit is not applied.
+        # if the feature list saved, the feature_clusters will be empty
+        # (based on the payload construction logic in SDK compute_historical_feature_table method).
         feature_clusters = data.featurelist_get_historical_features.feature_clusters
         if feature_clusters:
             num_features = 0
