@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Optional
 
 import pymongo
+from pydantic import Field
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
@@ -21,6 +22,7 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
     # Id of the feature list used to compute the historical feature table. None if the feature list
     # was not saved.
     feature_list_id: Optional[PydanticObjectId]
+    num_features: Optional[int] = Field(default=None)
 
     class Settings(MaterializedTableModel.Settings):
         """

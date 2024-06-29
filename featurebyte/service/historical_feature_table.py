@@ -17,6 +17,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
@@ -88,6 +89,11 @@ class HistoricalFeatureTableService(
         Returns
         -------
         HistoricalFeatureTableTaskPayload
+
+        Raises
+        ------
+        ValueError
+            If the number of features exceeds the limit
         """
 
         # Check any conflict with existing documents
@@ -105,6 +111,22 @@ class HistoricalFeatureTableService(
             )
         else:
             observation_set_storage_path = None
+
+        # check number of features whether exceeds the limit
+        # if the task is triggered by a saved feature list, this limit is not applied.
+        # if the feature list saved, the feature_clusters will be empty
+        # (based on the payload construction logic in SDK compute_historical_feature_table method).
+        feature_clusters = data.featurelist_get_historical_features.feature_clusters
+        if feature_clusters:
+            num_features = 0
+            for feature_cluster in feature_clusters:
+                num_features += len(feature_cluster.node_names)
+
+            if num_features > MAX_BATCH_FEATURE_ITEM_COUNT:
+                raise ValueError(
+                    f"Number of features exceeds the limit of {MAX_BATCH_FEATURE_ITEM_COUNT}, "
+                    "please reduce the number of features or save the features in a feature list and try again."
+                )
 
         return HistoricalFeatureTableTaskPayload(
             **data.dict(),
