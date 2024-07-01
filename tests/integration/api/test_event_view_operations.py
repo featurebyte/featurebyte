@@ -931,6 +931,8 @@ async def test_get_historical_features__features_info(
     assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {
         "unsaved_feature"
     }
+    assert hist_feat_table.feature_names == ["unsaved_feature"]
+    assert hist_feat_table.feature_ids == [unsaved_feature.id]
 
     # delete the historical feature table
     hist_feat_table.delete()
