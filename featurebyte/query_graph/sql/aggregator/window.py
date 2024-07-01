@@ -19,7 +19,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
 from featurebyte.query_graph.sql.aggregator.range_join import (
     LeftTable,
     RightTable,
-    range_join_request_table_with_view,
+    range_join_tables,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
@@ -379,7 +379,7 @@ class WindowAggregator(TileBasedAggregator):
             disable_quote_columns=["INDEX"] + tile_value_columns,
         )
 
-        return range_join_request_table_with_view(
+        return range_join_tables(
             left_table=request_table,
             right_table=tile_table,
             window_size=num_tiles,

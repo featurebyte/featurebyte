@@ -127,7 +127,7 @@ class RightTable(BaseTable):
         return self.get_qualified_column(self.range_column)
 
 
-def range_join_request_table_with_view(
+def range_join_tables(
     left_table: LeftTable,
     right_table: RightTable,
     window_size: int,
