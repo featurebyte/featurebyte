@@ -970,9 +970,7 @@ class Feature(
 
     @typechecked
     def update_readiness(
-        self,
-        readiness: str,
-        ignore_guardrails: bool = False,
+        self, readiness: Union[str, FeatureReadiness], ignore_guardrails: bool = False
     ) -> None:
         """
         Updates readiness of a feature version.
@@ -1017,7 +1015,7 @@ class Feature(
 
     @typechecked
     def update_default_version_mode(
-        self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
+        self, default_version_mode: Union[str, DefaultVersionMode]
     ) -> None:
         """
         Sets the default version mode of a feature.
@@ -1040,8 +1038,10 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.update_default_version_mode("MANUAL")
         """
+        if isinstance(default_version_mode, str):
+            default_version_mode = DefaultVersionMode(default_version_mode)
         self.feature_namespace.update(
-            update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
+            update_payload={"default_version_mode": default_version_mode.value},
             allow_update_local=False,
         )
 

@@ -461,7 +461,7 @@ class EventTable(TableApiObject):
             late_data_allowance=late_data_allowance,
         )
         job_setting_analysis = self.post_async_task(
-            route="feature_job_setting_analysis", payload=payload.json_dict()
+            route="/feature_job_setting_analysis", payload=payload.json_dict()
         )
         analysis = FeatureJobSettingAnalysis.get_by_id(job_setting_analysis["_id"])
         analysis.display_report()

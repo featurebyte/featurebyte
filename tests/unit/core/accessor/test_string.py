@@ -3,6 +3,7 @@ Unit tests for core/accessor/string.py
 """
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -208,11 +209,9 @@ def test_slice_expression__step_size_not_supported_or_exception(varchar_series):
         varchar_series.str["hello"]
     assert 'type of argument "item" must be slice; got str instead' in str(exc.value)
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         varchar_series.str.pad(10, side="hello")
-    expected_msg = (
-        "the value of argument \"side\" must be one of ('left', 'right', 'both'); got hello instead"
-    )
+    expected_msg = "argument \"side\" (str) is not any of ('left', 'right', 'both')"
     assert expected_msg in str(exc.value)
 
 

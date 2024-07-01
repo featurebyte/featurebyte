@@ -270,3 +270,6 @@ class Frame(FrozenFrame):
 
         # update node_name
         self.node_name = node.name
+
+
+Frame.__getattr__ = GetAttrMixin.__getattr__

@@ -179,7 +179,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
             event_timestamp_column=234,
             record_creation_timestamp_column=345,
         )
-    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
+    assert 'argument "name" (int) is not an instance of str' in str(exc.value)
 
 
 def test_create_event_table__duplicated_record(saved_event_table, snowflake_database_table):
