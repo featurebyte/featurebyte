@@ -86,18 +86,6 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         return FeatureList.get_by_id(feature_list_id)  # type: ignore
 
     @property
-    def feature_names(self) -> list[str]:
-        """
-        List of feature names associated with the historical feature table.
-
-        Returns
-        -------
-        list[str]
-            List of feature names
-        """
-        return self.feature_list.feature_names
-
-    @property
     def target_name(self) -> Optional[str]:
         """
         Target name associated with the historical feature table.

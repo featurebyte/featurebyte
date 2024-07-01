@@ -34,7 +34,7 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
     @property
     def feature_names(self) -> Optional[List[str]]:
         """
-        Get the list of feature names
+        List of feature names associated with the historical feature table.
 
         Returns
         -------
@@ -47,7 +47,7 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
     @property
     def feature_ids(self) -> Optional[List[PydanticObjectId]]:
         """
-        Get the list of feature IDs
+        List of feature IDs associated with the historical feature table.
 
         Returns
         -------
