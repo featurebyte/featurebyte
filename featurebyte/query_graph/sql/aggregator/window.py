@@ -16,12 +16,13 @@ from featurebyte.query_graph.sql.aggregator.base import (
     LeftJoinableSubquery,
     TileBasedAggregator,
 )
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import (
-    CteStatements,
-    get_qualified_column_identifier,
-    quoted_identifier,
+from featurebyte.query_graph.sql.aggregator.range_join import (
+    LeftTable,
+    RightTable,
+    range_join_request_table_with_view,
 )
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
@@ -356,65 +357,33 @@ class WindowAggregator(TileBasedAggregator):
         # Join two tables with range join: REQ (processed request table) and TILE (tile table). For
         # each row in the REQ table, we want to join with rows in the TILE table with tile index
         # between REQ.FIRST_TILE_INDEX and REQ.LAST_TILE_INDEX.
-        range_join_where_conditions = [
-            f"TILE.INDEX >= REQ.{InternalName.FIRST_TILE_INDEX}",
-            f"TILE.INDEX < REQ.{InternalName.LAST_TILE_INDEX}",
-        ]
+        request_table = LeftTable(
+            name=quoted_identifier(expanded_request_table_name),
+            alias="REQ",
+            join_keys=serving_names,
+            range_start=InternalName.FIRST_TILE_INDEX,
+            range_end=InternalName.LAST_TILE_INDEX,
+            columns=[point_in_time_column] + serving_names,
+            disable_quote_columns={InternalName.FIRST_TILE_INDEX, InternalName.LAST_TILE_INDEX},
+        )
 
-        # Required columns from the request table
-        selected_from_request_table = [get_qualified_column_identifier(point_in_time_column, "REQ")]
-        for serving_name in serving_names:
-            selected_from_request_table.append(get_qualified_column_identifier(serving_name, "REQ"))
+        tile_table_columns = ["INDEX"] + tile_value_columns
+        if value_by:
+            tile_table_columns.append(value_by)
+        tile_table = RightTable(
+            name=expressions.Identifier(this=tile_table_id),
+            alias="TILE",
+            join_keys=keys,
+            range_column="INDEX",
+            columns=tile_table_columns,
+            disable_quote_columns=["INDEX"] + tile_value_columns,
+        )
 
-        # Required columns from the tile table
-        selected_from_tile_table = [
-            get_qualified_column_identifier("INDEX", "TILE", quote_column=False)
-        ] + [
-            get_qualified_column_identifier(tile_value_column, "TILE", quote_column=False)
-            for tile_value_column in tile_value_columns
-        ]
-        if value_by is not None:
-            selected_from_tile_table.append(get_qualified_column_identifier(value_by, "TILE"))
-
-        # Narrow down matches using these conditions before filtering by range_join_where_conditions
-        range_join_conditions = [
-            f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
-            f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
-        ]
-        req_joined_with_tiles = None
-        for range_join_condition in range_join_conditions:
-            join_conditions_lst: Any = [range_join_condition]
-            for serving_name, key in zip(serving_names, keys):
-                join_conditions_lst.append(
-                    f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
-                )
-            joined_expr = (
-                select(
-                    *selected_from_request_table,
-                    *selected_from_tile_table,
-                )
-                .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
-                .join(
-                    tile_table_id,
-                    join_alias="TILE",
-                    join_type="inner",
-                    on=expressions.and_(*join_conditions_lst),
-                    copy=False,
-                )
-                .where(*range_join_where_conditions, copy=False)
-            )
-            # Use UNION ALL with two separate joins to avoid non-exact join condition with OR which
-            # has significant performance impact.
-            if req_joined_with_tiles is None:
-                req_joined_with_tiles = joined_expr
-            else:
-                req_joined_with_tiles = expressions.Union(  # type: ignore[unreachable]
-                    this=req_joined_with_tiles,
-                    distinct=False,
-                    expression=joined_expr,
-                )
-        assert req_joined_with_tiles is not None
-        return select().from_(req_joined_with_tiles.subquery(copy=False))
+        return range_join_request_table_with_view(
+            left_table=request_table,
+            right_table=tile_table,
+            window_size=num_tiles,
+        )
 
     @staticmethod
     def _update_groupby_cols_and_result_names(
