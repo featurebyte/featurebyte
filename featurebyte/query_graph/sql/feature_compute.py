@@ -442,8 +442,8 @@ class FeatureExecutionPlan:
         else:
             request_table_column_names = []
 
-        table_expr = cte_context.select(*request_table_column_names, *columns).from_(
-            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
+        table_expr = cte_context.select(*request_table_column_names, *columns, copy=False).from_(
+            f"{self.AGGREGATION_TABLE_NAME} AS AGG", copy=False
         )
         return table_expr
 
