@@ -31,6 +31,32 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
     feature_list_id: Optional[PydanticObjectId]
     features_info: Optional[List[FeatureInfo]] = Field(default=None)
 
+    @property
+    def feature_names(self) -> Optional[List[str]]:
+        """
+        Get the list of feature names
+
+        Returns
+        -------
+        Optional[List[str]]
+        """
+        if self.features_info is None:
+            return None
+        return [feature_info.feature_name for feature_info in self.features_info]
+
+    @property
+    def feature_ids(self) -> Optional[List[PydanticObjectId]]:
+        """
+        Get the list of feature IDs
+
+        Returns
+        -------
+        Optional[List[PydanticObjectId]]
+        """
+        if self.features_info is None:
+            return None
+        return [feature_info.feature_id for feature_info in self.features_info]
+
     class Settings(MaterializedTableModel.Settings):
         """
         MongoDB settings

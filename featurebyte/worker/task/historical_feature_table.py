@@ -75,10 +75,12 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             )
             features_info = []
             async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
-                query_filter={"_id": feature_list_doc["feature_ids"]},
+                query_filter={"_id": {"$in": feature_list_doc["feature_ids"]}},
                 projection={"name": 1, "_id": 1},
             ):
-                features_info.append(FeatureInfo(**feature_doc))
+                features_info.append(
+                    FeatureInfo(feature_name=feature_doc["name"], feature_id=feature_doc["_id"])
+                )
         elif fl_get_historical_features.feature_clusters:
             features_info = []
             for cluster in fl_get_historical_features.feature_clusters:
