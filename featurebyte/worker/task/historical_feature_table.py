@@ -7,10 +7,11 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.logging import get_logger
-from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
+from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -35,6 +36,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_set_helper: ObservationSetHelper,
+        feature_service: FeatureService,
         feature_list_service: FeatureListService,
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
@@ -43,6 +45,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_set_helper = observation_set_helper
+        self.feature_service = feature_service
         self.feature_list_service = feature_list_service
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
@@ -64,21 +67,29 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         )
 
         fl_get_historical_features = payload.featurelist_get_historical_features
-        num_features = None
+        features_info = None
         if fl_get_historical_features.feature_list_id:
-            feature_list = await self.feature_list_service.get_document(
+            feature_list_doc = await self.feature_list_service.get_document_as_dict(
                 document_id=fl_get_historical_features.feature_list_id,
-                populate_remote_attributes=False,
+                projection={"feature_ids": 1},
             )
-            num_features = len(feature_list.feature_ids)
+            features_info = []
+            async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+                query_filter={"_id": feature_list_doc["feature_ids"]},
+                projection={"name": 1, "_id": 1},
+            ):
+                features_info.append(FeatureInfo(**feature_doc))
         elif fl_get_historical_features.feature_clusters:
-            num_features = 0
+            features_info = []
             for cluster in fl_get_historical_features.feature_clusters:
                 if cluster.feature_node_definition_hashes:
-                    num_features += len(cluster.feature_node_definition_hashes)
+                    for info in cluster.feature_node_definition_hashes:
+                        features_info.append(
+                            FeatureInfo(feature_id=info.feature_id, feature_name=info.feature_name)
+                        )
 
-            # reset num_features to None if it is 0
-            num_features = num_features or None
+            # reset num_features to None if the list is empty (to revert to the old behavior)
+            features_info = features_info or None
 
         async with self.drop_table_on_error(
             db_session=db_session,
@@ -108,7 +119,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 feature_list_id=fl_get_historical_features.feature_list_id,
                 columns_info=columns_info,
                 num_rows=num_rows,
-                num_features=num_features,
+                features_info=features_info,
                 is_view=result.is_output_view,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)
