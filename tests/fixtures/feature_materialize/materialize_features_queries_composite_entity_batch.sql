@@ -1,6 +1,6 @@
 CREATE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT DISTINCT
-  "cust_id",
+  CAST("cust_id" AS BIGINT) AS "cust_id",
   "another_key"
 FROM online_store_39866085bbe5ca4054c0978e965930d2f26cc229
 WHERE
