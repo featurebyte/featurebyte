@@ -4,7 +4,7 @@ HistoricalFeatureTable creation task
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List, Optional
 
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
@@ -67,7 +67,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         )
 
         fl_get_historical_features = payload.featurelist_get_historical_features
-        features_info = None
+        features_info: Optional[List[FeatureInfo]] = None
         if fl_get_historical_features.feature_list_id:
             feature_list_doc = await self.feature_list_service.get_document_as_dict(
                 document_id=fl_get_historical_features.feature_list_id,
