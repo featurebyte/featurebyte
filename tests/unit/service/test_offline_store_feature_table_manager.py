@@ -695,7 +695,7 @@ async def test_feature_table_one_feature_deployed(
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "cust_id"
+                      CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
@@ -838,7 +838,7 @@ async def test_feature_table_two_features_deployed(
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "cust_id"
+                      CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
@@ -938,7 +938,7 @@ async def test_feature_table_undeploy(
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "cust_id"
+                      CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
@@ -1076,7 +1076,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "cust_id"
+                      CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
@@ -1127,7 +1127,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "cust_id"
+                      CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'

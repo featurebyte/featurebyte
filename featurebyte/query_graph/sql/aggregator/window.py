@@ -399,8 +399,9 @@ class WindowAggregator(TileBasedAggregator):
                     join_alias="TILE",
                     join_type="inner",
                     on=expressions.and_(*join_conditions_lst),
+                    copy=False,
                 )
-                .where(*range_join_where_conditions)
+                .where(*range_join_where_conditions, copy=False)
             )
             # Use UNION ALL with two separate joins to avoid non-exact join condition with OR which
             # has significant performance impact.
@@ -413,7 +414,7 @@ class WindowAggregator(TileBasedAggregator):
                     expression=joined_expr,
                 )
         assert req_joined_with_tiles is not None
-        return select().from_(req_joined_with_tiles.subquery())
+        return select().from_(req_joined_with_tiles.subquery(copy=False))
 
     @staticmethod
     def _update_groupby_cols_and_result_names(

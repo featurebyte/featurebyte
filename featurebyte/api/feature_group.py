@@ -54,11 +54,8 @@ from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.feature import (
-    MAX_BATCH_FEATURE_ITEM_COUNT,
-    BatchFeatureCreatePayload,
-    BatchFeatureItem,
-)
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
+from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import FeatureListCreateJob, FeatureListPreview, FeatureListSQL
 from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 from featurebyte.typing import Scalar

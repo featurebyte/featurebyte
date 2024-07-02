@@ -1,6 +1,6 @@
 CREATE TABLE "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS
 SELECT DISTINCT
-  "cust_id"
+  CAST("cust_id" AS BIGINT) AS "cust_id"
 FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
 WHERE
   "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'

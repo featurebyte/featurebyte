@@ -204,6 +204,7 @@ class PreviewService:
         size: int,
         seed: int,
         columns_batch_size: Optional[int] = None,
+        drop_all_null_stats: bool = True,
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -220,6 +221,8 @@ class PreviewService:
             Maximum number of columns to describe in a single query. More columns in the data will
             be described in multiple queries. If None, a default value will be used. If 0, batching
             will be disabled.
+        drop_all_null_stats: bool
+            Whether to drop the result of a statistics if all values across all columns are null
 
         Returns
         -------
@@ -265,7 +268,9 @@ class PreviewService:
                 columns=[str(column.name) for column in columns],
             )
             df_queries.append(df_query)
-        results = pd.concat(df_queries, axis=1).dropna(axis=0, how="all")
+        results = pd.concat(df_queries, axis=1)
+        if drop_all_null_stats:
+            results = results.dropna(axis=0, how="all")
         return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
 
     async def value_counts(

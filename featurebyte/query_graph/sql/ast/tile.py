@@ -111,7 +111,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         )
         end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
-        select_expr = select_expr.where(start_cond, end_cond)
+        select_expr = select_expr.where(start_cond, end_cond, copy=False)
         return select_expr
 
     def _get_input_filtered_within_date_range_on_demand(self) -> Select:

@@ -28,8 +28,7 @@ from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperati
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
-
-MAX_BATCH_FEATURE_ITEM_COUNT = 500
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
 
 
 class FeatureCreate(FeatureByteBaseModel):

@@ -11,6 +11,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 from sqlglot import parse_one
 
@@ -745,6 +746,19 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
 
 
+@pytest_asyncio.fixture(name="observation_table_and_df_historical_expected", scope="module")
+async def observation_table_and_df_historical_expected_fixture(session, data_source):
+    """Observation table fixture"""
+    df_training_events, df_historical_expected = get_training_events_and_expected_result()
+    df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_training_events,
+        data_source,
+    )
+    return observation_table, df_historical_expected
+
+
 @pytest.mark.asyncio
 async def test_get_historical_features__feature_table_cache(
     session,
@@ -754,9 +768,10 @@ async def test_get_historical_features__feature_table_cache(
     user_entity,
     new_user_id_entity,
     feature_table_cache_metadata_service,
+    observation_table_and_df_historical_expected,
 ):
     """Test feature table cache create/update"""
-    _ = user_entity, new_user_id_entity
+    _ = user_entity, new_user_id_entity, data_source
 
     feature_list_1 = FeatureList(
         [
@@ -780,20 +795,20 @@ async def test_get_historical_features__feature_table_cache(
         name="My FeatureList 2",
     )
 
-    df_training_events, df_historical_expected = get_training_events_and_expected_result()
-    df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
-
-    observation_table = await create_observation_table_from_dataframe(
-        session,
-        df_training_events,
-        data_source,
-    )
-
+    observation_table, df_historical_expected = observation_table_and_df_historical_expected
     historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
     historical_feature_table = feature_list_1.compute_historical_feature_table(
         observation_table,
         historical_feature_table_name,
     )
+
+    assert len(historical_feature_table.features_info) == 3
+    assert set(feat_info.feature_name for feat_info in historical_feature_table.features_info) == {
+        "COUNT_2h",
+        "COUNT_BY_ACTION_24h",
+        "MOST_FREQUENT_ACTION_24h",
+    }
+
     df_historical_features_1 = await get_dataframe_from_materialized_table(
         session, historical_feature_table
     )
@@ -873,6 +888,57 @@ async def test_get_historical_features__feature_table_cache(
 
 
 @pytest.mark.asyncio
+async def test_get_historical_features__features_info(
+    feature_group,
+    user_entity,
+    new_user_id_entity,
+    observation_table_and_df_historical_expected,
+):
+    """Test feature table cache create/update"""
+    _ = user_entity, new_user_id_entity
+
+    unsaved_feature = feature_group["COUNT_2h"] + 1
+    unsaved_feature.name = "unsaved_feature"
+    feature_list = FeatureList([unsaved_feature], name="unsaved feature list")
+
+    # compute historical feature table
+    observation_table, _ = observation_table_and_df_historical_expected
+    hist_feat_table = feature_list.compute_historical_feature_table(
+        observation_set=observation_table,
+        historical_feature_table_name=f"hist_feat_table_{ObjectId()}",
+    )
+
+    # check that features_info are saved properly
+    assert len(hist_feat_table.features_info) == 1
+    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {
+        "unsaved_feature"
+    }
+
+    # delete the historical feature table
+    hist_feat_table.delete()
+
+    # check saved feature list
+    feature_list.save()
+
+    # compute historical feature table
+    hist_feat_table = feature_list.compute_historical_feature_table(
+        observation_set=observation_table,
+        historical_feature_table_name=f"hist_feat_table_{ObjectId()}",
+    )
+
+    # check that features_info are saved properly
+    assert len(hist_feat_table.features_info) == 1
+    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {
+        "unsaved_feature"
+    }
+    assert hist_feat_table.feature_names == ["unsaved_feature"]
+    assert hist_feat_table.feature_ids == [unsaved_feature.id]
+
+    # delete the historical feature table
+    hist_feat_table.delete()
+
+
+@pytest.mark.asyncio
 async def test_get_target__feature_table_cache(
     session,
     data_source,
@@ -883,7 +949,12 @@ async def test_get_target__feature_table_cache(
     feature_table_cache_metadata_service,
 ):
     """Test feature table cache create/update for target"""
-    _ = user_entity, new_user_id_entity
+    _ = (
+        user_entity,
+        new_user_id_entity,
+        transaction_data_upper_case,
+        feature_table_cache_metadata_service,
+    )
 
     target = event_view.groupby("ÜSER ID").forward_aggregate(
         method="avg",

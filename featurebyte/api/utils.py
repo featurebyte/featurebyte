@@ -46,9 +46,8 @@ def dataframe_from_arrow_stream_with_progress(buffer: Any, num_rows: int) -> pd.
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
                 while True:
-                    if batches[-1].num_rows == 0:
-                        break
-                    progress_bar(batches[-1].num_rows)  # pylint: disable=not-callable
+                    if batches[-1].num_rows > 0:
+                        progress_bar(batches[-1].num_rows)  # pylint: disable=not-callable
                     batches.append(reader.read_next_batch())
         except StopIteration:
             pass
@@ -81,10 +80,9 @@ def parquet_from_arrow_stream(buffer: Any, output_path: Path, num_rows: int) -> 
             ) as progress_bar:
                 while True:
                     table = pa.Table.from_batches([batch])
-                    if table.num_rows == 0:
-                        break
                     writer.write_table(table)
-                    progress_bar(table.num_rows)  # pylint: disable=not-callable
+                    if table.num_rows > 0:
+                        progress_bar(table.num_rows)  # pylint: disable=not-callable
                     batch = reader.read_next_batch()
         except StopIteration:
             pass

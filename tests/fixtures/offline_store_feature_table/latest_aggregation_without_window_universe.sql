@@ -1,5 +1,5 @@
 SELECT DISTINCT
-  "cust_id" AS "cust_id"
+  CAST("cust_id" AS BIGINT) AS "cust_id"
 FROM (
   SELECT
     "col_int" AS "col_int",
