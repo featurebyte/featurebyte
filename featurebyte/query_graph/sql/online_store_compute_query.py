@@ -195,10 +195,10 @@ class OnlineStorePrecomputePlan:
         -------
         expressions.Select
         """
-        output_expr = select().from_(aggregation_expr.subquery())
+        output_expr = select().from_(aggregation_expr.subquery(copy=False))
 
         output_expr = output_expr.select(
-            *[quoted_identifier(serving_name) for serving_name in serving_names]
+            *[quoted_identifier(serving_name) for serving_name in serving_names], copy=False
         )
 
         output_expr = output_expr.select(
@@ -215,6 +215,7 @@ class OnlineStorePrecomputePlan:
                 alias=InternalName.ONLINE_STORE_VALUE_COLUMN,
                 quoted=True,
             ),
+            copy=False,
         )
 
         return output_expr

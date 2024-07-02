@@ -190,7 +190,7 @@ mkdocs-table-reader-plugin = "^1.1.1"
 bandit = "^1.7.4"
 darglint = "^1.8.1"
 isort = { extras = ["colors"], version = "^5.10.1" }
-mypy = "^0.981"
+mypy = "^1.0.1"
 mypy-extensions = "^0.4.3"
 pip-audit = "^2.4.4"
 pylint = "^2.14.5"

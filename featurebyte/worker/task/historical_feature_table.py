@@ -4,13 +4,15 @@ HistoricalFeatureTable creation task
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List, Optional
 
 from featurebyte.logging import get_logger
-from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
+from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesService
@@ -34,6 +36,8 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_set_helper: ObservationSetHelper,
+        feature_service: FeatureService,
+        feature_list_service: FeatureListService,
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
     ):
@@ -41,6 +45,8 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_set_helper = observation_set_helper
+        self.feature_service = feature_service
+        self.feature_list_service = feature_list_service
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
 
@@ -59,6 +65,34 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         location = await self.historical_feature_table_service.generate_materialized_table_location(
             payload.feature_store_id
         )
+
+        fl_get_historical_features = payload.featurelist_get_historical_features
+        features_info: Optional[List[FeatureInfo]] = None
+        if fl_get_historical_features.feature_list_id:
+            feature_list_doc = await self.feature_list_service.get_document_as_dict(
+                document_id=fl_get_historical_features.feature_list_id,
+                projection={"feature_ids": 1},
+            )
+            features_info = []
+            async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+                query_filter={"_id": {"$in": feature_list_doc["feature_ids"]}},
+                projection={"name": 1, "_id": 1},
+            ):
+                features_info.append(
+                    FeatureInfo(feature_name=feature_doc["name"], feature_id=feature_doc["_id"])
+                )
+        elif fl_get_historical_features.feature_clusters:
+            features_info = []
+            for cluster in fl_get_historical_features.feature_clusters:
+                if cluster.feature_node_definition_hashes:
+                    for info in cluster.feature_node_definition_hashes:
+                        features_info.append(
+                            FeatureInfo(feature_id=info.feature_id, feature_name=info.feature_name)
+                        )
+
+            # reset num_features to None if the list is empty (to revert to the old behavior)
+            features_info = features_info or None
+
         async with self.drop_table_on_error(
             db_session=db_session,
             table_details=location.table_details,
@@ -66,7 +100,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         ):
             result = await self.historical_features_service.compute(
                 observation_set=observation_set,
-                compute_request=payload.featurelist_get_historical_features,
+                compute_request=fl_get_historical_features,
                 output_table_details=location.table_details,
             )
             (
@@ -84,9 +118,10 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 name=payload.name,
                 location=location,
                 observation_table_id=payload.observation_table_id,
-                feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
+                feature_list_id=fl_get_historical_features.feature_list_id,
                 columns_info=columns_info,
                 num_rows=num_rows,
+                features_info=features_info,
                 is_view=result.is_output_view,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)

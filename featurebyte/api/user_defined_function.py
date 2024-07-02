@@ -243,7 +243,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         name: str,
         sql_function_name: str,
         function_parameters: List[FunctionParameter],
-        output_dtype: Literal[tuple(DBVarType)],  # type: ignore[misc]
+        output_dtype: Union[DBVarType, str],
         is_global: bool = False,
     ) -> UserDefinedFunction:
         """
@@ -313,11 +313,14 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> another_cos_feat = fb.UDF.cos(feature)
         """
+        output_dtype_val = output_dtype
+        if isinstance(output_dtype, str):
+            output_dtype_val = DBVarType(output_dtype)
         user_defined_function = UserDefinedFunction(
             name=name,
             sql_function_name=sql_function_name,
             function_parameters=function_parameters,
-            output_dtype=output_dtype,
+            output_dtype=output_dtype_val,
             is_global=is_global,
         )
         user_defined_function.save()
@@ -389,7 +392,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @typechecked
-    def update_output_dtype(self, output_dtype: Literal[tuple(DBVarType)]) -> None:  # type: ignore[misc]
+    def update_output_dtype(self, output_dtype: Union[DBVarType, str]) -> None:
         """
         Update the output data type of the user-defined function.
 
@@ -405,7 +408,12 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf.output_dtype
         'INT'
         """
-        self.update(update_payload={"output_dtype": output_dtype}, allow_update_local=False)
+        output_dtype_val = output_dtype
+        if isinstance(output_dtype, str):
+            output_dtype_val = DBVarType(output_dtype)
+        self.update(
+            update_payload={"output_dtype": str(output_dtype_val)}, allow_update_local=False
+        )
 
     def delete(self) -> None:
         """

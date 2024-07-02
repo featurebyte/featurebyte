@@ -309,7 +309,7 @@ class SampleMixin(AsyncMixin):
 
     @perf_logging
     @typechecked
-    def shape(self: HasExtractPrunedGraphAndNode, **kwargs: Any) -> Tuple[int, int]:
+    def shape(self, **kwargs: Any) -> Tuple[int, int]:
         """
         Return the shape of the view / column.
 
@@ -335,7 +335,7 @@ class SampleMixin(AsyncMixin):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             feature_store_id=self.feature_store.id,
         )

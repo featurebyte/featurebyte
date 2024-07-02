@@ -5,6 +5,7 @@ Unit test for DataColumn class
 import textwrap
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
@@ -15,6 +16,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     StringValueImputation,
     ValueBeyondEndpointImputation,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 def test_table_column__as_entity(snowflake_event_table, mock_api_object_cache):
@@ -38,11 +40,14 @@ def test_table_column__as_entity(snowflake_event_table, mock_api_object_cache):
         if col.name == "col_int":
             assert col.entity_id == entity.id
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_event_table.col_int.as_entity(1234)
-    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
-        exc.value
+    expected_msg = (
+        'argument "entity_name" (int) did not match any element in the union:'
+        "\n  str: is not an instance of str"
+        "\n  NoneType: is not an instance of NoneType"
     )
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_table.col_int.as_entity("some_random_entity")
@@ -203,9 +208,10 @@ def _check_remove_critical_data_info(event_table):
     assert event_table.frame.node.type == NodeType.INPUT
     event_view = event_table.get_view()
     assert event_view.node.type == NodeType.GRAPH
-    assert event_view.node.parameters.graph.edges == [
-        {"source": "proxy_input_1", "target": "project_1"}
-    ]
+    compare_pydantic_obj(
+        event_view.node.parameters.graph.edges,
+        expected=[{"source": "proxy_input_1", "target": "project_1"}],
+    )
 
 
 def test_data_column__update_critical_data_info(snowflake_event_table, mock_api_object_cache):

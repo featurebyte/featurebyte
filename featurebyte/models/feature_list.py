@@ -235,6 +235,8 @@ class FeatureNodeDefinitionHash(FeatureByteBaseModel):
 
     node_name: str
     definition_hash: Optional[str] = None
+    feature_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_name: Optional[str] = Field(default=None)
 
 
 class FeatureCluster(FeatureByteBaseModel):
@@ -376,7 +378,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
         _ = clusters
         if clusters:
-            return [json.loads(cluster.model_dump_json()) for cluster in self.feature_clusters]
+            return [
+                json.loads(cluster.model_dump_json(by_alias=True))
+                for cluster in self.feature_clusters
+            ]
         return None
 
     @field_validator("supported_serving_entity_ids")
@@ -514,6 +519,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     FeatureNodeDefinitionHash(
                         node_name=mapped_node.name,
                         definition_hash=feature.definition_hash,
+                        feature_id=feature.id,
+                        feature_name=feature.name,
                     )
                 )
             feature_clusters.append(

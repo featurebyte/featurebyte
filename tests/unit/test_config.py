@@ -190,7 +190,7 @@ def test_use_profile_invalid_endpoint():
         with pytest.raises(InvalidSettingsError) as exc_info:
             config.use_profile("invalid")
         assert (
-            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
+            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234/"
         )
 
 

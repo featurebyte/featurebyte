@@ -43,7 +43,7 @@ def _assert_profile_with_details(
         if profile.name == profile_name:
             assert not has_profile  # check that there's only one profile with the given name
             has_profile = True
-            assert profile.api_url == api_url
+            assert str(profile.api_url) == api_url
             assert profile.api_token == api_token
     assert has_profile
 

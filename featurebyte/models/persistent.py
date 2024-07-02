@@ -57,7 +57,19 @@ class AuditDocument(FeatureByteBaseModel):
     @field_serializer("previous_values", "current_values", when_used="json")
     @staticmethod
     def _serialize_values(values: Dict[str, Any]) -> Dict[str, Any]:
-        return json.loads(json_util.dumps(values))
+
+        def _convert_value(v: Any) -> Any:
+            if isinstance(v, dict):
+                return {k: _convert_value(_v) for k, _v in v.items()}
+            elif isinstance(v, list):
+                return [_convert_value(_v) for _v in v]
+            elif isinstance(v, datetime):
+                return v.isoformat()
+            elif isinstance(v, ObjectId):
+                return str(v)
+            return v
+
+        return json.loads(json_util.dumps(_convert_value(values)))
 
     @field_serializer("document_id", when_used="json")
     @staticmethod

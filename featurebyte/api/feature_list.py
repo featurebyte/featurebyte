@@ -1371,7 +1371,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
-    def update_status(self, status: str) -> None:
+    def update_status(self, status: Union[str, FeatureListStatus]) -> None:
         """
         A FeatureList can have one of five statuses:
 
@@ -1401,10 +1401,11 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
-        if isinstance(status, str):
-            status = FeatureListStatus(status)
+        status_value = status
+        if isinstance(status_value, str):
+            status_value = FeatureListStatus(status_value)
         self.feature_list_namespace.update(
-            update_payload={"status": str(status)}, allow_update_local=False
+            update_payload={"status": str(status_value)}, allow_update_local=False
         )
 
     @typechecked

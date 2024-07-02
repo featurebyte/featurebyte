@@ -91,19 +91,21 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
     with pytest.raises(TypeCheckError) as exc:
         function_parameter_processor._extract_node_parameters("a", 2)
     expected_error = (
-        "type of x must be one of (int, featurebyte.api.view.ViewColumn, featurebyte.api.feature.Feature); "
-        "got str instead"
+        "str did not match any element in the union:\n"
+        "  int: is not an instance of int\n"
+        "  featurebyte.api.view.ViewColumn: is not an instance of featurebyte.api.view.ViewColumn\n"
+        "  featurebyte.api.feature.Feature: is not an instance of featurebyte.api.feature.Feature"
     )
     assert expected_error in str(exc.value)
 
     # check invalid view column type
-    with pytest.raises(TypeCheckError) as exc:
+    with pytest.raises(TypeError) as exc:
         function_parameter_processor._extract_node_parameters(1, snowflake_event_view.col_char)
     expected_error = 'Parameter "y" has dtype FLOAT but input ViewColumn or Feature (name: col_char) has dtype CHAR.'
     assert expected_error in str(exc.value)
 
     # check mis-matched series type
-    with pytest.raises(TypeCheckError) as exc:
+    with pytest.raises(TypeError) as exc:
         function_parameter_processor._extract_node_parameters(
             snowflake_event_view.col_int, float_feature
         )

@@ -19,6 +19,8 @@ def test_construct_snowflaketile_time_modulo_error():
     """
     with pytest.raises(ValueError) as excinfo:
         TileSpec(
+            tile_id="tile_id_1",
+            aggregation_id="agg_id1",
             time_modulo_frequency_second=183,
             blind_spot_second=3,
             frequency_minute=3,

@@ -54,11 +54,8 @@ from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.feature import (
-    MAX_BATCH_FEATURE_ITEM_COUNT,
-    BatchFeatureCreatePayload,
-    BatchFeatureItem,
-)
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
+from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import FeatureListCreateJob, FeatureListPreview, FeatureListSQL
 from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
 from featurebyte.typing import Scalar
@@ -103,7 +100,8 @@ class BaseFeatureGroup(AsyncMixin):
                     raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
                 if item.id in feature_ids:
                     raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
-                feature_objects[item.name] = item
+                feature_objects[item.name] = item.copy(deep=True)
+                feature_objects[item.name].set_parent(None)
                 feature_ids.add(item.id)
             else:
                 for name, feature in item.feature_objects.items():
@@ -113,7 +111,8 @@ class BaseFeatureGroup(AsyncMixin):
                         )
                     if feature.id in feature_ids:
                         raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
-                    feature_objects[name] = feature
+                    feature_objects[name] = feature.copy(deep=True)
+                    feature_objects[name].set_parent(None)
         return feature_objects
 
     @staticmethod
@@ -529,7 +528,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
-        value = parse_obj_as(Feature, value)
+        value = parse_obj_as(Feature, value).copy(deep=True)
         # Name setting performs validation to ensure the specified name is valid
         value.name = key
         self.feature_objects[key] = value

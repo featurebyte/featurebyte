@@ -2,9 +2,9 @@
 This module contains Tile related models
 """
 
-from typing import Any, Dict, List, cast
+from typing import List, cast
 
-from pydantic import field_validator
+from pydantic import Field, model_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -35,26 +35,21 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    precompute_queries: List[OnlineStoreComputeQueryModel] = []
+    precompute_queries: List[OnlineStoreComputeQueryModel] = Field(default_factory=list)
 
-    @field_validator("precompute_queries", mode="before")
-    @classmethod
-    def _generate_precompute_queries(  # pylint: disable=no-self-argument
-        cls,
-        val: List[OnlineStoreComputeQueryModel],
-        values: Dict[str, Any],
-    ) -> List[OnlineStoreComputeQueryModel]:
-        if val:
-            # Allow direct setting; mainly used in integration tests
-            return val
-        feature = values["feature"]
-        precompute_queries = get_online_store_precompute_queries(
+    @model_validator(mode="after")
+    def _generate_precompute_queries(self) -> "OnlineFeatureSpec":
+        if self.precompute_queries:
+            return self
+
+        feature = self.feature
+        self.precompute_queries = get_online_store_precompute_queries(
             graph=feature.graph,
             node=feature.node,
             source_type=feature.feature_store_type,
             agg_result_name_include_serving_names=feature.agg_result_name_include_serving_names,
         )
-        return precompute_queries
+        return self
 
     @property
     def tile_ids(self) -> List[str]:

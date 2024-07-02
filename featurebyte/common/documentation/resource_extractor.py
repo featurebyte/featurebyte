@@ -14,7 +14,8 @@ from enum import Enum
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
 from mkautodoc.extension import import_from_string, trim_docstring
-from pydantic.fields import ModelField, Undefined
+from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.allowed_classes import nested_description_allowed_classes
@@ -86,8 +87,8 @@ def get_params(
             if render_kw_only_separator:
                 render_kw_only_separator = False
                 params.append(RawParameterDetails("*", None, None))
-        hinted_type = type_hints.get(parameter.name, Undefined)
-        if hinted_type == Undefined:
+        hinted_type = type_hints.get(parameter.name, PydanticUndefined)
+        if hinted_type == PydanticUndefined:
             hinted_type = parameter.annotation
         params.append(RawParameterDetails(value, hinted_type, default))
     return params
@@ -120,9 +121,9 @@ def get_params_from_signature(resource: Any) -> tuple[List[RawParameterDetails],
             parameters = get_params(signature, type_hints)
         except ValueError:
             parameters = []
-        return parameters, type_hints.get("return", Undefined)
+        return parameters, type_hints.get("return", PydanticUndefined)
 
-    elif isinstance(resource, ModelField):
+    elif isinstance(resource, FieldInfo):
         return [], resource.annotation
 
     return [], type(resource)

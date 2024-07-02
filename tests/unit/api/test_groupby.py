@@ -5,6 +5,7 @@ Unit test for EventViewGroupBy
 from typing import List, Type
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte import FeatureJobSetting
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
@@ -56,18 +57,24 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     """
     Test not valid object type passed to the constructor
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         GroupBy(obj=True, keys="whatever")
     expected_msg = (
-        'type of argument "obj" must be one of (featurebyte.api.event_view.EventView, '
-        "featurebyte.api.item_view.ItemView, featurebyte.api.change_view.ChangeView, "
-        "featurebyte.api.scd_view.SCDView); got bool instead"
+        'argument "obj" (bool) did not match any element in the union:'
+        "\n  featurebyte.api.event_view.EventView: is not an instance of featurebyte.api.event_view.EventView"
+        "\n  featurebyte.api.item_view.ItemView: is not an instance of featurebyte.api.item_view.ItemView"
+        "\n  featurebyte.api.change_view.ChangeView: is not an instance of featurebyte.api.change_view.ChangeView"
+        "\n  featurebyte.api.scd_view.SCDView: is not an instance of featurebyte.api.scd_view.SCDView"
     )
     assert expected_msg in str(exc.value)
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         GroupBy(snowflake_event_view, True)
-    expected_msg = 'type of argument "keys" must be one of (str, List[str]); got bool instead'
+    expected_msg = (
+        'argument "keys" (bool) did not match any element in the union:'
+        "\n  str: is not an instance of str"
+        "\n  List[str]: is not a list"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -112,11 +119,9 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     Test not valid aggregation method passed to groupby
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(ValueError) as exc:
         grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
-    expected_message = (
-        'type of argument "method" must be one of (Literal[sum, avg, min, max, count, na_count'
-    )
+    expected_message = "Aggregation method not supported: unknown_method"
     assert expected_message in str(exc.value)
 
 

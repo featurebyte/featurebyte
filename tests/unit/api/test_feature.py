@@ -62,6 +62,7 @@ from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
+    compare_pydantic_obj,
     deploy_features_through_api,
     get_node,
 )
@@ -283,11 +284,6 @@ def test_feature_to_json(float_feature):
     # exclude_none
     output_exclude_none = float_feature.json(exclude_none=True)
     assert "is_default" not in output_exclude_none
-
-    # check encoder
-    float_feature.__dict__["created_at"] = datetime.now()
-    output_encoder = float_feature.json(encoder=lambda v: "__default__")
-    assert '"created_at": "__default__"' in output_encoder
 
 
 @pytest.fixture(name="saved_feature")
@@ -1414,10 +1410,16 @@ def test_feature_graph_prune_unused_cleaning_operations(feature_with_clean_colum
     # check feature graph before saving
     graph = QueryGraphModel(**feature._get_create_payload()["graph"])
     event_view_graph_node_metadata = graph.get_node_by_name("graph_1").parameters.metadata
-    assert event_view_graph_node_metadata.column_cleaning_operations == [
-        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
-        for col_name in col_names
-    ]
+    compare_pydantic_obj(
+        event_view_graph_node_metadata.column_cleaning_operations,
+        expected=[
+            {
+                "column_name": col_name,
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            }
+            for col_name in col_names
+        ],
+    )
 
     # check feature graph after saving
     feature.save()
@@ -1427,10 +1429,16 @@ def test_feature_graph_prune_unused_cleaning_operations(feature_with_clean_colum
     event_view_graph_node = graph.get_node_by_name("graph_1")
     assert event_view_graph_node.parameters.type == "event_view"
     event_view_graph_node_metadata = event_view_graph_node.parameters.metadata
-    assert event_view_graph_node_metadata.column_cleaning_operations == [
-        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
-        for col_name in ["col_float", "cust_id"]
-    ]
+    compare_pydantic_obj(
+        event_view_graph_node_metadata.column_cleaning_operations,
+        expected=[
+            {
+                "column_name": col_name,
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            }
+            for col_name in ["col_float", "cust_id"]
+        ],
+    )
 
     # check cleaning graph node (should contain only those columns that are used in the feature)
     cleaning_graph_node = event_view_graph_node.parameters.graph.get_node_by_name("graph_1")

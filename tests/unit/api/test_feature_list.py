@@ -1027,7 +1027,7 @@ def test_save_feature_group(saved_feature_list):
 def test_feature_list_constructor():
     """Test FeatureList constructor"""
     _ = FeatureList([], "my_fl")  # ok
-    with pytest.raises(TypeCheckError) as exc:
+    with pytest.raises(TypeError) as exc:
         FeatureList([])
     assert "missing 1 required positional argument: 'name'" in str(exc.value)
 

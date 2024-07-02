@@ -28,8 +28,8 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     name: NameStr
     type: SourceType
     details: DatabaseDetails
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
 
 class FeatureStoreList(PaginationMixin):

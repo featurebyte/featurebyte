@@ -33,7 +33,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 @pytest.fixture(name="event_table_dict")
@@ -677,12 +677,12 @@ def test_update_record_creation_timestamp_column__saved_object(saved_event_table
     # check that validation logic works
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_table.update_record_creation_timestamp_column("random_column_name")
-    expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    expected_msg = 'Column "random_column_name" not found in the table!'
     assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_table.update_record_creation_timestamp_column("col_float")
-    expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+    expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ']"
     assert expected_msg in str(exc.value)
 
 
@@ -971,9 +971,12 @@ def test_event_table__entity_relation_auto_tagging(saved_event_table, mock_api_o
     saved_event_table.cust_id.as_entity("customer")
 
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
-    assert updated_transaction_entity.parents == [
-        {"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}
-    ]
+    compare_pydantic_obj(
+        updated_transaction_entity.parents,
+        expected=[
+            {"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}
+        ],
+    )
     updated_customer_entity = Entity.get_by_id(id=customer.id)
     assert updated_customer_entity.parents == []
 
@@ -1066,7 +1069,7 @@ def test_timezone_offset__invalid_column(snowflake_database_table_dimension_tabl
             event_timestamp_column="event_timestamp",
             event_timestamp_timezone_offset_column="col_float",
         )
-    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR'] (type=value_error)"
+    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR']"
     assert expected in str(exc.value)
 
 

@@ -269,47 +269,6 @@ class QueryObject(FeatureByteBaseModel):
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)
 
-    def json(
-        self,
-        *,
-        include: AbstractSetIntStr | MappingIntStrAny | None = None,
-        exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
-        by_alias: bool = False,
-        skip_defaults: bool | None = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-        encoder: Callable[[Any], Any] | None = None,
-        models_as_dict: bool = True,
-        **dumps_kwargs: Any,
-    ) -> str:
-        # Serialization of query object requires both graph & node (to prune the graph).
-        # However, pydantic `json()` does not call `dict()` directly. It iterates inner attributes
-        # and trigger theirs `dict()`. To fix this issue, we call the pydantic `json()` first to
-        # serialize the whole object, then calling `QueryObject.dict()` to construct pruned graph & node map.
-        # After that, use the `QueryObject.dict()` result to overwrite pydantic `json()` results.
-        json_object = super().json(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            skip_defaults=skip_defaults,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-            encoder=encoder,
-            models_as_dict=models_as_dict,
-            **dumps_kwargs,
-        )
-        encoder = cast(Callable[[Any], Any], encoder or self.__json_encoder__)
-        dict_object = json.loads(json_object)
-        if "graph" in dict_object:
-            pruned_dict_object = self.dict()
-            for key in ["graph", "node_name"]:
-                if key in dict_object:
-                    dict_object[key] = pruned_dict_object[key]
-            json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
-        return json_object
-
     @classmethod
     def clear_operation_structure_cache(cls) -> None:
         """

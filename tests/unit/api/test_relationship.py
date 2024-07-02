@@ -153,7 +153,7 @@ async def test_relationships_list(persistable_relationship_info, relationship_in
     assert_relationship_info(relationships)
 
     # apply relationship_type filter for non-existing filter
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         Relationship.list(relationship_type="random_filter")
 
 

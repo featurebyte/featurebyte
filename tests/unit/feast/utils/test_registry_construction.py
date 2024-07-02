@@ -115,7 +115,9 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
     }
 
     # dill's getsource() does not include the import statements
-    udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
+    udf = feast_registry_proto.on_demand_feature_views[
+        0
+    ].spec.feature_transformation.user_defined_function
     assert udf.body_text.startswith(
         "import datetime\nimport json\nimport numpy as np\nimport pandas as pd\n"
     )
@@ -356,7 +358,9 @@ def test_feast_registry_construction(
     udf_definition = None
     for odfv in on_demand_feature_views:
         if odfv["spec"]["name"] == feat_view_name:
-            udf_definition = odfv["spec"]["userDefinedFunction"]["bodyText"]
+            udf_definition = odfv["spec"]["featureTransformation"]["userDefinedFunction"][
+                "bodyText"
+            ]
 
     expected = f"""
     import datetime

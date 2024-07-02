@@ -128,7 +128,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         self, value: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         if value:
-            return json.loads(self.offline_store_info.model_dump_json())
+            return json.loads(self.offline_store_info.model_dump_json(by_alias=True))
         return value
 
     @staticmethod

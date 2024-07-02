@@ -27,7 +27,7 @@ class QueryGraphMixin(FeatureByteBaseModel):
 
     @field_serializer("internal_graph", when_used="json")
     def _serialize_graph(self, graph: Any) -> Any:
-        return json.loads(QueryGraph(**graph).model_dump_json())
+        return json.loads(QueryGraph(**graph).model_dump_json(by_alias=True))
 
     @property
     def graph(self) -> QueryGraph:
