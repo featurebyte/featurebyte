@@ -166,12 +166,11 @@ def range_join_tables(
         ),
     ]
 
-    # Narrow down matches using these conditions before filtering by range_join_where_conditions.
-    # (
-    #   FLOOR(LEFT.RANGE_END / WINDOW) = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
-    #   AND
-    #   FLOOR(LEFT.RANGE_END / WINDOW) - 1 = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
-    # )
+    # We can narrow down matches using joins without inequality conditions to make the query
+    # efficient. The desired output rows must statisfy either of these conditions:
+    #
+    # 1. FLOOR(LEFT.RANGE_END / WINDOW) = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
+    # 2. FLOOR(LEFT.RANGE_END / WINDOW) - 1 = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
     left_range_end_div_window = expressions.Floor(
         expression=expressions.Div(
             this=left_table.qualified_range_end, expression=make_literal_value(window_size)
@@ -183,12 +182,16 @@ def range_join_tables(
         )
     )
     range_join_conditions = [
-        expressions.EQ(this=left_range_end_div_window, expression=right_range_div_window),
-        expressions.EQ(
+        expressions.EQ(  # Condition 1
+            this=left_range_end_div_window, expression=right_range_div_window
+        ),
+        expressions.EQ(  # Condition 2
             this=expressions.Sub(this=left_range_end_div_window, expression=make_literal_value(1)),
             expression=right_range_div_window,
         ),
     ]
+
+    # We will use two joins, each with one of the conditions, and then union the result
     req_joined_with_tiles = None
     for range_join_condition in range_join_conditions:
         join_conditions_lst: Any = [range_join_condition]
