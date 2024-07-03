@@ -25,7 +25,7 @@ from featurebyte.query_graph.sql.aggregator.range_join import (
     range_join_tables,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.common import CteStatement, CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
@@ -59,7 +59,15 @@ class NonTileRequestTablePlan:
         self.adapter = get_sql_adapter(source_type)
 
     def add_aggregation_spec(self, aggregation_spec: NonTileWindowAggregateSpec) -> None:
-        key = self.get_request_table_key(aggregation_spec)
+        """
+        Update plan to account for the aggregation spec
+
+        Parameters
+        ----------
+        aggregation_spec: NonTileWindowAggregateSpec
+            Aggregation spec
+        """
+        key = self._get_request_table_key(aggregation_spec)
         if key not in self.processed_request_tables:
             window_spec = f"W{aggregation_spec.window}"
             if aggregation_spec.offset is not None:
@@ -79,11 +87,11 @@ class NonTileRequestTablePlan:
             )
 
     @staticmethod
-    def get_request_table_key(aggregation_spec: NonTileWindowAggregateSpec) -> RequestTableKeyType:
+    def _get_request_table_key(aggregation_spec: NonTileWindowAggregateSpec) -> RequestTableKeyType:
         params = aggregation_spec.parameters
         key = (
             aggregation_spec.window,
-            params.offset,
+            aggregation_spec.offset,
             params.feature_job_setting,
             tuple(params.serving_names),
         )
@@ -92,13 +100,37 @@ class NonTileRequestTablePlan:
     def get_processed_request_table(
         self, aggregation_spec: NonTileWindowAggregateSpec
     ) -> ProcessedRequestTable:
-        key = self.get_request_table_key(aggregation_spec)
+        """
+        Get the process request table corresponding to an aggregation spec
+
+        Parameters
+        ----------
+        aggregation_spec: NonTileWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        ProcessedRequestTable
+        """
+        key = self._get_request_table_key(aggregation_spec)
         return self.processed_request_tables[key]
 
     def construct_request_table_ctes(self, request_table_name: str) -> CteStatements:
+        """
+        Get the CTEs for all the processed request tables
+
+        Parameters
+        ----------
+        request_table_name: str
+            Name of the input request table
+
+        Returns
+        -------
+        CteStatements
+        """
         request_table_ctes = []
-        for key, processed_request_table in self.processed_request_tables.items():
-            processed_table_sql = self.construct_processed_request_table_sql(
+        for processed_request_table in self.processed_request_tables.values():
+            processed_table_sql = self._construct_processed_request_table_sql(
                 request_table_name=request_table_name,
                 aggregation_spec=processed_request_table.aggregation_spec,
             )
@@ -107,11 +139,26 @@ class NonTileRequestTablePlan:
             )
         return cast(CteStatements, request_table_ctes)
 
-    def construct_processed_request_table_sql(
+    def _construct_processed_request_table_sql(
         self,
         request_table_name: str,
         aggregation_spec: NonTileWindowAggregateSpec,
     ) -> Select:
+        """
+        Get a Select statement that applies necessary transformations to the request table to
+        prepare for the aggregation.
+
+        Parameters
+        ----------
+        request_table_name: str
+            Request table name
+        aggregation_spec: NonTileWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        Select
+        """
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
             quoted_identifier(SpecialColumnName.POINT_IN_TIME)
         )
@@ -164,11 +211,35 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
 
     @staticmethod
     def get_source_view_table_name(aggregation_spec: NonTileWindowAggregateSpec) -> str:
+        """
+        Get the view name corresponding to the source of the aggregation
+
+        Parameters
+        ----------
+        aggregation_spec: NonTileWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        str
+        """
         return f"VIEW_{aggregation_spec.source_hash}"
 
     def get_source_view_with_timestamp_epoch(
         self, aggregation_spec: NonTileWindowAggregateSpec
     ) -> Select:
+        """
+        Get the source view augmented with timestamp converted to epoch seconds
+
+        Parameters
+        ----------
+        aggregation_spec: NonTileWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        Select
+        """
         timestamp_column = aggregation_spec.parameters.timestamp
         timestamp_epoch_expr = self.adapter.to_epoch_seconds(quoted_identifier(timestamp_column))
         return select(
@@ -213,7 +284,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         right_table = RightTable(
             name=quoted_identifier(source_view_table_name),
             alias="VIEW",
-            join_keys=[key for key in spec.parameters.keys],
+            join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
             columns=[
                 agg_spec.parameters.parent
@@ -277,7 +348,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         )
 
     def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
-        out = []
+        out: list[CteStatement] = []
         out.extend(self.request_table_plan.construct_request_table_ctes(request_table_name))
         for table_name, view_expr in self.aggregation_source_views.items():
             out.append((quoted_identifier(table_name), view_expr))

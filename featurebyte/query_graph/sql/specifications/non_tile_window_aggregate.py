@@ -34,7 +34,7 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
     parameters: NonTileWindowAggregateParameters
     parent_dtype: Optional[DBVarType]
     window: int
-    offset: int
+    offset: Optional[int]
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -83,23 +83,28 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         agg_result_name_include_serving_names: bool,
     ) -> list[NonTileWindowAggregateSpec]:
         assert isinstance(node, NonTileWindowAggregateNode)
-        return [
-            cls(
-                node_name=node.name,
-                feature_name=feature_name,
-                parameters=node.parameters,
-                parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
-                aggregation_source=aggregation_source,
-                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
-                serving_names=node.parameters.serving_names,
-                serving_names_mapping=serving_names_mapping,
-                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
-                window=parse_duration_string(window),
-                offset=(
-                    parse_duration_string(node.parameters.offset)
-                    if node.parameters.offset
-                    else None
-                ),
+        specs = []
+        for feature_name, window in zip(node.parameters.names, node.parameters.windows):
+            assert window is not None
+            specs.append(
+                cls(
+                    node_name=node.name,
+                    feature_name=feature_name,
+                    parameters=node.parameters,
+                    parent_dtype=cls.get_parent_dtype_from_graph(
+                        graph, node.parameters.parent, node
+                    ),
+                    aggregation_source=aggregation_source,
+                    entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                    serving_names=node.parameters.serving_names,
+                    serving_names_mapping=serving_names_mapping,
+                    agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                    window=parse_duration_string(window),
+                    offset=(
+                        parse_duration_string(node.parameters.offset)
+                        if node.parameters.offset
+                        else None
+                    ),
+                )
             )
-            for feature_name, window in zip(node.parameters.names, node.parameters.windows)
-        ]
+        return specs

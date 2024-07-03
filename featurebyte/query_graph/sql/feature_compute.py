@@ -75,6 +75,7 @@ AggregatorType = Union[
     WindowAggregator,
     ItemAggregator,
     AsAtAggregator,
+    NonTileWindowAggregator,
     ForwardAggregator,
     ForwardAsAtAggregator,
 ]

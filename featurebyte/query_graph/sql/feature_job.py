@@ -4,7 +4,8 @@ Feature job utilities for sql generation
 
 from __future__ import annotations
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 

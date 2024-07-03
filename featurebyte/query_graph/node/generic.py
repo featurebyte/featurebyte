@@ -4,20 +4,7 @@ This module contains SQL operation related node classes
 
 # pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 from typing_extensions import Literal
 
 from pydantic import Field, root_validator, validator
