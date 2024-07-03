@@ -136,8 +136,10 @@ class WebdavStorage(Storage):
                     "file_path": str(local_path),
                 },
             )
-            r = await self.client.put(url=f"{self.base_url}/{remote_path}", content=file_obj.read())
-            await r.aclose()
+            response = await self.client.put(
+                url=f"{self.base_url}/{remote_path}", content=file_obj.read()
+            )
+            await response.aclose()
 
     async def delete(self, remote_path: Path) -> None:
         """
