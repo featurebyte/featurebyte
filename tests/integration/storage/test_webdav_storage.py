@@ -16,7 +16,7 @@ class TestWebdavStorage(BaseStorageTestSuite):
     """
 
     @pytest.fixture(name="rclone", scope="session")
-    def setup(self, request) -> str:
+    def setup(self) -> str:
         """
         Setup rclone server
         """

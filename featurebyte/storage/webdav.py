@@ -38,17 +38,21 @@ class WebdavStorage(Storage):
     def __init__(self, base_url: str, temp: bool = False) -> None:
         """
         Initialize class
+
+        Parameters
+        ----------
+        base_url: str
+            Base URL of storage
+        temp: bool
+            Is temp data
         """
         base_url = base_url.rstrip("/")
 
-        if temp:
-            self.mkdir(Path("temp/"))
-            base_url = f"{base_url}/temp"
-
         self.client = httpx.AsyncClient()
         self.base_url = base_url  # http://localhost:1234
+        self.temp = temp
 
-    async def __adel__(self):
+    async def __adel__(self) -> None:
         await self.client.aclose()
 
     async def mkdir(self, remote_path: Path) -> None:
@@ -84,10 +88,12 @@ class WebdavStorage(Storage):
                 if mat:
                     # if the last character is a slash, it is a directory
                     if mat.group(1).endswith("/"):
-                        continue
+                        return
                     # if the last character is not a slash, it is a file
-                    else:
-                        raise FileExistsError("Remote path cannot be created")
+                    raise FileExistsError("Remote path cannot be created")
+                raise FileExistsError(
+                    "rclone did not return a correct response whilst creating directory"
+                )
             else:
                 raise FileExistsError("Unknown error occurred while creating directory")
 
@@ -107,6 +113,8 @@ class WebdavStorage(Storage):
         FileExistsError
             File or path already exists on remote path
         """
+        if self.temp:
+            remote_path = Path("temp").joinpath(remote_path)
 
         # Create all subdirectories
         await self.mkdir(remote_path)
@@ -140,7 +148,11 @@ class WebdavStorage(Storage):
         Raises
         ------
         FileNotFoundError
+            Remote file does not exist
         """
+        if self.temp:
+            remote_path = Path("temp").joinpath(remote_path)
+
         response = await self.client.delete(url=f"{self.base_url}/{remote_path}")
         if response.status_code == HTTPStatus.NOT_FOUND:
             raise FileNotFoundError("Remote file does not exist")
@@ -164,7 +176,11 @@ class WebdavStorage(Storage):
         Raises
         ------
         FileNotFoundError
+            Remote file does not exist
         """
+        if self.temp:
+            remote_path = Path("temp").joinpath(remote_path)
+
         response = await self.client.get(url=f"{self.base_url}/{remote_path}")
         if response.status_code == HTTPStatus.NOT_FOUND:
             raise FileNotFoundError("Remote file does not exist")
@@ -192,7 +208,11 @@ class WebdavStorage(Storage):
         Raises
         ------
         FileNotFoundError
+            Remote file does not exist
         """
+        if self.temp:
+            remote_path = Path("temp").joinpath(remote_path)
+
         response = await self.client.get(url=f"{self.base_url}/{remote_path}")
         if response.status_code == HTTPStatus.NOT_FOUND:
             raise FileNotFoundError("Remote file does not exist")
