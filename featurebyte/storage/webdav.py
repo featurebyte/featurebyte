@@ -2,7 +2,7 @@
 Webdav storage class (rclone)
 """
 
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from http import HTTPStatus
 from pathlib import Path
@@ -23,7 +23,14 @@ class WebdavHTTPMethods(StrEnum):
 
 
 class WebdavStorage(Storage):
+    """
+    Webdav storage class
+    """
+
     def __init__(self, base_url: str) -> None:
+        """
+        Initialize class
+        """
         base_url = base_url.rstrip("/")
 
         self.client = httpx.AsyncClient()
@@ -46,8 +53,7 @@ class WebdavStorage(Storage):
         FileExistsError
             File already exists on remote path
         """
-        # Consider URL encoding attack
-        paths = str(remote_path).split("/")
+        paths = str(remote_path).strip("/").split("/")
         mkdir_path = "/"
         for path in paths[:-1]:
             mkdir_path = f"{mkdir_path}/{path}"
