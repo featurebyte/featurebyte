@@ -86,9 +86,12 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             for cluster in fl_get_historical_features.feature_clusters:
                 if cluster.feature_node_definition_hashes:
                     for info in cluster.feature_node_definition_hashes:
-                        features_info.append(
-                            FeatureInfo(feature_id=info.feature_id, feature_name=info.feature_name)
-                        )
+                        if info.feature_id and info.feature_name:
+                            features_info.append(
+                                FeatureInfo(
+                                    feature_id=info.feature_id, feature_name=info.feature_name
+                                )
+                            )
 
             # reset num_features to None if the list is empty (to revert to the old behavior)
             features_info = features_info or None
