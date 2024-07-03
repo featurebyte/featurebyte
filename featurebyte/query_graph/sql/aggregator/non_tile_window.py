@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte import FeatureJobSetting, SourceType
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
