@@ -383,6 +383,10 @@ class InternalName(StrEnum):
 
     FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
 
+    VIEW_TIMESTAMP_EPOCH = "__FB_VIEW_TIMESTAMP_EPOCH"
+    WINDOW_START_EPOCH = "__FB_WINDOW_START_EPOCH"
+    WINDOW_END_EPOCH = "__FB_WINDOW_END_EPOCH"
+
 
 class WorkerCommand(StrEnum):
     """
