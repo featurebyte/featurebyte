@@ -83,12 +83,12 @@ class WebdavStorage(Storage):
                 )
                 await self.client.send(request)
             elif response.status_code == HTTPStatus.MULTI_STATUS:
-                pat = re.compile(r"<d:href>(.*)</d:href>")
+                pat = re.compile(r"<D:href>(.*?)</D:href>")
                 mat = pat.search(response.text)
                 if mat:
                     # if the last character is a slash, it is a directory
                     if mat.group(1).endswith("/"):
-                        return
+                        continue
                     # if the last character is not a slash, it is a file
                     raise FileExistsError("Remote path cannot be created")
                 raise FileExistsError(
