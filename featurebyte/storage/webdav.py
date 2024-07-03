@@ -14,6 +14,10 @@ from featurebyte.storage.base import Storage
 
 
 class WebdavHTTPMethods(StrEnum):
+    """
+    Webdav HTTP methods
+    """
+
     PROPFIND = "PROPFIND"
     MKCOL = "MKCOL"
     COPY = "COPY"
@@ -115,8 +119,10 @@ class WebdavStorage(Storage):
         response = await self.client.delete(url=f"{self.base_url}/{remote_path}")
         if response.status_code == HTTPStatus.NOT_FOUND:
             raise FileNotFoundError("Remote file does not exist")
-        elif response.status_code == HTTPStatus.NO_CONTENT:
+        if response.status_code == HTTPStatus.NO_CONTENT:
             return
+
+        # This should not be reached
         raise FileNotFoundError("")
 
     async def _get(self, remote_path: Path, local_path: Path) -> None:
