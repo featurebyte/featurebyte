@@ -159,6 +159,7 @@ class NonTileRequestTablePlan:
         -------
         Select
         """
+        # Add window start and window end columns to prepare for join
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
             quoted_identifier(SpecialColumnName.POINT_IN_TIME)
         )
@@ -176,6 +177,8 @@ class NonTileRequestTablePlan:
             this=range_end_expr,
             expression=make_literal_value(aggregation_spec.window),
         )
+
+        # Select distinct point in time values and entities
         quoted_serving_names = [quoted_identifier(x) for x in aggregation_spec.serving_names]
         select_distinct_expr = (
             select(quoted_identifier(SpecialColumnName.POINT_IN_TIME), *quoted_serving_names)
@@ -188,6 +191,7 @@ class NonTileRequestTablePlan:
             alias_(range_start_expr, InternalName.WINDOW_START_EPOCH, quoted=True),
             alias_(range_end_expr, InternalName.WINDOW_END_EPOCH, quoted=True),
         ).from_(select_distinct_expr.subquery())
+
         return processed_request_table
 
 
