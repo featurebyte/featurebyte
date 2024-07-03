@@ -113,33 +113,6 @@ class WebdavStorage(Storage):
             return
         raise FileNotFoundError("")
 
-    async def get(
-        self, remote_path: Path, local_path: Path, cache_key: Optional[str] = None
-    ) -> None:
-        """
-        Download file from storage to local path with caching if cache_key is provided
-
-        Parameters
-        ----------
-        remote_path: Path
-            Path of remote file to be downloaded
-        local_path: Path
-            Path to stored downloaded file
-        cache_key: Optional[str]
-            Cache key for storing downloaded file (if provided, the result will be cached).
-
-        Returns
-        -------
-        None
-        """
-        if cache_key is None:
-            return await self._get(remote_path, local_path)
-
-        cache_hit = await self._cache.write_from_cache(cache_key, local_path)
-        if not cache_hit:
-            await self._get(remote_path, local_path)
-            await self._cache.write_to_cache(cache_key, local_path)
-
     async def _get(self, remote_path: Path, local_path: Path) -> None:
         """
         Retrieve file from storage to local path
