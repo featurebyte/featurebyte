@@ -4,13 +4,17 @@ Webdav storage class (rclone)
 
 from typing import AsyncGenerator
 
+import re
 from http import HTTPStatus
 from pathlib import Path
 
 import httpx
 
 from featurebyte.enum import StrEnum
+from featurebyte.logging import get_logger
 from featurebyte.storage.base import Storage
+
+logger = get_logger(__name__)
 
 
 class WebdavHTTPMethods(StrEnum):
@@ -31,11 +35,15 @@ class WebdavStorage(Storage):
     Webdav storage class
     """
 
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, temp: bool = False) -> None:
         """
         Initialize class
         """
         base_url = base_url.rstrip("/")
+
+        if temp:
+            self.mkdir(Path("temp/"))
+            base_url = f"{base_url}/temp"
 
         self.client = httpx.AsyncClient()
         self.base_url = base_url  # http://localhost:1234
@@ -70,8 +78,18 @@ class WebdavStorage(Storage):
                     WebdavHTTPMethods.MKCOL, url=f"{self.base_url}/{mkdir_path}"
                 )
                 await self.client.send(request)
-            elif response.status_code != HTTPStatus.MULTI_STATUS:
-                raise FileExistsError("Remote path cannot be created")
+            elif response.status_code == HTTPStatus.MULTI_STATUS:
+                pat = re.compile(r"<d:href>(.*)</d:href>")
+                mat = pat.search(response.text)
+                if mat:
+                    # if the last character is a slash, it is a directory
+                    if mat.group(1).endswith("/"):
+                        continue
+                    # if the last character is not a slash, it is a file
+                    else:
+                        raise FileExistsError("Remote path cannot be created")
+            else:
+                raise FileExistsError("Unknown error occurred while creating directory")
 
     async def put(self, local_path: Path, remote_path: Path) -> None:
         """
@@ -101,6 +119,13 @@ class WebdavStorage(Storage):
             raise FileExistsError("File already exists on remote path")
 
         with open(local_path, "rb") as file_obj:
+            logger.debug(
+                "Put object to storage",
+                extra={
+                    "object_name": str(remote_path),
+                    "file_path": str(local_path),
+                },
+            )
             await self.client.put(url=f"{self.base_url}/{remote_path}", content=file_obj.read())
 
     async def delete(self, remote_path: Path) -> None:
