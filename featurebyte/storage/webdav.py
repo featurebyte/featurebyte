@@ -77,14 +77,16 @@ class WebdavStorage(Storage):
                 WebdavHTTPMethods.PROPFIND, url=f"{self.base_url}/{mkdir_path}"
             )
             response = await self.client.send(request)
+            await response.aclose()
             if response.status_code == HTTPStatus.NOT_FOUND:
                 request = self.client.build_request(
                     WebdavHTTPMethods.MKCOL, url=f"{self.base_url}/{mkdir_path}"
                 )
-                await self.client.send(request)
+                response = await self.client.send(request)
             elif response.status_code == HTTPStatus.MULTI_STATUS:
                 pat = re.compile(r"<D:href>(.*?)</D:href>")
                 mat = pat.search(response.text)
+                await response.aclose()
                 if mat:
                     # if the last character is a slash, it is a directory
                     if mat.group(1).endswith("/"):
@@ -134,7 +136,8 @@ class WebdavStorage(Storage):
                     "file_path": str(local_path),
                 },
             )
-            await self.client.put(url=f"{self.base_url}/{remote_path}", content=file_obj.read())
+            r = await self.client.put(url=f"{self.base_url}/{remote_path}", content=file_obj.read())
+            await r.aclose()
 
     async def delete(self, remote_path: Path) -> None:
         """
@@ -154,6 +157,7 @@ class WebdavStorage(Storage):
             remote_path = Path("temp").joinpath(remote_path)
 
         response = await self.client.delete(url=f"{self.base_url}/{remote_path}")
+        await response.aclose()
         if response.status_code == HTTPStatus.NOT_FOUND:
             raise FileNotFoundError("Remote file does not exist")
         if response.status_code == HTTPStatus.NO_CONTENT:
@@ -187,6 +191,8 @@ class WebdavStorage(Storage):
         with open(local_path, "wb") as file_obj:
             file_obj.write(response.content)
 
+        await response.aclose()
+
     async def get_file_stream(
         self, remote_path: Path, chunk_size: int = 255 * 1024
     ) -> AsyncGenerator[bytes, None]:
@@ -218,3 +224,5 @@ class WebdavStorage(Storage):
             raise FileNotFoundError("Remote file does not exist")
         for chunk in response.iter_bytes(chunk_size):
             yield chunk
+
+        await response.aclose()
