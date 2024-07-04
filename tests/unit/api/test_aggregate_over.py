@@ -195,3 +195,6 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
         "value_by": None,
         "windows": ["7d"],
     }
+
+    # check feature can be saved
+    feature.save()
