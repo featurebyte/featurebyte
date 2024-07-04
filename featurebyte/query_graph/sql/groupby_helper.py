@@ -108,13 +108,16 @@ def get_aggregation_expression(
     """
     # Check if it's a count function
     if agg_func == AggFunc.COUNT:
-        return expressions.Count(this="*")
+        return expressions.Count(this=expressions.Star())
 
     # Get input_column_expr from input_column
     assert input_column is not None
     input_column_expr = input_column
     if isinstance(input_column, str):
         input_column_expr = quoted_identifier(input_column)
+
+    if agg_func == AggFunc.COUNT_DISTINCT:
+        return expressions.Count(this=expressions.Distinct(expressions=[input_column_expr]))
 
     # Try to get a built-in SQL aggregate function
     agg_func_sql_mapping = {

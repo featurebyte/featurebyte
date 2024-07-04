@@ -287,6 +287,7 @@ class AggFunc(StrEnum):
     NA_COUNT = "na_count", "Compute count of missing values."
     STD = "std", "Compute standard deviation of values."
     LATEST = "latest", "Compute the latest value."
+    COUNT_DISTINCT = "count_distinct", "Compute number of distinct values"
 
     @classmethod
     def all(cls) -> list[str]:
