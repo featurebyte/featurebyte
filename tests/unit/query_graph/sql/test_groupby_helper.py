@@ -34,7 +34,12 @@ from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg im
     "agg_func,input_column,parent_dtype,expected",
     [
         (AggFunc.COUNT, None, None, "COUNT(*)"),
-        (AggFunc.COUNT_DISTINCT, "col", None, 'COUNT(DISTINCT "col")'),
+        (
+            AggFunc.COUNT_DISTINCT,
+            "col",
+            None,
+            'COUNT(DISTINCT "col") + CAST(COUNT_IF("col" IS NULL) > 0 AS BIGINT)',
+        ),
         (AggFunc.SUM, "col", None, 'SUM("col")'),
         (AggFunc.AVG, "col", None, 'AVG("col")'),
         (AggFunc.MIN, "col", None, 'MIN("col")'),

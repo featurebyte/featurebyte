@@ -329,7 +329,7 @@ def feature_parameters_fixture():
             "count_distinct",
             "2d",
             "product_action_count_distinct_2d",
-            lambda x: pd.Series(x).nunique() if len(x) > 0 else None,
+            lambda x: pd.Series(x).nunique(dropna=False) if len(x) > 0 else None,
             None,
         ),
     ]
