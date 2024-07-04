@@ -324,6 +324,14 @@ def feature_parameters_fixture():
             lambda x: x.values[-1] if len(x) > 0 else None,
             None,
         ),
+        (
+            "PRODUCT_ACTION",
+            "count_distinct",
+            "2d",
+            "product_action_count_distinct_2d",
+            lambda x: pd.Series(x).nunique() if len(x) > 0 else None,
+            None,
+        ),
     ]
     return parameters
 
