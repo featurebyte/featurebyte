@@ -80,7 +80,6 @@ class LeftTable(BaseTable):
     Representation of the left table (typically the request table) in a range join
     """
 
-    join_keys: list[str]
     range_start: str
     range_end: str
     columns: list[str]

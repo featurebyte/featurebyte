@@ -34,6 +34,7 @@ from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.aggregator.lookup_target import LookupTargetAggregator
+from featurebyte.query_graph.sql.aggregator.non_tile_window import NonTileWindowAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -52,6 +53,9 @@ from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
 )
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
+from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
+    NonTileWindowAggregateSpec,
+)
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     AggregationType,
@@ -71,6 +75,7 @@ AggregatorType = Union[
     WindowAggregator,
     ItemAggregator,
     AsAtAggregator,
+    NonTileWindowAggregator,
     ForwardAggregator,
     ForwardAsAtAggregator,
 ]
@@ -99,6 +104,7 @@ class FeatureExecutionPlan:
             AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
             AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
             AggregationType.AS_AT: AsAtAggregator(**aggregator_kwargs),
+            AggregationType.NON_TILE_WINDOW: NonTileWindowAggregator(**aggregator_kwargs),
             AggregationType.FORWARD: ForwardAggregator(**aggregator_kwargs),
             AggregationType.FORWARD_AS_AT: ForwardAsAtAggregator(**aggregator_kwargs),
         }
@@ -658,6 +664,9 @@ class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
+        non_tile_window_aggregate_nodes = list(
+            self.graph.iterate_nodes(node, NodeType.NON_TILE_WINDOW_AGGREGATE)
+        )
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
         forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
 
@@ -682,6 +691,14 @@ class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
         if asat_nodes:
             for asat_node in asat_nodes:
                 out.extend(self.get_non_tiling_specs(AggregateAsAtSpec, asat_node))
+
+        if non_tile_window_aggregate_nodes:
+            for non_tile_window_aggregate_node in non_tile_window_aggregate_nodes:
+                out.extend(
+                    self.get_non_tiling_specs(
+                        NonTileWindowAggregateSpec, non_tile_window_aggregate_node
+                    )
+                )
 
         if forward_aggregate_nodes:
             for forward_aggregate_node in forward_aggregate_nodes:
