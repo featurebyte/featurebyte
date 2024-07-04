@@ -89,10 +89,10 @@ class SimpleAggregator(BaseAggregator):
         assert method is not None
         assert feature_name is not None
         agg_method = construct_agg_func(agg_func=method)
-        feature = self._project_feature_from_groupby_node(
+        feature = self._project_feature_from_aggregation_node(
             agg_method=agg_method,
             feature_name=feature_name,
-            groupby_node=groupby_node,
+            aggregation_node=groupby_node,
             method=method,
             value_column=value_column,
             fill_value=fill_value,
