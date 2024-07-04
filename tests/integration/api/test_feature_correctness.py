@@ -586,6 +586,13 @@ def test_aggregate_asat(
     feature_parameters = [
         (None, "count", "asat_count", lambda x: len(x) if len(x) else None, None),
         (None, "count", "asat_count_by_day_of_month", lambda x: len(x) if len(x) else None, "day"),
+        (
+            "ID",
+            "count_distinct",
+            "asat_count_distinct",
+            lambda x: pd.Series(x).nunique(dropna=False) if len(x) else None,
+            None,
+        ),
     ]
 
     scd_view = scd_table.get_view()
