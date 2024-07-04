@@ -68,6 +68,12 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
 
     @classmethod
+    def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
+        return expressions.Cast(
+            this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP")
+        )
+
+    @classmethod
     def str_trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
