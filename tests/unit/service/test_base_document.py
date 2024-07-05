@@ -30,6 +30,7 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
+from tests.util.helper import compare_pydantic_obj
 
 
 class Document(FeatureByteBaseDocumentModel):
@@ -282,7 +283,7 @@ INSERTION_WITH_OTHER_FIELD_AUDIT_LOG = {
 def test_get_field_history__new_field_introduction(audit_docs, expected):
     """Test a new field get introduced or updated"""
     output = BaseDocumentService._get_field_history(field="field", audit_docs=audit_docs)
-    assert output == expected
+    compare_pydantic_obj(output, expected=expected)
 
 
 @pytest.mark.parametrize(
@@ -352,7 +353,7 @@ def test_get_field_history__new_field_introduction(audit_docs, expected):
 def test_get_filed_history__existing_field_removal(audit_docs, expected):
     """Test an existing field get removed or updated"""
     output = BaseDocumentService._get_field_history(field="field", audit_docs=audit_docs)
-    assert output == expected
+    compare_pydantic_obj(output, expected=expected)
 
 
 @pytest.mark.parametrize(

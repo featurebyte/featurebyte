@@ -33,6 +33,7 @@ from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
+    compare_pydantic_obj,
     deploy_features_through_api,
     get_node,
 )
@@ -165,11 +166,22 @@ def test_event_view_column_lag(
     assert lagged_column.node.output_type == NodeOutputType.SERIES
     assert lagged_column.dtype == expected_var_type
     assert lagged_column.node.type == NodeType.LAG
-    assert lagged_column.node.parameters == {
-        "timestamp_column": "event_timestamp",
-        "entity_columns": ["cust_id"],
-        "offset": expected_offset_param,
-    }
+    compare_pydantic_obj(
+        lagged_column.node.parameters,
+        expected={
+            "timestamp_column": "event_timestamp",
+            "entity_columns": ["cust_id"],
+            "offset": expected_offset_param,
+        },
+    )
+    compare_pydantic_obj(
+        lagged_column.node.parameters,
+        expected={
+            "timestamp_column": "event_timestamp",
+            "entity_columns": ["cust_id"],
+            "offset": expected_offset_param,
+        },
+    )
 
     # check SDK code generation
     check_sdk_code_generation(
@@ -733,16 +745,19 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     # create event view & the metadata
     event_view = snowflake_event_table_with_entity.get_view()
     graph_metadata = event_view.node.parameters.metadata
-    assert graph_metadata.column_cleaning_operations == [
-        {
-            "column_name": "col_int",
-            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
-        },
-        {
-            "column_name": "col_float",
-            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
-        },
-    ]
+    compare_pydantic_obj(
+        graph_metadata.column_cleaning_operations,
+        expected=[
+            {
+                "column_name": "col_int",
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            },
+            {
+                "column_name": "col_float",
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            },
+        ],
+    )
 
     # create feature
     feature_group = event_view.groupby("cust_id").aggregate_over(
@@ -760,16 +775,19 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     assert nested_view_graph_node.parameters.type == "event_view"
 
     # note that cleaning operation is not pruned before saving
-    assert nested_view_graph_node.parameters.metadata.column_cleaning_operations == [
-        {
-            "column_name": "col_int",
-            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
-        },
-        {
-            "column_name": "col_float",
-            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
-        },
-    ]
+    compare_pydantic_obj(
+        nested_view_graph_node.parameters.metadata.column_cleaning_operations,
+        expected=[
+            {
+                "column_name": "col_int",
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            },
+            {
+                "column_name": "col_float",
+                "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+            },
+        ],
+    )
 
 
 def test__validate_column_is_not_used(empty_event_view_builder):

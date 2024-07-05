@@ -14,7 +14,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import OperationStructureExtractor
 from featurebyte.query_graph.node import construct_node
-from tests.util.helper import get_node, get_preview_sql_for_series
+from tests.util.helper import compare_pydantic_obj, get_node, get_preview_sql_for_series
 
 
 def test__getitem__series_key(int_series, bool_series):
@@ -975,10 +975,10 @@ def test_astype__expected_parameters(series_fixture_name, request):
 
     def _check_converted_series(converted_series, expected_type_in_params):
         assert converted_series.node.type == NodeType.CAST
-        assert converted_series.node.parameters == {
-            "type": expected_type_in_params,
-            "from_dtype": series.dtype,
-        }
+        compare_pydantic_obj(
+            converted_series.node.parameters,
+            expected={"type": expected_type_in_params, "from_dtype": series.dtype},
+        )
         input_node_names = converted_series.graph.backward_edges_map[converted_series.node.name]
         assert input_node_names == [series.node.name]
 

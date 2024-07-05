@@ -2,6 +2,7 @@
 Test TableColumnsInfoService
 """
 
+import copy
 from unittest.mock import patch
 
 import pytest
@@ -21,6 +22,7 @@ from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.item_table import ItemTableServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableServiceUpdate
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.mark.asyncio
@@ -128,6 +130,7 @@ async def test_update_columns_info__critical_data_info(
         "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
     }
     columns_info = [{**col, "entity_id": None, "semantic_id": None} for col in columns_info]
+    expected_columns_info = copy.deepcopy(columns_info)
 
     # update columns info
     await table_columns_info_service.update_columns_info(
@@ -138,10 +141,12 @@ async def test_update_columns_info__critical_data_info(
 
     # check the updated document
     updated_doc = await event_table_service.get_document(document_id=event_table.id)
-    assert updated_doc.columns_info == columns_info
+    compare_pydantic_obj(updated_doc.columns_info, expected_columns_info)
 
     # test remove critical data info
+    columns_info = expected_columns_info
     columns_info[0]["critical_data_info"] = {"cleaning_operations": []}
+    expected_columns_info = copy.deepcopy(columns_info)
     await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
@@ -149,7 +154,7 @@ async def test_update_columns_info__critical_data_info(
     )
     # check the updated document
     updated_doc = await event_table_service.get_document(document_id=event_table.id)
-    assert updated_doc.columns_info == columns_info
+    compare_pydantic_obj(updated_doc.columns_info, expected_columns_info)
 
 
 @pytest.mark.asyncio
