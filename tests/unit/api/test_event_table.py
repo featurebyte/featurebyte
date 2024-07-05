@@ -32,7 +32,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 @pytest.fixture(name="event_table_dict")
@@ -970,9 +970,12 @@ def test_event_table__entity_relation_auto_tagging(saved_event_table, mock_api_o
     saved_event_table.cust_id.as_entity("customer")
 
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
-    assert updated_transaction_entity.parents == [
-        {"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}
-    ]
+    compare_pydantic_obj(
+        updated_transaction_entity.parents,
+        expected=[
+            {"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}
+        ],
+    )
     updated_customer_entity = Entity.get_by_id(id=customer.id)
     assert updated_customer_entity.parents == []
 

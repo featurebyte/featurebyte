@@ -13,6 +13,7 @@ from featurebyte import AccessTokenCredential, S3StorageCredential, UsernamePass
 from featurebyte.api.credential import Credential
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.credential import CredentialModel
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.fixture(name="credential")
@@ -43,16 +44,22 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     assert new_credential.id is not None
     assert new_credential.feature_store_id == snowflake_feature_store.id
     assert new_credential.name == snowflake_feature_store.name
-    assert new_credential.database_credential == {
-        "type": "USERNAME_PASSWORD",
-        "username": "********",
-        "password": "********",
-    }
-    assert new_credential.storage_credential == {
-        "type": "S3",
-        "s3_access_key_id": "********",
-        "s3_secret_access_key": "********",
-    }
+    compare_pydantic_obj(
+        new_credential.database_credential,
+        expected={
+            "type": "USERNAME_PASSWORD",
+            "username": "********",
+            "password": "********",
+        },
+    )
+    compare_pydantic_obj(
+        new_credential.storage_credential,
+        expected={
+            "type": "S3",
+            "s3_access_key_id": "********",
+            "s3_secret_access_key": "********",
+        },
+    )
 
 
 def test_credential_creation__conflict(snowflake_feature_store):

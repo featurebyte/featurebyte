@@ -4,6 +4,7 @@ import pytest
 from bson import ObjectId
 from pydantic import ValidationError
 
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
@@ -64,6 +65,6 @@ def test_feature_list_batch_feature_creation(payload_class):
         conflict_resolution_strategy="raise",
         features=features,
         skip_batch_feature_creation=True,
-        graph=QueryGraphModel(),
+        graph=QueryGraph(),
     )
     assert len(payload.features) == feat_number

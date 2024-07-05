@@ -11,10 +11,13 @@ from bson import ObjectId
 
 from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
+from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
 from featurebyte.models.credential import UsernamePasswordCredential
+from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.models.request_input import SourceTableRequestInput
+from featurebyte.models.static_source_table import SourceTableStaticSourceInput
 from featurebyte.models.user_defined_function import FunctionParameter
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.catalog import CatalogCreate
@@ -168,7 +171,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         _id="646f6c1c0ed28a5271fb02d7",
         name="observation_table",
         feature_store_id=snowflake_feature_store.id,
-        request_input=SourceTableRequestInput(
+        request_input=SourceTableObservationInput(
             source=snowflake_event_table.tabular_source,
         ),
         context_id=context.id,
@@ -205,7 +208,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         _id="646f6c1c0ed28a5271fb02d9",
         name="batch_request_table",
         feature_store_id=snowflake_feature_store.id,
-        request_input=SourceTableRequestInput(
+        request_input=SourceTableBatchRequestInput(
             source=snowflake_dimension_table.tabular_source,
         ),
         context_id=context.id,
@@ -221,7 +224,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         _id="647b5ba9875a4313db21a1e0",
         name="static_source_table",
         feature_store_id=snowflake_feature_store.id,
-        request_input=SourceTableRequestInput(
+        request_input=SourceTableStaticSourceInput(
             source=snowflake_event_table.tabular_source,
         ),
     )
@@ -244,7 +247,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     )
     graph, node = snowflake_event_table.frame.extract_pruned_graph_and_node()
     feature_store_sample = FeatureStoreSample(
-        graph=graph,
+        graph=QueryGraph(**graph.dict(by_alias=True)),
         node_name=node.name,
         feature_store_id=snowflake_feature_store.id,
         from_timestamp="2012-11-24T11:00:00",

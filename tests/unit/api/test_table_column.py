@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     StringValueImputation,
     ValueBeyondEndpointImputation,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 def test_table_column__as_entity(snowflake_event_table, mock_api_object_cache):
@@ -203,9 +204,10 @@ def _check_remove_critical_data_info(event_table):
     assert event_table.frame.node.type == NodeType.INPUT
     event_view = event_table.get_view()
     assert event_view.node.type == NodeType.GRAPH
-    assert event_view.node.parameters.graph.edges == [
-        {"source": "proxy_input_1", "target": "project_1"}
-    ]
+    compare_pydantic_obj(
+        event_view.node.parameters.graph.edges,
+        expected=[{"source": "proxy_input_1", "target": "project_1"}],
+    )
 
 
 def test_data_column__update_critical_data_info(snowflake_event_table, mock_api_object_cache):

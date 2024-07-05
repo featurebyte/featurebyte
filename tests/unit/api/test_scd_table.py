@@ -13,7 +13,7 @@ from featurebyte.exception import DuplicatedRecordException, RecordRetrievalExce
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 class TestSCDTableTestSuite(BaseTableTestSuite):
@@ -366,9 +366,10 @@ def test_scd_table__entity_relation_auto_tagging(saved_scd_table, mock_api_objec
     saved_scd_table.cust_id.as_entity("b")
 
     updated_entity_a = Entity.get_by_id(id=entity_a.id)
-    assert updated_entity_a.parents == [
-        {"id": entity_b.id, "table_type": "scd_table", "table_id": saved_scd_table.id}
-    ]
+    compare_pydantic_obj(
+        updated_entity_a.parents,
+        expected=[{"id": entity_b.id, "table_type": "scd_table", "table_id": saved_scd_table.id}],
+    )
     updated_entity_b = Entity.get_by_id(id=entity_b.id)
     assert updated_entity_b.parents == []
 
