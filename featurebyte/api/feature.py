@@ -971,7 +971,7 @@ class Feature(
     @typechecked
     def update_readiness(
         self,
-        readiness: Literal[tuple(FeatureReadiness)],  # type: ignore[misc]
+        readiness: Union[FeatureReadiness, str],
         ignore_guardrails: bool = False,
     ) -> None:
         """
@@ -995,7 +995,7 @@ class Feature(
 
         Parameters
         ----------
-        readiness: Literal[tuple(FeatureReadiness)]
+        readiness: Union[FeatureReadiness, str]
             Feature readiness level
         ignore_guardrails: bool
             Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
@@ -1008,14 +1008,15 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
         """
+        readiness_value = FeatureReadiness(readiness).value
         self.update(
-            update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
+            update_payload={"readiness": readiness_value, "ignore_guardrails": ignore_guardrails},
             allow_update_local=False,
         )
 
     @typechecked
     def update_default_version_mode(
-        self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
+        self, default_version_mode: Union[DefaultVersionMode, str]
     ) -> None:
         """
         Sets the default version mode of a feature.
@@ -1029,7 +1030,7 @@ class Feature(
 
         Parameters
         ----------
-        default_version_mode: Literal[tuple(DefaultVersionMode)]
+        default_version_mode: Union[DefaultVersionMode, str]
             Feature default version mode.
 
         Examples
@@ -1038,8 +1039,9 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.update_default_version_mode("MANUAL")
         """
+        mode_value = DefaultVersionMode(default_version_mode).value
         self.feature_namespace.update(
-            update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
+            update_payload={"default_version_mode": mode_value},
             allow_update_local=False,
         )
 

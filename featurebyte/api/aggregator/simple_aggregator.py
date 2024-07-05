@@ -4,8 +4,7 @@ This module contains simple aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type
-from typing_extensions import Literal
+from typing import List, Optional, Type, Union
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
@@ -37,7 +36,7 @@ class SimpleAggregator(BaseAggregator):
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: Optional[Union[AggFunc, str]] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
@@ -49,7 +48,7 @@ class SimpleAggregator(BaseAggregator):
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: Optional[Union[AggFunc, str]]
             Aggregation method
         feature_name: str
             Output feature name
@@ -88,7 +87,7 @@ class SimpleAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
-        agg_method = construct_agg_func(agg_func=method)
+        agg_method = construct_agg_func(agg_func=AggFunc(method))
         feature = self._project_feature_from_aggregation_node(
             agg_method=agg_method,
             feature_name=feature_name,

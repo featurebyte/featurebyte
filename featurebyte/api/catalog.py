@@ -6,7 +6,6 @@ Catalog module
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from typing_extensions import Literal
 
 import pandas as pd
 from bson import ObjectId
@@ -682,7 +681,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     def list_relationships(
         self,
         include_id: Optional[bool] = True,
-        relationship_type: Optional[Literal[tuple(RelationshipType)]] = None,  # type: ignore[misc]
+        relationship_type: Optional[Union[RelationshipType, str]] = None,
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -702,7 +701,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ----------
         include_id: Optional[bool]
             Whether to include Relationship object id in the output.
-        relationship_type: Optional[Literal[tuple[RelationshipType]]]
+        relationship_type: Optional[Union[RelationshipType, str]]
             This parameter allows you to filter the results based on a specific relationship type. If no relationship
             type is provided (default is None), no filtering will be applied based on relationship type.
 
@@ -724,7 +723,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
         """
-        return Relationship.list(include_id=include_id, relationship_type=relationship_type)
+        type_value = None
+        if relationship_type:
+            type_value = RelationshipType(relationship_type).value
+        return Relationship.list(include_id=include_id, relationship_type=type_value)
 
     @update_and_reset_catalog
     def list_feature_job_setting_analyses(

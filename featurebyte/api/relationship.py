@@ -2,8 +2,7 @@
 Relationships API object
 """
 
-from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Literal
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
 from pydantic import Field
@@ -114,7 +113,9 @@ class Relationship(ApiObject):
     @classmethod
     @typechecked
     def list(
-        cls, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore[misc]
+        cls,
+        include_id: Optional[bool] = True,
+        relationship_type: Optional[Union[RelationshipType, str]] = None,
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -134,7 +135,7 @@ class Relationship(ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include the id in the dataframe
-        relationship_type: Optional[Literal[tuple[RelationshipType]]]
+        relationship_type: Optional[Union[RelationshipType, str]]
             The type of relationship to list
 
         Returns
@@ -167,11 +168,10 @@ class Relationship(ApiObject):
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
         """
+        type_value = RelationshipType(relationship_type).value if relationship_type else None
         list_responses = super().list(include_id=include_id)
         if relationship_type:
-            list_responses = list_responses[
-                list_responses["relationship_type"] == relationship_type
-            ]
+            list_responses = list_responses[list_responses["relationship_type"] == type_value]
         return list_responses
 
     def enable(self) -> None:

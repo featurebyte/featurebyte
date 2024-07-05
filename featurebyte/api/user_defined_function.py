@@ -5,7 +5,6 @@ UserDefinedFunction API object
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union, cast
-from typing_extensions import Literal
 
 from http import HTTPStatus
 
@@ -244,7 +243,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         name: str,
         sql_function_name: str,
         function_parameters: List[FunctionParameter],
-        output_dtype: Literal[tuple(DBVarType)],  # type: ignore[misc]
+        output_dtype: Union[DBVarType, str],
         is_global: bool = False,
     ) -> UserDefinedFunction:
         """
@@ -259,7 +258,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
             The SQL function name of the user-defined function (which is used in SQL queries).
         function_parameters: List[FunctionParameter]
             The function parameters of the user-defined function.
-        output_dtype: Literal[tuple(DBVarType)]
+        output_dtype: Union[DBVarType, str]
             The output data type of the user-defined function.
         is_global: bool
             Whether the user-defined function is global across all catalogs or not. Global user-defined
@@ -390,13 +389,13 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @typechecked
-    def update_output_dtype(self, output_dtype: Literal[tuple(DBVarType)]) -> None:  # type: ignore[misc]
+    def update_output_dtype(self, output_dtype: Union[DBVarType, str]) -> None:
         """
         Update the output data type of the user-defined function.
 
         Parameters
         ----------
-        output_dtype: Literal[tuple(DBVarType)]
+        output_dtype: Union[DBVarType, str]
             The output data type of the user-defined function.
 
         Examples
@@ -406,7 +405,8 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf.output_dtype
         'INT'
         """
-        self.update(update_payload={"output_dtype": output_dtype}, allow_update_local=False)
+        dtype_value = DBVarType(output_dtype).value
+        self.update(update_payload={"output_dtype": dtype_value}, allow_update_local=False)
 
     def delete(self) -> None:
         """
