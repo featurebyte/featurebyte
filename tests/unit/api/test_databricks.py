@@ -350,6 +350,23 @@ def test_databricks_specs(
     feat_specs = databricks_deployment.databricks.get_feature_specs_definition()
     assert feat_specs.strip() == textwrap.dedent(expected).strip()
 
+    # test skip exclude columns
+    feat_specs = databricks_deployment.databricks.get_feature_specs_definition(
+        skip_exclude_columns=["transaction_id"]
+    )
+    expected_sub_string = """
+    exclude_columns = [
+        "POINT_IN_TIME",
+        "__feature_V240103__part0",
+        "__feature_V240103__part1",
+        "__featurebyte_dummy_entity",
+        "__relative_frequency_V240103__part0",
+        "__relative_frequency_V240103__part1",
+        "__req_col_feature_V240103__part0",
+    ]
+    """
+    assert textwrap.dedent(expected_sub_string).strip() in feat_specs
+
 
 def test_databricks_commands__run_in_non_databricks_env(databricks_deployment):
     """Test databricks commands run in non-databricks environment"""
