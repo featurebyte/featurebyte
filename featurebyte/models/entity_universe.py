@@ -511,11 +511,9 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
             this=range_end_expr,
             expression=make_literal_value(
                 max(
-                    [
-                        parse_duration_string(window)
-                        for window in node.parameters.windows
-                        if window is not None
-                    ]
+                    parse_duration_string(window)
+                    for window in node.parameters.windows
+                    if window is not None
                 )
             ),
         )

@@ -20,10 +20,7 @@ from featurebyte.query_graph.model.entity_relationship_info import EntityRelatio
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.generic import (
-    GroupByNodeParameters,
-    NonTileWindowAggregateParameters,
-)
+from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
