@@ -107,7 +107,7 @@ class AsAtAggregator(BaseAsAtAggregator):
             "backward": backward,
             **view.get_common_scd_parameters().dict(),
         }
-        groupby_node = self.view.graph.add_operation(
+        asat_node = self.view.graph.add_operation(
             node_type=NodeType.AGGREGATE_AS_AT,
             node_params=node_params,
             node_output_type=NodeOutputType.FRAME,
@@ -118,10 +118,10 @@ class AsAtAggregator(BaseAsAtAggregator):
         assert feature_name is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
 
-        return self._project_feature_from_groupby_node(
+        return self._project_feature_from_aggregation_node(
             agg_method=agg_method,
             feature_name=feature_name,
-            groupby_node=groupby_node,
+            aggregation_node=asat_node,
             method=method,
             value_column=value_column,
             fill_value=fill_value,

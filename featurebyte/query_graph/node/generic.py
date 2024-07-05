@@ -4,7 +4,8 @@ This module contains SQL operation related node classes
 
 # pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
+from typing_extensions import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -682,17 +683,22 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         return statements, out_var_name
 
 
-class GroupByNodeParameters(BaseGroupbyParameters):
-    """Parameters"""
+class BaseWindowAggregateParameters(BaseGroupbyParameters):
+    """Common parameters for window aggregates"""
 
     windows: List[Optional[str]]
     timestamp: InColumnStr
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
+    offset: Optional[str] = None
+
+
+class GroupByNodeParameters(BaseWindowAggregateParameters):
+    """Parameters"""
+
     tile_id: Optional[str] = None
     aggregation_id: Optional[str] = None
     tile_id_version: int = Field(default=1)
-    offset: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -707,12 +713,10 @@ class GroupByNodeParameters(BaseGroupbyParameters):
         return values
 
 
-class GroupByNode(AggregationOpStructMixin, BaseNode):
-    """GroupByNode class"""
+class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
+    """Common behaviour for window aggregate nodes"""
 
-    type: Literal[NodeType.GROUPBY] = NodeType.GROUPBY
-    output_type: Literal[NodeOutputType.FRAME] = NodeOutputType.FRAME
-    parameters: GroupByNodeParameters
+    parameters: BaseWindowAggregateParameters
 
     # feature definition hash generation configuration
     _window_parameter_field_name: ClassVar[Optional[str]] = "windows"
@@ -751,7 +755,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
                 offset=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
-                aggregation_type=self.type,
+                aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 dtype=output_var_type,
@@ -830,7 +834,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         self,
         input_node_hashes: List[str],
         input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["GroupByNode", Dict[str, str]]:
+    ) -> Tuple["BaseWindowAggregateNode", Dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -839,7 +843,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         # remap windows and names
         input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         names = []
-        assert isinstance(self.parameters, GroupByNodeParameters)
+        assert isinstance(self.parameters, BaseWindowAggregateParameters)
         for name, window in zip(self.parameters.names, self.parameters.windows):
             if window:
                 window_secs = parse_duration_string(window)
@@ -850,14 +854,34 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
             names.append(OutColumnStr(feat_name))
             column_name_remap[str(name)] = feat_name
 
-        assert isinstance(remapped_node.parameters, GroupByNodeParameters)
+        assert isinstance(remapped_node.parameters, BaseWindowAggregateParameters)
         names, windows = sort_lists_by_first_list(names, remapped_node.parameters.windows)
         remapped_node.parameters.names = names
         remapped_node.parameters.windows = windows
 
+        return remapped_node, column_name_remap
+
+
+class GroupByNode(BaseWindowAggregateNode):
+    """GroupByNode class"""
+
+    type: Literal[NodeType.GROUPBY] = NodeType.GROUPBY
+    output_type: NodeOutputType = NodeOutputType.FRAME
+    parameters: GroupByNodeParameters
+
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["GroupByNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes, input_node_column_mappings
+        )
+        remapped_node = cast(GroupByNode, remapped_node)
         # remove tile_id and aggregation_id so that the definition hash will not be affected by them
         remapped_node.parameters.tile_id = None
         remapped_node.parameters.aggregation_id = None
+
         return remapped_node, column_name_remap
 
 
@@ -1904,6 +1928,22 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
+
+
+class NonTileWindowAggregateParameters(BaseWindowAggregateParameters):
+    """
+    NonTileWindowAggregatesParameters for window aggregates without tile
+    """
+
+
+class NonTileWindowAggregateNode(BaseWindowAggregateNode):
+    """
+    NonTileWindowAggregateNode class.
+    """
+
+    type: Literal[NodeType.NON_TILE_WINDOW_AGGREGATE] = NodeType.NON_TILE_WINDOW_AGGREGATE
+    output_type: NodeOutputType = NodeOutputType.FRAME
+    parameters: NonTileWindowAggregateParameters
 
 
 class AliasNode(BaseNode):

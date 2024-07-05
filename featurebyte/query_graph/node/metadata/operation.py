@@ -355,6 +355,7 @@ class AggregationColumn(BaseDataColumn):
         NodeType.ITEM_GROUPBY,
         NodeType.LOOKUP,
         NodeType.AGGREGATE_AS_AT,
+        NodeType.NON_TILE_WINDOW_AGGREGATE,
         NodeType.REQUEST_COLUMN,
         NodeType.FORWARD_AGGREGATE,
         NodeType.LOOKUP_TARGET,

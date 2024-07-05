@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 from pydantic import BaseModel
 
 from featurebyte.storage import Storage
@@ -52,40 +51,38 @@ class BaseStorageTestSuite:
             file_obj.flush()
             yield file_obj.name
 
-    @pytest_asyncio.fixture(name="remote_path")
-    async def remote_path_fixture(self, test_storage: Storage, local_path: Path):
-        """
-        Yield remote path of uploaded file
-        """
-        remote_path = Path("some/file")
-        await test_storage.put(local_path, remote_path=remote_path)
-        yield remote_path
-
     @pytest.mark.asyncio
-    async def test_put_file_success(self, remote_path: str):
+    async def test_put_file_success(self):
         """
         Test file upload
         """
         # upload should work
+        remote_path = Path("some/success")
         assert remote_path
 
     @pytest.mark.asyncio
-    async def test_put_file_fail(self, local_path: Path, remote_path: Path, test_storage: Storage):
+    async def test_put_file_fail(self, local_path: Path, test_storage: Storage):
         """
         Test file upload
         """
+        duplicate_path = Path("some/duplicate")
+
+        # Should pass
+        await test_storage.put(local_path, remote_path=duplicate_path)
+
         # upload should fail if remote file already exist
         with pytest.raises(FileExistsError) as exc_info:
-            await test_storage.put(local_path, remote_path=remote_path)
+            await test_storage.put(local_path, remote_path=duplicate_path)
         assert str(exc_info.value) == "File already exists on remote path"
 
     @pytest.mark.asyncio
-    async def test_get_file_success(
-        self, local_path: Path, remote_path: Path, test_storage: Storage
-    ):
+    async def test_get_file_success(self, local_path: Path, test_storage: Storage):
         """
         Test file upload
         """
+        remote_path = Path("some/get_success")
+        await test_storage.put(local_path, remote_path)
+
         with tempfile.NamedTemporaryFile() as file_obj:
             # download should work
             await test_storage.get(remote_path, file_obj.name)
@@ -105,12 +102,15 @@ class BaseStorageTestSuite:
             assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_get_with_cache_key(
-        self, test_storage: Storage, local_path: Path, remote_path: Path
-    ):
+    async def test_get_with_cache_key(self, test_storage: Storage, local_path: Path):
         """
         Test file upload
         """
+
+        # upload should work
+        remote_path = Path("some/get_with_cache_key")
+        await test_storage.put(local_path, remote_path)
+
         # clear cache
         storage_cache = test_storage._cache
         storage_cache.clear()
@@ -139,11 +139,15 @@ class BaseStorageTestSuite:
 
     @pytest.mark.asyncio
     async def test_stream_file_success(
-        self, remote_path: Path, test_storage: Storage, text_file_content: str
+        self, local_path: Path, test_storage: Storage, text_file_content: str
     ):
         """
         Test file upload
         """
+        # upload should work
+        remote_path = Path("some/stream_file")
+        await test_storage.put(local_path, remote_path)
+
         file_stream = test_storage.get_file_stream(remote_path, chunk_size=5)
         read_bytes = b"".join([chunk async for chunk in file_stream])
         assert read_bytes.decode("utf-8") == text_file_content

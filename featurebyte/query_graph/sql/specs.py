@@ -56,6 +56,7 @@ class AggregationType(StrEnum):
     WINDOW = "window"
     ITEM = "item"
     AS_AT = "as_at"
+    NON_TILE_WINDOW = "non_tile_window"
     FORWARD = "forward"
     FORWARD_AS_AT = "forward_as_at"
 

@@ -287,6 +287,7 @@ class AggFunc(StrEnum):
     NA_COUNT = "na_count", "Compute count of missing values."
     STD = "std", "Compute standard deviation of values."
     LATEST = "latest", "Compute the latest value."
+    COUNT_DISTINCT = "count_distinct", "Compute number of distinct values"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -382,6 +383,10 @@ class InternalName(StrEnum):
     ONLINE_STORE_VERSION_PLACEHOLDER_SUFFIX = "_VERSION_PLACEHOLDER"
 
     FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
+
+    VIEW_TIMESTAMP_EPOCH = "__FB_VIEW_TIMESTAMP_EPOCH"
+    WINDOW_START_EPOCH = "__FB_WINDOW_START_EPOCH"
+    WINDOW_END_EPOCH = "__FB_WINDOW_END_EPOCH"
 
 
 class WorkerCommand(StrEnum):

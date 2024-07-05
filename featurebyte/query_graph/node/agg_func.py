@@ -164,6 +164,12 @@ class CountAggFunc(BaseCountAggFunc):
     type: Literal[AggFunc.COUNT] = AggFunc.COUNT
 
 
+class CountDistinctAggFunc(BaseCountAggFunc):
+    """CountDistinctAggFunc class"""
+
+    type: Literal[AggFunc.COUNT_DISTINCT] = AggFunc.COUNT_DISTINCT
+
+
 class NaCountAggFunc(BaseCountAggFunc):
     """NaCountAggFunc class"""
 

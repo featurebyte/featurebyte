@@ -1354,6 +1354,39 @@ def time_since_last_event_feature_node_fixture(global_graph, input_node):
     return time_since_last_event_feature_node
 
 
+@pytest.fixture(name="non_tile_window_aggregate_feature_node")
+def non_tile_window_ggregation_feature_node_fixture(global_graph, input_node):
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "12h",  # 12h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["a_48h_sum_no_tile"],
+        "windows": ["48h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    aggregate_node = global_graph.add_operation(
+        node_type=NodeType.NON_TILE_WINDOW_AGGREGATE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_48h_sum_no_tile"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="feature_nodes_all_types")
 def feature_nodes_all_types_fixture(
     mixed_point_in_time_and_item_aggregations,

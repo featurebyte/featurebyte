@@ -219,7 +219,10 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         return schema_statement, pyspark_import_statement
 
     def get_feature_specs_definition(
-        self, target_spec: Optional[ColumnSpec], include_log_model: bool = True
+        self,
+        target_spec: Optional[ColumnSpec],
+        skip_exclude_columns: Optional[List[str]] = None,
+        include_log_model: bool = True,
     ) -> str:
         """
         Get Feature specs definition for DataBricks
@@ -228,6 +231,8 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         ----------
         target_spec: Optional[ColumnSpec]
             Target column spec
+        skip_exclude_columns: Optional[List[str]]
+            Columns to skip from exclude columns (to include in the generated feature specs)
         include_log_model: bool
             Whether to include log model statement in the generated code
 
@@ -242,13 +247,17 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             base_dataframe_schema,
             pyspark_import_statement,
         ) = self._get_base_dataframe_schema_and_import_statement(target_spec=target_spec)
+
+        exclude_columns = self.exclude_columns
+        if skip_exclude_columns:
+            exclude_columns = [col for col in exclude_columns if col not in skip_exclude_columns]
         codes = code_gen.generate(
             to_format=True,
             remove_unused_variables=False,
             databricks_sdk_version=self.databricks_sdk_version,
             pyspark_import_statement=pyspark_import_statement,
             features=feature_specs,
-            exclude_columns=self.exclude_columns,
+            exclude_columns=exclude_columns,
             require_timestamp_lookup_key=self.require_timestamp_lookup_key,
             schema=base_dataframe_schema,
             target_column=target_spec.name,
