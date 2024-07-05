@@ -14,6 +14,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
+    get_aggregation_expression,
     get_groupby_expr,
     get_vector_agg_column_snowflake,
     update_aggregation_expression_for_columns,
@@ -27,6 +28,34 @@ from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only_no_val
 from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg import (
     SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY,
 )
+
+
+@pytest.mark.parametrize(
+    "agg_func,input_column,parent_dtype,expected",
+    [
+        (AggFunc.COUNT, None, None, "COUNT(*)"),
+        (
+            AggFunc.COUNT_DISTINCT,
+            "col",
+            None,
+            'COUNT(DISTINCT "col") + CAST(COUNT_IF("col" IS NULL) > 0 AS BIGINT)',
+        ),
+        (AggFunc.SUM, "col", None, 'SUM("col")'),
+        (AggFunc.AVG, "col", None, 'AVG("col")'),
+        (AggFunc.MIN, "col", None, 'MIN("col")'),
+        (AggFunc.MAX, "col", None, 'MAX("col")'),
+        (AggFunc.STD, "col", None, 'STDDEV("col")'),
+        (AggFunc.NA_COUNT, "col", None, 'SUM(CAST("col" IS NULL AS INTEGER))'),
+        (AggFunc.SUM, parse_one("a + b"), None, "SUM(a + b)"),
+        (AggFunc.AVG, "col", DBVarType.ARRAY, 'VECTOR_AGGREGATE_SIMPLE_AVERAGE("col")'),
+    ],
+)
+def test_get_aggregation_expression(agg_func, input_column, parent_dtype, expected):
+    """
+    Test get_aggregation_expression
+    """
+    expr = get_aggregation_expression(agg_func, input_column, parent_dtype)
+    assert expr.sql(pretty=True) == expected
 
 
 @pytest.fixture(name="common_params")

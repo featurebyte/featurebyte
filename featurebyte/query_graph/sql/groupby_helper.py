@@ -14,6 +14,7 @@ from sqlglot.expressions import Expression, Select, alias_, select
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.adapter.base import VectorAggColumn
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_vector_aggregation
 
@@ -87,6 +88,39 @@ def _get_vector_sql_func(agg_func: AggFunc, is_tile: bool) -> str:
     return array_parent_agg_func_sql_mapping[agg_func]
 
 
+def column_distinct_count_including_null(column_expr: Expression) -> Expression:
+    """
+    Get an expression for counting the number of distinct values in a column including null values
+
+    Parameters
+    ----------
+    column_expr: Expression
+        Column expression
+
+    Returns
+    -------
+    Expression
+    """
+    return expressions.Add(
+        this=expressions.Count(this=expressions.Distinct(expressions=[column_expr])),
+        expression=expressions.Cast(
+            this=expressions.GT(
+                this=expressions.Anonymous(
+                    this="COUNT_IF",
+                    expressions=[
+                        expressions.Is(
+                            this=column_expr,
+                            expression=expressions.Null(),
+                        )
+                    ],
+                ),
+                expression=make_literal_value(0),
+            ),
+            to=expressions.DataType.build("BIGINT"),
+        ),
+    )
+
+
 def get_aggregation_expression(
     agg_func: AggFunc, input_column: Optional[str | Expression], parent_dtype: Optional[DBVarType]
 ) -> Expression:
@@ -108,13 +142,17 @@ def get_aggregation_expression(
     """
     # Check if it's a count function
     if agg_func == AggFunc.COUNT:
-        return expressions.Count(this="*")
+        return expressions.Count(this=expressions.Star())
 
     # Get input_column_expr from input_column
     assert input_column is not None
-    input_column_expr = input_column
     if isinstance(input_column, str):
         input_column_expr = quoted_identifier(input_column)
+    else:
+        input_column_expr = input_column
+
+    if agg_func == AggFunc.COUNT_DISTINCT:
+        return column_distinct_count_including_null(input_column_expr)
 
     # Try to get a built-in SQL aggregate function
     agg_func_sql_mapping = {

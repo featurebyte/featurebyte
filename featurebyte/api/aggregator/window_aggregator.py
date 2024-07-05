@@ -16,7 +16,9 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.enum import AggFunc
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
     GroupByNode,
@@ -108,23 +110,17 @@ class WindowAggregator(BaseAggregator):
             feature_job_setting=feature_job_setting,
             offset=offset,
         )
-        groupby_node = add_pruning_sensitive_operation(
-            graph=self.view.graph,
-            node_cls=GroupByNode,
-            node_params=node_params,
-            input_node=self.view.node,
-            operation_structure_info=self.view.operation_structure_info,
-        )
-        assert isinstance(feature_names, list)
         assert method is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+        aggregation_node = self._add_aggregation_node(agg_method.type, node_params)
+        assert isinstance(feature_names, list)
 
         items = []
         for feature_name in feature_names:
-            feature = self._project_feature_from_groupby_node(
+            feature = self._project_feature_from_aggregation_node(
                 agg_method=agg_method,
                 feature_name=feature_name,
-                groupby_node=groupby_node,
+                aggregation_node=aggregation_node,
                 method=method,
                 value_column=value_column,
                 fill_value=fill_value,
@@ -224,3 +220,19 @@ class WindowAggregator(BaseAggregator):
             "entity_ids": self.entity_ids,
             "tile_id_version": tile_id_version,
         }
+
+    def _add_aggregation_node(self, agg_func: AggFunc, node_params: dict[str, Any]) -> Node:
+        if agg_func == AggFunc.COUNT_DISTINCT:
+            return self.view.graph.add_operation(
+                node_type=NodeType.NON_TILE_WINDOW_AGGREGATE,
+                node_params=node_params,
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[self.view.node],
+            )
+        return add_pruning_sensitive_operation(
+            graph=self.view.graph,
+            node_cls=GroupByNode,
+            node_params=node_params,
+            input_node=self.view.node,
+            operation_structure_info=self.view.operation_structure_info,
+        )

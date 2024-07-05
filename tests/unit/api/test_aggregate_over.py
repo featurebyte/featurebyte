@@ -7,6 +7,7 @@ import pytest
 from featurebyte import FeatureJobSetting
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
+from featurebyte.query_graph.enum import NodeType
 from tests.util.helper import get_node
 
 
@@ -158,3 +159,42 @@ def test_offset__invalid_duration(snowflake_event_view_with_entity):
         str(exc_info.value)
         == "window provided 13m is not a multiple of the feature job frequency 360s"
     )
+
+
+def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entity):
+    """
+    Test count_distinct aggregation function produces a different node type
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="count_distinct",
+        windows=["7d"],
+        feature_names=["col_int_count_distinct_7d"],
+        feature_job_setting=FeatureJobSetting(blind_spot="0", period="1d", offset="1h"),
+    )["col_int_count_distinct_7d"]
+
+    feature_node_name = feature.node.name
+    aggregation_node_name = feature.graph.backward_edges_map[feature_node_name][0]
+    aggregation_node = feature.graph.get_node_by_name(aggregation_node_name)
+    assert aggregation_node.type == NodeType.NON_TILE_WINDOW_AGGREGATE
+    assert aggregation_node.parameters.dict() == {
+        "agg_func": "count_distinct",
+        "entity_ids": [cust_id_entity.id],
+        "feature_job_setting": {
+            "blind_spot": "0s",
+            "execution_buffer": "0s",
+            "offset": "3600s",
+            "period": "86400s",
+        },
+        "keys": ["cust_id"],
+        "names": ["col_int_count_distinct_7d"],
+        "offset": None,
+        "parent": "col_int",
+        "serving_names": ["cust_id"],
+        "timestamp": "event_timestamp",
+        "value_by": None,
+        "windows": ["7d"],
+    }
+
+    # check feature can be saved
+    feature.save()

@@ -135,11 +135,11 @@ class BaseAggregator(ABC):
             input_var_type=input_var_type, category=self.category
         )
 
-    def _project_feature_from_groupby_node(
+    def _project_feature_from_aggregation_node(
         self,
         agg_method: AggFuncType,
         feature_name: str,
-        groupby_node: Node,
+        aggregation_node: Node,
         method: str,
         value_column: Optional[str],
         fill_value: OptionalScalar,
@@ -149,7 +149,7 @@ class BaseAggregator(ABC):
         var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
 
         feature = self.view.project_feature_from_node(
-            node=groupby_node,
+            node=aggregation_node,
             feature_name=feature_name,
             feature_dtype=var_type,
         )
