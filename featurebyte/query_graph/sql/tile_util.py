@@ -14,6 +14,7 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 
 
@@ -162,30 +163,13 @@ def get_previous_job_epoch_expr(
 
     Returns
     -------
-    str
+    Expression
     """
-    frequency = make_literal_value(tile_info.frequency)
-    time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
-
-    # FLOOR((POINT_IN_TIME - TIME_MODULO_FREQUENCY) / FREQUENCY)
-    previous_job_index_expr = expressions.Floor(
-        this=expressions.Div(
-            this=expressions.Paren(
-                this=expressions.Sub(
-                    this=point_in_time_epoch_expr, expression=time_modulo_frequency
-                )
-            ),
-            expression=frequency,
-        )
+    return get_previous_job_epoch_expr_from_settings(
+        point_in_time_epoch_expr=point_in_time_epoch_expr,
+        period_seconds=tile_info.frequency,
+        offset_seconds=tile_info.time_modulo_frequency,
     )
-
-    # PREVIOUS_JOB_INDEX * FREQUENCY + TIME_MODULO_FREQUENCY
-    previous_job_epoch_expr = expressions.Add(
-        this=expressions.Mul(this=previous_job_index_expr, expression=frequency),
-        expression=time_modulo_frequency,
-    )
-
-    return previous_job_epoch_expr
 
 
 def get_earliest_tile_start_date_expr(

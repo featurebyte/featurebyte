@@ -227,6 +227,8 @@ class FeatureNodeDefinitionHash(FeatureByteBaseModel):
 
     node_name: str
     definition_hash: Optional[str]
+    feature_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_name: Optional[str] = Field(default=None)
 
 
 class FeatureCluster(FeatureByteBaseModel):
@@ -507,6 +509,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     FeatureNodeDefinitionHash(
                         node_name=mapped_node.name,
                         definition_hash=feature.definition_hash,
+                        feature_id=feature.id,
+                        feature_name=feature.name,
                     )
                 )
             feature_clusters.append(

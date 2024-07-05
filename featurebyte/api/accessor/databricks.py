@@ -95,7 +95,11 @@ class DataBricksAccessor:
                 output.add(feature_spec.table_name)
         return sorted(output)
 
-    def get_feature_specs_definition(self, include_log_model: bool = True) -> str:
+    def get_feature_specs_definition(
+        self,
+        include_log_model: bool = True,
+        skip_exclude_columns: Optional[List[str]] = None,
+    ) -> str:
         """
         Get DataBricks feature specs definition code
 
@@ -103,6 +107,8 @@ class DataBricksAccessor:
         ----------
         include_log_model: bool
             Whether to include log model statement in the generated code
+        skip_exclude_columns: Optional[List[str]]
+            List of columns to skip from exclude columns list (to include in the feature specs)
 
         Returns
         -------
@@ -113,13 +119,19 @@ class DataBricksAccessor:
         if self._target_name and self._target_dtype:
             target_spec = ColumnSpec(name=self._target_name, dtype=self._target_dtype)
         feature_specs = self._store_info.get_feature_specs_definition(
-            target_spec=target_spec, include_log_model=include_log_model
+            target_spec=target_spec,
+            include_log_model=include_log_model,
+            skip_exclude_columns=skip_exclude_columns,
         )
         return feature_specs
 
-    def _exec_feature_spec_definition(self, print_feature_specs: bool) -> dict[str, Any]:
+    def _exec_feature_spec_definition(
+        self, print_feature_specs: bool, skip_exclude_columns: Optional[List[str]]
+    ) -> dict[str, Any]:
         exec_locals: dict[str, Any] = {}
-        feature_specs_definition = self.get_feature_specs_definition(include_log_model=False)
+        feature_specs_definition = self.get_feature_specs_definition(
+            include_log_model=False, skip_exclude_columns=skip_exclude_columns
+        )
 
         # print feature specs
         if print_feature_specs:
@@ -129,7 +141,9 @@ class DataBricksAccessor:
         exec(feature_specs_definition, exec_locals)  # pylint: disable=exec-used  # nosec
         return exec_locals
 
-    def get_feature_specs(self, print_feature_specs: bool = True) -> Any:
+    def get_feature_specs(
+        self, print_feature_specs: bool = True, skip_exclude_columns: Optional[List[str]] = None
+    ) -> Any:
         """
         Execute the feature specs definition and return the feature specs
 
@@ -137,13 +151,17 @@ class DataBricksAccessor:
         ----------
         print_feature_specs: bool
             Whether to print the feature specs
+        skip_exclude_columns: Optional[List[str]]
+            List of columns to skip from exclude columns list (to include in the feature specs)
 
         Returns
         -------
         Any
             Feature specs
         """
-        exec_locals = self._exec_feature_spec_definition(print_feature_specs)
+        exec_locals = self._exec_feature_spec_definition(
+            print_feature_specs, skip_exclude_columns=skip_exclude_columns
+        )
         return exec_locals["features"]
 
     def log_model(
@@ -153,6 +171,7 @@ class DataBricksAccessor:
         flavor: ModuleType,
         registered_model_name: str,
         print_feature_specs: bool = True,
+        skip_exclude_columns: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -170,12 +189,16 @@ class DataBricksAccessor:
             Name of the registered model
         print_feature_specs: bool
             Whether to print the feature specs
+        skip_exclude_columns: Optional[List[str]]
+            List of columns to skip from exclude columns list (to include in the feature specs)
         kwargs: Any
             Additional keyword arguments to pass to the log_model method
         """
         # create feature engineering client
         databricks_fe_client = _get_feature_engineering_client()
-        exec_locals = self._exec_feature_spec_definition(print_feature_specs)
+        exec_locals = self._exec_feature_spec_definition(
+            print_feature_specs, skip_exclude_columns=skip_exclude_columns
+        )
 
         # log model
         kwargs = kwargs or {}

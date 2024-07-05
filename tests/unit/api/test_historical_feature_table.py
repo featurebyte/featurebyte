@@ -6,7 +6,12 @@ from typing import Any, Dict
 
 from unittest import mock
 
+import pytest
+
+from featurebyte import FeatureList
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
+from featurebyte.exception import RecordCreationException
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
@@ -76,4 +81,45 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
         assert (
             last_log.msg
             == "Failed to log featurebyte training data information to mlflow: Random error"
+        )
+
+
+@pytest.mark.usefixtures("patched_observation_table_service")
+def test_historical_feature_table_validation(catalog, snowflake_event_table, cust_id_entity):
+    """Test historical feature table validation"""
+    snowflake_event_table.col_int.as_entity(cust_id_entity.name)
+    event_view = snowflake_event_table.get_view()
+    feature = event_view.col_float.as_feature("feat")
+    features = []
+    for i in range(MAX_BATCH_FEATURE_ITEM_COUNT + 1):
+        feat = feature + i
+        feat.name = f"feat_{i}"
+        features.append(feat)
+
+    feature_list = FeatureList(features, name="test feature list")
+
+    table_details = snowflake_event_table.tabular_source.table_details
+    observation_table = (
+        catalog.get_data_source()
+        .get_source_table(
+            table_name=table_details.table_name,
+            schema_name=table_details.schema_name,
+            database_name=table_details.database_name,
+        )
+        .create_observation_table(
+            name="observation_table",
+            primary_entities=[cust_id_entity.name],
+            columns=["event_timestamp", "cust_id"],
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        )
+    )
+
+    expected_error = (
+        "Number of features exceeds the limit of 500, please reduce the number of features or save the "
+        "features in a feature list and try again."
+    )
+    with pytest.raises(RecordCreationException, match=expected_error):
+        feature_list.compute_historical_feature_table(
+            observation_set=observation_table,
+            historical_feature_table_name="historical_feature_table",
         )

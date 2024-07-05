@@ -27,8 +27,8 @@ from featurebyte.models.feature_list import (
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.feature_or_target import ComputeRequest
+from featurebyte.schema.constant import MAX_BATCH_FEATURE_ITEM_COUNT
 from featurebyte.schema.feature import (
-    MAX_BATCH_FEATURE_ITEM_COUNT,
     BatchFeatureCreate,
     BatchFeatureCreatePayload,
     BatchFeatureItem,

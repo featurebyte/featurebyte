@@ -13,6 +13,8 @@
                 "feature_node_definition_hashes": [
                     {
                         "definition_hash": null,
+                        "feature_id": "646f6c1b0ed28a5271fb02c4",
+                        "feature_name": "sum_30m",
                         "node_name": "project_1"
                     }
                 ],

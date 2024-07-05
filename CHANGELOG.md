@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.3 (2024-07-05)
+
+### 💡 Enhancements
+
++ `worker` Speed up table description by excluding top and most frequent values for float and timestamp columns.
+
+### 🐛 Bug Fixes
+
++ `api` Fix materialized table download failure.
+
+
 ## v1.1.2 (2024-06-25)
 
 ### 💡 Enhancements

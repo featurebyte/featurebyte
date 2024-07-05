@@ -14,7 +14,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
@@ -46,6 +46,7 @@ from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregat
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER = "__fb_current_feature_timestamp"
 LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER = "__fb_last_materialized_timestamp"
@@ -130,6 +131,16 @@ class BaseEntityUniverseConstructor:
         )
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
+
+        op_struct = (
+            OperationStructureExtractor(graph=flat_graph)
+            .extract(node=flat_node)
+            .operation_structure_map[flat_node.name]
+        )
+        self.aggregate_input_column_dtypes = {
+            source_col.name: source_col.dtype for source_col in op_struct.source_columns
+        }
+
         self.adapter = get_sql_adapter(source_type)
 
     @abstractmethod
@@ -167,6 +178,36 @@ class BaseEntityUniverseConstructor:
         _ = graph
         _ = node
         return None
+
+    def get_entity_column(
+        self, entity_column_name: str, entity_column_to_get_dtype: Optional[str] = None
+    ) -> Expression:
+        """
+        Get the expression for the entity column with casting applied if needed
+
+        Parameters
+        ----------
+        entity_column_name: str
+            Entity column name
+        entity_column_to_get_dtype: str
+            Entity column name used to retrieve dtype. If not specified, this is assumed to be the
+            same as entity_column_name.
+
+        Returns
+        -------
+        Expression
+        """
+        if entity_column_to_get_dtype is None:
+            entity_column_to_get_dtype = entity_column_name
+        expr = quoted_identifier(entity_column_name)
+        dtype = self.aggregate_input_column_dtypes.get(entity_column_to_get_dtype)
+        if dtype == DBVarType.INT:
+            expr = expressions.alias_(
+                expressions.Cast(this=expr, to=expressions.DataType.build("BIGINT")),
+                alias=entity_column_name,
+                quoted=True,
+            )
+        return expr
 
 
 class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
@@ -249,7 +290,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         universe_expr = (
             select(
                 *[
-                    expressions.alias_(quoted_identifier(key), alias=serving_name, quoted=True)
+                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
                     for key, serving_name in zip(
                         node.parameters.keys, node.parameters.serving_names
                     )
@@ -312,7 +353,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         universe_expr = (
             select(
                 *[
-                    expressions.alias_(quoted_identifier(key), alias=serving_name, quoted=True)
+                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
                     for key, serving_name in zip(
                         node.parameters.keys, node.parameters.serving_names
                     )
@@ -369,7 +410,15 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         )
         universe_expr = (
             select(
-                *[quoted_identifier(serving_name) for serving_name in node.parameters.serving_names]
+                *[
+                    self.get_entity_column(
+                        serving_name,
+                        entity_column_to_get_dtype=entity_column,
+                    )
+                    for entity_column, serving_name in zip(
+                        node.parameters.keys, node.parameters.serving_names
+                    )
+                ]
             )
             .distinct()
             .from_(expressions.Table(this=online_store_table_name))
@@ -415,7 +464,7 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         universe_expr = (
             select(
                 *[
-                    expressions.alias_(quoted_identifier(key), alias=serving_name, quoted=True)
+                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
                     for key, serving_name in zip(
                         node.parameters.keys, node.parameters.serving_names
                     )

@@ -170,14 +170,14 @@ class DatabricksUnitySession(DatabricksSession):
         timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
-            f"SELECT TABLE_NAME FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
+            f"SELECT TABLE_NAME, COMMENT FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
             f"WHERE TABLE_SCHEMA = '{schema_name}'",
             timeout=timeout,
         )
         output = []
         if tables is not None:
-            for _, (name,) in tables[["TABLE_NAME"]].iterrows():
-                output.append(TableSpec(name=name))
+            for _, (name, comment) in tables.iterrows():
+                output.append(TableSpec(name=name, description=comment))
         return output
 
     async def create_table_as(
