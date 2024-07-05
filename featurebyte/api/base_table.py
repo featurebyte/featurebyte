@@ -12,7 +12,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
@@ -756,7 +756,9 @@ class TableApiObject(
                     feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
+                assert table.id == data_id_value
                 table.save()
+                assert table.id == data_id_value
                 return table
             existing_record = response_dict["data"][0]
             raise DuplicatedRecordException(
@@ -964,13 +966,13 @@ class TableApiObject(
         )
 
     @typechecked
-    def update_status(self, status: Literal[tuple(TableStatus)]) -> None:  # type: ignore
+    def update_status(self, status: Union[TableStatus, str]) -> None:
         """
         Update table status
 
         Parameters
         ----------
-        status: Literal[tuple(TableStatus)]
+        status: Union[TableStatus, str]
             Table status
 
         Examples
@@ -980,7 +982,8 @@ class TableApiObject(
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table.update_status(fb.TableStatus.PUBLIC_DRAFT)
         """
-        self.update(update_payload={"status": str(status)}, allow_update_local=False)
+        status_value = TableStatus(status).value
+        self.update(update_payload={"status": status_value}, allow_update_local=False)
 
     @staticmethod
     def _validate_view_mode_params(

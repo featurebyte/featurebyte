@@ -6,7 +6,6 @@ ObservationTable class
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Sequence, Union
-from typing_extensions import Literal
 
 import os
 from pathlib import Path
@@ -392,13 +391,13 @@ class ObservationTable(
         super().update_description(description)
 
     @typechecked
-    def update_purpose(self, purpose: Literal[tuple(Purpose)]) -> None:  # type: ignore[misc]
+    def update_purpose(self, purpose: Union[Purpose, str]) -> None:
         """
         Update purpose for the observation table.
 
         Parameters
         ----------
-        purpose: Literal[tuple(Purpose)]
+        purpose: Union[Purpose, str]
             Purpose for the observation table. Expect value to be a string or a Purpose enum.
 
         Examples
@@ -406,8 +405,9 @@ class ObservationTable(
         >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
         >>> observation_table.update_purpose(fb.Purpose.EDA)  # doctest: +SKIP
         """
+        purpose_value = Purpose(purpose).value
         self.update(
-            update_payload={"purpose": purpose},
+            update_payload={"purpose": purpose_value},
             allow_update_local=False,
             url=f"{self._route}/{self.id}",
             skip_update_schema_check=True,

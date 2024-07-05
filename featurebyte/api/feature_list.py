@@ -18,7 +18,6 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Literal
 
 from http import HTTPStatus
 
@@ -1373,7 +1372,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
-    def update_status(self, status: Literal[tuple(FeatureListStatus)]) -> None:  # type: ignore[misc]
+    def update_status(self, status: Union[FeatureListStatus, str]) -> None:
         """
         A FeatureList can have one of five statuses:
 
@@ -1395,7 +1394,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Parameters
         ----------
-        status: Literal[tuple(FeatureListStatus)]
+        status: Union[FeatureListStatus, str]
             Desired feature list status.
 
         Examples
@@ -1403,8 +1402,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
+        status_value = FeatureListStatus(status).value
         self.feature_list_namespace.update(
-            update_payload={"status": str(status)}, allow_update_local=False
+            update_payload={"status": status_value}, allow_update_local=False
         )
 
     @typechecked
