@@ -263,6 +263,12 @@ def features_fixture(
             feature_names=["Latest Amount by User Offset 1d"],
         )["Latest Amount by User Offset 1d"]
     )
+    feature_18 = event_view.groupby("ÜSER ID").aggregate_over(
+        "PRODUCT_ACTION",
+        method="count_distinct",
+        windows=["48h"],
+        feature_names=["Number of Distinct Product Action 48h"],
+    )["Number of Distinct Product Action 48h"]
 
     # Save all features to be deployed
     features = [
@@ -285,6 +291,7 @@ def features_fixture(
             feature_15,
             feature_16,
             feature_17,
+            feature_18,
         ]
         if feature is not None
     ]
@@ -923,6 +930,7 @@ async def test_feast_registry(
         f"Relative Frequency 7d_{version}": [0.5652173757553101],
         f"Latest Amount by User_{version}": [91.31999969482422],
         f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
+        f"Number of Distinct Product Action 48h_{version}": [5],
         "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
@@ -963,6 +971,7 @@ async def test_feast_registry(
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.0],
         f"Latest Amount by User_{version}": [91.31999969482422],
         f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
+        f"Number of Distinct Product Action 48h_{version}": [None],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -1067,6 +1076,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
         "üser id": 5,
+        "Number of Distinct Product Action 48h": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
@@ -1115,6 +1125,7 @@ def expected_features_order_id_T3850(source_type):
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
         "Relative Frequency 7d": 0.5652173757553101,
+        "Number of Distinct Product Action 48h": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
@@ -1346,6 +1357,7 @@ async def test_simulated_materialize__ttl_feature_table(
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}",
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+        f"Number of Distinct Product Action 48h_{version}",
         f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
         f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
         f"__Relative Frequency 7d_{version}__part0",

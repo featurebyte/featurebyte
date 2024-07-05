@@ -273,6 +273,11 @@ class OfflineStoreInfoInitializationService:
                 if any(node.parameters.windows):
                     has_ttl = True
                     break
+            for _ in feature.graph.iterate_nodes(
+                target_node=feature.node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
+            ):
+                has_ttl = True
+                break
             table_name = (
                 await self.offline_store_feature_table_creator(
                     primary_entity_ids=feature.primary_entity_ids,

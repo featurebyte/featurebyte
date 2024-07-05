@@ -7,12 +7,14 @@ from typing import (
     Callable,
     DefaultDict,
     Dict,
+    Generator,
     Iterator,
     List,
     Optional,
     Set,
     Tuple,
     TypedDict,
+    Union,
     cast,
 )
 from typing_extensions import Literal
@@ -35,7 +37,12 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.function import GenericFunctionNode
-from featurebyte.query_graph.node.generic import GroupByNode, LookupNode, LookupTargetNode
+from featurebyte.query_graph.node.generic import (
+    GroupByNode,
+    LookupNode,
+    LookupTargetNode,
+    NonTileWindowAggregateNode,
+)
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
@@ -231,7 +238,7 @@ class QueryGraph(QueryGraphModel):
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
-    ) -> Iterator[Tuple[GroupByNode, Optional[ObjectId]]]:
+    ) -> Iterator[Tuple[Union[GroupByNode, NonTileWindowAggregateNode], Optional[ObjectId]]]:
         """
         Iterate all GroupBy nodes and their corresponding Table ID
 
@@ -249,18 +256,25 @@ class QueryGraph(QueryGraphModel):
             node=target_node,
             keep_all_source_columns=True,
         )
-        for group_by_node in self.iterate_nodes(
-            target_node=target_node, node_type=NodeType.GROUPBY
-        ):
-            assert isinstance(group_by_node, GroupByNode)
-            group_by_op_struct = operation_structure_info.operation_structure_map[
-                group_by_node.name
-            ]
+
+        def _iter_window_aggregate_nodes() -> Generator[Node, None, None]:
+            for group_by_node in self.iterate_nodes(
+                target_node=target_node, node_type=NodeType.GROUPBY
+            ):
+                yield group_by_node
+            for non_tile_window_aggregate_node in self.iterate_nodes(
+                target_node=target_node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
+            ):
+                yield non_tile_window_aggregate_node
+
+        for node in _iter_window_aggregate_nodes():
+            assert isinstance(node, (GroupByNode, NonTileWindowAggregateNode))
+            group_by_op_struct = operation_structure_info.operation_structure_map[node.name]
             timestamp_col = next(
                 (
                     col
                     for col in group_by_op_struct.columns
-                    if col.name == group_by_node.parameters.timestamp
+                    if col.name == node.parameters.timestamp
                 ),
                 None,
             )
@@ -275,7 +289,7 @@ class QueryGraph(QueryGraphModel):
                 table_id = timestamp_col.columns[-1].table_id
 
             assert table_id is not None, "Table ID not found"
-            yield group_by_node, table_id
+            yield node, table_id
 
     def extract_table_id_feature_job_settings(
         self, target_node: Node, keep_first_only: bool = False

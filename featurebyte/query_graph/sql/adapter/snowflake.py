@@ -59,6 +59,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         )
 
     @classmethod
+    def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
+        return expressions.Cast(
+            this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP")
+        )
+
+    @classmethod
     def str_trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:

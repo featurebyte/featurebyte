@@ -16,7 +16,12 @@ from featurebyte.query_graph.model.entity_relationship_info import (
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupByNode, LookupNode, LookupTargetNode
+from featurebyte.query_graph.node.generic import (
+    GroupByNode,
+    LookupNode,
+    LookupTargetNode,
+    NonTileWindowAggregateNode,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
@@ -142,7 +147,7 @@ class FeatureJobSettingExtractor:
         if not isinstance(node, AggregationOpStructMixin):
             return None
 
-        if isinstance(node, GroupByNode):
+        if isinstance(node, (GroupByNode, NonTileWindowAggregateNode)):
             return node.parameters.feature_job_setting
 
         if isinstance(node, LookupNode):
@@ -279,6 +284,8 @@ class DecomposePointState:
             aggregation_info.agg_node_types = [node.type]
             if isinstance(node, GroupByNode):
                 aggregation_info.has_ttl_agg_type = any(node.parameters.windows)
+            elif isinstance(node, NonTileWindowAggregateNode):
+                aggregation_info.has_ttl_agg_type = True
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys

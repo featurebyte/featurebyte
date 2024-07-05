@@ -134,6 +134,14 @@ def feat_list_with_all_features_deployed_deployment_id_fixture():
     return ObjectId()
 
 
+@pytest.fixture(name="count_distinct_window_aggregate_deployment_id")
+def count_distinct_window_aggregate_deployment_id_fixture():
+    """
+    Deployment id fixture
+    """
+    return ObjectId()
+
+
 @pytest_asyncio.fixture
 async def deployed_float_feature_list(
     app_container,
@@ -410,6 +418,26 @@ async def deployed_latest_aggregation_features(
 
 
 @pytest_asyncio.fixture
+async def deployed_count_distinct_window_aggregate_feature(
+    app_container,
+    count_distinct_window_aggregate_feature,
+    count_distinct_window_aggregate_deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a deployed feature using count distinct aggregation
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    return await deploy_feature(
+        app_container,
+        count_distinct_window_aggregate_feature,
+        deployment_id=count_distinct_window_aggregate_deployment_id,
+    )
+
+
+@pytest_asyncio.fixture
 async def deployed_feature_list_when_all_features_already_deployed(
     app_container,
     float_feature,
@@ -443,6 +471,7 @@ def expected_feast_registry_mapping_fixture(
     feat_list_with_all_feats_deployed_deployment_id,
     latest_aggregation_with_window_deployment_id,
     latest_aggregation_without_window_deployment_id,
+    count_distinct_window_aggregate_deployment_id,
 ):
     """Fixture for expected feast registry mapping"""
     fl_version = get_version()
@@ -499,6 +528,10 @@ def expected_feast_registry_mapping_fixture(
         latest_aggregation_without_window_deployment_id: {
             "feature_views": {"cat1_cust_id_30m_1"},
             "feature_services": {f"latest_event_timestamp_list_{fl_version}"},
+        },
+        count_distinct_window_aggregate_deployment_id: {
+            "feature_views": {"cat1_cust_id_30m"},
+            "feature_services": {f"col_int_distinct_count_48h_list_{fl_version}"},
         },
     }
 
@@ -1996,6 +2029,71 @@ async def test_latest_aggregation_features(
     await check_feast_registry(
         app_container,
         deployment_id=latest_aggregation_without_window_deployment_id,
+        expected_feast_registry_mapping=expected_feast_registry_mapping,
+        enabled_deployment=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_count_distinct_window_aggregate_feature(
+    app_container,
+    document_service,
+    periodic_task_service,
+    deployed_count_distinct_window_aggregate_feature,
+    count_distinct_window_aggregate_deployment_id,
+    expected_feast_registry_mapping,
+    update_fixtures,
+):
+    """
+    Test feature table creation with latest aggregation features
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert set(feature_tables.keys()) == {"cat1_cust_id_30m"}
+
+    # Check feature table
+    feature_table = feature_tables["cat1_cust_id_30m"]
+    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict.pop("_id")
+    _ = feature_table_dict.pop("feature_cluster")
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/count_distinct_window_aggregate_universe.sql",
+        update_fixtures,
+    )
+    assert feature_table_dict == {
+        "base_name": "cust_id_30m",
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "deployment_ids": [count_distinct_window_aggregate_deployment_id],
+        "description": None,
+        "entity_lookup_info": None,
+        "feature_cluster_path": feature_table_dict["feature_cluster_path"],
+        "feature_ids": [deployed_count_distinct_window_aggregate_feature.id],
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "period": "1800s",
+            "offset": "300s",
+            "execution_buffer": "0s",
+        },
+        "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": "cat1_cust_id_30m",
+        "name_prefix": "cat1",
+        "name_suffix": None,
+        "online_stores_last_materialized_at": [],
+        "output_column_names": ["col_int_distinct_count_48h_V231227"],
+        "output_dtypes": ["INT"],
+        "precomputed_lookup_feature_table_info": None,
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        deployment_id=count_distinct_window_aggregate_deployment_id,
         expected_feast_registry_mapping=expected_feast_registry_mapping,
         enabled_deployment=True,
     )

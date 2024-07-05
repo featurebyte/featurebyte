@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.generic import (
     GroupByNode,
     ItemGroupbyNode,
     LookupNode,
+    NonTileWindowAggregateNode,
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
@@ -41,6 +42,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
 from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
 from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -477,6 +479,74 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         return universe_expr
 
 
+class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
+    """
+    Construct the entity universe expression for tile based aggregate node
+    """
+
+    def get_serving_names(self) -> List[str]:
+        node = cast(NonTileWindowAggregateNode, self.node)
+        return node.parameters.serving_names
+
+    def get_entity_universe_template(self) -> List[Expression]:
+        node = cast(NonTileWindowAggregateNode, self.node)
+
+        if not node.parameters.serving_names:
+            return [DUMMY_ENTITY_UNIVERSE]
+
+        feature_job_settings = node.parameters.feature_job_setting
+        feature_timestamp_epoch = self.adapter.to_epoch_seconds(
+            quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER)
+        )
+        job_epoch_expr = get_previous_job_epoch_expr_from_settings(
+            point_in_time_epoch_expr=feature_timestamp_epoch,
+            period_seconds=feature_job_settings.period_seconds,
+            offset_seconds=feature_job_settings.offset_seconds,
+        )
+        range_end_expr = expressions.Sub(
+            this=job_epoch_expr,
+            expression=make_literal_value(feature_job_settings.blind_spot_seconds),
+        )
+        range_start_expr = expressions.Sub(
+            this=range_end_expr,
+            expression=make_literal_value(
+                max(
+                    parse_duration_string(window)
+                    for window in node.parameters.windows
+                    if window is not None
+                )
+            ),
+        )
+        window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
+        window_start_timestamp_expr = self.adapter.from_epoch_seconds(range_start_expr)
+        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
+            expressions.and_(
+                expressions.GTE(
+                    this=quoted_identifier(node.parameters.timestamp),
+                    expression=window_start_timestamp_expr,
+                ),
+                expressions.LT(
+                    this=quoted_identifier(node.parameters.timestamp),
+                    expression=window_end_timestamp_expr,
+                ),
+            )
+        )
+        universe_expr = (
+            select(
+                *[
+                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                    for key, serving_name in zip(
+                        node.parameters.keys, node.parameters.serving_names
+                    )
+                ]
+            )
+            .distinct()
+            .from_(filtered_aggregate_input_expr.subquery())
+            .where(columns_not_null(node.parameters.keys))
+        )
+        return [universe_expr]
+
+
 def get_entity_universe_constructor(
     graph: QueryGraphModel, node: Node, source_type: SourceType
 ) -> BaseEntityUniverseConstructor:
@@ -506,6 +576,7 @@ def get_entity_universe_constructor(
         NodeType.AGGREGATE_AS_AT: AggregateAsAtNodeEntityUniverseConstructor,
         NodeType.ITEM_GROUPBY: ItemAggregateNodeEntityUniverseConstructor,
         NodeType.GROUPBY: TileBasedAggregateNodeEntityUniverseConstructor,
+        NodeType.NON_TILE_WINDOW_AGGREGATE: NonTileWindowAggregateNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
         return node_type_to_constructor[node.type](graph, node, source_type)  # type: ignore

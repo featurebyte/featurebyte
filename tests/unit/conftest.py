@@ -2032,6 +2032,23 @@ def latest_event_timestamp_unbounded_feature_fixture(
     return feature
 
 
+@pytest.fixture(name="count_distinct_window_aggregate_feature")
+def count_distinct_window_aggregate_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a feature using count distinct aggregation
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="count_distinct",
+        windows=["48h"],
+        feature_names=["col_int_distinct_count_48h"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["col_int_distinct_count_48h"]
+    return feature
+
+
 @pytest.fixture(name="request_column_point_in_time")
 def request_column_point_in_time():
     """
