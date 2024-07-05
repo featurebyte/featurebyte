@@ -2077,7 +2077,7 @@ async def test_count_distinct_window_aggregate_feature(
             "execution_buffer": "0s",
         },
         "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-        "has_ttl": False,
+        "has_ttl": True,
         "last_materialized_at": None,
         "name": "cat1_cust_id_30m",
         "name_prefix": "cat1",

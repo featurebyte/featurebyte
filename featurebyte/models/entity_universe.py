@@ -510,7 +510,13 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         range_start_expr = expressions.Sub(
             this=range_end_expr,
             expression=make_literal_value(
-                max([parse_duration_string(window) for window in node.parameters.windows])
+                max(
+                    [
+                        parse_duration_string(window)
+                        for window in node.parameters.windows
+                        if window is not None
+                    ]
+                )
             ),
         )
         window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)

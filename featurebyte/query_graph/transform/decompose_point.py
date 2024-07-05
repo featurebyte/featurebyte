@@ -284,6 +284,8 @@ class DecomposePointState:
             aggregation_info.agg_node_types = [node.type]
             if isinstance(node, GroupByNode):
                 aggregation_info.has_ttl_agg_type = any(node.parameters.windows)
+            elif isinstance(node, NonTileWindowAggregateNode):
+                aggregation_info.has_ttl_agg_type = True
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys
