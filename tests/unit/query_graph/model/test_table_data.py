@@ -35,6 +35,7 @@ from featurebyte.query_graph.node.schema import (
     TableDetails,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.fixture(name="tabular_source")
@@ -170,7 +171,7 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": None,
-            "table_details": source_table_data.tabular_source.table_details,
+            "table_details": source_table_data.tabular_source.table_details.dict(by_alias=True),
             "type": "source_table",
         },
         "output_type": "frame",
@@ -193,7 +194,7 @@ def event_input_node_fixture(feature_store_details, event_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": event_table_data.id,
-            "table_details": event_table_data.tabular_source.table_details,
+            "table_details": event_table_data.tabular_source.table_details.dict(by_alias=True),
             "id_column": "event_id",
             "timestamp_column": "event_timestamp",
             "type": "event_table",
@@ -229,7 +230,7 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": dimension_table_data.id,
-            "table_details": dimension_table_data.tabular_source.table_details,
+            "table_details": dimension_table_data.tabular_source.table_details.dict(by_alias=True),
             "id_column": "user_id",
             "type": "dimension_table",
         },
@@ -353,29 +354,32 @@ def test_event_view_graph_node(event_table_data, event_input_node):
     assert set(
         graph_node._get_required_input_columns(input_index=0, available_column_names=[])
     ) == {"amount", "event_id"}
-    assert columns_info == [
-        {
-            "name": "event_id",
-            "dtype": "INT",
-            "semantic_id": None,
-            "entity_id": None,
-            "critical_data_info": None,
-            "description": None,
-        },
-        {
-            "name": "amount",
-            "dtype": "FLOAT",
-            "semantic_id": None,
-            "entity_id": None,
-            "critical_data_info": {
-                "cleaning_operations": [
-                    {"type": "missing", "imputed_value": 0},
-                    {"type": "less_than", "end_point": 0, "imputed_value": None},
-                ]
+    compare_pydantic_obj(
+        columns_info,
+        expected=[
+            {
+                "name": "event_id",
+                "dtype": "INT",
+                "semantic_id": None,
+                "entity_id": None,
+                "critical_data_info": None,
+                "description": None,
             },
-            "description": None,
-        },
-    ]
+            {
+                "name": "amount",
+                "dtype": "FLOAT",
+                "semantic_id": None,
+                "entity_id": None,
+                "critical_data_info": {
+                    "cleaning_operations": [
+                        {"type": "missing", "imputed_value": 0},
+                        {"type": "less_than", "end_point": 0, "imputed_value": None},
+                    ]
+                },
+                "description": None,
+            },
+        ],
+    )
 
 
 def test_item_view_graph_node(item_table_data, event_table_data, item_input_node, event_input_node):

@@ -2,10 +2,10 @@
 Tests for Feature route
 """
 
+# pylint: disable=too-many-lines
+
 import collections
 import textwrap
-
-# pylint: disable=too-many-lines
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
@@ -27,6 +27,7 @@ from featurebyte.schema.feature import FeatureCreate
 from featurebyte.session.snowflake import SnowflakeSession
 from tests.unit.common.test_utils import create_batch_feature_create
 from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.util.helper import compare_pydantic_obj
 
 
 class TestFeatureApi(BaseCatalogApiTestSuite):
@@ -241,8 +242,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # check that the table cleaning operations are applied
         graph_node = graph.get_node_by_name("graph_1")
-        assert (
-            graph_node.parameters.metadata.column_cleaning_operations == column_cleaning_operations
+        compare_pydantic_obj(
+            graph_node.parameters.metadata.column_cleaning_operations,
+            expected=column_cleaning_operations,
         )
 
     def test_create_422__create_new_version(

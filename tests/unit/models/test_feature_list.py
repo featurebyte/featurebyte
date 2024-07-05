@@ -13,6 +13,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessTransition,
 )
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.fixture(name="feature_list_model_dict")
@@ -96,7 +97,9 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_model_dict["_id"] = updated_feature_list.id
     feature_list_model_dict["version"] = "V220710"
     loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    assert loaded_old_feature_list.version == {"name": "V220710", "suffix": None}
+    compare_pydantic_obj(
+        loaded_old_feature_list.version, expected={"name": "V220710", "suffix": None}
+    )
     assert loaded_old_feature_list == updated_feature_list
 
     # check that feature list store info for older record

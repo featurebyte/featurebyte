@@ -34,6 +34,7 @@ from featurebyte.schema.feature_list import (
     FeatureListServiceCreate,
     FeatureVersionInfo,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 def test_feature_new_version_create_schema_validation():
@@ -138,8 +139,8 @@ async def test_create_new_feature_version(
 
     # check version
     version_name = get_version()
-    assert feature.version == {"name": version_name, "suffix": None}
-    assert version.version == {"name": version_name, "suffix": 1}
+    compare_pydantic_obj(feature.version, {"name": version_name, "suffix": None})
+    compare_pydantic_obj(version.version, {"name": version_name, "suffix": 1})
 
     # check other attributes
     assert version.node_name == "project_1"
@@ -432,14 +433,14 @@ async def test_create_new_feature_version__with_event_table_cleaning_operations(
     )
 
     # check newly created version
-    assert (
-        version.graph.edges
-        == feature.graph.edges
-        == [
+    compare_pydantic_obj(version.graph.edges, expected=feature.graph.edges)
+    compare_pydantic_obj(
+        feature.graph.edges,
+        expected=[
             {"source": "input_1", "target": "graph_1"},
             {"source": "graph_1", "target": "groupby_1"},
             {"source": "groupby_1", "target": "project_1"},
-        ]
+        ],
     )
 
     # check view graph node
@@ -602,8 +603,8 @@ async def test_create_new_feature_version__with_item_event_feature(
     """Test create new feature version with event table cleaning operations"""
     event_view_graph_node = feature_item_event.graph.get_node_by_name("graph_1")
     item_view_graph_node = feature_item_event.graph.get_node_by_name("graph_2")
-    assert event_view_graph_node.parameters.metadata == event_metadata
-    assert item_view_graph_node.parameters.metadata == item_metadata
+    compare_pydantic_obj(event_view_graph_node.parameters.metadata, expected=event_metadata)
+    compare_pydantic_obj(item_view_graph_node.parameters.metadata, expected=item_metadata)
 
     # create a new feature version with relevant table cleaning operations
     new_version = await version_service.create_new_feature_version(

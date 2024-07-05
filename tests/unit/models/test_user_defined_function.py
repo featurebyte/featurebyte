@@ -13,6 +13,7 @@ from featurebyte.models.user_defined_function import (
     function_parameter_dtype_to_python_type,
     get_default_test_value,
 )
+from tests.util.helper import compare_pydantic_obj
 
 
 @pytest.mark.parametrize(
@@ -88,11 +89,11 @@ def test_user_defined_function_model(
         feature_store_id=feature_store_id,
     )
     assert user_defined_function.sql_function_name == "sql_func"
-    assert user_defined_function.function_parameters == function_parameters
     assert user_defined_function.catalog_id == catalog_id
     assert user_defined_function.output_dtype == DBVarType.FLOAT
     assert user_defined_function.signature == expected_signature
     assert user_defined_function.feature_store_id == feature_store_id
+    compare_pydantic_obj(user_defined_function.function_parameters, expected=function_parameters)
 
     test_sql = user_defined_function.generate_test_sql(source_type=SourceType.SNOWFLAKE)
     assert test_sql == expected_test_sql

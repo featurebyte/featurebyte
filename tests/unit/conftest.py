@@ -903,6 +903,7 @@ def snowflake_event_table_fixture(
         _id=snowflake_event_table_id,
     )
     assert event_table.frame.node.parameters.id == event_table.id
+    assert event_table.id == snowflake_event_table_id
     yield event_table
 
 

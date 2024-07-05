@@ -5,7 +5,7 @@ Test target table schema
 import pytest
 from bson import ObjectId
 
-from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.target_table import TargetTableCreate
 
 
@@ -14,12 +14,12 @@ from featurebyte.schema.target_table import TargetTableCreate
     [
         (ObjectId(), None, None, None),
         (ObjectId(), None, ["node1"], ValueError),
-        (ObjectId(), QueryGraphModel(), None, ValueError),
-        (ObjectId(), QueryGraphModel(), ["node1"], ValueError),
+        (ObjectId(), QueryGraph(), None, ValueError),
+        (ObjectId(), QueryGraph(), ["node1"], ValueError),
         (None, None, None, ValueError),
         (None, None, ["node1"], ValueError),
-        (None, QueryGraphModel(), None, ValueError),
-        (None, QueryGraphModel(), ["node1"], None),
+        (None, QueryGraph(), None, ValueError),
+        (None, QueryGraph(), ["node1"], None),
     ],
 )
 def test_target_table_create(target_id, graph, node_names, expected_error):
