@@ -231,11 +231,12 @@ class FilterNode(BaseNode):
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
+            transform_info = self.transform_info
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
                     name=col.name,
                     columns=[col] + mask_operation_info.aggregations,
-                    transform=self.transform_info,
+                    transform=transform_info,
                     node_name=self.name,
                     other_node_names=mask_operation_info.all_node_names,
                     dtype=col.dtype,
@@ -1384,6 +1385,7 @@ class JoinNode(BasePrunableNode):
         right_on_col = next(
             col for col in inputs[1].columns if col.name == self.parameters.right_on
         )
+        transform_info = self.transform_info
         for col in inputs[1].columns:
             if col.name in right_col_map:
                 if global_state.keep_all_source_columns:
@@ -1395,7 +1397,7 @@ class JoinNode(BasePrunableNode):
                         # this is used to decide the timestamp column source table in
                         # `iterate_group_by_node_and_table_id_pairs`
                         columns=[left_on_col, right_on_col, col],
-                        transform=self.transform_info,
+                        transform=transform_info,
                         node_name=self.name,
                         dtype=col.dtype,
                         other_node_names=col.node_names,
@@ -1718,6 +1720,7 @@ class TrackChangesNode(BaseNode):
         columns = [natural_key_source_column]
         track_dtype = tracked_source_column.dtype
         valid_dtype = effective_timestamp_source_column.dtype
+        transform_info = self.transform_info
         for column_name, dtype in [
             (self.parameters.previous_tracked_column_name, track_dtype),
             (self.parameters.new_tracked_column_name, track_dtype),
@@ -1727,7 +1730,7 @@ class TrackChangesNode(BaseNode):
             derived_column = DerivedDataColumn.create(
                 name=column_name,
                 columns=[effective_timestamp_source_column, tracked_source_column],
-                transform=self.transform_info,
+                transform=transform_info,
                 node_name=self.name,
                 dtype=dtype,
             )
