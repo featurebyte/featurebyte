@@ -61,7 +61,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         return f"Disabling online store for catalog {payload.catalog_id}"
 
     async def execute(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> Any:
-        logger.info(f"Starting task: {self.get_task_description(payload)}")
+        logger.info(f"Starting task: {await self.get_task_description(payload)}")
 
         if payload.online_store_id is not None:
             await self._run_materialize(payload)
