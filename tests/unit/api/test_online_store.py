@@ -143,6 +143,7 @@ async def test_get(saved_mysql_online_store, persistent):
             ("details.host", "mysql_host"),
             ("details.port", 3306),
             ("details.type", "mysql"),
+            ("is_deleted", False),
             ("name", "mysql_online_store"),
             ("updated_at", None),
             ("user_id", None),

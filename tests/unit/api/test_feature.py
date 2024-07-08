@@ -552,6 +552,7 @@ def test_get_feature(saved_feature):
         "description",
         "online_store_table_names",
         "last_updated_by_scheduled_task_at",
+        "is_deleted",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

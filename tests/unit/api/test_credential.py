@@ -211,6 +211,7 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
                 np.nan,
                 str(snowflake_feature_store.id),
             ),
+            ("INSERT", 'insert: "sf_featurestore"', "is_deleted", np.nan, False),
             ("INSERT", 'insert: "sf_featurestore"', "name", np.nan, "sf_featurestore"),
             ("INSERT", 'insert: "sf_featurestore"', "storage_credential", np.nan, None),
             ("INSERT", 'insert: "sf_featurestore"', "updated_at", np.nan, None),
@@ -290,6 +291,7 @@ def test_get_credentials(credential):
         "storage_credential",
         "block_modification_by",
         "description",
+        "is_deleted",
     }
 
 

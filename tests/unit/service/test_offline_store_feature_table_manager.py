@@ -761,6 +761,7 @@ async def test_feature_table_one_feature_deployed(
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [float_feat_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -824,6 +825,7 @@ async def test_feature_table_one_feature_deployed(
         "serving_names": ["transaction_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "deployment_ids": [float_feat_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -906,6 +908,7 @@ async def test_feature_table_two_features_deployed(
         "deployment_ids": sorted(
             [float_feat_deployment_id, float_feat_post_processed_deployment_id]
         ),
+        "is_deleted": False,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -1004,6 +1007,7 @@ async def test_feature_table_undeploy(
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [float_feat_post_processed_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -1142,6 +1146,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [float_feat_deployment_id],
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -1193,6 +1198,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [float_feat_diff_fjs_deployment_id],
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -1259,6 +1265,7 @@ async def test_feature_table_without_entity(
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [feat_without_entity_deployment_id],
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1324,6 +1331,7 @@ async def test_lookup_feature(
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [scd_lookup_deployment_id],
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1394,6 +1402,7 @@ async def test_aggregate_asat_feature(
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
         "deployment_ids": [aggregate_asat_deployment_id],
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -1444,6 +1453,7 @@ async def test_aggregate_asat_feature(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "deployment_ids": [aggregate_asat_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -1662,6 +1672,7 @@ async def test_feature_with_internal_parent_child_relationships(
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "deployment_ids": [feat_with_internal_parent_child_relationships_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -1871,6 +1882,7 @@ async def test_item_view_window_aggregate(
         "primary_entity_ids": [ObjectId("664a3e7d7ac430c2ae37aedf")],
         "serving_names": ["item_type"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "is_deleted": False,
     }
 
     # check precomputed lookup feature table
@@ -1912,6 +1924,7 @@ async def test_item_view_window_aggregate(
         "serving_names": item_entity.serving_names,
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "deployment_ids": [float_feat_deployment_id],
+        "is_deleted": False,
     }
     assert_equal_with_expected_fixture(
         entity_universe["query_template"]["formatted_expression"],
@@ -1976,6 +1989,7 @@ async def test_latest_aggregation_features(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -2024,6 +2038,7 @@ async def test_latest_aggregation_features(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
@@ -2089,6 +2104,7 @@ async def test_count_distinct_window_aggregate_feature(
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
+        "is_deleted": False,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(

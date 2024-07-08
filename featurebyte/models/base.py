@@ -294,6 +294,10 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         description="List of reference information that blocks modifications to the document",
     )
     description: Optional[StrictStr] = Field(default=None, description="Record description")
+    is_deleted: bool = Field(
+        default=False,
+        description="Flag to indicate if the record is deleted.",
+    )
 
     @validator("id", pre=True)
     @classmethod

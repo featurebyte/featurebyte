@@ -88,6 +88,7 @@ def test_feature_list_creation__success(
         "catalog_id": catalog.id,
         "block_modification_by": [],
         "description": None,
+        "is_deleted": False,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -153,6 +154,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "catalog_id": catalog.id,
         "block_modification_by": [],
         "description": None,
+        "is_deleted": False,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -528,6 +530,7 @@ def test_get_feature_list(
                 _get_new_value_from_audit_history("features_entity_lookup_info"),
             ),
             ("features_primary_entity_ids", [[str(cust_id_entity.id)]]),
+            ("is_deleted", False),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("primary_entity_ids", [str(cust_id_entity.id)]),
