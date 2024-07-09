@@ -137,6 +137,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "use_case_ids": [],
             "user_id": str(user_id),
+            "is_deleted": False,
         }
 
     @pytest.mark.parametrize(

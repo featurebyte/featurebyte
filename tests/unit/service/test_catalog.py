@@ -13,7 +13,7 @@ async def test_catalog_get_and_list_raw_query_filter(app_container, catalog):
     Test catalog service get query filter
     """
     catalog_service = app_container.catalog_service
-    await catalog_service.soft_delete(document_id=catalog.id)
+    await catalog_service.soft_delete_document(document_id=catalog.id)
 
     with pytest.raises(DocumentNotFoundError):
         await catalog_service.get_document(document_id=catalog.id)

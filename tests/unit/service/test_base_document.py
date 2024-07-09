@@ -359,8 +359,11 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
-        ({}, {"catalog_id": "catalog_id"}),
-        ({"name": "some_name"}, {"name": "some_name", "catalog_id": "catalog_id"}),
+        ({}, {"catalog_id": "catalog_id", "is_deleted": {"$ne": True}}),
+        (
+            {"name": "some_name"},
+            {"name": "some_name", "catalog_id": "catalog_id", "is_deleted": {"$ne": True}},
+        ),
         (
             {"search": "some_value"},
             {
@@ -369,11 +372,12 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
                     {"name": {"$regex": "some_value", "$options": "i"}},
                 ],
                 "catalog_id": "catalog_id",
+                "is_deleted": {"$ne": True},
             },
         ),
         (
             {"query_filter": {"field": {"$in": ["a", "b"]}}},
-            {"field": {"$in": ["a", "b"]}, "catalog_id": "catalog_id"},
+            {"field": {"$in": ["a", "b"]}, "catalog_id": "catalog_id", "is_deleted": {"$ne": True}},
         ),
         (
             {
@@ -389,6 +393,7 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
                 ],
                 "field": {"$in": ["a", "b"]},
                 "catalog_id": "catalog_id",
+                "is_deleted": {"$ne": True},
             },
         ),
     ],
@@ -774,3 +779,37 @@ async def test_app_container__disable_block_modification_check(app_container, en
 
     # outside the context manager, check that block modification check is enabled
     assert service.block_modification_handler.block_modification is True
+
+
+@pytest.mark.asyncio
+async def test_soft_delete_document(document_service):
+    """Test soft delete document"""
+    documents = [
+        await document_service.create_document(data=Document()),
+        await document_service.create_document(data=Document()),
+        await document_service.create_document(data=Document()),
+    ]
+
+    # test soft_delete_document
+    document_id = documents[0].id
+    await document_service.soft_delete_document(document_id=document_id)
+    with pytest.raises(DocumentNotFoundError):
+        await document_service.get_document(document_id=document_id)
+
+    list_doc_ids = {
+        doc.id async for doc in document_service.list_documents_iterator(query_filter={})
+    }
+    assert list_doc_ids == {documents[1].id, documents[2].id}
+
+    # test soft_delete_documents
+    await document_service.soft_delete_documents(
+        query_filter={"_id": {"$in": [doc.id for doc in documents[1:]]}}
+    )
+    for document in documents[1:]:
+        with pytest.raises(DocumentNotFoundError):
+            await document_service.get_document(document_id=document.id)
+
+    list_doc_ids = {
+        doc.id async for doc in document_service.list_documents_iterator(query_filter={})
+    }
+    assert list_doc_ids == set()

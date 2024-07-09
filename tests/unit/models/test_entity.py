@@ -34,6 +34,7 @@ def test_entity_model():
         "catalog_id",
         "block_modification_by",
         "description",
+        "is_deleted",
     }
     assert isinstance(entity_dict["_id"], ObjectId)
     assert isinstance(entity_dict["user_id"], ObjectId)

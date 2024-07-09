@@ -44,6 +44,14 @@ class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
         unique_constraints: List[UniqueValuesConstraint] = []
 
 
+class DocumentSoftDeleteUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Document soft delete update schema
+    """
+
+    is_deleted: bool
+
+
 class PaginationMixin(FeatureByteBaseModel):
     """
     Add page and page_size

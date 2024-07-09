@@ -61,7 +61,6 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     name: Optional[NameStr]
-    is_deleted: Optional[bool]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

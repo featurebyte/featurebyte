@@ -99,6 +99,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
         "type": "item_table",
         "updated_at": None,
         "user_id": None,
+        "is_deleted": False,
     }
 
 

@@ -40,6 +40,7 @@ def feature_list_model_dict_fixture():
         "supported_serving_entity_ids": [],
         "block_modification_by": [],
         "description": None,
+        "is_deleted": False,
     }
 
 
@@ -64,6 +65,7 @@ def feature_list_namespace_model_dict_fixture():
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
         "description": None,
+        "is_deleted": False,
     }
 
 

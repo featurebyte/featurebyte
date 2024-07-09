@@ -57,13 +57,6 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         default=None,
         description="Online store ID that is associated with the catalog.",
     )
-    is_deleted: bool = Field(
-        default=False,
-        description=(
-            "Flag to indicate if the catalog is deleted. "
-            "If true, the catalog will not be returned in any API calls."
-        ),
-    )
 
     # pydantic validators
     _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(

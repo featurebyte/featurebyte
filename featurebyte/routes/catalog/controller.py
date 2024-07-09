@@ -159,7 +159,7 @@ class CatalogController(
                 f"Catalog cannot be deleted because it still has active deployment: {doc['name']}"
             )
 
-        await self.service.soft_delete(document_id=catalog_id)
+        await self.service.soft_delete_document(document_id=catalog_id)
 
     async def get_info(
         self,

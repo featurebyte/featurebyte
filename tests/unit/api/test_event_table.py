@@ -133,6 +133,7 @@ def event_table_dict_fixture(snowflake_database_table):
         "user_id": None,
         "event_timestamp_timezone_offset": None,
         "event_timestamp_timezone_offset_column": None,
+        "is_deleted": False,
     }
 
 
@@ -895,6 +896,7 @@ def test_default_feature_job_setting_history(saved_event_table):
         "event_timestamp_timezone_offset",
         "event_timestamp_timezone_offset_column",
         "block_modification_by",
+        "is_deleted",
     }
 
 
