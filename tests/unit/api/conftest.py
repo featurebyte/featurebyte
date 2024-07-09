@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte import Catalog, RequestColumn, TargetNamespace, UseCase

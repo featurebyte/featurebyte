@@ -338,8 +338,8 @@ class CredentialModel(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
     def encrypt_credentials(self) -> None:
         """

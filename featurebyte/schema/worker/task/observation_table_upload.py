@@ -29,4 +29,4 @@ class ObservationTableUploadTaskPayload(BaseTaskPayload, ObservationTableUpload)
     observation_set_storage_path: str
     file_format: UploadFileFormat
     uploaded_file_name: str  # the name of the file that was uploaded by the user
-    target_namespace_id: Optional[PydanticObjectId]
+    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)

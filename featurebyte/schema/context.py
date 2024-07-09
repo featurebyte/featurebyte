@@ -21,7 +21,7 @@ class ContextCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     primary_entity_ids: List[PydanticObjectId]
-    description: Optional[StrictStr]
+    description: Optional[StrictStr] = Field(default=None)
 
 
 class ContextList(PaginationMixin):
@@ -37,17 +37,16 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     Context update schema
     """
 
-    graph: Optional[QueryGraph]
-    node_name: Optional[StrictStr]
+    name: Optional[NameStr] = Field(default=None)
+    graph: Optional[QueryGraph] = Field(default=None)
+    node_name: Optional[StrictStr] = Field(default=None)
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
-    observation_table_id_to_remove: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
+    default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id_to_remove: Optional[PydanticObjectId] = Field(default=None)
 
-    remove_default_eda_table: Optional[bool]
-    remove_default_preview_table: Optional[bool]
-
-    name: Optional[NameStr]
+    remove_default_eda_table: Optional[bool] = Field(default=None)
+    remove_default_preview_table: Optional[bool] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod

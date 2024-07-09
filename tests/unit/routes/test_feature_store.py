@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import numpy as np
 import pandas as pd
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from snowflake.connector.errors import ProgrammingError
 

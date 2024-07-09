@@ -180,12 +180,12 @@ class TableInfo(TableBriefInfo, BaseInfo):
     Table info schema
     """
 
-    record_creation_timestamp_column: Optional[str]
+    record_creation_timestamp_column: Optional[str] = Field(default=None)
     table_details: TableDetails
     entities: EntityBriefInfoList
     semantics: List[str]
     column_count: int
-    columns_info: Optional[List[TableColumnInfo]]
+    columns_info: Optional[List[TableColumnInfo]] = Field(default=None)
 
 
 class EventTableInfo(TableInfo):
@@ -195,7 +195,7 @@ class EventTableInfo(TableInfo):
 
     event_timestamp_column: str
     event_id_column: str
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
 class ItemTableInfo(TableInfo):
@@ -223,9 +223,9 @@ class SCDTableInfo(TableInfo):
 
     natural_key_column: str
     effective_timestamp_column: str
-    surrogate_key_column: Optional[str]
-    end_timestamp_column: Optional[str]
-    current_flag_column: Optional[str]
+    surrogate_key_column: Optional[str] = Field(default=None)
+    end_timestamp_column: Optional[str] = Field(default=None)
+    current_flag_column: Optional[str] = Field(default=None)
 
 
 class NamespaceInfo(BaseInfo):
@@ -261,9 +261,9 @@ class FeatureInfo(FeatureNamespaceInfo):
     readiness: ReadinessComparison
     table_feature_job_setting: TableFeatureJobSettingComparison
     table_cleaning_operation: TableCleaningOperationComparison
-    versions_info: Optional[FeatureBriefInfoList]
+    versions_info: Optional[FeatureBriefInfoList] = Field(default=None)
     metadata: Any
-    namespace_description: Optional[str]
+    namespace_description: Optional[str] = Field(default=None)
 
 
 class FeatureListBriefInfo(FeatureByteBaseModel):
@@ -350,9 +350,9 @@ class FeatureListInfo(BaseFeatureListNamespaceInfo):
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
     default_feature_fraction: DefaultFeatureFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList]
+    versions_info: Optional[FeatureListBriefInfoList] = Field(default=None)
     deployed: bool
-    namespace_description: Optional[str]
+    namespace_description: Optional[str] = Field(default=None)
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
@@ -378,8 +378,8 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     Catalog info schema
     """
 
-    feature_store_name: Optional[str]
-    online_store_name: Optional[str]
+    feature_store_name: Optional[str] = Field(default=None)
+    online_store_name: Optional[str] = Field(default=None)
 
 
 class CredentialBriefInfo(BaseBriefInfo):
@@ -387,8 +387,8 @@ class CredentialBriefInfo(BaseBriefInfo):
     Credential brief info schema
     """
 
-    database_credential_type: Optional[DatabaseCredentialType]
-    storage_credential_type: Optional[StorageCredentialType]
+    database_credential_type: Optional[DatabaseCredentialType] = Field(default=None)
+    storage_credential_type: Optional[StorageCredentialType] = Field(default=None)
 
 
 class CredentialInfo(CredentialBriefInfo, BaseInfo):

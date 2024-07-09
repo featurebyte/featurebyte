@@ -74,15 +74,17 @@ class EventTable(TableApiObject):
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        alias="default_feature_job_setting"
+        alias="default_feature_job_setting", default=None
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+    internal_event_id_column: Optional[StrictStr] = Field(
+        alias="event_id_column", default=None
+    )  # DEV-556
     internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
-        alias="event_timestamp_timezone_offset"
+        alias="event_timestamp_timezone_offset", default=None
     )
     internal_event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(
-        alias="event_timestamp_timezone_offset_column"
+        alias="event_timestamp_timezone_offset_column", default=None
     )
 
     # pydantic validators

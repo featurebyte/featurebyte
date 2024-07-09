@@ -297,14 +297,14 @@ class InputNodeFeatureStoreDetails(FeatureByteBaseModel):
     """FeatureStoreDetails for input node"""
 
     type: SourceType
-    details: Optional[DatabaseDetails]
+    details: Optional[DatabaseDetails] = Field(default=None)
 
 
 class TableDetails(FeatureByteBaseModel):
     """Table details"""
 
-    database_name: Optional[NameStr]
-    schema_name: Optional[NameStr]
+    database_name: Optional[NameStr] = Field(default=None)
+    schema_name: Optional[NameStr] = Field(default=None)
     table_name: NameStr
 
 

@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import FeatureModel

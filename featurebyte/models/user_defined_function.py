@@ -134,8 +134,8 @@ class FunctionParameter(FeatureByteBaseModel):
     # instance variables
     name: str
     dtype: DBVarType
-    default_value: Optional[Union[Scalar, Timestamp]]
-    test_value: Optional[Union[Scalar, Timestamp]]
+    default_value: Optional[Union[Scalar, Timestamp]] = Field(default=None)
+    test_value: Optional[Union[Scalar, Timestamp]] = Field(default=None)
 
     @property
     def has_default_value(self) -> bool:
@@ -220,7 +220,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     signature: str = Field(default_factory=str)
-    catalog_id: Optional[PydanticObjectId]
+    catalog_id: Optional[PydanticObjectId] = Field(default=None)
     feature_store_id: PydanticObjectId
 
     @validator("name", "sql_function_name")

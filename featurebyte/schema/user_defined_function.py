@@ -45,7 +45,7 @@ class UserDefinedFunctionServiceCreate(UserDefinedFunctionCreateBase):
     UserDefinedFunction service creation schema
     """
 
-    catalog_id: Optional[PydanticObjectId]
+    catalog_id: Optional[PydanticObjectId] = Field(default=None)
     feature_store_id: PydanticObjectId
 
 
@@ -54,9 +54,9 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     UserDefinedFunction update schema
     """
 
-    sql_function_name: Optional[NameStr]
-    function_parameters: Optional[List[FunctionParameter]]
-    output_dtype: Optional[DBVarType]
+    sql_function_name: Optional[NameStr] = Field(default=None)
+    function_parameters: Optional[List[FunctionParameter]] = Field(default=None)
+    output_dtype: Optional[DBVarType] = Field(default=None)
 
     # pydanctic validator
     _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(

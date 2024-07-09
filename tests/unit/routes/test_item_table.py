@@ -5,7 +5,7 @@ Tests for ItemTable routes
 from http import HTTPStatus
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_table import ItemTableModel

@@ -6,7 +6,7 @@ from http import HTTPStatus
 from unittest import mock
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models import EntityModel
 from featurebyte.models.entity import ParentEntity

@@ -74,16 +74,18 @@ class SCDTable(TableApiObject):
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        alias="default_feature_job_setting"
+        alias="default_feature_job_setting", default=None
     )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
+    internal_surrogate_key_column: Optional[StrictStr] = Field(
+        alias="surrogate_key_column", default=None
+    )
     internal_end_timestamp_column: Optional[StrictStr] = Field(
-        default=None, alias="end_timestamp_column"
+        alias="end_timestamp_column", default=None
     )
     internal_current_flag_column: Optional[StrictStr] = Field(
-        default=None, alias="current_flag_column"
+        alias="current_flag_column", default=None
     )
 
     # pydantic validators

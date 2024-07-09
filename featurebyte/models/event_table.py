@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from datetime import datetime
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
@@ -33,7 +33,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    setting: Optional[FeatureJobSetting]
+    setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
 class EventTableModel(EventTableData, TableModel):
@@ -62,7 +62,7 @@ class EventTableModel(EventTableData, TableModel):
         Datetime when the EventTable object was last updated
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
     _table_data_class: ClassVar[Type[EventTableData]] = EventTableData
 
     # pydantic validators

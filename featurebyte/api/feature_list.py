@@ -22,7 +22,7 @@ from typing import (
 from http import HTTPStatus
 
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 

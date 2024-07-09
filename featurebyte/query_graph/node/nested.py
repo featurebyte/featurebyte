@@ -342,7 +342,7 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
 class ItemViewMetadata(ViewMetadata):
     """Item view metadata"""
 
-    event_suffix: Optional[str]
+    event_suffix: Optional[str] = Field(default=None)
     event_drop_column_names: List[str]
     event_column_cleaning_operations: List[ColumnCleaningOperation]
     event_join_column_names: List[str]
@@ -465,8 +465,8 @@ class ChangeViewMetadata(ViewMetadata):
     """Change view metadata"""
 
     track_changes_column: str
-    default_feature_job_setting: Optional[Dict[str, Any]]
-    prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+    default_feature_job_setting: Optional[Dict[str, Any]] = Field(default=None)
+    prefixes: Optional[Tuple[Optional[str], Optional[str]]] = Field(default=None)
 
 
 class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):

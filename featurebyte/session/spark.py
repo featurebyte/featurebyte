@@ -67,8 +67,8 @@ class SparkSession(BaseSparkSession):
     use_http_transport: bool
     use_ssl: bool
     source_type: SourceType = Field(SourceType.SPARK, const=True)
-    database_credential: Optional[SparkDatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[SparkDatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
     def _initialize_connection(self) -> None:
         auth = None

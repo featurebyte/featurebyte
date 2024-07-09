@@ -32,10 +32,10 @@ class CredentialCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
 
 class CredentialRead(FeatureByteBaseDocumentModel):
@@ -44,8 +44,8 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
     @validator("database_credential", "storage_credential")
     @classmethod
@@ -87,8 +87,8 @@ class CredentialUpdate(FeatureByteBaseModel):
     Schema for credential update
     """
 
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
 
 class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -96,8 +96,8 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
     Credential service update schema
     """
 
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
     def encrypt(self) -> None:
         """

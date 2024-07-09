@@ -45,7 +45,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     ]
 
     # pydantic instance variables
-    internal_window: Optional[str] = Field(alias="window")
+    internal_window: Optional[str] = Field(alias="window", default=None)
     internal_dtype: DBVarType = Field(alias="dtype")
 
     @classmethod

@@ -4,6 +4,8 @@ FeatureListNamespace API payload scheme
 
 from typing import List, Optional
 
+from pydantic import Field
+
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
@@ -35,7 +37,7 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     FeatureListNamespace update schema
     """
 
-    status: Optional[FeatureListStatus]
+    status: Optional[FeatureListStatus] = Field(default=None)
 
 
 class FeatureListNamespaceServiceUpdate(
@@ -45,6 +47,6 @@ class FeatureListNamespaceServiceUpdate(
     FeatureListNamespace service update schema
     """
 
-    feature_list_ids: Optional[List[PydanticObjectId]]
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]]
-    default_feature_list_id: Optional[PydanticObjectId]
+    feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    default_feature_list_id: Optional[PydanticObjectId] = Field(default=None)

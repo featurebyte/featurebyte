@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
@@ -214,4 +214,4 @@ class ParentServingPreparation(FeatureByteBaseModel):
 
     join_steps: List[EntityLookupStep]
     feature_store_details: FeatureStoreDetails
-    entity_relationships_context: Optional[EntityRelationshipsContext]
+    entity_relationships_context: Optional[EntityRelationshipsContext] = Field(default=None)

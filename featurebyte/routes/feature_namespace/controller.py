@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import copy
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector

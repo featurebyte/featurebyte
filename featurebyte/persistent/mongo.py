@@ -13,7 +13,7 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 
 import pymongo
-from bson.objectid import ObjectId
+from bson import ObjectId
 from motor.core import AgnosticCursor
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult

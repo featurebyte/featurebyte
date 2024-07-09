@@ -83,7 +83,7 @@ class BaseFunctionParameterInput(FeatureByteBaseModel):
 class ValueFunctionParameterInput(BaseFunctionParameterInput):
     """ValueFunctionParameterInput class"""
 
-    value: Optional[ValueParameterType]
+    value: Optional[ValueParameterType] = Field(default=None)
     input_form: Literal[FunctionParameterInputForm.VALUE] = Field(
         FunctionParameterInputForm.VALUE, const=True
     )
@@ -105,7 +105,7 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
 class ColumnFunctionParameterInput(BaseFunctionParameterInput):
     """ColumnFunctionParameterInput class"""
 
-    column_name: Optional[str]
+    column_name: Optional[str] = Field(default=None)
     input_form: Literal[FunctionParameterInputForm.COLUMN] = Field(
         FunctionParameterInputForm.COLUMN, const=True
     )

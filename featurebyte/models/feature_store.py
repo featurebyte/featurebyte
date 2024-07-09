@@ -143,7 +143,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     """
 
     status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT, allow_mutation=False)
-    record_creation_timestamp_column: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property

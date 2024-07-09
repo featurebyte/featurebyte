@@ -10,7 +10,7 @@ import operator
 from http import HTTPStatus
 
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame

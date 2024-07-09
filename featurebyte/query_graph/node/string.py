@@ -69,7 +69,7 @@ class TrimNode(BaseStringAccessorOpNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        character: Optional[str]
+        character: Optional[str] = Field(default=None)
         side: Side
 
     type: Literal[NodeType.TRIM] = Field(NodeType.TRIM, const=True)
@@ -272,7 +272,7 @@ class SubStringNode(BaseStringAccessorOpNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        start: Optional[int]
+        start: Optional[int] = Field(default=None)
         length: Optional[int] = Field(default=1, ge=1)
 
     type: Literal[NodeType.SUBSTRING] = Field(NodeType.SUBSTRING, const=True)

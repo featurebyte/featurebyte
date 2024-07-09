@@ -32,7 +32,7 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     context_id: PydanticObjectId
-    target_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = Field(default=None)
     target_namespace_id: PydanticObjectId
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)

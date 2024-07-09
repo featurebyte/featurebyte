@@ -405,7 +405,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         """Parameters"""
 
         name: OutColumnStr
-        value: Optional[Any]
+        value: Optional[Any] = Field(default=None)
 
     type: Literal[NodeType.ASSIGN] = Field(NodeType.ASSIGN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
@@ -587,8 +587,8 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     """
 
     name: OutColumnStr
-    window: Optional[str]
-    offset: Optional[str]
+    window: Optional[str] = Field(default=None)
+    offset: Optional[str] = Field(default=None)
     timestamp_col: InColumnStr
 
 
@@ -691,14 +691,14 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     timestamp: InColumnStr
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
-    offset: Optional[str]
+    offset: Optional[str] = Field(default=None)
 
 
 class GroupByNodeParameters(BaseWindowAggregateParameters):
     """Parameters"""
 
-    tile_id: Optional[str]
-    aggregation_id: Optional[str]
+    tile_id: Optional[str] = Field(default=None)
+    aggregation_id: Optional[str] = Field(default=None)
     tile_id_version: int = Field(default=1)
 
     @root_validator(pre=True)
@@ -985,8 +985,8 @@ class SCDBaseParameters(FeatureByteBaseModel):
 
     effective_timestamp_column: InColumnStr
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
-    current_flag_column: Optional[InColumnStr]
-    end_timestamp_column: Optional[InColumnStr]
+    current_flag_column: Optional[InColumnStr] = Field(default=None)
+    end_timestamp_column: Optional[InColumnStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod
@@ -1006,7 +1006,7 @@ class SCDJoinParameters(SCDBaseParameters):
 class SCDLookupParameters(SCDBaseParameters):
     """Parameters for SCD lookup"""
 
-    offset: Optional[str]
+    offset: Optional[str] = Field(default=None)
 
 
 class EventLookupParameters(FeatureByteBaseModel):
@@ -1023,8 +1023,8 @@ class LookupParameters(FeatureByteBaseModel):
     entity_column: InColumnStr
     serving_name: str
     entity_id: PydanticObjectId
-    scd_parameters: Optional[SCDLookupParameters]
-    event_parameters: Optional[EventLookupParameters]
+    scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
+    event_parameters: Optional[EventLookupParameters] = Field(default=None)
 
     @root_validator(skip_on_failure=True)
     @classmethod
@@ -1176,7 +1176,7 @@ class LookupNode(BaseLookupNode):
 class LookupTargetParameters(LookupParameters):
     """LookupTargetParameters"""
 
-    offset: Optional[str]
+    offset: Optional[str] = Field(default=None)
 
 
 class LookupTargetNode(BaseLookupNode):
@@ -1234,7 +1234,7 @@ class JoinEventTableAttributesMetadata(FeatureByteBaseModel):
 
     type: str = Field("join_event_table_attributes", const=True)
     columns: List[str]
-    event_suffix: Optional[str]
+    event_suffix: Optional[str] = Field(default=None)
 
 
 class JoinNodeParameters(FeatureByteBaseModel):
@@ -1247,7 +1247,7 @@ class JoinNodeParameters(FeatureByteBaseModel):
     right_input_columns: List[InColumnStr]
     right_output_columns: List[OutColumnStr]
     join_type: Literal["left", "inner"]
-    scd_parameters: Optional[SCDJoinParameters]
+    scd_parameters: Optional[SCDJoinParameters] = Field(default=None)
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
@@ -1566,7 +1566,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         """
 
         view_entity_column: InColumnStr
-        view_point_in_time_column: Optional[InColumnStr]
+        view_point_in_time_column: Optional[InColumnStr] = Field(default=None)
         feature_entity_column: InColumnStr
         name: OutColumnStr
 
@@ -1789,9 +1789,9 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     """Parameters for AggregateAsAtNode"""
 
     name: OutColumnStr
-    offset: Optional[str]
+    offset: Optional[str] = Field(default=None)
     # Note: This is kept for backward compatibility and not used by SQL generation
-    backward: Optional[bool]
+    backward: Optional[bool] = Field(default=None)
 
 
 class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):

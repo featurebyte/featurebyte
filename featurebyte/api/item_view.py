@@ -75,10 +75,11 @@ class ItemView(View, GroupByMixin, RawMixin):
         "While it's possible to override the setting during feature declaration, "
         "using the Default Feature Job Setting simplifies the process of setting "
         "up the Feature Job Setting for each feature.",
+        default=None,
     )
     event_view: EventView = Field(allow_mutation=False)
     timestamp_column_name: str = Field(allow_mutation=False)
-    timestamp_timezone_offset_column_name: Optional[str] = Field(allow_mutation=False)
+    timestamp_timezone_offset_column_name: Optional[str] = Field(allow_mutation=False, default=None)
 
     def join_event_table_attributes(
         self,

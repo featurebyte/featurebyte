@@ -9,7 +9,7 @@ from typing import Any, ClassVar, Optional
 import json
 from enum import IntEnum
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
@@ -51,7 +51,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
     is_scheduled_task: Optional[bool] = Field(default=False)
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = Field(default=None)
     catalog_id: PydanticObjectId
 
     class Config:

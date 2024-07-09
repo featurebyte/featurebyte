@@ -18,7 +18,7 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.api.utils import parquet_from_arrow_stream
 from featurebyte.common.utils import (

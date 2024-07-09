@@ -7,7 +7,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity

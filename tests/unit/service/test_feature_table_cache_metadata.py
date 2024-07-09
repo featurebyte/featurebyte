@@ -32,7 +32,7 @@ def observation_table_fixture(event_table, user):
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        request_input=request_input,
+        request_input=request_input.dict(by_alias=True),
         columns_info=[
             {"name": "cust_id", "dtype": "INT"},
             {"name": "b", "dtype": "INT"},

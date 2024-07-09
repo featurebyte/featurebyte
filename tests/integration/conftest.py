@@ -28,7 +28,7 @@ import pytest
 import pytest_asyncio
 import redis
 import yaml
-from bson.objectid import ObjectId
+from bson import ObjectId
 from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient

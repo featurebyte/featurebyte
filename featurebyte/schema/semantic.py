@@ -4,7 +4,7 @@ Semantic API payload schema
 
 from typing import List, Optional
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId

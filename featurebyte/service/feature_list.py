@@ -9,8 +9,7 @@ from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional
 from dataclasses import dataclass
 from pathlib import Path
 
-from bson import json_util
-from bson.objectid import ObjectId
+from bson import ObjectId, json_util
 from redis import Redis
 from redis.lock import Lock
 

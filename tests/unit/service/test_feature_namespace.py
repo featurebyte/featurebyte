@@ -3,7 +3,7 @@ Test FeatureNamespaceService
 """
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.schema.feature import FeatureServiceCreate
 

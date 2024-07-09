@@ -61,11 +61,11 @@ class Task(FeatureByteBaseModel):
 
     id: TaskId = Field(allow_mutation=False)
     status: TaskStatus = Field(allow_mutation=False)
-    output_path: Optional[str]
+    output_path: Optional[str] = Field(default=None)
     payload: Dict[str, Any]
-    traceback: Optional[str]
-    start_time: Optional[datetime.datetime]
-    date_done: Optional[datetime.datetime]
+    traceback: Optional[str] = Field(default=None)
+    start_time: Optional[datetime.datetime] = Field(allow_mutation=False)
+    date_done: Optional[datetime.datetime] = Field(allow_mutation=False)
     progress: Optional[Dict[str, Any]] = Field(default=None)
 
 
@@ -82,4 +82,4 @@ class TaskUpdate(FeatureByteBaseModel):
     Update Task
     """
 
-    revoke: Optional[bool]
+    revoke: Optional[bool] = Field(default=None)

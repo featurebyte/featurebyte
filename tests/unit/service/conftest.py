@@ -14,7 +14,7 @@ from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType

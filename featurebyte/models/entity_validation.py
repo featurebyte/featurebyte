@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import validator
+from pydantic import Field, validator
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
@@ -28,7 +28,7 @@ class EntityInfo(FeatureByteBaseModel):
 
     required_entities: List[EntityModel]
     provided_entities: List[EntityModel]
-    serving_names_mapping: Optional[Dict[str, str]]
+    serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
 
     @validator("required_entities", "provided_entities")
     @classmethod

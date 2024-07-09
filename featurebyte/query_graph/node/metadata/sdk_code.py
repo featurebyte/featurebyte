@@ -126,8 +126,8 @@ class ObjectClass(FeatureByteBaseModel):
     - import objects
     """
 
-    module_path: Optional[str]
-    class_name: Optional[str]
+    module_path: Optional[str] = Field(default=None)
+    class_name: Optional[str] = Field(default=None)
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
     callable_name: Optional[str] = Field(default=None)

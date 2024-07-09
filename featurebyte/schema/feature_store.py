@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, root_validator
 
 from featurebyte.enum import SourceType
@@ -28,8 +28,8 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     name: NameStr
     type: SourceType
     details: DatabaseDetails
-    database_credential: Optional[DatabaseCredential]
-    storage_credential: Optional[StorageCredential]
+    database_credential: Optional[DatabaseCredential] = Field(default=None)
+    storage_credential: Optional[StorageCredential] = Field(default=None)
 
 
 class FeatureStoreList(PaginationMixin):

@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+from bson import ObjectId
 from bson.errors import InvalidId
-from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr, root_validator, validator
 from pydantic.errors import DictError, PydanticTypeError
 from pymongo.operations import IndexModel
@@ -233,7 +233,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
 
     fields: List[str]
     conflict_fields_signature: Dict[str, Any]
-    resolution_signature: Optional[UniqueConstraintResolutionSignature]
+    resolution_signature: Optional[UniqueConstraintResolutionSignature] = Field(default=None)
     extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
 
 
@@ -281,7 +281,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     user_id: Optional[PydanticObjectId] = Field(
         default=None, allow_mutation=False, description="User identifier"
     )
-    name: Optional[NameStr] = Field(description="Record name")
+    name: Optional[NameStr] = Field(default=None, description="Record name")
     created_at: Optional[datetime] = Field(
         default=None, allow_mutation=False, description="Record creation time"
     )

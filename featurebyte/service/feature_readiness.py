@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pymongo.errors import OperationFailure
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 

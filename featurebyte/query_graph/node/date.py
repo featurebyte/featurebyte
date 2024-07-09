@@ -42,7 +42,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         """Parameters"""
 
         property: DatetimeSupportedPropertyType
-        timezone_offset: Optional[str]
+        timezone_offset: Optional[str] = Field(default=None)
 
     type: Literal[NodeType.DT_EXTRACT] = Field(NodeType.DT_EXTRACT, const=True)
     parameters: Parameters
@@ -378,7 +378,7 @@ class DateAddNode(BaseSeriesOutputNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        value: Optional[int]
+        value: Optional[int] = Field(default=None)
 
     type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
     parameters: Parameters

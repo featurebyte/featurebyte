@@ -23,10 +23,10 @@ class SCDTableCreate(TableCreate):
 
     type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
     natural_key_column: StrictStr
-    surrogate_key_column: Optional[StrictStr]
+    surrogate_key_column: Optional[StrictStr] = Field(default=None)
     effective_timestamp_column: StrictStr
-    end_timestamp_column: Optional[StrictStr]
-    current_flag_column: Optional[StrictStr]
+    end_timestamp_column: Optional[StrictStr] = Field(default=None)
+    current_flag_column: Optional[StrictStr] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         default=FeatureJobSetting(blind_spot="0h", offset="0h", period="24h")
     )
@@ -56,9 +56,9 @@ class SCDDataUpdateMixin(FeatureByteBaseModel):
     SCDTable specific update schema
     """
 
-    end_timestamp_column: Optional[StrictStr]
-    current_flag_column: Optional[StrictStr]
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    end_timestamp_column: Optional[StrictStr] = Field(default=None)
+    current_flag_column: Optional[StrictStr] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
 class SCDTableUpdate(SCDDataUpdateMixin, TableUpdate):

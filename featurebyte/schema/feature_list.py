@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -177,8 +177,8 @@ class FeatureListUpdate(FeatureByteBaseModel):
     FeatureList update schema
     """
 
-    make_production_ready: Optional[bool]
-    ignore_guardrails: Optional[bool]
+    make_production_ready: Optional[bool] = Field(default=None)
+    ignore_guardrails: Optional[bool] = Field(default=None)
 
 
 class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdate):
@@ -186,9 +186,9 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     FeatureList service update schema
     """
 
-    deployed: Optional[bool]
-    online_enabled_feature_ids: Optional[List[PydanticObjectId]]
-    readiness_distribution: Optional[FeatureReadinessDistribution]
+    deployed: Optional[bool] = Field(default=None)
+    online_enabled_feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    readiness_distribution: Optional[FeatureReadinessDistribution] = Field(default=None)
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):
@@ -213,8 +213,8 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     FeatureList get historical features schema
     """
 
-    feature_clusters: Optional[List[FeatureCluster]]
-    feature_list_id: Optional[PydanticObjectId]
+    feature_clusters: Optional[List[FeatureCluster]] = Field(default=None)
+    feature_list_id: Optional[PydanticObjectId] = Field(default=None)
 
     @root_validator
     @classmethod
@@ -235,7 +235,7 @@ class PreviewObservationSet(FeatureByteBaseModel):
     point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
         min_items=1, max_items=FEATURE_PREVIEW_ROW_LIMIT
     )
-    observation_table_id: Optional[PydanticObjectId]
+    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     @root_validator
     @classmethod

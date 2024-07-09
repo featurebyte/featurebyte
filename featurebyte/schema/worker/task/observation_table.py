@@ -26,4 +26,4 @@ class ObservationTableTaskPayload(BaseTaskPayload, ObservationTableCreate):
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
-    target_namespace_id: Optional[PydanticObjectId]
+    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)

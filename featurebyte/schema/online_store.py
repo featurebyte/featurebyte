@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -29,8 +29,8 @@ class OnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
     Online Store Creation Schema
     """
 
-    name: Optional[StrictStr]
-    details: Optional[OnlineStoreDetails]
+    name: Optional[StrictStr] = Field(default=None)
+    details: Optional[OnlineStoreDetails] = Field(default=None)
 
 
 class OnlineStoreRead(FeatureByteBaseModel):
@@ -39,11 +39,11 @@ class OnlineStoreRead(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId = Field(alias="_id")
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = Field(default=None)
     name: StrictStr
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
-    description: Optional[StrictStr]
+    created_at: Optional[datetime] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
+    description: Optional[StrictStr] = Field(default=None)
     details: OnlineStoreDetails
 
     @validator("details")
