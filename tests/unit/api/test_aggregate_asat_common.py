@@ -69,7 +69,13 @@ def test_aggregate_asat__latest_not_supported(snowflake_scd_view_with_entity, is
             ["col_boolean"],
             dict(value_column="col_float", method="latest", name="asat_feature"),
         )
-    assert str(exc.value) == "latest aggregation method is not supported for aggregated_asat"
+    if is_forward:
+        assert (
+            str(exc.value)
+            == "latest aggregation method is not supported for forward_aggregate_asat"
+        )
+    else:
+        assert str(exc.value) == "latest aggregation method is not supported for aggregate_asat"
 
 
 @pytest.mark.parametrize("is_forward", [False, True])

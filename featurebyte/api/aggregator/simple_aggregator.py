@@ -33,6 +33,10 @@ class SimpleAggregator(BaseAggregator):
     def aggregation_method_name(self) -> str:
         return "aggregate"
 
+    @property
+    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+        return [AggFunc.LATEST]
+
     def aggregate(
         self,
         value_column: Optional[str] = None,

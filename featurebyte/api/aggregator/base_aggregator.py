@@ -68,6 +68,17 @@ class BaseAggregator(ABC):
         str
         """
 
+    @property
+    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+        """
+        Aggregators can override this to indicate aggregation methods that are not supported
+
+        Returns
+        -------
+        Optional[List[AggFunc]]
+        """
+        return None
+
     def _validate_method_and_value_column(
         self, method: Optional[str], value_column: Optional[str]
     ) -> None:
@@ -88,6 +99,12 @@ class BaseAggregator(ABC):
                 raise ValueError("value_column is required")
             if value_column not in self.view.columns:
                 raise KeyError(f'Column "{value_column}" not found in {self.view}!')
+
+        unsupported_methods = self.not_supported_aggregation_methods
+        if unsupported_methods is not None and method in unsupported_methods:
+            raise ValueError(
+                f"{method} aggregation method is not supported for {self.aggregation_method_name}"
+            )
 
         validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 
