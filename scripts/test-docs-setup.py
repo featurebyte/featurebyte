@@ -222,7 +222,7 @@ def setup() -> None:
         "GroceryCustomerGuid"
     ).forward_aggregate(
         value_column="Timestamp",
-        method="latest",
+        method="max",
         window="7d",
         target_name="target_latest_invoice_timestamp",
     )
