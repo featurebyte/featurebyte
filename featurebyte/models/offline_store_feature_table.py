@@ -115,6 +115,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
     deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
+    aggregation_ids: List[str] = Field(default_factory=list)
 
     @root_validator
     @classmethod
@@ -346,6 +347,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                 "precomputed_lookup_feature_table_info.source_feature_table_id"
             ),
             pymongo.operations.IndexModel("deployment_ids"),
+            pymongo.operations.IndexModel("aggregation_ids"),
         ]
         auditable = False
 
@@ -361,6 +363,7 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel
+    aggregation_ids: List[str]
 
 
 class OfflineLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):

@@ -198,6 +198,10 @@ class OfflineStoreFeatureTableConstructionService:
                 await self.storage.put(Path(file_path), Path(path))
             raise
 
+        aggregation_ids = set()
+        for feature_model in features:
+            aggregation_ids.update(feature_model.aggregation_ids)
+
         return OfflineStoreFeatureTableModel(
             name=feature_table_name,
             feature_ids=[feature.id for feature in features],
@@ -210,6 +214,7 @@ class OfflineStoreFeatureTableConstructionService:
             entity_universe=entity_universe,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting.normalize() if feature_job_setting else None,
+            aggregation_ids=list(aggregation_ids),
         )
 
     async def get_entity_universe_model(
