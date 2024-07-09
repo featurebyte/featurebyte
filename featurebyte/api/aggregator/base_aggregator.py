@@ -102,7 +102,9 @@ class BaseAggregator(ABC):
 
         unsupported_methods = self.not_supported_aggregation_methods
         if unsupported_methods is not None and method in unsupported_methods:
-            raise ValueError(f"{method} is not supported for {self.aggregation_method_name}")
+            raise ValueError(
+                f"{method} aggregation method is not supported for {self.aggregation_method_name}"
+            )
 
         validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 

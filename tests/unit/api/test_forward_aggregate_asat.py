@@ -129,4 +129,7 @@ def test_forward_aggregate_as_at_latest(snowflake_scd_view_with_entity):
             target_name="asat_feature",
             offset="7d",
         )
-    assert str(exc_info.value) == "latest is not supported for forward_aggregate_asat"
+    assert (
+        str(exc_info.value)
+        == "latest aggregation method is not supported for forward_aggregate_asat"
+    )
