@@ -33,6 +33,10 @@ class ForwardAggregator(BaseAggregator):
     def aggregation_method_name(self) -> str:
         return "forward_aggregate"
 
+    @property
+    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+        return [AggFunc.LATEST]
+
     def forward_aggregate(
         self,
         value_column: str,

@@ -2,6 +2,8 @@
 Test forward_aggregate_asat
 """
 
+import pytest
+
 from featurebyte.api.target import Target
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -114,3 +116,17 @@ def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id
         },
         "type": "forward_aggregate_as_at",
     }
+
+
+def test_forward_aggregate_as_at_latest(snowflake_scd_view_with_entity):
+    """
+    Test unsupported aggregation method
+    """
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_scd_view_with_entity.groupby("col_boolean").forward_aggregate_asat(
+            value_column="col_float",
+            method="latest",
+            target_name="asat_feature",
+            offset="7d",
+        )
+    assert str(exc_info.value) == "latest is not supported for forward_aggregate_asat"

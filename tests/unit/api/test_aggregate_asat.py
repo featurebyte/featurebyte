@@ -161,3 +161,17 @@ def test_aggregate_asat_with_category(
             "window": None,
         }
     }
+
+
+def test_aggregate_as_at_latest(snowflake_scd_view_with_entity):
+    """
+    Test unsupported aggregation method
+    """
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_scd_view_with_entity.groupby("col_boolean").aggregate_asat(
+            value_column="col_float",
+            method="latest",
+            feature_name="asat_feature",
+            offset="7d",
+        )
+    assert str(exc_info.value) == "latest is not supported for aggregate_asat"
