@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.4 (2024-07-09)
+
+### 💡 Enhancements
+
++ `service` Validate aggregation method is supported in more aggregation methods
++ `service` Added support for count_distinct aggregation method
+
+### 🐛 Bug Fixes
+
++ `numpy` Explicitly Set lower bound for numpy version to <2.0.0
+
 ## v1.1.3 (2024-07-05)
 
 ### 💡 Enhancements
