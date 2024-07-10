@@ -720,6 +720,7 @@ async def test_feature_table_one_feature_deployed(
     feature_table_id = feature_table_dict.pop("_id")
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "block_modification_by": [],
         "catalog_id": catalog_id,
         "description": None,
@@ -793,6 +794,7 @@ async def test_feature_table_one_feature_deployed(
     )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": catalog_id,
         "description": None,
@@ -865,6 +867,7 @@ async def test_feature_table_two_features_deployed(
     )
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -966,6 +969,7 @@ async def test_feature_table_undeploy(
     )
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1105,6 +1109,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1157,6 +1162,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_420f46a4414d6fc926c85a1349835967a96bf4c2"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1235,6 +1241,7 @@ async def test_feature_table_without_entity(
     )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["count_3178e5d8142ed182c5db45462cb780d18205bd64"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1304,6 +1311,7 @@ async def test_lookup_feature(
         update_fixtures,
     )
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1375,6 +1383,7 @@ async def test_aggregate_asat_feature(
     )
 
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1421,6 +1430,7 @@ async def test_aggregate_asat_feature(
     )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
@@ -1645,6 +1655,7 @@ async def test_feature_with_internal_parent_child_relationships(
 
     _ = feature_table_dict.pop("entity_universe")  # covered in service/test_feature_materialize.py
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": catalog_id,
         "description": None,
@@ -1841,6 +1852,7 @@ async def test_item_view_window_aggregate(
     feature_table_id = feature_table_dict.pop("_id")
     feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
+        "aggregation_ids": ["sum_2e4057b32df81d547bde013cd755a1189af7e615"],
         "base_name": "item_type_30m",
         "block_modification_by": [],
         "catalog_id": catalog_id,
@@ -1892,6 +1904,7 @@ async def test_item_view_window_aggregate(
     )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "block_modification_by": [],
         "catalog_id": catalog_id,
         "description": None,
@@ -1962,6 +1975,7 @@ async def test_latest_aggregation_features(
         update_fixtures,
     )
     assert feature_table_dict == {
+        "aggregation_ids": ["latest_d9b2a8ebb02e7a6916ae36e9cc223759433c01e2"],
         "base_name": "cust_id_30m",
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -2011,6 +2025,7 @@ async def test_latest_aggregation_features(
         update_fixtures,
     )
     assert feature_table_dict == {
+        "aggregation_ids": ["latest_d9b2a8ebb02e7a6916ae36e9cc223759433c01e2"],
         "base_name": "cust_id_30m",
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -2077,6 +2092,7 @@ async def test_count_distinct_window_aggregate_feature(
         update_fixtures,
     )
     assert feature_table_dict == {
+        "aggregation_ids": [],
         "base_name": "cust_id_30m",
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),

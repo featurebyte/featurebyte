@@ -50,6 +50,7 @@ def offline_store_feature_table_dict_fixture(test_dir, service, user_id):
         "primary_entity_ids": [],
         "serving_names": ["cust_id"],
         "user_id": user_id,
+        "aggregation_ids": ["agg_id_1"],
     }
 
 
@@ -168,6 +169,7 @@ async def test_update_document(
             output_column_names=["col1", "col2"],
             output_dtypes=["FLOAT", "FLOAT"],
             entity_universe=offline_store_feature_table.entity_universe,
+            aggregation_ids=[],
         ),
         populate_remote_attributes=True,
     )
@@ -204,6 +206,7 @@ async def test_update_document__with_failure(
         output_column_names=["col1", "col2"],
         output_dtypes=["FLOAT", "FLOAT"],
         entity_universe=offline_store_feature_table.entity_universe,
+        aggregation_ids=[],
     )
 
     assert os.path.exists(cluster_path)
@@ -226,3 +229,20 @@ async def test_update_document__with_failure(
     assert updated_doc.feature_cluster == feature_cluster_two_features
     cluster_path = os.path.join(service.storage.base_path, updated_doc.feature_cluster_path)
     assert os.path.exists(cluster_path)
+
+
+@pytest.mark.asyncio
+async def test_list_feature_tables_for_aggregation_id(service, offline_store_feature_table):
+    """
+    Test listing documents given an aggregation_id
+    """
+    docs = []
+    async for doc in service.list_feature_tables_for_aggregation_id("agg_id_1"):
+        docs.append(doc)
+    assert len(docs) == 1
+    assert docs[0].id == offline_store_feature_table.id
+
+    docs = []
+    async for doc in service.list_feature_tables_for_aggregation_id("agg_id_unknown"):
+        docs.append(doc)
+    assert len(docs) == 0
