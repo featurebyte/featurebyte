@@ -197,6 +197,8 @@ async def migrate_method_generator(
     persistent: Persistent,
     get_credential: Any,
     celery: Celery,
+    storage: Storage,
+    temp_storage: Storage,
     schema_metadata: SchemaMetadataModel,
     include_data_warehouse_migrations: bool,
 ) -> AsyncGenerator[tuple[BaseMigrationServiceMixin, Callable[..., Any]], None]:
@@ -213,6 +215,10 @@ async def migrate_method_generator(
         Callback to retrieve credential
     celery: Celery
         Celery object
+    storage: Storage
+        Storage object
+    temp_storage: Storage
+        Storage object
     schema_metadata: SchemaMetadataModel
         Schema metadata
     include_data_warehouse_migrations: bool
@@ -228,6 +234,8 @@ async def migrate_method_generator(
     instance_map = {
         "user": user,
         "persistent": persistent,
+        "storage": storage,
+        "temp_storage": temp_storage,
         "catalog_id": DEFAULT_CATALOG_ID,
     }
     app_container = LazyAppContainer(
@@ -298,6 +306,7 @@ async def run_migration(
     get_credential: Any,
     celery: Celery,
     storage: Storage,
+    temp_storage: Storage,
     redis: Redis[Any],
     include_data_warehouse_migrations: bool = True,
 ) -> None:
@@ -315,6 +324,8 @@ async def run_migration(
     celery: Celery
         Celery object
     storage: Storage
+        Storage object
+    temp_storage: Storage
         Storage object
     redis: Redis[Any]
         Redis object
@@ -337,6 +348,8 @@ async def run_migration(
         persistent=persistent,
         get_credential=get_credential,
         celery=celery,
+        storage=storage,
+        temp_storage=temp_storage,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=include_data_warehouse_migrations,
     )

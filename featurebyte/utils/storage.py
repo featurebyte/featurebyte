@@ -29,6 +29,7 @@ S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "featurebyte")
 AZURE_STORAGE_ACCOUNT_NAME = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
 AZURE_STORAGE_ACCOUNT_KEY = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
 AZURE_STORAGE_CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME", "featurebyte")
+WEBDAV_BASE_URL = os.environ.get("WEBDAV_BASE_URL", "http://failed")
 
 
 @asynccontextmanager
@@ -99,11 +100,6 @@ def get_storage() -> Storage:
         return S3Storage(get_client=get_client, bucket_name=S3_BUCKET_NAME)
     if STORAGE_TYPE == "azure":
         return AzureBlobStorage(get_client=get_azure_storage_blob_client)
-    # TODO: This is a bad hack because we use a webdav settings in featurebyte-app
-    #       and we should use the same config instead
-    if STORAGE_TYPE == "webdav":
-        base_url = os.environ.get("WEBDAV_BASE_URL", "http://failed")
-        return WebdavStorage(base_url=base_url, temp=False)
     raise ValueError(f"Invalid storage type: {STORAGE_TYPE}")
 
 
@@ -130,9 +126,4 @@ def get_temp_storage() -> Storage:
             get_client=get_azure_storage_blob_client,
             temp=True,
         )
-    # TODO: This is a bad hack because we use a webdav settings in featurebyte-app
-    #       and we should use the same config instead
-    if STORAGE_TYPE == "webdav":
-        base_url = os.environ.get("WEBDAV_BASE_URL", "http://failed")
-        return WebdavStorage(base_url=base_url, temp=True)
     raise ValueError(f"Invalid storage type: {STORAGE_TYPE}")
