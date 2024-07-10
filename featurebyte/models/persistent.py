@@ -44,7 +44,7 @@ class AuditDocument(FeatureByteBaseModel):
     Audit document
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     user_id: Optional[PydanticObjectId] = Field(default=None)
     name: str
     document_id: Any = Field(default=None)

@@ -52,13 +52,11 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         Feature list status
     """
 
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
+    feature_list_ids: List[PydanticObjectId] = Field(frozen=True)
+    feature_namespace_ids: List[PydanticObjectId] = Field(frozen=True)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    default_feature_list_id: PydanticObjectId = Field(frozen=True)
+    status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
     _sort_ids_validator = validator(

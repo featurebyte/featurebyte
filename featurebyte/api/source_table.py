@@ -99,8 +99,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     _table_data_class: ClassVar[Type[AllTableDataT]]
 
     # pydantic instance variable (public)
-    tabular_source: TabularSource = Field(allow_mutation=False)
-    feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
+    tabular_source: TabularSource = Field(frozen=True)
+    feature_store: FeatureStoreModel = Field(frozen=True, exclude=True)
 
     # pydantic instance variable (internal use)
     internal_columns_info: List[ColumnInfo] = Field(alias="columns_info")

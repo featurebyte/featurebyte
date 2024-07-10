@@ -148,7 +148,7 @@ class FeatureByteBaseModel(BaseModel):
         """
 
         # With `validate_assignment` flag enabled, pydantic model runs validation check during attribute assignment.
-        # This also enables the feature to make attribute immutable by using Field(allow_mutation=False).
+        # This also enables the feature to make attribute immutable by using Field(frozen=True).
         validate_assignment = True
 
         # With `use_enum_values` flag enabled, pydantic model converts the enum attribute to the enum's value when
@@ -276,21 +276,21 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId = Field(
-        default_factory=ObjectId, alias="_id", allow_mutation=False, description="Record identifier"
+        default_factory=ObjectId, alias="_id", frozen=True, description="Record identifier"
     )
     user_id: Optional[PydanticObjectId] = Field(
-        default=None, allow_mutation=False, description="User identifier"
+        default=None, frozen=True, description="User identifier"
     )
     name: Optional[NameStr] = Field(default=None, description="Record name")
     created_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record creation time"
+        default=None, frozen=True, description="Record creation time"
     )
     updated_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record last updated time"
+        default=None, frozen=True, description="Record last updated time"
     )
     block_modification_by: List[ReferenceInfo] = Field(
         default_factory=list,
-        allow_mutation=False,
+        frozen=True,
         description="List of reference information that blocks modifications to the document",
     )
     description: Optional[StrictStr] = Field(default=None, description="Record description")

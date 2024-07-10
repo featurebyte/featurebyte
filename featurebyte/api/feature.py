@@ -122,7 +122,7 @@ class Feature(
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
-        allow_mutation=False,
+        frozen=True,
         description="Provides information about the feature store that the feature is connected to.",
     )
 

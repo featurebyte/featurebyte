@@ -376,7 +376,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
     ] = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Determines how the boundary values are treated.\n"
         "- If type is `less_than`, any value that is less than the end_point "
         "value will be replaced with imputed_value.\n"

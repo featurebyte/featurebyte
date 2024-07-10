@@ -59,13 +59,13 @@ class Task(FeatureByteBaseModel):
     TaskStatus retrieval schema
     """
 
-    id: TaskId = Field(allow_mutation=False)
-    status: TaskStatus = Field(allow_mutation=False)
+    id: TaskId = Field(frozen=True)
+    status: TaskStatus = Field(frozen=True)
     output_path: Optional[str] = Field(default=None)
     payload: Dict[str, Any]
     traceback: Optional[str] = Field(default=None)
-    start_time: Optional[datetime.datetime] = Field(allow_mutation=False)
-    date_done: Optional[datetime.datetime] = Field(allow_mutation=False)
+    start_time: Optional[datetime.datetime] = Field(frozen=True)
+    date_done: Optional[datetime.datetime] = Field(frozen=True)
     progress: Optional[Dict[str, Any]] = Field(default=None)
 
 

@@ -20,7 +20,7 @@ class QueryGraphMixin(FeatureByteBaseModel):
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_graph: Any = Field(default=None, allow_mutation=False, alias="graph")
+    internal_graph: Any = Field(default=None, frozen=True, alias="graph")
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
     @property

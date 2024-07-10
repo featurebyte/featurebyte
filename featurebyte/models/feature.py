@@ -71,51 +71,43 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     It contains all the attributes that are shared between FeatureModel & TargetModel.
     """
 
-    dtype: DBVarType = Field(allow_mutation=False, default=DBVarType.UNKNOWN)
+    dtype: DBVarType = Field(frozen=True, default=DBVarType.UNKNOWN)
     node_name: str
-    tabular_source: TabularSource = Field(allow_mutation=False)
-    version: VersionIdentifier = Field(allow_mutation=False, default=None)
-    definition: Optional[str] = Field(allow_mutation=False, default=None)
-    definition_hash: Optional[str] = Field(allow_mutation=False, default=None)
+    tabular_source: TabularSource = Field(frozen=True)
+    version: VersionIdentifier = Field(frozen=True, default=None)
+    definition: Optional[str] = Field(frozen=True, default=None)
+    definition_hash: Optional[str] = Field(frozen=True, default=None)
 
     # query graph derived attributes
     # - table columns used by the feature or target
     # - table feature job settings used by the feature or target
     # - table cleaning operations used by the feature or target
-    table_id_column_names: List[TableIdColumnNames] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    table_id_column_names: List[TableIdColumnNames] = Field(frozen=True, default_factory=list)
     table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(
-        allow_mutation=False, default_factory=list
+        frozen=True, default_factory=list
     )
     table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(
-        allow_mutation=False, default_factory=list
+        frozen=True, default_factory=list
     )
 
     # list of IDs attached to this feature or target
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    entity_dtypes: List[DBVarType] = Field(allow_mutation=False, default_factory=list)
-    primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    user_defined_function_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    entity_dtypes: List[DBVarType] = Field(frozen=True, default_factory=list)
+    primary_entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    primary_table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    user_defined_function_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
     # relationship info contains the bare enough entity relationship information between all the entities
     # for example, if there are following entity relationship (child -> parent):
     # transaction -> order -> customer -> city -> state
     # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
     # transaction and state will not be included as they are not used by the feature.
-    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
-    )
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(frozen=True, default=None)
 
     # entity join steps contains the steps required to join the entities used by the feature or target
     # when it is None, it means that the attribute is not initialized (for backward compatibility)
-    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
-    )
+    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(frozen=True, default=None)
 
     # offline store info contains the information used to construct the offline store table(s) required
     # by the feature or target.
@@ -547,22 +539,18 @@ class FeatureModel(BaseFeatureModel):
         Datetime when the Feature value was last updated
     """
 
-    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    online_enabled: bool = Field(allow_mutation=False, default=False)
+    readiness: FeatureReadiness = Field(frozen=True, default=FeatureReadiness.DRAFT)
+    online_enabled: bool = Field(frozen=True, default=False)
 
     # ID related fields associated with this feature
-    feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
-    aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
-    online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
+    feature_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
+    feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
+    aggregation_result_names: List[str] = Field(frozen=True, default_factory=list)
+    online_store_table_names: List[str] = Field(frozen=True, default_factory=list)
     agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
-    last_updated_by_scheduled_task_at: Optional[datetime] = Field(
-        allow_mutation=False, default=None
-    )
+    last_updated_by_scheduled_task_at: Optional[datetime] = Field(frozen=True, default=None)
 
     @root_validator
     @classmethod

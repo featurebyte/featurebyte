@@ -243,7 +243,7 @@ class FeatureCluster(FeatureByteBaseModel):
         default=None
     )
     feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = Field(default=None)
-    combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
+    combined_relationships_info: List[EntityRelationshipInfo] = Field(frozen=True)
 
     @root_validator(pre=True)
     @classmethod
@@ -323,23 +323,17 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Store specific info for the feature list
     """
 
-    version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
+    version: VersionIdentifier = Field(frozen=True, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None  # DEV-556
+        frozen=True, default=None  # DEV-556
     )
     features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
-        allow_mutation=False, default=None
+        frozen=True, default=None
     )
-    supported_serving_entity_ids: List[ServingEntity] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    readiness_distribution: FeatureReadinessDistribution = Field(
-        allow_mutation=False, default_factory=list
-    )
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    deployed: bool = Field(allow_mutation=False, default=False)
+    supported_serving_entity_ids: List[ServingEntity] = Field(frozen=True, default_factory=list)
+    readiness_distribution: FeatureReadinessDistribution = Field(frozen=True, default_factory=list)
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(frozen=True, default_factory=list)
+    deployed: bool = Field(frozen=True, default=False)
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
@@ -349,18 +343,14 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
-    primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    primary_entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
-        allow_mutation=False, default_factory=list
+        frozen=True, default_factory=list
     )
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    feature_list_namespace_id: PydanticObjectId = Field(
-        allow_mutation=False, default_factory=ObjectId
-    )
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    feature_list_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)

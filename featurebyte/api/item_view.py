@@ -58,16 +58,16 @@ class ItemView(View, GroupByMixin, RawMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.ITEM_VIEW
 
     # pydantic instance variables
-    event_id_column: str = Field(allow_mutation=False)
-    item_id_column: str = Field(allow_mutation=False)
+    event_id_column: str = Field(frozen=True)
+    item_id_column: str = Field(frozen=True)
     event_table_id: PydanticObjectId = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Returns the unique identifier (ID) "
         "of the Event Table related to the Item "
         "view.",
     )
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used "
         "by features that aggregate data in the view, ensuring consistency of "
@@ -77,9 +77,9 @@ class ItemView(View, GroupByMixin, RawMixin):
         "up the Feature Job Setting for each feature.",
         default=None,
     )
-    event_view: EventView = Field(allow_mutation=False)
-    timestamp_column_name: str = Field(allow_mutation=False)
-    timestamp_timezone_offset_column_name: Optional[str] = Field(allow_mutation=False, default=None)
+    event_view: EventView = Field(frozen=True)
+    timestamp_column_name: str = Field(frozen=True)
+    timestamp_timezone_offset_column_name: Optional[str] = Field(frozen=True, default=None)
 
     def join_event_table_attributes(
         self,

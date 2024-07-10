@@ -160,7 +160,7 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
 
     # exclude this field from the response
     internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters", exclude=True
+        frozen=True, alias="feature_clusters", exclude=True
     )
 
 

@@ -59,7 +59,7 @@ class EventView(View, GroupByMixin, RawMixin):
 
     # pydantic instance variables
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used by "
         "features that aggregate data in the view, ensuring consistency of the "
@@ -69,7 +69,7 @@ class EventView(View, GroupByMixin, RawMixin):
         "up the Feature Job Setting for each feature.",
     )
     event_id_column: Optional[str] = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Returns the name of the column representing the event key of the Event view.",
     )
 

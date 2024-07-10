@@ -33,8 +33,8 @@ class Relationship(FeatureByteBaseDocumentModel):
     Catalog-agnostic relationship model
     """
 
-    parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
-    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parents: List[Parent] = Field(default_factory=list, frozen=True)
+    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, frozen=True)
 
     # pydantic validators
     _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
@@ -86,7 +86,7 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
     The Relationship class above stores all relationships for a given child in a single document.
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     relationship_type: RelationshipType
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
