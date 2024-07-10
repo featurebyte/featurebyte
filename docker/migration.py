@@ -26,6 +26,7 @@ if __name__ == "__main__":
             get_credential=credential_provider.get_credential,
             celery=get_celery(),
             storage=get_storage(),
+            temp_storage=get_storage(),
             redis=get_redis(),
         )
     )
