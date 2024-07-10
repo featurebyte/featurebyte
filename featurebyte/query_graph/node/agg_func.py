@@ -20,8 +20,9 @@ class BaseAggFunc(FeatureByteBaseModel):
 
     type: AggFunc
 
-    def __init_subclass__(cls, **kwargs: Any):
-        if "Literal" in repr(cls.__fields__["type"].type_):
+    @classmethod
+    def __pydantic_init_subclass__(cls) -> None:
+        if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
 
