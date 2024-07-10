@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import (
@@ -95,10 +95,10 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     table_cleaning_operations: Optional[List[TableCleaningOperation]] = Field(default=None)
 
     # pydantic validators
-    _validate_unique_feat_job_data_name = validator("table_feature_job_settings", allow_reuse=True)(
+    _validate_unique_feat_job_data_name = field_validator("table_feature_job_settings")(
         construct_unique_name_validator(field="table_name")
     )
-    _validate_unique_clean_ops_data_name = validator("table_cleaning_operations", allow_reuse=True)(
+    _validate_unique_clean_ops_data_name = field_validator("table_cleaning_operations")(
         construct_unique_name_validator(field="table_name")
     )
 

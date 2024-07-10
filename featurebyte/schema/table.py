@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Sequence
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -32,7 +32,7 @@ class TableCreate(FeatureByteBaseModel):
     description: Optional[StrictStr] = Field(default=None)
 
     # pydantic validators
-    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+    _columns_info_validator = field_validator("columns_info")(columns_info_validator)
 
     @classmethod
     def _special_column_validator(cls, column_name: str, values: Dict[str, Any]) -> str:
@@ -85,7 +85,7 @@ class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
     columns_info: Optional[List[ColumnInfo]] = Field(default=None)
 
     # pydantic validators
-    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+    _columns_info_validator = field_validator("columns_info")(columns_info_validator)
 
 
 class TableList(PaginationMixin):

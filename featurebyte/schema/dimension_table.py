@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Literal
 
-from pydantic import Field, StrictStr, validator
+from pydantic import StrictStr, field_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.dimension_table import DimensionTableModel
@@ -23,8 +23,8 @@ class DimensionTableCreate(TableCreate):
     dimension_id_column: StrictStr
 
     # pydantic validators
-    _special_columns_validator = validator(
-        "record_creation_timestamp_column", "dimension_id_column", allow_reuse=True
+    _special_columns_validator = field_validator(
+        "record_creation_timestamp_column", "dimension_id_column"
     )(TableCreate._special_column_validator)
 
 

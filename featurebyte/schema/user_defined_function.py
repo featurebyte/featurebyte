@@ -5,7 +5,7 @@ UserDefinedFunction API payload schema
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, model_validator, validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -27,7 +27,7 @@ class UserDefinedFunctionCreateBase(FeatureByteBaseModel):
     output_dtype: DBVarType
 
     # pydantic validator
-    _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
+    _validate_unique_function_parameter_name = field_validator("function_parameters")(
         construct_unique_name_validator(field="name")
     )
 
@@ -59,7 +59,7 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     output_dtype: Optional[DBVarType] = Field(default=None)
 
     # pydanctic validator
-    _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
+    _validate_unique_function_parameter_name = field_validator("function_parameters")(
         construct_unique_name_validator(field="name")
     )
 

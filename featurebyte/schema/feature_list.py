@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from bson import ObjectId
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -127,7 +127,7 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     version: VersionIdentifier = Field(description="Feature version.")
 
     # pydantic validators
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+    _version_validator = field_validator("version", mode="before")(version_validator)
 
 
 class FeatureListNewVersionCreate(FeatureByteBaseModel):
@@ -140,7 +140,7 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     allow_unchanged_feature_list_version: bool = Field(default=False)
 
     # pydantic validators
-    _validate_unique_feat_name = validator("features", allow_reuse=True)(
+    _validate_unique_feat_name = field_validator("features")(
         construct_unique_name_validator(field="name")
     )
 

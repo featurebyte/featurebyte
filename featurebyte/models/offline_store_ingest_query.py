@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 import datetime
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
@@ -107,9 +107,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     has_ttl: bool
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
 
     @classmethod
     def create_from_graph_node(

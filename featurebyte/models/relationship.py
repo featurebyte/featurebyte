@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
@@ -37,10 +37,8 @@ class Relationship(FeatureByteBaseDocumentModel):
     ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, frozen=True)
 
     # pydantic validators
-    _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
-    _sort_parent_validator = validator("parents", allow_reuse=True)(
-        construct_sort_validator(field="id")
-    )
+    _sort_ids_validator = field_validator("ancestor_ids")(construct_sort_validator())
+    _sort_parent_validator = field_validator("parents")(construct_sort_validator(field="id"))
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

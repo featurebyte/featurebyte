@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -32,14 +32,13 @@ class SCDTableCreate(TableCreate):
     )
 
     # pydantic validators
-    _special_columns_validator = validator(
+    _special_columns_validator = field_validator(
         "record_creation_timestamp_column",
         "natural_key_column",
         "surrogate_key_column",
         "effective_timestamp_column",
         "end_timestamp_column",
         "current_flag_column",
-        allow_reuse=True,
     )(TableCreate._special_column_validator)
 
 

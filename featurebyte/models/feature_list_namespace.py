@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, List
 
 import pymongo
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -59,8 +59,8 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_ids_validator = validator(
-        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
+    _sort_ids_validator = field_validator(
+        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids"
     )(construct_sort_validator())
 
     @model_validator(mode="before")
