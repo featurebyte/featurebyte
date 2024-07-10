@@ -97,7 +97,7 @@ class FeatureListNamespaceListHandler(ListHandler):
         feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(
-                __root__=readiness_distribution
+                readiness_distribution
             ).derive_production_ready_fraction()
         )
         return feature_lists

@@ -262,7 +262,7 @@ class UseCaseController(
         return UseCaseInfo(
             **use_case.dict(),
             author=author,
-            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
+            primary_entities=EntityBriefInfoList(entity_briefs),
             context_name=context.name,
             target_name=target_name,
             default_preview_table=default_preview_table_name,

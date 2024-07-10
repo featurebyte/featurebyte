@@ -1164,27 +1164,23 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_a
 
     feature_list = FeatureList([new_feat], name="my_fl")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
 
     new_feat.update_readiness(readiness="PRODUCTION_READY")
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [
+        {"readiness": "PRODUCTION_READY", "count": 1}
+    ]
 
     feature_list.save()
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [
+        {"readiness": "PRODUCTION_READY", "count": 1}
+    ]
 
     new_feat.update_readiness(readiness="PUBLIC_DRAFT")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "PUBLIC_DRAFT", "count": 1}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "PUBLIC_DRAFT", "count": 1}]
 
 
 def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
@@ -1221,9 +1217,7 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     # check properties derived from feature list model directly
     assert feature_list.saved is False
     assert feature_list.online_enabled_feature_ids == []
-    assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 3}]
-    }
+    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 3}]
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.deployed is False
 
@@ -1239,9 +1233,7 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     # check properties derived from feature list model directly
     assert saved_feature_list.saved
     assert saved_feature_list.online_enabled_feature_ids == []
-    assert saved_feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 1}]
-    }
+    assert saved_feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
     assert saved_feature_list.production_ready_fraction == 0.0
     assert saved_feature_list.deployed is False
 

@@ -12,7 +12,15 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, field_validator, model_validator, parse_obj_as
+from pydantic import (
+    Field,
+    PrivateAttr,
+    RootModel,
+    StrictStr,
+    field_validator,
+    model_validator,
+    parse_obj_as,
+)
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -84,12 +92,12 @@ class FeatureReadinessTransition(FeatureByteBaseModel):
 
 
 @functools.total_ordering
-class FeatureReadinessDistribution(FeatureByteBaseModel):
+class FeatureReadinessDistribution(RootModel):
     """
     Feature readiness distribution
     """
 
-    __root__: List[FeatureReadinessCount]
+    root: List[FeatureReadinessCount]
 
     @property
     def total_count(self) -> int:
@@ -100,7 +108,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         -------
         int
         """
-        return sum(readiness_count.count for readiness_count in self.__root__)
+        return sum(readiness_count.count for readiness_count in self.root)
 
     @staticmethod
     def _to_count_per_readiness_map(
@@ -110,7 +118,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         for feature_readiness in FeatureReadiness:
             output[feature_readiness] = 0
 
-        for feature_readiness_count in feature_readiness_dist.__root__:
+        for feature_readiness_count in feature_readiness_dist.root:
             output[feature_readiness_count.readiness] += feature_readiness_count.count
         return output
 
@@ -166,7 +174,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         Fraction of production ready features
         """
         production_ready_cnt = 0
-        for readiness_count in self.__root__:
+        for readiness_count in self.root:
             if readiness_count.readiness == FeatureReadiness.PRODUCTION_READY:
                 production_ready_cnt += readiness_count.count
         return production_ready_cnt / max(self.total_count, 1)
@@ -203,7 +211,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
                 readiness_dist.append(
                     FeatureReadinessCount(readiness=feature_readiness, count=count)
                 )
-        return FeatureReadinessDistribution(__root__=readiness_dist)
+        return FeatureReadinessDistribution(readiness_dist)
 
     def worst_case(self) -> FeatureReadinessDistribution:
         """
@@ -214,9 +222,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         FeatureReadinessDistribution
         """
         return FeatureReadinessDistribution(
-            __root__=[
-                FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
-            ]
+            [FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)]
         )
 
 
@@ -407,7 +413,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
             # some sanity check
             total_count = sum(
-                read_count.count for read_count in values["readiness_distribution"].__root__
+                read_count.count for read_count in values["readiness_distribution"].root
             )
             if total_count != len(values["feature_ids"]):
                 raise ValueError(
@@ -433,7 +439,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         for feature in features:
             readiness_count_map[feature.readiness] += 1
         return FeatureReadinessDistribution(
-            __root__=[
+            [
                 FeatureReadinessCount(readiness=readiness, count=count)
                 for readiness, count in readiness_count_map.items()
             ]

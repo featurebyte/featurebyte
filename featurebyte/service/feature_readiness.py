@@ -72,14 +72,12 @@ class FeatureReadinessService:
         async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list_ids}}
         ):
-            readiness_dist = FeatureReadinessDistribution(
-                __root__=feature_list["readiness_distribution"]
-            )
+            readiness_dist = FeatureReadinessDistribution(feature_list["readiness_distribution"])
             if default_feature_list is None:
                 default_feature_list = feature_list
             else:
                 default_readiness_dist = FeatureReadinessDistribution(
-                    __root__=default_feature_list["readiness_distribution"]
+                    default_feature_list["readiness_distribution"]
                 )
                 if readiness_dist > default_readiness_dist:
                     default_feature_list = feature_list
@@ -162,9 +160,7 @@ class FeatureReadinessService:
         """
         document = await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
         if from_readiness != to_readiness:
-            doc_readiness_dist = FeatureReadinessDistribution(
-                __root__=document["readiness_distribution"]
-            )
+            doc_readiness_dist = FeatureReadinessDistribution(document["readiness_distribution"])
             readiness_dist = doc_readiness_dist.update_readiness(
                 transition=FeatureReadinessTransition(
                     from_readiness=from_readiness, to_readiness=to_readiness
