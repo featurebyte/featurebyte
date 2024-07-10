@@ -6,6 +6,10 @@ from typing import Any
 
 from abc import ABC, abstractmethod
 
+import numpy as np
+from bson import ObjectId
+from pydantic import ConfigDict
+
 from featurebyte.models.tile import TileCommonParameters
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaseSqlModel
@@ -16,12 +20,17 @@ class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
     Base class for Tile Operation Classes
     """
 
-    class Config(TileCommonParameters.Config):
-        """
-        Config class to allow services to be passed in as arguments
-        """
-
-        arbitrary_types_allowed = True
+    # pydantic model configuration
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        json_encoders={
+            ObjectId: str,
+            np.ndarray: lambda arr: arr.tolist(),
+        },
+        extra="forbid",
+        arbitrary_types_allowed=True,
+    )
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """

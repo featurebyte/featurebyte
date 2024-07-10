@@ -7,7 +7,7 @@ from typing import List, Optional
 import textwrap
 from datetime import datetime
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
@@ -32,12 +32,8 @@ class TileScheduleOnlineStore(BaseSqlModel):
     online_store_table_version_service: OnlineStoreTableVersionService
     online_store_compute_query_service: OnlineStoreComputeQueryService
 
-    class Config:
-        """
-        Config class to allow services to be passed in as arguments
-        """
-
-        arbitrary_types_allowed = True
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     async def execute(self) -> None:
         """

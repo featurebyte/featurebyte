@@ -21,7 +21,9 @@ from typing import (
 import copy
 from abc import ABC, abstractmethod
 
-from pydantic import Field
+import numpy as np
+from bson import ObjectId
+from pydantic import ConfigDict, Field
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -66,11 +68,17 @@ class BaseNodeParameters(FeatureByteBaseModel):
     BaseNodeParameters class
     """
 
-    class Config:
-        """Model configuration"""
-
-        # cause validation to fail if extra attributes are included (https://docs.pydantic.dev/usage/model_config/)
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        json_encoders={
+            ObjectId: str,
+            np.ndarray: lambda arr: arr.tolist(),
+        },
+        arbitrary_types_allowed=True,
+        extra="forbid",
+    )
 
 
 class BaseNode(FeatureByteBaseModel):
@@ -99,10 +107,8 @@ class BaseNode(FeatureByteBaseModel):
     # nested parameter field names to be normalized
     _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
 
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(extra="forbid")
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)

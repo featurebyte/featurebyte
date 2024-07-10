@@ -5,7 +5,7 @@ This module contains Tile related models
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -67,12 +67,8 @@ class TileSpec(FeatureByteBaseModel):
     windows: List[Optional[str]] = Field(default=None)
     offset: Optional[str] = Field(default=None)
 
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -152,10 +148,8 @@ class TileCommonParameters(FeatureByteBaseModel):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    class Config(FeatureByteBaseModel.Config):
-        """Model configuration"""
-
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(extra="forbid")
 
 
 class TileScheduledJobParameters(TileCommonParameters):
