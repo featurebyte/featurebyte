@@ -17,7 +17,6 @@ from azure.storage.blob.aio import ContainerClient
 
 from featurebyte.config import Configurations
 from featurebyte.storage import AzureBlobStorage, LocalStorage, LocalTempStorage, S3Storage, Storage
-from featurebyte.storage.webdav import WebdavStorage
 
 STORAGE_TYPE = os.environ.get("STORAGE_TYPE", "local")
 
@@ -29,7 +28,6 @@ S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "featurebyte")
 AZURE_STORAGE_ACCOUNT_NAME = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
 AZURE_STORAGE_ACCOUNT_KEY = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
 AZURE_STORAGE_CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME", "featurebyte")
-WEBDAV_BASE_URL = os.environ.get("WEBDAV_BASE_URL", "http://failed")
 
 
 @asynccontextmanager

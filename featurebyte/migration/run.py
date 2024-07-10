@@ -33,7 +33,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.utils.storage import get_storage
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
 logger = get_logger(__name__)
@@ -385,6 +385,7 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
         credential_provider.get_credential,
         celery=get_celery(),
         storage=get_storage(),
+        temp_storage=get_temp_storage(),
         redis=get_redis(),
         include_data_warehouse_migrations=False,
     )
