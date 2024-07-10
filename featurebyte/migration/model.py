@@ -49,7 +49,7 @@ class MigrationMetadata(StrEnum):
 class SchemaMetadataModel(BaseMigrationMetadataModel):
     """SchemaMetadata model"""
 
-    name: str = Field(MigrationMetadata.SCHEMA_METADATA, const=True)
+    name: str = MigrationMetadata.SCHEMA_METADATA
     version: int
     description: str
 

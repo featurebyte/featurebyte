@@ -43,7 +43,7 @@ class RequestColumnNode(BaseNode):
         column_name: StrictStr
         dtype: DBVarType
 
-    type: Literal[NodeType.REQUEST_COLUMN] = Field(NodeType.REQUEST_COLUMN, const=True)
+    type: Literal[NodeType.REQUEST_COLUMN] = NodeType.REQUEST_COLUMN
     output_type: NodeOutputType
     parameters: RequestColumnNodeParameters
 

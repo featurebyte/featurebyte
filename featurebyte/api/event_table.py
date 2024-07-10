@@ -70,7 +70,7 @@ class EventTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(

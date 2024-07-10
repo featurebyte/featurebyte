@@ -61,7 +61,7 @@ class DimensionTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
 
     # pydantic instance variable (internal use)
     internal_dimension_id_column: StrictStr = Field(alias="dimension_id_column")

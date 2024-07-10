@@ -98,7 +98,7 @@ class DatabricksUnitySession(DatabricksSession):
 
     _files_client: FilesAPI = PrivateAttr()
 
-    source_type: SourceType = Field(SourceType.DATABRICKS_UNITY, const=True)
+    source_type: SourceType = SourceType.DATABRICKS_UNITY
     group_name: str
 
     def __init__(self, **data: Any) -> None:

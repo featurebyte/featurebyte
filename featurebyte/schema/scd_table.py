@@ -21,7 +21,7 @@ class SCDTableCreate(TableCreate):
     SCDTable Creation Schema
     """
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     natural_key_column: StrictStr
     surrogate_key_column: Optional[StrictStr] = Field(default=None)
     effective_timestamp_column: StrictStr

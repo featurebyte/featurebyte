@@ -29,7 +29,7 @@ class SQLiteSession(BaseSession):
     """
 
     filename: str
-    source_type: SourceType = Field(SourceType.SQLITE, const=True)
+    source_type: SourceType = SourceType.SQLITE
 
     def initializer(self) -> Optional[BaseSchemaInitializer]:
         return None

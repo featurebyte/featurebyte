@@ -197,7 +197,7 @@ class MissingValueImputation(BaseCleaningOperation):
 
     # instance variables
     type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True, repr=False
+        ConditionOperationField.MISSING, frozen=True, repr=False
     )
     imputed_value: Scalar
 
@@ -241,7 +241,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
     # instance variables
     type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True, repr=False
+        ConditionOperationField.DISGUISED, frozen=True, repr=False
     )
     disguised_values: Sequence[OptionalScalar] = Field(
         description="List of values that need to be replaced."
@@ -299,7 +299,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
 
     # instance variables
     type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True, repr=False
+        ConditionOperationField.NOT_IN, frozen=True, repr=False
     )
     expected_values: Sequence[OptionalScalar] = Field(
         description="List of values that are expected to be present."
@@ -456,7 +456,7 @@ class StringValueImputation(BaseCleaningOperation):
 
     # instance variables
     type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True, repr=False
+        ConditionOperationField.IS_STRING, frozen=True, repr=False
     )
 
     def derive_sdk_code(self) -> ObjectClass:

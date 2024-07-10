@@ -45,7 +45,7 @@ class DatabricksSession(BaseSparkSession):
     _storage_base_path: str = PrivateAttr()
     _dbfs_client: DbfsExt = PrivateAttr()
 
-    source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
+    source_type: SourceType = SourceType.DATABRICKS
     database_credential: AccessTokenCredential
 
     def _initialize_connection(self) -> None:

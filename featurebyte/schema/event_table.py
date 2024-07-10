@@ -22,7 +22,7 @@ class EventTableCreate(TableCreate):
     EventTable Creation Schema
     """
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
     event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)

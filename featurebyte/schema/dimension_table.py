@@ -19,7 +19,7 @@ class DimensionTableCreate(TableCreate):
     DimensionTable Creation Schema
     """
 
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
     dimension_id_column: StrictStr
 
     # pydantic validators

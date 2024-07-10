@@ -42,7 +42,7 @@ def base_session_test_fixture():
         def initializer(self):
             return Mock(name="MockInitializer")
 
-        source_type: SourceType = Field(SourceType.TEST, const=True)
+        source_type: SourceType = SourceType.TEST
 
         @property
         def schema_name(self) -> str:

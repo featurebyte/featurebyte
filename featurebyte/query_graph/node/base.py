@@ -951,8 +951,8 @@ class SeriesOutputNodeOpStructMixin:
 class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
+    output_type: NodeOutputType = NodeOutputType.SERIES
+    parameters: FeatureByteBaseModel = {}
 
 
 class SingleValueNodeParameters(BaseNodeParameters):
@@ -970,7 +970,7 @@ class ValueWithRightOpNodeParameters(SingleValueNodeParameters):
 class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output & contain a single scalar parameter"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    output_type: NodeOutputType = NodeOutputType.SERIES
     parameters: SingleValueNodeParameters
 
     @property

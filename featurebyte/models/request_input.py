@@ -186,7 +186,7 @@ class ViewRequestInput(BaseRequestInput):
     """
 
     node_name: StrictStr
-    type: Literal[RequestInputType.VIEW] = Field(RequestInputType.VIEW, const=True)
+    type: Literal[RequestInputType.VIEW] = RequestInputType.VIEW
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
@@ -231,7 +231,7 @@ class SourceTableRequestInput(BaseRequestInput):
     """
 
     source: TabularSource
-    type: Literal[RequestInputType.SOURCE_TABLE] = Field(RequestInputType.SOURCE_TABLE, const=True)
+    type: Literal[RequestInputType.SOURCE_TABLE] = RequestInputType.SOURCE_TABLE
 
     def get_query_expr(self, source_type: SourceType) -> Select:
         _ = source_type

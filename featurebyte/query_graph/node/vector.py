@@ -31,9 +31,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 class VectorCosineSimilarityNode(BaseSeriesOutputNode):
     """VectorCosineSimilarityNode class"""
 
-    type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = Field(
-        NodeType.VECTOR_COSINE_SIMILARITY, const=True
-    )
+    type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = NodeType.VECTOR_COSINE_SIMILARITY
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT

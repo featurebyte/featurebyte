@@ -18,7 +18,7 @@ class ItemTableCreate(TableCreate):
     ItemTable creation schema
     """
 
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     event_id_column: StrictStr
     item_id_column: StrictStr
     event_table_id: PydanticObjectId

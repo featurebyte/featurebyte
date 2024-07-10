@@ -19,7 +19,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import ExpressionStr, Variab
 class NotNode(BaseSeriesOutputWithSingleOperandNode):
     """NotNode class"""
 
-    type: Literal[NodeType.NOT] = Field(NodeType.NOT, const=True)
+    type: Literal[NodeType.NOT] = NodeType.NOT
 
     # class variable
     _derive_sdk_code_return_var_name_expression_type: ClassVar[
@@ -42,7 +42,7 @@ class NotNode(BaseSeriesOutputWithSingleOperandNode):
 class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
     """AbsoluteNode class"""
 
-    type: Literal[NodeType.ABS] = Field(NodeType.ABS, const=True)
+    type: Literal[NodeType.ABS] = NodeType.ABS
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
@@ -57,7 +57,7 @@ class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
 class SquareRootNode(BaseSeriesOutputWithSingleOperandNode):
     """SquareRootNode class"""
 
-    type: Literal[NodeType.SQRT] = Field(NodeType.SQRT, const=True)
+    type: Literal[NodeType.SQRT] = NodeType.SQRT
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -75,7 +75,7 @@ class SquareRootNode(BaseSeriesOutputWithSingleOperandNode):
 class FloorNode(BaseSeriesOutputWithSingleOperandNode):
     """FloorNode class"""
 
-    type: Literal[NodeType.FLOOR] = Field(NodeType.FLOOR, const=True)
+    type: Literal[NodeType.FLOOR] = NodeType.FLOOR
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
@@ -93,7 +93,7 @@ class FloorNode(BaseSeriesOutputWithSingleOperandNode):
 class CeilNode(BaseSeriesOutputWithSingleOperandNode):
     """CeilNode class"""
 
-    type: Literal[NodeType.CEIL] = Field(NodeType.CEIL, const=True)
+    type: Literal[NodeType.CEIL] = NodeType.CEIL
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
@@ -111,7 +111,7 @@ class CeilNode(BaseSeriesOutputWithSingleOperandNode):
 class CosNode(BaseSeriesOutputWithSingleOperandNode):
     """CosNode class"""
 
-    type: Literal[NodeType.COS] = Field(NodeType.COS, const=True)
+    type: Literal[NodeType.COS] = NodeType.COS
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -129,7 +129,7 @@ class CosNode(BaseSeriesOutputWithSingleOperandNode):
 class SinNode(BaseSeriesOutputWithSingleOperandNode):
     """SinNode class"""
 
-    type: Literal[NodeType.SIN] = Field(NodeType.SIN, const=True)
+    type: Literal[NodeType.SIN] = NodeType.SIN
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -147,7 +147,7 @@ class SinNode(BaseSeriesOutputWithSingleOperandNode):
 class TanNode(BaseSeriesOutputWithSingleOperandNode):
     """TanNode class"""
 
-    type: Literal[NodeType.TAN] = Field(NodeType.TAN, const=True)
+    type: Literal[NodeType.TAN] = NodeType.TAN
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -165,7 +165,7 @@ class TanNode(BaseSeriesOutputWithSingleOperandNode):
 class AcosNode(BaseSeriesOutputWithSingleOperandNode):
     """AcosNode class"""
 
-    type: Literal[NodeType.ACOS] = Field(NodeType.ACOS, const=True)
+    type: Literal[NodeType.ACOS] = NodeType.ACOS
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -183,7 +183,7 @@ class AcosNode(BaseSeriesOutputWithSingleOperandNode):
 class AsinNode(BaseSeriesOutputWithSingleOperandNode):
     """AsinNode class"""
 
-    type: Literal[NodeType.ASIN] = Field(NodeType.ASIN, const=True)
+    type: Literal[NodeType.ASIN] = NodeType.ASIN
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -201,7 +201,7 @@ class AsinNode(BaseSeriesOutputWithSingleOperandNode):
 class AtanNode(BaseSeriesOutputWithSingleOperandNode):
     """CeilNode class"""
 
-    type: Literal[NodeType.ATAN] = Field(NodeType.ATAN, const=True)
+    type: Literal[NodeType.ATAN] = NodeType.ATAN
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -219,7 +219,7 @@ class AtanNode(BaseSeriesOutputWithSingleOperandNode):
 class LogNode(BaseSeriesOutputWithSingleOperandNode):
     """LogNode class"""
 
-    type: Literal[NodeType.LOG] = Field(NodeType.LOG, const=True)
+    type: Literal[NodeType.LOG] = NodeType.LOG
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -237,7 +237,7 @@ class LogNode(BaseSeriesOutputWithSingleOperandNode):
 class ExponentialNode(BaseSeriesOutputWithSingleOperandNode):
     """ExponentialNode class"""
 
-    type: Literal[NodeType.EXP] = Field(NodeType.EXP, const=True)
+    type: Literal[NodeType.EXP] = NodeType.EXP
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -255,7 +255,7 @@ class ExponentialNode(BaseSeriesOutputWithSingleOperandNode):
 class IsNullNode(BaseSeriesOutputWithSingleOperandNode):
     """IsNullNode class"""
 
-    type: Literal[NodeType.IS_NULL] = Field(NodeType.IS_NULL, const=True)
+    type: Literal[NodeType.IS_NULL] = NodeType.IS_NULL
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
@@ -279,7 +279,7 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
         type: Literal["int", "float", "str"]
         from_dtype: DBVarType
 
-    type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
+    type: Literal[NodeType.CAST] = NodeType.CAST
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -307,7 +307,7 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
 class IsStringNode(BaseSeriesOutputWithSingleOperandNode):
     """IsStringNode class"""
 
-    type: Literal[NodeType.IS_STRING] = Field(NodeType.IS_STRING, const=True)
+    type: Literal[NodeType.IS_STRING] = NodeType.IS_STRING
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL

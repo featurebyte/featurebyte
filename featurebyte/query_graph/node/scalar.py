@@ -27,7 +27,7 @@ class TimestampValue(FeatureByteBaseModel):
     """TimestampValue class"""
 
     iso_format_str: str
-    type: Literal[NonNativeValueType.TIMESTAMP] = Field(NonNativeValueType.TIMESTAMP, const=True)
+    type: Literal[NonNativeValueType.TIMESTAMP] = NonNativeValueType.TIMESTAMP
 
     @classmethod
     def from_pandas_timestamp(cls, timestamp: pd.Timestamp) -> TimestampValue:

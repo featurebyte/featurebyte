@@ -31,7 +31,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 class AndNode(BinaryOpWithBoolOutputNode):
     """AndNode class"""
 
-    type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
+    type: Literal[NodeType.AND] = NodeType.AND
 
     # AND operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -43,7 +43,7 @@ class AndNode(BinaryOpWithBoolOutputNode):
 class OrNode(BinaryOpWithBoolOutputNode):
     """OrNode class"""
 
-    type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
+    type: Literal[NodeType.OR] = NodeType.OR
 
     # OR operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -55,7 +55,7 @@ class OrNode(BinaryOpWithBoolOutputNode):
 class EqualNode(BinaryOpWithBoolOutputNode):
     """EqualNode class"""
 
-    type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
+    type: Literal[NodeType.EQ] = NodeType.EQ
 
     # Equality operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -67,7 +67,7 @@ class EqualNode(BinaryOpWithBoolOutputNode):
 class NotEqualNode(BinaryOpWithBoolOutputNode):
     """NotEqualNode class"""
 
-    type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
+    type: Literal[NodeType.NE] = NodeType.NE
 
     # Equality operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -79,7 +79,7 @@ class NotEqualNode(BinaryOpWithBoolOutputNode):
 class GreaterThanNode(BinaryOpWithBoolOutputNode):
     """GreaterThanNode class"""
 
-    type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
+    type: Literal[NodeType.GT] = NodeType.GT
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} > {right_operand}"
@@ -88,7 +88,7 @@ class GreaterThanNode(BinaryOpWithBoolOutputNode):
 class GreaterEqualNode(BinaryOpWithBoolOutputNode):
     """GreaterEqualNode class"""
 
-    type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
+    type: Literal[NodeType.GE] = NodeType.GE
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} >= {right_operand}"
@@ -97,7 +97,7 @@ class GreaterEqualNode(BinaryOpWithBoolOutputNode):
 class LessThanNode(BinaryOpWithBoolOutputNode):
     """LessThanNode class"""
 
-    type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
+    type: Literal[NodeType.LT] = NodeType.LT
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} < {right_operand}"
@@ -106,7 +106,7 @@ class LessThanNode(BinaryOpWithBoolOutputNode):
 class LessEqualNode(BinaryOpWithBoolOutputNode):
     """LessEqualNode class"""
 
-    type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
+    type: Literal[NodeType.LE] = NodeType.LE
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} <= {right_operand}"
@@ -115,7 +115,7 @@ class LessEqualNode(BinaryOpWithBoolOutputNode):
 class AddNode(BinaryArithmeticOpNode):
     """AddNode class"""
 
-    type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
+    type: Literal[NodeType.ADD] = NodeType.ADD
 
     # Addition operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -127,7 +127,7 @@ class AddNode(BinaryArithmeticOpNode):
 class SubtractNode(BinaryArithmeticOpNode):
     """SubtractNode class"""
 
-    type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
+    type: Literal[NodeType.SUB] = NodeType.SUB
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} - {right_operand}"
@@ -136,7 +136,7 @@ class SubtractNode(BinaryArithmeticOpNode):
 class MultiplyNode(BinaryArithmeticOpNode):
     """MultiplyNode class"""
 
-    type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
+    type: Literal[NodeType.MUL] = NodeType.MUL
 
     # Multiplication operation is commutative
     is_commutative: ClassVar[bool] = True
@@ -148,7 +148,7 @@ class MultiplyNode(BinaryArithmeticOpNode):
 class DivideNode(BinaryArithmeticOpNode):
     """DivideNode class"""
 
-    type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
+    type: Literal[NodeType.DIV] = NodeType.DIV
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         _ = inputs
@@ -167,7 +167,7 @@ class DivideNode(BinaryArithmeticOpNode):
 class ModuloNode(BinaryArithmeticOpNode):
     """ModuloNode class"""
 
-    type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
+    type: Literal[NodeType.MOD] = NodeType.MOD
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} % {right_operand}"
@@ -176,7 +176,7 @@ class ModuloNode(BinaryArithmeticOpNode):
 class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     """PowerNode class"""
 
-    type: Literal[NodeType.POWER] = Field(NodeType.POWER, const=True)
+    type: Literal[NodeType.POWER] = NodeType.POWER
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -191,7 +191,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
 
-    type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
+    type: Literal[NodeType.IS_IN] = NodeType.IS_IN
 
     @property
     def max_input_count(self) -> int:

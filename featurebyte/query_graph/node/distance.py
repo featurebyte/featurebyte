@@ -36,7 +36,7 @@ class HaversineNode(BaseSeriesOutputNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-    type: Literal[NodeType.HAVERSINE] = Field(NodeType.HAVERSINE, const=True)
+    type: Literal[NodeType.HAVERSINE] = NodeType.HAVERSINE
     parameters: Parameters
 
     @property

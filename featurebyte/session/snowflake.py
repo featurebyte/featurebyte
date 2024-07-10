@@ -75,7 +75,7 @@ class SnowflakeSession(BaseSession):
     database_name: str
     schema_name: str
     role_name: str
-    source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
+    source_type: SourceType = SourceType.SNOWFLAKE
     database_credential: UsernamePasswordCredential
 
     def _initialize_connection(self) -> None:

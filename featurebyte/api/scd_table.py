@@ -70,7 +70,7 @@ class SCDTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(

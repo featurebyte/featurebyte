@@ -66,7 +66,7 @@ class SparkSession(BaseSparkSession):
     port: int
     use_http_transport: bool
     use_ssl: bool
-    source_type: SourceType = Field(SourceType.SPARK, const=True)
+    source_type: SourceType = SourceType.SPARK
     database_credential: Optional[SparkDatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
