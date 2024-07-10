@@ -17,6 +17,7 @@ from azure.storage.blob.aio import ContainerClient
 
 from featurebyte.config import Configurations
 from featurebyte.storage import AzureBlobStorage, LocalStorage, LocalTempStorage, S3Storage, Storage
+from featurebyte.storage.webdav import WebdavStorage
 
 STORAGE_TYPE = os.environ.get("STORAGE_TYPE", "local")
 
@@ -98,6 +99,11 @@ def get_storage() -> Storage:
         return S3Storage(get_client=get_client, bucket_name=S3_BUCKET_NAME)
     if STORAGE_TYPE == "azure":
         return AzureBlobStorage(get_client=get_azure_storage_blob_client)
+    # TODO: This is a bad hack because we use a webdav settings in featurebyte-app
+    #       and we should use the same config instead
+    if STORAGE_TYPE == "webdav":
+        base_url = os.environ.get("WEBDAV_BASE_URL", "http://failed")
+        return WebdavStorage(base_url=base_url, temp=False)
     raise ValueError(f"Invalid storage type: {STORAGE_TYPE}")
 
 
@@ -124,4 +130,9 @@ def get_temp_storage() -> Storage:
             get_client=get_azure_storage_blob_client,
             temp=True,
         )
+    # TODO: This is a bad hack because we use a webdav settings in featurebyte-app
+    #       and we should use the same config instead
+    if STORAGE_TYPE == "webdav":
+        base_url = os.environ.get("WEBDAV_BASE_URL", "http://failed")
+        return WebdavStorage(base_url=base_url, temp=True)
     raise ValueError(f"Invalid storage type: {STORAGE_TYPE}")
