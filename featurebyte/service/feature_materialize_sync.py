@@ -47,6 +47,10 @@ class FeatureMaterializeSyncService:
         ----------
         offline_store_feature_table_id: ObjectId
             Offline store feature table id
+
+        Returns
+        -------
+        Optional[FeatureMaterializePrerequisite]
         """
         current_job_datetime = await self._get_scheduled_job_ts_for_feature_table(
             offline_store_feature_table_id=offline_store_feature_table_id

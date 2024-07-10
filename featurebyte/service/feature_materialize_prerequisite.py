@@ -51,6 +51,11 @@ class FeatureMaterializePrerequisiteService(
         Returns
         -------
         ObjectId
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the document to be updated does not exist
         """
         async for doc in self.list_documents_as_dict_iterator(
             query_filter={
@@ -80,6 +85,11 @@ class FeatureMaterializePrerequisiteService(
         Returns
         -------
         FeatureMaterializePrerequisite
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the document to be updated does not exist
         """
         async for model in self.list_documents_iterator(
             query_filter={

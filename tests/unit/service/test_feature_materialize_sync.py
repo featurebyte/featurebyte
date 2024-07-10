@@ -12,10 +12,7 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.feature_materialize_prerequisite import (
-    FeatureMaterializePrerequisite,
-    PrerequisiteTileTask,
-)
+from featurebyte.models.feature_materialize_prerequisite import PrerequisiteTileTask
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.service.feature_materialize_prerequisite import (

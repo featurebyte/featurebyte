@@ -133,6 +133,10 @@ def get_current_job_datetime(
         Feature job setting period in minutes
     time_modulo_frequency_seconds: int
         Feature job setting offset in seconds
+
+    Returns
+    -------
+    datetime
     """
     next_job_datetime = get_next_job_datetime(
         input_dt=input_dt,
