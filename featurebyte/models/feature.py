@@ -74,7 +74,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     dtype: DBVarType = Field(frozen=True, default=DBVarType.UNKNOWN)
     node_name: str
     tabular_source: TabularSource = Field(frozen=True)
-    version: VersionIdentifier = Field(frozen=True, default=None)
+    version: VersionIdentifier = Field(frozen=True, default_factory=VersionIdentifier.create)
     definition: Optional[str] = Field(frozen=True, default=None)
     definition_hash: Optional[str] = Field(frozen=True, default=None)
 
