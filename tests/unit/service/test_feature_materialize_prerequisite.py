@@ -124,7 +124,9 @@ async def test_add_completed_task_not_found(
         aggregation_id="agg_id_1",
         status="success",
     )
-    # Update but document does not exist - should not fail
     await service.add_completed_prerequisite(
         offline_store_feature_table_id, scheduled_job_ts, tile_task_1
     )
+    docs = await service.list_documents_as_dict()
+    assert len(docs["data"]) == 1
+    assert docs["data"][0]["completed"] == [{"aggregation_id": "agg_id_1", "status": "success"}]

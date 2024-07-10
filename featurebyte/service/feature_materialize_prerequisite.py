@@ -123,15 +123,14 @@ class FeatureMaterializePrerequisiteService(
                 offline_store_feature_table_id, scheduled_job_ts
             )
         except DocumentNotFoundError:
-            # Handle the case for very late update (edge case). It should not make this call fail
-            logger.warning(
-                "FeatureMaterializePrerequisite to be updated cannot be found",
-                extra={
-                    "offline_store_feature_table_id": offline_store_feature_table_id,
-                    "scheduled_job_ts": scheduled_job_ts,
-                },
+            # Handle the edge case where the prerequisite document is not yet created. This should
+            # be rare since it should be much faster to create this document than completing a tile
+            # task.
+            feature_materialize_prerequisite = FeatureMaterializePrerequisite(
+                offline_store_feature_table_id=offline_store_feature_table_id,
+                scheduled_job_ts=scheduled_job_ts,
             )
-            return
+            document_id = (await self.create_document(feature_materialize_prerequisite)).id
         query_filter = self._construct_get_query_filter(document_id)
         await self.persistent.update_one(
             collection_name=self.collection_name,
