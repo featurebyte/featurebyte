@@ -109,3 +109,22 @@ async def test_add_completed_task(
         offline_store_feature_table_id, scheduled_job_ts
     )
     assert retrieved_model.completed == [tile_task_1, tile_task_2]
+
+
+@pytest.mark.asyncio
+async def test_add_completed_task_not_found(
+    service,
+    offline_store_feature_table_id,
+    scheduled_job_ts,
+):
+    """
+    Test updating a FeatureMaterializePrerequisite document by adding completed tasks
+    """
+    tile_task_1 = PrerequisiteTileTask(
+        aggregation_id="agg_id_1",
+        status="success",
+    )
+    # Update but document does not exist - should not fail
+    await service.add_completed_prerequisite(
+        offline_store_feature_table_id, scheduled_job_ts, tile_task_1
+    )

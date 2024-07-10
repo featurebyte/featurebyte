@@ -9,12 +9,15 @@ from datetime import datetime
 from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisite,
     PrerequisiteTileTask,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
+
+logger = get_logger(__name__)
 
 
 class FeatureMaterializePrerequisiteService(
@@ -91,7 +94,7 @@ class FeatureMaterializePrerequisiteService(
         self,
         offline_store_feature_table_id: ObjectId,
         scheduled_job_ts: datetime,
-        tile_task_item: PrerequisiteTileTask,
+        prerequisite_tile_task: PrerequisiteTileTask,
     ) -> None:
         """
         Insert a completed task item into an existing prerequisite document
@@ -102,16 +105,27 @@ class FeatureMaterializePrerequisiteService(
             Offline store feature table identifier
         scheduled_job_ts: datetime
             Scheduled job time used to identify the current job cycle
-        tile_task_item: PrerequisiteTileTask
+        prerequisite_tile_task: PrerequisiteTileTask
             Representation of a completed tile task
         """
-        document_id = await self.get_document_id_for_feature_table(
-            offline_store_feature_table_id, scheduled_job_ts
-        )
+        try:
+            document_id = await self.get_document_id_for_feature_table(
+                offline_store_feature_table_id, scheduled_job_ts
+            )
+        except DocumentNotFoundError:
+            # Handle the case for very late update (edge case). It should not make this call fail
+            logger.warning(
+                "FeatureMaterializePrerequisite to be updated cannot be found",
+                extra={
+                    "offline_store_feature_table_id": offline_store_feature_table_id,
+                    "scheduled_job_ts": scheduled_job_ts,
+                },
+            )
+            return
         query_filter = self._construct_get_query_filter(document_id)
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
-            update={"$push": {"completed": tile_task_item}},
+            update={"$push": {"completed": prerequisite_tile_task}},
             user_id=self.user.id,
         )
