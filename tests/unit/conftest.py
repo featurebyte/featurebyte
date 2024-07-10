@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 import pandas as pd
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector import ProgrammingError

@@ -5,7 +5,7 @@ Unit tests for classes in featurebyte/query_graph/model/table.py
 import textwrap
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, ViewMode

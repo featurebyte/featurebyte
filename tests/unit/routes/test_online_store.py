@@ -5,7 +5,7 @@ Test for OnlineStore route
 from http import HTTPStatus
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from tests.unit.routes.base import BaseApiTestSuite
 

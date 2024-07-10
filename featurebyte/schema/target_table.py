@@ -22,14 +22,14 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     TargetTable creation payload
     """
 
-    serving_names_mapping: Optional[Dict[str, str]]
-    target_id: Optional[PydanticObjectId]
+    serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
+    target_id: Optional[PydanticObjectId] = Field(default=None)
     graph: Optional[QueryGraph] = Field(default=None)
     # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
     # for backwards compatibility reasons.
     node_names: Optional[List[StrictStr]] = Field(default=None)
-    request_input: Optional[TargetInput]
-    context_id: Optional[PydanticObjectId]
+    request_input: Optional[TargetInput] = Field(default=None)
+    context_id: Optional[PydanticObjectId] = Field(default=None)
     skip_entity_validation_checks: bool = Field(default=False)
 
     @root_validator(pre=True)

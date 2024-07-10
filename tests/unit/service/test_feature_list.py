@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
 from featurebyte.enum import DBVarType

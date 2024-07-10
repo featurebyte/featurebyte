@@ -46,8 +46,8 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: Optional[PydanticObjectId]
-    observation_table_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
     async def materialize(

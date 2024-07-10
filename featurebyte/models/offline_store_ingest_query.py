@@ -89,7 +89,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # aggregation nodes info of the offline store ingest query graph
     graph: QueryGraphModel
     node_name: str
-    ref_node_name: Optional[str]
+    ref_node_name: Optional[str] = Field(default=None)
     aggregation_nodes_info: List[AggregationNodeInfo]
 
     # table related info
@@ -103,7 +103,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
     has_ttl: bool
 
     # pydantic validators
@@ -291,7 +291,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     is_decomposed: bool
 
     # if the feature's or target's query graph is not decomposed, metadata will be populated.
-    metadata: Optional[OfflineStoreInfoMetadata]
+    metadata: Optional[OfflineStoreInfoMetadata] = Field(default=None)
 
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
     serving_names_info: List[ServingNameInfo] = Field(default_factory=list)

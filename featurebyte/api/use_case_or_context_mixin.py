@@ -5,6 +5,7 @@ Base UseCase and Context mixin
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
@@ -18,8 +19,8 @@ class UseCaseOrContextMixin(ApiObject):
     Base UseCase and Context mixin
     """
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
+    default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     @property
     def default_eda_table(self) -> Optional[ObservationTable]:

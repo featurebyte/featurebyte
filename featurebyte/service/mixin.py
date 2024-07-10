@@ -8,7 +8,7 @@ from typing import Any, Generic, Optional, Type, TypeVar
 
 from abc import abstractmethod
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,

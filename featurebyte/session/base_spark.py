@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from pydantic import Field
 from pyhive.exc import OperationalError
 
 from featurebyte.common.path_util import get_package_root
@@ -83,7 +84,7 @@ class BaseSparkSession(BaseSession, ABC):
     catalog_name: str
     schema_name: str
 
-    region_name: Optional[str]
+    region_name: Optional[str] = Field(default=None)
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)

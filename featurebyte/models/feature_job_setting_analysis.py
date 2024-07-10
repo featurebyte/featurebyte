@@ -54,9 +54,9 @@ class AnalysisPlots(FeatureByteBaseModel):
     """
 
     wh_job_time_modulo_frequency_hist: Dict[str, Any]
-    wh_intervals_hist: Optional[Dict[str, Any]]
-    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]]
-    affected_jobs_record_age: Optional[Dict[str, Any]]
+    wh_intervals_hist: Optional[Dict[str, Any]] = Field(default=None)
+    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]] = Field(default=None)
+    affected_jobs_record_age: Optional[Dict[str, Any]] = Field(default=None)
 
 
 class BackTestSummary(FeatureByteBaseModel):
@@ -65,7 +65,7 @@ class BackTestSummary(FeatureByteBaseModel):
     """
 
     output_document_id: PydanticObjectId
-    user_id: Optional[PydanticObjectId]
+    user_id: Optional[PydanticObjectId] = Field(default=None)
     created_at: datetime.datetime
     feature_job_setting: FeatureJobSetting
     total_pct_late_data: float
@@ -115,7 +115,7 @@ class BacktestResult(FeatureByteBaseModel):
     results: str
     job_with_issues_count: int
     warnings: List[str]
-    plot: Optional[str]
+    plot: Optional[str] = Field(default=None)
 
 
 class EventLandingTimeResult(FeatureByteBaseModel):
@@ -135,7 +135,7 @@ class AnalysisResultsData(FeatureByteBaseModel):
     """
 
     blind_spot_search_result: BlindSpotSearchResult
-    blind_spot_search_exc_missing_jobs_result: Optional[BlindSpotSearchResult]
+    blind_spot_search_exc_missing_jobs_result: Optional[BlindSpotSearchResult] = Field(default=None)
     event_landing_time_result: EventLandingTimeResult
     backtest_result: BacktestResult
 
@@ -146,11 +146,11 @@ class MissingJobsInfo(FeatureByteBaseModel):
     """
 
     normal_age_max: float
-    late_job_index: Optional[str]
-    late_event_index: Optional[str]
+    late_job_index: Optional[str] = Field(default=None)
+    late_event_index: Optional[str] = Field(default=None)
     jobs_after_missing_jobs_index: str
     affected_jobs_index: str
-    affected_event_index: Optional[str]
+    affected_event_index: Optional[str] = Field(default=None)
 
 
 class AnalysisData(FeatureByteBaseModel):
@@ -168,6 +168,6 @@ class FeatureJobSettingAnalysisData(FeatureByteBaseModel):
     Store large objects from the analysis
     """
 
-    analysis_plots: Optional[AnalysisPlots]
-    analysis_data: Optional[AnalysisData]
+    analysis_plots: Optional[AnalysisPlots] = Field(default=None)
+    analysis_data: Optional[AnalysisData] = Field(default=None)
     analysis_result: AnalysisResultsData

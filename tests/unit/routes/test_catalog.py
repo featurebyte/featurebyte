@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.deployment import DeploymentModel
 from tests.unit.routes.base import BaseApiTestSuite

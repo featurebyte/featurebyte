@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 
 from http import HTTPStatus
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from fastapi.exceptions import HTTPException
 
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError

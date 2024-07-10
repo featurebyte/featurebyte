@@ -60,8 +60,8 @@ class PrecomputedLookupFeatureTableInfo(FeatureByteBaseModel):
     """
 
     lookup_steps: List[EntityRelationshipInfo]
-    source_feature_table_id: Optional[PydanticObjectId]
-    lookup_mapping: Optional[List[PrecomputedLookupMapping]]
+    source_feature_table_id: Optional[PydanticObjectId] = Field(default=None)
+    lookup_mapping: Optional[List[PrecomputedLookupMapping]] = Field(default=None)
 
     def get_lookup_feature_table_serving_name(
         self, source_feature_table_serving_name: str
@@ -98,21 +98,23 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
     has_ttl: bool
-    last_materialized_at: Optional[datetime]
+    last_materialized_at: Optional[datetime] = Field(default=None)
     online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt] = Field(
         default_factory=list
     )
 
     feature_cluster_path: Optional[str] = Field(default=None)
-    feature_cluster: Optional[FeatureCluster]
+    feature_cluster: Optional[FeatureCluster] = Field(default=None)
 
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
-    entity_lookup_info: Optional[EntityRelationshipInfo]  # Note: deprecated
-    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo]
+    entity_lookup_info: Optional[EntityRelationshipInfo] = Field(default=None)  # Note: deprecated
+    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo] = Field(
+        default=None
+    )
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
     deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
 
@@ -356,8 +358,8 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     feature_ids: List[PydanticObjectId]
-    feature_cluster: Optional[FeatureCluster]
-    feature_cluster_path: Optional[str]
+    feature_cluster: Optional[FeatureCluster] = Field(default=None)
+    feature_cluster_path: Optional[str] = Field(default=None)
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: EntityUniverseModel

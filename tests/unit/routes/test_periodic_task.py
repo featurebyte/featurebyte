@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 from requests import Response
 
 from featurebyte.models.base import User

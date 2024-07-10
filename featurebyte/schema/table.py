@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.validator import columns_info_validator
@@ -28,8 +28,8 @@ class TableCreate(FeatureByteBaseModel):
     name: NameStr
     tabular_source: TabularSource
     columns_info: List[ColumnSpecWithDescription]
-    record_creation_timestamp_column: Optional[StrictStr]
-    description: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
+    description: Optional[StrictStr] = Field(default=None)
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
@@ -69,12 +69,12 @@ class TableUpdate(FeatureByteBaseModel):
     Update table payload schema
     """
 
-    status: Optional[TableStatus]
-    record_creation_timestamp_column: Optional[StrictStr]
+    status: Optional[TableStatus] = Field(default=None)
+    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
 
     # Update of columns info is deprecated and will be removed in release 0.5.0
     # See https://featurebyte.atlassian.net/browse/DEV-2000
-    columns_info: Optional[List[ColumnInfo]]
+    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
 
 
 class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
@@ -82,7 +82,7 @@ class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
     TableService update schema
     """
 
-    columns_info: Optional[List[ColumnInfo]]
+    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
@@ -130,7 +130,7 @@ class ColumnCriticalDataInfoUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    critical_data_info: Optional[CriticalDataInfo]
+    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
 class ColumnEntityUpdate(FeatureByteBaseModel):
@@ -139,7 +139,7 @@ class ColumnEntityUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    entity_id: Optional[PydanticObjectId]
+    entity_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class ColumnDescriptionUpdate(FeatureByteBaseModel):
@@ -148,7 +148,7 @@ class ColumnDescriptionUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    description: Optional[StrictStr]
+    description: Optional[StrictStr] = Field(default=None)
 
 
 class ColumnSemanticUpdate(FeatureByteBaseModel):
@@ -157,4 +157,4 @@ class ColumnSemanticUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    semantic_id: Optional[PydanticObjectId]
+    semantic_id: Optional[PydanticObjectId] = Field(default=None)

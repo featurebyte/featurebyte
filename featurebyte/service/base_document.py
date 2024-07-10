@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bson.objectid import ObjectId
+from bson import ObjectId
 from cachetools import LRUCache
 from pymongo.errors import OperationFailure
 from redis import Redis

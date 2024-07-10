@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.logging import get_logger

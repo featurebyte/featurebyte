@@ -5,7 +5,7 @@ Tests FeatureByteBaseModel
 from typing import List
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import StrictStr, ValidationError
 
 from featurebyte.models.base import (

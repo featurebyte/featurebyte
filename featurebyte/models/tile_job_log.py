@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, UniqueValuesConstraint
 from featurebyte.models.tile import TileType
@@ -26,8 +26,8 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
     session_id: StrictStr
     status: StrictStr
     message: StrictStr
-    traceback: Optional[StrictStr]
-    duration: Optional[float]
+    traceback: Optional[StrictStr] = Field(default=None)
+    duration: Optional[float] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

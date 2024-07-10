@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 import yaml
-from bson.objectid import ObjectId
+from bson import ObjectId
 from fastapi.testclient import TestClient
 
 from featurebyte.api.base_table import TableApiObject

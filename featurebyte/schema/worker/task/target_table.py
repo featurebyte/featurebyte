@@ -4,7 +4,7 @@ Target table task payload
 
 from typing import Any, ClassVar, Dict, Optional
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.observation_table import ObservationTableModel
@@ -22,7 +22,7 @@ class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
     output_collection_name: ClassVar[str] = ObservationTableModel.collection_name()
 
     # instance variables
-    observation_set_storage_path: Optional[str]
+    observation_set_storage_path: Optional[str] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod

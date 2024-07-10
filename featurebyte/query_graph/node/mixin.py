@@ -6,6 +6,8 @@ from typing import List, Optional, Set
 
 from abc import ABC, abstractmethod
 
+from pydantic import Field
+
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
@@ -25,11 +27,11 @@ class BaseGroupbyParameters(FeatureByteBaseModel):
     """Common parameters related to groupby operation"""
 
     keys: List[InColumnStr]
-    parent: Optional[InColumnStr]
+    parent: Optional[InColumnStr] = Field(default=None)
     agg_func: AggFunc
-    value_by: Optional[InColumnStr]
+    value_by: Optional[InColumnStr] = Field(default=None)
     serving_names: List[str]
-    entity_ids: Optional[List[PydanticObjectId]]
+    entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
 class AggregationOpStructMixin(BaseNode, ABC):

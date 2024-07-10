@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -36,7 +36,7 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
     sql: str
     table_name: str
     serving_names: List[StrictStr]
-    feature_store_id: Optional[PydanticObjectId]
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

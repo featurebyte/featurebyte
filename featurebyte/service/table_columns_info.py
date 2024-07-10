@@ -8,7 +8,7 @@ from typing import List, Tuple, Union
 
 from collections import defaultdict
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pymongo.errors import OperationFailure
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 

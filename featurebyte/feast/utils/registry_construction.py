@@ -25,6 +25,7 @@ from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import FeastConfigBaseModel, RegistryConfig, RepoConfig
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
+from pydantic import Field as PydanticField
 
 from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
@@ -124,12 +125,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSetting] = PydanticField(default=None)
     has_ttl: bool
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     primary_entity_info: List[OfflineStoreEntityInfo]
-    source_feature_table_name: Optional[str]
+    source_feature_table_name: Optional[str] = PydanticField(default=None)
 
     @property
     def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:

@@ -958,7 +958,7 @@ class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
 class SingleValueNodeParameters(BaseNodeParameters):
     """SingleValueNodeParameters"""
 
-    value: Optional[ValueParameterType]
+    value: Optional[ValueParameterType] = Field(default=None)
 
 
 class ValueWithRightOpNodeParameters(SingleValueNodeParameters):

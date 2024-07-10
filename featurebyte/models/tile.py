@@ -59,13 +59,13 @@ class TileSpec(FeatureByteBaseModel):
     value_column_types: List[str]
     tile_id: str
     aggregation_id: str
-    aggregation_function_name: Optional[str]
-    parent_column_name: Optional[str]
-    category_column_name: Optional[str]
-    feature_store_id: Optional[ObjectId]
+    aggregation_function_name: Optional[str] = Field(default=None)
+    parent_column_name: Optional[str] = Field(default=None)
+    category_column_name: Optional[str] = Field(default=None)
+    feature_store_id: Optional[ObjectId] = Field(default=None)
     entity_tracker_table_name: str
-    windows: List[Optional[str]]
-    offset: Optional[str]
+    windows: List[Optional[str]] = Field(default=None)
+    offset: Optional[str] = Field(default=None)
 
     class Config:
         """

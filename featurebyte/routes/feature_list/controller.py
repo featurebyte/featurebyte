@@ -9,8 +9,7 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, U
 import copy
 from http import HTTPStatus
 
-from bson import json_util
-from bson.objectid import ObjectId
+from bson import ObjectId, json_util
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
 

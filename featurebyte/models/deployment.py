@@ -28,9 +28,9 @@ class FeastRegistryInfo(FeatureByteBaseModel):
 class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     """Model for a deployment"""
 
-    name: Optional[StrictStr]
+    name: Optional[StrictStr] = Field(default=None)
     feature_list_id: PydanticObjectId
-    feature_list_namespace_id: Optional[PydanticObjectId]
+    feature_list_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     enabled: bool
     context_id: Optional[PydanticObjectId] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)

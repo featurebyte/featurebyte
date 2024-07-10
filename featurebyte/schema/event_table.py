@@ -25,9 +25,9 @@ class EventTableCreate(TableCreate):
     type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
-    event_timestamp_timezone_offset: Optional[StrictStr]
-    event_timestamp_timezone_offset_column: Optional[StrictStr]
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
+    event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
     # pydantic validators
     _special_columns_validator = validator(
@@ -73,7 +73,7 @@ class EventTableUpdateMixin(FeatureByteBaseModel):
     EventTable specific update schema
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting]
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
 class EventTableUpdate(EventTableUpdateMixin, TableUpdate):

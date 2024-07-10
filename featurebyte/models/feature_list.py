@@ -11,7 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import pymongo
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, PrivateAttr, StrictStr, parse_obj_as, root_validator, validator
 from typeguard import typechecked
 
@@ -226,7 +226,7 @@ class FeatureNodeDefinitionHash(FeatureByteBaseModel):
     """
 
     node_name: str
-    definition_hash: Optional[str]
+    definition_hash: Optional[str] = Field(default=None)
     feature_id: Optional[PydanticObjectId] = Field(default=None)
     feature_name: Optional[str] = Field(default=None)
 
@@ -239,8 +239,10 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]]
-    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]]
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]] = Field(
+        default=None
+    )
+    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = Field(default=None)
     combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
 
     @root_validator(pre=True)
@@ -342,7 +344,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     feature_clusters_path: Optional[str] = Field(default=None)
-    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters")
+    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters", default=None)
     _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list

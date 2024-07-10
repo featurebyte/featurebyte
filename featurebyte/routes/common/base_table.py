@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError

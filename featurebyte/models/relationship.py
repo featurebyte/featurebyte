@@ -91,10 +91,10 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
-    entity_column_name: Optional[str]
-    related_entity_column_name: Optional[str]
+    entity_column_name: Optional[str] = Field(default=None)
+    related_entity_column_name: Optional[str] = Field(default=None)
     enabled: bool
-    updated_by: Optional[PydanticObjectId]
+    updated_by: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

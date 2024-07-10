@@ -46,8 +46,8 @@ class BaseRequestInput(FeatureByteBaseModel):
     BaseRequestInput is the base class for all RequestInput types
     """
 
-    columns: Optional[List[str]]
-    columns_rename_mapping: Optional[Dict[str, str]]
+    columns: Optional[List[str]] = Field(default=None)
+    columns_rename_mapping: Optional[Dict[str, str]] = Field(default=None)
 
     @abstractmethod
     def get_query_expr(self, source_type: SourceType) -> Select:
@@ -190,7 +190,7 @@ class ViewRequestInput(BaseRequestInput):
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_graph: Any = Field(alias="graph")
+    internal_graph: Any = Field(alias="graph", default=None)
     _graph: Optional[QueryGraphModel] = PrivateAttr(default=None)
 
     @property

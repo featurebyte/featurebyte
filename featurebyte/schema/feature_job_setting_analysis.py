@@ -6,7 +6,7 @@ from typing import Any, Dict, Literal, Optional, Sequence, Union
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pandas import Timestamp
 from pydantic import Field, StrictStr, root_validator
 
@@ -37,7 +37,7 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)
     event_table_id: Optional[PydanticObjectId] = Field(default=None)
     event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_date: Optional[datetime] = Field(default=None)

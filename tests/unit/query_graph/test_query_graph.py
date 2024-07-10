@@ -6,7 +6,7 @@ import textwrap
 from collections import defaultdict
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

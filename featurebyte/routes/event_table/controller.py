@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.event_table import EventTableModel

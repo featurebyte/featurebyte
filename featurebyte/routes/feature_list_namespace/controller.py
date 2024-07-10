@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import copy
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.persistent.base import SortDir

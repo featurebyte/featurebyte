@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import gevent
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType

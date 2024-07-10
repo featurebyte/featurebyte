@@ -452,7 +452,7 @@ class BaseCountDictWithKeyOpNode(BaseCountDictOpNode, ABC):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        value: Optional[Scalar]
+        value: Optional[Scalar] = Field(default=None)
 
     parameters: Parameters
 

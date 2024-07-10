@@ -20,7 +20,7 @@ class BaseRequestTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    context_id: Optional[PydanticObjectId]
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class BaseRequestTableListRecord(BaseMaterializedTableListRecord):

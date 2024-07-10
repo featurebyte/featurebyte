@@ -3,7 +3,7 @@ Tests for Feature list related models
 """
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte import FeatureListStatus
 from featurebyte.models.base import DEFAULT_CATALOG_ID

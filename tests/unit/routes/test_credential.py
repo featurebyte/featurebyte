@@ -6,7 +6,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.credential import decrypt_value
 from tests.unit.routes.base import BaseApiTestSuite

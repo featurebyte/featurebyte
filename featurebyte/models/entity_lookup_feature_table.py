@@ -68,7 +68,7 @@ def get_entity_lookup_graph(
                 natural_key_column=relation_table.natural_key_column,
                 current_flag_column=relation_table.current_flag_column,
                 end_timestamp_column=relation_table.end_timestamp_column,
-            )
+            ).dict(by_alias=True)
         }
     elif relation_table.type == TableDataType.EVENT_TABLE:
         assert isinstance(relation_table, EventTableModel)

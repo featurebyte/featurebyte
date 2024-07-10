@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pytest
 import pytest_asyncio
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.test import TestIOTaskPayload

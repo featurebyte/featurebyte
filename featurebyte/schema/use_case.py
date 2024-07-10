@@ -18,10 +18,10 @@ class UseCaseCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=PydanticObjectId, alias="_id")
     name: NameStr
-    target_id: Optional[PydanticObjectId]
-    target_namespace_id: Optional[PydanticObjectId]
+    target_id: Optional[PydanticObjectId] = Field(default=None)
+    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     context_id: PydanticObjectId
-    description: Optional[StrictStr]
+    description: Optional[StrictStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod
@@ -38,14 +38,14 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     Use Case update schema
     """
 
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
-    observation_table_id_to_remove: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
+    default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id_to_remove: Optional[PydanticObjectId] = Field(default=None)
 
-    remove_default_eda_table: Optional[bool]
-    remove_default_preview_table: Optional[bool]
+    remove_default_eda_table: Optional[bool] = Field(default=None)
+    remove_default_preview_table: Optional[bool] = Field(default=None)
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod

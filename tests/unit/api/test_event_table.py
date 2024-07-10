@@ -13,7 +13,7 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity

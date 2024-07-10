@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.models.base import NameStr, PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -38,7 +38,7 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
 
     feature_store_id: PydanticObjectId
-    observation_table_id: Optional[PydanticObjectId]
+    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod
@@ -52,4 +52,4 @@ class HistoricalFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
     HistoricalFeatureTable update payload
     """
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)

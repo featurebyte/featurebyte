@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.enum import ConflictResolution
@@ -91,8 +91,8 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
-    table_cleaning_operations: Optional[List[TableCleaningOperation]]
+    table_feature_job_settings: Optional[List[TableFeatureJobSetting]] = Field(default=None)
+    table_cleaning_operations: Optional[List[TableCleaningOperation]] = Field(default=None)
 
     # pydantic validators
     _validate_unique_feat_job_data_name = validator("table_feature_job_settings", allow_reuse=True)(
@@ -124,8 +124,8 @@ class FeatureUpdate(FeatureByteBaseModel):
     Feature update schema
     """
 
-    readiness: Optional[FeatureReadiness]
-    ignore_guardrails: Optional[bool]
+    readiness: Optional[FeatureReadiness] = Field(default=None)
+    ignore_guardrails: Optional[bool] = Field(default=None)
 
 
 class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
@@ -133,9 +133,9 @@ class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
     Feature service update schema
     """
 
-    online_enabled: Optional[bool]
-    feature_list_ids: Optional[List[PydanticObjectId]]
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]]
+    online_enabled: Optional[bool] = Field(default=None)
+    feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
 class ReadinessComparison(FeatureByteBaseModel):

@@ -2,9 +2,9 @@
 Tests for FeatureList route
 """
 
-import collections
-
 # pylint: disable=too-many-lines
+
+import collections
 import os
 import textwrap
 from collections import defaultdict
@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, Mock, call, patch
 import numpy as np
 import pandas as pd
 import pytest
-from bson.objectid import ObjectId
+from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
