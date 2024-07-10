@@ -268,7 +268,7 @@ class S3StorageCredential(BaseStorageCredential):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
 
     # instance variables
-    type: StorageCredentialType = StorageCredentialType.S3
+    type: Literal[StorageCredentialType.S3] = StorageCredentialType.S3
     s3_access_key_id: StrictStr = Field(
         description="S3 access key ID used for connecting to your S3 store."
     )
@@ -293,7 +293,7 @@ class GCSStorageCredential(BaseStorageCredential):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.GCSStorageCredential")
 
     # instance variables
-    type: StorageCredentialType = StorageCredentialType.GCS
+    type: Literal[StorageCredentialType.GCS] = StorageCredentialType.GCS
     service_account_info: Dict[str, str] = Field(
         description="Service account information used for connecting to your GCS store."
     )
@@ -317,7 +317,7 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     )
 
     # instance variables
-    type: StorageCredentialType = StorageCredentialType.AZURE
+    type: Literal[StorageCredentialType.AZURE] = StorageCredentialType.AZURE
     account_name: StrictStr
     account_key: StrictStr
 
