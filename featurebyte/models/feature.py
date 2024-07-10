@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType
@@ -116,14 +116,14 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     )
 
     # pydantic validators
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
-    _sort_ids_validator = validator(
+    _version_validator = field_validator("version", mode="before")(version_validator)
+    _sort_ids_validator = field_validator(
         "table_ids",
         "primary_table_ids",
         "entity_ids",
         "primary_entity_ids",
         "user_defined_function_ids",
-        allow_reuse=True,
+        mode="after",
     )(construct_sort_validator())
 
     @staticmethod
@@ -198,7 +198,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
         return self
 
-    @validator("name")
+    @field_validator("name")
     @classmethod
     def _validate_asset_name(cls, value: Optional[str]) -> Optional[str]:
         if value and value.startswith("__"):
@@ -207,7 +207,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
         return value
 
-    @validator(
+    @field_validator(
         "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
     )
     @classmethod

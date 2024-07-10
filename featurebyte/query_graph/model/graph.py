@@ -6,7 +6,7 @@ from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple,
 
 from collections import defaultdict
 
-from pydantic import Field, PrivateAttr, model_validator, validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -309,14 +309,14 @@ class QueryGraphModel(FeatureByteBaseModel):
 
         return self
 
-    @validator("edges_map", "backward_edges_map")
+    @field_validator("edges_map", "backward_edges_map")
     @classmethod
     def _make_default_dict_list(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         # make sure the output is default dict to list
         updated_dict = defaultdict(list, value)
         return updated_dict
 
-    @validator("node_type_counter")
+    @field_validator("node_type_counter")
     @classmethod
     def _make_default_dict_int(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         # make sure the output is default dict to int

@@ -5,7 +5,7 @@ This module contains Tile related models
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -84,7 +84,7 @@ class TileSpec(FeatureByteBaseModel):
             )
         return values
 
-    @validator("tile_id")
+    @field_validator("tile_id")
     @classmethod
     def stripped(cls, value: str) -> str:
         """

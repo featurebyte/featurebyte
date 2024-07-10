@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, model_validator, parse_obj_as, validator
+from pydantic import Field, PrivateAttr, StrictStr, field_validator, model_validator, parse_obj_as
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -356,17 +356,17 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
 
     # pydantic validators
-    _sort_ids_validator = validator(
+    _sort_ids_validator = field_validator(
         "online_enabled_feature_ids",
         "features_primary_entity_ids",
         "primary_entity_ids",
         "entity_ids",
         "table_ids",
-        allow_reuse=True,
+        mode="after",
     )(construct_sort_validator())
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+    _version_validator = field_validator("version", mode="before")(version_validator)
 
-    @validator("supported_serving_entity_ids")
+    @field_validator("supported_serving_entity_ids")
     @classmethod
     def _validate_supported_serving_entity_ids(
         cls, value: List[ServingEntity]

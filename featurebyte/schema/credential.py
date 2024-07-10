@@ -5,7 +5,7 @@ Pydantic schemas for handling API payloads for credential routes
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -47,7 +47,7 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
-    @validator("database_credential", "storage_credential")
+    @field_validator("database_credential", "storage_credential")
     @classmethod
     def hide_credentials(cls, credential: Optional[BaseCredential]) -> Optional[BaseCredential]:
         """

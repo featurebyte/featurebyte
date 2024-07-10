@@ -9,7 +9,7 @@ from typing_extensions import Annotated, Literal
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 import pandas as pd
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, StrEnum
@@ -249,7 +249,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
-    @validator("disguised_values")
+    @field_validator("disguised_values")
     @classmethod
     def _validate_disguised_values(cls, values: Sequence[Any]) -> Sequence[Any]:
         if len(values) == 0:
@@ -307,7 +307,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
-    @validator("expected_values")
+    @field_validator("expected_values")
     @classmethod
     def _validate_expected_values(cls, values: Sequence[Any]) -> Sequence[Any]:
         if len(values) == 0:
@@ -587,7 +587,7 @@ class TableCleaningOperation(FeatureByteBaseModel):
     )
 
     # pydantic validators
-    _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(
+    _validate_unique_column_name = field_validator("column_cleaning_operations")(
         construct_unique_name_validator(field="column_name")
     )
 
@@ -601,6 +601,6 @@ class TableIdCleaningOperation(FeatureByteBaseModel):
     column_cleaning_operations: List[ColumnCleaningOperation]
 
     # pydantic validators
-    _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(
+    _validate_unique_column_name = field_validator("column_cleaning_operations")(
         construct_unique_name_validator(field="column_name")
     )

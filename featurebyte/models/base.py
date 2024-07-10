@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from bson import ObjectId
 from bson.errors import InvalidId
-from pydantic import BaseModel, Field, StrictStr, model_validator, validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 from pydantic.errors import DictError, PydanticTypeError
 from pymongo.operations import IndexModel
 
@@ -299,7 +299,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         description="Flag to indicate if the record is deleted.",
     )
 
-    @validator("id", pre=True)
+    @field_validator("id", mode="before")
     @classmethod
     def validate_id(cls, value: Any) -> Any:
         """

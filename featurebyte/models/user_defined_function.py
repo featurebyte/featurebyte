@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 import pymongo
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
@@ -223,7 +223,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     catalog_id: Optional[PydanticObjectId] = Field(default=None)
     feature_store_id: PydanticObjectId
 
-    @validator("name", "sql_function_name")
+    @field_validator("name", "sql_function_name")
     @classmethod
     def _validate_function_name(cls, value: str) -> str:
         # check that name or function name is a valid identifier
@@ -231,7 +231,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
             raise ValueError(f'"{value}" is not a valid identifier')
         return value
 
-    @validator("function_parameters")
+    @field_validator("function_parameters")
     @classmethod
     def _validate_function_parameters(
         cls, value: List[FunctionParameter]

@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
@@ -541,7 +541,7 @@ class OnlineStoreInfo(BaseInfo):
     details: OnlineStoreDetails
     catalogs: List[CatalogBriefInfo]
 
-    @validator("details")
+    @field_validator("details", mode="after")
     @classmethod
     def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
         """

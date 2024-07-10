@@ -7,7 +7,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 from typing_extensions import Literal
 
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -1252,7 +1252,7 @@ class JoinNodeParameters(FeatureByteBaseModel):
         default=None
     )  # DEV-556: should be compulsory
 
-    @validator(
+    @field_validator(
         "left_input_columns",
         "right_input_columns",
         "left_output_columns",

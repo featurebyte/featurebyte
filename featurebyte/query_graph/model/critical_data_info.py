@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import validator
+from pydantic import field_validator
 
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -18,7 +18,7 @@ class CriticalDataInfo(FeatureByteBaseModel):
 
     cleaning_operations: List[CleaningOperation]
 
-    @validator("cleaning_operations")
+    @field_validator("cleaning_operations")
     @classmethod
     def _validate_cleaning_operation(
         cls, values: List[CleaningOperation]
