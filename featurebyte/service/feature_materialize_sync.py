@@ -143,7 +143,7 @@ class FeatureMaterializeSyncService:
         The entry point of all feature materialize tasks
 
         This will be called in a scheduled IO task. It will wait for all the prerequisites for a
-        feature materialize task to be met (with a deadline) before triggering the task
+        feature materialize task to be met before triggering the task, with a deadline.
 
         Parameters
         ----------
@@ -165,8 +165,7 @@ class FeatureMaterializeSyncService:
         feature_job_setting = feature_table.feature_job_setting
         assert feature_job_setting is not None
 
-        # TODO: should count from tic or scheduled job time?
-        tic = time.time()
+        tic = prerequisite.scheduled_job_ts.timestamp()
         prerequisite_met = False
         logger.debug(
             "Waiting for prerequisites for feature materialize task",
