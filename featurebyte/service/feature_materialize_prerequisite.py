@@ -136,6 +136,6 @@ class FeatureMaterializePrerequisiteService(
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
-            update={"$push": {"completed": prerequisite_tile_task}},
+            update={"$push": {"completed": prerequisite_tile_task.dict(by_alias=True)}},
             user_id=self.user.id,
         )

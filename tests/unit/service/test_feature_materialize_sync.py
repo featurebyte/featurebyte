@@ -281,7 +281,7 @@ async def test_run_feature_materialize__prerequisite_met(
     # Check prerequisite document
     docs = await feature_materialize_prerequisite_service.list_documents_as_dict(query_filter={})
     assert len(docs["data"]) == 1
-    assert len(docs["data"][0]["completed"]) == 1
+    assert docs["data"][0]["completed"] == [{"aggregation_id": "agg_id_x", "status": "success"}]
 
     # Check materialize task is triggered
     assert caplog.records[-1].msg == "Prerequisites for feature materialize task met"
