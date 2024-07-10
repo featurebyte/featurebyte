@@ -2033,7 +2033,9 @@ def test_feature_metadata_extraction(snowflake_event_table):
     dropoff_time = event_view["dropoff_time"]
     trip_distance = event_view["trip_distance"]
     event_view["trip_duration"] = (dropoff_time - pickup_time).dt.second
-    event_view["pickup_week_hour"] = pickup_time.dt.day_of_week.astype(str) + "-" + pickup_time.dt.hour.astype(str)
+    event_view["pickup_week_hour"] = (
+        pickup_time.dt.day_of_week.astype(str) + "-" + pickup_time.dt.hour.astype(str)
+    )
     trip_duration = event_view["trip_duration"]
     filter_cond = (trip_distance > 1) & (trip_duration > 0) & (trip_duration < 10800)
     event_view = event_view[filter_cond]
@@ -2044,14 +2046,16 @@ def test_feature_metadata_extraction(snowflake_event_table):
         method="sum",
         windows=["28d"],
         feature_names=["total_duration_by_week_hour_28d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="0s", period="3600s", offset="0s"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
         skip_fill_na=True,
         offset=None,
-    )["total_duration_by_week_hour_28d"]
+    )[
+        "total_duration_by_week_hour_28d"
+    ]
     point_in_time = RequestColumn.point_in_time()
-    pit_weekday_hour = point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
+    pit_weekday_hour = (
+        point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
+    )
     lookup_total_duration = total_duration_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
     total_distance_by_week_hour_28d = event_view.groupby(
         by_keys=["col_text"], category="pickup_week_hour"
@@ -2060,16 +2064,24 @@ def test_feature_metadata_extraction(snowflake_event_table):
         method="sum",
         windows=["28d"],
         feature_names=["total_distance_by_week_hour_28d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="0s", period="3600s", offset="0s"
-        ),
+        feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
         skip_fill_na=True,
         offset=None,
-    )["total_distance_by_week_hour_28d"]
+    )[
+        "total_distance_by_week_hour_28d"
+    ]
     lookup_total_distance = total_distance_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
     avg_speed = lookup_total_distance / lookup_total_duration
     avg_speed.name = "pickup_location_avg_speed_week_hour_28d"
     avg_speed.save()
 
     # check that feature metadata can be extracted without error
-    _ = avg_speed.info()
+    feature_metadata = avg_speed.info()["metadata"]
+    assert feature_metadata["post_aggregation"]["name"] == "pickup_location_avg_speed_week_hour_28d"
+    assert feature_metadata["post_aggregation"]["inputs"] == ["F0", "F1", "F2"]
+    aggregation_names = {agg["name"] for agg in feature_metadata["aggregations"].values()}
+    assert aggregation_names == {
+        "total_duration_by_week_hour_28d",
+        "total_distance_by_week_hour_28d",
+        "POINT_IN_TIME",
+    }

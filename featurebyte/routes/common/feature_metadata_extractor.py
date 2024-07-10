@@ -4,13 +4,19 @@ Feature metadata extractor
 
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar, Union
 
 from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
-from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    AggregationColumn,
+    DerivedDataColumn,
+    GroupOperationStructure,
+    PostAggregationColumn,
+    SourceDataColumn,
+)
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
@@ -61,7 +67,9 @@ class FeatureOrTargetMetadataExtractor:
         self.table_service = table_service
         self.semantic_service = semantic_service
 
-    async def extract_from_object(self, obj: BaseFeatureModel) -> dict[str, Any]:
+    async def extract_from_object(
+        self, obj: BaseFeatureModel
+    ) -> tuple[GroupOperationStructure, dict[str, Any]]:
         """
         Extract feature metadata from feature or target
 
@@ -72,18 +80,43 @@ class FeatureOrTargetMetadataExtractor:
 
         Returns
         -------
-        dict[str, Any]
+        tuple[GroupOperationStructure, dict[str, Any]]
         """
         try:
             op_struct = obj.extract_operation_structure(keep_all_source_columns=False)
-            return await self._extract(op_struct=op_struct)
+            metadata = await self._extract(op_struct=op_struct)
         except KeyError:
             # FIXME (https://featurebyte.atlassian.net/browse/DEV-2045): Setting
             #  keep_all_source_columns to False fails in some edge cases. This is a workaround for
             #  the cases where it fails, though it produces info that is more verbose than desired.
             #  We should clean this up.
             op_struct = obj.extract_operation_structure(keep_all_source_columns=True)
-            return await self._extract(op_struct=op_struct)
+            metadata = await self._extract(op_struct=op_struct)
+        return op_struct, metadata
+
+    @classmethod
+    def _reference_key_func(
+        cls,
+        col: Optional[
+            Union[SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn]
+        ],
+    ) -> str:
+        # helper function to generate reference key used in the reference map (_extract function)
+        if col is None:
+            return "None"
+        if isinstance(col, SourceDataColumn):
+            return f"SourceDataColumn({col.table_id}, {col.name})"
+        if isinstance(col, DerivedDataColumn):
+            table_ids = sorted([col.table_id for col in col.columns if col.table_id is not None])
+            return f"DerivedDataColumn({col.name}, {table_ids})"
+        if isinstance(col, AggregationColumn):
+            # for count aggregation, col.column is None
+            col_key = cls._reference_key_func(col.column) if col.column is not None else None
+            return f"AggregationColumn({col.name}, {col_key})"
+
+        assert isinstance(col, PostAggregationColumn)
+        col_keys = sorted([cls._reference_key_func(col) for col in col.columns])
+        return f"PostAggregationColumn({col.name}, {col_keys})"
 
     async def _extract(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         """
@@ -116,11 +149,12 @@ class FeatureOrTargetMetadataExtractor:
 
         # construct feature metadata
         source_columns = {}
-        reference_map: dict[Any, str] = {}
+        reference_map: dict[str, str] = {}
         for idx, src_col in enumerate(op_struct.source_columns):
             column_metadata = column_map[(src_col.table_id, src_col.name)]
-            reference_map[src_col] = f"Input{idx}"
-            source_columns[reference_map[src_col]] = {
+            reference_key = self._reference_key_func(src_col)
+            reference_map[reference_key] = f"Input{idx}"
+            source_columns[reference_map[reference_key]] = {
                 "data": column_metadata["table_name"],
                 "column_name": src_col.name,
                 "semantic": column_metadata["semantic"],
@@ -128,9 +162,10 @@ class FeatureOrTargetMetadataExtractor:
 
         derived_columns = {}
         for idx, drv_col in enumerate(op_struct.derived_columns):
-            columns = [reference_map[col] for col in drv_col.columns]
-            reference_map[drv_col] = f"X{idx}"
-            derived_columns[reference_map[drv_col]] = {
+            columns = [reference_map[self._reference_key_func(col)] for col in drv_col.columns]
+            reference_key = self._reference_key_func(drv_col)
+            reference_map[reference_key] = f"X{idx}"
+            derived_columns[reference_map[reference_key]] = {
                 "name": drv_col.name,
                 "inputs": columns,
                 "transforms": drv_col.transforms,
@@ -138,12 +173,11 @@ class FeatureOrTargetMetadataExtractor:
 
         aggregation_columns = {}
         for idx, agg_col in enumerate(op_struct.aggregations):
-            reference_map[agg_col] = f"F{idx}"
-            aggregation_columns[reference_map[agg_col]] = {
+            reference_key = self._reference_key_func(agg_col)
+            reference_map[reference_key] = f"F{idx}"
+            aggregation_columns[reference_map[reference_key]] = {
                 "name": agg_col.name,
-                "column": reference_map.get(
-                    agg_col.column, None
-                ),  # for count aggregation, column is None
+                "column": reference_map.get(self._reference_key_func(agg_col.column)),
                 "function": agg_col.method,
                 "keys": agg_col.keys,
                 "window": agg_col.window,
@@ -157,7 +191,10 @@ class FeatureOrTargetMetadataExtractor:
         if op_struct.post_aggregation:
             post_aggregation = {
                 "name": op_struct.post_aggregation.name,
-                "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
+                "inputs": [
+                    reference_map[self._reference_key_func(col)]
+                    for col in op_struct.post_aggregation.columns
+                ],
                 "transforms": op_struct.post_aggregation.transforms,
             }
         return {
