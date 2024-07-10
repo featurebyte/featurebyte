@@ -2,11 +2,11 @@
 This module contains Relation mixin model
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
@@ -129,11 +129,8 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
             ],
         ]
 
-    @root_validator
-    @classmethod
-    def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        child_id = values.get("entity_id")
-        parent_id = values.get("related_entity_id")
-        if child_id == parent_id:
+    @model_validator(mode="after")
+    def _validate_child_and_parent_id(self) -> "RelationshipInfoModel":
+        if self.entity_id == self.related_entity_id:
             raise ValueError("Primary and Related entity id cannot be the same")
-        return values
+        return self

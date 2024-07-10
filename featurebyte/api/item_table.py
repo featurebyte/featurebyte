@@ -11,14 +11,14 @@ import operator
 
 from bson import ObjectId
 from cachetools import cachedmethod
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.api.api_object import ApiObjectT, get_api_object_cache_key
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import apply_column_name_modifiers
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -105,8 +105,8 @@ class ItemTable(TableApiObject):
     internal_item_id_column: StrictStr = Field(alias="item_id_column")
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (

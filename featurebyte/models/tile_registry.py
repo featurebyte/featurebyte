@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 import pymongo
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -33,16 +33,16 @@ class LastRunMetadata(FeatureByteBaseModel):
         Tile index corresponding to the tile end date
     """
 
-    @root_validator(pre=True)
+    tile_end_date: datetime
+    index: int
+
+    @model_validator(mode="before")
     @classmethod
     def _convert_start_date(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: backward compatibility after renaming field
         if values.get("start_date"):
             values["tile_end_date"] = values["start_date"]
         return values
-
-    tile_end_date: datetime
-    index: int
 
 
 class BackfillMetadata(FeatureByteBaseModel):

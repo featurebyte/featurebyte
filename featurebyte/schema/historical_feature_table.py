@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.models.base import NameStr, PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -40,7 +40,7 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
     feature_store_id: PydanticObjectId
     observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["feature_store_id"] = values["location"]["feature_store_id"]

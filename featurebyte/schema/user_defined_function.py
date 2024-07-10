@@ -2,10 +2,10 @@
 UserDefinedFunction API payload schema
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, model_validator, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -79,11 +79,10 @@ class UserDefinedFunctionResponse(UserDefinedFunctionModel):
 
     is_global: bool = Field(default=False)
 
-    @root_validator(pre=True)
-    @classmethod
-    def _derive_is_global(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["is_global"] = values.get("catalog_id") is None
-        return values
+    @model_validator(mode="after")
+    def _derive_is_global(self) -> "UserDefinedFunctionResponse":
+        self.is_global = self.catalog_id is None
+        return self
 
 
 class UserDefinedFunctionList(PaginationMixin):

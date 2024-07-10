@@ -12,7 +12,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -145,10 +145,10 @@ class Feature(
         # of their lineage.
         return tuple()
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_store" not in values:
+        if isinstance(values, dict) and "feature_store" not in values:
             tabular_source = values.get("tabular_source")
             if isinstance(tabular_source, dict):
                 feature_store_id = TabularSource(**tabular_source).feature_store_id

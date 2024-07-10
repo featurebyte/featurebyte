@@ -8,12 +8,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, ca
 from typing_extensions import Literal
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.scd_table import SCDTableModel
@@ -89,8 +89,8 @@ class SCDTable(TableApiObject):
     )
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (

@@ -5,7 +5,7 @@ This module contains Tile related models
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -74,7 +74,7 @@ class TileSpec(FeatureByteBaseModel):
 
         arbitrary_types_allowed: bool = True
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # Fill in default entity_tracker_table_name if not provided. For tests.
@@ -108,16 +108,10 @@ class TileSpec(FeatureByteBaseModel):
             raise ValueError("value cannot be empty")
         return value.strip()
 
-    @root_validator
-    @classmethod
-    def check_time_modulo_and_frequency_minute(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def check_time_modulo_and_frequency_minute(self) -> "TileSpec":
         """
         Root Validator for time-modulo-frequency
-
-        Parameters
-        ----------
-        values: dict
-            dict of attribute and value
 
         Raises
         ------
@@ -130,15 +124,15 @@ class TileSpec(FeatureByteBaseModel):
         -------
             original dict
         """
-        if values["frequency_minute"] > 60 and values["frequency_minute"] % 60 != 0:
+        if self.frequency_minute > 60 and self.frequency_minute % 60 != 0:
             raise ValueError("frequency_minute should be a multiple of 60 if it is more than 60")
 
-        if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
+        if self.time_modulo_frequency_second > self.frequency_minute * 60:
             raise ValueError(
-                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
+                f"time_modulo_frequency_second must be less than {self.frequency_minute * 60}"
             )
 
-        return values
+        return self
 
 
 class TileCommonParameters(FeatureByteBaseModel):

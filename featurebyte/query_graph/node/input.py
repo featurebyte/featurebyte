@@ -9,7 +9,7 @@ from typing_extensions import Annotated, Literal
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -57,7 +57,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         SourceType.TEST: ClassEnum.TESTDB_DETAILS,
     }
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: convert list of string to list of dictionary
@@ -200,7 +200,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
     event_timestamp_timezone_offset: Optional[str] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: converted older record (parameters) into a newer format

@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -99,7 +99,7 @@ class Target(
         """
         return isinstance(other_series, Target)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_store" not in values:

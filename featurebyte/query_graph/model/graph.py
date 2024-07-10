@@ -6,7 +6,7 @@ from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple,
 
 from collections import defaultdict
 
-from pydantic import Field, PrivateAttr, root_validator, validator
+from pydantic import Field, PrivateAttr, model_validator, validator
 
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -271,50 +271,43 @@ class QueryGraphModel(FeatureByteBaseModel):
             ref_to_node_name[ref] = node_name
         return ref_to_node_name
 
-    @root_validator
-    @classmethod
-    def _set_internal_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _set_internal_variables(self) -> "QueryGraphModel":
         # NOTE: During graph instantiation, this method will get called (including global query graph).
         # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
         # for the global query graph.
-        nodes_map = values.get("nodes_map")
-        if not nodes_map and isinstance(values.get("nodes"), list):
-            values["nodes_map"] = cls._derive_nodes_map(values["nodes"], nodes_map)
+        if self.nodes and not self.nodes_map:
+            self.nodes_map = self._derive_nodes_map(self.nodes, self.nodes_map)
 
-        edges_map = values.get("edges_map")
-        if not edges_map and isinstance(values.get("edges"), list):
-            values["edges_map"] = cls._derive_edges_map(values["edges"], edges_map)
+        if self.edges and not self.edges_map:
+            self.edges_map = self._derive_edges_map(self.edges, self.edges_map)
 
-        backward_edges_map = values.get("backward_edges_map")
-        if not backward_edges_map and isinstance(values.get("edges"), list):
-            values["backward_edges_map"] = cls._derive_backward_edges_map(
-                values["edges"], backward_edges_map
+        if self.edges and not self.backward_edges_map:
+            self.backward_edges_map = self._derive_backward_edges_map(
+                self.edges, self.backward_edges_map
             )
 
-        node_type_counter = values.get("node_type_counter")
-        if not node_type_counter and isinstance(values.get("nodes"), list):
-            values["node_type_counter"] = cls._derive_node_type_counter(
-                values["nodes"], node_type_counter
+        if self.nodes and not self.node_type_counter:
+            self.node_type_counter = self._derive_node_type_counter(
+                self.nodes, self.node_type_counter
             )
 
-        node_name_to_ref = values.get("node_name_to_ref")
-        if not node_name_to_ref:
+        if self.nodes and not self.node_name_to_ref:
             # edges_map & backward_edges_map is a defaultdict, accessing a new key will have side effect
             # construct a new backward_edges_map dictionary to avoid introducing side effect
-            values["node_name_to_ref"] = cls._derive_node_name_to_ref(
-                nodes_map=values["nodes_map"],
-                edges_map=dict(values["edges_map"]),
-                backward_edges_map=dict(values["backward_edges_map"]),
-                node_name_to_ref=node_name_to_ref,
+            self.node_name_to_ref = self._derive_node_name_to_ref(
+                nodes_map=self.nodes_map,
+                edges_map=self.edges_map,
+                backward_edges_map=self.backward_edges_map,
+                node_name_to_ref=self.node_name_to_ref,
             )
 
-        ref_to_node_name = values.get("ref_to_node_name")
-        if not ref_to_node_name:
-            values["ref_to_node_name"] = cls._derive_ref_to_node_name(
-                node_name_to_ref=values["node_name_to_ref"], ref_to_node_name=ref_to_node_name
+        if self.nodes and not self.ref_to_node_name:
+            self.ref_to_node_name = self._derive_ref_to_node_name(
+                node_name_to_ref=self.node_name_to_ref, ref_to_node_name=self.ref_to_node_name
             )
 
-        return values
+        return self
 
     @validator("edges_map", "backward_edges_map")
     @classmethod

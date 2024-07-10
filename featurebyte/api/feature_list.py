@@ -23,7 +23,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -318,14 +318,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
-    @root_validator
-    @classmethod
-    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _initialize_feature_list_parameters(self) -> "FeatureList":
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
-        features = list(values["feature_objects"].values())
-        values["internal_feature_ids"] = [feature.id for feature in features]
-        return values
+        self.internal_feature_ids = [feature.id for feature in self.feature_objects.values()]
+        return self
 
     @typechecked
     def __init__(self, items: Sequence[Item], name: str, **kwargs: Any):

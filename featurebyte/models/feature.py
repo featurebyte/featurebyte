@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType
@@ -138,54 +138,53 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             raise ValueError("Feature or target graph must have exactly one aggregation output")
         return op_struct.aggregations[0].dtype
 
-    @root_validator
-    @classmethod
-    def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _add_derived_attributes(self) -> "BaseFeatureModel":
         # do not check entity_ids as the derived result can be an empty list
         derived_attributes = [
-            values.get("primary_table_ids"),
-            values.get("table_ids"),
-            values.get("dtype"),
-            values.get("table_id_column_names"),
+            self.primary_entity_ids,
+            self.table_ids,
+            self.dtype,
+            self.table_id_column_names,
         ]
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
             # extract table ids & entity ids from the graph
-            graph_dict = values["internal_graph"]
+            graph_dict = self.internal_graph
             if isinstance(graph_dict, QueryGraphModel):
                 graph_dict = graph_dict.dict(by_alias=True)
             graph = QueryGraph(**graph_dict)
-            node_name = values["node_name"]
+            node_name = self.node_name
             decompose_state = graph.get_decompose_state(
                 node_name=node_name, relationships_info=None
             )
             entity_ids = decompose_state.primary_entity_ids
 
-            values["entity_ids"] = entity_ids
-            values["entity_dtypes"] = [
+            self.entity_ids = entity_ids
+            self.entity_dtypes = [
                 decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
                 for entity_id in entity_ids
             ]
-            values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
-            values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
+            self.primary_table_ids = graph.get_primary_table_ids(node_name=node_name)
+            self.table_ids = graph.get_table_ids(node_name=node_name)
+            self.user_defined_function_ids = graph.get_user_defined_function_ids(
                 node_name=node_name
             )
 
             # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
             table_id_to_col_names = graph.extract_table_id_to_table_column_names(node=node)
-            values["table_id_column_names"] = [
+            self.table_id_column_names = [
                 TableIdColumnNames(
                     table_id=table_id,
                     column_names=sorted(table_id_to_col_names[table_id]),
                 )
                 for table_id in sorted(table_id_to_col_names)
             ]
-            values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
+            self.table_id_feature_job_settings = graph.extract_table_id_feature_job_settings(
                 target_node=node, keep_first_only=True
             )
-            values["table_id_cleaning_operations"] = graph.extract_table_id_cleaning_operations(
+            self.table_id_cleaning_operations = graph.extract_table_id_cleaning_operations(
                 target_node=node,
                 keep_all_columns=True,
                 table_id_to_col_names=table_id_to_col_names,
@@ -193,11 +192,11 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
             # extract dtype from the graph
             exception_message = "Feature or target graph must have exactly one aggregation output"
-            values["dtype"] = extract_dtype_from_graph(
+            self.dtype = extract_dtype_from_graph(
                 graph=graph, output_node=node, exception_message=exception_message
             )
 
-        return values
+        return self
 
     @validator("name")
     @classmethod
@@ -552,20 +551,19 @@ class FeatureModel(BaseFeatureModel):
     agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
     last_updated_by_scheduled_task_at: Optional[datetime] = Field(frozen=True, default=None)
 
-    @root_validator
-    @classmethod
-    def _add_tile_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _add_tile_derived_attributes(self) -> "FeatureModel":
         # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
         # specific scheduled tile task. An aggregation_id can produce multiple aggregation results
         # using different feature derivation windows.
-        if values.get("aggregation_ids") and values.get("aggregation_result_names"):
-            return values
+        if self.aggregation_ids and self.aggregation_result_names:
+            return self
 
-        graph_dict = values["internal_graph"]
+        graph_dict = self.internal_graph
         if isinstance(graph_dict, QueryGraphModel):
             graph_dict = graph_dict.dict(by_alias=True)
         graph = QueryGraph(**graph_dict)
-        node_name = values["node_name"]
+        node_name = self.node_name
         feature_store_type = graph.get_input_node(node_name).parameters.feature_store_details.type
 
         interpreter = GraphInterpreter(graph, feature_store_type)
@@ -576,10 +574,10 @@ class FeatureModel(BaseFeatureModel):
         except StopIteration:
             # add a try except block here for the old features that may trigger StopIteration,
             # in this case, we will not add tile related attributes
-            return values
+            return self
         except Exception:
             # print a traceback for debugging purpose
-            # without this, the error message will be swallowed by the root_validator
+            # without this, the error message will be swallowed by the model_validator
             print(traceback.format_exc())
             raise
 
@@ -587,21 +585,20 @@ class FeatureModel(BaseFeatureModel):
         for info in tile_infos:
             aggregation_ids.append(info.aggregation_id)
 
-        values["aggregation_ids"] = aggregation_ids
-
-        values["aggregation_result_names"] = []
+        self.aggregation_ids = aggregation_ids
+        self.aggregation_result_names = []
         online_store_table_names = set()
         for query in get_online_store_precompute_queries(
             graph,
             graph.get_node_by_name(node_name),
             feature_store_type,
-            values["agg_result_name_include_serving_names"],
+            self.agg_result_name_include_serving_names,
         ):
-            values["aggregation_result_names"].append(query.result_name)
+            self.aggregation_result_names.append(query.result_name)
             online_store_table_names.add(query.table_name)
-        values["online_store_table_names"] = sorted(online_store_table_names)
+        self.online_store_table_names = sorted(online_store_table_names)
 
-        return values
+        return self
 
     @property
     def used_request_column(self) -> bool:

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, PrivateAttr, StrictStr, parse_obj_as, root_validator, validator
+from pydantic import Field, PrivateAttr, StrictStr, model_validator, parse_obj_as, validator
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -245,7 +245,7 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = Field(default=None)
     combined_relationships_info: List[EntityRelationshipInfo] = Field(frozen=True)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "combined_relationships_info" in values:
@@ -376,7 +376,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             for serving_entity in sorted(value, key=lambda e: (len(e), e))
         ]
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
         # "features" is not an attribute to the FeatureList model, when it appears in the input to

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -60,55 +60,45 @@ class FeatureStoreSample(FeatureStorePreview):
     timestamp_column: Optional[str] = Field(default=None)
     stats_names: Optional[List[str]] = Field(default=None)
 
-    @root_validator()
-    @classmethod
-    def _validate_timestamp_column(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_timestamp_column(self) -> "FeatureStoreSample":
         """
         Validate timestamp_column is specified if from_timestamp or to_timestamp is specified
 
-        Parameters
-        ----------
-        values: Dict[str, Any]
-            Dictionary contains parameter name to value mapping for the FeatureStoreSample object
-
         Returns
         -------
-        Dict[str, Any]
+        FeatureStoreSample
+            FeatureStoreSample instance
 
         Raises
         ------
         ValueError
             Timestamp column not specified
         """
-        from_timestamp = values.get("from_timestamp")
-        to_timestamp = values.get("to_timestamp")
-        timestamp_column = values.get("timestamp_column")
-
         # make sure timestamp_column is available if timestamp range is specified
-        if from_timestamp or to_timestamp:
-            if not timestamp_column:
+        if self.from_timestamp or self.to_timestamp:
+            if not self.timestamp_column:
                 raise ValueError("timestamp_column must be specified.")
 
             # validate timestamp_column exists in a frame
-            graph = values["graph"]
-            node_name = values["node_name"]
-            target_node = graph.get_node_by_name(node_name)
+            target_node = self.graph.get_node_by_name(self.node_name)
             found = False
-            for input_node in graph.iterate_nodes(
+            for input_node in self.graph.iterate_nodes(
                 target_node=target_node, node_type=NodeType.INPUT
             ):
                 column_names = [col.name for col in input_node.parameters.columns]
-                if timestamp_column in column_names:
+                if self.timestamp_column in column_names:
                     found = True
-            assert found, f'timestamp_column: "{timestamp_column}" does not exist'
+
+            if not found:
+                raise ValueError(f'timestamp_column: "{self.timestamp_column}" does not exist')
 
         # make sure to_timestamp is lt from_timestamp
-        if from_timestamp and to_timestamp:
-            assert (
-                from_timestamp < to_timestamp
-            ), "from_timestamp must be smaller than to_timestamp."
+        if self.from_timestamp and self.to_timestamp:
+            if self.from_timestamp >= self.to_timestamp:
+                raise ValueError("from_timestamp must be smaller than to_timestamp.")
 
-        return values
+        return self
 
 
 class FeatureStoreShape(FeatureByteBaseModel):

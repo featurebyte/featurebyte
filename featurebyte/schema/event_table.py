@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, model_validator, validator
 
 from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.enum import TableDataType
@@ -45,19 +45,16 @@ class EventTableCreate(TableCreate):
             validate_timezone_offset_string(value)
         return value
 
-    @root_validator()
-    @classmethod
-    def _validate_event_timestamp_timezone_offset_parameters(
-        cls, values: dict[str, Any]
-    ) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_event_timestamp_timezone_offset_parameters(self) -> "EventTableCreate":
         if (
-            values.get("event_timestamp_timezone_offset") is not None
-            and values.get("event_timestamp_timezone_offset_column") is not None
+            self.event_timestamp_timezone_offset is not None
+            and self.event_timestamp_timezone_offset_column is not None
         ):
             raise ValueError(
                 "Cannot specify both event_timestamp_timezone_offset and event_timestamp_timezone_offset_column"
             )
-        return values
+        return self
 
 
 class EventTableList(PaginationMixin):

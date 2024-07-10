@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -74,7 +74,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     features: List[BatchFeatureItem]
     skip_batch_feature_creation: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if (
@@ -216,15 +216,11 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     feature_clusters: Optional[List[FeatureCluster]] = Field(default=None)
     feature_list_id: Optional[PydanticObjectId] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _validate_feature_clusters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        feature_clusters = values.get("feature_clusters", None)
-        feature_list_id = values.get("feature_list_id", None)
-        if not feature_clusters and not feature_list_id:
+    @model_validator(mode="after")
+    def _validate_feature_clusters(self) -> "FeatureListGetHistoricalFeatures":
+        if not self.feature_clusters and not self.feature_list_id:
             raise ValueError("Either feature_clusters or feature_list_id must be set")
-
-        return values
+        return self
 
 
 class PreviewObservationSet(FeatureByteBaseModel):
@@ -237,23 +233,21 @@ class PreviewObservationSet(FeatureByteBaseModel):
     )
     observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _validate_observation_set(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        point_in_time_and_serving_name_list = values.get(
-            "point_in_time_and_serving_name_list", None
-        )
-        observation_table_id = values.get("observation_table_id", None)
-        if not point_in_time_and_serving_name_list and not observation_table_id:
+    @model_validator(mode="after")
+    def _validate_observation_set(self) -> "PreviewObservationSet":
+        if not self.point_in_time_and_serving_name_list and not self.observation_table_id:
             raise ValueError(
                 "Either point_in_time_and_serving_name_list or observation_table_id must be set"
             )
-        if observation_table_id is not None and point_in_time_and_serving_name_list is not None:
+
+        if (
+            self.observation_table_id is not None
+            and self.point_in_time_and_serving_name_list is not None
+        ):
             raise ValueError(
                 "Only one of point_in_time_and_serving_name_list and observation_table_id can be set"
             )
-
-        return values
+        return self
 
 
 class FeatureListPreview(FeatureListGetHistoricalFeatures, PreviewObservationSet):

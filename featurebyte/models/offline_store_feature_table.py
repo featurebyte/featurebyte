@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
@@ -119,24 +119,18 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
     aggregation_ids: List[str] = Field(default_factory=list)
 
-    @root_validator
-    @classmethod
-    def _set_feature_store_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _set_feature_store_id(self) -> "OfflineStoreFeatureTableModel":
         """
         Set feature_store_id
 
-        Parameters
-        ----------
-        values : Dict[str, Any]
-            Values
-
         Returns
         -------
-        Dict[str, Any]
+        OfflineStoreFeatureTableModel
         """
-        if not values.get("feature_store_id", None) and values.get("feature_cluster"):
-            values["feature_store_id"] = values["feature_cluster"].feature_store_id
-        return values
+        if not self.feature_store_id and self.feature_cluster:
+            self.feature_store_id = self.feature_cluster.feature_store_id
+        return self
 
     @classmethod
     def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:

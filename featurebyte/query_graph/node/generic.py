@@ -7,7 +7,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 from typing_extensions import Literal
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -701,7 +701,7 @@ class GroupByNodeParameters(BaseWindowAggregateParameters):
     aggregation_id: Optional[str] = Field(default=None)
     tile_id_version: int = Field(default=1)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         old_keys = ["frequency", "time_modulo_frequency", "blind_spot"]
@@ -988,7 +988,7 @@ class SCDBaseParameters(FeatureByteBaseModel):
     current_flag_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: backward compatibility
@@ -1026,7 +1026,7 @@ class LookupParameters(FeatureByteBaseModel):
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_input_column_names_feature_names_same_length(
         cls, values: Dict[str, Any]
@@ -1221,7 +1221,7 @@ class JoinMetadata(FeatureByteBaseModel):
     rsuffix: str
     rprefix: str
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _backward_compat_fill_rprefix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values.get("rprefix") is None:
@@ -1264,15 +1264,14 @@ class JoinNodeParameters(FeatureByteBaseModel):
             raise ValueError(f"Column names (values: {values}) must be unique!")
         return values
 
-    @root_validator
-    @classmethod
-    def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
-            values.get("right_output_columns", [])
+    @model_validator(mode="after")
+    def _validate_left_and_right_output_columns(self) -> "JoinNodeParameters":
+        duplicated_output_cols = set(self.left_output_columns).intersection(
+            set(self.right_output_columns)
         )
         if duplicated_output_cols:
             raise ValueError("Left and right output columns should not have common item(s).")
-        return values
+        return self
 
 
 class JoinNode(BasePrunableNode):

@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from bson import ObjectId
 from bson.errors import InvalidId
-from pydantic import BaseModel, Field, StrictStr, root_validator, validator
+from pydantic import BaseModel, Field, StrictStr, model_validator, validator
 from pydantic.errors import DictError, PydanticTypeError
 from pymongo.operations import IndexModel
 
@@ -430,9 +430,11 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
 
     catalog_id: PydanticObjectId
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _validate_catalog_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
         catalog_id = values.get("catalog_id")
         if catalog_id is None:
             values["catalog_id"] = DEFAULT_CATALOG_ID

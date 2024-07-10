@@ -5,7 +5,7 @@ This module contains context related models.
 from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
@@ -41,7 +41,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
         construct_sort_validator()
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _set_primary_entity_ids(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         entity_ids = values.get("entity_ids", None)

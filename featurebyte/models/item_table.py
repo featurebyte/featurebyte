@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel
@@ -48,8 +48,8 @@ class ItemTableModel(ItemTableData, TableModel):
     _table_data_class: ClassVar[Type[ItemTableData]] = ItemTableData
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),

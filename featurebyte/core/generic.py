@@ -12,7 +12,7 @@ from abc import abstractmethod
 
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.common.utils import get_version
@@ -176,14 +176,13 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self.operation_structure.output_category
 
-    @root_validator
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-        return values
+    @model_validator(mode="after")
+    def _convert_query_graph_to_global_query_graph(self) -> "QueryObject":
+        if not isinstance(self.graph, GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(self.graph)
+            self.graph = global_graph
+            self.node_name = node_name_map[self.node_name]
+        return self
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """

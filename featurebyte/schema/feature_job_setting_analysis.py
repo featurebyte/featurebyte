@@ -8,7 +8,7 @@ from datetime import datetime
 
 from bson import ObjectId
 from pandas import Timestamp
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -48,7 +48,7 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     job_time_buffer_setting: Union[int, Literal["auto"]] = Field(default="auto")
     late_data_allowance: float = Field(gt=0, le=0.5, default=0.005 / 100)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def validate_event_table_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -117,7 +117,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
     blind_spot: int
     feature_cutoff_modulo_frequency: int
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -193,7 +193,7 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     recommended_feature_job_setting: FeatureJobSetting
     stats_on_wh_jobs: FeatureJobSettingAnalysisWarehouseRecord
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "recommended_feature_job_setting" not in values:
@@ -227,7 +227,7 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
     offset: int = Field(ge=0, le=3600 * 24 * 28)
     blind_spot: int = Field(ge=0, le=3600 * 24 * 28)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "frequency" in values:
