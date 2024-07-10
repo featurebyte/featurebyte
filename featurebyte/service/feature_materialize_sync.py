@@ -6,21 +6,49 @@ from __future__ import annotations
 
 from typing import Optional
 
+import asyncio
+import time
 from datetime import datetime
 
 from bson import ObjectId
 
 from featurebyte.common.date_util import get_current_job_datetime
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisite,
     PrerequisiteTileTask,
     PrerequisiteTileTaskStatusType,
 )
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.schema.worker.task.scheduled_feature_materialize import (
+    ScheduledFeatureMaterializeTaskPayload,
+)
 from featurebyte.service.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisiteService,
 )
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.task_manager import TaskManager
+
+logger = get_logger(__name__)
+
+POLL_PERIOD_SECONDS = 5
+
+
+def get_allowed_waiting_time_seconds(feature_job_setting: FeatureJobSetting) -> int:
+    """
+    Get the amount of time allowed to wait for prequisites
+
+    Parameters
+    ----------
+    feature_job_setting: FeatureJobSetting
+        Feature job setting
+
+    Returns
+    -------
+    int
+    """
+    return feature_job_setting.period_seconds // 2
 
 
 class FeatureMaterializeSyncService:
@@ -32,9 +60,11 @@ class FeatureMaterializeSyncService:
         self,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_materialize_prerequisite_service: FeatureMaterializePrerequisiteService,
+        task_manager: TaskManager,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_materialize_prerequisite_service = feature_materialize_prerequisite_service
+        self.task_manager = task_manager
 
     async def initialize_prerequisite(
         self, offline_store_feature_table_id: ObjectId
@@ -107,6 +137,76 @@ class FeatureMaterializeSyncService:
                 scheduled_job_ts=schedule_job_datetime,
                 prerequisite_tile_task=prerequisite_tile_task,
             )
+
+    async def run_feature_materialize(self, offline_store_feature_table_id: ObjectId) -> None:
+        """
+        The entry point of all feature materialize tasks
+
+        This will be called in a scheduled IO task. It will wait for all the prerequisites for a
+        feature materialize task to be met (with a deadline) before triggering the task
+
+        Parameters
+        ----------
+        offline_store_feature_table_id: ObjectId
+            Offline store feature table id
+        """
+        feature_table = await self.offline_store_feature_table_service.get_document(
+            offline_store_feature_table_id
+        )
+
+        # No need to wait for feature tables without prerequisites
+        if not feature_table.aggregation_ids:
+            await self._submit_feature_materialize_task(feature_table)
+            return
+
+        prerequisite = await self.initialize_prerequisite(offline_store_feature_table_id)
+        assert prerequisite is not None
+
+        feature_job_setting = feature_table.feature_job_setting
+        assert feature_job_setting is not None
+
+        # TODO: should count from tic or scheduled job time?
+        tic = time.time()
+        prerequisite_met = False
+        logger.debug(
+            "Waiting for prerequisites for feature materialize task",
+            extra={"offline_store_feature_table_id": feature_table.id},
+        )
+        while time.time() - tic < get_allowed_waiting_time_seconds(feature_job_setting):
+            prerequisite_model = await self.feature_materialize_prerequisite_service.get_document(
+                prerequisite.id
+            )
+            completed_aggregation_ids = [
+                item.aggregation_id for item in prerequisite_model.completed
+            ]
+            if set(feature_table.aggregation_ids).issubset(set(completed_aggregation_ids)):
+                logger.debug(
+                    "Prerequisites for feature materialize task met",
+                    extra={"offline_store_feature_table_id": feature_table.id},
+                )
+                prerequisite_met = True
+                break
+            await asyncio.sleep(POLL_PERIOD_SECONDS)
+
+        if not prerequisite_met:
+            logger.warning(
+                "Running feature materialize task but prerequisites are not met",
+                extra={"offline_store_feature_table_id": feature_table.id},
+            )
+
+        await self._submit_feature_materialize_task(feature_table)
+
+    async def _submit_feature_materialize_task(
+        self,
+        offline_store_feature_table: OfflineStoreFeatureTableModel,
+    ) -> None:
+        payload = ScheduledFeatureMaterializeTaskPayload(
+            offline_store_feature_table_name=offline_store_feature_table.name,
+            offline_store_feature_table_id=offline_store_feature_table.id,
+            catalog_id=self.offline_store_feature_table_service.catalog_id,
+            user_id=self.offline_store_feature_table_service.user.id,
+        )
+        await self.task_manager.submit(payload)
 
     async def _get_scheduled_job_ts_for_feature_table(
         self, offline_store_feature_table_id: ObjectId
