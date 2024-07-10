@@ -192,7 +192,7 @@ class TargetController(  # pylint: disable=too-many-instance-attributes
         )
 
         # Get metadata
-        target_metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
+        _, target_metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
             target_doc
         )
 

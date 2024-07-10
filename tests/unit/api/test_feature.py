@@ -27,6 +27,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.table import Table
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
@@ -2014,3 +2015,73 @@ def test_feature_or_view_column_name_contains_quote(
 
     # check feature can be saved without error
     feature.save()
+
+
+def test_feature_metadata_extraction(snowflake_event_table):
+    """Test feature metadata extraction"""
+    entity = Entity.create(name="location", serving_names=["location_id"])
+    snowflake_event_table.col_text.as_entity(entity.name)
+
+    # add a few columns
+    event_view = snowflake_event_table.get_view()
+    event_view["pickup_time"] = event_view.event_timestamp
+    event_view["dropoff_time"] = event_view.event_timestamp
+    event_view["trip_distance"] = event_view.col_float
+
+    # construct the feature
+    pickup_time = event_view["pickup_time"]
+    dropoff_time = event_view["dropoff_time"]
+    trip_distance = event_view["trip_distance"]
+    event_view["trip_duration"] = (dropoff_time - pickup_time).dt.second
+    event_view["pickup_week_hour"] = (
+        pickup_time.dt.day_of_week.astype(str) + "-" + pickup_time.dt.hour.astype(str)
+    )
+    trip_duration = event_view["trip_duration"]
+    filter_cond = (trip_distance > 1) & (trip_duration > 0) & (trip_duration < 10800)
+    event_view = event_view[filter_cond]
+    total_duration_by_week_hour_28d = event_view.groupby(
+        by_keys=["col_text"], category="pickup_week_hour"
+    ).aggregate_over(
+        value_column="trip_duration",
+        method="sum",
+        windows=["28d"],
+        feature_names=["total_duration_by_week_hour_28d"],
+        feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
+        skip_fill_na=True,
+        offset=None,
+    )[
+        "total_duration_by_week_hour_28d"
+    ]
+    point_in_time = RequestColumn.point_in_time()
+    pit_weekday_hour = (
+        point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
+    )
+    lookup_total_duration = total_duration_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
+    total_distance_by_week_hour_28d = event_view.groupby(
+        by_keys=["col_text"], category="pickup_week_hour"
+    ).aggregate_over(
+        value_column="trip_distance",
+        method="sum",
+        windows=["28d"],
+        feature_names=["total_distance_by_week_hour_28d"],
+        feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
+        skip_fill_na=True,
+        offset=None,
+    )[
+        "total_distance_by_week_hour_28d"
+    ]
+    lookup_total_distance = total_distance_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
+    avg_speed = lookup_total_distance / lookup_total_duration
+    avg_speed.name = "pickup_location_avg_speed_week_hour_28d"
+    avg_speed.save()
+
+    # check that feature metadata can be extracted without error
+    feature_metadata = avg_speed.info()["metadata"]
+    assert feature_metadata["post_aggregation"]["name"] == "pickup_location_avg_speed_week_hour_28d"
+    assert feature_metadata["post_aggregation"]["inputs"] == ["F0", "F1", "F2"]
+    aggregation_names = {agg["name"] for agg in feature_metadata["aggregations"].values()}
+    assert aggregation_names == {
+        "total_duration_by_week_hour_28d",
+        "total_distance_by_week_hour_28d",
+        "POINT_IN_TIME",
+    }
