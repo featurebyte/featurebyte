@@ -100,6 +100,9 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
+from featurebyte.service.feature_materialize_prerequisite import (
+    FeatureMaterializePrerequisiteService,
+)
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
@@ -269,6 +272,7 @@ app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
+app_container_config.register_class(FeatureMaterializePrerequisiteService)
 app_container_config.register_class(FeatureMaterializeSchedulerService)
 app_container_config.register_class(FeatureMaterializeService)
 app_container_config.register_class(FeatureOrTargetHelper)
