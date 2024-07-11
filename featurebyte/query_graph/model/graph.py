@@ -54,10 +54,15 @@ class QueryGraphModel(FeatureByteBaseModel):
     _node_topological_order_map: Dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __repr__(self) -> str:
-        return self.json(by_alias=True, indent=4)
+        return self.model_dump_json(by_alias=True, indent=4)
 
     def __str__(self) -> str:
         return repr(self)
+
+    def __eq__(self, other: Any):
+        if isinstance(other, QueryGraphModel):
+            return self.dict() == other.dict()
+        return False
 
     def _is_cache_invalid(self) -> bool:
         """
@@ -168,8 +173,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_edges_map(
-        edges: List[Edge], edges_map: Optional[Dict[str, List[str]]]
-    ) -> Dict[str, List[str]]:
+        edges: List[Edge], edges_map: Optional[defaultdict[str, List[str]]]
+    ) -> defaultdict[str, List[str]]:
         if edges_map is None:
             edges_map = defaultdict(list)
         for edge in edges:
@@ -178,8 +183,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_backward_edges_map(
-        edges: List[Edge], backward_edges_map: Optional[Dict[str, List[str]]]
-    ) -> Dict[str, List[str]]:
+        edges: List[Edge], backward_edges_map: Optional[defaultdict[str, List[str]]]
+    ) -> defaultdict[str, List[str]]:
         if backward_edges_map is None:
             backward_edges_map = defaultdict(list)
         for edge in edges:
@@ -188,8 +193,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_node_type_counter(
-        nodes: List[Node], node_type_counter: Optional[Dict[str, int]]
-    ) -> Dict[str, int]:
+        nodes: List[Node], node_type_counter: Optional[defaultdict[str, int]]
+    ) -> defaultdict[str, int]:
         if node_type_counter is None:
             node_type_counter = defaultdict(int)
         for node in nodes:
