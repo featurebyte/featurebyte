@@ -132,9 +132,7 @@ class FeatureMaterializePrerequisiteService(
             )
             document_id = (await self.create_document(feature_materialize_prerequisite)).id
         query_filter = self._construct_get_query_filter(document_id)
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
+        await self.update_documents(
             query_filter=query_filter,
             update={"$push": {"completed": prerequisite_tile_task.dict(by_alias=True)}},
-            user_id=self.user.id,
         )
