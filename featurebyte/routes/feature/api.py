@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Query, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -19,6 +18,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -75,7 +75,7 @@ async def submit_batch_feature_create_task(request: Request, data: BatchFeatureC
 
 
 @router.get("/{feature_id}", response_model=FeatureModelResponse)
-async def get_feature(request: Request, feature_id: PydanticObjectId) -> FeatureModelResponse:
+async def get_feature(request: Request, feature_id: PyObjectId) -> FeatureModelResponse:
     """
     Get Feature
     """
@@ -86,7 +86,7 @@ async def get_feature(request: Request, feature_id: PydanticObjectId) -> Feature
 
 @router.patch("/{feature_id}", response_model=FeatureModelResponse)
 async def update_feature(
-    request: Request, feature_id: PydanticObjectId, data: FeatureUpdate
+    request: Request, feature_id: PyObjectId, data: FeatureUpdate
 ) -> FeatureModelResponse:
     """
     Update Feature
@@ -100,7 +100,7 @@ async def update_feature(
 
 
 @router.delete("/{feature_id}", status_code=HTTPStatus.OK)
-async def delete_feature(request: Request, feature_id: PydanticObjectId) -> DeleteResponse:
+async def delete_feature(request: Request, feature_id: PyObjectId) -> DeleteResponse:
     """
     Delete Feature
     """
@@ -119,8 +119,8 @@ async def list_features(
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
     version: Optional[str] = VersionQuery,
-    feature_list_id: Optional[PydanticObjectId] = None,
-    feature_namespace_id: Optional[PydanticObjectId] = None,
+    feature_list_id: Optional[PyObjectId] = None,
+    feature_namespace_id: Optional[PyObjectId] = None,
 ) -> FeaturePaginatedList:
     """
     List Features
@@ -142,7 +142,7 @@ async def list_features(
 @router.get("/audit/{feature_id}", response_model=AuditDocumentList)
 async def list_feature_audit_logs(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -166,7 +166,7 @@ async def list_feature_audit_logs(
 @router.get("/{feature_id}/info", response_model=FeatureInfo)
 async def get_feature_info(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_id: PyObjectId,
     verbose: bool = VerboseQuery,
 ) -> FeatureInfo:
     """
@@ -213,7 +213,7 @@ async def get_feature_sql(
 @router.get("/{feature_id}/feature_job_logs", response_model=Dict[str, Any])
 async def get_feature_job_logs(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_id: PyObjectId,
     hour_limit: int = Query(default=24, gt=0, le=2400),
 ) -> Dict[str, Any]:
     """
@@ -230,7 +230,7 @@ async def get_feature_job_logs(
 @router.patch("/{feature_id}/description", response_model=FeatureModelResponse)
 async def update_feature_description(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> FeatureModelResponse:
     """
@@ -250,7 +250,7 @@ async def update_feature_description(
 )
 async def get_feature_sample_entity_serving_names(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_id: PyObjectId,
     count: int = Query(default=1, gt=0, le=10),
 ) -> SampleEntityServingNames:
     """

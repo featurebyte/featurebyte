@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_table import FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.scd_table import SCDTableModel
@@ -20,6 +19,7 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,
@@ -106,13 +106,13 @@ class SCDTableRouter(
             response_model=List[FeatureJobSettingHistoryEntry],
         )
 
-    async def get_object(self, request: Request, scd_table_id: PydanticObjectId) -> SCDTableModel:
+    async def get_object(self, request: Request, scd_table_id: PyObjectId) -> SCDTableModel:
         return await super().get_object(request, scd_table_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        scd_table_id: PydanticObjectId,
+        scd_table_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -130,7 +130,7 @@ class SCDTableRouter(
         )
 
     async def update_description(
-        self, request: Request, scd_table_id: PydanticObjectId, data: DescriptionUpdate
+        self, request: Request, scd_table_id: PyObjectId, data: DescriptionUpdate
     ) -> SCDTableModel:
         return await super().update_description(request, scd_table_id, data)
 
@@ -139,7 +139,7 @@ class SCDTableRouter(
         return await controller.create_table(data=data)
 
     async def get_scd_table_info(
-        self, request: Request, scd_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+        self, request: Request, scd_table_id: PyObjectId, verbose: bool = VerboseQuery
     ) -> SCDTableInfo:
         """
         Retrieve scd table info
@@ -152,7 +152,7 @@ class SCDTableRouter(
         return info
 
     async def update_scd_table(
-        self, request: Request, scd_table_id: PydanticObjectId, data: SCDTableUpdate
+        self, request: Request, scd_table_id: PyObjectId, data: SCDTableUpdate
     ) -> SCDTableModel:
         """
         Update scd table
@@ -165,7 +165,7 @@ class SCDTableRouter(
         return scd_table
 
     async def update_column_entity(
-        self, request: Request, scd_table_id: PydanticObjectId, data: ColumnEntityUpdate
+        self, request: Request, scd_table_id: PyObjectId, data: ColumnEntityUpdate
     ) -> SCDTableModel:
         """
         Update column entity
@@ -181,7 +181,7 @@ class SCDTableRouter(
     async def update_column_critical_data_info(
         self,
         request: Request,
-        scd_table_id: PydanticObjectId,
+        scd_table_id: PyObjectId,
         data: ColumnCriticalDataInfoUpdate,
     ) -> SCDTableModel:
         """
@@ -198,7 +198,7 @@ class SCDTableRouter(
     async def update_column_description(
         self,
         request: Request,
-        scd_table_id: PydanticObjectId,
+        scd_table_id: PyObjectId,
         data: ColumnDescriptionUpdate,
     ) -> SCDTableModel:
         """
@@ -215,7 +215,7 @@ class SCDTableRouter(
     async def list_default_feature_job_setting_history(
         self,
         request: Request,
-        scd_table_id: PydanticObjectId,
+        scd_table_id: PyObjectId,
     ) -> List[FeatureJobSettingHistoryEntry]:
         """
         List SCDTable default feature job settings history
@@ -234,9 +234,7 @@ class SCDTableRouter(
             for record in history_values
         ]
 
-    async def delete_object(
-        self, request: Request, scd_table_id: PydanticObjectId
-    ) -> DeleteResponse:
+    async def delete_object(self, request: Request, scd_table_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=scd_table_id)
         return DeleteResponse()

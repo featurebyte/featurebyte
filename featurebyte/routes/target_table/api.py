@@ -12,7 +12,6 @@ from http import HTTPStatus
 from fastapi import Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.persistent.base import SortDir
@@ -22,6 +21,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -94,9 +94,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             response_model=TargetTableModel,
         )
 
-    async def get_table(
-        self, request: Request, target_table_id: PydanticObjectId
-    ) -> TargetTableModel:
+    async def get_table(self, request: Request, target_table_id: PyObjectId) -> TargetTableModel:
         """
         Test random string
         """
@@ -126,7 +124,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         return task_submit
 
     @staticmethod
-    async def delete_target_table(request: Request, target_table_id: PydanticObjectId) -> Task:
+    async def delete_target_table(request: Request, target_table_id: PyObjectId) -> Task:
         """
         Delete TargetTable
         """
@@ -160,7 +158,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     @staticmethod
     async def list_target_table_audit_logs(
         request: Request,
-        target_table_id: PydanticObjectId,
+        target_table_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -182,7 +180,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def get_target_table_info(
-        request: Request, target_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+        request: Request, target_table_id: PyObjectId, verbose: bool = VerboseQuery
     ) -> TargetTableInfo:
         """
         Get TargetTable info
@@ -193,7 +191,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def download_table_as_pyarrow_table(
-        request: Request, target_table_id: PydanticObjectId
+        request: Request, target_table_id: PyObjectId
     ) -> StreamingResponse:
         """
         Download TargetTable as pyarrow table
@@ -206,7 +204,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def download_table_as_parquet(
-        request: Request, target_table_id: PydanticObjectId
+        request: Request, target_table_id: PyObjectId
     ) -> StreamingResponse:
         """
         Download TargetTable as parquet file
@@ -220,7 +218,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     @staticmethod
     async def update_target_table_description(
         request: Request,
-        target_table_id: PydanticObjectId,
+        target_table_id: PyObjectId,
         data: DescriptionUpdate,
     ) -> TargetTableModel:
         """

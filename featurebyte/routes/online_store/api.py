@@ -8,7 +8,6 @@ from typing import Optional, cast
 
 from fastapi import Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
@@ -16,6 +15,7 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,
@@ -73,15 +73,13 @@ class OnlineStoreRouter(
         online_store: OnlineStoreRead = await controller.create_online_store(data=data)
         return online_store
 
-    async def get_object(
-        self, request: Request, online_store_id: PydanticObjectId
-    ) -> OnlineStoreRead:
+    async def get_object(self, request: Request, online_store_id: PyObjectId) -> OnlineStoreRead:
         return await super().get_object(request, online_store_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        online_store_id: PydanticObjectId,
+        online_store_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -100,7 +98,7 @@ class OnlineStoreRouter(
 
     @staticmethod
     async def update_online_store(
-        request: Request, online_store_id: PydanticObjectId, data: OnlineStoreUpdate
+        request: Request, online_store_id: PyObjectId, data: OnlineStoreUpdate
     ) -> OnlineStoreRead:
         """
         Update online store
@@ -110,14 +108,14 @@ class OnlineStoreRouter(
         return cast(OnlineStoreRead, document)
 
     async def update_description(
-        self, request: Request, online_store_id: PydanticObjectId, data: DescriptionUpdate
+        self, request: Request, online_store_id: PyObjectId, data: DescriptionUpdate
     ) -> OnlineStoreRead:
         return await super().update_description(request, online_store_id, data)
 
     @staticmethod
     async def get_online_store_info(
         request: Request,
-        online_store_id: PydanticObjectId,
+        online_store_id: PyObjectId,
         verbose: bool = VerboseQuery,
     ) -> OnlineStoreInfo:
         """
@@ -130,9 +128,7 @@ class OnlineStoreRouter(
         )
         return cast(OnlineStoreInfo, info)
 
-    async def delete_object(
-        self, request: Request, online_store_id: PydanticObjectId
-    ) -> DeleteResponse:
+    async def delete_object(self, request: Request, online_store_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=online_store_id)
         return DeleteResponse()

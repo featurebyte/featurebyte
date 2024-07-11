@@ -11,7 +11,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -21,6 +20,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -60,7 +60,7 @@ async def create_batch_feature_table(
 
 @router.get("/{batch_feature_table_id}", response_model=BatchFeatureTableModel)
 async def get_batch_feature_table(
-    request: Request, batch_feature_table_id: PydanticObjectId
+    request: Request, batch_feature_table_id: PyObjectId
 ) -> BatchFeatureTableModel:
     """
     Get BatchFeatureTable
@@ -73,9 +73,7 @@ async def get_batch_feature_table(
 
 
 @router.delete("/{batch_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
-async def delete_batch_feature_table(
-    request: Request, batch_feature_table_id: PydanticObjectId
-) -> Task:
+async def delete_batch_feature_table(request: Request, batch_feature_table_id: PyObjectId) -> Task:
     """
     Delete BatchFeatureTable
     """
@@ -111,7 +109,7 @@ async def list_batch_feature_tables(
 @router.get("/audit/{batch_feature_table_id}", response_model=AuditDocumentList)
 async def list_batch_feature_table_audit_logs(
     request: Request,
-    batch_feature_table_id: PydanticObjectId,
+    batch_feature_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -134,7 +132,7 @@ async def list_batch_feature_table_audit_logs(
 
 @router.get("/{batch_feature_table_id}/info", response_model=BatchFeatureTableInfo)
 async def get_batch_feature_table_info(
-    request: Request, batch_feature_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    request: Request, batch_feature_table_id: PyObjectId, verbose: bool = VerboseQuery
 ) -> BatchFeatureTableInfo:
     """
     Get BatchFeatureTable info
@@ -146,7 +144,7 @@ async def get_batch_feature_table_info(
 
 @router.get("/pyarrow_table/{batch_feature_table_id}")
 async def download_table_as_pyarrow_table(
-    request: Request, batch_feature_table_id: PydanticObjectId
+    request: Request, batch_feature_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download BatchFeatureTable as pyarrow table
@@ -160,7 +158,7 @@ async def download_table_as_pyarrow_table(
 
 @router.get("/parquet/{batch_feature_table_id}")
 async def download_table_as_parquet(
-    request: Request, batch_feature_table_id: PydanticObjectId
+    request: Request, batch_feature_table_id: PyObjectId
 ) -> StreamingResponse:
     """
     Download BatchFeatureTable as parquet file
@@ -175,7 +173,7 @@ async def download_table_as_parquet(
 @router.patch("/{batch_feature_table_id}/description", response_model=BatchFeatureTableModel)
 async def update_batch_feature_table_description(
     request: Request,
-    batch_feature_table_id: PydanticObjectId,
+    batch_feature_table_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> BatchFeatureTableModel:
     """

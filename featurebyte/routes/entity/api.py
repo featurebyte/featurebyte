@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -20,6 +19,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -52,7 +52,7 @@ async def create_entity(request: Request, data: EntityCreate) -> EntityModel:
 
 
 @router.get("/{entity_id}", response_model=EntityModel)
-async def get_entity(request: Request, entity_id: PydanticObjectId) -> EntityModel:
+async def get_entity(request: Request, entity_id: PyObjectId) -> EntityModel:
     """
     Get Entity
     """
@@ -88,7 +88,7 @@ async def list_entities(
 @router.patch("/{entity_id}", response_model=EntityModel)
 async def update_entity(
     request: Request,
-    entity_id: PydanticObjectId,
+    entity_id: PyObjectId,
     data: EntityUpdate,
 ) -> EntityModel:
     """
@@ -105,7 +105,7 @@ async def update_entity(
 @router.get("/audit/{entity_id}", response_model=AuditDocumentList)
 async def list_entity_audit_logs(
     request: Request,
-    entity_id: PydanticObjectId,
+    entity_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -132,7 +132,7 @@ async def list_entity_audit_logs(
 )
 async def list_name_history(
     request: Request,
-    entity_id: PydanticObjectId,
+    entity_id: PyObjectId,
 ) -> List[EntityNameHistoryEntry]:
     """
     List Entity name history
@@ -155,7 +155,7 @@ async def list_name_history(
 @router.get("/{entity_id}/info", response_model=EntityInfo)
 async def get_entity_info(
     request: Request,
-    entity_id: PydanticObjectId,
+    entity_id: PyObjectId,
     verbose: bool = VerboseQuery,
 ) -> EntityInfo:
     """
@@ -172,7 +172,7 @@ async def get_entity_info(
 @router.patch("/{entity_id}/description", response_model=EntityModel)
 async def update_entity_description(
     request: Request,
-    entity_id: PydanticObjectId,
+    entity_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> EntityModel:
     """
@@ -187,7 +187,7 @@ async def update_entity_description(
 
 
 @router.delete("/{entity_id}")
-async def delete_entity(request: Request, entity_id: PydanticObjectId) -> None:
+async def delete_entity(request: Request, entity_id: PyObjectId) -> None:
     """
     Delete Entity
     """

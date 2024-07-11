@@ -8,7 +8,6 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -16,6 +15,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -59,7 +59,7 @@ async def list_table(
 
 
 @router.get("/{table_id}", response_model=ProxyTableModel)
-async def get_table(request: Request, table_id: PydanticObjectId) -> ProxyTableModel:
+async def get_table(request: Request, table_id: PyObjectId) -> ProxyTableModel:
     """
     Retrieve Table
     """
