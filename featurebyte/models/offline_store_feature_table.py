@@ -504,6 +504,9 @@ def _extract_aggregation_ids(offline_ingest_graph: OfflineStoreIngestQueryGraph)
     aggregation_ids = []
     for info in offline_ingest_graph.aggregation_nodes_info:
         node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
-        if isinstance(node.parameters, GroupByNodeParameters):
+        if (
+            isinstance(node.parameters, GroupByNodeParameters)
+            and node.parameters.aggregation_id is not None
+        ):
             aggregation_ids.append(node.parameters.aggregation_id)
     return aggregation_ids
