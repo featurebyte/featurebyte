@@ -28,6 +28,7 @@ from featurebyte.exception import (
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel, get_active_catalog_id
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -263,7 +264,7 @@ class SampleMixin(AsyncMixin):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             feature_store_id=self.feature_store.id,
         )
@@ -334,7 +335,7 @@ class SampleMixin(AsyncMixin):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             feature_store_id=self.feature_store.id,
         )

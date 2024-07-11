@@ -3,17 +3,19 @@ TaskStatus API payload schema
 """
 
 from typing import Any, Dict, List, Optional, Set, Union
+from typing_extensions import Annotated
 
 import datetime
-from uuid import UUID
+import uuid
 
-from pydantic import Field
+from pydantic import AfterValidator, Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.schema.common.base import PaginationMixin
 
-TaskId = Union[PydanticObjectId, UUID]
+UUID4 = Union[uuid.UUID, Annotated[str, AfterValidator(lambda x: uuid.UUID(x, version=4))]]
+TaskId = Union[UUID4, PydanticObjectId]
 
 
 class TaskStatus(StrEnum):
