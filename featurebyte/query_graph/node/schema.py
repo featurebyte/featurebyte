@@ -267,17 +267,12 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         return values
 
 
-class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
-    """Model for a no-op mock database details for use in tests"""
-
-
 DatabaseDetails = Union[
     SnowflakeDetails,
     SparkDetails,
     SQLiteDetails,
     DatabricksDetails,
     DatabricksUnityDetails,
-    TestDatabaseDetails,
 ]
 
 
