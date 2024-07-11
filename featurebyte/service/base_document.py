@@ -44,11 +44,7 @@ from featurebyte.models.persistent import (
 )
 from featurebyte.persistent.base import Persistent, SortDir
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.schema.common.base import (
-    BaseDocumentServiceUpdateSchema,
-    BaseInfo,
-    DocumentSoftDeleteUpdate,
-)
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import (
     DEFAULT_PAGE_SIZE,
     Document,
@@ -333,10 +329,6 @@ class BaseDocumentService(
             if not self._allow_to_use_raw_query_filter:
                 raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return kwargs
-
-        # filter out soft deleted documents
-        kwargs["is_deleted"] = {"$ne": True}
-
         # inject catalog_id into filter if document is catalog specific
         if self.is_catalog_specific:
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
@@ -540,40 +532,6 @@ class BaseDocumentService(
         ):
             await self.storage.try_delete_if_exists(remote_path)
 
-    async def soft_delete_document(self, document_id: ObjectId) -> None:
-        """
-        Soft delete document at persistent
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        """
-        await self.update_document(
-            document_id=document_id,
-            data=DocumentSoftDeleteUpdate(is_deleted=True),  # type: ignore[arg-type]
-            return_document=False,
-        )
-
-    async def soft_delete_documents(self, query_filter: QueryFilter) -> int:
-        """
-        Soft delete multiple documents at persistent
-
-        Parameters
-        ----------
-        query_filter: QueryFilter
-            Query filter to apply on documents
-
-        Returns
-        -------
-        int
-            Number of soft-deleted documents
-        """
-        return await self.update_documents(
-            query_filter=query_filter,
-            update={"$set": {"is_deleted": True}},
-        )
-
     def construct_list_query_filter(
         self,
         query_filter: Optional[QueryFilter] = None,
@@ -612,8 +570,6 @@ class BaseDocumentService(
             if not self._allow_to_use_raw_query_filter:
                 raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return output
-
-        output["is_deleted"] = {"$ne": True}  # exclude soft-deleted documents
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
         if kwargs.get("version"):
@@ -1123,7 +1079,9 @@ class BaseDocumentService(
             self._check_document_modifiable(document=document.dict(by_alias=True))
 
         # check any conflict with existing documents
-        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
+        updated_document = self.document_class(
+            **{**document.dict(by_alias=True), **copy.deepcopy(update_dict)}
+        )
         await self._check_document_unique_constraints(
             document=updated_document,
             document_class=update_document_class,
@@ -1180,7 +1138,7 @@ class BaseDocumentService(
             )
 
         # perform validation first before actual update
-        update_dict = data.dict(
+        update_dict = data.model_dump(
             exclude_none=exclude_none,
             exclude={"id": True},  # exclude id to avoid updating original document ID
             by_alias=True,  # use alias when getting update data dictionary
