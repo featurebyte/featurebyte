@@ -5,7 +5,7 @@ This module contains Feature Table Cache related models
 from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -28,6 +28,9 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _set_feature_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "feature_name" not in values:
             definition_hash = values["definition_hash"]
             values["feature_name"] = f"FEATURE_{definition_hash}"

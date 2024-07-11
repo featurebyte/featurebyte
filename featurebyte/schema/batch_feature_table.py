@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
@@ -46,5 +46,8 @@ class BatchFeatureTableListRecord(BaseMaterializedTableListRecord):
     @model_validator(mode="before")
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

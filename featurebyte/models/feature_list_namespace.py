@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, List
 
 import pymongo
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -66,6 +66,9 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     @model_validator(mode="before")
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:

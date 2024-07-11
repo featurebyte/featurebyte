@@ -8,7 +8,7 @@ from datetime import datetime
 
 from bson import ObjectId
 from pandas import Timestamp
-from pydantic import Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -69,6 +69,9 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
         ValueError
             If neither event_table_id or event_table_candidate is provided
         """
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         event_table_id = values.get("event_table_id")
         event_table_candidate = values.get("event_table_candidate")
         if not (event_table_id or event_table_candidate):
@@ -133,6 +136,9 @@ class FeatureJobSetting(FeatureByteBaseModel):
         Dict[str, Any]
             Validated values
         """
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "frequency" in values:
             values["period"] = values.pop("frequency")
         if "job_time_modulo_frequency" in values:
@@ -196,6 +202,9 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     @model_validator(mode="before")
     @classmethod
     def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "recommended_feature_job_setting" not in values:
             values["recommended_feature_job_setting"] = values["analysis_result"][
                 "recommended_feature_job_setting"
@@ -230,6 +239,9 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "frequency" in values:
             values["period"] = values.pop("frequency")
         if "job_time_modulo_frequency" in values:

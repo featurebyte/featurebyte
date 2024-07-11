@@ -77,6 +77,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
         # support old parameters
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
+
         database = values.get("database")
         if database:
             values["database_name"] = database

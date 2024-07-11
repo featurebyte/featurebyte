@@ -13,6 +13,7 @@ from pathlib import Path
 import pymongo
 from bson import ObjectId
 from pydantic import (
+    BaseModel,
     Field,
     PrivateAttr,
     RootModel,
@@ -254,6 +255,9 @@ class FeatureCluster(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "combined_relationships_info" in values:
             return values
         combined_relationships_info: Set[EntityRelationshipInfo] = set()
@@ -385,6 +389,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     @model_validator(mode="before")
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
@@ -35,6 +35,9 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     @model_validator(mode="before")
     @classmethod
     def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         graph = values.get("graph", None)
         node_names = values.get("node_names", None)
         target_id = values.get("target_id", None)
@@ -94,5 +97,8 @@ class TargetTableListRecord(BaseMaterializedTableListRecord):
     @model_validator(mode="before")
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

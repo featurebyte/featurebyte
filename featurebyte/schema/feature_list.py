@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from bson import ObjectId
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -77,6 +77,9 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if (
             not values.get("skip_batch_feature_creation", False)
             and len(values.get("features", [])) > MAX_BATCH_FEATURE_ITEM_COUNT

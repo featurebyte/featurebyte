@@ -7,7 +7,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 from typing_extensions import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -704,6 +704,9 @@ class GroupByNodeParameters(BaseWindowAggregateParameters):
     @model_validator(mode="before")
     @classmethod
     def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         old_keys = ["frequency", "time_modulo_frequency", "blind_spot"]
         if all(key in values for key in old_keys) and "feature_job_setting" not in values:
             values["feature_job_setting"] = FeatureJobSetting(
@@ -992,6 +995,9 @@ class SCDBaseParameters(FeatureByteBaseModel):
     @classmethod
     def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: backward compatibility
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "right_timestamp_column" in values:
             values["effective_timestamp_column"] = values["right_timestamp_column"]
         return values
@@ -1031,6 +1037,9 @@ class LookupParameters(FeatureByteBaseModel):
     def _validate_input_column_names_feature_names_same_length(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         input_column_names = values["input_column_names"]
         feature_names = values["feature_names"]
         assert len(input_column_names) == len(feature_names)
@@ -1224,6 +1233,9 @@ class JoinMetadata(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _backward_compat_fill_rprefix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if values.get("rprefix") is None:
             values["rprefix"] = ""
         return values

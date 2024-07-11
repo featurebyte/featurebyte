@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
@@ -70,6 +70,9 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         entity_relationships_info: List[EntityRelationshipInfo] = values[
             "entity_relationships_info"
         ]

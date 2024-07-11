@@ -9,7 +9,7 @@ from typing_extensions import Annotated, Literal
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -61,6 +61,9 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
     @classmethod
     def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: convert list of string to list of dictionary
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         columns = values.get("columns")
         if columns and isinstance(columns[0], str):
             values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]

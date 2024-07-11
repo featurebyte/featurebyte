@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -34,8 +35,8 @@ class TableCreate(FeatureByteBaseModel):
     # pydantic validators
     _columns_info_validator = field_validator("columns_info")(columns_info_validator)
 
-    @classmethod
-    def _special_column_validator(cls, column_name: str, values: Dict[str, Any]) -> str:
+    @staticmethod
+    def _special_column_validator(column_name: str, info: ValidationInfo) -> str:
         """
         Check if column name specified for a special column field exists in the table create columns info
 
@@ -43,8 +44,8 @@ class TableCreate(FeatureByteBaseModel):
         ----------
         column_name: str
             Special column name
-        values: Dict[str, Any]
-            Dict of values
+        info: ValidationInfo
+            Validation info
 
         Raises
         ------
@@ -55,7 +56,7 @@ class TableCreate(FeatureByteBaseModel):
         -------
         str
         """
-        columns_info = values.get("columns_info")
+        columns_info = info.data.get("columns_info")
         # columns_info is None if validation failed for columns_info - skip validation in this case
         if column_name is not None and columns_info is not None:
             columns_info = set(column_info.name for column_info in columns_info)

@@ -10,7 +10,7 @@ import os  # pylint: disable=wrong-import-order
 
 import pymongo
 from cryptography.fernet import Fernet
-from pydantic import Field, StrictStr
+from pydantic import Field, Strict, StrictStr
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
@@ -78,17 +78,17 @@ class BaseCredential(FeatureByteBaseModel):
         func: Callable[[str], str]
             Function to apply
         """
-        for field in self.__fields__.values():
-            if field.type_ == StrictStr:
-                setattr(self, field.name, func(getattr(self, field.name)))
-            elif field.type_ == str:
+        for field_name, field in self.__fields__.items():
+            if field.annotation is str and field.metadata == [Strict(strict=True)]:
+                setattr(self, field_name, func(getattr(self, field_name)))
+            else:
                 # pydantic captures dict field type as str
-                field_value = getattr(self, field.name)
+                field_value = getattr(self, field_name)
                 if isinstance(field_value, dict):
                     # Encrypt each value in the dict
                     setattr(
                         self,
-                        field.name,
+                        field_name,
                         {key: func(value) for key, value in field_value.items()},
                     )
 

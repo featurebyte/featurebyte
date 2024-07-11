@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from requests import Response
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -88,7 +88,7 @@ class LocalStorageSettings(BaseModel):
 
     local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data/files"))
 
-    @field_validator("local_path")
+    @validator("local_path")
     @classmethod
     def expand_path(cls, value: Path) -> Path:
         """
@@ -114,8 +114,8 @@ class Profile(BaseModel):
 
     name: str
     api_url: AnyHttpUrl
-    api_token: Optional[str] = Field(default=None)
-    ssl_verify: bool = Field(default=True)
+    api_token: Optional[str] = None
+    ssl_verify: bool = True
 
 
 class ProfileList(BaseModel):
@@ -214,9 +214,10 @@ class APIClient(BaseAPIClient):
             kwargs["timeout"] = HTTP_REQUEST_TIMEOUT
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
+            full_url = f"{str(self.base_url).rstrip('/')}{url}"
             return super().request(
                 method,
-                self.base_url + str(url),
+                full_url,
                 *args,
                 **kwargs,
             )
@@ -559,7 +560,7 @@ class Configurations:
         WebsocketClient
             Websocket client
         """
-        url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
+        url = str(self.profile.api_url).replace("http://", "ws://").replace("https://", "wss://")
         url = f"{url}/ws/{task_id}"
         websocket_client = WebsocketClient(
             url=url, access_token=self.profile.api_token, ssl_verify=self.profile.ssl_verify

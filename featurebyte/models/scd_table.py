@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType
@@ -60,6 +60,9 @@ class SCDTableModel(SCDTableData, TableModel):
     @classmethod
     def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
         # DEV-556: remove this after migration
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "current_flag" in values:
             values["current_flag_column"] = values["current_flag"]
         return values

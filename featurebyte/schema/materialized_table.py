@@ -4,7 +4,7 @@ Schemas common to materialized table
 
 from typing import Any, Dict, Tuple
 
-from pydantic import model_validator
+from pydantic import BaseModel, model_validator
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 
@@ -19,5 +19,8 @@ class BaseMaterializedTableListRecord(FeatureByteBaseDocumentModel):
     @model_validator(mode="before")
     @classmethod
     def _extract_common_materialized_table_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         values["shape"] = values["num_rows"], len(values["columns_info"])
         return values

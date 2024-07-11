@@ -5,7 +5,7 @@ Context API payload schema
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
@@ -52,6 +52,9 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     @classmethod
     def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # check xor between graph & node_name
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         graph = values.get("graph")
         node_name = values.get("node_name")
         if bool(graph) != bool(node_name):
