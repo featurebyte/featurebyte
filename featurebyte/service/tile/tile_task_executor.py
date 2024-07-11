@@ -13,9 +13,11 @@ import dateutil.parser
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.models.feature_materialize_prerequisite import PrerequisiteTileTaskStatusType
 from featurebyte.models.tile import TileScheduledJobParameters, TileType
 from featurebyte.models.tile_job_log import TileJobLogModel
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_materialize_sync import FeatureMaterializeSyncService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_job_log import TileJobLogService
@@ -27,6 +29,7 @@ from featurebyte.sql.tile_monitor import TileMonitor
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 logger = get_logger(__name__)
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class TileTaskExecutor:
@@ -42,14 +45,15 @@ class TileTaskExecutor:
         tile_registry_service: TileRegistryService,
         tile_job_log_service: TileJobLogService,
         feature_service: FeatureService,
+        feature_materialize_sync_service: FeatureMaterializeSyncService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_registry_service = tile_registry_service
         self.tile_job_log_service = tile_job_log_service
         self.feature_service = feature_service
+        self.feature_materialize_sync_service = feature_materialize_sync_service
 
-    # pylint: disable=too-many-locals,too-many-statements
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
         Execute steps in the scheduled task
@@ -60,15 +64,27 @@ class TileTaskExecutor:
             Session object to be used for executing queries in data warehouse
         params: TileScheduledJobParameters
             Parameters for the scheduled task
-
-        Raises
-        ------
-        Exception
-            Related exception from the triggered stored procedures if it fails
         """
-        date_format = "%Y-%m-%d %H:%M:%S"
-        used_job_schedule_ts = params.job_schedule_ts or datetime.now().strftime(date_format)
-        candidate_last_tile_end_ts = dateutil.parser.isoparse(used_job_schedule_ts)
+        used_job_schedule_ts = params.job_schedule_ts or datetime.now().strftime(DATE_FORMAT)
+        final_status: PrerequisiteTileTaskStatusType = "failure"
+        try:
+            await self._execute(session, params, used_job_schedule_ts)
+            final_status = "success"
+        finally:
+            if params.tile_type.upper() == "ONLINE":
+                await self.feature_materialize_sync_service.update_tile_prerequisite(
+                    tile_task_ts=dateutil.parser.isoparse(used_job_schedule_ts),
+                    aggregation_id=params.aggregation_id,
+                    status=final_status,
+                )
+
+    async def _execute(  # pylint: disable=too-many-locals,too-many-statements
+        self,
+        session: BaseSession,
+        params: TileScheduledJobParameters,
+        job_schedule_ts: str,
+    ) -> None:
+        candidate_last_tile_end_ts = dateutil.parser.isoparse(job_schedule_ts)
 
         # derive the correct job schedule ts based on input job schedule ts
         # the input job schedule ts might be between 2 intervals
@@ -93,7 +109,7 @@ class TileTaskExecutor:
             tile_end_ts = tile_end_ts - timedelta(minutes=lookback_period)
 
         tile_start_ts = tile_end_ts - timedelta(minutes=lookback_period)
-        tile_start_ts_str = tile_start_ts.strftime(date_format)
+        tile_start_ts_str = tile_start_ts.strftime(DATE_FORMAT)
         monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
@@ -104,13 +120,13 @@ class TileTaskExecutor:
             registry_last_tile_start_ts = tile_model.last_run_metadata_online.tile_end_date
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
-            if registry_last_tile_start_ts.strftime(date_format) < tile_start_ts.strftime(
-                date_format
+            if registry_last_tile_start_ts.strftime(DATE_FORMAT) < tile_start_ts.strftime(
+                DATE_FORMAT
             ):
                 logger.info(
                     f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )
-                tile_start_ts_str = registry_last_tile_start_ts.strftime(date_format)
+                tile_start_ts_str = registry_last_tile_start_ts.strftime(DATE_FORMAT)
 
         session_id = f"{tile_id}|{datetime.now()}"
 
@@ -135,7 +151,7 @@ class TileTaskExecutor:
         await _add_log_entry("STARTED", "")
 
         monitor_end_ts = tile_end_ts - timedelta(minutes=params.frequency_minute)
-        monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
+        monitor_tile_end_ts_str = monitor_end_ts.strftime(DATE_FORMAT)
 
         monitor_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_start_ts_str + "'"
@@ -143,7 +159,7 @@ class TileTaskExecutor:
             f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'"
         )
 
-        tile_end_ts_str = tile_end_ts.strftime(date_format)
+        tile_end_ts_str = tile_end_ts.strftime(DATE_FORMAT)
         generate_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + tile_start_ts_str + "'"
         ).replace(f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + tile_end_ts_str + "'")
@@ -195,7 +211,7 @@ class TileTaskExecutor:
         tile_online_store_ins = TileScheduleOnlineStore(
             session=session,
             aggregation_id=params.aggregation_id,
-            job_schedule_ts_str=corrected_job_ts.strftime(date_format),
+            job_schedule_ts_str=corrected_job_ts.strftime(DATE_FORMAT),
             online_store_table_version_service=self.online_store_table_version_service,
             online_store_compute_query_service=self.online_store_compute_query_service,
         )
