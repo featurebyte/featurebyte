@@ -33,40 +33,6 @@ class FeatureMaterializePrerequisiteService(
 
     document_class = FeatureMaterializePrerequisite
 
-    async def get_document_id_for_feature_table(
-        self,
-        offline_store_feature_table_id: ObjectId,
-        scheduled_job_ts: datetime,
-    ) -> ObjectId:
-        """
-        Get the FeatureMaterializePrerequisite document id for the feature table and job time
-
-        Parameters
-        ----------
-        offline_store_feature_table_id: ObjectId
-            Offline store feature table identifier
-        scheduled_job_ts: datetime
-            Scheduled job time used to identify the current job cycle
-
-        Returns
-        -------
-        ObjectId
-
-        Raises
-        ------
-        DocumentNotFoundError
-            If the document to be updated does not exist
-        """
-        async for doc in self.list_documents_as_dict_iterator(
-            query_filter={
-                "offline_store_feature_table_id": offline_store_feature_table_id,
-                "scheduled_job_ts": scheduled_job_ts,
-            },
-            projection={"_id": 1},
-        ):
-            return doc["_id"]
-        raise DocumentNotFoundError("FeatureMaterializePrerequisite document not found")
-
     async def get_document_for_feature_table(
         self,
         offline_store_feature_table_id: ObjectId,
@@ -100,6 +66,35 @@ class FeatureMaterializePrerequisiteService(
             return model
         raise DocumentNotFoundError("FeatureMaterializePrerequisite document not found")
 
+    async def get_or_create_for_feature_table(
+        self, offline_store_feature_table_id: ObjectId, scheduled_job_ts: datetime
+    ) -> FeatureMaterializePrerequisite:
+        """
+        Get or create a FeatureMaterializePrerequisite document for the feature table and job time
+
+        Parameters
+        ----------
+        offline_store_feature_table_id: ObjectId
+            Offline store feature table identifier
+        scheduled_job_ts: datetime
+            Scheduled job time used to identify the current job cycle
+
+        Returns
+        -------
+        FeatureMaterializePrerequisite
+        """
+        try:
+            document = await self.get_document_for_feature_table(
+                offline_store_feature_table_id, scheduled_job_ts
+            )
+        except DocumentNotFoundError:
+            feature_materialize_prerequisite = FeatureMaterializePrerequisite(
+                offline_store_feature_table_id=offline_store_feature_table_id,
+                scheduled_job_ts=scheduled_job_ts,
+            )
+            document = await self.create_document(feature_materialize_prerequisite)
+        return document
+
     async def add_completed_prerequisite(
         self,
         offline_store_feature_table_id: ObjectId,
@@ -118,23 +113,11 @@ class FeatureMaterializePrerequisiteService(
         prerequisite_tile_task: PrerequisiteTileTask
             Representation of a completed tile task
         """
-        try:
-            document_id = await self.get_document_id_for_feature_table(
-                offline_store_feature_table_id, scheduled_job_ts
-            )
-        except DocumentNotFoundError:
-            # Handle the edge case where the prerequisite document is not yet created. This should
-            # be rare since it should be much faster to create this document than completing a tile
-            # task.
-            feature_materialize_prerequisite = FeatureMaterializePrerequisite(
-                offline_store_feature_table_id=offline_store_feature_table_id,
-                scheduled_job_ts=scheduled_job_ts,
-            )
-            document_id = (await self.create_document(feature_materialize_prerequisite)).id
-        query_filter = self._construct_get_query_filter(document_id)
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
+        document = await self.get_or_create_for_feature_table(
+            offline_store_feature_table_id, scheduled_job_ts
+        )
+        query_filter = self._construct_get_query_filter(document.id)
+        await self.update_documents(
             query_filter=query_filter,
             update={"$push": {"completed": prerequisite_tile_task.dict(by_alias=True)}},
-            user_id=self.user.id,
         )

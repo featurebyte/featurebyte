@@ -87,14 +87,13 @@ class FeatureMaterializeSyncService:
         )
         if current_job_datetime is None:
             return None
-        feature_materialize_prerequisite = FeatureMaterializePrerequisite(
-            offline_store_feature_table_id=offline_store_feature_table_id,
-            scheduled_job_ts=current_job_datetime,
+        document = (
+            await self.feature_materialize_prerequisite_service.get_or_create_for_feature_table(
+                offline_store_feature_table_id=offline_store_feature_table_id,
+                scheduled_job_ts=current_job_datetime,
+            )
         )
-        created_document = await self.feature_materialize_prerequisite_service.create_document(
-            feature_materialize_prerequisite
-        )
-        return created_document
+        return document
 
     async def update_tile_prerequisite(
         self,

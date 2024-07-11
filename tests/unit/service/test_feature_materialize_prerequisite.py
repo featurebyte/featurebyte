@@ -59,15 +59,11 @@ async def test_save_and_retrieve(
     Test saving and retrieving a FeatureMaterializePrerequisite document
     """
     await service.create_document(feature_materialize_prerequisite_model)
-    retrieved_id = await service.get_document_id_for_feature_table(
-        offline_store_feature_table_id, scheduled_job_ts
-    )
-    assert retrieved_id == feature_materialize_prerequisite_model.id
 
     retrieved_model = await service.get_document_for_feature_table(
         offline_store_feature_table_id, scheduled_job_ts
     )
-    assert retrieved_model.id == retrieved_id
+    assert retrieved_model.id == feature_materialize_prerequisite_model.id
 
 
 @pytest.mark.asyncio
@@ -118,7 +114,8 @@ async def test_add_completed_task_not_found(
     scheduled_job_ts,
 ):
     """
-    Test updating a FeatureMaterializePrerequisite document by adding completed tasks
+    Test updating a FeatureMaterializePrerequisite document by adding completed tasks before the
+    prerequisite document is created.
     """
     tile_task_1 = PrerequisiteTileTask(
         aggregation_id="agg_id_1",
