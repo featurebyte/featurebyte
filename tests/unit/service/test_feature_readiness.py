@@ -88,8 +88,7 @@ async def check_states_after_readiness_change(
     # check feature list version get updated (new feature list readiness distribution get updated)
     updated_flist = await feature_list_service.get_document(document_id=new_feature_list.id)
     assert (
-        updated_flist.readiness_distribution.__root__
-        == expected_feature_list_readiness_distribution
+        updated_flist.readiness_distribution.dict() == expected_feature_list_readiness_distribution
     )
 
     # check feature list namespace (new feature list becomes the default one)

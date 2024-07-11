@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set
 
 import functools
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from pydantic import (
     PrivateAttr,
     RootModel,
     StrictStr,
+    field_serializer,
     field_validator,
     model_validator,
     parse_obj_as,
@@ -341,7 +343,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         frozen=True, default=None
     )
     supported_serving_entity_ids: List[ServingEntity] = Field(frozen=True, default_factory=list)
-    readiness_distribution: FeatureReadinessDistribution = Field(frozen=True, default_factory=list)
+    readiness_distribution: FeatureReadinessDistribution = Field(
+        frozen=True, default=FeatureReadinessDistribution(root=[])
+    )
     dtype_distribution: List[FeatureTypeFeatureCount] = Field(frozen=True, default_factory=list)
     deployed: bool = Field(frozen=True, default=False)
 
@@ -375,6 +379,16 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         mode="after",
     )(construct_sort_validator())
     _version_validator = field_validator("version", mode="before")(version_validator)
+
+    @field_serializer("internal_feature_clusters", when_used="json")
+    def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
+        _ = clusters
+        if clusters:
+            return [
+                json.loads(cluster.model_dump_json(by_alias=True))
+                for cluster in self.feature_clusters
+            ]
+        return None
 
     @field_validator("supported_serving_entity_ids")
     @classmethod

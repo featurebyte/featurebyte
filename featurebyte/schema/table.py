@@ -4,7 +4,7 @@ Table model's attribute payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator
@@ -13,7 +13,7 @@ from pydantic_core.core_schema import ValidationInfo
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_store import TableStatus
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -94,7 +94,7 @@ class TableList(PaginationMixin):
     TableList used to deserialize list document output
     """
 
-    data: Sequence[ProxyTableModel]
+    data: List[TableModel]
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:

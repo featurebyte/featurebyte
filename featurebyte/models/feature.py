@@ -6,12 +6,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+import json
 import traceback
 from datetime import datetime
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_serializer, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType
@@ -121,6 +122,14 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         "user_defined_function_ids",
         mode="after",
     )(construct_sort_validator())
+
+    @field_serializer("internal_offline_store_info", when_used="json")
+    def _serialize_offline_store_info(
+        self, value: Optional[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        if value:
+            return json.loads(self.offline_store_info.model_dump_json(by_alias=True))
+        return value
 
     @staticmethod
     def _extract_dtype_from_graph(graph: QueryGraphModel, node_name: str) -> DBVarType:

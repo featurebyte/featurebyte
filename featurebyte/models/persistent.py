@@ -4,10 +4,11 @@ Pydantic Model for persistent storage
 
 from typing import Any, Dict, List, Mapping, Optional
 
+import json
 from datetime import datetime
 
-from bson import ObjectId
-from pydantic import Field
+from bson import ObjectId, json_util
+from pydantic import Field, field_serializer
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import StrEnum
@@ -52,6 +53,28 @@ class AuditDocument(FeatureByteBaseModel):
     action_type: AuditActionType
     previous_values: Dict[str, Any]
     current_values: Dict[str, Any]
+
+    @field_serializer("previous_values", "current_values", when_used="json")
+    @staticmethod
+    def _serialize_values(values: Dict[str, Any]) -> Dict[str, Any]:
+
+        def _convert_value(v: Any) -> Any:
+            if isinstance(v, dict):
+                return {k: _convert_value(_v) for k, _v in v.items()}
+            elif isinstance(v, list):
+                return [_convert_value(_v) for _v in v]
+            elif isinstance(v, datetime):
+                return v.isoformat()
+            elif isinstance(v, ObjectId):
+                return str(v)
+            return v
+
+        return json.loads(json_util.dumps(_convert_value(values)))
+
+    @field_serializer("document_id", when_used="json")
+    @staticmethod
+    def _serialize_document_id(document_id: Any) -> str:
+        return str(document_id)
 
 
 class AuditDocumentList(PaginationMixin):

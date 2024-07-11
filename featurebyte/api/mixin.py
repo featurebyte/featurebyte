@@ -299,7 +299,7 @@ class SampleMixin(AsyncMixin):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         return FeatureStoreSample(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
@@ -481,7 +481,7 @@ class SampleMixin(AsyncMixin):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStoreSample(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,

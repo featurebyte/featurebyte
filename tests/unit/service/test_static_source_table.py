@@ -4,8 +4,10 @@ Test for StaticSourceTableService
 
 import pytest
 
-from featurebyte.models.request_input import SourceTableRequestInput
-from featurebyte.models.static_source_table import StaticSourceTableModel
+from featurebyte.models.static_source_table import (
+    SourceTableStaticSourceInput,
+    StaticSourceTableModel,
+)
 from featurebyte.query_graph.model.common_table import TabularSource
 
 
@@ -14,7 +16,7 @@ def static_source_table_from_source_table_fixture(event_table, user):
     """
     Fixture for an StaticSourceTable from a source table
     """
-    request_input = SourceTableRequestInput(source=event_table.tabular_source)
+    request_input = SourceTableStaticSourceInput(source=event_table.tabular_source)
     location = TabularSource(
         **{
             "feature_store_id": event_table.tabular_source.feature_store_id,
