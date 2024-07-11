@@ -14,7 +14,6 @@ import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
 from pydantic import Field
-from pyhive.exc import OperationalError
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
@@ -248,7 +247,7 @@ class BaseSparkSession(BaseSession, ABC):
     async def list_databases(self) -> list[str]:
         try:
             databases = await self.execute_query_interactive("SHOW CATALOGS")
-        except OperationalError as exc:
+        except self._no_schema_error as exc:
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW CATALOGS
                 return ["spark_catalog"]
@@ -261,7 +260,7 @@ class BaseSparkSession(BaseSession, ABC):
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(f"SHOW SCHEMAS IN `{database_name}`")
-        except OperationalError as exc:
+        except self._no_schema_error as exc:  # pylint: disable=broad-exception-caught
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
                 schemas = await self.execute_query_interactive("SHOW SCHEMAS")

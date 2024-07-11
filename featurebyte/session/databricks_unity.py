@@ -155,9 +155,13 @@ class DatabricksUnitySession(DatabricksSession):
         await self.set_owner("TABLE", table_name)
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
-        schemas = await self.execute_query_interactive(
-            f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
-        )
+        try:
+            schemas = await self.execute_query_interactive(
+                f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
+            )
+        except self._no_schema_error:
+            # fallback to using show statements if catalog does not have information schema
+            return await super().list_schemas()
         output = []
         if schemas is not None:
             output.extend(schemas["SCHEMA_NAME"].tolist())
@@ -169,11 +173,15 @@ class DatabricksUnitySession(DatabricksSession):
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
-        tables = await self.execute_query_interactive(
-            f"SELECT TABLE_NAME, COMMENT FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
-            f"WHERE TABLE_SCHEMA = '{schema_name}'",
-            timeout=timeout,
-        )
+        try:
+            tables = await self.execute_query_interactive(
+                f"SELECT TABLE_NAME, COMMENT FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
+                f"WHERE TABLE_SCHEMA = '{schema_name}'",
+                timeout=timeout,
+            )
+        except self._no_schema_error:
+            # fallback to using show statements if catalog does not have information schema
+            return await super().list_tables()
         output = []
         if tables is not None:
             for _, (name, comment) in tables.iterrows():
