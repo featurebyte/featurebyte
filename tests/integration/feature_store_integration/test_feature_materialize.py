@@ -1424,6 +1424,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     Test simulating scheduled feature materialization for a feature table without TTL
     """
     feature_table_model = user_entity_non_ttl_feature_table
+    assert feature_table_model.aggregation_ids == []
     service = app_container.feature_materialize_service
 
     df_0 = await session.execute_query(

@@ -32,6 +32,7 @@ from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
@@ -400,6 +401,7 @@ class OfflineIngestGraphMetadata:
     feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
+    aggregation_ids: List[str]
     offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]]
 
 
@@ -432,6 +434,7 @@ def get_combined_ingest_graph(
     output_nodes = []
     output_column_names = []
     output_dtypes = []
+    aggregation_ids = set()
     all_offline_ingest_graphs = []
 
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
@@ -464,6 +467,7 @@ def get_combined_ingest_graph(
             )
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
+            aggregation_ids.update(_extract_aggregation_ids(offline_ingest_graph))
             all_offline_ingest_graphs.append(
                 (offline_ingest_graph, feature.relationships_info or [])
             )
@@ -479,5 +483,30 @@ def get_combined_ingest_graph(
         feature_cluster=feature_cluster,
         output_column_names=output_column_names,
         output_dtypes=output_dtypes,
+        aggregation_ids=list(aggregation_ids),
         offline_ingest_graphs=all_offline_ingest_graphs,
     )
+
+
+def _extract_aggregation_ids(offline_ingest_graph: OfflineStoreIngestQueryGraph) -> list[str]:
+    """
+    Extract all aggregation_id from groupby nodes in OfflineStoreIngestQueryGraph
+
+    Parameters
+    ----------
+    offline_ingest_graph: OfflineStoreIngestQueryGraph
+        Offline store ingest query graph
+
+    Returns
+    -------
+    list[str]
+    """
+    aggregation_ids = []
+    for info in offline_ingest_graph.aggregation_nodes_info:
+        node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
+        if (
+            isinstance(node.parameters, GroupByNodeParameters)
+            and node.parameters.aggregation_id is not None
+        ):
+            aggregation_ids.append(node.parameters.aggregation_id)
+    return aggregation_ids
