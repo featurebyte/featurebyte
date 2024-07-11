@@ -70,11 +70,12 @@ class OnlineStoreRouter(
         Create Feature Store
         """
         controller = request.state.app_container.online_store_controller
-        online_store: OnlineStoreRead = await controller.create_online_store(data=data)
-        return online_store
+        online_store = await controller.create_online_store(data=data)
+        return OnlineStoreRead(**online_store.dict(by_alias=True))
 
     async def get_object(self, request: Request, online_store_id: PyObjectId) -> OnlineStoreRead:
-        return await super().get_object(request, online_store_id)
+        online_store = await super().get_object(request, online_store_id)
+        return OnlineStoreRead(**online_store.dict(by_alias=True))
 
     async def list_audit_logs(
         self,
@@ -105,12 +106,13 @@ class OnlineStoreRouter(
         """
         controller = request.state.app_container.online_store_controller
         document = await controller.update_online_store(online_store_id, data)
-        return cast(OnlineStoreRead, document)
+        return OnlineStoreRead(**document.dict(by_alias=True))
 
     async def update_description(
         self, request: Request, online_store_id: PyObjectId, data: DescriptionUpdate
     ) -> OnlineStoreRead:
-        return await super().update_description(request, online_store_id, data)
+        online_store = await super().update_description(request, online_store_id, data)
+        return OnlineStoreRead(**online_store.dict(by_alias=True))
 
     @staticmethod
     async def get_online_store_info(

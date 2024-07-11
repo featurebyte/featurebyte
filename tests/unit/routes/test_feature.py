@@ -2,10 +2,10 @@
 Tests for Feature route
 """
 
-# pylint: disable=too-many-lines
-
 import collections
 import textwrap
+
+# pylint: disable=too-many-lines
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, Mock, call, patch
 import numpy as np
 import pandas as pd
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
@@ -64,14 +64,30 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             {**payload, "graph": {"edges": {"name": "value"}}},
             [
                 {
-                    "loc": ["body", "graph", "edges"],
-                    "msg": "value is not a valid list",
-                    "type": "type_error.list",
+                    "input": {"name": "value"},
+                    "loc": ["body", "FeatureCreate", "graph", "edges"],
+                    "msg": "Input should be a valid list",
+                    "type": "list_type",
                 },
                 {
-                    "loc": ["body", "source_feature_id"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "input": {
+                        "_COMMENT": payload["_COMMENT"],
+                        "_id": payload["_id"],
+                        "graph": {"edges": {"name": "value"}},
+                        "name": "sum_30m",
+                        "node_name": "project_1",
+                        "tabular_source": {
+                            "feature_store_id": payload["tabular_source"]["feature_store_id"],
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_table",
+                            },
+                        },
+                    },
+                    "loc": ["body", "FeatureNewVersionCreate", "source_feature_id"],
+                    "msg": "Field required",
+                    "type": "missing",
                 },
             ],
         ),
@@ -79,22 +95,40 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             {**payload, "graph": {"nodes": {}}},
             [
                 {
-                    "loc": ["body", "graph", "nodes"],
-                    "msg": "value is not a valid list",
-                    "type": "type_error.list",
+                    "input": {},
+                    "loc": ["body", "FeatureCreate", "graph", "nodes"],
+                    "msg": "Input should be a valid list",
+                    "type": "list_type",
                 },
                 {
-                    "loc": ["body", "source_feature_id"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "input": {
+                        "_COMMENT": payload["_COMMENT"],
+                        "_id": payload["_id"],
+                        "graph": {"nodes": {}},
+                        "name": "sum_30m",
+                        "node_name": "project_1",
+                        "tabular_source": {
+                            "feature_store_id": payload["tabular_source"]["feature_store_id"],
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_table",
+                            },
+                        },
+                    },
+                    "loc": ["body", "FeatureNewVersionCreate", "source_feature_id"],
+                    "msg": "Field required",
+                    "type": "missing",
                 },
             ],
         ),
         (
             {**payload, "node_name": "groupby_1"},
             (
-                "1 validation error for FeatureModel\n__root__\n  "
-                "Feature or target graph must have exactly one aggregation output (type=value_error)"
+                "1 validation error for FeatureModel\n"
+                "  Value error, Feature or target graph must have exactly one aggregation output [type=value_error, "
+                "input_value={'_id': ObjectId('646f6c1...de_serving_names': True}, input_type=dict]\n"
+                "    For further information visit https://errors.pydantic.dev/2.8/v/value_error"
             ),
         ),
     ]
@@ -244,7 +278,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         graph_node = graph.get_node_by_name("graph_1")
         compare_pydantic_obj(
             graph_node.parameters.metadata.column_cleaning_operations,
-            expected=column_cleaning_operations,
+            column_cleaning_operations,
         )
 
     def test_create_422__create_new_version(
@@ -778,15 +812,11 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
+                "input": ["2022-04-01", "C1"],
                 "loc": ["body", "point_in_time_and_serving_name_list", 0],
-                "msg": "value is not a valid dict",
-                "type": "type_error.dict",
-            },
-            {
-                "loc": ["body", "__root__"],
-                "msg": "Either point_in_time_and_serving_name_list or observation_table_id must be set",
-                "type": "value_error",
-            },
+                "msg": "Input should be a valid dictionary",
+                "type": "dict_type",
+            }
         ]
 
     def test_sql_200(self, test_api_client_persistent, feature_preview_payload):

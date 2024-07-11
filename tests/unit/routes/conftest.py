@@ -9,7 +9,7 @@ from functools import partial
 from unittest.mock import Mock, patch
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
 from featurebyte import UsernamePasswordCredential

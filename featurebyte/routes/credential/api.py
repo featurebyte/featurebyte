@@ -70,7 +70,8 @@ class CredentialRouter(
         )
 
     async def get_object(self, request: Request, credential_id: PyObjectId) -> CredentialRead:
-        return await super().get_object(request, credential_id)
+        credential = await super().get_object(request, credential_id)
+        return CredentialRead(**credential.dict(by_alias=True))
 
     async def delete_object(self, request: Request, credential_id: PyObjectId) -> DeleteResponse:
         return await super().delete_object(request, credential_id)
@@ -98,7 +99,8 @@ class CredentialRouter(
     async def update_description(
         self, request: Request, credential_id: PyObjectId, data: DescriptionUpdate
     ) -> CredentialRead:
-        return await super().update_description(request, credential_id, data)
+        credentials = await super().update_description(request, credential_id, data)
+        return CredentialRead(**credentials.dict(by_alias=True))
 
     async def list_objects(
         self,
@@ -132,7 +134,8 @@ class CredentialRouter(
         """
         Create credential
         """
-        return await super().create_object(request, data)
+        credential = await super().create_object(request, data)
+        return CredentialRead(**credential.dict(by_alias=True))
 
     async def update_credential(
         self,
@@ -144,10 +147,8 @@ class CredentialRouter(
         Update credential
         """
         controller = self.get_controller_for_request(request)
-        return await controller.update_credential(
-            credential_id=credential_id,
-            data=data,
-        )
+        credential = await controller.update_credential(credential_id=credential_id, data=data)
+        return CredentialRead(**credential.dict(by_alias=True))
 
     async def get_credential_info(
         self,

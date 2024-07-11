@@ -5,7 +5,7 @@ Tests for Entity route
 from http import HTTPStatus
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
@@ -41,9 +41,10 @@ class TestEntityApi(BaseCatalogApiTestSuite):
             {**payload, "serving_name": ["cust_id"]},
             [
                 {
+                    "input": ["cust_id"],
                     "loc": ["body", "serving_name"],
-                    "msg": "str type expected",
-                    "type": "type_error.str",
+                    "msg": "Input should be a valid string",
+                    "type": "string_type",
                 }
             ],
         )
@@ -178,22 +179,25 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         response = test_api_client.patch(f"{self.base_route}/{unknown_entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
-            "detail": [
-                {
-                    "loc": ["body"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
-                }
-            ]
+            "detail": [{"input": None, "loc": ["body"], "msg": "Field required", "type": "missing"}]
         }
 
         response = test_api_client.patch(f"{self.base_route}/abc", json={"name": "anything"})
         assert response.json()["detail"] == [
             {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
+                "ctx": {"class": "ObjectId"},
+                "input": "abc",
+                "loc": ["path", "entity_id", "is-instance[ObjectId]"],
+                "msg": "Input should be an instance of ObjectId",
+                "type": "is_instance_of",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": "abc",
+                "loc": ["path", "entity_id", "chain[str,function-plain[validate()]]"],
+                "msg": "Value error, Invalid ObjectId",
+                "type": "value_error",
+            },
         ]
 
     def tests_get_name_history(self, test_api_client_persistent, create_success_response):

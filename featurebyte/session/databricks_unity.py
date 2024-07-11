@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, BinaryIO, Literal
 
 import pandas as pd
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 from sqlglot.expressions import Select
 
 from featurebyte import SourceType

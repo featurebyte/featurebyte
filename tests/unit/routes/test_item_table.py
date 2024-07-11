@@ -5,7 +5,7 @@ Tests for ItemTable routes
 from http import HTTPStatus
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_table import ItemTableModel
@@ -50,10 +50,10 @@ class TestItemTableApi(BaseTableApiTestSuite):
             {**payload, "tabular_source": ("Some other source", "other table")},
             [
                 {
-                    "ctx": {"object_type": "TabularSource"},
+                    "input": ["Some other source", "other table"],
                     "loc": ["body", "tabular_source"],
-                    "msg": "value is not a valid TabularSource type",
-                    "type": "type_error.featurebytetype",
+                    "msg": "Input should be a valid dictionary or object to extract fields from",
+                    "type": "model_attributes_type",
                 }
             ],
         ),
@@ -61,10 +61,12 @@ class TestItemTableApi(BaseTableApiTestSuite):
             {**payload, "columns_info": 2 * payload["columns_info"]},
             [
                 {
+                    "ctx": {"error": {}},
+                    "input": 2 * payload["columns_info"],
                     "loc": ["body", "columns_info"],
-                    "msg": 'Column name "event_id_col" is duplicated.',
+                    "msg": 'Value error, Column name "event_id_col" is duplicated.',
                     "type": "value_error",
-                },
+                }
             ],
         ),
         (

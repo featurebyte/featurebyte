@@ -5,7 +5,7 @@ Request data related node classes
 from typing import List, Sequence, Tuple
 from typing_extensions import Literal
 
-from pydantic import Field, StrictStr
+from pydantic import StrictStr
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel

@@ -61,11 +61,11 @@ class AuditDocument(FeatureByteBaseModel):
         def _convert_value(v: Any) -> Any:
             if isinstance(v, dict):
                 return {k: _convert_value(_v) for k, _v in v.items()}
-            elif isinstance(v, list):
+            if isinstance(v, list):
                 return [_convert_value(_v) for _v in v]
-            elif isinstance(v, datetime):
+            if isinstance(v, datetime):
                 return v.isoformat()
-            elif isinstance(v, ObjectId):
+            if isinstance(v, ObjectId):
                 return str(v)
             return v
 

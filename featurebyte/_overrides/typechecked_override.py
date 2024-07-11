@@ -3,7 +3,7 @@ This module overrides the `typechecked` decorator from the `typeguard` package t
 type checking behavior based on the module where the function is defined.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import functools
 import inspect

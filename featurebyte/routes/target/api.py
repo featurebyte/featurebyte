@@ -16,6 +16,7 @@ from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
+    NameQuery,
     PageQuery,
     PageSizeQuery,
     PyObjectId,
@@ -60,7 +61,7 @@ async def list_target(
     sort_by: Optional[str] = SortByQuery,
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
-    name: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> TargetList:
     """
     List Target's

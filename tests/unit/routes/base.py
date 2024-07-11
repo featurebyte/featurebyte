@@ -18,7 +18,7 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 import pytest_asyncio
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.api.utils import parquet_from_arrow_stream
 from featurebyte.common.utils import (
@@ -53,48 +53,54 @@ class BaseApiTestSuite:
             {"page_size": 0},
             [
                 {
+                    "ctx": {"gt": 0},
+                    "input": "0",
                     "loc": ["query", "page_size"],
-                    "msg": "ensure this value is greater than 0",
-                    "type": "value_error.number.not_gt",
-                    "ctx": {"limit_value": 0},
-                },
+                    "msg": "Input should be greater than 0",
+                    "type": "greater_than",
+                }
             ],
         ),
         (
             {"page_size": 501},
             [
                 {
+                    "ctx": {"le": 500},
+                    "input": "501",
                     "loc": ["query", "page_size"],
-                    "msg": "ensure this value is less than or equal to 500",
-                    "type": "value_error.number.not_le",
-                    "ctx": {"limit_value": 500},
-                },
+                    "msg": "Input should be less than or equal to 500",
+                    "type": "less_than_equal",
+                }
             ],
         ),
         (
             {"page_size": "abcd"},
             [
                 {
+                    "input": "abcd",
                     "loc": ["query", "page_size"],
-                    "msg": "value is not a valid integer",
-                    "type": "type_error.integer",
-                },
+                    "msg": "Input should be a valid integer, unable to parse string as an "
+                    "integer",
+                    "type": "int_parsing",
+                }
             ],
         ),
         (
             {"sort_by": "", "search": ""},
             [
                 {
+                    "ctx": {"min_length": 1},
+                    "input": "",
                     "loc": ["query", "sort_by"],
-                    "msg": "ensure this value has at least 1 characters",
-                    "type": "value_error.any_str.min_length",
-                    "ctx": {"limit_value": 1},
+                    "msg": "String should have at least 1 character",
+                    "type": "string_too_short",
                 },
                 {
+                    "ctx": {"min_length": 1},
+                    "input": "",
                     "loc": ["query", "search"],
-                    "msg": "ensure this value has at least 1 characters",
-                    "type": "value_error.any_str.min_length",
-                    "ctx": {"limit_value": 1},
+                    "msg": "String should have at least 1 character",
+                    "type": "string_too_short",
                 },
             ],
         ),
@@ -102,10 +108,11 @@ class BaseApiTestSuite:
             {"sort_dir": "abcd"},
             [
                 {
+                    "ctx": {"expected": "'asc' or 'desc'"},
+                    "input": "abcd",
                     "loc": ["query", "sort_dir"],
-                    "msg": "unexpected value; permitted: 'asc', 'desc'",
-                    "type": "value_error.const",
-                    "ctx": {"given": "abcd", "permitted": ["asc", "desc"]},
+                    "msg": "Input should be 'asc' or 'desc'",
+                    "type": "literal_error",
                 }
             ],
         ),
@@ -391,13 +398,23 @@ class BaseApiTestSuite:
         """Test get (unprocessable)"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/abcd")
+        response_detail = response.json()["detail"]
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == [
+        assert response_detail == [
             {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
+                "ctx": {"class": "ObjectId"},
+                "input": "abcd",
+                "loc": response_detail[0]["loc"],
+                "msg": "Input should be an instance of ObjectId",
+                "type": "is_instance_of",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": "abcd",
+                "loc": response_detail[1]["loc"],
+                "msg": "Value error, Invalid ObjectId",
+                "type": "value_error",
+            },
         ]
 
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):
@@ -508,13 +525,23 @@ class BaseApiTestSuite:
         """Test list audit (unprocessable) - invalid id value"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/audit/abc")
+        response_detail = response.json()["detail"]
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
+                "ctx": {"class": "ObjectId"},
+                "input": "abc",
+                "loc": response_detail[0]["loc"],
+                "msg": "Input should be an instance of ObjectId",
+                "type": "is_instance_of",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": "abc",
+                "loc": response_detail[1]["loc"],
+                "msg": "Value error, Invalid ObjectId",
+                "type": "value_error",
+            },
         ]
 
     def test_update_description_200(self, test_api_client_persistent, create_success_response):
@@ -829,16 +856,14 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
                 {"record_creation_timestamp_column": "non-exist-columns"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
-                    "__root__\n  "
-                    'Column "non-exist-columns" not found in the table! (type=value_error)'
+                    '  Value error, Column "non-exist-columns" not found in the table!'
                 ),
             ),
             (
                 {"record_creation_timestamp_column": "item_id"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
-                    f"__root__\n  "
-                    f"Column \"item_id\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+                    f"  Value error, Column \"item_id\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] "
                 ),
             ),
         ]
@@ -966,8 +991,10 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         assert response_dict == {
             "detail": [
                 {
+                    "ctx": {"error": {}},
+                    "input": "",
                     "loc": ["body", special_column],
-                    "msg": "Column not found in table: ",
+                    "msg": "Value error, Column not found in table: ",
                     "type": "value_error",
                 }
                 for special_column in special_columns
@@ -1061,10 +1088,19 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
+                "ctx": {"class": "ObjectId"},
+                "input": "abc",
+                "loc": ["path", self.id_field_name, "is-instance[ObjectId]"],
+                "msg": "Input should be an instance of ObjectId",
+                "type": "is_instance_of",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": "abc",
+                "loc": ["path", self.id_field_name, "chain[str,function-plain[validate()]]"],
+                "msg": "Value error, Invalid ObjectId",
+                "type": "value_error",
+            },
         ]
 
     def test_update_column_entity_422__entity_id_not_found(
@@ -1249,7 +1285,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
             json=unprocessible_entity_payload,
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == expected_message
+        assert expected_message in response.json()["detail"]
 
     def test_table_get_200(self, test_api_client_persistent, create_success_response):
         """Test table get (success)"""

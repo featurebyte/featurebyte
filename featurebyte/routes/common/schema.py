@@ -52,11 +52,24 @@ class PyObjectId(str):
                     ),
                 ]
             ),
-            serialization=core_schema.plain_serializer_function_ser_schema(lambda x: str(x)),
+            serialization=core_schema.plain_serializer_function_ser_schema(str),
         )
 
     @classmethod
-    def validate(cls, value) -> ObjectId:
+    def validate(cls, value: Any) -> ObjectId:
+        """
+        Validate ObjectId
+
+        Parameters
+        ----------
+        value: Any
+            value to validate
+
+        Returns
+        -------
+        ObjectId
+            ObjectId value
+        """
         if not ObjectId.is_valid(value):
             raise ValueError("Invalid ObjectId")
         return ObjectId(value)

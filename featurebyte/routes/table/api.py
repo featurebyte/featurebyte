@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.proxy_table import TableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
@@ -58,13 +58,13 @@ async def list_table(
     return table_list
 
 
-@router.get("/{table_id}", response_model=ProxyTableModel)
-async def get_table(request: Request, table_id: PyObjectId) -> ProxyTableModel:
+@router.get("/{table_id}", response_model=TableModel)
+async def get_table(request: Request, table_id: PyObjectId) -> TableModel:
     """
     Retrieve Table
     """
     controller = request.state.app_container.table_controller
-    table: ProxyTableModel = await controller.get(
+    table: TableModel = await controller.get(
         document_id=table_id,
     )
     return table

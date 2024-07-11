@@ -154,7 +154,7 @@ class QueryObject(FeatureByteBaseModel):
         flattened_node = flattened_graph.get_node_by_name(node_name_map[pruned_node.name])
 
         # prune the flattened graph as view graph node is not pruned before flattened
-        graph = QueryGraph(**flattened_graph.dict())
+        graph = QueryGraph(**flattened_graph.dict(by_alias=True))
         pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node)
         pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
             pruned_node_name_map[flattened_node.name]

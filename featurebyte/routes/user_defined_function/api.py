@@ -51,10 +51,8 @@ async def create_user_defined_function(
     Create UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionResponse = (
-        await controller.create_user_defined_function(data=data)
-    )
-    return user_defined_function
+    user_defined_function = await controller.create_user_defined_function(data=data)
+    return UserDefinedFunctionResponse(**user_defined_function.dict(by_alias=True))
 
 
 @router.get("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
@@ -65,10 +63,8 @@ async def get_user_defined_function(
     Get UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionResponse = await controller.get(
-        document_id=user_defined_function_id
-    )
-    return user_defined_function
+    user_defined_function = await controller.get(document_id=user_defined_function_id)
+    return UserDefinedFunctionResponse(**user_defined_function.dict(by_alias=True))
 
 
 @router.patch("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
@@ -79,12 +75,10 @@ async def update_user_defined_function(
     Update UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_function: UserDefinedFunctionResponse = (
-        await controller.update_user_defined_function(
-            document_id=user_defined_function_id, data=data
-        )
+    user_defined_function = await controller.update_user_defined_function(
+        document_id=user_defined_function_id, data=data
     )
-    return user_defined_function
+    return UserDefinedFunctionResponse(**user_defined_function.dict(by_alias=True))
 
 
 @router.delete("/{user_defined_function_id}", response_model=DeleteResponse)
@@ -175,4 +169,4 @@ async def update_user_defined_function_description(
         document_id=user_defined_function_id,
         description=data.description,
     )
-    return user_defined_function
+    return UserDefinedFunctionResponse(**user_defined_function.dict(by_alias=True))

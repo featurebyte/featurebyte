@@ -8,7 +8,6 @@ from typing import Union, cast
 from typing_extensions import Literal
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel

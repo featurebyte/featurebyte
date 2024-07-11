@@ -4,7 +4,7 @@ Tests for Semantic route
 
 from http import HTTPStatus
 
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseRelationshipApiTestSuite
 

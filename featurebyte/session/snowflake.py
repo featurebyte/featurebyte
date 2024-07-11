@@ -13,7 +13,6 @@ import logging
 
 import pandas as pd
 import pyarrow as pa
-from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
 from snowflake.connector.errors import Error as SnowflakeError

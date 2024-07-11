@@ -5,9 +5,18 @@ FeatureList API payload schema
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing_extensions import Annotated
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    Tag,
+    field_validator,
+    model_validator,
+)
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -33,7 +42,10 @@ from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
 )
-from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
+from featurebyte.schema.worker.task.feature_list_create import (
+    FeatureParameters,
+    feature_params_discriminator,
+)
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -43,7 +55,7 @@ class FeatureListCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    feature_ids: List[PydanticObjectId] = Field(min_items=1)
+    feature_ids: List[PydanticObjectId] = Field(min_length=1)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):
@@ -53,7 +65,10 @@ class FeatureListCreateJob(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
+    features: Union[
+        Annotated[List[FeatureParameters], Tag("feature_params")],
+        Annotated[List[PydanticObjectId], Tag("feature_ids")],
+    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
     features_conflict_resolution: ConflictResolution
 
 
@@ -163,7 +178,7 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
 
     # exclude this field from the response
     internal_feature_clusters: Optional[List[Any]] = Field(
-        frozen=True, alias="feature_clusters", exclude=True
+        alias="feature_clusters", default=None, exclude=True
     )
 
 
@@ -232,7 +247,7 @@ class PreviewObservationSet(FeatureByteBaseModel):
     """
 
     point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
-        min_items=1, max_items=FEATURE_PREVIEW_ROW_LIMIT
+        min_length=1, max_length=FEATURE_PREVIEW_ROW_LIMIT, default=None
     )
     observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
@@ -265,7 +280,7 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     """
 
     entity_serving_names: List[Dict[str, Any]] = Field(
-        min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT
+        min_length=1, max_length=ONLINE_FEATURE_REQUEST_ROW_LIMIT
     )
 
 
@@ -275,3 +290,6 @@ class SampleEntityServingNames(FeatureByteBaseModel):
     """
 
     entity_serving_names: List[Dict[str, str]]
+
+    # model configuration
+    model_config = ConfigDict(coerce_numbers_to_str=True)

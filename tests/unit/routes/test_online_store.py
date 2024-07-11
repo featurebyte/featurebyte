@@ -5,7 +5,7 @@ Test for OnlineStore route
 from http import HTTPStatus
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseApiTestSuite
 
@@ -37,9 +37,10 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             {key: val for key, val in payload.items() if key != "name"},
             [
                 {
+                    "input": {key: val for key, val in payload.items() if key != "name"},
                     "loc": ["body", "name"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
             ],
         )

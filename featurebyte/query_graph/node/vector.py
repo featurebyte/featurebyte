@@ -7,8 +7,6 @@ from typing_extensions import Literal
 
 import textwrap
 
-from pydantic import Field
-
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode

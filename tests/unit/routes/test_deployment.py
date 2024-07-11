@@ -483,8 +483,8 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
     @pytest.mark.parametrize(
         "num_rows, expected_msg",
         [
-            (1000, "ensure this value has at most 50 items"),
-            (0, "ensure this value has at least 1 items"),
+            (1000, "List should have at most 50 items after validation, not 1000"),
+            (0, "List should have at least 1 item after validation, not 0"),
         ],
     )
     def test_get_online_features__invalid_number_of_rows(

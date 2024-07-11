@@ -11,7 +11,7 @@ from io import BytesIO
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE

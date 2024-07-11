@@ -3,12 +3,13 @@ FeatureJobSettingAnalysis API payload schema
 """
 
 from typing import Any, Dict, Literal, Optional, Sequence, Union
+from typing_extensions import Annotated
 
 from datetime import datetime
 
 from bson import ObjectId
 from pandas import Timestamp
-from pydantic import BaseModel, Field, StrictStr, model_validator
+from pydantic import AfterValidator, BaseModel, Field, StrictStr, field_validator, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -18,6 +19,8 @@ from featurebyte.models.base import (
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import PaginationMixin
+
+PD_Timestamp = Union[Timestamp, Annotated[str, AfterValidator(lambda x: Timestamp(x))]]
 
 
 class EventTableCandidate(FeatureByteBaseModel):
@@ -84,8 +87,8 @@ class AnalysisOptions(FeatureByteBaseModel):
     Analysis options
     """
 
-    analysis_date: Timestamp
-    analysis_start: Timestamp
+    analysis_date: PD_Timestamp
+    analysis_start: PD_Timestamp
     analysis_length: int
     blind_spot_buffer_setting: int
     exclude_late_job: bool
@@ -175,6 +178,11 @@ class FeatureJobSettingAnalysisWHJobTimeModuloFrequency(FeatureByteBaseModel):
     ends: int
     ends_wo_late: int
     job_at_end_of_cycle: bool
+
+    @field_validator("starts", "ends", "ends_wo_late", mode="before")
+    @classmethod
+    def _coerce_float_to_int(cls, value: Any) -> int:
+        return int(value)
 
 
 class FeatureJobSettingAnalysisWarehouseRecord(FeatureByteBaseDocumentModel):

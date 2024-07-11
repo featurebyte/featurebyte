@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 import pandas as pd
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.unit.routes.base import BaseMaterializedTableTestSuite

@@ -6,8 +6,6 @@ This module contains binary operation node classes
 from typing import ClassVar, List, Sequence, Tuple
 from typing_extensions import Literal
 
-from pydantic import Field
-
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (

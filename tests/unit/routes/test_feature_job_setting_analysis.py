@@ -47,10 +47,11 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             {**payload, "analysis_length": 0},
             [
                 {
+                    "ctx": {"ge": 3600},
+                    "input": 0,
                     "loc": ["body", "analysis_length"],
-                    "msg": "ensure this value is greater than or equal to 3600",
-                    "type": "value_error.number.not_ge",
-                    "ctx": {"limit_value": 3600},
+                    "msg": "Input should be greater than or equal to 3600",
+                    "type": "greater_than_equal",
                 }
             ],
         )
@@ -380,8 +381,10 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
-                "loc": ["body", "__root__"],
-                "msg": "Either event_table_id or event_table_candidate is required",
+                "input": payload,
+                "ctx": {"error": {}},
+                "loc": ["body"],
+                "msg": "Value error, Either event_table_id or event_table_candidate is required",
                 "type": "value_error",
             }
         ]

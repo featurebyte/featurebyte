@@ -6,7 +6,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.models.credential import decrypt_value
 from tests.unit.routes.base import BaseApiTestSuite
@@ -38,9 +38,10 @@ class TestCredentialApi(BaseApiTestSuite):
             {**payload, "name": ["test"]},
             [
                 {
+                    "input": ["test"],
                     "loc": ["body", "name"],
-                    "msg": "str type expected",
-                    "type": "type_error.str",
+                    "msg": "Input should be a valid string",
+                    "type": "string_type",
                 }
             ],
         )
@@ -164,9 +165,10 @@ class TestCredentialApi(BaseApiTestSuite):
         assert response.json() == {
             "detail": [
                 {
+                    "input": None,
                     "loc": ["body"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
+                    "msg": "Field required",
+                    "type": "missing",
                 }
             ]
         }
@@ -174,10 +176,19 @@ class TestCredentialApi(BaseApiTestSuite):
         response = test_api_client.patch(f"{self.base_route}/abc", json={"name": "anything"})
         assert response.json()["detail"] == [
             {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
+                "ctx": {"class": "ObjectId"},
+                "input": "abc",
+                "loc": ["path", self.id_field_name, "is-instance[ObjectId]"],
+                "msg": "Input should be an instance of ObjectId",
+                "type": "is_instance_of",
+            },
+            {
+                "ctx": {"error": {}},
+                "input": "abc",
+                "loc": ["path", self.id_field_name, "chain[str,function-plain[validate()]]"],
+                "msg": "Value error, Invalid ObjectId",
+                "type": "value_error",
+            },
         ]
 
     @pytest.mark.asyncio
