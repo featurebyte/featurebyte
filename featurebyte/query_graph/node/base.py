@@ -876,7 +876,7 @@ class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""
 
     name: str
-    transform_info: str
+    transform_info: ClassVar[Callable[[], str]]
     output_type: NodeOutputType
 
     @abstractmethod
