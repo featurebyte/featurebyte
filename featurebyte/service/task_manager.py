@@ -397,7 +397,7 @@ class TaskManager:
 
         data = result["data"]
         if not data:
-            logger.error(f"Document with name {name} not found")
+            logger.warning(f"Periodic task with name {name} not found; nothing to delete")
         else:
             await self.periodic_task_service.delete_document(document_id=data[0]["_id"])
 
