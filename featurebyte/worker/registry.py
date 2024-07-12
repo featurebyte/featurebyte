@@ -25,6 +25,7 @@ from featurebyte.worker.task.feature_list_create import FeatureListCreateTask
 from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
+from featurebyte.worker.task.feature_materialize_sync import FeatureMaterializeSyncTask
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
 from featurebyte.worker.task.observation_table import ObservationTableTask
@@ -55,6 +56,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TILE_COMPUTE: TileTask,
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
+    WorkerCommand.FEATURE_MATERIALIZE_SYNC: FeatureMaterializeSyncTask,
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
     WorkerCommand.DATA_DESCRIPTION: DataDescriptionTask,
     WorkerCommand.TEST: TestTask,
