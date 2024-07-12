@@ -9,6 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -64,10 +65,10 @@ def test__getitem__type_not_supported(int_series):
     """
     Test retrieval with unsupported type
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = int_series[True]
     expected_msg = (
-        'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
+        'argument "item" (bool) is not an instance of featurebyte.core.series.FrozenSeries'
     )
     assert expected_msg in str(exc.value)
 
@@ -279,11 +280,9 @@ def test__setitem__key_type_not_supported(int_series):
     """
     Test assignment with non-supported key type
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         int_series[1] = True
-    expected_msg = (
-        'type of argument "key" must be featurebyte.core.series.FrozenSeries; got int instead'
-    )
+    expected_msg = 'argument "key" (int) is not an instance of featurebyte.core.series.FrozenSeries'
     assert expected_msg in str(exc.value)
 
 
@@ -327,11 +326,12 @@ def test_logical_operators(bool_series, int_series):
         {"source": "project_1", "target": "or_1"},
     ]
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = bool_series & "string"
     expected_msg = (
-        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); '
-        "got str instead"
+        'argument "other" (str) did not match any element in the union:\n'
+        "  bool: is not an instance of bool\n"
+        "  featurebyte.core.series.FrozenSeries: is not an instance of featurebyte.core.series.FrozenSeries"
     )
     assert expected_msg in str(exc.value)
 
@@ -994,11 +994,14 @@ def test_astype__invalid_type_str(float_series):
     """
     Test series astype with invalid type specification
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         float_series.astype("number")
     assert str(exc.value) == (
-        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
-        " Literal[int, float, str]); got str instead"
+        'argument "new_type" (str) did not match any element in the union:\n'
+        "  Type[int]: is not a class\n"
+        "  Type[float]: is not a class\n"
+        "  Type[str]: is not a class\n"
+        "  Literal['int', 'float', 'str']: is not any of ('int', 'float', 'str')"
     )
 
 
@@ -1006,11 +1009,14 @@ def test_astype__invalid_type_cls(float_series):
     """
     Test series astype with invalid type specification
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         float_series.astype(dict)
     assert str(exc.value) == (
-        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
-        " Literal[int, float, str]); got dict instead"
+        'argument "new_type" (class dict) did not match any element in the union:\n'
+        "  Type[int]: is not a subclass of int\n"
+        "  Type[float]: is not a subclass of float\n"
+        "  Type[str]: is not a subclass of str\n"
+        "  Literal['int', 'float', 'str']: is not any of ('int', 'float', 'str')"
     )
 
 
@@ -1204,12 +1210,15 @@ def test_scalar_timestamp__invalid(timestamp_series, scalar_timestamp):
     """
     Test scalar timestamp value is not allowed in a non-relational operation
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = timestamp_series - scalar_timestamp
-    assert (
-        'type of argument "other" must be one of (int, float, featurebyte.core.series.FrozenSeries)'
-        in str(exc.value)
+    expected_msg = (
+        'argument "other" (pandas._libs.tslibs.timestamps.Timestamp) did not match any element in the union:\n'
+        "  int: is not an instance of int\n"
+        "  float: is neither float or int\n"
+        "  featurebyte.core.series.FrozenSeries: is not an instance of featurebyte.core.series.FrozenSeries"
     )
+    assert expected_msg in str(exc.value)
 
 
 def test_operation_structure_cache(float_series):
