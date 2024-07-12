@@ -65,7 +65,7 @@ class TileTaskExecutor:
         params: TileScheduledJobParameters
             Parameters for the scheduled task
         """
-        used_job_schedule_ts = params.job_schedule_ts or datetime.now().strftime(DATE_FORMAT)
+        used_job_schedule_ts = params.job_schedule_ts or datetime.utcnow().strftime(DATE_FORMAT)
         final_status: PrerequisiteTileTaskStatusType = "failure"
         try:
             await self._execute(session, params, used_job_schedule_ts)
