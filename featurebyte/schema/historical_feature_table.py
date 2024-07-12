@@ -42,7 +42,7 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
 
     @model_validator(mode="before")
     @classmethod
-    def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

@@ -117,7 +117,7 @@ class BaseNode(FeatureByteBaseModel):
         assert "Literal" in repr(self.model_fields["type"].annotation)
 
     @classmethod
-    def __pydantic_init_subclass__(cls) -> None:
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
             NODE_TYPES.append(cls)
@@ -928,7 +928,7 @@ class SeriesOutputNodeOpStructMixin:
                 DerivedDataColumn.create(
                     name=None,
                     columns=columns,
-                    transform=self.transform_info,
+                    transform=self.transform_info,  # type: ignore
                     node_name=self.name,
                     dtype=self.derive_var_type(inputs),
                 )
@@ -939,7 +939,7 @@ class SeriesOutputNodeOpStructMixin:
                 PostAggregationColumn.create(
                     name=None,
                     columns=aggregations,
-                    transform=self.transform_info,
+                    transform=self.transform_info,  # type: ignore
                     node_name=self.name,
                     dtype=self.derive_var_type(inputs),
                 )
@@ -957,7 +957,7 @@ class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
     output_type: NodeOutputType = NodeOutputType.SERIES
-    parameters: FeatureByteBaseModel = {}
+    parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
 
 class SingleValueNodeParameters(BaseNodeParameters):

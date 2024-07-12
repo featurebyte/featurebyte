@@ -3,7 +3,7 @@ Query graph node related classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, cast
 from typing_extensions import Annotated
 
 from pydantic import Field, parse_obj_as
@@ -35,5 +35,5 @@ def construct_node(**kwargs: Any) -> Node:
     -------
     Node
     """
-    node = parse_obj_as(Node, kwargs)  # type: ignore[misc]
-    return node
+    node = parse_obj_as(Node, kwargs)
+    return cast(Node, node)

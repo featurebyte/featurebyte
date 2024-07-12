@@ -59,7 +59,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_columns_format(cls, values: Any) -> Any:
         # DEV-556: convert list of string to list of dictionary
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

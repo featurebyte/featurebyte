@@ -242,7 +242,7 @@ class AzureBlobStorage(SimpleStorage):
     def delete_object(self, path: str) -> None:
         path = path.rstrip("/")
         key = f"{self.key_prefix}/{path}" if self.key_prefix else path
-        self.client.get_container_client(container=self.container).delete_blob(blob=key)  # type: ignore
+        self.client.get_container_client(container=self.container).delete_blob(blob=key)
 
 
 class WebHDFSStorage(SimpleStorage):

@@ -403,7 +403,7 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_catalog_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_catalog_id(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

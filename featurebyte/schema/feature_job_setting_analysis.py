@@ -53,18 +53,18 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_event_table_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_event_table_parameters(cls, values: Any) -> Any:
         """
         Validate Event Table parameters are provided
 
         Parameters
         ----------
-        values : Dict[str, Any]
+        values : Any
             Values to validate
 
         Returns
         -------
-        Dict[str, Any]
+        Any
             Validated values
 
         Raises
@@ -125,13 +125,13 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_backward_compatibility(cls, values: Any) -> Any:
         """
         Handle backward compatibility
 
         Parameters
         ----------
-        values : Dict[str, Any]
+        values : Any
             Values to validate
 
         Returns
@@ -209,7 +209,7 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_recommended_feature_job_setting(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -246,7 +246,7 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_backward_compatibility(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

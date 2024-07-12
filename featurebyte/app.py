@@ -223,7 +223,7 @@ def get_app() -> FastAPI:
         channel = f"task_{user.id}_{task_id}_progress"
 
         async with redis.from_url(REDIS_URI) as client:
-            async with client.pubsub() as pubsub:  # type: ignore
+            async with client.pubsub() as pubsub:
                 logger.debug("Listening to channel", extra={"channel": channel})
                 await pubsub.subscribe(channel)
                 async for message in pubsub.listen():

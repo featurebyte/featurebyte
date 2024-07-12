@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import Query, Request
 
 from featurebyte.exception import DocumentNotFoundError
@@ -187,7 +188,7 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.get_info(
-            document_id=feature_store_id,
+            document_id=ObjectId(feature_store_id),
             verbose=verbose,
         )
 
@@ -367,14 +368,15 @@ class FeatureStoreRouter(
         Submit data description task for query graph node
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        catalog_id_value = catalog_id or DEFAULT_CATALOG_ID
         task_submit: Task = await controller.create_data_description(
-            sample=sample, size=size, seed=seed, catalog_id=catalog_id or DEFAULT_CATALOG_ID
+            sample=sample, size=size, seed=seed, catalog_id=ObjectId(catalog_id_value)
         )
         return task_submit
 
     async def delete_object(self, request: Request, feature_store_id: PyObjectId) -> DeleteResponse:
         controller: FeatureStoreController = self.get_controller_for_request(request)
-        await controller.delete(document_id=feature_store_id)
+        await controller.delete(document_id=ObjectId(feature_store_id))
         return DeleteResponse()
 
     async def update_details(
@@ -382,4 +384,6 @@ class FeatureStoreRouter(
     ) -> FeatureStoreModel:
         """Update details"""
         controller: FeatureStoreController = self.get_controller_for_request(request)
-        return await controller.update_details(feature_store_id=feature_store_id, data=data)
+        return await controller.update_details(
+            feature_store_id=ObjectId(feature_store_id), data=data
+        )

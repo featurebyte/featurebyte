@@ -69,7 +69,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_default_entity_lookup_steps(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

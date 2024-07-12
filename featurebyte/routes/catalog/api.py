@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import Query, Request, Response
 
 from featurebyte.models.catalog import CatalogModel, CatalogNameHistoryEntry
@@ -144,7 +145,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         info = await controller.get_info(
-            document_id=catalog_id,
+            document_id=ObjectId(catalog_id),
             verbose=verbose,
         )
         return info
@@ -160,7 +161,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         catalog = await controller.update_catalog(
-            catalog_id=catalog_id,
+            catalog_id=ObjectId(catalog_id),
             data=data,
         )
         return catalog
@@ -176,7 +177,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         catalog = await controller.update_catalog_online_store(
-            catalog_id=catalog_id,
+            catalog_id=ObjectId(catalog_id),
             data=data,
         )
         return catalog
@@ -193,7 +194,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         maybe_task = await controller.update_catalog_online_store_async(
-            catalog_id=catalog_id,
+            catalog_id=ObjectId(catalog_id),
             data=data,
         )
         if maybe_task is None:
@@ -222,7 +223,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         await controller.delete_catalog(
-            catalog_id=catalog_id,
+            catalog_id=ObjectId(catalog_id),
             soft_delete=soft_delete,
         )
 
@@ -236,7 +237,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         controller = self.get_controller_for_request(request)
         history_values = await controller.list_field_history(
-            document_id=catalog_id,
+            document_id=ObjectId(catalog_id),
             field="name",
         )
 

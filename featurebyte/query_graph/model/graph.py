@@ -59,9 +59,9 @@ class QueryGraphModel(FeatureByteBaseModel):
     def __str__(self) -> str:
         return repr(self)
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, QueryGraphModel):
-            return self.dict() == other.dict()
+            return bool(self.dict() == other.dict())
         return False
 
     def _is_cache_invalid(self) -> bool:
@@ -239,7 +239,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             # introduced.
             if node_parameters.get("offset") is None:
                 node_parameters.pop("offset", None)
-        return node_parameters
+        return dict(node_parameters)
 
     @classmethod
     def _derive_node_name_to_ref(

@@ -280,7 +280,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
             for col in self.metadata.column_cleaning_operations
             if col.column_name in target_columns
         ]
-        return metadata
+        return dict(metadata)
 
     @staticmethod
     def prepare_column_cleaning_operation_code_generation(
@@ -539,7 +539,7 @@ class BaseGraphNode(BasePrunableNode):
         return ""
 
     @property
-    def output_node(self) -> NodeT:  # type: ignore[type-var]
+    def output_node(self) -> NodeT:  # type: ignore
         """
         Output node of the graph (in the graph node)
 

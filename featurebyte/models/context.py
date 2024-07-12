@@ -41,7 +41,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _set_primary_entity_ids(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _set_primary_entity_ids(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

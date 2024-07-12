@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -83,7 +84,7 @@ async def get_target(request: Request, target_id: PyObjectId) -> TargetModel:
     Retrieve Target
     """
     controller: TargetController = request.state.app_container.target_controller
-    return await controller.get(document_id=target_id)
+    return await controller.get(document_id=ObjectId(target_id))
 
 
 @router.get("/{target_id}/info", response_model=TargetInfo)
@@ -97,7 +98,7 @@ async def get_target_info(
     """
     controller: TargetController = request.state.app_container.target_controller
     return await controller.get_info(
-        document_id=target_id,
+        document_id=ObjectId(target_id),
         verbose=verbose,
     )
 
@@ -149,7 +150,7 @@ async def update_target_description(
     """
     controller: TargetController = request.state.app_container.target_controller
     return await controller.update_description(
-        document_id=target_id,
+        document_id=ObjectId(target_id),
         description=data.description,
     )
 
@@ -167,7 +168,9 @@ async def get_feature_sample_entity_serving_names(
     Get Feature Sample Entity Serving Names
     """
     controller: TargetController = request.state.app_container.target_controller
-    return await controller.get_sample_entity_serving_names(target_id=target_id, count=count)
+    return await controller.get_sample_entity_serving_names(
+        target_id=ObjectId(target_id), count=count
+    )
 
 
 @router.delete("/{target_id}")
@@ -176,4 +179,4 @@ async def delete_target(request: Request, target_id: PyObjectId) -> None:
     Delete Target
     """
     controller = request.state.app_container.target_controller
-    await controller.delete(document_id=target_id)
+    await controller.delete(document_id=ObjectId(target_id))

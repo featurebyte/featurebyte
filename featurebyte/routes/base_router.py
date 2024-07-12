@@ -6,6 +6,7 @@ from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Request
 from fastapi.routing import APIRoute
 from starlette.routing import BaseRoute
@@ -152,7 +153,7 @@ class BaseApiRouter(
         Get table
         """
         controller = self.get_controller_for_request(request)
-        object_model: ObjectModelT = await controller.get(document_id=object_id)
+        object_model: ObjectModelT = await controller.get(document_id=ObjectId(object_id))
         return object_model
 
     async def create_object(self, request: Request, data: CreateObjectSchemaT) -> ObjectModelT:
@@ -193,7 +194,7 @@ class BaseApiRouter(
         Delete object
         """
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=object_id)
+        await controller.delete(document_id=ObjectId(object_id))
         return DeleteResponse()
 
     async def list_audit_logs(
@@ -211,7 +212,7 @@ class BaseApiRouter(
         """
         controller = self.get_controller_for_request(request)
         audit_doc_list: AuditDocumentList = await controller.list_audit(
-            document_id=object_id,
+            document_id=ObjectId(object_id),
             page=page,
             page_size=page_size,
             sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -227,7 +228,7 @@ class BaseApiRouter(
         """
         controller = self.get_controller_for_request(request)
         object_model: ObjectModelT = await controller.update_description(
-            document_id=object_id,
+            document_id=ObjectId(object_id),
             description=data.description,
         )
         return object_model

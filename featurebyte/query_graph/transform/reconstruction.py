@@ -38,7 +38,7 @@ class BasePruningSensitiveNode(BaseNode):
     """
 
     @classmethod
-    def __pydantic_init_subclass__(cls) -> None:
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         super().__pydantic_init_subclass__()
         node_type = cls.model_fields["type"].default
         PRUNING_SENSITIVE_NODE_MAP[node_type] = cls

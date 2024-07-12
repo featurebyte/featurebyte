@@ -191,7 +191,7 @@ class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = NodeType.FILTER
-    parameters: FeatureByteBaseModel = {}
+    parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
     # feature definition hash generation configuration
     _inherit_first_input_column_name_mapping: ClassVar[bool] = True
@@ -703,7 +703,7 @@ class GroupByNodeParameters(BaseWindowAggregateParameters):
 
     @model_validator(mode="before")
     @classmethod
-    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_backward_compatibility(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -993,7 +993,7 @@ class SCDBaseParameters(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_node_parameters_format(cls, values: Any) -> Any:
         # DEV-556: backward compatibility
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
@@ -1034,9 +1034,7 @@ class LookupParameters(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_input_column_names_feature_names_same_length(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _validate_input_column_names_feature_names_same_length(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -1232,7 +1230,7 @@ class JoinMetadata(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _backward_compat_fill_rprefix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _backward_compat_fill_rprefix(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

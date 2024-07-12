@@ -65,7 +65,7 @@ class EntityInfo(EntityBriefInfo, BaseInfo):
     """
 
 
-class EntityBriefInfoList(RootModel):
+class EntityBriefInfoList(RootModel[Any]):
     """
     Paginated list of entity brief info
     """
@@ -99,7 +99,7 @@ class TableBriefInfo(BaseBriefInfo):
     catalog_name: str
 
 
-class TableBriefInfoList(RootModel):
+class TableBriefInfoList(RootModel[Any]):
     """
     Paginated list of table brief info
     """
@@ -124,7 +124,7 @@ class TableBriefInfoList(RootModel):
         return TableBriefInfoList(data_project.project(paginated_data))
 
 
-class EventTableBriefInfoList(RootModel):
+class EventTableBriefInfoList(RootModel[Any]):
     """
     Paginated list of event table brief info
     """
@@ -284,7 +284,7 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
         return self
 
 
-class FeatureListBriefInfoList(RootModel):
+class FeatureListBriefInfoList(RootModel[Any]):
     """
     Paginated list of feature brief info
     """

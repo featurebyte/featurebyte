@@ -4,7 +4,7 @@ This module contains feature store & table schemas that are used in node paramet
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Optional, Union
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
@@ -73,7 +73,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
 
     @model_validator(mode="before")
     @classmethod
-    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
@@ -156,7 +156,7 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
 
     @model_validator(mode="before")
     @classmethod
-    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
@@ -258,7 +258,7 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
 
     @model_validator(mode="before")
     @classmethod
-    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

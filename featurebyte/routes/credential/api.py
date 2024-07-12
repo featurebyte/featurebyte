@@ -8,6 +8,7 @@ from typing import Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import Request
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -161,6 +162,6 @@ class CredentialRouter(
         """
         controller = self.get_controller_for_request(request)
         return await controller.get_info(
-            credential_id=credential_id,
+            credential_id=ObjectId(credential_id),
             verbose=verbose,
         )

@@ -153,7 +153,7 @@ class InfoDict(Dict[str, Any]):
                         value = datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M:%S")
                     except (ValueError, TypeError):
                         pass
-                    value_elem = doc.createTextNode(str(value))
+                    value_elem = doc.createTextNode(str(value))  # type: ignore
 
                 val_column = doc.createElement("td")
                 _set_element_style(val_column, {"width": "auto", "text-align": "left"})

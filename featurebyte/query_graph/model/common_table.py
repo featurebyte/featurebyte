@@ -60,7 +60,7 @@ class BaseTableData(FeatureByteBaseModel):
     _validator = field_validator("columns_info")(columns_info_validator)
 
     @classmethod
-    def __pydantic_init_subclass__(cls) -> None:
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
         table_type = cls.model_fields["type"]
         if "Literal" in repr(table_type.annotation):

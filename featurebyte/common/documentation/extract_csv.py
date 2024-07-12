@@ -7,16 +7,13 @@ from typing import Dict, List, Literal
 import csv
 from dataclasses import dataclass
 
-from featurebyte.common.documentation.doc_types import DocItems
+from featurebyte.common.documentation.doc_types import DocItems, ResourceDetails
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
     generate_documentation_for_docs,
     get_doc_groups,
 )
-from featurebyte.common.documentation.resource_extractor import (
-    ResourceDetails,
-    get_resource_details,
-)
+from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logging import get_logger
 
 logger = get_logger(__name__)

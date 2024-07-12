@@ -124,9 +124,8 @@ class HistoricalFeatureTableController(
         -------
         Optional[HistoricalFeatureTableModel]
         """
-        return cast(
-            HistoricalFeatureTableModel,
-            await self.service.update_document(
-                historical_feature_table_id, data, return_document=True
-            ),
+        table = await self.service.update_document(
+            historical_feature_table_id, data, return_document=True
         )
+        assert isinstance(table, HistoricalFeatureTableModel)
+        return table

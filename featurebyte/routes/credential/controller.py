@@ -54,7 +54,7 @@ class CredentialController(
             CredentialRead object
         """
         document = await self.service.update_document(
-            document_id=credential_id,
+            document_id=ObjectId(credential_id),
             data=CredentialServiceUpdate(**data.dict(by_alias=True)),
         )
         assert document is not None
@@ -80,7 +80,7 @@ class CredentialController(
         CredentialInfo
         """
         _ = verbose
-        credential = await self.service.get_document(document_id=credential_id)
+        credential = await self.service.get_document(document_id=ObjectId(credential_id))
         return CredentialInfo(
             name=credential.name,
             feature_store_info=await self.feature_store_service.get_feature_store_info(

@@ -333,11 +333,11 @@ class SampleMixin(AsyncMixin):
         >>> catalog.get_view("INVOICEITEMS").shape()
         (300450, 10)
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStorePreview(
             graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
-            feature_store_id=self.feature_store.id,
+            feature_store_id=self.feature_store.id,  # type: ignore
         )
         client = Configurations().get_client()
         response = client.post(url="/feature_store/shape", json=payload.json_dict())

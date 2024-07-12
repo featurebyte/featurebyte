@@ -204,7 +204,7 @@ class FeatureBriefInfo(FeatureByteBaseModel):
     created_at: datetime
 
 
-class FeatureBriefInfoList(RootModel):
+class FeatureBriefInfoList(RootModel[Any]):
     """
     Paginated list of feature brief info
     """

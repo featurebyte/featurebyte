@@ -62,7 +62,7 @@ async def get_azure_storage_blob_client() -> AsyncIterator[ContainerClient]:
     AsyncIterator[AioBaseClient]
         azure blob storage client
     """
-    async with ContainerClient.from_connection_string(  # type: ignore
+    async with ContainerClient.from_connection_string(
         conn_str=(
             f"AccountName={AZURE_STORAGE_ACCOUNT_NAME};DefaultEndpointsProtocol=https;"
             "EndpointSuffix=core.windows.net"

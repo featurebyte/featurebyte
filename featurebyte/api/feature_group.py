@@ -528,12 +528,13 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
-        value = parse_obj_as(Feature, value).copy(deep=True)
+        feature = parse_obj_as(Feature, value).copy(deep=True)
+        assert isinstance(feature, Feature)
         # Name setting performs validation to ensure the specified name is valid
-        value.name = key
-        self.feature_objects[key] = value
+        feature.name = key
+        self.feature_objects[key] = feature
         # sanity check: make sure we don't copy global query graph
-        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
+        assert id(self.feature_objects[key].graph.nodes) == id(feature.graph.nodes)
 
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:

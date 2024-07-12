@@ -2,7 +2,7 @@
 Aggregation method model
 """
 
-from typing import TYPE_CHECKING, ClassVar, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
@@ -21,7 +21,7 @@ class BaseAggFunc(FeatureByteBaseModel):
     type: AggFunc
 
     @classmethod
-    def __pydantic_init_subclass__(cls) -> None:
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
@@ -202,5 +202,5 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     -------
     AggFuncType
     """
-    agg_func_obj = parse_obj_as(AggFuncType, {"type": agg_func})  # type: ignore
-    return agg_func_obj
+    agg_func_obj = parse_obj_as(AggFuncType, {"type": agg_func})
+    return cast(AggFuncType, agg_func_obj)

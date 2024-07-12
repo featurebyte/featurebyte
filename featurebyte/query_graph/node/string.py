@@ -48,7 +48,7 @@ class LengthNode(BaseStringAccessorOpNode):
     """LengthNode class"""
 
     type: Literal[NodeType.LENGTH] = NodeType.LENGTH
-    parameters: FeatureByteBaseModel = {}
+    parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT

@@ -622,7 +622,7 @@ class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
     """
 
     def __new__(cls, **kwargs: Any) -> Any:
-        return parse_obj_as(SpecificTableDataT, kwargs)  # type: ignore[misc]
+        return parse_obj_as(SpecificTableDataT, kwargs)
 
 
 class TableSpec(FeatureByteBaseModel):
@@ -643,7 +643,7 @@ class TableDetails(FeatureByteBaseModel):
     fully_qualified_name: str
 
     @property
-    def description(self) -> str:
+    def description(self) -> Optional[str]:
         """
         Get the description of the table
 

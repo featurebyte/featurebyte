@@ -301,7 +301,7 @@ class BaseDocumentService(
             document=document,
             document_class=self.document_class,
         )
-        return document.dict(by_alias=True)
+        return dict(document.dict(by_alias=True))
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any

@@ -72,7 +72,7 @@ class TileSpec(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _default_entity_tracker_table_name(cls, values: Any) -> Any:
         # Fill in default entity_tracker_table_name if not provided. For tests.
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

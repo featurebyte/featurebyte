@@ -34,7 +34,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
 
     @model_validator(mode="before")
     @classmethod
-    def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_graph_and_node_names(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -96,7 +96,7 @@ class TargetTableListRecord(BaseMaterializedTableListRecord):
 
     @model_validator(mode="before")
     @classmethod
-    def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

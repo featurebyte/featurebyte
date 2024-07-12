@@ -214,7 +214,7 @@ class APIClient(BaseAPIClient):
             kwargs["timeout"] = HTTP_REQUEST_TIMEOUT
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
-            full_url = f"{str(self.base_url).rstrip('/')}{url}"
+            full_url = str(self.base_url).rstrip("/") + str(url)
             return super().request(
                 method,
                 full_url,
@@ -540,7 +540,7 @@ class Configurations:
             configure_featurebyte_logger(self)
 
         return APIClient(
-            api_url=self.profile.api_url,
+            api_url=str(self.profile.api_url),
             api_token=self.profile.api_token,
             ssl_verify=self.profile.ssl_verify,
         )

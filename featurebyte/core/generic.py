@@ -4,9 +4,8 @@ This module generic query object classes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, TypeVar
 
-import json
 import operator
 from abc import abstractmethod
 
@@ -248,7 +247,7 @@ class QueryObject(FeatureByteBaseModel):
     ) -> QueryObjectT:
         update_dict = update or {}
         update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
-        return super().copy(
+        return super().copy(  # type: ignore
             include=include,
             exclude=exclude,
             update=update_dict,
@@ -267,7 +266,7 @@ class QueryObject(FeatureByteBaseModel):
             # global one.
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
-        return super().dict(*args, **kwargs)
+        return dict(super().dict(*args, **kwargs))
 
     @classmethod
     def clear_operation_structure_cache(cls) -> None:

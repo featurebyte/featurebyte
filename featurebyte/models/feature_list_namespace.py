@@ -65,7 +65,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _derive_feature_related_attributes(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

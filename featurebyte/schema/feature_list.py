@@ -91,7 +91,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_payload(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

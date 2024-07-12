@@ -86,7 +86,7 @@ class FeatureStoreSample(FeatureStorePreview):
             for input_node in self.graph.iterate_nodes(
                 target_node=target_node, node_type=NodeType.INPUT
             ):
-                column_names = [col.name for col in input_node.parameters.columns]
+                column_names = [col.name for col in input_node.parameters.columns]  # type: ignore
                 if self.timestamp_column in column_names:
                     found = True
 

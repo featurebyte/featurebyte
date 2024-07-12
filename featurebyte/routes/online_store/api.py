@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+from bson import ObjectId
 from fastapi import Request
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -125,12 +126,12 @@ class OnlineStoreRouter(
         """
         controller = request.state.app_container.online_store_controller
         info = await controller.get_info(
-            document_id=online_store_id,
+            document_id=ObjectId(online_store_id),
             verbose=verbose,
         )
         return cast(OnlineStoreInfo, info)
 
     async def delete_object(self, request: Request, online_store_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=online_store_id)
+        await controller.delete(document_id=ObjectId(online_store_id))
         return DeleteResponse()

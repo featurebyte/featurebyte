@@ -257,7 +257,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 merge_expr=aggregator.merge(aggregation_id),
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
-                entity_ids=groupby_node_params.entity_ids,  # type: ignore[arg-type]
+                entity_ids=groupby_node_params.entity_ids,
                 dtype=dtype,
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,

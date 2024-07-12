@@ -25,7 +25,7 @@ class UseCaseCreate(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_target(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_target(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -52,7 +52,7 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_input(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

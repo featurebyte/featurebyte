@@ -43,12 +43,12 @@ class ColumnInfo(ColumnSpecWithDescription):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_column_info(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_column_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
         critical_data_info = values.get("critical_data_info")
-        dtype = DBVarType(values.get("dtype"))  # type: ignore
+        dtype = DBVarType(values.get("dtype"))
         if critical_data_info:
             # attempt to cast the cleaning operations to the dtype of the column
             cdi = CriticalDataInfo(**dict(critical_data_info))

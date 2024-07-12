@@ -14,10 +14,8 @@ from mkautodoc.extension import AutoDocProcessor, last_iter
 from pydantic import BaseModel
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.resource_extractor import (
-    ResourceDetails,
-    get_resource_details,
-)
+from featurebyte.common.documentation.doc_types import ResourceDetails
+from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.common.documentation.util import _filter_none_from_list
 
 NONE_TYPES = [None, "NoneType"]
@@ -337,7 +335,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 elem,
                 "Parameters",
                 _get_parameters_content(
-                    resource_details.parameters,
+                    resource_details.parameters,  # type: ignore
                     resource_details.should_hide_keyword_only_params_in_class_docs
                     and resource_details.type == "class",
                 ),
@@ -345,7 +343,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         if resource_details.enum_values:
             self._render(
-                elem, "Possible Values", _get_parameters_content(resource_details.enum_values)
+                elem, "Possible Values", _get_parameters_content(resource_details.enum_values)  # type: ignore
             )
 
         # Render returns:

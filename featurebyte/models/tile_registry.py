@@ -38,7 +38,7 @@ class LastRunMetadata(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_start_date(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_start_date(cls, values: Any) -> Any:
         # DEV-556: backward compatibility after renaming field
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

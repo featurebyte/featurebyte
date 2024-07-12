@@ -146,7 +146,7 @@ class DataBricksFeatureFunction(FeatureByteBaseModel):
     input_bindings: Dict[str, str]
     output_name: str
 
-    def __repr_name__(self) -> str:
+    def __repr_name__(self) -> str:  # type: ignore
         return "FeatureFunction"
 
 

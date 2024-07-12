@@ -95,7 +95,7 @@ class FeatureReadinessTransition(FeatureByteBaseModel):
 
 
 @functools.total_ordering
-class FeatureReadinessDistribution(RootModel):
+class FeatureReadinessDistribution(RootModel[Any]):
     """
     Feature readiness distribution
     """
@@ -256,7 +256,7 @@ class FeatureCluster(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _derive_combined_relationships_info(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _derive_combined_relationships_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -381,10 +381,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     @field_serializer("internal_feature_clusters", when_used="json")
     def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
-        if clusters:
+        feature_clusters = self.feature_clusters
+        if clusters and feature_clusters:
             return [
-                json.loads(cluster.model_dump_json(by_alias=True))
-                for cluster in self.feature_clusters
+                json.loads(cluster.model_dump_json(by_alias=True)) for cluster in feature_clusters
             ]
         return None
 
@@ -400,7 +400,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _derive_feature_related_attributes(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

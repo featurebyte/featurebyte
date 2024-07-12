@@ -37,7 +37,7 @@ def feature_params_discriminator(x: Any) -> Literal["feature_ids", "feature_para
     """
     if isinstance(x, list):
         if x:
-            return feature_params_discriminator(x[0])  # type: ignore
+            return feature_params_discriminator(x[0])
         return "feature_ids"
     if isinstance(x, (dict, FeatureParameters)):
         return "feature_params"

@@ -69,7 +69,7 @@ class AuditDocument(FeatureByteBaseModel):
                 return str(v)
             return v
 
-        return json.loads(json_util.dumps(_convert_value(values)))
+        return dict(json.loads(json_util.dumps(_convert_value(values))))
 
     @field_serializer("document_id", when_used="json")
     @staticmethod

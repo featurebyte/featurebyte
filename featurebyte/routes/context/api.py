@@ -8,6 +8,7 @@ from typing import Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import Request
 
 from featurebyte.models.context import ContextModel
@@ -108,7 +109,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         Delete Context
         """
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=context_id)
+        await controller.delete(document_id=ObjectId(context_id))
         return DeleteResponse()
 
     async def update_context(
@@ -118,7 +119,9 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         Update Context
         """
         controller = self.get_controller_for_request(request)
-        context: ContextModel = await controller.update_context(context_id=context_id, data=data)
+        context: ContextModel = await controller.update_context(
+            context_id=ObjectId(context_id), data=data
+        )
         return context
 
     @staticmethod
@@ -144,4 +147,4 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         Get Context Info
         """
         controller = self.get_controller_for_request(request)
-        return await controller.get_info(context_id=context_id)
+        return await controller.get_info(context_id=ObjectId(context_id))

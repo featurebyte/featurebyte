@@ -28,4 +28,4 @@ class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
     """
 
     def __new__(cls, **kwargs: Any) -> Any:
-        return parse_obj_as(TableModel, kwargs)  # type: ignore[arg-type]
+        return parse_obj_as(TableModel, kwargs)

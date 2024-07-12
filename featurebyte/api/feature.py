@@ -147,7 +147,7 @@ class Feature(
 
     @model_validator(mode="before")
     @classmethod
-    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_feature_store(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
@@ -259,7 +259,7 @@ class Feature(
         >>> new_feature = lookup_feature.isin(dictionary_feature)
         >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
-        return super().isin(other)  # type: ignore[no-any-return,misc]
+        return super().isin(other)
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
@@ -748,7 +748,7 @@ class Feature(
         >>> string_invoice_count_feature = feature.astype(str)
         >>> float_invoice_count_feature = feature.astype(float)
         """
-        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+        return super().astype(new_type=new_type)
 
     @substitute_docstring(
         doc_template=PREVIEW_DOC,

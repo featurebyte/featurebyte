@@ -58,7 +58,7 @@ class SCDTableModel(SCDTableData, TableModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _handle_current_flag_name(cls, values: Any) -> Any:
         # DEV-556: remove this after migration
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

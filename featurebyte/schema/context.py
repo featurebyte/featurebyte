@@ -50,7 +50,7 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_parameters(cls, values: Any) -> Any:
         # check xor between graph & node_name
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

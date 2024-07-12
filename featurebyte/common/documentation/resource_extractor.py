@@ -244,7 +244,7 @@ def _get_param_details(
         if type(param_type) == str:
             param_type_string = param_type
         else:
-            param_type_string = format_param_type(param_type) if param_type else None
+            param_type_string = format_param_type(param_type) if param_type else None  # type: ignore
         details.append(
             ParameterDetails(
                 name=param_name,
@@ -392,7 +392,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
             # get actual classname and name of the resource
             try:
-                resource_classname, resource_realname = resource.__qualname__.split(".", maxsplit=1)
+                resource_classname, resource_realname = resource.__qualname__.split(".", maxsplit=1)  # type: ignore
                 resource_path = f"{resource.__module__}.{resource_classname}"
             except AttributeError:
                 pass

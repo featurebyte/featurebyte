@@ -101,7 +101,7 @@ class Target(
 
     @model_validator(mode="before")
     @classmethod
-    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_feature_store(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 

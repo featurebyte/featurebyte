@@ -48,9 +48,7 @@ def _get_cache_collection_name(
     obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]]
 ) -> str:
     if hasattr(obj, "_get_schema"):
-        collection_name = (
-            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
-        )
+        collection_name = obj._get_schema.Settings.collection_name
     else:
         collection_name = obj.Settings.collection_name
     return str(collection_name)

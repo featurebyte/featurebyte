@@ -69,17 +69,17 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_setting_parameters(cls, values: Any) -> Any:
         """Validate feature job setting parameters
 
         Parameters
         ----------
-        values : dict
+        values : Any
             Parameter values
 
         Returns
         -------
-        dict
+        Any
 
         Raises
         ------
