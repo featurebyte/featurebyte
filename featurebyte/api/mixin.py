@@ -309,7 +309,7 @@ class SampleMixin(AsyncMixin):
 
     @perf_logging
     @typechecked
-    def shape(self: HasExtractPrunedGraphAndNode, **kwargs: Any) -> Tuple[int, int]:
+    def shape(self, **kwargs: Any) -> Tuple[int, int]:
         """
         Return the shape of the view / column.
 
@@ -490,7 +490,7 @@ class SampleMixin(AsyncMixin):
         )
         catalog_id = get_active_catalog_id()
         data_description = AsyncMixin.post_async_task(
-            route=f"/feature_store/data_description?size={size}&seed={seed}&catalog_id={catalog_id}",
+            route=f"feature_store/data_description?size={size}&seed={seed}&catalog_id={catalog_id}",
             payload=payload.json_dict(),
         )
         return dataframe_from_json(data_description)

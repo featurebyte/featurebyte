@@ -514,9 +514,7 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     assert change_view.node.type == NodeType.GRAPH
     compare_pydantic_obj(
         change_view.node.parameters.graph.edges[:1],
-        expected=[
-            {"source": "proxy_input_1", "target": "project_1"},  # no cleaning operation
-        ],
+        expected=[{"source": "proxy_input_1", "target": "project_1"}],  # no cleaning operation
     )
 
     # check the case when the table has cleaning operations

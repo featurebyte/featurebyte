@@ -66,8 +66,8 @@ class Task(FeatureByteBaseModel):
     output_path: Optional[str] = Field(default=None)
     payload: Dict[str, Any]
     traceback: Optional[str] = Field(default=None)
-    start_time: Optional[datetime.datetime] = Field(frozen=True)
-    date_done: Optional[datetime.datetime] = Field(frozen=True)
+    start_time: Optional[datetime.datetime] = Field(frozen=True, default=None)
+    date_done: Optional[datetime.datetime] = Field(frozen=True, default=None)
     progress: Optional[Dict[str, Any]] = Field(default=None)
 
 

@@ -5,6 +5,7 @@ Test SCD table API object
 from unittest.mock import patch
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.scd_table import SCDTable
@@ -255,7 +256,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     assert output == scd_table_dict
 
     # user input validation
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_database_table_scd_table.create_scd_table(
             name=123,
             natural_key_column="col_text",
@@ -265,7 +266,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
             current_flag_column="is_current",
             record_creation_timestamp_column=345,
         )
-    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
+    assert 'argument "name" (int) is not an instance of str' in str(exc.value)
 
 
 @pytest.mark.usefixtures("saved_scd_table")

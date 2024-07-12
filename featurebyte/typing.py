@@ -29,7 +29,7 @@ TimedeltaSupportedUnitType = Literal[
     "microsecond",
 ]
 
-Scalar = Union[StrictInt, StrictFloat, StrictStr, bool]
+Scalar = Union[bool, StrictInt, StrictFloat, StrictStr]
 OptionalScalar = Optional[Scalar]
 ScalarSequence = Sequence[Scalar]
 Numeric = Union[StrictInt, StrictFloat]

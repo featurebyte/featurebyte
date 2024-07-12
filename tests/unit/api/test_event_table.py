@@ -13,8 +13,9 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 from pydantic import ValidationError
+from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -172,14 +173,14 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     assert output == event_table_dict
 
     # user input validation
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_database_table.create_event_table(
             name=123,
             event_id_column="col_int",
             event_timestamp_column=234,
             record_creation_timestamp_column=345,
         )
-    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
+    assert 'argument "name" (int) is not an instance of str' in str(exc.value)
 
 
 def test_create_event_table__duplicated_record(saved_event_table, snowflake_database_table):
@@ -677,12 +678,12 @@ def test_update_record_creation_timestamp_column__saved_object(saved_event_table
     # check that validation logic works
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_table.update_record_creation_timestamp_column("random_column_name")
-    expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    expected_msg = 'Column "random_column_name" not found in the table!'
     assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_table.update_record_creation_timestamp_column("col_float")
-    expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+    expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ']"
     assert expected_msg in str(exc.value)
 
 
@@ -1070,7 +1071,7 @@ def test_timezone_offset__invalid_column(snowflake_database_table_dimension_tabl
             event_timestamp_column="event_timestamp",
             event_timestamp_timezone_offset_column="col_float",
         )
-    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR'] (type=value_error)"
+    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR']"
     assert expected in str(exc.value)
 
 

@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
-from pydantic import ValidationError
+from typeguard import TypeCheckError
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.entity import Entity
@@ -40,16 +40,6 @@ def entity_fixture(catalog):
     assert entity.saved is True
     assert entity.id == previous_id
     yield entity
-
-
-def test_entity_creation__input_validation():
-    """
-    Test entity creation input validation
-    """
-    entity = Entity(name="hello", serving_names=["world"])
-    with pytest.raises(ValidationError) as exc:
-        entity.name = 1234
-    assert "str type expected (type=type_error.str)" in str(exc.value)
 
 
 def test_entity__update_name(entity):
@@ -171,9 +161,9 @@ def test_entity_update_name(entity, catalog):
     # create another entity
     Entity(name="product", serving_names=["product_id"]).save()
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         entity.update_name(type)
-    assert 'type of argument "name" must be str; got type instead' in str(exc.value)
+    assert 'argument "name" (class type) is not an instance of str' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")

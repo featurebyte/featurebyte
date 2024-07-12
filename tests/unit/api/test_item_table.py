@@ -7,7 +7,8 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
+from typeguard import TypeCheckError
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
@@ -107,6 +108,7 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     """
     Test ItemTable creation using tabular source
     """
+    _ = saved_event_table
     item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
@@ -136,14 +138,14 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     assert output == item_table_dict
 
     # user input validation
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_database_table_item_table.create_item_table(
             name=123,
             event_id_column="event_id_col",
             item_id_column="item_id_col",
             event_table_name="sf_event_table",
         )
-    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
+    assert 'argument "name" (int) is not an instance of str' in str(exc.value)
 
 
 def test_create_item_table__duplicated_record(
@@ -301,11 +303,13 @@ def test_item_table_column__as_entity(snowflake_item_table, mock_api_object_cach
     snowflake_item_table.item_id_col.as_entity("item")
     assert snowflake_item_table.item_id_col.info.entity_id == entity.id
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_item_table.item_id_col.as_entity(1234)
-    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
-        exc.value
+    expected_msg = (
+        'argument "entity_name" (int) did not match any element in the union:\n'
+        "  str: is not an instance of str\n  NoneType: is not an instance of NoneType"
     )
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_item_table.item_id_col.as_entity("some_random_entity")
@@ -368,14 +372,13 @@ def test_update_record_creation_timestamp_column__saved_object(saved_item_table)
     # check that validation logic works
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_table.update_record_creation_timestamp_column("random_column_name")
-    expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    expected_msg = 'Column "random_column_name" not found in the table!'
     assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_table.update_record_creation_timestamp_column("item_id_col")
     expected_msg = (
-        'Column "item_id_col" is expected to have type(s): '
-        "['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+        'Column "item_id_col" is expected to have type(s): ' "['TIMESTAMP', 'TIMESTAMP_TZ']"
     )
     assert expected_msg in str(exc.value)
 

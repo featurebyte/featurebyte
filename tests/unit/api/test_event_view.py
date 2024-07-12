@@ -174,14 +174,6 @@ def test_event_view_column_lag(
             "offset": expected_offset_param,
         },
     )
-    compare_pydantic_obj(
-        lagged_column.node.parameters,
-        expected={
-            "timestamp_column": "event_timestamp",
-            "entity_columns": ["cust_id"],
-            "offset": expected_offset_param,
-        },
-    )
 
     # check SDK code generation
     check_sdk_code_generation(
