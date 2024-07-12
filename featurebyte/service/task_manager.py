@@ -67,7 +67,7 @@ class TaskManager:
             redis=self.redis,
         )
 
-    async def submit(self, payload: BaseTaskPayload) -> str:
+    async def submit(self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False) -> str:
         """
         Submit task to celery
 
@@ -75,6 +75,8 @@ class TaskManager:
         ----------
         payload: BaseTaskPayload
             Payload to submit
+        mark_as_scheduled_task: bool
+            Whether to make the submitted task as scheduled task
 
         Returns
         -------
@@ -84,6 +86,8 @@ class TaskManager:
         assert self.user.id == payload.user_id
         kwargs = payload.json_dict()
         kwargs["task_output_path"] = payload.task_output_path
+        if mark_as_scheduled_task:
+            kwargs["is_scheduled_task"] = True
         task = self.celery.send_task(payload.task, kwargs=kwargs)
         return str(task.id)
 

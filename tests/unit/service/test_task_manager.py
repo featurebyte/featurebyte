@@ -228,3 +228,31 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
 
     # check celery task revoke
     celery.control.revoke.assert_called_with(task_id, reply=True, terminate=True, signal="SIGTERM")
+
+
+@pytest.mark.asyncio
+@pytest.mark.disable_task_manager_mock
+async def test_task_manager__submit_mark_as_scheduled_task(task_manager, celery, user_id, catalog):
+    """
+    Test submitting task and marking the task as scheduled task
+    """
+    payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
+    await task_manager.submit(
+        payload=payload,
+        mark_as_scheduled_task=True,
+    )
+    celery.send_task.assert_called_with(
+        payload.task,
+        kwargs={
+            "user_id": str(user_id),
+            "output_document_id": str(payload.output_document_id),
+            "command": payload.command,
+            "catalog_id": str(payload.catalog_id),
+            "output_collection_name": payload.output_collection_name,
+            "task_output_path": payload.task_output_path,
+            "task_type": "io_task",
+            "priority": 2,
+            "is_scheduled_task": True,  # check this is set
+            "is_revocable": True,
+        },
+    )

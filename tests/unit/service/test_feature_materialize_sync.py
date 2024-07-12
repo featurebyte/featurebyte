@@ -249,6 +249,9 @@ async def test_run_feature_materialize__no_prerequisites(
         "offline_store_feature_table_id": offline_store_feature_table_no_aggregation_ids.id,
     }.items() <= submitted_payload.items()
 
+    submit_kwargs = mock_task_manager_submit.call_args[1]
+    assert submit_kwargs["mark_as_scheduled_task"] is True
+
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
 @pytest.mark.asyncio
@@ -293,6 +296,9 @@ async def test_run_feature_materialize__prerequisite_met(
         "offline_store_feature_table_id": offline_store_feature_table_1.id,
     }.items() <= submitted_payload.items()
 
+    submit_kwargs = mock_task_manager_submit.call_args[1]
+    assert submit_kwargs["mark_as_scheduled_task"] is True
+
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
 @pytest.mark.asyncio
@@ -328,3 +334,6 @@ async def test_run_feature_materialize__timeout(
         "offline_store_feature_table_name": offline_store_feature_table_1.name,
         "offline_store_feature_table_id": offline_store_feature_table_1.id,
     }.items() <= submitted_payload.items()
+
+    submit_kwargs = mock_task_manager_submit.call_args[1]
+    assert submit_kwargs["mark_as_scheduled_task"] is True

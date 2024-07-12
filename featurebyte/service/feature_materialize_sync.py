@@ -204,7 +204,7 @@ class FeatureMaterializeSyncService:
             catalog_id=self.offline_store_feature_table_service.catalog_id,
             user_id=self.offline_store_feature_table_service.user.id,
         )
-        await self.task_manager.submit(payload)
+        await self.task_manager.submit(payload, mark_as_scheduled_task=True)
 
     async def _get_scheduled_job_ts_for_feature_table(
         self, offline_store_feature_table_id: ObjectId
