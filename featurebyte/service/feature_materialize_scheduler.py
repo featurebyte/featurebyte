@@ -116,7 +116,7 @@ class FeatureMaterializeSchedulerService:
 
     @classmethod
     def _get_job_id(cls, offline_store_feature_table_id: ObjectId) -> str:
-        return f"feature_materialize_{offline_store_feature_table_id}"
+        return f"feature_materialize_sync_{offline_store_feature_table_id}"
 
     @classmethod
     def _get_deprecated_job_id(cls, offline_store_feature_table_id: ObjectId) -> str:
