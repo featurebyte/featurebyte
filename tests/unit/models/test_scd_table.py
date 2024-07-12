@@ -145,15 +145,6 @@ def test_scd_table_model(scd_table_model, expected_scd_table_model):
     assert scd_table_loaded == scd_table_model
 
 
-def assert_missing_column(exc_info: ExceptionInfo):
-    """Helper method to assert column validation given an exception"""
-    errors = exc_info.value.errors()
-    assert len(errors) == 1
-    error = errors[0]
-    assert error["msg"] == "field required"
-    assert error["type"] == "value_error.missing"
-
-
 @pytest.mark.parametrize("column", ["natural_key_column"])
 def test_missing_scd_table_id_column_errors(expected_scd_table_model, column):
     """Test missing column validation on SCDTable models"""
@@ -161,16 +152,11 @@ def test_missing_scd_table_id_column_errors(expected_scd_table_model, column):
     expected_scd_table_model.pop(column)
     with pytest.raises(ValidationError) as exc_info:
         SCDTableModel.parse_obj(expected_scd_table_model)
-    assert_missing_column(exc_info)
 
-
-def assert_type_error(exc_info: ExceptionInfo, expected_type: str):
-    """Helper method to assert type validation given an exception"""
     errors = exc_info.value.errors()
     assert len(errors) == 1
-    error = errors[0]
-    assert error["msg"] == f"{expected_type} type expected"
-    assert error["type"] == f"type_error.{expected_type}"
+    assert errors[0]["msg"] == "Field required"
+    assert errors[0]["type"] == "missing"
 
 
 def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
@@ -179,4 +165,8 @@ def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
     expected_scd_table_model["natural_key_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
         SCDTableModel.parse_obj(expected_scd_table_model)
-    assert_type_error(exc_info, "str")
+
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["msg"] == "Input should be a valid string"
+    assert errors[0]["type"] == "string_type"

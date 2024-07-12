@@ -178,8 +178,8 @@ class FunctionParameter(FeatureByteBaseModel):
         self,
         name: str,
         dtype: Union[DBVarType, str],
-        default_value: Optional[Scalar] = None,
-        test_value: Optional[Scalar] = None,
+        default_value: Optional[Union[Scalar, pd.Timestamp]] = None,
+        test_value: Optional[Union[Scalar, pd.Timestamp]] = None,
     ) -> None:
         expected_type = function_parameter_dtype_to_python_type.get(DBVarType(dtype))
         if expected_type is None:
