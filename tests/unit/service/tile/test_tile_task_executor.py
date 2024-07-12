@@ -2,12 +2,16 @@
 Unit tests for TileTaskExecutor
 """
 
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import SourceType
+from featurebyte import FeatureJobSetting, SourceType
+from featurebyte.enum import DBVarType
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.session.snowflake import SnowflakeSession
 
@@ -24,14 +28,22 @@ def session_fixture():
     )
 
 
+@pytest.fixture(name="aggregation_id")
+def aggregation_id_fixture():
+    """
+    Fixture for an aggregation id
+    """
+    return "some_agg_id"
+
+
 @pytest.fixture(name="tile_task_parameters")
-def tile_task_parameters_fixture() -> TileScheduledJobParameters:
+def tile_task_parameters_fixture(aggregation_id) -> TileScheduledJobParameters:
     """
     Fixture for TileScheduledJobParameters
     """
     return TileScheduledJobParameters(
         tile_id="some_tile_id",
-        aggregation_id="some_agg_id",
+        aggregation_id=aggregation_id,
         time_modulo_frequency_second=10,
         blind_spot_second=30,
         frequency_minute=5,
@@ -44,6 +56,27 @@ def tile_task_parameters_fixture() -> TileScheduledJobParameters:
         monitor_periods=10,
         feature_store_id=ObjectId(),
     )
+
+
+@pytest_asyncio.fixture(name="offline_store_feature_table")
+async def offline_store_feature_table_fixture(app_container, aggregation_id):
+    """
+    Fixture for a saved offline store feature table
+    """
+    model = OfflineStoreFeatureTableModel(
+        name="my_feature_table",
+        feature_ids=[ObjectId()],
+        primary_entity_ids=[ObjectId()],
+        serving_names=["cust_id"],
+        has_ttl=False,
+        output_column_names=["x"],
+        output_dtypes=[DBVarType.FLOAT],
+        catalog_id=app_container.catalog_id,
+        feature_job_setting=FeatureJobSetting(period="5m", offset="10s", blind_spot="30s"),
+        aggregation_ids=[aggregation_id],
+    )
+    doc = await app_container.offline_store_feature_table_service.create_document(model)
+    yield doc
 
 
 @pytest.fixture(name="patched_tile_classes")
@@ -77,3 +110,65 @@ async def test_online_store_job_schedule_ts(
     # The online store calculation should use the corrected schedule time as point in time
     _, kwargs = patched_tile_classes["TileScheduleOnlineStore"].call_args
     assert kwargs["job_schedule_ts_str"] == "2023-01-15 10:00:10"
+
+
+@pytest.mark.usefixtures("patched_tile_classes")
+@pytest.mark.asyncio
+async def test_update_tile_prerequisite__success(
+    app_container,
+    tile_task_executor,
+    tile_task_parameters,
+    session,
+    offline_store_feature_table,
+):
+    """
+    Test that tile task status are reflected in feature store table prerequisite documents (success
+    case)
+    """
+    # Simulate a successful tile task
+    tile_task_parameters.job_schedule_ts = "2023-01-15 10:00:11"
+    await tile_task_executor.execute(session, tile_task_parameters)
+
+    # Check prerequisite documents updated
+    docs = await app_container.feature_materialize_prerequisite_service.list_documents_as_dict()
+    assert len(docs["data"]) == 1
+    doc = docs["data"][0]
+    expected = {
+        "offline_store_feature_table_id": offline_store_feature_table.id,
+        "scheduled_job_ts": datetime(2023, 1, 15, 10, 0, 10),
+        "completed": [{"aggregation_id": "some_agg_id", "status": "success"}],
+    }
+    assert expected.items() < doc.items()
+
+
+@pytest.mark.asyncio
+async def test_update_tile_prerequisite__failure(
+    app_container,
+    tile_task_executor,
+    tile_task_parameters,
+    session,
+    patched_tile_classes,
+    offline_store_feature_table,
+):
+    """
+    Test that tile task status are reflected in feature store table prerequisite documents (failure
+    case)
+    """
+    # Simulate an error during tile task
+    patched_tile_classes["TileGenerate"].return_value.execute.side_effect = RuntimeError(
+        "Fail on purpose"
+    )
+    tile_task_parameters.job_schedule_ts = "2023-01-15 10:00:11"
+    with pytest.raises(RuntimeError, match="Fail on purpose"):
+        await tile_task_executor.execute(session, tile_task_parameters)
+
+    # Check prerequisite documents updated
+    docs = await app_container.feature_materialize_prerequisite_service.list_documents_as_dict()
+    assert len(docs["data"]) == 1
+    doc = docs["data"][0]
+    expected = {
+        "offline_store_feature_table_id": offline_store_feature_table.id,
+        "scheduled_job_ts": datetime(2023, 1, 15, 10, 0, 10),
+        "completed": [{"aggregation_id": "some_agg_id", "status": "failure"}],
+    }
+    assert expected.items() < doc.items()
