@@ -9,7 +9,6 @@ from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -18,6 +17,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -45,7 +45,7 @@ class FeatureListNamespaceRouter(BaseRouter):
 
 @router.get("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModelResponse)
 async def get_feature_list_namespace(
-    request: Request, feature_list_namespace_id: PydanticObjectId
+    request: Request, feature_list_namespace_id: PyObjectId
 ) -> FeatureListNamespaceModelResponse:
     """
     Get FeatureListNamespace
@@ -63,7 +63,7 @@ async def get_feature_list_namespace(
 
 @router.patch("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModelResponse)
 async def update_feature_list_namespace(
-    request: Request, feature_list_namespace_id: PydanticObjectId, data: FeatureListNamespaceUpdate
+    request: Request, feature_list_namespace_id: PyObjectId, data: FeatureListNamespaceUpdate
 ) -> FeatureListNamespaceModelResponse:
     """
     Update FeatureListNamespace
@@ -105,7 +105,7 @@ async def list_feature_list_namespace(
 @router.get("/audit/{feature_list_namespace_id}", response_model=AuditDocumentList)
 async def list_feature_list_namespace_audit_logs(
     request: Request,
-    feature_list_namespace_id: PydanticObjectId,
+    feature_list_namespace_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -129,7 +129,7 @@ async def list_feature_list_namespace_audit_logs(
 @router.get("/{feature_list_namespace_id}/info", response_model=FeatureListNamespaceInfo)
 async def get_feature_list_namespace_info(
     request: Request,
-    feature_list_namespace_id: PydanticObjectId,
+    feature_list_namespace_id: PyObjectId,
     verbose: bool = VerboseQuery,
 ) -> FeatureListNamespaceInfo:
     """
@@ -148,7 +148,7 @@ async def get_feature_list_namespace_info(
 )
 async def update_feature_list_namespace_description(
     request: Request,
-    feature_list_namespace_id: PydanticObjectId,
+    feature_list_namespace_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> FeatureListNamespaceModelResponse:
     """

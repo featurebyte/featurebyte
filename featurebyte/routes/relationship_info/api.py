@@ -8,7 +8,6 @@ from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import RelationshipInfoModel
 from featurebyte.persistent.base import SortDir
@@ -18,6 +17,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -67,7 +67,7 @@ async def list_relationship_info(
 
 @router.get("/{relationship_info_id}", response_model=RelationshipInfoModel)
 async def get_relationship_info(
-    request: Request, relationship_info_id: PydanticObjectId
+    request: Request, relationship_info_id: PyObjectId
 ) -> RelationshipInfoModel:
     """
     Retrieve relationship info
@@ -82,7 +82,7 @@ async def get_relationship_info(
 @router.patch("/{relationship_info_id}")
 async def update_relationship_info(
     request: Request,
-    relationship_info_id: PydanticObjectId,
+    relationship_info_id: PyObjectId,
     data: RelationshipInfoUpdate,
 ) -> RelationshipInfoModel:
     """
@@ -98,7 +98,7 @@ async def update_relationship_info(
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)
 async def get_relationship_info_info(
     request: Request,
-    relationship_info_id: PydanticObjectId,
+    relationship_info_id: PyObjectId,
 ) -> RelationshipInfoInfo:
     """
     Retrieve RelationshipInfo info
@@ -113,7 +113,7 @@ async def get_relationship_info_info(
 @router.get("/audit/{relationship_info_id}", response_model=AuditDocumentList)
 async def list_relationship_info_audit_logs(
     request: Request,
-    relationship_info_id: PydanticObjectId,
+    relationship_info_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -137,7 +137,7 @@ async def list_relationship_info_audit_logs(
 @router.patch("/{relationship_info_id}/description", response_model=RelationshipInfoModel)
 async def update_relationship_info_description(
     request: Request,
-    relationship_info_id: PydanticObjectId,
+    relationship_info_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> RelationshipInfoModel:
     """

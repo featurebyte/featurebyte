@@ -59,7 +59,7 @@ from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureRead
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
@@ -1090,7 +1090,7 @@ class Feature(
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureSQL(
-            graph=pruned_graph,
+            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
         )
 

@@ -111,7 +111,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
 
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
-    internal_entity_universe: Optional[Dict[str, Any]] = Field(alias="entity_universe")
+    internal_entity_universe: Optional[Dict[str, Any]] = Field(
+        alias="entity_universe", default=None
+    )
     entity_lookup_info: Optional[EntityRelationshipInfo] = Field(default=None)  # Note: deprecated
     precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo] = Field(
         default=None

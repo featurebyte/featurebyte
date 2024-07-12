@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-import datetime
+from datetime import datetime
 
 import pymongo
 from pydantic import Field
@@ -66,7 +66,7 @@ class BackTestSummary(FeatureByteBaseModel):
 
     output_document_id: PydanticObjectId
     user_id: Optional[PydanticObjectId] = Field(default=None)
-    created_at: datetime.datetime
+    created_at: datetime
     feature_job_setting: FeatureJobSetting
     total_pct_late_data: float
     pct_incomplete_jobs: float

@@ -10,15 +10,16 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Query, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target import TargetModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
+    NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -60,7 +61,7 @@ async def list_target(
     sort_by: Optional[str] = SortByQuery,
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
-    name: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> TargetList:
     """
     List Target's
@@ -77,7 +78,7 @@ async def list_target(
 
 
 @router.get("/{target_id}", response_model=TargetModel)
-async def get_target(request: Request, target_id: PydanticObjectId) -> TargetModel:
+async def get_target(request: Request, target_id: PyObjectId) -> TargetModel:
     """
     Retrieve Target
     """
@@ -88,7 +89,7 @@ async def get_target(request: Request, target_id: PydanticObjectId) -> TargetMod
 @router.get("/{target_id}/info", response_model=TargetInfo)
 async def get_target_info(
     request: Request,
-    target_id: PydanticObjectId,
+    target_id: PyObjectId,
     verbose: bool = VerboseQuery,
 ) -> TargetInfo:
     """
@@ -104,7 +105,7 @@ async def get_target_info(
 @router.get("/audit/{target_id}", response_model=AuditDocumentList)
 async def list_target_audit_logs(
     request: Request,
-    target_id: PydanticObjectId,
+    target_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -140,7 +141,7 @@ async def get_target_preview(
 @router.patch("/{target_id}/description", response_model=TargetModel)
 async def update_target_description(
     request: Request,
-    target_id: PydanticObjectId,
+    target_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> TargetModel:
     """
@@ -159,7 +160,7 @@ async def update_target_description(
 )
 async def get_feature_sample_entity_serving_names(
     request: Request,
-    target_id: PydanticObjectId,
+    target_id: PyObjectId,
     count: int = Query(default=1, gt=0, le=10),
 ) -> SampleEntityServingNames:
     """
@@ -170,7 +171,7 @@ async def get_feature_sample_entity_serving_names(
 
 
 @router.delete("/{target_id}")
-async def delete_target(request: Request, target_id: PydanticObjectId) -> None:
+async def delete_target(request: Request, target_id: PyObjectId) -> None:
     """
     Delete Target
     """

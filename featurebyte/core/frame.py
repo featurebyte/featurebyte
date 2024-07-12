@@ -73,7 +73,7 @@ class BaseFrame(QueryObject):
 FrozenFrameT = TypeVar("FrozenFrameT", bound="FrozenFrame")
 
 
-class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
+class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
     """
     FrozenFrame class used for representing a table in the query graph with the ability to perform
     column(s) subsetting and row filtering. This class is immutable as it does not support

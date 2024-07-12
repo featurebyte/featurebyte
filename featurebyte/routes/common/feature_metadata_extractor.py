@@ -102,6 +102,10 @@ class FeatureOrTargetMetadataExtractor:
         ],
     ) -> str:
         # helper function to generate reference key used in the reference map (_extract function)
+        # As the col contains other attribute like filter to track whether the column has been applied
+        # filtering operation, it could cause referencing error when both col & filtered col are used
+        # in deriving a column. A referencing key function is introduced to use the source table(s) &
+        # column name information only to construct the reference key.
         if col is None:
             return "None"
         if isinstance(col, SourceDataColumn):

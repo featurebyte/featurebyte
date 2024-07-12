@@ -10,7 +10,6 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent.base import SortDir
@@ -20,6 +19,7 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
+    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
@@ -59,7 +59,7 @@ async def create_target_namespace(
 
 @router.get("/{target_namespace_id}", response_model=TargetNamespaceModel)
 async def get_target_namespace(
-    request: Request, target_namespace_id: PydanticObjectId
+    request: Request, target_namespace_id: PyObjectId
 ) -> TargetNamespaceModel:
     """
     Retrieve Target Namespace
@@ -76,7 +76,7 @@ async def get_target_namespace(
 
 @router.patch("/{target_namespace_id}", response_model=TargetNamespaceModel)
 async def update_target_namespace(
-    request: Request, target_namespace_id: PydanticObjectId, data: TargetNamespaceUpdate
+    request: Request, target_namespace_id: PyObjectId, data: TargetNamespaceUpdate
 ) -> TargetNamespaceModel:
     """
     Update TargetNamespace
@@ -115,7 +115,7 @@ async def list_target_namespaces(
 @router.get("/audit/{target_namespace_id}", response_model=AuditDocumentList)
 async def list_target_namespace_audit_logs(
     request: Request,
-    target_namespace_id: PydanticObjectId,
+    target_namespace_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -139,7 +139,7 @@ async def list_target_namespace_audit_logs(
 @router.get("/{target_namespace_id}/info", response_model=TargetNamespaceInfo)
 async def get_target_namespace_info(
     request: Request,
-    target_namespace_id: PydanticObjectId,
+    target_namespace_id: PyObjectId,
     verbose: bool = VerboseQuery,
 ) -> TargetNamespaceInfo:
     """
@@ -156,7 +156,7 @@ async def get_target_namespace_info(
 @router.patch("/{target_namespace_id}/description", response_model=TargetNamespaceModel)
 async def update_target_namespace_description(
     request: Request,
-    target_namespace_id: PydanticObjectId,
+    target_namespace_id: PyObjectId,
     data: DescriptionUpdate,
 ) -> TargetNamespaceModel:
     """
@@ -173,7 +173,7 @@ async def update_target_namespace_description(
 @router.delete("/{target_namespace_id}")
 async def delete_target_namespace(
     request: Request,
-    target_namespace_id: PydanticObjectId,
+    target_namespace_id: PyObjectId,
 ) -> None:
     """
     Delete TargetNamespace

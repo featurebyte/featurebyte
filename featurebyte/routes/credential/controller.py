@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from bson import ObjectId
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.credential import (
     CredentialList,
     CredentialRead,
@@ -36,16 +36,14 @@ class CredentialController(
         self.feature_store_service = feature_store_service
 
     async def update_credential(
-        self,
-        credential_id: PydanticObjectId,
-        data: CredentialUpdate,
+        self, credential_id: PyObjectId, data: CredentialUpdate
     ) -> CredentialRead:
         """
         Update credential
 
         Parameters
         ----------
-        credential_id: PydanticObjectId
+        credential_id: PyObjectId
             credential id
         data: CredentialUpdate
             CredentialUpdate object

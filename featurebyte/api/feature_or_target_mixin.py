@@ -24,6 +24,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
@@ -86,7 +87,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         preview_params = {
-            "graph": pruned_graph,
+            "graph": QueryGraph(**pruned_graph.dict(by_alias=True)),
             "node_name": mapped_node.name,
             "feature_store_id": self.feature_store.id,
         }

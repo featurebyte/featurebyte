@@ -9,12 +9,12 @@ from typing import Any, Dict, List, Tuple, cast
 from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
@@ -78,13 +78,13 @@ class UserDefinedFunctionController(
                 await self.service.delete_document(document_id=user_defined_function.id)
             raise exception_class(f"{exc}") from exc
 
-    async def _get_feature_store_id(self) -> PydanticObjectId:
+    async def _get_feature_store_id(self) -> PyObjectId:
         """
         Get feature store id from active catalog
 
         Returns
         -------
-        PydanticObjectId
+        PyObjectId
         """
         active_catalog = await self.catalog_service.get_document(document_id=self.active_catalog_id)
         return active_catalog.default_feature_store_ids[0]
@@ -129,7 +129,7 @@ class UserDefinedFunctionController(
 
     async def update_user_defined_function(
         self,
-        document_id: PydanticObjectId,
+        document_id: PyObjectId,
         data: UserDefinedFunctionUpdate,
     ) -> UserDefinedFunctionModel:
         """
@@ -137,7 +137,7 @@ class UserDefinedFunctionController(
 
         Parameters
         ----------
-        document_id: PydanticObjectId
+        document_id: PyObjectId
             UserDefinedFunction id
         data: UserDefinedFunctionUpdate
             UserDefinedFunction update payload
@@ -202,7 +202,7 @@ class UserDefinedFunctionController(
         sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
-        feature_store_id: PydanticObjectId | None = None,
+        feature_store_id: PyObjectId | None = None,
     ) -> UserDefinedFunctionList:
         """
         List UserDefinedFunction stored in persistent
@@ -219,7 +219,7 @@ class UserDefinedFunctionController(
             Search token to be used in filtering
         name: str | None
             Feature name to be used in filtering
-        feature_store_id: PydanticObjectId | None
+        feature_store_id: PyObjectId | None
             FeatureStore id to be used in filtering
 
         Returns
