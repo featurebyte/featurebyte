@@ -11,8 +11,8 @@ from featurebyte.models.base import User
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.persistent import DuplicateDocumentError
-from featurebyte.schema.worker.task.scheduled_feature_materialize import (
-    ScheduledFeatureMaterializeTaskPayload,
+from featurebyte.schema.worker.task.feature_materialize_sync import (
+    FeatureMaterializeSyncTaskPayload,
 )
 from featurebyte.service.task_manager import TaskManager
 
@@ -47,7 +47,8 @@ class FeatureMaterializeSchedulerService:
         offline_store_feature_table: OfflineStoreFeatureTableModel
             Offline store feature table
         """
-        payload = ScheduledFeatureMaterializeTaskPayload(
+        await self._stop_deprecated_job(offline_store_feature_table.id)
+        payload = FeatureMaterializeSyncTaskPayload(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             offline_store_feature_table_name=offline_store_feature_table.name,
@@ -90,6 +91,7 @@ class FeatureMaterializeSchedulerService:
         offline_store_feature_table_id: ObjectId
             Offline store feature table id
         """
+        await self._stop_deprecated_job(offline_store_feature_table_id)
         job_id = self._get_job_id(offline_store_feature_table_id)
         await self.task_manager.delete_periodic_task_by_name(job_id)
 
@@ -112,5 +114,17 @@ class FeatureMaterializeSchedulerService:
             self._get_job_id(offline_store_feature_table_id)
         )
 
-    def _get_job_id(self, offline_store_feature_table_id: ObjectId) -> str:
+    @classmethod
+    def _get_job_id(cls, offline_store_feature_table_id: ObjectId) -> str:
+        return f"feature_materialize_sync_{offline_store_feature_table_id}"
+
+    @classmethod
+    def _get_deprecated_job_id(cls, offline_store_feature_table_id: ObjectId) -> str:
+        # For backward compatibility. Before we schedule SCHEDULED_FEATURE_MATERIALIZE task
+        # directly, but now we schedule FEATURE_MATERIALIZE_SYNC. Can be removed once all
+        # deprecated jobs are stopped.
         return f"scheduled_feature_materialize_{offline_store_feature_table_id}"
+
+    async def _stop_deprecated_job(self, offline_store_feature_table_id: ObjectId) -> None:
+        job_id = self._get_deprecated_job_id(offline_store_feature_table_id)
+        await self.task_manager.delete_periodic_task_by_name(job_id)

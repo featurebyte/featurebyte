@@ -560,7 +560,7 @@ async def get_all_scheduled_tasks(periodic_task_service):
     """
     tasks = {}
     async for periodic_task in periodic_task_service.list_documents_iterator(
-        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
+        query_filter={"kwargs.command": "FEATURE_MATERIALIZE_SYNC"}
     ):
         tasks[periodic_task.id] = periodic_task
     return tasks

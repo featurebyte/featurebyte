@@ -2321,7 +2321,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
         task_status = {}
         with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
 
-            async def submit(payload: BaseTaskPayload):
+            async def submit(payload: BaseTaskPayload, **kwargs):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
