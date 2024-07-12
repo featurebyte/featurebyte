@@ -114,8 +114,8 @@ class Profile(BaseModel):
 
     name: str
     api_url: AnyHttpUrl
-    api_token: Optional[str] = None
-    ssl_verify: bool = True
+    api_token: Optional[str] = Field(default=None)
+    ssl_verify: bool = Field(default=True)
 
 
 class ProfileList(BaseModel):

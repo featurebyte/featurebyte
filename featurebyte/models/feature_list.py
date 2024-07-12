@@ -376,13 +376,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         "primary_entity_ids",
         "entity_ids",
         "table_ids",
-        mode="after",
     )(construct_sort_validator())
     _version_validator = field_validator("version", mode="before")(version_validator)
 
     @field_serializer("internal_feature_clusters", when_used="json")
     def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
-        _ = clusters
         if clusters:
             return [
                 json.loads(cluster.model_dump_json(by_alias=True))

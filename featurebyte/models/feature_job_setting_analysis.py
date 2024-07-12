@@ -77,7 +77,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_table_id: Optional[PydanticObjectId]
+    event_table_id: Optional[PydanticObjectId] = Field(default=None)
     event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters

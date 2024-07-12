@@ -465,7 +465,7 @@ class ChangeViewMetadata(ViewMetadata):
     """Change view metadata"""
 
     track_changes_column: str
-    default_feature_job_setting: Optional[Dict[str, Any]] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
     prefixes: Optional[Tuple[Optional[str], Optional[str]]] = Field(default=None)
 
 
@@ -491,7 +491,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
         feature_job_setting: Optional[ObjectClass] = None
         if self.metadata.default_feature_job_setting:
             feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(
-                **self.metadata.default_feature_job_setting
+                **self.metadata.default_feature_job_setting.dict(by_alias=True)
             )
 
         assert len(input_var_name_expressions) == 1

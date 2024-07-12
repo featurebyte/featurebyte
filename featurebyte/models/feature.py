@@ -120,7 +120,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         "entity_ids",
         "primary_entity_ids",
         "user_defined_function_ids",
-        mode="after",
     )(construct_sort_validator())
 
     @field_serializer("internal_offline_store_info", when_used="json")

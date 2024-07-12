@@ -118,8 +118,8 @@ class DataBricksFeatureLookup(FeatureByteBaseModel):
 
     table_name: str
     lookup_key: List[str]
-    timestamp_lookup_key: Optional[str]
-    lookback_window: Optional[str]
+    timestamp_lookup_key: Optional[str] = Field(default=None)
+    lookback_window: Optional[str] = Field(default=None)
     feature_names: List[str]
     rename_outputs: Dict[str, str]
 

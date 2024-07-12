@@ -2,7 +2,7 @@
 This module contains schema related model
 """
 
-from typing import List
+from typing import List, Literal
 
 from pydantic import Field
 
@@ -49,7 +49,7 @@ class MigrationMetadata(StrEnum):
 class SchemaMetadataModel(BaseMigrationMetadataModel):
     """SchemaMetadata model"""
 
-    name: str = MigrationMetadata.SCHEMA_METADATA
+    name: Literal[MigrationMetadata.SCHEMA_METADATA] = MigrationMetadata.SCHEMA_METADATA
     version: int
     description: str
 

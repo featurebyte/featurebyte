@@ -32,7 +32,7 @@ class BaseFrame(QueryObject):
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
 
     # pydantic validator
-    _validate_column_names = field_validator("columns_info")(
+    _validate_column_names = field_validator("columns_info", mode="after")(
         construct_unique_name_validator(field="name")
     )
 

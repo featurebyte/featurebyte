@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
-import datetime
+from datetime import timedelta
 
 from bson import ObjectId
 from pydantic import Field, field_validator
@@ -299,18 +299,18 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
 
     @property
-    def time_to_live_delta(self) -> Optional[datetime.timedelta]:
+    def time_to_live_delta(self) -> Optional[timedelta]:
         """
-        Time-to-live (TTL) in datetime.timedelta
+        Time-to-live (TTL) in timedelta
 
         Returns
         -------
-        Optional[datetime.timedelta]
-            Time-to-live (TTL) in datetime.timedelta
+        Optional[timedelta]
+            Time-to-live (TTL) in timedelta
         """
         if not self.time_to_live_in_secs:
             return None
-        return datetime.timedelta(seconds=self.time_to_live_in_secs)
+        return timedelta(seconds=self.time_to_live_in_secs)
 
     def initialize(
         self,
