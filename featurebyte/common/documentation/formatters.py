@@ -7,7 +7,7 @@ from typing import Any, ForwardRef, Optional, TypeVar
 import inspect
 from enum import Enum
 
-from pydantic.fields import Undefined
+from pydantic_core import PydanticUndefined
 
 from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.util import _filter_none_from_list
@@ -50,7 +50,7 @@ def format_param_type(param_type: Any) -> Optional[str]:
     """
 
     def _get_param_type_str(param_type: Any) -> Optional[str]:
-        if param_type == Undefined:
+        if param_type == PydanticUndefined:
             return None
         if isinstance(param_type, TypeVar):
             # TypeVar spoofs the module
