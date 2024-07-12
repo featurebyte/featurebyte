@@ -2,7 +2,7 @@
 This module contains Feature Table Cache related models
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, model_validator

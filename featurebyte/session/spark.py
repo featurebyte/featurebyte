@@ -85,7 +85,7 @@ class SparkSession(BaseSparkSession):
                 access_token = self.database_credential.access_token
             else:
                 raise NotImplementedError(
-                    f"Unsupported credential type: {self.database_credential.type}"
+                    f"Unsupported credential type: {self.database_credential.type}"  # pylint: disable=no-member
                 )
 
         # determine transport scheme

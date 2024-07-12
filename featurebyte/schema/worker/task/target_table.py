@@ -2,7 +2,7 @@
 Target table task payload
 """
 
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Optional
 
 from pydantic import BaseModel, Field, model_validator
 

@@ -604,9 +604,11 @@ class FeastRegistryBuilder:
         if offline_store_credentials:
             database_credential = offline_store_credentials.database_credential
             storage_credential = offline_store_credentials.storage_credential
-        offline_store_config = feature_store_details.details.get_offline_store_config(
-            database_credential=database_credential,
-            storage_credential=storage_credential,
+        offline_store_config = (
+            feature_store_details.details.get_offline_store_config(  # pylint: disable=no-member
+                database_credential=database_credential,
+                storage_credential=storage_credential,
+            )
         )
         return offline_store_config
 

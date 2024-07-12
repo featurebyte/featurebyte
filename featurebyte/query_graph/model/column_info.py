@@ -2,7 +2,7 @@
 This module contains column info related models.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
 

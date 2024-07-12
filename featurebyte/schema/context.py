@@ -2,7 +2,7 @@
 Context API payload schema
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, StrictStr, model_validator

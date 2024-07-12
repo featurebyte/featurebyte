@@ -41,10 +41,12 @@ class FeastRedisOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, RedisOnlineSt
     def to_feast_online_store_config(self) -> FeastConfigBaseModel:
         connection_string = self.connection_string
         if self.credential is not None:
-            if self.credential.username:
-                connection_string += f",username={self.credential.username}"
-            if self.credential.password:
-                connection_string += f",password={self.credential.password}"
+            # pylint: disable=no-member
+            username, password = self.credential.username, self.credential.password
+            if username:
+                connection_string += f",username={username}"
+            if password:
+                connection_string += f",password={password}"
         return RedisOnlineStoreConfig(connection_string=connection_string)
 
 
@@ -55,6 +57,7 @@ class FeastMySQLOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, MySQLOnlineSt
 
     def to_feast_online_store_config(self) -> FeastConfigBaseModel:
         if self.credential is not None:
+            # pylint: disable=no-member
             user, password = self.credential.username, self.credential.password
         else:
             user, password = None, None

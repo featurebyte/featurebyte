@@ -2,7 +2,7 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
-from typing import Any, Dict, Literal, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, Union
 from typing_extensions import Annotated
 
 from datetime import datetime
@@ -20,7 +20,7 @@ from featurebyte.models.base import (
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import PaginationMixin
 
-PD_Timestamp = Union[Timestamp, Annotated[str, AfterValidator(lambda x: Timestamp(x))]]
+PandasTimestamp = Union[Timestamp, Annotated[str, AfterValidator(Timestamp)]]
 
 
 class EventTableCandidate(FeatureByteBaseModel):
@@ -87,8 +87,8 @@ class AnalysisOptions(FeatureByteBaseModel):
     Analysis options
     """
 
-    analysis_date: PD_Timestamp
-    analysis_start: PD_Timestamp
+    analysis_date: PandasTimestamp
+    analysis_start: PandasTimestamp
     analysis_length: int
     blind_spot_buffer_setting: int
     exclude_late_job: bool
@@ -136,8 +136,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
         Returns
         -------
-        Dict[str, Any]
-            Validated values
+        Any
         """
         if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)

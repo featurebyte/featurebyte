@@ -2,7 +2,7 @@
 Base class for all request tables.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator

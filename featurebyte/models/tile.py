@@ -2,7 +2,7 @@
 This module contains Tile related models
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator

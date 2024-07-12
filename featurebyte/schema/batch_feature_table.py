@@ -4,7 +4,7 @@ BatchFeatureTable API payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator
