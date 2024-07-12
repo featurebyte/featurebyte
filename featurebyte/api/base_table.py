@@ -498,11 +498,7 @@ class TableListMixin(ApiObject):
 
 
 class TableApiObject(
-    GetAttrMixin,
-    AbstractTableData,
-    TableListMixin,
-    DeletableApiObject,
-    SavableApiObject,
+    GetAttrMixin, AbstractTableData, TableListMixin, DeletableApiObject, SavableApiObject
 ):
     """
     Base class for all Table objects

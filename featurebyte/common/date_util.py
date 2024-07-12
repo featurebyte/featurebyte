@@ -114,3 +114,33 @@ def get_next_job_datetime(
         next_expected_job += timedelta(seconds=frequency)
 
     return next_expected_job
+
+
+def get_current_job_datetime(
+    input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
+) -> datetime:
+    """
+    Get the current job datetime.
+
+    If input_dt is aligned with the scheduled job time, input_dt will be returned. Otherwise, it
+    will return an earlier date corresponding to the scheduled job time in the current cycle.
+
+    Parameters
+    ----------
+    input_dt: datetime
+        Input datetime
+    frequency_minutes: int
+        Feature job setting period in minutes
+    time_modulo_frequency_seconds: int
+        Feature job setting offset in seconds
+
+    Returns
+    -------
+    datetime
+    """
+    next_job_datetime = get_next_job_datetime(
+        input_dt=input_dt,
+        frequency_minutes=frequency_minutes,
+        time_modulo_frequency_seconds=time_modulo_frequency_seconds,
+    )
+    return next_job_datetime - timedelta(seconds=frequency_minutes * 60)

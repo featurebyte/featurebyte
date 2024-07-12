@@ -14,6 +14,9 @@ from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.persistent.mongo import MongoDB
 
+# Need to disable early here before any feast imports (too late to patch this in an autouse fixture)
+os.environ["FEAST_USAGE"] = "False"
+
 
 def pytest_addoption(parser):
     """Set up additional pytest options"""
@@ -112,12 +115,3 @@ def index_to_timestamp_fixture(request):
     Parameterized fixture for index to timestamp conversion
     """
     return request.param
-
-
-@pytest.fixture(autouse=True)
-def disable_feast_usage():
-    """
-    Enable feast usage reporting
-    """
-    with patch.dict(os.environ, {"FEAST_USAGE": "False"}):
-        yield

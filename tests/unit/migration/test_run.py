@@ -30,7 +30,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.utils.storage import get_storage
+from featurebyte.utils.storage import get_storage, get_temp_storage
 
 
 @pytest.fixture(name="schema_metadata_service")
@@ -78,6 +78,8 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
         persistent=persistent,
         get_credential=get_credential,
         celery=get_celery(),
+        storage=get_storage(),
+        temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
     )
@@ -99,6 +101,8 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
         persistent=persistent,
         get_credential=get_credential,
         celery=get_celery(),
+        storage=get_storage(),
+        temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
     )
@@ -125,6 +129,8 @@ async def test_migrate_method_generator__exclude_warehouse(
         persistent=persistent,
         get_credential=get_credential,
         celery=get_celery(),
+        storage=get_storage(),
+        temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=False,
     )
@@ -198,8 +204,9 @@ async def test_run_migration(
         persistent=persistent,
         get_credential=get_credential,
         celery=get_celery(),
-        include_data_warehouse_migrations=False,
         storage=get_storage(),
+        temp_storage=get_temp_storage(),
+        include_data_warehouse_migrations=False,
         redis=Mock(),
     )
 
@@ -211,6 +218,8 @@ async def test_run_migration(
         persistent=persistent,
         get_credential=get_credential,
         celery=get_celery(),
+        storage=get_storage(),
+        temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=False,
     ):
