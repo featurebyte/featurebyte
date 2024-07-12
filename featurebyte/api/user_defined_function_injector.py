@@ -158,9 +158,7 @@ class FunctionParameterProcessor:
         for i, param in enumerate(self.function_parameters):
             # extract the parameter value from the arguments
             value, kwargs = self._extract_parameter_value(i, param, *args, **kwargs)
-            check_type(
-                param.name, value=value, expected_type=get_param_type_annotations(param.dtype)
-            )
+            check_type(value=value, expected_type=get_param_type_annotations(param.dtype))
 
             # prepare generic function parameter
             func_param: FunctionParameterInput

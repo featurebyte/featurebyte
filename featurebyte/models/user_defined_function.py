@@ -188,10 +188,10 @@ class FunctionParameter(FeatureByteBaseModel):
 
         # check default value and test value type
         if default_value is not None:
-            check_type("default_value", value=default_value, expected_type=expected_type)
+            check_type(value=default_value, expected_type=expected_type)
 
         if test_value is not None:
-            check_type("test_value", value=test_value, expected_type=expected_type)
+            check_type(value=test_value, expected_type=expected_type)
 
         super().__init__(
             name=name,
