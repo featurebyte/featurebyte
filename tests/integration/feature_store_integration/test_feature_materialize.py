@@ -27,6 +27,9 @@ from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME, DUMMY_E
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.schema.worker.task.feature_materialize_sync import (
+    FeatureMaterializeSyncTaskPayload,
+)
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
@@ -1425,7 +1428,6 @@ async def test_simulated_materialize__non_ttl_feature_table(
     """
     feature_table_model = user_entity_non_ttl_feature_table
     assert feature_table_model.aggregation_ids == []
-    service = app_container.feature_materialize_service
 
     df_0 = await session.execute_query(
         sql_to_string(
@@ -1445,8 +1447,12 @@ async def test_simulated_materialize__non_ttl_feature_table(
 
     # Trigger a materialization task after the feature table is created. This should materialize
     # features for the entities that appear since deployment time (mocked above) till now.
-    feature_table_model = await reload_feature_table_model(app_container, feature_table_model)
-    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    task_payload = FeatureMaterializeSyncTaskPayload(
+        catalog_id=feature_table_model.catalog_id,
+        offline_store_feature_table_name=feature_table_model.name,
+        offline_store_feature_table_id=feature_table_model.id,
+    )
+    await app_container.task_manager.submit(task_payload)
     df_1 = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
@@ -1458,8 +1464,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     # Materialize one more time. Since there is no new data that appears since the last
     # materialization, the entity universe is empty. This shouldn't insert any new rows into the
     # feature table.
-    feature_table_model = await reload_feature_table_model(app_container, feature_table_model)
-    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    await app_container.task_manager.submit(task_payload)
     df_2 = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'),

@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Optional
 
 import asyncio
-import time
 from datetime import datetime
 
 from bson import ObjectId
@@ -116,6 +115,14 @@ class FeatureMaterializeSyncService:
         status: PrerequisiteTileTaskStatusType
             Status of the tile task
         """
+        logger.info(
+            "Updating tile prerequisite",
+            extra={
+                "tile_tasks_ts": str(tile_task_ts),
+                "aggregation_id": aggregation_id,
+                "status": status,
+            },
+        )
         async for (
             feature_table_model
         ) in self.offline_store_feature_table_service.list_feature_tables_for_aggregation_id(
@@ -166,11 +173,15 @@ class FeatureMaterializeSyncService:
 
         tic = prerequisite.scheduled_job_ts.timestamp()
         prerequisite_met = False
-        logger.debug(
+        logger.info(
             "Waiting for prerequisites for feature materialize task",
-            extra={"offline_store_feature_table_id": feature_table.id},
+            extra={
+                "offline_store_feature_table_id": feature_table.id,
+                "scheduled_job_ts": str(prerequisite.scheduled_job_ts),
+            },
         )
-        while time.time() - tic < get_allowed_waiting_time_seconds(feature_job_setting):
+        allowed_waiting_time_seconds = get_allowed_waiting_time_seconds(feature_job_setting)
+        while datetime.utcnow().timestamp() - tic < allowed_waiting_time_seconds:
             prerequisite_model = await self.feature_materialize_prerequisite_service.get_document(
                 prerequisite.id
             )
@@ -178,7 +189,7 @@ class FeatureMaterializeSyncService:
                 item.aggregation_id for item in prerequisite_model.completed
             ]
             if set(feature_table.aggregation_ids).issubset(set(completed_aggregation_ids)):
-                logger.debug(
+                logger.info(
                     "Prerequisites for feature materialize task met",
                     extra={"offline_store_feature_table_id": feature_table.id},
                 )
@@ -204,7 +215,7 @@ class FeatureMaterializeSyncService:
             catalog_id=self.offline_store_feature_table_service.catalog_id,
             user_id=self.offline_store_feature_table_service.user.id,
         )
-        await self.task_manager.submit(payload)
+        await self.task_manager.submit(payload, mark_as_scheduled_task=True)
 
     async def _get_scheduled_job_ts_for_feature_table(
         self, offline_store_feature_table_id: ObjectId

@@ -199,6 +199,7 @@ from featurebyte.worker.task.feature_list_create import FeatureListCreateTask
 from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
+from featurebyte.worker.task.feature_materialize_sync import FeatureMaterializeSyncTask
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
 from featurebyte.worker.task.observation_table import ObservationTableTask
@@ -277,6 +278,7 @@ app_container_config.register_class(FeatureMaterializePrerequisiteService)
 app_container_config.register_class(FeatureMaterializeSchedulerService)
 app_container_config.register_class(FeatureMaterializeService)
 app_container_config.register_class(FeatureMaterializeSyncService)
+app_container_config.register_class(FeatureMaterializeSyncTask)
 app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)

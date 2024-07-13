@@ -2,15 +2,16 @@
 Document model for stored credentials
 """
 
-from typing import Callable, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import base64  # pylint: disable=wrong-import-order
+import json  # pylint: disable=wrong-import-order
 import os  # pylint: disable=wrong-import-order
 
 import pymongo
 from cryptography.fernet import Fernet
-from pydantic import Field, Strict, StrictStr
+from pydantic import BaseModel, Field, Strict, StrictStr, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
@@ -294,9 +295,20 @@ class GCSStorageCredential(BaseStorageCredential):
 
     # instance variables
     type: Literal[StorageCredentialType.GCS] = StorageCredentialType.GCS
-    service_account_info: Dict[str, str] = Field(
+    service_account_info: Union[Dict[str, str], StrictStr] = Field(
         description="Service account information used for connecting to your GCS store."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_service_account_info(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
+        service_account_info = values.get("service_account_info")
+        if isinstance(service_account_info, str):
+            values["service_account_info"] = json.loads(service_account_info)
+        return values
 
 
 class AzureBlobStorageCredential(BaseStorageCredential):
