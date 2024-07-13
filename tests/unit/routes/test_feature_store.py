@@ -1,8 +1,10 @@
+# pylint: disable=too-many-lines
 """
 Test for FeatureStore route
 """
 
 import copy
+import json
 import textwrap
 from datetime import datetime
 from http import HTTPStatus
@@ -969,3 +971,32 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         response = test_api_client.patch(f"{self.base_route}/{doc_id}/details", json=update_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json() == {"detail": "Invalid details: Some Error"}
+
+    def test_gcs_credentials(self, test_api_client_persistent):
+        """
+        Test GCS storage credential with string for service account info accepted
+        """
+        test_api_client, _ = test_api_client_persistent
+        payload = {
+            "database_credential": None,
+            "details": {
+                "account": "sf_account",
+                "database_name": "sf_database",
+                "role_name": "TESTING",
+                "schema_name": "sf_schema",
+                "warehouse": "sf_warehouse",
+            },
+            "name": "sf_featurestore",
+            "storage_credential": {
+                "type": "GCS",
+                "service_account_info": json.dumps(
+                    {
+                        "type": "service_account",
+                        "private_key": "private_key",
+                    }
+                ),
+            },
+            "type": "spark",
+        }
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == 201

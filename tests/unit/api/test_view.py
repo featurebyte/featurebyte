@@ -4,7 +4,7 @@ Test view class
 
 from typing import Any, Dict, List, Optional
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
@@ -17,7 +17,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails, TestDatabaseDetails
+from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from tests.util.helper import get_node, reset_global_graph
 
 
@@ -41,7 +41,15 @@ class SimpleTestView(View):
         table_details=TableDetails(table_name="table"),
     )
     feature_store: FeatureStoreModel = FeatureStoreModel(
-        name="random_featurestore", type=SourceType.TEST, details=TestDatabaseDetails()
+        name="random_featurestore",
+        type=SourceType.TEST,
+        details=SnowflakeDetails(
+            account="sf_account",
+            database_name="sf_database",
+            role_name="TESTING",
+            schema_name="sf_schema",
+            warehouse="sf_warehouse",
+        ),
     )
 
     join_col = ""
