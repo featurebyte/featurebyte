@@ -127,9 +127,7 @@ def get_script_path() -> str:
 def get_changelog_files(args: list[str]) -> list[str]:
     # no changelog file specified
     if len(args) == 0:
-        files = map(
-            lambda file: os.path.join(get_script_path(), file), os.listdir(get_script_path())
-        )
+        files = map(lambda file: os.path.join(get_script_path(), file), os.listdir(get_script_path()))
         files = filter(lambda file: os.path.isfile(file), files)
         files = filter(lambda file: file.endswith(".yaml"), files)
         files = list(filter(lambda file: os.path.basename(file) != "TEMPLATE.yaml", files))
