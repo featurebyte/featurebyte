@@ -33,9 +33,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
     def __init__(self, feature_table_cache_service: FeatureTableCacheService):
         self.feature_table_cache_service = feature_table_cache_service
 
-    async def execute(  # pylint: disable=too-many-locals
-        self, executor_params: ExecutorParams
-    ) -> ExecutionResult:
+    async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
         """
         Get targets.
 

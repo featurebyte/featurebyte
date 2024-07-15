@@ -2,7 +2,6 @@
 BaseApiTestSuite
 """
 
-# pylint: disable=too-many-lines
 import json
 import os
 import tempfile
@@ -36,8 +35,6 @@ class BaseApiTestSuite:
     """
     BaseApiTestSuite contains common api tests
     """
-
-    # pylint: disable=too-many-public-methods
 
     # class variables to be set at metaclass
     base_route = None
@@ -177,7 +174,7 @@ class BaseApiTestSuite:
     @staticmethod
     def tag_table_entity(api_client, table_type, table_payload):
         """Tag table entity"""
-        if not table_type in {"item_table", "event_table", "dimension_table", "scd_table"}:
+        if table_type not in {"item_table", "event_table", "dimension_table", "scd_table"}:
             return
 
         table_id = table_payload["_id"]
@@ -814,7 +811,7 @@ class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCata
     """
 
 
-class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
+class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
     """
     BaseTableApiTestSuite contains tests related to table service
     """

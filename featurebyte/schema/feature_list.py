@@ -115,7 +115,9 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     Examples
     --------
     >>> new_feature_list = feature_list.create_new_version(  # doctest: +SKIP
-    ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
+    ...     features=[
+    ...         fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)
+    ...     ]
     ... )
     """
 

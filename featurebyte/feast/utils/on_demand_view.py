@@ -3,7 +3,6 @@ On demand feature view related classes and functions.
 """
 
 from typing import Any, Dict, List, Optional, Union, cast
-
 from unittest.mock import patch
 
 from feast import FeatureView, Field, RequestSource
@@ -42,7 +41,7 @@ def create_feast_on_demand_feature_view(
     """
     # get the function from the definition
     locals_namespace: Dict[str, Any] = {}
-    exec(definition, locals_namespace)  # pylint: disable=exec-used  # nosec
+    exec(definition, locals_namespace)  # nosec
     func = locals_namespace[function_name]
 
     # dill.source.getsource fails to find the source code of the function

@@ -2,11 +2,10 @@
 Spark Thrift Server Offline Store
 """
 
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
-
 import json
 from abc import abstractmethod
 from datetime import datetime
+from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd

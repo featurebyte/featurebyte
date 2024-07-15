@@ -4,9 +4,8 @@ Module to support serving parent features using child entities
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from collections import OrderedDict
+from typing import List, Optional
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.entity_validation import EntityInfo

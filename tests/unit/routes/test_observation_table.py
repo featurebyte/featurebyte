@@ -307,12 +307,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             purpose="other",
             primary_entity_ids=["63f94ed6ea1f050131379214"],
         )
-        df = pd.DataFrame(
-            {
-                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "cust_id": ["C1"],
-            }
-        )
+        df = pd.DataFrame({
+            "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+            "cust_id": ["C1"],
+        })
         with tempfile.NamedTemporaryFile(mode="wb", suffix=f".{file_type}") as write_file_obj:
             uploaded_file_name = os.path.basename(write_file_obj.name)
             if file_type == "csv":
@@ -403,12 +401,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             purpose="other",
             primary_entity_ids=["63f94ed6ea1f050131379214"],
         )
-        df = pd.DataFrame(
-            {
-                "timestamp": ["2023-01-15 10:00:00"],
-                "CUST_ID": ["C1"],
-            }
-        )
+        df = pd.DataFrame({
+            "timestamp": ["2023-01-15 10:00:00"],
+            "CUST_ID": ["C1"],
+        })
         with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv") as write_file_obj:
             df.to_csv(write_file_obj, index=False)
             write_file_obj.flush()

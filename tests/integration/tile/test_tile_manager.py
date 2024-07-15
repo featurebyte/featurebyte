@@ -46,7 +46,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager_servi
         CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING)
     """
     if isinstance(session, SparkSession):
-        create_sql += f" USING DELTA"
+        create_sql += " USING DELTA"
     await session.execute_query(create_sql)
 
     await session.execute_query(

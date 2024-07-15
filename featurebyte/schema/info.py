@@ -4,9 +4,8 @@ Info related schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 from datetime import datetime
+from typing import Any, List, Optional
 
 from pydantic import Field, root_validator, validator
 

@@ -4,9 +4,8 @@ TableColumnsInfoService
 
 from __future__ import annotations
 
-from typing import List, Tuple, Union
-
 from collections import defaultdict
+from typing import List, Tuple, Union
 
 from bson import ObjectId
 from pymongo.errors import OperationFailure
@@ -22,6 +21,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
+from featurebyte.schema.table import TableColumnsInfoUpdate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -78,13 +78,11 @@ class TableColumnsInfoService(OpsServiceMixin):
         ]
         missing_id_values = sorted(set(id_values).difference(found_id_values))
         if missing_id_values:
-            column_name_id_pairs = sorted(
-                [
-                    (col_info.name, getattr(col_info, field_name))
-                    for col_info in columns_info
-                    if getattr(col_info, field_name) in missing_id_values
-                ]
-            )
+            column_name_id_pairs = sorted([
+                (col_info.name, getattr(col_info, field_name))
+                for col_info in columns_info
+                if getattr(col_info, field_name) in missing_id_values
+            ])
             col_names, id_vals = zip(*column_name_id_pairs)
             id_vals = [str(id_val) for id_val in id_vals]
             raise DocumentUpdateError(
@@ -137,8 +135,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                 # update columns info
                 await service.update_document(
                     document_id=document_id,
-                    data=service.document_update_class(columns_info=columns_info),  # type: ignore
+                    data=TableColumnsInfoUpdate(columns_info=columns_info),  # type: ignore
                     skip_block_modification_check=skip_block_modification_check,
+                    exclude_none=False,
                 )
 
                 # update entity table reference

@@ -92,7 +92,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
         """
-        return self.cached_model.catalog_id  # pylint: disable=no-member
+        return self.cached_model.catalog_id
 
     @property
     def serving_name(self) -> str:
@@ -260,8 +260,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         Examples
         --------
         >>> entity = fb.Entity.get_or_create(
-        ...     name="grocerycustomer",
-        ...     serving_names=["GROCERYCUSTOMERGUID"]
+        ...     name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"]
         ... )
         >>> entity.name
         'grocerycustomer'

@@ -23,7 +23,10 @@ async def test_entity_service__get_entities_with_serving_names(entity_a, entity_
     assert await entity_service.get_entities_with_serving_names({"B"}) == [entity_b]
     assert _sorted_entities(
         await entity_service.get_entities_with_serving_names({"A", "B"})
-    ) == _sorted_entities([entity_a, entity_b])
+    ) == _sorted_entities([
+        entity_a,
+        entity_b,
+    ])
 
 
 @pytest.mark.asyncio

@@ -123,7 +123,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         ...     name="use_case_1",
         ...     context_name="context_1",
         ...     target_name="target_1",
-        ...     description="use case description."
+        ...     description="use case description.",
         ... )
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
@@ -413,7 +413,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "UseCase":  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> "UseCase":
         """
         Returns a UseCase object by its unique identifier (ID).
 
@@ -456,7 +456,9 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = UseCase(name="use_case", target_id=target_id, context_id=context_id) # doctest: +SKIP
+        >>> use_case = UseCase(
+        ...     name="use_case", target_id=target_id, context_id=context_id
+        ... )  # doctest: +SKIP
         >>> use_case.save()  # doctest: +SKIP
         """
 

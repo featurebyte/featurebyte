@@ -4,9 +4,8 @@ TileManagerService class
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Tuple
-
 import time
+from typing import Any, Callable, Coroutine, List, Optional, Tuple
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger

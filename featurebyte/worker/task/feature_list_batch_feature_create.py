@@ -32,7 +32,7 @@ class FeatureListCreateWithBatchFeatureCreationTask(
 
     payload_class = FeatureListCreateWithBatchFeatureCreationTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_list_controller: FeatureListController,
         batch_feature_creator: BatchFeatureCreator,

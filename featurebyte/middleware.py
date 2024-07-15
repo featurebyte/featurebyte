@@ -2,10 +2,9 @@
 Handles API requests middleware
 """
 
-from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
-
 import inspect
 from http import HTTPStatus
+from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
@@ -102,7 +101,7 @@ class ExecutionContext:
         """
         try:
             return await self.call_next(self.request)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             for except_class, (
                 handle_status_code,
                 handle_message,
@@ -227,7 +226,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         try:
             async with ExecutionContext(request, call_next) as executor:
                 response: Response = await executor.execute()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.exception(str(exc))
             return JSONResponse(
                 content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR

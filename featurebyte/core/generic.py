@@ -4,11 +4,10 @@ This module generic query object classes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Tuple, TypeVar, cast
-
 import json
 import operator
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Tuple, TypeVar, cast
 
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey

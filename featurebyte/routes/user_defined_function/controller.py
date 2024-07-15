@@ -156,9 +156,10 @@ class UserDefinedFunctionController(
         document = await self.service.get_document(document_id=document_id)
 
         # check if no changes found in function parameters
-        updated_document = UserDefinedFunctionModel(
-            **{**document.dict(by_alias=True), **data.dict(by_alias=True, exclude_none=True)}
-        )
+        updated_document = UserDefinedFunctionModel(**{
+            **document.dict(by_alias=True),
+            **data.dict(by_alias=True, exclude_none=True),
+        })
         if updated_document == document:
             raise DocumentUpdateError("No changes detected in user defined function")
 

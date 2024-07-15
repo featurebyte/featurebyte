@@ -2,9 +2,8 @@
 This module contains
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -365,8 +364,10 @@ class DecomposePointState:
             )
 
         # reduce the primary entity ids based on entity relationship
-        aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
-            entity_ids=aggregation_info.primary_entity_ids  # type: ignore
+        aggregation_info.primary_entity_ids = (
+            self.entity_ancestor_descendant_mapper.reduce_entity_ids(
+                entity_ids=aggregation_info.primary_entity_ids  # type: ignore
+            )
         )
 
         # update the mapping

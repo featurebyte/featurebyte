@@ -4,9 +4,8 @@ ItemTable API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import APIRouter, Request
 
@@ -42,8 +41,6 @@ class ItemTableRouter(
     """
     Item table router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = ItemTableModel
     list_object_model = ItemTableList

@@ -4,9 +4,8 @@ Module for TRACK_CHANGES node sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select

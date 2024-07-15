@@ -4,10 +4,9 @@ This module contains the implementation of feature job setting validation
 
 from __future__ import annotations
 
-from typing import Any, Tuple
-
 import re
 from datetime import datetime
+from typing import Any, Tuple
 
 import pandas as pd
 from typeguard import typechecked

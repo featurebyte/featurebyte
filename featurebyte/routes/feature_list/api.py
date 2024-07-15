@@ -2,13 +2,11 @@
 FeatureList API routes
 """
 
-# pylint: disable=duplicate-code
 from __future__ import annotations
-
-from typing import Any, Dict, Optional, Union, cast
 
 import json
 from http import HTTPStatus
+from typing import Any, Dict, Optional, Union, cast
 
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 

@@ -10,7 +10,7 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel
 from featurebyte.models.feature_store import FeatureStoreModel
 
-all_models = [
+__all__ = [
     "DimensionTableModel",
     "EntityModel",
     "EventTableModel",
@@ -19,5 +19,3 @@ all_models = [
     "FeatureNamespaceModel",
     "FeatureStoreModel",
 ]
-
-__all__ = all_models

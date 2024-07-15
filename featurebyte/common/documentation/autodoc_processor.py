@@ -4,9 +4,8 @@ Autodoc Processor
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import re
+from typing import Any, List, Optional
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown
@@ -360,15 +359,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # Render raises
         if resource_details.raises:
-            content = "\n".join(
-                [
-                    _render_list_item_with_multiple_paragraphs(
-                        exc_type.type,
-                        _filter_none_from_list([exc_type.description]),
-                    )
-                    for exc_type in resource_details.raises
-                ]
-            )
+            content = "\n".join([
+                _render_list_item_with_multiple_paragraphs(
+                    exc_type.type,
+                    _filter_none_from_list([exc_type.description]),
+                )
+                for exc_type in resource_details.raises
+            ])
             self._render(elem, "Raises", content)
 
         # populate examples

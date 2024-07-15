@@ -4,9 +4,8 @@ FeatureMaterializeRunService document service class
 
 from __future__ import annotations
 
-from typing import List
-
 from datetime import datetime
+from typing import List
 
 from bson import ObjectId
 

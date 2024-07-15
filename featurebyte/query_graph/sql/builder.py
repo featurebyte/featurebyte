@@ -4,9 +4,8 @@ Module for SQL syntax tree builder
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Type
-
 from collections import defaultdict
+from typing import Any, Iterable, Optional, Type
 
 from featurebyte.common.path_util import import_submodules
 from featurebyte.enum import SourceType
@@ -157,8 +156,7 @@ class SQLOperationGraph:
         NotImplementedError
             If a query node is not yet supported
         """
-        # pylint: disable=too-many-locals
-        # pylint: disable=too-many-branches
+
         cur_node_id = cur_node.name
         assert cur_node_id not in self.sql_nodes
 

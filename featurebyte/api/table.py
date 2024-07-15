@@ -70,7 +70,7 @@ class Table(TableListMixin):
         return data_class.get(name)
 
     @classmethod
-    def get_by_id(cls: Any, id: ObjectId) -> Any:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls: Any, id: ObjectId) -> Any:
         """
         Retrieve saved source table by ID
 

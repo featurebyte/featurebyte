@@ -293,12 +293,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
             )
             assert response.status_code == HTTPStatus.OK
             update_response_dict = response.json()
-            expected_history.append(
-                {
-                    "created_at": update_response_dict["updated_at"],
-                    "setting": update_response_dict["default_feature_job_setting"],
-                }
-            )
+            expected_history.append({
+                "created_at": update_response_dict["updated_at"],
+                "setting": update_response_dict["default_feature_job_setting"],
+            })
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(

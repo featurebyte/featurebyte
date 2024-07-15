@@ -4,9 +4,8 @@ This module contains mixin class(es) used in the service directory.
 
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, Type, TypeVar
-
 from abc import abstractmethod
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from bson import ObjectId
 

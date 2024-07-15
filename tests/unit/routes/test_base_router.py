@@ -63,20 +63,16 @@ def test_base_router():
     assert router_a.router.routes[1].path == "/b/two"
 
     # Test remove routes - noop here since there's no POST route matching /a/one
-    router_a.remove_routes(
-        {
-            "/a/one": ["POST"],
-        }
-    )
+    router_a.remove_routes({
+        "/a/one": ["POST"],
+    })
     assert len(router_a.router.routes) == 2
     assert router_a.router.routes[0].path == "/a/one"
     assert router_a.router.routes[1].path == "/b/two"
 
     # Test remove route - should actually remove the matching GET route
-    router_a.remove_routes(
-        {
-            "/a/one": ["GET"],
-        }
-    )
+    router_a.remove_routes({
+        "/a/one": ["GET"],
+    })
     assert len(router_a.router.routes) == 1
     assert router_a.router.routes[0].path == "/b/two"

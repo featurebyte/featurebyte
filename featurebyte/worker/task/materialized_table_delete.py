@@ -29,7 +29,6 @@ from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-# pylint: disable=too-many-instance-attributes
 class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTableDeleteTaskPayload]):
     """
     Materialized Table Delete Task
@@ -37,7 +36,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
 
     payload_class = MaterializedTableDeleteTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,

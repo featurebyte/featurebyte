@@ -332,7 +332,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "Context":  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> "Context":
         """
         Returns a Context object by its unique identifier (ID).
 

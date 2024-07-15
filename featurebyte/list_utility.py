@@ -2,10 +2,9 @@
 Utility module
 """
 
-from typing import Optional
-
 import inspect
 from http import HTTPStatus
+from typing import Optional
 
 import pandas as pd
 
@@ -70,25 +69,21 @@ def list_unsaved_features() -> pd.DataFrame:
             if var_name in processed_variables:
                 continue
             if isinstance(var_obj, Feature) and not _is_saved(var_obj):
-                unsaved_features.append(
-                    {
-                        "object_id": str(var_obj.id),
-                        "variable_name": var_name,
-                        "name": var_obj.name,
-                        "catalog_id": str(var_obj.catalog_id),
-                    }
-                )
+                unsaved_features.append({
+                    "object_id": str(var_obj.id),
+                    "variable_name": var_name,
+                    "name": var_obj.name,
+                    "catalog_id": str(var_obj.catalog_id),
+                })
             elif isinstance(var_obj, BaseFeatureGroup):
                 for name, feature in var_obj.feature_objects.items():
                     if not _is_saved(feature):
-                        unsaved_features.append(
-                            {
-                                "object_id": str(feature.id),
-                                "variable_name": f'{var_name}["{name}"]',
-                                "name": feature.name,
-                                "catalog_id": str(feature.catalog_id),
-                            }
-                        )
+                        unsaved_features.append({
+                            "object_id": str(feature.id),
+                            "variable_name": f'{var_name}["{name}"]',
+                            "name": feature.name,
+                            "catalog_id": str(feature.catalog_id),
+                        })
             processed_variables.add(var_name)
 
     if unsaved_features:

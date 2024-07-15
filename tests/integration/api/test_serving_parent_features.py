@@ -48,42 +48,34 @@ async def tables_fixture(session, data_source, customer_entity, event_entity):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
-    df_events = pd.DataFrame(
-        {
-            "ts": pd.to_datetime(
-                [
-                    "2022-04-10 10:00:00",
-                    "2022-04-15 10:00:00",
-                    "2022-04-20 10:00:00",
-                ]
-            ),
-            "cust_id": [1000, 1000, 1000],
-            "event_id": [1, 2, 3],
-        }
-    )
-    df_scd_1 = pd.DataFrame(
-        {
-            "effective_ts": pd.to_datetime(
-                ["2020-01-01 10:00:00", "2022-04-12 10:00:00", "2022-04-20 10:00:00"]
-            ),
-            "scd_cust_id": [1000, 1000, 1000],
-            "scd_city": ["tokyo", "paris", "tokyo"],
-        }
-    )
-    df_scd_2 = pd.DataFrame(
-        {
-            "effective_ts": pd.to_datetime(["1970-01-01 00:00:00", "1970-01-01 00:00:00"]),
-            "city": ["paris", "tokyo"],
-            "state": ["île-de-france", "kanto"],
-            "is_record_active": [True, True],
-        }
-    )
-    df_dimension_1 = pd.DataFrame(
-        {
-            "state": ["île-de-france", "kanto"],
-            "country": ["france", "japan"],
-        }
-    )
+    df_events = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-04-10 10:00:00",
+            "2022-04-15 10:00:00",
+            "2022-04-20 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000],
+        "event_id": [1, 2, 3],
+    })
+    df_scd_1 = pd.DataFrame({
+        "effective_ts": pd.to_datetime([
+            "2020-01-01 10:00:00",
+            "2022-04-12 10:00:00",
+            "2022-04-20 10:00:00",
+        ]),
+        "scd_cust_id": [1000, 1000, 1000],
+        "scd_city": ["tokyo", "paris", "tokyo"],
+    })
+    df_scd_2 = pd.DataFrame({
+        "effective_ts": pd.to_datetime(["1970-01-01 00:00:00", "1970-01-01 00:00:00"]),
+        "city": ["paris", "tokyo"],
+        "state": ["île-de-france", "kanto"],
+        "is_record_active": [True, True],
+    })
+    df_dimension_1 = pd.DataFrame({
+        "state": ["île-de-france", "kanto"],
+        "country": ["france", "japan"],
+    })
     await session.register_table(f"{table_prefix}_EVENT", df_events)
     await session.register_table(f"{table_prefix}_SCD_1", df_scd_1)
     await session.register_table(f"{table_prefix}_SCD_2", df_scd_2)
@@ -368,16 +360,14 @@ def test_preview(
     Test serving parent features requiring multiple joins with different types of table
     """
     preview_params = {"POINT_IN_TIME": point_in_time, **provided_entity}
-    expected = pd.Series(
-        {
-            "POINT_IN_TIME": pd.Timestamp(point_in_time),
-            "Country Name": expected,
-            **provided_entity,
-        }
-    )
+    expected = pd.Series({
+        "POINT_IN_TIME": pd.Timestamp(point_in_time),
+        "Country Name": expected,
+        **provided_entity,
+    })
 
     # Preview feature
-    feature_list, deployment = feature_list_deployment_with_child_entities
+    feature_list, _deployment = feature_list_deployment_with_child_entities
     feature = feature_list["Country Name"]
     df = feature.preview(pd.DataFrame([preview_params]))
     tz_localize_if_needed(df, source_type)
@@ -391,40 +381,39 @@ def test_preview(
 
 @pytest.fixture(name="observations_set_with_expected_features")
 def observations_set_with_expected_features_fixture():
-    observations_set_with_expected_features = pd.DataFrame(
-        [
-            {
-                "POINT_IN_TIME": "2022-01-01 10:00:00",
-                "serving_event_id": 1,
-                "Event Customer ID": np.nan,
-                "Customer City": np.nan,
-                "Country Name": np.nan,
-                "Complex Feature": np.nan,
-            },
-            {
-                "POINT_IN_TIME": "2022-04-16 10:00:00",
-                "serving_event_id": 1,
-                "Event Customer ID": 1000,
-                "Customer City": "paris",
-                "Country Name": "france",
-                "Complex Feature": "1000_paris_france",
-            },
-            {
-                "POINT_IN_TIME": "2022-05-01 10:00:00",
-                "serving_event_id": 1,
-                "Event Customer ID": 1000,
-                "Customer City": "tokyo",
-                "Country Name": "japan",
-                "Complex Feature": "1000_tokyo_japan",
-            },
-        ]
-    )
+    observations_set_with_expected_features = pd.DataFrame([
+        {
+            "POINT_IN_TIME": "2022-01-01 10:00:00",
+            "serving_event_id": 1,
+            "Event Customer ID": np.nan,
+            "Customer City": np.nan,
+            "Country Name": np.nan,
+            "Complex Feature": np.nan,
+        },
+        {
+            "POINT_IN_TIME": "2022-04-16 10:00:00",
+            "serving_event_id": 1,
+            "Event Customer ID": 1000,
+            "Customer City": "paris",
+            "Country Name": "france",
+            "Complex Feature": "1000_paris_france",
+        },
+        {
+            "POINT_IN_TIME": "2022-05-01 10:00:00",
+            "serving_event_id": 1,
+            "Event Customer ID": 1000,
+            "Customer City": "tokyo",
+            "Country Name": "japan",
+            "Complex Feature": "1000_tokyo_japan",
+        },
+    ])
     observations_set_with_expected_features["POINT_IN_TIME"] = pd.to_datetime(
         observations_set_with_expected_features["POINT_IN_TIME"]
     )
-    observations_set_with_expected_features = observations_set_with_expected_features.sort_values(
-        ["POINT_IN_TIME", "serving_event_id"]
-    )
+    observations_set_with_expected_features = observations_set_with_expected_features.sort_values([
+        "POINT_IN_TIME",
+        "serving_event_id",
+    ])
     return observations_set_with_expected_features
 
 
@@ -438,7 +427,7 @@ def test_historical_features(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "serving_event_id"]
     ]
-    feature_list, deployment = feature_list_deployment_with_child_entities
+    feature_list, _deployment = feature_list_deployment_with_child_entities
     df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
     assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
@@ -460,7 +449,7 @@ def test_historical_features_with_serving_names_mapping(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "new_serving_event_id"]
     ]
-    feature_list, deployment = feature_list_deployment_with_child_entities
+    feature_list, _deployment = feature_list_deployment_with_child_entities
     df = feature_list.compute_historical_features(
         observations_set,
         serving_names_mapping={"serving_event_id": "new_serving_event_id"},
@@ -604,14 +593,14 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     assert len(primary_entity) == 1
     assert primary_entity[0].name == f"{table_prefix}_customer"
 
-    observations_set = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(
-                ["2022-03-15 10:00:00", "2022-04-16 10:00:00", "2022-04-25 10:00:00"]
-            ),
-            "serving_event_id": [1, 1, 1],
-        }
-    )
+    observations_set = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime([
+            "2022-03-15 10:00:00",
+            "2022-04-16 10:00:00",
+            "2022-04-25 10:00:00",
+        ]),
+        "serving_event_id": [1, 1, 1],
+    })
     expected = observations_set.copy()
     expected["user_city_changes_count_4w"] = [np.nan, 1, 2]
 

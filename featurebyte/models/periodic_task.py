@@ -2,9 +2,8 @@
 Periodic Task document model
 """
 
-from typing import Any, Dict, List, Literal, Optional, Union
-
 from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pymongo
 from pydantic import Field

@@ -4,9 +4,8 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
-
 import datetime
+from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from pydantic import Field, validator

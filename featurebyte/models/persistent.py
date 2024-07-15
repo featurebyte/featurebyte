@@ -2,9 +2,8 @@
 Pydantic Model for persistent storage
 """
 
-from typing import Any, Dict, List, Mapping, Optional
-
 from datetime import datetime
+from typing import Any, Dict, List, Mapping, Optional
 
 from bson import ObjectId
 from pydantic import Field

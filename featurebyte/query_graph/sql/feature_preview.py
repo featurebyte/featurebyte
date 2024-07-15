@@ -2,12 +2,10 @@
 Feature or Target preview SQL generation
 """
 
-# pylint: disable=too-many-locals
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
-
 import time
+from typing import Any, List, Optional, cast
 
 import pandas as pd
 

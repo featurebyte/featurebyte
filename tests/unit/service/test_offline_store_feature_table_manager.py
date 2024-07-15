@@ -2,13 +2,10 @@
 Tests for OfflineStoreFeatureTableManagerService
 """
 
-from typing import Dict
-
 import os
-
-# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 import pickle
 import textwrap
+from typing import Dict
 from unittest.mock import patch
 
 import pytest
@@ -707,9 +704,9 @@ async def test_feature_table_one_feature_deployed(
     """
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
@@ -853,9 +850,9 @@ async def test_feature_table_two_features_deployed(
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
@@ -908,9 +905,10 @@ async def test_feature_table_two_features_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
-        "deployment_ids": sorted(
-            [float_feat_deployment_id, float_feat_post_processed_deployment_id]
-        ),
+        "deployment_ids": sorted([
+            float_feat_deployment_id,
+            float_feat_post_processed_deployment_id,
+        ]),
         "is_deleted": False,
     }
     assert_equal_json_fixture(
@@ -955,9 +953,9 @@ async def test_feature_table_undeploy(
     await undeploy_feature_async(deployed_float_feature, app_container)
 
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
@@ -1091,9 +1089,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     # The table cat1_cust_id_3h doesn't have a precomputed lookup feature table because the
     # deployment is expected to be served using cust_id entity
     assert set(feature_tables.keys()) == {
@@ -1580,9 +1578,9 @@ async def test_new_deployment_on_already_enabled_feature_list(
 
     # Check offline feature tables
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",

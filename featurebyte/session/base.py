@@ -2,10 +2,7 @@
 Session class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
-
-from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
@@ -18,6 +15,7 @@ from abc import ABC, abstractmethod
 from asyncio import events
 from io import BytesIO
 from random import randint
+from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
 
 import aiofiles
 import pandas as pd
@@ -115,8 +113,6 @@ class BaseSession(BaseModel):
     Abstract session class to extract data warehouse table metadata & execute query
     """
 
-    # pylint: disable=too-many-public-methods
-
     source_type: SourceType
     database_name: str = ""
     schema_name: str = ""
@@ -158,7 +154,7 @@ class BaseSession(BaseModel):
         if self.is_threadsafe():
             return self
         new_session = self.copy()
-        new_session._initialize_connection()  # pylint: disable=protected-access
+        new_session._initialize_connection()
         return new_session
 
     @property
@@ -489,7 +485,7 @@ class BaseSession(BaseModel):
         query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
             results = await self.execute_query(query, to_log_error=False)
-        except self._no_schema_error:  # pylint: disable=broad-except
+        except self._no_schema_error:
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
             # more platforms.
@@ -701,13 +697,11 @@ class BaseSession(BaseModel):
         """
 
         async def _drop(is_view: bool) -> None:
-            fully_qualified_table_name = get_fully_qualified_table_name(
-                {
-                    "table_name": table_name,
-                    "schema_name": schema_name,
-                    "database_name": database_name,
-                }
-            )
+            fully_qualified_table_name = get_fully_qualified_table_name({
+                "table_name": table_name,
+                "schema_name": schema_name,
+                "database_name": database_name,
+            })
             query = sql_to_string(
                 expressions.Drop(
                     this=expressions.Table(this=fully_qualified_table_name),
@@ -720,13 +714,13 @@ class BaseSession(BaseModel):
 
         try:
             await _drop(is_view=False)
-        except Exception as exc:  # pylint: disable=bare-except
+        except Exception as exc:
             msg = str(exc)
             if "VIEW" in msg:
                 try:
                     await _drop(is_view=True)
                     return
-                except Exception as exc_view:  # pylint: disable=bare-except
+                except Exception as exc_view:
                     msg = str(exc_view)
                     raise DataWarehouseOperationError(msg) from exc_view
             raise DataWarehouseOperationError(msg) from exc
@@ -793,7 +787,7 @@ class BaseSession(BaseModel):
         for i in range(retry_num):
             try:
                 return await self.execute_query_long_running(sql)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
+            except Exception as exc:
                 logger.warning(
                     "SQL query failed",
                     extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
@@ -832,7 +826,7 @@ class BaseSession(BaseModel):
                 sql_to_string(expr, self.source_type), to_log_error=False
             )
             return True
-        except self._no_schema_error:  # pylint: disable=broad-except
+        except self._no_schema_error:
             pass
         return False
 
@@ -1280,7 +1274,7 @@ class MetadataSchemaInitializer:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
-        from featurebyte.migration.run import (  # pylint: disable=import-outside-toplevel, cyclic-import
+        from featurebyte.migration.run import (
             retrieve_all_migration_methods,
         )
 

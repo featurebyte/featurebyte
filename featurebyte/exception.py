@@ -4,9 +4,8 @@ List of Exceptions
 
 from __future__ import annotations
 
-from typing import Any
-
 from asyncio.exceptions import CancelledError
+from typing import Any
 
 from requests.exceptions import JSONDecodeError
 from requests.models import Response

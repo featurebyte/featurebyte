@@ -4,9 +4,8 @@ SavableApiObject class
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from http import HTTPStatus
+from typing import Any, Optional
 
 from bson import ObjectId
 from typeguard import typechecked
@@ -78,13 +77,17 @@ class SavableApiObject(ApiObject):
 
         Save a new Entity object.
 
-        >>> entity = fb.Entity(name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity = fb.Entity(
+        ...     name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"]
+        ... )  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         None
 
         Calling save again returns an error.
 
-        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity = fb.Entity(
+        ...     name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"]
+        ... )  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         Entity (id: <entity.id>) has been saved before.

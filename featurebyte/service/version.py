@@ -94,7 +94,6 @@ class VersionService:
                 for data_feature_job_setting in table_feature_job_settings
             }
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
-                # pylint: disable=abstract-class-instantiated
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_as_dict_iterator(
                     query_filter={"_id": {"$in": feature.table_ids}}
@@ -129,9 +128,10 @@ class VersionService:
                     parameters = group_by_node.parameters.dict()
                     parameters["feature_job_setting"] = feature_job_setting.dict()
                     if group_by_node.parameters.dict() != parameters:
-                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(
-                            **{**group_by_node.dict(), "parameters": parameters}
-                        )
+                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(**{
+                            **group_by_node.dict(),
+                            "parameters": parameters,
+                        })
 
         return node_name_to_replacement_node
 
@@ -173,14 +173,12 @@ class VersionService:
             # only include fields that are required for creating a new feature version,
             # other attributes will be re-generated when the new feature version is constructed
             include_fields = {"name", "tabular_source", "feature_namespace_id"}
-            return FeatureModel(
-                **{
-                    **feature.dict(include=include_fields),
-                    "graph": pruned_graph,
-                    "node_name": pruned_node_name,
-                    "_id": ObjectId(),
-                }
-            )
+            return FeatureModel(**{
+                **feature.dict(include=include_fields),
+                "graph": pruned_graph,
+                "node_name": pruned_node_name,
+                "_id": ObjectId(),
+            })
         return None
 
     async def _create_new_feature_version(
@@ -337,14 +335,12 @@ class VersionService:
 
             raise DocumentError("No change detected on the new feature list version.")
 
-        return FeatureListModel(
-            **{
-                **feature_list.dict(),
-                "_id": ObjectId(),
-                "feature_ids": feature_ids,
-                "features": features,
-            }
-        )
+        return FeatureListModel(**{
+            **feature_list.dict(),
+            "_id": ObjectId(),
+            "feature_ids": feature_ids,
+            "features": features,
+        })
 
     async def create_new_feature_list_version(
         self,

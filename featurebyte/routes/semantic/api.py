@@ -4,9 +4,8 @@ Semantic API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Request
 
@@ -34,8 +33,6 @@ class SemanticRouter(
     """
     Semantic API router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = SemanticModel
     list_object_model = SemanticList

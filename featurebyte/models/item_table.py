@@ -86,7 +86,7 @@ class ItemTableModel(ItemTableData, TableModel):
         (
             view_graph_node,
             columns_info,
-        ) = table_data.construct_item_view_graph_node(  # pylint: disable=no-member
+        ) = table_data.construct_item_view_graph_node(
             item_table_node=input_node,
             columns_to_join=metadata.event_join_column_names,
             event_suffix=metadata.event_suffix,

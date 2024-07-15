@@ -51,7 +51,7 @@ TableDocumentServiceT = TypeVar(
 )
 
 
-class BaseTableDocumentController(  # pylint: disable=too-many-instance-attributes
+class BaseTableDocumentController(
     BaseDocumentController[TableDocumentT, TableDocumentServiceT, PaginatedDocument]
 ):
     """
@@ -63,7 +63,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         "record_creation_timestamp_column": SemanticType.RECORD_CREATION_TIMESTAMP,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         service: TableDocumentService,
         table_facade_service: TableFacadeService,

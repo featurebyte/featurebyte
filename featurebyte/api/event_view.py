@@ -4,9 +4,8 @@ EventView class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
-
 import copy
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from bson import ObjectId
 from pydantic import Field
@@ -144,12 +143,10 @@ class EventView(View, GroupByMixin, RawMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update(
-            {
-                "default_feature_job_setting": self.default_feature_job_setting,
-                "event_id_column": self.event_id_column,
-            }
-        )
+        params.update({
+            "default_feature_job_setting": self.default_feature_job_setting,
+            "event_id_column": self.event_id_column,
+        })
         return params
 
     def get_join_column(self) -> str:
@@ -410,12 +407,14 @@ class EventView(View, GroupByMixin, RawMixin):
         >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")  # doctest: +SKIP
         >>> # Get the number of items in each invoice
         >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
-        ...   None,
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="InvoiceItemCount",
+        ...     None,
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="InvoiceItemCount",
         ... )
         >>> event_view = catalog.get_view("GROCERYINVOICE")  # doctest: +SKIP
-        >>> event_view = event_view.add_feature("InvoiceItemCount", invoice_item_count)  # doctest: +SKIP
+        >>> event_view = event_view.add_feature(
+        ...     "InvoiceItemCount", invoice_item_count
+        ... )  # doctest: +SKIP
         """
         validate_type_is_feature(feature, "feature")
 

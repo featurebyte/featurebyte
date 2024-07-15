@@ -72,7 +72,7 @@ async def check_states_after_readiness_change(
     expected_default_feature_list_id,
 ):
     """Check states after feature readiness get changed"""
-    # pylint: disable=too-many-arguments,too-many-locals
+
     new_feat = await feature_readiness_service.update_feature(
         feature_id=new_feature_id, readiness=new_feature_next_readiness
     )

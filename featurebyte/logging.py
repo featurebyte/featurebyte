@@ -4,11 +4,10 @@ Logging formatting
 
 from __future__ import annotations
 
-from typing import Any, Mapping
-
 import logging
 import os
 import sys
+from typing import Any, Mapping
 
 from featurebyte.common.env_util import is_notebook
 from featurebyte.config import Configurations, LogLevel
@@ -19,7 +18,7 @@ class CustomLogger(logging.Logger):
     Custom logger to capture extra field
     """
 
-    def makeRecord(  # pylint: disable=too-many-arguments
+    def makeRecord(
         self,
         name: str,
         level: int,

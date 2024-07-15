@@ -212,7 +212,7 @@ async def test_update_document__inconsistency_error(
     assert expected_msg in str(exc.value)
 
 
-async def create_entity_family(  # pylint: disable=too-many-locals
+async def create_entity_family(
     entity_service,
     table_columns_info_service,
     entity_relationship_service,

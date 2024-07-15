@@ -266,7 +266,7 @@ def test_feature_deserialization(
     )
 
     # check pruned graph and node_name are set properly
-    pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()
+    _pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()
     assert mapped_node.name != feature_group["sum_1d"].node_name
 
 
@@ -342,20 +342,18 @@ def test_list(saved_feature):
     feature_list = Feature.list(include_id=True)
     assert_frame_equal(
         feature_list,
-        pd.DataFrame(
-            {
-                "id": [str(saved_feature.id)],
-                "name": [saved_feature_namespace.name],
-                "dtype": [saved_feature.dtype],
-                "readiness": [saved_feature_namespace.readiness],
-                "online_enabled": [saved_feature.online_enabled],
-                "tables": [["sf_event_table"]],
-                "primary_tables": [["sf_event_table"]],
-                "entities": [["customer"]],
-                "primary_entities": [["customer"]],
-                "created_at": [saved_feature_namespace.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(saved_feature.id)],
+            "name": [saved_feature_namespace.name],
+            "dtype": [saved_feature.dtype],
+            "readiness": [saved_feature_namespace.readiness],
+            "online_enabled": [saved_feature.online_enabled],
+            "tables": [["sf_event_table"]],
+            "primary_tables": [["sf_event_table"]],
+            "entities": [["customer"]],
+            "primary_entities": [["customer"]],
+            "created_at": [saved_feature_namespace.created_at.isoformat()],
+        }),
     )
 
 
@@ -1132,60 +1130,56 @@ def test_list_versions(saved_feature):
     """
     # save a few more features
     feature_group = FeatureGroup(items=[])
-    feature_group[f"new_feat1"] = saved_feature + 1
-    feature_group[f"new_feat2"] = saved_feature + 2
+    feature_group["new_feat1"] = saved_feature + 1
+    feature_group["new_feat2"] = saved_feature + 2
     feature_group.save()
 
     # check feature class list_version & feature object list_versions
     assert_frame_equal(
         Feature.list_versions(),
-        pd.DataFrame(
-            {
-                "id": [
-                    str(feature_group["new_feat2"].id),
-                    str(feature_group["new_feat1"].id),
-                    str(saved_feature.id),
-                ],
-                "name": ["new_feat2", "new_feat1", saved_feature.name],
-                "version": [saved_feature.version] * 3,
-                "dtype": [saved_feature.dtype] * 3,
-                "readiness": [saved_feature.readiness] * 3,
-                "online_enabled": [saved_feature.online_enabled] * 3,
-                "tables": [["sf_event_table"]] * 3,
-                "primary_tables": [["sf_event_table"]] * 3,
-                "entities": [["customer"]] * 3,
-                "primary_entities": [["customer"]] * 3,
-                "created_at": [
-                    feature_group[
-                        "new_feat2"
-                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
-                    feature_group[
-                        "new_feat1"
-                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
-                    saved_feature.created_at.isoformat(),
-                ],
-                "is_default": [True] * 3,
-            }
-        ),
+        pd.DataFrame({
+            "id": [
+                str(feature_group["new_feat2"].id),
+                str(feature_group["new_feat1"].id),
+                str(saved_feature.id),
+            ],
+            "name": ["new_feat2", "new_feat1", saved_feature.name],
+            "version": [saved_feature.version] * 3,
+            "dtype": [saved_feature.dtype] * 3,
+            "readiness": [saved_feature.readiness] * 3,
+            "online_enabled": [saved_feature.online_enabled] * 3,
+            "tables": [["sf_event_table"]] * 3,
+            "primary_tables": [["sf_event_table"]] * 3,
+            "entities": [["customer"]] * 3,
+            "primary_entities": [["customer"]] * 3,
+            "created_at": [
+                feature_group[
+                    "new_feat2"
+                ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                feature_group[
+                    "new_feat1"
+                ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                saved_feature.created_at.isoformat(),
+            ],
+            "is_default": [True] * 3,
+        }),
     )
     assert_frame_equal(
         saved_feature.list_versions(),
-        pd.DataFrame(
-            {
-                "id": [str(saved_feature.id)],
-                "name": [saved_feature.name],
-                "version": [saved_feature.version],
-                "dtype": [saved_feature.dtype],
-                "readiness": [saved_feature.readiness],
-                "online_enabled": [saved_feature.online_enabled],
-                "tables": [["sf_event_table"]],
-                "primary_tables": [["sf_event_table"]],
-                "entities": [["customer"]],
-                "primary_entities": [["customer"]],
-                "created_at": [saved_feature.created_at.isoformat()],
-                "is_default": [True],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(saved_feature.id)],
+            "name": [saved_feature.name],
+            "version": [saved_feature.version],
+            "dtype": [saved_feature.dtype],
+            "readiness": [saved_feature.readiness],
+            "online_enabled": [saved_feature.online_enabled],
+            "tables": [["sf_event_table"]],
+            "primary_tables": [["sf_event_table"]],
+            "entities": [["customer"]],
+            "primary_entities": [["customer"]],
+            "created_at": [saved_feature.created_at.isoformat()],
+            "is_default": [True],
+        }),
     )
 
     # check documentation of the list_versions
@@ -1245,20 +1239,18 @@ def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs
         mock_get_jobs_dataframe.return_value = feature_job_logs[:1]
         job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (1, 12)
-    expected_feature_job_summary = pd.DataFrame(
-        {
-            "aggregation_hash": {0: "e8c51d7d"},
-            "frequency(min)": {0: 30},
-            "completed_jobs": {0: 0},
-            "max_duration(s)": {0: np.nan},
-            "95 percentile": {0: np.nan},
-            "frac_late": {0: np.nan},
-            "exceed_period": {0: 0},
-            "failed_jobs": {0: 0},
-            "incomplete_jobs": {0: 48},
-            "time_since_last": {0: "NaT"},
-        }
-    )
+    expected_feature_job_summary = pd.DataFrame({
+        "aggregation_hash": {0: "e8c51d7d"},
+        "frequency(min)": {0: 30},
+        "completed_jobs": {0: 0},
+        "max_duration(s)": {0: np.nan},
+        "95 percentile": {0: np.nan},
+        "frac_late": {0: np.nan},
+        "exceed_period": {0: 0},
+        "failed_jobs": {0: 0},
+        "incomplete_jobs": {0: 48},
+        "time_since_last": {0: "NaT"},
+    })
     assert_frame_equal(
         job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
     )
@@ -1275,20 +1267,18 @@ def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
         mock_get_jobs_dataframe.return_value = feature_job_logs[:0]
         job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (0, 12)
-    expected_feature_job_summary = pd.DataFrame(
-        {
-            "aggregation_hash": {0: "e8c51d7d"},
-            "frequency(min)": {0: 30},
-            "completed_jobs": {0: 0},
-            "max_duration(s)": {0: np.nan},
-            "95 percentile": {0: np.nan},
-            "frac_late": {0: np.nan},
-            "exceed_period": {0: 0},
-            "failed_jobs": {0: 0},
-            "incomplete_jobs": {0: 48},
-            "time_since_last": {0: "NaT"},
-        }
-    )
+    expected_feature_job_summary = pd.DataFrame({
+        "aggregation_hash": {0: "e8c51d7d"},
+        "frequency(min)": {0: 30},
+        "completed_jobs": {0: 0},
+        "max_duration(s)": {0: np.nan},
+        "95 percentile": {0: np.nan},
+        "frac_late": {0: np.nan},
+        "exceed_period": {0: 0},
+        "failed_jobs": {0: 0},
+        "incomplete_jobs": {0: 48},
+        "time_since_last": {0: "NaT"},
+    })
     assert_frame_equal(
         job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
     )
@@ -1662,99 +1652,97 @@ def test_list_unsaved_features(
         activate_and_get_catalog("catalog")
 
         # create unsaved features
-        unsaved_feature = float_feature
-        feature_group = FeatureGroup(
+        unsaved_feature = float_feature  # noqa
+        feature_group = FeatureGroup(  # noqa
             [float_feature, sum_per_category_feature],
         )
         feature_list_1 = FeatureList(
             [count_per_category_feature_group, sum_per_category_feature], name="FL1"
         )
-        feature_list_2 = FeatureList(
+        feature_list_2 = FeatureList(  # noqa
             [float_feature, sum_per_category_feature, count_per_category_feature], name="FL2"
         )
 
         # test list unsaved features
         unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])
-        expected_df = pd.DataFrame(
-            {
-                "variable_name": [
-                    "count_per_category_feature",
-                    'count_per_category_feature_group["counts_1d"]',
-                    'feature_list_1["counts_1d"]',
-                    'feature_list_2["counts_1d"]',
-                    'count_per_category_feature_group["counts_2h"]',
-                    'feature_list_1["counts_2h"]',
-                    'count_per_category_feature_group["counts_30m"]',
-                    'feature_list_1["counts_30m"]',
-                    'feature_group["sum_1d"]',
-                    'feature_list_2["sum_1d"]',
-                    "float_feature",
-                    "unsaved_feature",
-                    'feature_group["sum_30m"]',
-                    'feature_list_1["sum_30m"]',
-                    'feature_list_2["sum_30m"]',
-                    "sum_per_category_feature",
-                    "bool_feature",
-                ],
-                "name": [
-                    "counts_1d",
-                    "counts_1d",
-                    "counts_1d",
-                    "counts_1d",
-                    "counts_2h",
-                    "counts_2h",
-                    "counts_30m",
-                    "counts_30m",
-                    "sum_1d",
-                    "sum_1d",
-                    "sum_1d",
-                    "sum_1d",
-                    "sum_30m",
-                    "sum_30m",
-                    "sum_30m",
-                    "sum_30m",
-                    None,
-                ],
-                "catalog": [
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "catalog",
-                    "test_catalog",
-                ],
-                "active_catalog": [
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    True,
-                    False,
-                ],
-            }
-        )
+        expected_df = pd.DataFrame({
+            "variable_name": [
+                "count_per_category_feature",
+                'count_per_category_feature_group["counts_1d"]',
+                'feature_list_1["counts_1d"]',
+                'feature_list_2["counts_1d"]',
+                'count_per_category_feature_group["counts_2h"]',
+                'feature_list_1["counts_2h"]',
+                'count_per_category_feature_group["counts_30m"]',
+                'feature_list_1["counts_30m"]',
+                'feature_group["sum_1d"]',
+                'feature_list_2["sum_1d"]',
+                "float_feature",
+                "unsaved_feature",
+                'feature_group["sum_30m"]',
+                'feature_list_1["sum_30m"]',
+                'feature_list_2["sum_30m"]',
+                "sum_per_category_feature",
+                "bool_feature",
+            ],
+            "name": [
+                "counts_1d",
+                "counts_1d",
+                "counts_1d",
+                "counts_1d",
+                "counts_2h",
+                "counts_2h",
+                "counts_30m",
+                "counts_30m",
+                "sum_1d",
+                "sum_1d",
+                "sum_1d",
+                "sum_1d",
+                "sum_30m",
+                "sum_30m",
+                "sum_30m",
+                "sum_30m",
+                None,
+            ],
+            "catalog": [
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "catalog",
+                "test_catalog",
+            ],
+            "active_catalog": [
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+            ],
+        })
         assert unsaved_feature_df.columns.tolist() == [
             "object_id",
             "variable_name",
@@ -1773,16 +1761,14 @@ def test_list_unsaved_features(
         feature_list_1.save()
         float_feature.save()
         unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])
-        expected_df = pd.DataFrame(
-            [
-                {
-                    "variable_name": "bool_feature",
-                    "name": None,
-                    "catalog": "test_catalog",
-                    "active_catalog": False,
-                }
-            ]
-        )
+        expected_df = pd.DataFrame([
+            {
+                "variable_name": "bool_feature",
+                "name": None,
+                "catalog": "test_catalog",
+                "active_catalog": False,
+            }
+        ])
         pd.testing.assert_frame_equal(
             unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(
                 drop=True
@@ -2049,9 +2035,7 @@ def test_feature_metadata_extraction(snowflake_event_table):
         feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
         skip_fill_na=True,
         offset=None,
-    )[
-        "total_duration_by_week_hour_28d"
-    ]
+    )["total_duration_by_week_hour_28d"]
     point_in_time = RequestColumn.point_in_time()
     pit_weekday_hour = (
         point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
@@ -2067,9 +2051,7 @@ def test_feature_metadata_extraction(snowflake_event_table):
         feature_job_setting=FeatureJobSetting(blind_spot="0s", period="3600s", offset="0s"),
         skip_fill_na=True,
         offset=None,
-    )[
-        "total_distance_by_week_hour_28d"
-    ]
+    )["total_distance_by_week_hour_28d"]
     lookup_total_distance = total_distance_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
     avg_speed = lookup_total_distance / lookup_total_duration
     avg_speed.name = "pickup_location_avg_speed_week_hour_28d"

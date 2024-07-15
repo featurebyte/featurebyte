@@ -4,9 +4,8 @@ FeatureStore class
 
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, cast
-
 from http import HTTPStatus
+from typing import ClassVar, List, Optional, cast
 
 from typeguard import typechecked
 

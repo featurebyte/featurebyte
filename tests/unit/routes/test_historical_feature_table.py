@@ -195,12 +195,10 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         Test that providing both observation_table_id and observation set DataFrame is not allowed
         """
         test_api_client, _ = test_api_client_persistent
-        df = pd.DataFrame(
-            {
-                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "CUST_ID": ["C1"],
-            }
-        )
+        df = pd.DataFrame({
+            "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+            "CUST_ID": ["C1"],
+        })
         files = {"observation_set": dataframe_to_arrow_bytes(df)}
         response = self.post(test_api_client, self.payload, files=files)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

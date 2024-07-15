@@ -5,6 +5,7 @@ Databricks Tile Generate Job Script
 from typing import Optional
 
 import dateutil.parser
+from pydantic import Field
 
 from featurebyte.common import date_util
 from featurebyte.logging import get_logger
@@ -22,17 +23,16 @@ class TileGenerate(TileCommon):
     """
 
     tile_type: TileType
-    last_tile_start_str: Optional[str]
+    last_tile_start_str: Optional[str] = Field(default=None)
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
         """
         Execute tile generate operation
         """
-        # pylint: disable=too-many-statements
+
         tile_table_exist_flag = await self.table_exists(self.tile_id)
 
-        # pylint: disable=duplicate-code
         await TileRegistry(
             session=self._session,
             sql=self.sql,

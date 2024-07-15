@@ -2,12 +2,11 @@
 Vector node module
 """
 
-from typing import List, Sequence, Tuple
-from typing_extensions import Literal
-
 import textwrap
+from typing import List, Sequence, Tuple
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType

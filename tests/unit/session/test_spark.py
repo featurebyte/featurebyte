@@ -214,6 +214,4 @@ def test_convert_to_internal_variable_type(data_type, expected):
     Test convert_to_internal_variable_type
     """
 
-    assert (
-        SparkSession._convert_to_internal_variable_type(data_type) == expected
-    )  # pylint: disable=protected-access
+    assert SparkSession._convert_to_internal_variable_type(data_type) == expected

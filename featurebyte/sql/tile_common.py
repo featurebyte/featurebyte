@@ -2,9 +2,8 @@
 Base Class for Tile Schedule Instance
 """
 
-from typing import Any
-
 from abc import ABC, abstractmethod
+from typing import Any
 
 from featurebyte.models.tile import TileCommonParameters
 from featurebyte.session.base import BaseSession

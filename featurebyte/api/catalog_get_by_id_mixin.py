@@ -37,9 +37,7 @@ class CatalogGetByIdMixin:
     """
 
     @update_and_reset_catalog
-    def get_data_source_by_feature_store_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> DataSource:
+    def get_data_source_by_feature_store_id(self, id: ObjectId) -> DataSource:
         """
         Get data source by a given feature store id.
 
@@ -63,9 +61,7 @@ class CatalogGetByIdMixin:
         return feature_store.get_data_source()
 
     @update_and_reset_catalog
-    def get_view_by_table_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> View:
+    def get_view_by_table_id(self, id: ObjectId) -> View:
         """
         Get view for a given table id.
 
@@ -89,9 +85,7 @@ class CatalogGetByIdMixin:
         return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
-    def get_feature_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Feature:
+    def get_feature_by_id(self, id: ObjectId) -> Feature:
         """
         Returns a Feature object by its unique identifier (ID).
 
@@ -114,9 +108,7 @@ class CatalogGetByIdMixin:
         return Feature.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_list_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureList:
+    def get_feature_list_by_id(self, id: ObjectId) -> FeatureList:
         """
         Gets a FeatureList object by its unique identifier (ID).
 
@@ -139,9 +131,7 @@ class CatalogGetByIdMixin:
         return FeatureList.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Any:
+    def get_table_by_id(self, id: ObjectId) -> Any:
         """
         Returns a Table object by its unique identifier (ID).
 
@@ -164,9 +154,7 @@ class CatalogGetByIdMixin:
         return Table.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_relationship_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Relationship:
+    def get_relationship_by_id(self, id: ObjectId) -> Relationship:
         """
         Returns a Relationship object by its unique identifier (ID).
 
@@ -189,9 +177,7 @@ class CatalogGetByIdMixin:
         return Relationship.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_job_setting_analysis_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureJobSettingAnalysis:
+    def get_feature_job_setting_analysis_by_id(self, id: ObjectId) -> FeatureJobSettingAnalysis:
         """
         Get feature job setting analysis by id.
 
@@ -209,14 +195,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved feature job setting analysis.
 
-        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis_by_id(ObjectId())  # doctest: +SKIP
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_store_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureStore:
+    def get_feature_store_by_id(self, id: ObjectId) -> FeatureStore:
         """
         Get feature store by id.
 
@@ -239,9 +225,7 @@ class CatalogGetByIdMixin:
         return FeatureStore.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_entity_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Entity:
+    def get_entity_by_id(self, id: ObjectId) -> Entity:
         """
         Returns an Entity object by its unique identifier (ID).
 
@@ -264,9 +248,7 @@ class CatalogGetByIdMixin:
         return Entity.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_periodic_task_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> PeriodicTask:
+    def get_periodic_task_by_id(self, id: ObjectId) -> PeriodicTask:
         """
         Get periodic task by id.
 
@@ -289,9 +271,7 @@ class CatalogGetByIdMixin:
         return PeriodicTask.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_observation_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> ObservationTable:
+    def get_observation_table_by_id(self, id: ObjectId) -> ObservationTable:
         """
         Get observation table by id.
 
@@ -314,9 +294,7 @@ class CatalogGetByIdMixin:
         return ObservationTable.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_historical_feature_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> HistoricalFeatureTable:
+    def get_historical_feature_table_by_id(self, id: ObjectId) -> HistoricalFeatureTable:
         """
         Get historical feature table by id.
 
@@ -334,14 +312,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved historical feature table.
 
-        >>> historiacl_feature_table = catalog.get_historical_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> historiacl_feature_table = catalog.get_historical_feature_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_batch_request_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> BatchRequestTable:
+    def get_batch_request_table_by_id(self, id: ObjectId) -> BatchRequestTable:
         """
         Get batch request table by id.
 
@@ -359,14 +337,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved batch request table.
 
-        >>> batch_request_table = catalog.get_batch_request_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return BatchRequestTable.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_batch_feature_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> BatchFeatureTable:
+    def get_batch_feature_table_by_id(self, id: ObjectId) -> BatchFeatureTable:
         """
         Get batch feature table task by id.
 
@@ -384,14 +362,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return BatchFeatureTable.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_static_source_table_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> StaticSourceTable:
+    def get_static_source_table_by_id(self, id: ObjectId) -> StaticSourceTable:
         """
         Get static source table by id.
 
@@ -409,14 +387,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved static source table.
 
-        >>> static_source_table = catalog.get_static_source_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return StaticSourceTable.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_deployment_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Deployment:
+    def get_deployment_by_id(self, id: ObjectId) -> Deployment:
         """
         Get deployment by id.
 
@@ -439,9 +417,7 @@ class CatalogGetByIdMixin:
         return Deployment.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_user_defined_function_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> UserDefinedFunction:
+    def get_user_defined_function_by_id(self, id: ObjectId) -> UserDefinedFunction:
         """
         Get user defined function by id.
 
@@ -459,14 +435,14 @@ class CatalogGetByIdMixin:
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function_by_id(ObjectId())  # doctest: +SKIP
+        >>> user_defined_function = catalog.get_user_defined_function_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return UserDefinedFunction.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_target_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Target:
+    def get_target_by_id(self, id: ObjectId) -> Target:
         """
         Get target by id.
 
@@ -489,9 +465,7 @@ class CatalogGetByIdMixin:
         return Target.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_use_case_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> UseCase:
+    def get_use_case_by_id(self, id: ObjectId) -> UseCase:
         """
         Get use case by id.
 
@@ -514,9 +488,7 @@ class CatalogGetByIdMixin:
         return UseCase.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_context_by_id(
-        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Context:
+    def get_context_by_id(self, id: ObjectId) -> Context:
         """
         Get context by id.
 

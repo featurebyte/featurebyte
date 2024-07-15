@@ -2,10 +2,9 @@
 This module contains entity relationship info related classes.
 """
 
-from typing import Dict, List, Optional, Sequence, Set
-
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence, Set
 
 from bson import ObjectId
 from pydantic import Field

@@ -2,12 +2,10 @@
 Unit tests for StaticSourceTable class
 """
 
-from unittest.mock import Mock, call, patch
+from unittest.mock import call
 
-import pandas as pd
 import pytest
 
-from featurebyte.api.source_table import SourceTable
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.exception import RecordRetrievalException
 

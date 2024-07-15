@@ -4,9 +4,8 @@ Feature API routes
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union, cast
-
 from http import HTTPStatus
+from typing import Any, Dict, Optional, Union, cast
 
 from fastapi import APIRouter, Query, Request
 

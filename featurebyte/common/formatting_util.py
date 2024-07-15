@@ -4,11 +4,10 @@ Utility functions for formatting data in Jupyter notebooks
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union
-
 import copy
 import re
 from datetime import datetime
+from typing import Any, Dict, Union
 from xml.dom import getDOMImplementation
 from xml.dom.minidom import Document, Element
 
