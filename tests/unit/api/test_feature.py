@@ -1582,11 +1582,12 @@ def test_list_unsaved_features(
         activate_and_get_catalog("catalog")
 
         # create unsaved features
-        FeatureGroup(
+        unsaved_feature = float_feature  # noqa
+        feature_group = FeatureGroup(  # noqa
             [float_feature, sum_per_category_feature],
         )
         feature_list_1 = FeatureList([count_per_category_feature_group, sum_per_category_feature], name="FL1")
-        FeatureList([float_feature, sum_per_category_feature, count_per_category_feature], name="FL2")
+        feature_list_2 = FeatureList([float_feature, sum_per_category_feature, count_per_category_feature], name="FL2")  # noqa
 
         # test list unsaved features
         unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])

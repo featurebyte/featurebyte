@@ -537,11 +537,6 @@ __all__ = [
     # online store config
     "RedisOnlineStoreDetails",
     "MySQLOnlineStoreDetails",
-    "iterate_api_object_using_paginated_routes",
-    "BaseFeatureGroup",
-    "Series",
-    "import_dataset",
-    "KerberosKeytabCredential",
 ]
 
 

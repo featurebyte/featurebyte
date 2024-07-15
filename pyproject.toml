@@ -7,6 +7,12 @@ requires = ["poetry_core>=1.0.0"]
 [tool.bandit]
 skips = ["B608"]
 
+[tool.black]
+color = true
+exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__|docker|tests/fixtures/sdk_code)/'
+line-length = 100
+target-version = ["py39"]
+
 [tool.coverage.report] # https://coverage.readthedocs.io/en/6.4.1/config.html#run
 exclude_lines = [
     "pragma: no cover",
@@ -216,7 +222,7 @@ norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".g
 
 [tool.ruff]
 preview = true
-extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site"]
+extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures/"]
 line-length = 120
 indent-width = 4
 target-version = "py39"
