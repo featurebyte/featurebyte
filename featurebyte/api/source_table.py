@@ -2,12 +2,14 @@
 SourceTable class
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 from abc import ABC, abstractmethod
 from datetime import datetime
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -109,7 +111,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         tabular_source = dict(values["tabular_source"])
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist in the input
-            from featurebyte.api.feature_store import (
+            from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
                 FeatureStore,
             )
 
@@ -310,16 +312,16 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         Sample 3 rows from the table with timestamps.
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
         >>> event_table.sample(  # doctest: +SKIP
-        ...     size=3,
-        ...     seed=111,
-        ...     from_timestamp=datetime(2019, 1, 1),
-        ...     to_timestamp=datetime(2023, 12, 31),
-        ...     after_cleaning=True,
+        ...   size=3,
+        ...   seed=111,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2023, 12, 31),
+        ...   after_cleaning=True,
         ... )
 
         See Also
@@ -346,6 +348,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
+        # pylint: disable=line-too-long
         """
         Returns descriptive statistics of the table columns.
 
@@ -372,8 +375,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         Get a summary of a view.
 
         >>> catalog.get_table("GROCERYINVOICE").describe(
-        ...     from_timestamp=datetime(2022, 1, 1),
-        ...     to_timestamp=datetime(2022, 12, 31),
+        ...   from_timestamp=datetime(2022, 1, 1),
+        ...   to_timestamp=datetime(2022, 12, 31),
         ... )
                                     GroceryInvoiceGuid                   GroceryCustomerGuid                      Timestamp            record_available_at     Amount
         dtype                                  VARCHAR                               VARCHAR                      TIMESTAMP                      TIMESTAMP      FLOAT
@@ -509,16 +512,18 @@ class SourceTable(AbstractTableData):
 
         >>> # Register GroceryInvoice as an event data
         >>> source_table = ds.get_source_table(  # doctest: +SKIP
-        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYINVOICE"
         ... )
         >>> invoice_table = source_table.create_event_table(  # doctest: +SKIP
-        ...     name="GROCERYINVOICE",
-        ...     event_id_column="GroceryInvoiceGuid",
-        ...     event_timestamp_column="Timestamp",
-        ...     record_creation_timestamp_column="record_available_at",
+        ...   name="GROCERYINVOICE",
+        ...   event_id_column="GroceryInvoiceGuid",
+        ...   event_timestamp_column="Timestamp",
+        ...   record_creation_timestamp_column="record_available_at"
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
 
         return EventTable.create(
@@ -588,16 +593,18 @@ class SourceTable(AbstractTableData):
 
         >>> # Register invoice items as an item table
         >>> source_table = ds.get_table(  # doctest: +SKIP
-        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="INVOICEITEMS"
         ... )
         >>> source_table.create_item_table(  # doctest: +SKIP
-        ...     name="INVOICEITEMS",
-        ...     event_id_column="GroceryInvoiceGuid",
-        ...     item_id_column="GroceryInvoiceItemGuid",
-        ...     event_table_name="GROCERYINVOICE",
+        ...   name="INVOICEITEMS",
+        ...   event_id_column="GroceryInvoiceGuid",
+        ...   item_id_column="GroceryInvoiceItemGuid",
+        ...   event_table_name="GROCERYINVOICE"
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
         from featurebyte.api.item_table import ItemTable
 
@@ -665,13 +672,16 @@ class SourceTable(AbstractTableData):
 
         >>> # Register GroceryProduct as a dimension table
         >>> source_table = ds.get_table(  # doctest: +SKIP
-        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYPRODUCT"
         ... )
         >>> product_table = source_table.create_dimension_table(  # doctest: +SKIP
-        ...     name="GROCERYPRODUCT", dimension_id_column="GroceryProductGuid"
+        ...   name="GROCERYPRODUCT",
+        ...   dimension_id_column="GroceryProductGuid"
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.create(
@@ -755,18 +765,20 @@ class SourceTable(AbstractTableData):
 
         >>> # Declare the grocery customer table
         >>> source_table = ds.get_table(  # doctest: +SKIP
-        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYCUSTOMER"
         ... )
         >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
-        ...     name="GROCERYCUSTOMER",
-        ...     surrogate_key_column="RowID",
-        ...     natural_key_column="GroceryCustomerGuid",
-        ...     effective_timestamp_column="ValidFrom",
-        ...     current_flag_column="CurrentRecord",
-        ...     record_creation_timestamp_column="record_available_at",
+        ...    name="GROCERYCUSTOMER",
+        ...    surrogate_key_column='RowID',
+        ...    natural_key_column="GroceryCustomerGuid",
+        ...    effective_timestamp_column="ValidFrom",
+        ...    current_flag_column ="CurrentRecord",
+        ...    record_creation_timestamp_column="record_available_at"
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.create(
@@ -817,7 +829,7 @@ class SourceTable(AbstractTableData):
         -------
         EventTable
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
 
         return EventTable.get_or_create(
@@ -868,7 +880,7 @@ class SourceTable(AbstractTableData):
         -------
         ItemTable
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
         from featurebyte.api.item_table import ItemTable
 
@@ -916,7 +928,7 @@ class SourceTable(AbstractTableData):
         -------
         DimensionTable
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.get_or_create(
@@ -973,7 +985,7 @@ class SourceTable(AbstractTableData):
         -------
         SCDTable
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.get_or_create(
@@ -1055,7 +1067,7 @@ class SourceTable(AbstractTableData):
         ...   context_id=context_id,
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.context import Context
         from featurebyte.api.observation_table import ObservationTable
 
@@ -1127,7 +1139,7 @@ class SourceTable(AbstractTableData):
         ...   columns_rename_mapping={ <entity_column_name>: <entity_serving_name>, }
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.batch_request_table import BatchRequestTable
 
         payload = BatchRequestTableCreate(
@@ -1181,11 +1193,11 @@ class SourceTable(AbstractTableData):
         ...   table_name=<table_name>
         ... )
         >>> static_source_table = source_table.create_static_source_table(  # doctest: +SKIP
-        ...     name="<static_source_table_name>",
-        ...     sample_rows=desired_sample_size,
+        ...   name="<static_source_table_name>",
+        ...   sample_rows=desired_sample_size,
         ... )
         """
-
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.static_source_table import StaticSourceTable
 
         payload = StaticSourceTableCreate(
@@ -1205,7 +1217,7 @@ class SourceTable(AbstractTableData):
 
     @perf_logging
     @typechecked
-    def preview(self, limit: int = 10) -> pd.DataFrame:
+    def preview(self, limit: int = 10) -> pd.DataFrame:  # pylint: disable=arguments-differ
         """
         Retrieve a preview of the source table / column.
 
@@ -1251,7 +1263,7 @@ class SourceTable(AbstractTableData):
 
     @perf_logging
     @typechecked
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> Tuple[int, int]:  # pylint: disable=arguments-differ
         """
         Return the shape of the source table
 

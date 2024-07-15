@@ -4,8 +4,9 @@ Module with utility functions to compute historical features
 
 from __future__ import annotations
 
-import time
 from typing import Any, Callable, Coroutine, Optional, Union
+
+import time
 
 import pandas as pd
 from bson import ObjectId
@@ -37,7 +38,7 @@ from featurebyte.session.session_helper import execute_feature_query_set
 logger = get_logger(__name__)
 
 
-async def compute_tiles_on_demand(
+async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
     session: BaseSession,
     tile_cache_service: TileCacheService,
     graph: QueryGraph,
@@ -116,7 +117,7 @@ async def compute_tiles_on_demand(
             )
 
 
-async def get_historical_features(
+async def get_historical_features(  # pylint: disable=too-many-locals, too-many-arguments
     session: BaseSession,
     tile_cache_service: TileCacheService,
     graph: QueryGraph,

@@ -132,7 +132,7 @@ def patched_num_features_per_query():
 @pytest.fixture(name="expected_online_feature_query")
 def expected_online_feature_query_fixture():
     """Expected query for online feature"""
-
+    # pylint: disable=line-too-long
     return textwrap.dedent(
         '''
         WITH ONLINE_REQUEST_TABLE AS (
@@ -295,6 +295,7 @@ async def test_feature_list_deployed_with_batch_request_table(
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
 
+    # pylint: disable=line-too-long
     expected = textwrap.dedent(
         '''
         CREATE TABLE "some_database"."some_schema"."some_table" AS

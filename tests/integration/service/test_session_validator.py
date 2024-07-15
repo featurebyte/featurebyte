@@ -38,7 +38,7 @@ async def get_reset_session_fixture(session_manager, feature_store_details, feat
         session_type=SourceType.SNOWFLAKE,
         details=feature_store_details,
     )
-    await session.execute_query("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = NULL")
+    await session.execute_query(f"UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = NULL")
 
 
 @pytest.mark.skip(reason="skipping while we rollback the default state")

@@ -4,9 +4,10 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
+from typing import Any, AsyncIterator, Dict, Optional
+
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Optional
 
 from bson import ObjectId, json_util
 from redis.lock import Lock
@@ -170,10 +171,9 @@ class OfflineStoreFeatureTableService(
                 # attempt to remove the old feature cluster
                 await self.storage.try_delete_if_exists(Path(original_doc.feature_cluster_path))
 
-            table = OfflineStoreFeatureTableModel(**{
-                **original_doc.dict(by_alias=True),
-                **data.dict(by_alias=True),
-            })
+            table = OfflineStoreFeatureTableModel(
+                **{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)}
+            )
             table = await self._move_feature_cluster_to_storage(table)
             data.feature_cluster = None
             data.feature_cluster_path = table.feature_cluster_path

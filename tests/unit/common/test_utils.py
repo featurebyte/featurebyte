@@ -26,10 +26,12 @@ def data_to_convert_fixture():
     """
     Dataframe fixture for conversion test
     """
-    dataframe = pd.DataFrame({
-        "a": range(10),
-        "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
-    })
+    dataframe = pd.DataFrame(
+        {
+            "a": range(10),
+            "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
+        }
+    )
     type_conversions = {"b": DBVarType.TIMESTAMP_TZ}
     return dataframe, type_conversions
 

@@ -4,10 +4,11 @@ List handler
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Type
+
 import json
 from functools import partial
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Type
 
 import pandas as pd
 from pandas import DataFrame

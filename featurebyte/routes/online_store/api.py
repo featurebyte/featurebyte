@@ -38,6 +38,8 @@ class OnlineStoreRouter(
     Feature Store API router
     """
 
+    # pylint: disable=arguments-renamed
+
     object_model = OnlineStoreRead
     list_object_model = OnlineStoreList
     create_object_schema = OnlineStoreCreate

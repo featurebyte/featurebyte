@@ -4,9 +4,9 @@ This module contains datetime operation related node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing_extensions import Literal
 
 from pydantic import Field
-from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel

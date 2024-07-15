@@ -4,8 +4,9 @@ Common utilities for Spark SQL
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from typing import AsyncIterator
+
+from contextlib import asynccontextmanager
 
 from bson import ObjectId
 

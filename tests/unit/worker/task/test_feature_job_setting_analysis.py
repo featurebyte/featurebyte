@@ -142,7 +142,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_success(
+    async def test_execute_success(  # pylint: disable=too-many-locals
         self, task_completed, mongo_persistent, progress, update_fixtures, storage
     ):
         """
@@ -194,7 +194,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_without_event_table_success(
+    async def test_execute_without_event_table_success(  # pylint: disable=too-many-locals
         self,
         catalog,
         mongo_persistent,
@@ -257,7 +257,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_with_databricks_store_success(
+    async def test_execute_with_databricks_store_success(  # pylint: disable=too-many-locals
         self,
         catalog,
         mongo_persistent,

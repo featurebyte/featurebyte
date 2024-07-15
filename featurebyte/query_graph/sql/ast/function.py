@@ -4,8 +4,9 @@ Generic function related SQLNode
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, List, cast
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression

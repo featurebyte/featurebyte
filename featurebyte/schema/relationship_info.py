@@ -2,8 +2,9 @@
 Relationship Info payload schema
 """
 
-from datetime import datetime
 from typing import List, Optional
+
+from datetime import datetime
 
 from bson import ObjectId
 from pydantic import Field

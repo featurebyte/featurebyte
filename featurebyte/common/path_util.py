@@ -4,11 +4,12 @@ Utilities to retrieve paths related information
 
 from __future__ import annotations
 
+from typing import Any
+
 import importlib
 import os
 import pkgutil
 import sys
-from typing import Any
 
 
 def get_package_root() -> str:

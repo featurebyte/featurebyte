@@ -2,8 +2,9 @@
 Catalog decorator.
 """
 
-from functools import wraps
 from typing import Any
+
+from functools import wraps
 
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog, get_active_catalog_id

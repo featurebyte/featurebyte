@@ -2,7 +2,6 @@
 Implement graph data structure for query graph
 """
 
-from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
@@ -18,10 +17,12 @@ from typing import (
     Union,
     cast,
 )
+from typing_extensions import Literal
+
+from collections import OrderedDict, defaultdict
 
 from bson import ObjectId
 from pydantic import Field
-from typing_extensions import Literal
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import GraphNodeType, NodeType

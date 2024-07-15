@@ -4,11 +4,12 @@ Extract resource details given a path descriptor.
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, get_type_hints
+
 import inspect
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, get_type_hints
 
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
@@ -239,7 +240,7 @@ def _get_param_details(
         # If the type is already a string, just use that as the type.
         # If we pass it into format_param_type, the returned value will be enclosed in quotes, such as `'"str"'`, which
         # looks weird.
-        if isinstance(param_type, str):
+        if type(param_type) == str:
             param_type_string = param_type
         else:
             param_type_string = format_param_type(param_type) if param_type else None

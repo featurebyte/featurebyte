@@ -27,15 +27,19 @@ async def test_download_table(
     """
 
     # mock row count query
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
-        "row_count": [100],
-    })
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "row_count": [100],
+        }
+    )
 
     # mock list_table_schema query
-    df_list_table_schema = pd.DataFrame({
-        "col_a": {"name": "col_a"},
-        "col_b": {"name": "col_b"},
-    })
+    df_list_table_schema = pd.DataFrame(
+        {
+            "col_a": {"name": "col_a"},
+            "col_b": {"name": "col_b"},
+        }
+    )
     if has_row_index:
         df_list_table_schema["__FB_TABLE_ROW_INDEX"] = {"name": "__FB_TABLE_ROW_INDEX"}
     mock_snowflake_session.list_table_schema.return_value = df_list_table_schema
@@ -88,9 +92,11 @@ async def test_table_shape(
         "col_a": {"name": "col_a"},
         "col_b": {"name": "col_b"},
     }
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
-        "row_count": [100],
-    })
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "row_count": [100],
+        }
+    )
     result = await feature_store_warehouse_service.table_shape(
         location=TabularSource(
             feature_store_id=feature_store.id,
@@ -113,10 +119,12 @@ async def test_table_preview(
     """
     Test value counts
     """
-    expected_data = pd.DataFrame({
-        "col_a": [1, 2, 3],
-        "col_b": ["a", "b", "c"],
-    })
+    expected_data = pd.DataFrame(
+        {
+            "col_a": [1, 2, 3],
+            "col_b": ["a", "b", "c"],
+        }
+    )
     mock_snowflake_session.execute_query.return_value = expected_data
     result = await feature_store_warehouse_service.table_preview(
         location=TabularSource(

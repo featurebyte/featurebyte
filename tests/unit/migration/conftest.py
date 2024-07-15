@@ -2,13 +2,17 @@
 This module contains common fixtures used in tests/unit/migration directory
 """
 
-from unittest.mock import Mock
+from contextlib import asynccontextmanager
+from unittest.mock import Mock, patch
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
+from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 
 

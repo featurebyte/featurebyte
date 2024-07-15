@@ -1,7 +1,7 @@
+# pylint: disable=too-many-lines
 """
 Common test fixtures used across unit test directories
 """
-
 import copy
 import json
 import logging
@@ -113,7 +113,9 @@ def mock_websocket_client_fixture(request):
         with mock.patch(
             "featurebyte.config.Configurations.get_websocket_client"
         ) as mock_get_websocket_client:
-            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = None
+            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = (
+                None
+            )
             yield mock_get_websocket_client
 
 
@@ -2060,7 +2062,7 @@ def session_manager_fixture(credentials, snowflake_connector):
     """
     Session manager fixture
     """
-
+    # pylint: disable=E1101
     _ = snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)
@@ -2347,7 +2349,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 

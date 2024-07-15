@@ -61,6 +61,6 @@ def test_get_definition_for_obs_table_creation_from_view(
 
     # Try to run the code to test that it works
     local_vars = {}
-    exec(definition, {}, local_vars)
+    exec(definition, {}, local_vars)  # pylint: disable=exec-used
     observation_table = local_vars["output"]
     assert observation_table.name == "test_obs_table"

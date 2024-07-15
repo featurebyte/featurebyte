@@ -6,9 +6,10 @@ This contains all our registrations for dependency injection.
 
 from __future__ import annotations
 
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
+
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
 
 from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 

@@ -4,12 +4,13 @@ Persistent storage using MongoDB
 
 from __future__ import annotations
 
+from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
+
 import asyncio
 import copy
 from asyncio import iscoroutine
 from collections import OrderedDict
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
 
 import pymongo
 from bson import ObjectId
@@ -46,7 +47,7 @@ class MongoDB(Persistent):
 
         if not client:
             # use global client to enforce connection throttling
-            global MONGODB_CLIENT
+            global MONGODB_CLIENT  # pylint: disable=global-statement
             if MONGODB_CLIENT is None:
                 MONGODB_CLIENT = AsyncIOMotorClient(uri, uuidRepresentation="standard")
 
@@ -224,10 +225,12 @@ class MongoDB(Persistent):
             Retrieved documents
         """
         if sort_by:
-            sort = OrderedDict([
-                (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
-                for sort_key, sort_dir in sort_by
-            ])
+            sort = OrderedDict(
+                [
+                    (str(sort_key), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)
+                    for sort_key, sort_dir in sort_by
+                ]
+            )
             if "_id" not in sort:
                 sort["_id"] = pymongo.DESCENDING  # break ties using _id
         else:

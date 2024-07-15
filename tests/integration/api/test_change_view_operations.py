@@ -110,41 +110,45 @@ async def test_change_view_correctness(session, data_source):
     """
     Test ChangeView correctness
     """
-    df = pd.DataFrame([
-        {"effective_ts": "2022-01-01 00:00:00", "column": "a"},  # first entry
-        {"effective_ts": "2022-01-02 00:00:00", "column": "a"},
-        {"effective_ts": "2022-01-03 00:00:00", "column": "b"},  # changed: a -> b
-        {"effective_ts": "2022-01-04 00:00:00", "column": "b"},
-        {"effective_ts": "2022-01-05 00:00:00", "column": "b"},
-        {"effective_ts": "2022-01-06 00:00:00", "column": "c"},  # changed: b -> c
-        {"effective_ts": "2022-01-07 00:00:00", "column": "c"},
-    ])
+    df = pd.DataFrame(
+        [
+            {"effective_ts": "2022-01-01 00:00:00", "column": "a"},  # first entry
+            {"effective_ts": "2022-01-02 00:00:00", "column": "a"},
+            {"effective_ts": "2022-01-03 00:00:00", "column": "b"},  # changed: a -> b
+            {"effective_ts": "2022-01-04 00:00:00", "column": "b"},
+            {"effective_ts": "2022-01-05 00:00:00", "column": "b"},
+            {"effective_ts": "2022-01-06 00:00:00", "column": "c"},  # changed: b -> c
+            {"effective_ts": "2022-01-07 00:00:00", "column": "c"},
+        ]
+    )
     df["effective_ts"] = pd.to_datetime(df["effective_ts"])
     df["cust_id"] = "c1"
 
-    df_expected = pd.DataFrame([
-        {
-            "new_effective_ts": "2022-01-01 00:00:00",
-            "past_effective_ts": np.nan,
-            "new_column": "a",
-            "past_column": np.nan,
-            "past_column_lag": np.nan,
-        },
-        {
-            "new_effective_ts": "2022-01-03 00:00:00",
-            "past_effective_ts": "2022-01-01 00:00:00",
-            "new_column": "b",
-            "past_column": "a",
-            "past_column_lag": np.nan,
-        },
-        {
-            "new_effective_ts": "2022-01-06 00:00:00",
-            "past_effective_ts": "2022-01-03 00:00:00",
-            "new_column": "c",
-            "past_column": "b",
-            "past_column_lag": "a",
-        },
-    ])
+    df_expected = pd.DataFrame(
+        [
+            {
+                "new_effective_ts": "2022-01-01 00:00:00",
+                "past_effective_ts": np.nan,
+                "new_column": "a",
+                "past_column": np.nan,
+                "past_column_lag": np.nan,
+            },
+            {
+                "new_effective_ts": "2022-01-03 00:00:00",
+                "past_effective_ts": "2022-01-01 00:00:00",
+                "new_column": "b",
+                "past_column": "a",
+                "past_column_lag": np.nan,
+            },
+            {
+                "new_effective_ts": "2022-01-06 00:00:00",
+                "past_effective_ts": "2022-01-03 00:00:00",
+                "new_column": "c",
+                "past_column": "b",
+                "past_column_lag": "a",
+            },
+        ]
+    )
     df_expected["new_effective_ts"] = pd.to_datetime(df_expected["new_effective_ts"])
     df_expected["past_effective_ts"] = pd.to_datetime(df_expected["past_effective_ts"])
     df_expected.insert(0, "cust_id", "c1")

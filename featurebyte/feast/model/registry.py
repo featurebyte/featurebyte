@@ -2,10 +2,13 @@
 Feast registry model
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from pathlib import Path
+
 import pymongo
+
+# pylint: disable=no-name-in-module
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from pydantic import Field
 

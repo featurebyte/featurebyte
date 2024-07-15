@@ -6,8 +6,9 @@ We split this into a separate service, as these typically require a session obje
 
 from __future__ import annotations
 
-import os
 from typing import Any, AsyncGenerator, List, Optional, Tuple
+
+import os
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix

@@ -4,9 +4,10 @@ Utility functions
 
 from __future__ import annotations
 
+from typing import Any, Dict, List
+
 import hashlib
 import json
-from typing import Any, Dict, List
 
 from bson import json_util
 
@@ -49,7 +50,7 @@ def hash_node(
         sort_keys=True,
     ).encode("utf-8")
     hasher.update(hash_data)
-    hash_result = hasher.hexdigest(20)
+    hash_result = hasher.hexdigest(20)  # pylint: disable=E1121
     return hash_result
 
 
@@ -69,7 +70,7 @@ def hash_input_node_hashes(input_node_hashes: List[str]) -> str:
     hasher = hashlib.shake_128()
     hash_data = json_util.dumps(tuple(input_node_hashes), sort_keys=True).encode("utf-8")
     hasher.update(hash_data)
-    hash_result = hasher.hexdigest(20)
+    hash_result = hasher.hexdigest(20)  # pylint: disable=E1121
     return hash_result
 
 
@@ -130,7 +131,7 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     hasher.update(json.dumps(hash_components, sort_keys=True).encode("utf-8"))
 
     # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
-    aggregation_identifier = "_".join([prefix, hasher.hexdigest(20)])
+    aggregation_identifier = "_".join([prefix, hasher.hexdigest(20)])  # pylint: disable=E1121
     return aggregation_identifier
 
 
@@ -185,7 +186,7 @@ def get_tile_table_identifier_v1(row_index_lineage_hash: str, parameters: dict[s
     hasher.update(json.dumps(hash_components, sort_keys=True).encode("utf-8"))
 
     # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
-    tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])
+    tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])  # pylint: disable=E1121
     return tile_table_identifier.upper()
 
 

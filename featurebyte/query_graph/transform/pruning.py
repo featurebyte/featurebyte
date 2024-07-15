@@ -184,10 +184,12 @@ class NodeParametersPruningExtractor(
                 target_node_names = self.graph.edges_map[node.name]
                 for target_node_name in target_node_names:
                     target_node = self.graph.get_node_by_name(target_node_name)
-                    target_node_input_order_pairs.append((
-                        target_node,
-                        self.graph.get_input_node_names(target_node).index(node.name),
-                    ))
+                    target_node_input_order_pairs.append(
+                        (
+                            target_node,
+                            self.graph.get_input_node_names(target_node).index(node.name),
+                        )
+                    )
 
             node = node.prune(
                 target_node_input_order_pairs=target_node_input_order_pairs,

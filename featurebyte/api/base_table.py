@@ -2,18 +2,20 @@
 DataColumn class
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
+
+from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing_extensions import Literal
 
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 import pandas as pd
 from bson import ObjectId
 from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
-from typing_extensions import Literal
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -97,9 +99,9 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...    ]
         ... )
         >>> event_table["Amount"].cleaning_operations
         [MissingValueImputation(imputed_value=0.0)]
@@ -177,12 +179,12 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(
-        ...             type="less_than", end_point=0, imputed_value=0
-        ...         ),
-        ...     ]
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...        fb.ValueBeyondEndpointImputation(
+        ...            type="less_than", end_point=0, imputed_value=0
+        ...        ),
+        ...    ]
         ... )
 
         Show column cleaning operations of the event table.
@@ -300,11 +302,14 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
-        >>> description = event_table.preview(limit=5, after_cleaning=True)
+        >>> description = event_table.preview(
+        ...   limit=5,
+        ...   after_cleaning=True
+        ... )
         """
         return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
 
@@ -371,16 +376,16 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Sample 3 rows from the table with timestamps after cleaning operations have been applied.
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
         >>> event_table["Amount"].sample(  # doctest: +SKIP
-        ...     size=3,
-        ...     seed=111,
-        ...     from_timestamp=datetime(2019, 1, 1),
-        ...     to_timestamp=datetime(2023, 12, 31),
-        ...     after_cleaning=True,
+        ...   size=3,
+        ...   seed=111,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2023, 12, 31),
+        ...   after_cleaning=True,
         ... )
         """
         return self.parent.sample(
@@ -428,8 +433,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> description = event_table["Amount"].describe(
-        ...     from_timestamp=datetime(2020, 1, 1),
-        ...     to_timestamp=datetime(2020, 1, 31),
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
         ... )
 
 
@@ -437,14 +442,14 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
         >>> description = event_table["Amount"].describe(
-        ...     from_timestamp=datetime(2020, 1, 1),
-        ...     to_timestamp=datetime(2020, 1, 31),
-        ...     after_cleaning=True,
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ...   after_cleaning=True
         ... )
         """
         return self.parent.describe(
@@ -528,7 +533,7 @@ class TableApiObject(
         -------
         List[PydanticObjectId]
         """
-        return self.cached_model.entity_ids
+        return self.cached_model.entity_ids  # pylint: disable=no-member
 
     @property
     def table_data(self) -> BaseTableData:
@@ -568,7 +573,7 @@ class TableApiObject(
         - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
         """
         try:
-            return self.cached_model.columns_info
+            return self.cached_model.columns_info  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_columns_info
 
@@ -586,7 +591,7 @@ class TableApiObject(
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
         """
-        return self.cached_model.catalog_id
+        return self.cached_model.catalog_id  # pylint: disable=no-member
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -598,7 +603,7 @@ class TableApiObject(
         List[str]
             List of primary key columns
         """
-        return self.cached_model.primary_key_columns
+        return self.cached_model.primary_key_columns  # pylint: disable=no-member
 
     @property
     def status(self) -> TableStatus:
@@ -614,7 +619,7 @@ class TableApiObject(
             Table status
         """
         try:
-            return self.cached_model.status
+            return self.cached_model.status  # pylint: disable=no-member
         except RecordRetrievalException:
             return TableStatus.PUBLIC_DRAFT
 
@@ -632,12 +637,13 @@ class TableApiObject(
             Record creation timestamp column name
         """
         try:
-            return self.cached_model.record_creation_timestamp_column
+            return self.cached_model.record_creation_timestamp_column  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_record_creation_timestamp_column
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        # pylint: disable=line-too-long
         """
         List of column cleaning operations associated with this table. Column cleaning operation is a list of
         cleaning operations to be applied to a column of this table.
@@ -653,12 +659,12 @@ class TableApiObject(
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(
-        ...             type="less_than", end_point=0, imputed_value=0
-        ...         ),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...     fb.ValueBeyondEndpointImputation(
+        ...       type="less_than", end_point=0, imputed_value=0
+        ...     ),
+        ...   ]
         ... )
         >>> event_table.column_cleaning_operations
         [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0), ValueBeyondEndpointImputation(imputed_value=0.0, type=less_than, end_point=0.0)])]
@@ -666,7 +672,9 @@ class TableApiObject(
         Empty list of column cleaning operations after resetting the cleaning operations.
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table["Amount"].update_critical_data_info(
+        ...   cleaning_operations=[]
+        ... )
         >>> event_table.column_cleaning_operations
         []
 
@@ -686,7 +694,7 @@ class TableApiObject(
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(**self.dict(by_alias=True))
+        data = self._create_schema_class(**self.dict(by_alias=True))  # pylint: disable=not-callable
         return data.json_dict()
 
     @classmethod
@@ -729,7 +737,7 @@ class TableApiObject(
         assert cls._create_schema_class is not None
 
         data_id_value = _id or ObjectId()
-        data = cls._create_schema_class(
+        data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=data_id_value,
             name=name,
             tabular_source=source_table.tabular_source,
@@ -840,22 +848,22 @@ class TableApiObject(
         Describe a table without cleaning operations
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> description = event_table.describe(
-        ...     from_timestamp=datetime(2020, 1, 1),
-        ...     to_timestamp=datetime(2020, 1, 31),
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
         ... )
 
 
         Describe a table after cleaning operations have been applied.
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
         >>> description = event_table.describe(
-        ...     from_timestamp=datetime(2020, 1, 1),
-        ...     to_timestamp=datetime(2020, 1, 31),
-        ...     after_cleaning=True,
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ...   after_cleaning=True
         ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
@@ -890,11 +898,14 @@ class TableApiObject(
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
-        ...     cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...     ]
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
         ... )
-        >>> description = event_table.preview(limit=5, after_cleaning=True)
+        >>> description = event_table.preview(
+        ...   limit=5,
+        ...   after_cleaning=True
+        ... )
         """
         return super().preview(limit=limit, after_cleaning=after_cleaning)
 

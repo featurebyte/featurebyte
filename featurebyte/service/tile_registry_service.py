@@ -4,8 +4,9 @@ TileRegistryService class
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
+
+from datetime import datetime
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.tile import TileType

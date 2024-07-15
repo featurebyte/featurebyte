@@ -73,39 +73,51 @@ async def test_scd_join_small(session, data_source, source_type):
     """
     Self-contained test case to test SCD with small datasets
     """
-    df_events = pd.DataFrame({
-        "ts": pd.to_datetime([
-            "2022-04-10 10:00:00",
-            "2022-04-15 10:00:00",
-            "2022-04-20 10:00:00",
-            "1970-01-01 00:00:00",  # To be modified as None later
-        ]),
-        "cust_id": [1000, 1000, 1000, 1000],
-        "event_id": [1, 2, 3, 4],
-    })
-    df_scd = pd.DataFrame({
-        "effective_ts": pd.to_datetime([
-            "2022-04-12 10:00:00",
-            "2022-04-20 10:00:00",
-            "1970-01-01 00:00:00",  # To be modified as None later
-        ]),
-        "scd_cust_id": [1000, 1000, 1000],
-        "scd_value": [1, 2, 3],
-    })
+    df_events = pd.DataFrame(
+        {
+            "ts": pd.to_datetime(
+                [
+                    "2022-04-10 10:00:00",
+                    "2022-04-15 10:00:00",
+                    "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
+                ]
+            ),
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [1, 2, 3, 4],
+        }
+    )
+    df_scd = pd.DataFrame(
+        {
+            "effective_ts": pd.to_datetime(
+                [
+                    "2022-04-12 10:00:00",
+                    "2022-04-20 10:00:00",
+                    "1970-01-01 00:00:00",  # To be modified as None later
+                ]
+            ),
+            "scd_cust_id": [1000, 1000, 1000],
+            "scd_value": [1, 2, 3],
+        }
+    )
     # Insert duplicate rows to ensure it can be handled (only one row should be joined)
     df_scd = pd.concat([df_scd, df_scd], ignore_index=True)
-    df_expected = pd.DataFrame({
-        "ts": pd.to_datetime([
-            pd.NaT,
-            "2022-04-10 10:00:00",
-            "2022-04-15 10:00:00",
-            "2022-04-20 10:00:00",
-        ]),
-        "cust_id": [1000, 1000, 1000, 1000],
-        "event_id": [4, 1, 2, 3],
-        "scd_value_latest": [np.nan, np.nan, 1, 2],
-        "scd_value_latest_v2": [np.nan, np.nan, 1, 2],
-    })
+    df_expected = pd.DataFrame(
+        {
+            "ts": pd.to_datetime(
+                [
+                    pd.NaT,
+                    "2022-04-10 10:00:00",
+                    "2022-04-15 10:00:00",
+                    "2022-04-20 10:00:00",
+                ]
+            ),
+            "cust_id": [1000, 1000, 1000, 1000],
+            "event_id": [4, 1, 2, 3],
+            "scd_value_latest": [np.nan, np.nan, 1, 2],
+            "scd_value_latest_v2": [np.nan, np.nan, 1, 2],
+        }
+    )
     table_prefix = "TEST_SCD_JOIN_SMALL"
 
     def _quote(col_name) -> str:
@@ -158,26 +170,34 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     """
     Test case to test feature derived from multiple SCD joins
     """
-    df_events = pd.DataFrame({
-        "ts": pd.to_datetime([
-            "2022-04-10 10:00:00",
-            "2022-04-15 10:00:00",
-            "2022-04-20 10:00:00",
-        ]),
-        "event_id": [1, 2, 3],
-        "event_type": ["A", "B", "A"],
-        "account_id": [1000, 1000, 1000],
-    })
-    df_scd = pd.DataFrame({
-        "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
-        "account_id": [1000, 1000],
-        "customer_id": ["c1", "c1"],
-    })
-    df_scd_2 = pd.DataFrame({
-        "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
-        "customer_id": ["c1", "c1"],
-        "state_code": ["CA", "MA"],
-    })
+    df_events = pd.DataFrame(
+        {
+            "ts": pd.to_datetime(
+                [
+                    "2022-04-10 10:00:00",
+                    "2022-04-15 10:00:00",
+                    "2022-04-20 10:00:00",
+                ]
+            ),
+            "event_id": [1, 2, 3],
+            "event_type": ["A", "B", "A"],
+            "account_id": [1000, 1000, 1000],
+        }
+    )
+    df_scd = pd.DataFrame(
+        {
+            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
+            "account_id": [1000, 1000],
+            "customer_id": ["c1", "c1"],
+        }
+    )
+    df_scd_2 = pd.DataFrame(
+        {
+            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
+            "customer_id": ["c1", "c1"],
+            "state_code": ["CA", "MA"],
+        }
+    )
     table_prefix = str(ObjectId())
     await session.register_table(f"{table_prefix}_EVENT", df_events)
     await session.register_table(f"{table_prefix}_SCD", df_scd)
@@ -232,10 +252,9 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
         feature_names=["state_code_counts_30d"],
         feature_job_setting=FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
     )
-    df_observations = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-04-25 10:00:00"],
-        "customer_id": ["c1"],
-    })
+    df_observations = pd.DataFrame(
+        {"POINT_IN_TIME": ["2022-04-25 10:00:00"], "customer_id": ["c1"]}
+    )
     df = features.preview(df_observations)
     expected = df_observations.copy()
     expected["POINT_IN_TIME"] = pd.to_datetime(expected["POINT_IN_TIME"])
@@ -460,12 +479,14 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     # check preview but provides children id
     feature_list = FeatureList([feature_1, feature_2], name="mylist")
     df = feature_list.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": "2001-10-25 10:00:00",
-                "üser id": 1,
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                    "üser id": 1,
+                }
+            ]
+        )
     )
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
@@ -479,12 +500,14 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
 
     # check preview
     df = feature_list.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": "2001-10-25 10:00:00",
-                "user_status": "STÀTUS_CODE_42",
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                    "user_status": "STÀTUS_CODE_42",
+                }
+            ]
+        )
     )
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
@@ -497,10 +520,12 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     assert df.iloc[0].equals(pd.Series(expected))
 
     # check historical features
-    observations_set = pd.DataFrame({
-        "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-        "user_status": ["STÀTUS_CODE_47"] * 10,
-    })
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+            "user_status": ["STÀTUS_CODE_47"] * 10,
+        }
+    )
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [
         np.nan,
@@ -546,11 +571,13 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
 
     # check preview
     df = feature.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": "2001-10-25 10:00:00",
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                }
+            ]
+        )
     )
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
@@ -562,9 +589,11 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
 
     # check historical features
     feature_list = FeatureList([feature], "feature_list")
-    observations_set = pd.DataFrame({
-        "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-    })
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+        }
+    )
     expected = observations_set.copy()
     expected["Current Number of Users"] = [8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
     df = feature_list.compute_historical_features(observations_set)

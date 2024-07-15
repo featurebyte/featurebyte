@@ -87,9 +87,9 @@ def feature_list_fixture(feature_list_features):
 @pytest_asyncio.fixture(name="entity_lookup_steps_mapping")
 async def entity_lookup_steps_mapping_fixture(app_container, feature_list):
     """Fixture for entity_lookup_steps_mapping"""
-    return await app_container.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping([
-        feature_list.cached_model
-    ])
+    return await app_container.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
+        [feature_list.cached_model]
+    )
 
 
 @pytest.fixture(name="feast_registry_proto")
@@ -139,9 +139,9 @@ async def expected_cust_id_via_transaction_id_table_name_fixture(
         child_entity_id=transaction_entity.id,
         parent_entity_id=cust_id_entity.id,
     )
-    expected_suffix = get_lookup_steps_unique_identifier([
-        transaction_to_customer_relationship_info
-    ])
+    expected_suffix = get_lookup_steps_unique_identifier(
+        [transaction_to_customer_relationship_info]
+    )
     return f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
 
 

@@ -4,9 +4,10 @@ SQL generation for online serving
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
+
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -310,7 +311,7 @@ def add_concatenated_serving_names(
     return updated_select_expr
 
 
-def get_online_features_query_set(
+def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-many-locals
     graph: QueryGraph,
     node_groups: list[list[Node]],
     source_type: SourceType,
@@ -460,7 +461,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
     table_details: TableDetails
 
 
-async def get_online_features(
+async def get_online_features(  # pylint: disable=too-many-locals,too-many-branches
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],

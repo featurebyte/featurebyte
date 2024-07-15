@@ -2,6 +2,8 @@
 Tests for Feature route
 """
 
+# pylint: disable=too-many-lines
+
 import collections
 import textwrap
 from collections import defaultdict
@@ -32,6 +34,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     """
     TestFeatureApi class
     """
+
+    # pylint: disable=too-many-public-methods
 
     class_name = "Feature"
     base_route = "/feature"
@@ -155,7 +159,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             yield payload
 
     @pytest.mark.asyncio
-    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_create_201(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):  # pylint: disable=invalid-overridden-method
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
@@ -701,18 +707,20 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.list_table_schema.return_value = collections.OrderedDict({
-            "cust_id": ColumnSpecWithDescription(
-                name="cust_id",
-                dtype=DBVarType.INT,
-                description=None,
-            ),
-            "POINT_IN_TIME": ColumnSpecWithDescription(
-                name="POINT_IN_TIME",
-                dtype=DBVarType.TIMESTAMP,
-                description=None,
-            ),
-        })
+        mock_session.list_table_schema.return_value = collections.OrderedDict(
+            {
+                "cust_id": ColumnSpecWithDescription(
+                    name="cust_id",
+                    dtype=DBVarType.INT,
+                    description=None,
+                ),
+                "POINT_IN_TIME": ColumnSpecWithDescription(
+                    name="POINT_IN_TIME",
+                    dtype=DBVarType.TIMESTAMP,
+                    description=None,
+                ),
+            }
+        )
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table
@@ -721,10 +729,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED, response.json()
         response = self.wait_for_results(test_api_client, response)
         assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
-        obs_table_df = pd.DataFrame({
-            "POINT_IN_TIME": pd.to_datetime(["2022-04-01"]),
-            "cust_id": ["C1"],
-        })
+        obs_table_df = pd.DataFrame(
+            {"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]}
+        )
         mock_session.execute_query.side_effect = (obs_table_df, expected_df)
 
         feature_preview_payload.pop("point_in_time_and_serving_name_list")
@@ -764,10 +771,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         Test feature preview validation but dict is not provided
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple([
-            "2022-04-01",
-            "C1",
-        ])
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple(
+            ["2022-04-01", "C1"]
+        )
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
@@ -812,44 +818,50 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         groupby_node = graph.get_node_by_name("groupby_1")
         aggregation_id = groupby_node.parameters.aggregation_id
 
-        job_logs = pd.DataFrame({
-            "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-            "AGGREGATION_ID": [aggregation_id] * 6,
-            "CREATED_AT": pd.to_datetime([
-                "2020-01-02 18:00:00",
-                "2020-01-02 18:01:00",
-                "2020-01-02 18:02:00",
-                "2020-01-02 18:03:00",
-                "2020-01-02 18:00:00",
-                "2020-01-02 18:05:00",
-            ]),
-            "STATUS": [
-                "STARTED",
-                "MONITORED",
-                "GENERATED",
-                "COMPLETED",
-                "STARTED",
-                "GENERATED_FAILED",
-            ],
-            "MESSAGE": [""] * 5 + ["Some error has occurred"],
-        })
+        job_logs = pd.DataFrame(
+            {
+                "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
+                "AGGREGATION_ID": [aggregation_id] * 6,
+                "CREATED_AT": pd.to_datetime(
+                    [
+                        "2020-01-02 18:00:00",
+                        "2020-01-02 18:01:00",
+                        "2020-01-02 18:02:00",
+                        "2020-01-02 18:03:00",
+                        "2020-01-02 18:00:00",
+                        "2020-01-02 18:05:00",
+                    ]
+                ),
+                "STATUS": [
+                    "STARTED",
+                    "MONITORED",
+                    "GENERATED",
+                    "COMPLETED",
+                    "STARTED",
+                    "GENERATED_FAILED",
+                ],
+                "MESSAGE": [""] * 5 + ["Some error has occurred"],
+            }
+        )
         with patch(
             "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
         ) as mock_get_jobs_dataframe:
             mock_get_jobs_dataframe.return_value = job_logs
             response = test_api_client.get(f"{self.base_route}/{feature_id}/feature_job_logs")
         assert response.status_code == HTTPStatus.OK
-        expected_df = pd.DataFrame({
-            "SESSION_ID": ["SID1", "SID2"],
-            "AGGREGATION_ID": [aggregation_id] * 2,
-            "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
-            "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
-            "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
-            "QUEUE_DURATION": [1500.0] * 2,
-            "COMPUTE_DURATION": [180.0, np.nan],
-            "TOTAL_DURATION": [1680.0, np.nan],
-            "ERROR": [np.nan, "Some error has occurred"],
-        })
+        expected_df = pd.DataFrame(
+            {
+                "SESSION_ID": ["SID1", "SID2"],
+                "AGGREGATION_ID": [aggregation_id] * 2,
+                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
+                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
+                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
+                "QUEUE_DURATION": [1500.0] * 2,
+                "COMPUTE_DURATION": [180.0, np.nan],
+                "TOTAL_DURATION": [1680.0, np.nan],
+                "ERROR": [np.nan, "Some error has occurred"],
+            }
+        )
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
         assert mock_get_jobs_dataframe.call_args == call(
             aggregation_ids=[aggregation_id], hour_limit=24
@@ -975,17 +987,19 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame([
-                {
-                    "cust_id": 1,
-                },
-                {
-                    "cust_id": 2,
-                },
-                {
-                    "cust_id": 3,
-                },
-            ])
+            return pd.DataFrame(
+                [
+                    {
+                        "cust_id": 1,
+                    },
+                    {
+                        "cust_id": 2,
+                    },
+                    {
+                        "cust_id": 3,
+                    },
+                ]
+            )
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query

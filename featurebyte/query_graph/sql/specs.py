@@ -4,11 +4,12 @@ Module for data structures that describe different types of aggregations that fo
 
 from __future__ import annotations
 
+from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
+
 import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -132,6 +133,8 @@ class TileBasedAggregationSpec(AggregationSpec):
     Window aggregation specification
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     window: int | None
     offset: int | None
     frequency: int
@@ -204,7 +207,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         list[TileBasedAggregationSpec]
             List of AggregationSpec
         """
-
+        # pylint: disable=too-many-locals
         assert isinstance(groupby_node, GroupByNode)
         groupby_node_params = groupby_node.parameters
         tile_table_id = groupby_node_params.tile_id
@@ -359,7 +362,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         AggregationSource
             An AggregationSource object representing the source table
         """
-
+        # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.query_graph.sql.ast.aggregate import Aggregate
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
         from featurebyte.query_graph.sql.common import SQLType

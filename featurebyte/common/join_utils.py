@@ -2,8 +2,9 @@
 Join utils class
 """
 
-import copy
 from typing import List, Optional, Set
+
+import copy
 
 from featurebyte.query_graph.model.column_info import ColumnInfo
 

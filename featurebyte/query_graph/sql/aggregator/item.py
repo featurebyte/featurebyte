@@ -67,13 +67,15 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         # Construct input to be aggregated using GROUP BY
         if self.to_inner_join_with_request_table:
             request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
-            join_condition = expressions.and_(*[
-                expressions.EQ(
-                    this=get_qualified_column_identifier(serving_name, "REQ"),
-                    expression=get_qualified_column_identifier(key, "ITEM"),
-                )
-                for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
-            ])
+            join_condition = expressions.and_(
+                *[
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(serving_name, "REQ"),
+                        expression=get_qualified_column_identifier(key, "ITEM"),
+                    )
+                    for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+                ]
+            )
             groupby_input_expr = (
                 select()
                 .from_(

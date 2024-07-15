@@ -165,17 +165,19 @@ class TestTargetApi(BaseCatalogApiTestSuite):
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame([
-                {
-                    "cust_id": 1,
-                },
-                {
-                    "cust_id": 2,
-                },
-                {
-                    "cust_id": 3,
-                },
-            ])
+            return pd.DataFrame(
+                [
+                    {
+                        "cust_id": 1,
+                    },
+                    {
+                        "cust_id": 2,
+                    },
+                    {
+                        "cust_id": 3,
+                    },
+                ]
+            )
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query

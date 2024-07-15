@@ -325,7 +325,7 @@ def event_table_entity_initializer_fixture(
         ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [], {"qux"}),
     ],
 )
-async def test_update_entity_relationship(
+async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     table_columns_info_service,
     event_table_entity_initializer,
     event_table,
@@ -443,7 +443,7 @@ def assert_relationships_match(relationship_list_a, relationship_list_b):
         ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [("baz", "qux")], [("foo", "bar")]),
     ],
 )
-async def test_update_entity_relationship__relationship_infos_added(
+async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals, too-many-arguments
     table_columns_info_service,
     event_table,
     event_table_entity_initializer,

@@ -4,12 +4,13 @@ DatabricksAdapter class for generating Databricks specific SQL expressions
 
 from __future__ import annotations
 
-import re
 from typing import Optional
+from typing_extensions import Literal
+
+import re
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
-from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails

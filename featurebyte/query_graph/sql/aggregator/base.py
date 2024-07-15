@@ -4,9 +4,10 @@ Base class for aggregation SQL generators
 
 from __future__ import annotations
 
+from typing import Any, Generic, Sequence, Tuple, TypeVar
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Generic, Sequence, Tuple, TypeVar
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -279,9 +280,12 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         -------
         Select
         """
-        wrapped_table_expr = select(*[
-            alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True) for col in columns
-        ]).from_(table_expr.subquery(alias="REQ"))
+        wrapped_table_expr = select(
+            *[
+                alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True)
+                for col in columns
+            ]
+        ).from_(table_expr.subquery(alias="REQ"))
         return wrapped_table_expr
 
     @abstractmethod

@@ -227,16 +227,16 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     Create a new feature with a different feature job setting:
 
     >>> new_feature = feature.create_new_version(  # doctest: +SKIP
-    ...     table_feature_job_settings=[
-    ...         fb.TableFeatureJobSetting(
-    ...             table_name="GROCERYINVOICE",
-    ...             feature_job_setting=fb.FeatureJobSetting(
-    ...                 blind_spot="60s",
-    ...                 period="3600s",
-    ...                 offset="90s",
-    ...             ),
-    ...         )
-    ...     ]
+    ...   table_feature_job_settings=[
+    ...     fb.TableFeatureJobSetting(
+    ...       table_name="GROCERYINVOICE",
+    ...       feature_job_setting=fb.FeatureJobSetting(
+    ...         blind_spot="60s",
+    ...         period="3600s",
+    ...         offset="90s",
+    ...       )
+    ...     )
+    ...   ]
     ... )
     """
 

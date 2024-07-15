@@ -4,13 +4,14 @@ This module contains TaskExecutor class
 
 from __future__ import annotations
 
+from typing import Any, Coroutine, Optional, Set
+
 import asyncio
 import os
 import time
 from abc import abstractmethod
 from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
-from typing import Any, Coroutine, Optional, Set
 from uuid import UUID
 
 from bson import ObjectId
@@ -306,7 +307,7 @@ class IOBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_io_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        global WORKER_TERMINATED
+        global WORKER_TERMINATED  # pylint: disable=global-statement
         if WORKER_TERMINATED:
             raise WorkerTerminate(True)
         try:

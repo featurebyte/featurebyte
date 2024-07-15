@@ -4,8 +4,9 @@ UserDefinedFunction API object
 
 from __future__ import annotations
 
-from http import HTTPStatus
 from typing import Any, ClassVar, Dict, List, Optional, Union, cast
+
+from http import HTTPStatus
 
 from bson import ObjectId
 from pydantic import Field
@@ -299,7 +300,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> fb.FeatureGroup([feature, cos_feat]).preview(
         ...     observation_set=pd.DataFrame({
         ...         "POINT_IN_TIME": ["2022-06-01 00:00:00"],
-        ...         "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3"],
+        ...         "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3" ]
         ...     })
         ... )
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  cos(InvoiceCount_60days)
@@ -379,9 +380,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         Examples
         --------
         >>> cos_udf = catalog.get_user_defined_function("cos")
-        >>> cos_udf.update_function_parameters([
-        ...     FunctionParameter(name="value", dtype=DBVarType.FLOAT)
-        ... ])
+        >>> cos_udf.update_function_parameters([FunctionParameter(name="value", dtype=DBVarType.FLOAT)])
         >>> cos_udf.function_parameters
         [FunctionParameter(name='value', dtype='FLOAT', default_value=None, test_value=None)]
         """

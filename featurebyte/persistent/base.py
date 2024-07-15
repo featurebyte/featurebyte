@@ -4,13 +4,14 @@ Persistent base class
 
 from __future__ import annotations
 
+from typing import Any, AsyncIterator, Callable, Dict, Iterable, List, Optional, Tuple, cast
+from typing_extensions import Literal
+
 import copy
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Callable, Dict, Iterable, List, Optional, Tuple, cast
 
 from bson import ObjectId
-from typing_extensions import Literal
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.models.persistent import (
@@ -50,8 +51,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document: Document,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> ObjectId:
         """
         Insert record into collection. Note that when using this method inside a non BaseDocumentService,
@@ -81,8 +82,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         documents: Iterable[Document],
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> list[ObjectId]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
@@ -224,8 +225,8 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -273,8 +274,8 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update many records in collection. Note that when using this method inside a non BaseDocumentService,
@@ -322,8 +323,8 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Replace one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -360,8 +361,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete one record from collection. Note that when using this method inside a non BaseDocumentService,
@@ -390,8 +391,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId],
-        disable_audit: bool = False,
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete many records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -615,11 +616,13 @@ class Persistent(ABC):
                 original_doc, doc_dict
             )
 
-            updated_audit_doc = AuditDocument(**{
-                **audit_doc.dict(by_alias=True),
-                "previous_values": previous_values,
-                "current_values": current_values,
-            })
+            updated_audit_doc = AuditDocument(
+                **{
+                    **audit_doc.dict(by_alias=True),
+                    "previous_values": previous_values,
+                    "current_values": current_values,
+                }
+            )
             await self._update_one(
                 collection_name=get_audit_collection_name(collection_name),
                 query_filter={"_id": audit_doc.id},

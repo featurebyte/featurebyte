@@ -134,10 +134,12 @@ def construct_join_feature_sets_query(
         for feature_name in feature_set.feature_names:
             table_alias_by_feature[feature_name] = table_alias
 
-    return expr.select(*[
-        get_qualified_column_identifier(name, table_alias_by_feature[name])
-        for name in output_feature_names
-    ])
+    return expr.select(
+        *[
+            get_qualified_column_identifier(name, table_alias_by_feature[name])
+            for name in output_feature_names
+        ]
+    )
 
 
 def maybe_add_row_index_column(

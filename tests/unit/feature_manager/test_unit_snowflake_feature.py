@@ -236,12 +236,14 @@ async def test_retrieve_feature_tile_inconsistency_data(
     """
     Test retrieve_feature_tile_inconsistency_data
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame.from_dict({
-        "NAME": ["sum_30m", "sum_30m"],
-        "VERSION": ["v1", "v1"],
-        "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-        "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-    })
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame.from_dict(
+        {
+            "NAME": ["sum_30m", "sum_30m"],
+            "VERSION": ["v1", "v1"],
+            "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
+            "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
+        }
+    )
     result = await feature_manager_service.retrieve_feature_tile_inconsistency_data(
         mock_snowflake_session,
         query_start_ts="2022-06-05 15:43:00",

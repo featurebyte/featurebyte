@@ -201,7 +201,7 @@ async def test_schedule_generate_tile__with_registry(
     Test the stored procedure of generating tiles
     """
 
-    tile_id, agg_id, _feature_store_table_name, _, _ = tile_task_prep_spark
+    tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep_spark
 
     entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
@@ -271,7 +271,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     Test the stored procedure of generating tiles
     """
 
-    tile_id, agg_id, _feature_store_table_name, _, _ = tile_task_prep_spark
+    tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep_spark
 
     entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]

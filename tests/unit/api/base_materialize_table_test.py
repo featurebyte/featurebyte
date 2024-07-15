@@ -2,8 +2,9 @@
 Base materialize table test class
 """
 
-from abc import abstractmethod
 from typing import Any, Dict, Type, TypeVar
+
+from abc import abstractmethod
 
 import pandas as pd
 import pytest

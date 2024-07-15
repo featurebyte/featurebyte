@@ -4,10 +4,11 @@ This module contains generic function construction logic for user defined functi
 
 from __future__ import annotations
 
+from typing import Any, Callable, List, Tuple, Type, Union
+
 import inspect
 import textwrap
 from dataclasses import dataclass
-from typing import Any, Callable, List, Tuple, Type, Union
 
 from typeguard import check_type
 
@@ -261,10 +262,12 @@ class UserDefinedFunctionInjector:
 
     @staticmethod
     def _generate_docstring(udf: UserDefinedFunctionModel) -> str:
-        parameters = "\n        ".join([
-            f"{param.name} : {get_param_type_annotations(param.dtype)}"
-            for param in udf.function_parameters
-        ])
+        parameters = "\n        ".join(
+            [
+                f"{param.name} : {get_param_type_annotations(param.dtype)}"
+                for param in udf.function_parameters
+            ]
+        )
         docstring_template = f"""
         This function uses the feature store SQL function `{udf.sql_function_name}` to generate a new column
         or new feature. Note that the non-scalar input parameters must be homogeneous, i.e., they must

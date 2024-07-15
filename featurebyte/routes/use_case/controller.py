@@ -33,7 +33,9 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):
+class UseCaseController(
+    BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]
+):  # pylint: disable=too-many-instance-attributes
     """
     UseCase controller
     """
@@ -41,7 +43,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
     paginated_document_class = UseCaseList
     document_update_schema_class = UseCaseUpdate
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         use_case_service: UseCaseService,
         user_service: UserService,

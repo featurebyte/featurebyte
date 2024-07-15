@@ -4,8 +4,9 @@ Module for generic operations sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Optional, cast
+
+from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression

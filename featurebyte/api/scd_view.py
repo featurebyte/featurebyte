@@ -92,13 +92,15 @@ class SCDView(View, GroupByMixin, RawMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update({
-            "natural_key_column": self.natural_key_column,
-            "surrogate_key_column": self.surrogate_key_column,
-            "effective_timestamp_column": self.effective_timestamp_column,
-            "end_timestamp_column": self.end_timestamp_column,
-            "current_flag_column": self.current_flag_column,
-        })
+        params.update(
+            {
+                "natural_key_column": self.natural_key_column,
+                "surrogate_key_column": self.surrogate_key_column,
+                "effective_timestamp_column": self.effective_timestamp_column,
+                "end_timestamp_column": self.end_timestamp_column,
+                "current_flag_column": self.current_flag_column,
+            }
+        )
         return params
 
     def validate_join(self, other_view: View) -> None:

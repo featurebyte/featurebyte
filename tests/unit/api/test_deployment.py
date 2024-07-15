@@ -46,16 +46,18 @@ def test_list(deployment):
     Test listing Deployment objects
     """
     df = deployment.list()
-    expected = pd.DataFrame([
-        {
-            "id": str(deployment.id),
-            "name": deployment.name,
-            "feature_list_name": "my_feature_list",
-            "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
-            "num_feature": 1,
-            "enabled": False,
-        }
-    ])
+    expected = pd.DataFrame(
+        [
+            {
+                "id": str(deployment.id),
+                "name": deployment.name,
+                "feature_list_name": "my_feature_list",
+                "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
+                "num_feature": 1,
+                "enabled": False,
+            }
+        ]
+    )
     pd.testing.assert_frame_equal(df, expected[df.columns.tolist()])
 
 

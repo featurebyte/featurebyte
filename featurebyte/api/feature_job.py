@@ -2,13 +2,14 @@
 FeatureJobMixin class
 """
 
+from typing import Any, Dict, List, Tuple
+
 import base64
 import textwrap
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from io import BytesIO
-from typing import Any, Dict, List, Tuple
 
 import humanize
 import numpy as np
@@ -62,17 +63,20 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
         }
 
     def __str__(self) -> str:
-        return "\n\n".join([
-            str(pd.DataFrame.from_dict([self.request_parameters])),
-            str(self.feature_tile_table),
-            str(self.feature_job_summary),
-        ])
+        return "\n\n".join(
+            [
+                str(pd.DataFrame.from_dict([self.request_parameters])),
+                str(self.feature_tile_table),
+                str(self.feature_job_summary),
+            ]
+        )
 
     def __repr__(self) -> str:
         return str(self)
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str:  # pylint: disable=too-many-statements
         try:
+            # pylint: disable=import-outside-toplevel
             from matplotlib import pyplot as plt
 
             matplotlib_available = True
@@ -380,7 +384,7 @@ class FeatureJobMixin(ApiObject):
         logs = dataframe_from_json(result)
 
         # Compute short aggregation hash
-        log_columns = logs.columns.to_list()
+        log_columns = logs.columns.to_list()  # pylint: disable=no-member
         logs["AGGREGATION_HASH"] = logs["AGGREGATION_ID"].apply(lambda x: x.split("_")[-1][:8])
         logs = logs[["AGGREGATION_HASH"] + log_columns]
         logs["IS_LATE"] = logs["TOTAL_DURATION"] > job_duration_tolerance
@@ -391,11 +395,13 @@ class FeatureJobMixin(ApiObject):
         for feature_name, tile_spec_list in feature_tile_specs:
             data = []
             for tile_spec in tile_spec_list:
-                data.append({
-                    **tile_spec.dict(),
-                    "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
-                    "feature_name": feature_name,
-                })
+                data.append(
+                    {
+                        **tile_spec.dict(),
+                        "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
+                        "feature_name": feature_name,
+                    }
+                )
             tile_specs.append(pd.DataFrame.from_dict(data))
 
         feature_tile_specs_df = (
