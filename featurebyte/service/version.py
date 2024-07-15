@@ -94,7 +94,6 @@ class VersionService:
                 for data_feature_job_setting in table_feature_job_settings
             }
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
-                # pylint: disable=abstract-class-instantiated
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_as_dict_iterator(
                     query_filter={"_id": {"$in": feature.table_ids}}
@@ -129,9 +128,10 @@ class VersionService:
                     parameters = group_by_node.parameters.dict()
                     parameters["feature_job_setting"] = feature_job_setting.dict()
                     if group_by_node.parameters.dict() != parameters:
-                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(
-                            **{**group_by_node.dict(), "parameters": parameters}
-                        )
+                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(**{
+                            **group_by_node.dict(),
+                            "parameters": parameters,
+                        })
 
         return node_name_to_replacement_node
 
@@ -173,14 +173,12 @@ class VersionService:
             # only include fields that are required for creating a new feature version,
             # other attributes will be re-generated when the new feature version is constructed
             include_fields = {"name", "tabular_source", "feature_namespace_id"}
-            return FeatureModel(
-                **{
-                    **feature.dict(include=include_fields),
-                    "graph": pruned_graph,
-                    "node_name": pruned_node_name,
-                    "_id": ObjectId(),
-                }
-            )
+            return FeatureModel(**{
+                **feature.dict(include=include_fields),
+                "graph": pruned_graph,
+                "node_name": pruned_node_name,
+                "_id": ObjectId(),
+            })
         return None
 
     async def _create_new_feature_version(
@@ -269,9 +267,7 @@ class VersionService:
             )
         return new_feature
 
-    async def create_new_feature_version_using_source_settings(
-        self, document_id: ObjectId
-    ) -> FeatureModel:
+    async def create_new_feature_version_using_source_settings(self, document_id: ObjectId) -> FeatureModel:
         """
         Create new feature version based on feature job settings & cleaning operation from the source table
         (newly created feature won't be saved to the persistent)
@@ -301,8 +297,7 @@ class VersionService:
         data: FeatureListNewVersionCreate,
     ) -> FeatureListModel:
         feat_name_to_default_id_map = {
-            feat_namespace["name"]: feat_namespace["default_feature_id"]
-            for feat_namespace in feature_namespaces
+            feat_namespace["name"]: feat_namespace["default_feature_id"] for feat_namespace in feature_namespaces
         }
         feature_id_to_name_map = {
             feat_id: feature_namespace["name"]
@@ -315,9 +310,7 @@ class VersionService:
             feat_name = feature_id_to_name_map[feat_id]
             if feat_name in specified_feature_map:
                 version = specified_feature_map.pop(feat_name)
-                feature = await self.feature_service.get_document_by_name_and_version(
-                    name=feat_name, version=version
-                )
+                feature = await self.feature_service.get_document_by_name_and_version(name=feat_name, version=version)
                 features.append(feature)
             else:
                 # use default feature id for non-specified features
@@ -326,9 +319,7 @@ class VersionService:
 
         if specified_feature_map:
             names = [f'"{name}"' for name in specified_feature_map.keys()]
-            raise DocumentError(
-                f"Features ({', '.join(names)}) are not in the original FeatureList"
-            )
+            raise DocumentError(f"Features ({', '.join(names)}) are not in the original FeatureList")
 
         feature_ids = [feat.id for feat in features]
         if set(feature_list.feature_ids) == set(feature_ids):
@@ -337,14 +328,12 @@ class VersionService:
 
             raise DocumentError("No change detected on the new feature list version.")
 
-        return FeatureListModel(
-            **{
-                **feature_list.dict(),
-                "_id": ObjectId(),
-                "feature_ids": feature_ids,
-                "features": features,
-            }
-        )
+        return FeatureListModel(**{
+            **feature_list.dict(),
+            "_id": ObjectId(),
+            "feature_ids": feature_ids,
+            "features": features,
+        })
 
     async def create_new_feature_list_version(
         self,
@@ -362,9 +351,7 @@ class VersionService:
         -------
         FeatureListModel
         """
-        feature_list = await self.feature_list_service.get_document(
-            document_id=data.source_feature_list_id
-        )
+        feature_list = await self.feature_list_service.get_document(document_id=data.source_feature_list_id)
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list.feature_list_namespace_id,
         )
@@ -372,9 +359,7 @@ class VersionService:
             query_filter={"_id": {"$in": feature_list_namespace.feature_namespace_ids}},
             page_size=0,
         )
-        new_feature_list = await self._create_new_feature_list_version(
-            feature_list, feature_namespaces["data"], data
-        )
+        new_feature_list = await self._create_new_feature_list_version(feature_list, feature_namespaces["data"], data)
         if new_feature_list.id == feature_list.id:
             return feature_list
 

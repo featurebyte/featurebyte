@@ -246,9 +246,7 @@ def test_disable_block_modification_check(app_container):
     # check that _check_block_modification_func is set properly for deeply nested services
     with app_container.block_modification_handler.disable_block_modification_check():
         # level-1 service
-        assert (
-            app_container.event_table_service.block_modification_handler.block_modification is False
-        )
+        assert app_container.event_table_service.block_modification_handler.block_modification is False
         # level-2 service
         service = app_container.table_facade_service.event_table_service
         assert service.block_modification_handler.block_modification is False
@@ -256,9 +254,7 @@ def test_disable_block_modification_check(app_container):
         service = app_container.table_facade_service.table_columns_info_service.semantic_service
         assert service.block_modification_handler.block_modification is False
         # level-4 service
-        service = (
-            app_container.table_facade_service.table_columns_info_service.entity_relationship_service
-        )
+        service = app_container.table_facade_service.table_columns_info_service.entity_relationship_service
         assert service.entity_service.block_modification_handler.block_modification is False
 
     # outside the context manager, the check should be enabled
@@ -271,7 +267,5 @@ def test_disable_block_modification_check(app_container):
     service = app_container.table_facade_service.table_columns_info_service.semantic_service
     assert service.block_modification_handler.block_modification is True
     # level-4 service
-    service = (
-        app_container.table_facade_service.table_columns_info_service.entity_relationship_service
-    )
+    service = app_container.table_facade_service.table_columns_info_service.entity_relationship_service
     assert service.entity_service.block_modification_handler.block_modification is True

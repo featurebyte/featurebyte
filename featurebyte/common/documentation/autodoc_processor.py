@@ -4,9 +4,8 @@ Autodoc Processor
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import re
+from typing import Any, List, Optional
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown
@@ -43,9 +42,7 @@ class ExceptionDetails(BaseModel):
     description: Optional[str]
 
 
-def _render_list_item_with_multiple_paragraphs(
-    title: Optional[str], other_paragraphs: List[str]
-) -> str:
+def _render_list_item_with_multiple_paragraphs(title: Optional[str], other_paragraphs: List[str]) -> str:
     """
     Helper method to render a list item with multiple paragraphs.
 
@@ -70,9 +67,7 @@ def _render_list_item_with_multiple_paragraphs(
     return list_item_str
 
 
-def _get_parameters_content(
-    parameters: List[ParameterDetails], should_skip_keyword_params: bool = False
-) -> str:
+def _get_parameters_content(parameters: List[ParameterDetails], should_skip_keyword_params: bool = False) -> str:
     """
     Helper method to get the content for parameters.
 
@@ -101,9 +96,7 @@ def _get_parameters_content(
             continue
         param_name = param.name.replace("*", "\\*")
         param_type = f": *{param.type}*" if param.type else ""
-        param_default = (
-            f"**default**: *{param.default}*\n" if param.default and param.default != "None" else ""
-        )
+        param_default = f"**default**: *{param.default}*\n" if param.default and param.default != "None" else ""
         if param_default:
             items_to_render.append(param_default)
         formatted_description = ""
@@ -113,9 +106,7 @@ def _get_parameters_content(
             formatted_description = formatted_description.replace("\n", "<br/>")
         if formatted_description:
             items_to_render.append(formatted_description)
-        content += _render_list_item_with_multiple_paragraphs(
-            f"{param_name}{param_type}", items_to_render
-        )
+        content += _render_list_item_with_multiple_paragraphs(f"{param_name}{param_type}", items_to_render)
         content += "\n"
     return content
 
@@ -179,9 +170,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             if resource_details.parameters:
                 param_group_class = (
-                    "autodoc-param-group-multi"
-                    if len(resource_details.parameters) > 2
-                    else "autodoc-param-group"
+                    "autodoc-param-group-multi" if len(resource_details.parameters) > 2 else "autodoc-param-group"
                 )
                 for param, is_last in last_iter(resource_details.parameters):
                     # Don't render rest of params if we are at the keyword separator, and we should
@@ -268,10 +257,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             title_elem.text = ".".join([path, resource_details.name])
 
             # render autodoc
-            if not (
-                resource_details.should_skip_signature_in_class_docs
-                and resource_details.type == "class"
-            ):
+            if not (resource_details.should_skip_signature_in_class_docs and resource_details.type == "class"):
                 self.render_signature(autodoc_div, resource_details)
             for line in block.splitlines():
                 docstring_elem = etree.SubElement(autodoc_div, "div")
@@ -338,15 +324,12 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 "Parameters",
                 _get_parameters_content(
                     resource_details.parameters,
-                    resource_details.should_hide_keyword_only_params_in_class_docs
-                    and resource_details.type == "class",
+                    resource_details.should_hide_keyword_only_params_in_class_docs and resource_details.type == "class",
                 ),
             )
 
         if resource_details.enum_values:
-            self._render(
-                elem, "Possible Values", _get_parameters_content(resource_details.enum_values)
-            )
+            self._render(elem, "Possible Values", _get_parameters_content(resource_details.enum_values))
 
         # Render returns:
         if resource_details.returns:
@@ -360,15 +343,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # Render raises
         if resource_details.raises:
-            content = "\n".join(
-                [
-                    _render_list_item_with_multiple_paragraphs(
-                        exc_type.type,
-                        _filter_none_from_list([exc_type.description]),
-                    )
-                    for exc_type in resource_details.raises
-                ]
-            )
+            content = "\n".join([
+                _render_list_item_with_multiple_paragraphs(
+                    exc_type.type,
+                    _filter_none_from_list([exc_type.description]),
+                )
+                for exc_type in resource_details.raises
+            ])
             self._render(elem, "Raises", content)
 
         # populate examples

@@ -24,9 +24,7 @@ from featurebyte.storage import Storage
 logger = get_logger(__name__)
 
 
-class CredentialService(
-    BaseDocumentService[CredentialModel, CredentialCreate, CredentialServiceUpdate]
-):
+class CredentialService(BaseDocumentService[CredentialModel, CredentialCreate, CredentialServiceUpdate]):
     """
     CredentialService class
     """
@@ -92,9 +90,7 @@ class CredentialService(
             CredentialModel to validate
         """
         # test credential works
-        feature_store = await self.feature_store_service.get_document(
-            document_id=credential.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=credential.feature_store_id)
 
         async def get_credential(**kwargs: Any) -> CredentialModel:
             """
@@ -133,9 +129,7 @@ class CredentialService(
         credential = self.document_class(**data.dict(by_alias=True))
         await self._validate_credential(credential=credential)
         credential.encrypt_credentials()
-        return await super().create_document(
-            data=CredentialCreate(**credential.dict(by_alias=True))
-        )
+        return await super().create_document(data=CredentialCreate(**credential.dict(by_alias=True)))
 
     async def update_document(
         self,
@@ -172,9 +166,7 @@ class CredentialService(
         Optional[Document]
         """
         if document is None:
-            document = await self.get_document(
-                document_id=document_id, populate_remote_attributes=False
-            )
+            document = await self.get_document(document_id=document_id, populate_remote_attributes=False)
 
         # ensure document is decrypted
         try:

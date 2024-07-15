@@ -4,10 +4,9 @@ Feast registry service
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import random
 from pathlib import Path
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from redis import Redis
@@ -34,14 +33,12 @@ from featurebyte.storage import Storage
 FEAST_REGISTRY_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the lock in seconds
 
 
-class FeastRegistryService(
-    BaseDocumentService[FeastRegistryModel, FeastRegistryCreate, FeastRegistryUpdate]
-):
+class FeastRegistryService(BaseDocumentService[FeastRegistryModel, FeastRegistryCreate, FeastRegistryUpdate]):
     """Feast registry service"""
 
     document_class = FeastRegistryModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -93,9 +90,7 @@ class FeastRegistryService(
     async def _get_or_create_project_name(self, hex_digit_num: int = 7, max_try: int = 100) -> str:
         # check if there exists a registry document with the same catalog ID,
         # reuse the project name if it exists
-        async for registry_doc in self.list_documents_as_dict_iterator(
-            query_filter={"catalog_id": self.catalog_id}
-        ):
+        async for registry_doc in self.list_documents_as_dict_iterator(query_filter={"catalog_id": self.catalog_id}):
             return str(registry_doc["name"])
 
         # generate 7 hex digits
@@ -143,9 +138,7 @@ class FeastRegistryService(
                 },
             ],
         )
-        catalog_id_to_prefix = {
-            item["catalog_id"]: item["offline_table_name_prefix"] for item in res
-        }
+        catalog_id_to_prefix = {item["catalog_id"]: item["offline_table_name_prefix"] for item in res}
         if self.catalog_id in catalog_id_to_prefix:
             return str(catalog_id_to_prefix[self.catalog_id])
         return f"cat{len(catalog_id_to_prefix) + 1}"
@@ -167,12 +160,10 @@ class FeastRegistryService(
             registry = await self.get_document(document_id=deployment.registry_info.registry_id)
             return registry
 
-        registry = await self.create_document(
-            data=FeastRegistryCreate(feature_lists=[], deployment_id=deployment.id)
-        )
+        registry = await self.create_document(data=FeastRegistryCreate(feature_lists=[], deployment_id=deployment.id))
         return registry
 
-    async def _construct_feast_registry_model(  # pylint: disable=too-many-locals
+    async def _construct_feast_registry_model(
         self,
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],
@@ -184,9 +175,7 @@ class FeastRegistryService(
         feature_ids = set()
         recent_feature_lists = []
         for feature_list in feature_lists:
-            recent_feature_list = await self.feature_list_service.get_document(
-                document_id=feature_list.id
-            )
+            recent_feature_list = await self.feature_list_service.get_document(document_id=feature_list.id)
             recent_feature_lists.append(recent_feature_list)
             feature_ids.update(recent_feature_list.feature_ids)
 
@@ -219,22 +208,16 @@ class FeastRegistryService(
 
         online_store = None
         if catalog.online_store_id:
-            online_store = await self.online_store_service.get_document(
-                document_id=catalog.online_store_id
-            )
+            online_store = await self.online_store_service.get_document(document_id=catalog.online_store_id)
 
-        entity_lookup_steps_mapping = (
-            await self.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
-                feature_lists
-            )
+        entity_lookup_steps_mapping = await self.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
+            feature_lists
         )
 
         if not project_name:
             project_name = await self._get_or_create_project_name()
         if not offline_table_name_prefix:
-            offline_table_name_prefix = await self._create_offline_table_name_prefix(
-                feature_store_id=feature_store_id
-            )
+            offline_table_name_prefix = await self._create_offline_table_name_prefix(feature_store_id=feature_store_id)
 
         serving_entity_ids = None
         if deployment_id is not None:
@@ -270,9 +253,7 @@ class FeastRegistryService(
         return document
 
     async def _move_registry_to_storage(self, document: FeastRegistryModel) -> FeastRegistryModel:
-        feast_registry_path = self.get_full_remote_file_path(
-            f"feast_registry/{document.id}/feast_registry.pb"
-        )
+        feast_registry_path = self.get_full_remote_file_path(f"feast_registry/{document.id}/feast_registry.pb")
         await self.storage.put_bytes(document.registry, feast_registry_path)
         document.registry_path = str(feast_registry_path)
         document.registry = b""
@@ -319,9 +300,7 @@ class FeastRegistryService(
             )
 
         with self.get_registry_storage_lock(FEAST_REGISTRY_REDIS_LOCK_TIMEOUT):
-            original_doc = await self.get_document(
-                document_id=document_id, populate_remote_attributes=False
-            )
+            original_doc = await self.get_document(document_id=document_id, populate_remote_attributes=False)
             recreated_model = await self._construct_feast_registry_model(
                 project_name=original_doc.name,
                 offline_table_name_prefix=original_doc.offline_table_name_prefix,

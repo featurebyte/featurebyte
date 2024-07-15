@@ -4,9 +4,8 @@ Migration service for data warehouse working schema
 
 from __future__ import annotations
 
-from typing import Optional
-
 import textwrap
+from typing import Optional
 
 import pandas as pd
 from snowflake.connector.errors import ProgrammingError
@@ -54,7 +53,7 @@ class TileColumnTypeExtractor:
                 feature_model = ExtendedFeatureModel(**doc)
                 try:
                     tile_specs = feature_model.tile_specs
-                except:  # pylint: disable=bare-except
+                except:  # noqa
                     logger.exception(f"Failed to extract tile_specs for {doc}")
                     # For tile columns with no known type, they will be given a FLOAT type below
                     continue
@@ -164,9 +163,7 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
         """
         await self._add_tile_value_types_column(migration_version=7)
 
-    async def migrate_record_with_session(
-        self, feature_store: FeatureStoreModel, session: BaseSession
-    ) -> None:
+    async def migrate_record_with_session(self, feature_store: FeatureStoreModel, session: BaseSession) -> None:
         _ = feature_store
 
         df_tile_registry = await session.execute_query("SELECT * FROM TILE_REGISTRY")
@@ -181,9 +178,7 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
             df_tile_registry[["TILE_ID", "VALUE_COLUMN_NAMES", "VALUE_COLUMN_TYPES"]],  # type: ignore[index]
         )
 
-        await session.execute_query(
-            "ALTER TABLE TILE_REGISTRY ADD COLUMN VALUE_COLUMN_TYPES VARCHAR"
-        )
+        await session.execute_query("ALTER TABLE TILE_REGISTRY ADD COLUMN VALUE_COLUMN_TYPES VARCHAR")
 
         update_query = textwrap.dedent(
             """
@@ -251,9 +246,5 @@ class DataWarehouseMigrationServiceV3(DataWarehouseMigrationMixin):
         """
         await self.migrate_all_records(version=8, query_filter=query_filter)
 
-    async def migrate_record_with_session(
-        self, feature_store: FeatureStoreModel, session: BaseSession
-    ) -> None:
-        await self.working_schema_service.recreate_working_schema(
-            feature_store_id=feature_store.id, session=session
-        )
+    async def migrate_record_with_session(self, feature_store: FeatureStoreModel, session: BaseSession) -> None:
+        await self.working_schema_service.recreate_working_schema(feature_store_id=feature_store.id, session=session)

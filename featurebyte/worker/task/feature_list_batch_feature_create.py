@@ -23,16 +23,14 @@ from featurebyte.worker.util.batch_feature_creator import (
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
-class FeatureListCreateWithBatchFeatureCreationTask(
-    BaseTask[FeatureListCreateWithBatchFeatureCreationTaskPayload]
-):
+class FeatureListCreateWithBatchFeatureCreationTask(BaseTask[FeatureListCreateWithBatchFeatureCreationTaskPayload]):
     """
     Feature list creation with batch feature creation task
     """
 
     payload_class = FeatureListCreateWithBatchFeatureCreationTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_list_controller: FeatureListController,
         batch_feature_creator: BatchFeatureCreator,
@@ -45,9 +43,7 @@ class FeatureListCreateWithBatchFeatureCreationTask(
         self.feature_service = feature_service
         self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(
-        self, payload: FeatureListCreateWithBatchFeatureCreationTaskPayload
-    ) -> str:
+    async def get_task_description(self, payload: FeatureListCreateWithBatchFeatureCreationTaskPayload) -> str:
         return f'Save feature list "{payload.name}"'
 
     @patch_api_object_cache()
@@ -83,15 +79,9 @@ class FeatureListCreateWithBatchFeatureCreationTask(
             )
 
         # create feature list
-        feature_list_create = FeatureListCreate(
-            _id=payload.id, name=payload.name, feature_ids=feature_ids
-        )
+        feature_list_create = FeatureListCreate(_id=payload.id, name=payload.name, feature_ids=feature_ids)
         await self.feature_list_controller.create_feature_list(
             data=feature_list_create,
-            progress_callback=get_ranged_progress_callback(
-                self.task_progress_updater.update_progress, 90, 100
-            ),
+            progress_callback=get_ranged_progress_callback(self.task_progress_updater.update_progress, 90, 100),
         )
-        await self.task_progress_updater.update_progress(
-            percent=100, message="Completed feature list creation"
-        )
+        await self.task_progress_updater.update_progress(percent=100, message="Completed feature list creation")

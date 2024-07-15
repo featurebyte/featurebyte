@@ -2,9 +2,8 @@
 Base router
 """
 
-from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
-
 from http import HTTPStatus
+from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
 
 from fastapi import APIRouter, Request
 from fastapi.routing import APIRoute
@@ -69,9 +68,7 @@ class BaseRouter:
         self.router.routes = routes_to_keep
 
 
-class BaseApiRouter(
-    BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]
-):
+class BaseApiRouter(BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]):
     """
     Base API router.
 

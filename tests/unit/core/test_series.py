@@ -66,9 +66,7 @@ def test__getitem__type_not_supported(int_series):
     """
     with pytest.raises(TypeError) as exc:
         _ = int_series[True]
-    expected_msg = (
-        'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
-    )
+    expected_msg = 'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
     assert expected_msg in str(exc.value)
 
 
@@ -260,8 +258,7 @@ def test__setitem__value_type_not_correct(int_series, bool_series):
     with pytest.raises(ValueError) as exc:
         int_series[bool_series] = "abc"
     expected_msg = (
-        f"Conditionally updating 'Series[INT](name=CUST_ID, node_name=project_1)' with value 'abc' "
-        f"is not supported!"
+        "Conditionally updating 'Series[INT](name=CUST_ID, node_name=project_1)' with value 'abc' " "is not supported!"
     )
     assert expected_msg == str(exc.value)
 
@@ -281,9 +278,7 @@ def test__setitem__key_type_not_supported(int_series):
     """
     with pytest.raises(TypeError) as exc:
         int_series[1] = True
-    expected_msg = (
-        'type of argument "key" must be featurebyte.core.series.FrozenSeries; got int instead'
-    )
+    expected_msg = 'type of argument "key" must be featurebyte.core.series.FrozenSeries; got int instead'
     assert expected_msg in str(exc.value)
 
 
@@ -330,8 +325,7 @@ def test_logical_operators(bool_series, int_series):
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
     expected_msg = (
-        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); '
-        "got str instead"
+        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); ' "got str instead"
     )
     assert expected_msg in str(exc.value)
 
@@ -364,7 +358,7 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     """
     Test relational operators with other as Series type
     """
-    # pylint: disable=comparison-with-itself
+
     series_bool_eq = bool_series == bool_series
     series_int_ne = int_series != int_series
     series_float_lt = float_series < float_series
@@ -605,9 +599,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     )
     _check_node_equality(
         scalar_varchar_varchar_add.node,
-        construct_node(
-            name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs
-        ),
+        construct_node(name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs),
         exclude=exclude,
         has_value_params=True,
         has_right_op=True,
@@ -642,9 +634,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     exclude = {"name": True}
     _check_node_equality(
         scalar_int_float_add.node,
-        construct_node(
-            name="add_1", type=NodeType.ADD, parameters={"value": 1.23, "right_op": True}, **kwargs
-        ),
+        construct_node(name="add_1", type=NodeType.ADD, parameters={"value": 1.23, "right_op": True}, **kwargs),
         exclude=exclude,
         has_value_params=True,
         has_right_op=True,
@@ -652,9 +642,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     )
     _check_node_equality(
         scalar_int_int_sub.node,
-        construct_node(
-            name="sub_1", type=NodeType.SUB, parameters={"value": 1, "right_op": True}, **kwargs
-        ),
+        construct_node(name="sub_1", type=NodeType.SUB, parameters={"value": 1, "right_op": True}, **kwargs),
         exclude=exclude,
         has_value_params=True,
         has_right_op=True,
@@ -662,9 +650,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     )
     _check_node_equality(
         scalar_float_int_mul.node,
-        construct_node(
-            name="mul_1", type=NodeType.MUL, parameters={"value": 2, "right_op": True}, **kwargs
-        ),
+        construct_node(name="mul_1", type=NodeType.MUL, parameters={"value": 2, "right_op": True}, **kwargs),
         exclude=exclude,
         has_value_params=True,
         has_right_op=True,
@@ -672,9 +658,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     )
     _check_node_equality(
         scalar_float_float_div.node,
-        construct_node(
-            name="div_1", type=NodeType.DIV, parameters={"value": 2.34, "right_op": True}, **kwargs
-        ),
+        construct_node(name="div_1", type=NodeType.DIV, parameters={"value": 2.34, "right_op": True}, **kwargs),
         exclude=exclude,
         has_value_params=True,
         has_right_op=True,
@@ -937,9 +921,7 @@ def test_series_copy(float_series):
     assert id(new_feat.graph.nodes) == id(feat.graph.nodes) == id(float_series.graph.nodes)
 
 
-@pytest.mark.parametrize(
-    "scalar_input, expected_literal", [(True, "'scalar_value'"), (False, '"PRODUCT_ACTION"')]
-)
+@pytest.mark.parametrize("scalar_input, expected_literal", [(True, "'scalar_value'"), (False, '"PRODUCT_ACTION"')])
 def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
     """
     Test varchar series concat
@@ -964,9 +946,7 @@ def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
     )
 
 
-@pytest.mark.parametrize(
-    "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
-)
+@pytest.mark.parametrize("series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"])
 def test_astype__expected_parameters(series_fixture_name, request):
     """
     Test series astype method
@@ -1014,9 +994,7 @@ def test_astype__invalid_type_cls(float_series):
     )
 
 
-@pytest.mark.parametrize(
-    "series_fixture_name", ["timestamp_series", "timedelta_series", "timedelta_series"]
-)
+@pytest.mark.parametrize("series_fixture_name", ["timestamp_series", "timedelta_series", "timedelta_series"])
 def test_astype__unsupported_dtype(series_fixture_name, request):
     series = request.getfixturevalue(series_fixture_name)
     with pytest.raises(TypeError) as exc:
@@ -1130,9 +1108,7 @@ def scalar_timestamp_tz_fixture():
     return pd.Timestamp("2023-01-15 10:00:00", tz="Asia/Singapore")
 
 
-@pytest.mark.parametrize(
-    "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
-)
+@pytest.mark.parametrize("series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"])
 def test_scalar_timestamp__invalid_with_wrong_type(request, series_fixture_name, scalar_timestamp):
     """
     Test scalar timestamp value cannot be compared with series of wrong type
@@ -1154,9 +1130,7 @@ def test_scalar_timestamp__invalid_with_wrong_type(request, series_fixture_name,
         (lambda s, ts_value: s != ts_value, "<>"),
     ],
 )
-def test_scalar_timestamp__valid(
-    timestamp_series, scalar_timestamp, op_func, expected_operator_str
-):
+def test_scalar_timestamp__valid(timestamp_series, scalar_timestamp, op_func, expected_operator_str):
     """
     Test scalar timestamp value in a relational operation
     """
@@ -1206,9 +1180,8 @@ def test_scalar_timestamp__invalid(timestamp_series, scalar_timestamp):
     """
     with pytest.raises(TypeError) as exc:
         _ = timestamp_series - scalar_timestamp
-    assert (
-        'type of argument "other" must be one of (int, float, featurebyte.core.series.FrozenSeries)'
-        in str(exc.value)
+    assert 'type of argument "other" must be one of (int, float, featurebyte.core.series.FrozenSeries)' in str(
+        exc.value
     )
 
 

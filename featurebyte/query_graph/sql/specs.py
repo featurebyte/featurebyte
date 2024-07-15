@@ -4,12 +4,11 @@ Module for data structures that describe different types of aggregations that fo
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
-
 import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -37,9 +36,7 @@ from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 
-NonTileBasedAggregationSpecT = TypeVar(
-    "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
-)
+NonTileBasedAggregationSpecT = TypeVar("NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec")
 
 FB_INTERNAL_COLUMN_PREFIX = "_fb_internal"
 
@@ -78,9 +75,7 @@ class AggregationSpec(ABC):
         self.original_serving_names = self.serving_names[:]
         self.original_agg_result_name: str = self.agg_result_name
         if self.serving_names_mapping is not None:
-            self.serving_names = apply_serving_names_mapping(
-                self.serving_names, self.serving_names_mapping
-            )
+            self.serving_names = apply_serving_names_mapping(self.serving_names, self.serving_names_mapping)
 
     @property
     @abstractmethod
@@ -132,8 +127,6 @@ class TileBasedAggregationSpec(AggregationSpec):
     """
     Window aggregation specification
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     window: int | None
     offset: int | None
@@ -207,7 +200,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         list[TileBasedAggregationSpec]
             List of AggregationSpec
         """
-        # pylint: disable=too-many-locals
+
         assert isinstance(groupby_node, GroupByNode)
         groupby_node_params = groupby_node.parameters
         tile_table_id = groupby_node_params.tile_id
@@ -222,12 +215,8 @@ class TileBasedAggregationSpec(AggregationSpec):
         if parent_column_name:
             parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
             parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
-        aggregator = get_aggregator(
-            groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype
-        )
-        tile_value_columns = [
-            spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
-        ]
+        aggregator = get_aggregator(groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype)
+        tile_value_columns = [spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)]
         if groupby_node_params.offset is not None:
             offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
         else:
@@ -304,9 +293,7 @@ class TileBasedAggregationSpec(AggregationSpec):
             .operation_structure_map[pruned_node.name]
         )
         aggregations = op_struct.aggregations
-        assert (
-            len(aggregations) == 1
-        ), f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
+        assert len(aggregations) == 1, f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
         aggregation = aggregations[0]
         return pruned_graph, pruned_node, aggregation.dtype
 
@@ -362,7 +349,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         AggregationSource
             An AggregationSource object representing the source table
         """
-        # pylint: disable=import-outside-toplevel,cyclic-import
+
         from featurebyte.query_graph.sql.ast.aggregate import Aggregate
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
         from featurebyte.query_graph.sql.common import SQLType
@@ -559,9 +546,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         if aggregation_source is None:
             assert graph is not None
             assert source_type is not None
-            to_filter_scd_by_current_flag = (
-                is_online_serving is True
-                and cls.should_filter_scd_by_current_flag(graph=graph, node=node)
+            to_filter_scd_by_current_flag = is_online_serving is True and cls.should_filter_scd_by_current_flag(
+                graph=graph, node=node
             )
             aggregation_source = cls.get_aggregation_source(
                 graph=graph,
@@ -608,9 +594,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [
-                str(entity_id) for entity_id in parameters_dict["entity_ids"]
-            ]
+            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
         params["parameters"] = parameters_dict
         return params
 
@@ -660,9 +644,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [
-                str(entity_id) for entity_id in parameters_dict["entity_ids"]
-            ]
+            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
         params["parameters"] = parameters_dict
         return params
 

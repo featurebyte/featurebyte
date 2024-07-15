@@ -2,9 +2,8 @@
 TaskStatus API payload schema
 """
 
-from typing import Any, Dict, List, Optional, Set, Union
-
 import datetime
+from typing import Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from pydantic import Field

@@ -20,9 +20,7 @@ from featurebyte.service.online_store import OnlineStoreService
 logger = get_logger(__name__)
 
 
-class OnlineStoreController(
-    BaseDocumentController[OnlineStoreModel, OnlineStoreService, OnlineStoreList]
-):
+class OnlineStoreController(BaseDocumentController[OnlineStoreModel, OnlineStoreService, OnlineStoreList]):
     """
     OnlineStore controller
     """
@@ -81,14 +79,10 @@ class OnlineStoreController(
         -------
         InfoDocument
         """
-        info_document = await self.service.get_online_store_info(
-            document_id=document_id, verbose=verbose
-        )
+        info_document = await self.service.get_online_store_info(document_id=document_id, verbose=verbose)
         return info_document
 
-    async def update_online_store(
-        self, online_store_id: ObjectId, data: OnlineStoreUpdate
-    ) -> OnlineStoreModel:
+    async def update_online_store(self, online_store_id: ObjectId, data: OnlineStoreUpdate) -> OnlineStoreModel:
         """
         Update online store
 

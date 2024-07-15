@@ -74,9 +74,7 @@ class FeatureJobSettingAnalysisController(
         """
         _ = verbose
         feature_job_setting_analysis = await self.service.get_document(document_id=document_id)
-        recommended_setting = (
-            feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
-        )
+        recommended_setting = feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
         if feature_job_setting_analysis.event_table_id:
             event_table_doc = await self.event_table_service.get_document(
                 document_id=feature_job_setting_analysis.event_table_id

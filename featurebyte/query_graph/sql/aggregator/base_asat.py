@@ -4,9 +4,8 @@ SQL generation for as-at aggregation
 
 from __future__ import annotations
 
-from typing import Any, TypeVar, cast
-
 from abc import abstractmethod
+from typing import Any, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -101,29 +100,23 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             end_timestamp_column = spec.parameters.end_timestamp_column
 
         if spec.parameters.keys:
-            join_key_condition = expressions.and_(
-                *[
-                    expressions.EQ(
-                        this=get_qualified_column_identifier(serving_name, "REQ"),
-                        expression=get_qualified_column_identifier(key, "SCD"),
-                    )
-                    for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
-                ]
-            )
+            join_key_condition = expressions.and_(*[
+                expressions.EQ(
+                    this=get_qualified_column_identifier(serving_name, "REQ"),
+                    expression=get_qualified_column_identifier(key, "SCD"),
+                )
+                for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+            ])
         else:
             join_key_condition = expressions.true()
 
         # Use offset adjusted point in time to join with SCD table if any
         if spec.parameters.offset is None:
-            point_in_time_expr = get_qualified_column_identifier(
-                SpecialColumnName.POINT_IN_TIME, "REQ"
-            )
+            point_in_time_expr = get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")
         else:
             point_in_time_expr = add_offset_to_timestamp(
                 adapter=self.adapter,
-                timestamp_expr=get_qualified_column_identifier(
-                    SpecialColumnName.POINT_IN_TIME, "REQ"
-                ),
+                timestamp_expr=get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
                 offset=spec.parameters.offset,
                 offset_direction=self.get_offset_direction(),
             )
@@ -133,9 +126,7 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             # SCD.effective_timestamp_column <= REQ.POINT_IN_TIME; i.e. record became effective
             # at or before point in time
             expressions.LTE(
-                this=get_qualified_column_identifier(
-                    spec.parameters.effective_timestamp_column, "SCD"
-                ),
+                this=get_qualified_column_identifier(spec.parameters.effective_timestamp_column, "SCD"),
                 expression=point_in_time_expr,
             ),
             expressions.or_(
@@ -178,16 +169,12 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
                 parent_expr=(
-                    get_qualified_column_identifier(s.parameters.parent, "SCD")
-                    if s.parameters.parent
-                    else None
+                    get_qualified_column_identifier(s.parameters.parent, "SCD") if s.parameters.parent else None
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
                 parent_cols=(
-                    [get_qualified_column_identifier(s.parameters.parent, "SCD")]
-                    if s.parameters.parent
-                    else []
+                    [get_qualified_column_identifier(s.parameters.parent, "SCD")] if s.parameters.parent else []
                 ),
             )
             for s in specs

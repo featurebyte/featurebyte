@@ -17,7 +17,7 @@ class FeatureNamespaceListHandler(ListHandler):
         features["id"] = features["default_feature_id"]
 
         # add online_enabled
-        features["online_enabled"] = features[
-            ["default_feature_id", "online_enabled_feature_ids"]
-        ].apply(lambda row: row[0] in row[1], axis=1)
+        features["online_enabled"] = features[["default_feature_id", "online_enabled_feature_ids"]].apply(
+            lambda row: row[0] in row[1], axis=1
+        )
         return features

@@ -26,9 +26,7 @@ from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.target import TargetService
 
 
-class ItemTableController(
-    BaseTableDocumentController[ItemTableModel, ItemTableService, ItemTableList]
-):
+class ItemTableController(BaseTableDocumentController[ItemTableModel, ItemTableService, ItemTableList]):
     """
     ItemTable controller
     """
@@ -41,7 +39,7 @@ class ItemTableController(
         "item_id_column": SemanticType.ITEM_ID,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         item_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -92,12 +90,8 @@ class ItemTableController(
         ItemTableInfo
         """
         item_table = await self.service.get_document(document_id=document_id)
-        table_dict = await self.table_info_service.get_table_info(
-            data_document=item_table, verbose=verbose
-        )
-        event_table = await self.event_table_service.get_document(
-            document_id=item_table.event_table_id
-        )
+        table_dict = await self.table_info_service.get_table_info(data_document=item_table, verbose=verbose)
+        event_table = await self.event_table_service.get_document(document_id=item_table.event_table_id)
         return ItemTableInfo(
             **table_dict,
             event_id_column=item_table.event_id_column,

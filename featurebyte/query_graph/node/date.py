@@ -4,9 +4,9 @@ This module contains datetime operation related node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
-from typing_extensions import Literal
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -54,9 +54,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
@@ -217,9 +215,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -241,9 +237,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         if sdk_code:
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
-            expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) - pd.to_datetime({right_operand})"
-            )
+            expr = ExpressionStr(f"pd.to_datetime({left_operand}) - pd.to_datetime({right_operand})")
         return statements, expr
 
     def _derive_sdk_code(
@@ -291,9 +285,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -318,9 +310,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
         if isinstance(timedelta_func, ClassEnum):
             obj = timedelta_func(var_name_expression, unit=self.parameters.unit)
         else:
-            obj = get_object_class_from_function_call(
-                timedelta_func, var_name_expression, unit=self.parameters.unit
-            )
+            obj = get_object_class_from_function_call(timedelta_func, var_name_expression, unit=self.parameters.unit)
         statements.append((var_name, obj))
         return statements, var_name
 
@@ -387,9 +377,7 @@ class DateAddNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -415,9 +403,7 @@ class DateAddNode(BaseSeriesOutputNode):
         if sdk_code:
             expr = ExpressionStr(f"{left_operand} + {right_operand}")
         else:
-            expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) + pd.to_timedelta({right_operand})"
-            )
+            expr = ExpressionStr(f"pd.to_datetime({left_operand}) + pd.to_timedelta({right_operand})")
         return statements, expr
 
     def _derive_sdk_code(

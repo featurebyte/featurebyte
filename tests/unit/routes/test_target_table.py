@@ -23,9 +23,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "TargetTable"
     base_route = "/target_table"
-    payload = BaseMaterializedTableTestSuite.load_payload(
-        "tests/fixtures/request_payloads/target_table.json"
-    )
+    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/target_table.json")
     random_id = str(ObjectId())
 
     create_conflict_payload_expected_detail_pairs = [
@@ -177,12 +175,10 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         ).json_dict()
 
         if not observation_table_id:
-            df = pd.DataFrame(
-                {
-                    "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                    "cust_id": ["C1"],
-                }
-            )
+            df = pd.DataFrame({
+                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+                "cust_id": ["C1"],
+            })
             files = {"observation_set": dataframe_to_arrow_bytes(df)}
             response = self.post(test_api_client, payload, files=files)
         else:

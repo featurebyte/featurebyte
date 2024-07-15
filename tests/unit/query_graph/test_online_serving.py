@@ -2,9 +2,8 @@
 Tests for featurebyte.query_graph.sql.online_serving
 """
 
-from typing import List
-
 import textwrap
+from typing import List
 from unittest.mock import patch
 
 import pandas as pd
@@ -85,9 +84,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
     Test constructing universe sql for a simple point in time groupby
     """
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    plan = OnlineStorePrecomputePlan(
-        query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE), True
-    )
+    plan = OnlineStorePrecomputePlan(query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE), True)
     agg_specs = get_aggregation_specs(query_graph_with_groupby, node)
 
     # window size of 2h
@@ -169,9 +166,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     assert universe.expr.sql(pretty=True) == expected_sql
 
 
-def test_construct_universe_sql__unbounded_latest(
-    global_graph, latest_value_without_window_feature_node
-):
+def test_construct_universe_sql__unbounded_latest(global_graph, latest_value_without_window_feature_node):
     """
     Test constructing universe sql for groupby with category
     """
@@ -201,9 +196,7 @@ def test_construct_universe_sql__unbounded_latest(
     assert universe.expr.sql(pretty=True) == expected_sql
 
 
-def test_construct_universe_sql__window_offset(
-    global_graph, window_aggregate_with_offset_feature_node
-):
+def test_construct_universe_sql__window_offset(global_graph, window_aggregate_with_offset_feature_node):
     """
     Test constructing universe sql for window aggregate with offset
     """
@@ -294,9 +287,7 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures)
     pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
 
     # Check precompute sqls
-    queries = get_online_store_precompute_queries(
-        pruned_graph, pruned_node, SourceType.SNOWFLAKE, True
-    )
+    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, SourceType.SNOWFLAKE, True)
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",

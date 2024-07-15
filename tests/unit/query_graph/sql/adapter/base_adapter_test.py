@@ -2,10 +2,8 @@
 Base adapter test class that can be reused across all adapters
 """
 
-from typing import cast
-
 import textwrap
-from select import select
+from typing import cast
 
 from sqlglot import select
 from sqlglot.expressions import Identifier, Select, alias_
@@ -127,9 +125,7 @@ class BaseAdapterTest:
                 False,
             ),
         ]
-        group_by_expr = adapter.group_by(
-            select_expr, select_keys, agg_exprs, keys, vector_aggregate_exprs
-        )
+        group_by_expr = adapter.group_by(select_expr, select_keys, agg_exprs, keys, vector_aggregate_exprs)
         expected = self.get_group_by_expected_result()
         assert group_by_expr.sql(pretty=True) == expected
 

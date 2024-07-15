@@ -4,9 +4,8 @@ Module for groupby operation (non-time aware) sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot.expressions import Expression, select
 
@@ -32,11 +31,7 @@ class ItemGroupby(TableNode):
     @property
     def sql(self) -> Expression:
         groupby_keys = [GroupbyKey(expr=quoted_identifier(k), name=k) for k in self.keys]
-        value_by = (
-            GroupbyKey(expr=quoted_identifier(self.value_by), name=self.value_by)
-            if self.value_by
-            else None
-        )
+        value_by = GroupbyKey(expr=quoted_identifier(self.value_by), name=self.value_by) if self.value_by else None
         return get_groupby_expr(
             input_expr=select().from_(self.input_node.sql_nested()),
             groupby_keys=groupby_keys,
@@ -61,14 +56,10 @@ class ItemGroupby(TableNode):
         groupby_columns = [
             GroupbyColumn(
                 agg_func=parameters["agg_func"],
-                parent_expr=(
-                    quoted_identifier(parameters["parent"]) if parameters["parent"] else None
-                ),
+                parent_expr=(quoted_identifier(parameters["parent"]) if parameters["parent"] else None),
                 result_name=output_name,
                 parent_dtype=parent_dtype,
-                parent_cols=(
-                    [quoted_identifier(parameters["parent"])] if parameters["parent"] else []
-                ),
+                parent_cols=([quoted_identifier(parameters["parent"])] if parameters["parent"] else []),
             )
         ]
         node = ItemGroupby(

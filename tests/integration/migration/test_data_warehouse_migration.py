@@ -71,18 +71,14 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_no_creds"
     feature_store["details"]["schema_name"] += "_1"
-    await persistent.insert_one(
-        collection_name="feature_store", document=feature_store, user_id=user.id
-    )
+    await persistent.insert_one(collection_name="feature_store", document=feature_store, user_id=user.id)
     bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with wrong credentials
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_wrong_creds"
     feature_store["details"]["schema_name"] += "_2"
-    await persistent.insert_one(
-        collection_name="feature_store", document=feature_store, user_id=user.id
-    )
+    await persistent.insert_one(collection_name="feature_store", document=feature_store, user_id=user.id)
     bad_feature_store_docs.append(feature_store)
 
     # FeatureStore that can no longer instantiate a session object because of working schema
@@ -90,15 +86,11 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_a"
     feature_store["details"]["schema_name"] += "_3"
-    await persistent.insert_one(
-        collection_name="feature_store", document=feature_store, user_id=user.id
-    )
+    await persistent.insert_one(collection_name="feature_store", document=feature_store, user_id=user.id)
     feature_store = deepcopy(feature_store_doc)
     feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_b"
     feature_store["details"]["schema_name"] += "_3"
-    await persistent.insert_one(
-        collection_name="feature_store", document=feature_store, user_id=user.id
-    )
+    await persistent.insert_one(collection_name="feature_store", document=feature_store, user_id=user.id)
     bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with unreachable host
@@ -106,9 +98,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     feature_store["name"] = "snowflake_featurestore_unreachable"
     feature_store["details"]["account"] = "this.snowflake.account.does.not.exist.gcp"
     feature_store["details"]["schema_name"] += "_4"
-    await persistent.insert_one(
-        collection_name="feature_store", document=feature_store, user_id=user.id
-    )
+    await persistent.insert_one(collection_name="feature_store", document=feature_store, user_id=user.id)
 
     yield
 
@@ -160,12 +150,8 @@ async def test_data_warehouse_migration_v6(
 
     # Get tile id to check (both features should have the same tile id)
     expected_tile_id = get_tile_id(features_1["test_data_warehouse_migration_v6_feature_count"])
-    assert expected_tile_id == get_tile_id(
-        features_2["test_data_warehouse_migration_v6_feature_latest_event_time"]
-    )
-    latest_feature_agg_id = get_aggregation_id(
-        features_2["test_data_warehouse_migration_v6_feature_latest_event_time"]
-    )
+    assert expected_tile_id == get_tile_id(features_2["test_data_warehouse_migration_v6_feature_latest_event_time"])
+    latest_feature_agg_id = get_aggregation_id(features_2["test_data_warehouse_migration_v6_feature_latest_event_time"])
     latest_feature_tile_column = f"value_{latest_feature_agg_id}"
 
     async def _retrieve_tile_registry():
@@ -179,7 +165,7 @@ async def test_data_warehouse_migration_v6(
         return df
 
     async def _get_migration_version():
-        df = await session.execute_query(f"SELECT * FROM METADATA_SCHEMA")
+        df = await session.execute_query("SELECT * FROM METADATA_SCHEMA")
         return df["MIGRATION_VERSION"].iloc[0]
 
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
@@ -192,36 +178,25 @@ async def test_data_warehouse_migration_v6(
 
         # Simulate the case when the column in the tile table has wrong type to be corrected (FLOAT
         # is the wrong type, should be TIMESTAMP_NTZ)
-        await session.execute_query(
-            f"ALTER TABLE {expected_tile_id} DROP COLUMN {latest_feature_tile_column}"
-        )
+        await session.execute_query(f"ALTER TABLE {expected_tile_id} DROP COLUMN {latest_feature_tile_column}")
         await session.execute_query(
             f"ALTER TABLE {expected_tile_id} ADD COLUMN {latest_feature_tile_column} FLOAT DEFAULT NULL"
         )
 
         # Simulate missing MIGRATION_VERSION
-        await session.execute_query(
-            f"ALTER TABLE METADATA_SCHEMA DROP COLUMN {InternalName.MIGRATION_VERSION}"
-        )
+        await session.execute_query(f"ALTER TABLE METADATA_SCHEMA DROP COLUMN {InternalName.MIGRATION_VERSION}")
 
         # Run migration
-        service = DataWarehouseMigrationServiceV1(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        service = DataWarehouseMigrationServiceV1(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
         service.set_credential_callback(get_credential)
         await service.add_tile_value_types_column()
 
         # Check migration correctly adds the VALUE_COLUMN_TYPES column
         df_migrated = await _retrieve_tile_registry()
-        assert (
-            df_migrated["VALUE_COLUMN_TYPES"].tolist() == df_expected["VALUE_COLUMN_TYPES"].tolist()
-        )
+        assert df_migrated["VALUE_COLUMN_TYPES"].tolist() == df_expected["VALUE_COLUMN_TYPES"].tolist()
 
         df_migrated_tile_table = await _retrieve_tile_table()
-        assert (
-            str(df_migrated_tile_table[latest_feature_tile_column.upper()].dtype)
-            == "datetime64[ns, UTC]"
-        )
+        assert str(df_migrated_tile_table[latest_feature_tile_column.upper()].dtype) == "datetime64[ns, UTC]"
 
         assert await _get_migration_version() == 6
 

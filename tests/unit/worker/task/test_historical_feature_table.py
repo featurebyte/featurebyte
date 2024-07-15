@@ -35,7 +35,4 @@ async def test_get_task_description(app_container):
         feature_store_id=ObjectId(),
     )
     task = app_container.get(HistoricalFeatureTableTask)
-    assert (
-        await task.get_task_description(payload)
-        == 'Save historical feature table "Test historical feature table"'
-    )
+    assert await task.get_task_description(payload) == 'Save historical feature table "Test historical feature table"'

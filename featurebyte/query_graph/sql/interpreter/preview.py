@@ -1,17 +1,14 @@
-# pylint: disable=too-many-lines
 """
 Preview mixin for Graph Interpreter
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
-from typing import OrderedDict as OrderedDictT
-from typing import Set, Tuple, cast
-
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable, List, Optional, Set, Tuple, cast
+from typing import OrderedDict as OrderedDictT
 
 from sqlglot import expressions, parse_one
 
@@ -146,9 +143,7 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_node = self.get_flattened_node(node_name)
-        sql_graph = SQLOperationGraph(
-            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
-        )
+        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type)
         sql_node = sql_graph.build(flat_node)
 
         assert isinstance(sql_node, (TableNode, ExpressionNode))
@@ -175,18 +170,14 @@ class PreviewMixin(BaseGraphInterpreter):
                 filter_conditions.append(
                     expressions.GTE(
                         this=quoted_identifier(timestamp_column),
-                        expression=make_literal_value(
-                            from_timestamp.isoformat(), cast_as_timestamp=True
-                        ),
+                        expression=make_literal_value(from_timestamp.isoformat(), cast_as_timestamp=True),
                     )
                 )
             if to_timestamp:
                 filter_conditions.append(
                     expressions.LT(
                         this=quoted_identifier(timestamp_column),
-                        expression=make_literal_value(
-                            to_timestamp.isoformat(), cast_as_timestamp=True
-                        ),
+                        expression=make_literal_value(to_timestamp.isoformat(), cast_as_timestamp=True),
                     )
                 )
             if filter_conditions:
@@ -206,9 +197,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, type_conversions
 
-    def construct_preview_sql(
-        self, node_name: str, num_rows: int = 10
-    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
+    def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to preview data from a given node
 
         Parameters
@@ -275,9 +264,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
-    def construct_unique_values_sql(
-        self, node_name: str, column_name: str, num_rows: int = 10
-    ) -> str:
+    def construct_unique_values_sql(self, node_name: str, column_name: str, num_rows: int = 10) -> str:
         """Construct SQL to get unique values in a column from a given node
 
         Parameters
@@ -327,9 +314,7 @@ class PreviewMixin(BaseGraphInterpreter):
         expr = expressions.alias_(make_literal_value(None), column_name, quoted=True)
         return cast(expressions.Expression, expr)
 
-    def _percentile_expr(
-        self, expression: expressions.Expression, quantile: float
-    ) -> expressions.Expression:
+    def _percentile_expr(self, expression: expressions.Expression, quantile: float) -> expressions.Expression:
         """
         Create expression for percentile of column
 
@@ -408,9 +393,7 @@ class PreviewMixin(BaseGraphInterpreter):
         """
         stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
         stats_expressions["unique"] = (
-            lambda col_expr, _: expressions.Count(
-                this=expressions.Distinct(expressions=[col_expr])
-            ),
+            lambda col_expr, _: expressions.Count(this=expressions.Distinct(expressions=[col_expr])),
             None,
         )
         stats_expressions["%missing"] = (
@@ -561,9 +544,7 @@ class PreviewMixin(BaseGraphInterpreter):
             )
             .from_(CASTED_DATA_TABLE_NAME if use_casted_data else "data")
             .group_by(col_expr)
-            .order_by(
-                expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
-            )
+            .order_by(expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True))
             .limit(num_categories_limit)
         )
 
@@ -587,9 +568,7 @@ class PreviewMixin(BaseGraphInterpreter):
         expressions.Select
         """
         entropy_required = self._is_dtype_supported(col_dtype, self.stats_expressions["entropy"][1])
-        cat_counts = self._get_cat_counts(
-            col_expr, num_categories_limit=500 if entropy_required else 1
-        )
+        cat_counts = self._get_cat_counts(col_expr, num_categories_limit=500 if entropy_required else 1)
         col_expr_filled_null = expressions.Case(
             ifs=[
                 expressions.If(
@@ -599,9 +578,7 @@ class PreviewMixin(BaseGraphInterpreter):
             ],
             default=col_expr,
         )
-        object_agg_expr = self.adapter.object_agg(
-            col_expr_filled_null, quoted_identifier(CATEGORY_COUNT_COLUMN_NAME)
-        )
+        object_agg_expr = self.adapter.object_agg(col_expr_filled_null, quoted_identifier(CATEGORY_COUNT_COLUMN_NAME))
         cat_count_dict = expressions.select(
             expressions.alias_(
                 expression=object_agg_expr,
@@ -616,11 +593,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 expressions.alias_(
                     expression=expressions.Anonymous(
                         this="F_COUNT_DICT_ENTROPY",
-                        expressions=[
-                            expressions.Column(
-                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
-                            )
-                        ],
+                        expressions=[expressions.Column(this=quoted_identifier("COUNT_DICT"), table="count_dict")],
                     ),
                     alias=f"entropy__{column_idx}",
                     quoted=True,
@@ -632,11 +605,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 expressions.alias_(
                     expression=expressions.Anonymous(
                         this="F_COUNT_DICT_MOST_FREQUENT",
-                        expressions=[
-                            expressions.Column(
-                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
-                            )
-                        ],
+                        expressions=[expressions.Column(this=quoted_identifier("COUNT_DICT"), table="count_dict")],
                     ),
                     alias=f"top__{column_idx}",
                     quoted=True,
@@ -647,19 +616,13 @@ class PreviewMixin(BaseGraphInterpreter):
                 expressions.alias_(
                     expression=expressions.Anonymous(
                         this="F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                        expressions=[
-                            expressions.Column(
-                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
-                            )
-                        ],
+                        expressions=[expressions.Column(this=quoted_identifier("COUNT_DICT"), table="count_dict")],
                     ),
                     alias=f"freq__{column_idx}",
                     quoted=True,
                 )
             )
-        return expressions.select(*selections).from_(
-            expressions.Subquery(this=cat_count_dict, alias="count_dict")
-        )
+        return expressions.select(*selections).from_(expressions.Subquery(this=cat_count_dict, alias="count_dict"))
 
     @staticmethod
     def _get_cte_with_casted_data(sql_tree: expressions.Expression) -> CteStatement:
@@ -700,12 +663,10 @@ class PreviewMixin(BaseGraphInterpreter):
                 expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
             ),
         )
-        clipped_col_expr = expressions.If(
-            this=invalid_mask, true=expressions.Null(), false=col_expr
-        )
+        clipped_col_expr = expressions.If(this=invalid_mask, true=expressions.Null(), false=col_expr)
         return clipped_col_expr
 
-    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def _construct_stats_sql(
         self,
         sql_tree: expressions.Select,
         columns: List[ViewDataColumn],
@@ -728,9 +689,7 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[expressions.Select, List[str], List[ViewDataColumn]]
             Select expression, row indices, columns
         """
-        columns_info = {
-            column.name: column for column in columns if column.name or len(columns) == 1
-        }
+        columns_info = {column.name: column for column in columns if column.name or len(columns) == 1}
 
         # original data
         cte_statements: List[CteStatement] = [("data", sql_tree)]
@@ -758,9 +717,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
             # add dtype
             final_selections.append(
-                expressions.alias_(
-                    make_literal_value(column.dtype), f"dtype__{column_idx}", quoted=True
-                )
+                expressions.alias_(make_literal_value(column.dtype), f"dtype__{column_idx}", quoted=True)
             )
 
             entropy_required = "entropy" in required_stats_expressions and self._is_dtype_supported(
@@ -796,17 +753,13 @@ class PreviewMixin(BaseGraphInterpreter):
                             ),
                         )
                     else:
-                        stats_selections.append(
-                            self._empty_value_expr(f"{stats_name}__{column_idx}")
-                        )
+                        stats_selections.append(self._empty_value_expr(f"{stats_name}__{column_idx}"))
 
                 if stats_name == "entropy":
                     stats_name = f"entropy__{column_idx}"
                     final_selections.append(
                         (expressions.Column(this=quoted_identifier(stats_name)))
-                        if self._is_dtype_supported(
-                            column.dtype, self.stats_expressions["entropy"][1]
-                        )
+                        if self._is_dtype_supported(column.dtype, self.stats_expressions["entropy"][1])
                         else self._empty_value_expr(stats_name)
                     )
                 elif stats_name == "top":
@@ -824,9 +777,7 @@ class PreviewMixin(BaseGraphInterpreter):
                         else self._empty_value_expr(stats_name)
                     )
                 else:
-                    final_selections.append(
-                        expressions.Column(this=quoted_identifier(f"{stats_name}__{column_idx}"))
-                    )
+                    final_selections.append(expressions.Column(this=quoted_identifier(f"{stats_name}__{column_idx}")))
 
         # get statistics
         all_tables = []
@@ -1026,9 +977,7 @@ class PreviewMixin(BaseGraphInterpreter):
             construct_cte_sql(cte_statements)
             .select(
                 expressions.alias_(quoted_identifier(col_name), "key", quoted=True),
-                expressions.alias_(
-                    quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True
-                ),
+                expressions.alias_(quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True),
             )
             .from_(cat_counts.subquery())
         )

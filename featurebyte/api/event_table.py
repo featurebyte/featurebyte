@@ -4,15 +4,14 @@ EventTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
-from typing_extensions import Literal
-
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
@@ -77,9 +76,7 @@ class EventTable(TableApiObject):
         alias="default_feature_job_setting", default=None
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    internal_event_id_column: Optional[StrictStr] = Field(
-        alias="event_id_column", default=None
-    )  # DEV-556
+    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column", default=None)  # DEV-556
     internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
         alias="event_timestamp_timezone_offset", default=None
     )
@@ -153,22 +150,20 @@ class EventTable(TableApiObject):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_view = event_table.get_view(
-        ...   view_mode="manual",
-        ...   drop_column_names=["record_available_at"],
-        ...   column_cleaning_operations=[
-        ...     fb.ColumnCleaningOperation(
-        ...       column_name="Amount",
-        ...       cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(
-        ...           type="less_than", end_point=0, imputed_value=None
+        ...     view_mode="manual",
+        ...     drop_column_names=["record_available_at"],
+        ...     column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...             column_name="Amount",
+        ...             cleaning_operations=[
+        ...                 fb.MissingValueImputation(imputed_value=0),
+        ...                 fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=None),
+        ...             ],
         ...         )
-        ...       ],
-        ...     )
-        ...   ],
+        ...     ],
         ... )
         """
-        from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_view import EventView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -309,9 +304,7 @@ class EventTable(TableApiObject):
         return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
-    def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> EventTable:
+    def get_by_id(cls, id: ObjectId) -> EventTable:
         """
         Returns an EventTable object by its unique identifier (ID).
 
@@ -349,9 +342,9 @@ class EventTable(TableApiObject):
 
         >>> from featurebyte import FeatureJobSetting
         >>> new_feature_job_setting = FeatureJobSetting(
-        ...   blind_spot="10m",
-        ...   period="24h",
-        ...   offset="65m",
+        ...     blind_spot="10m",
+        ...     period="24h",
+        ...     offset="65m",
         ... )
 
 
@@ -436,13 +429,13 @@ class EventTable(TableApiObject):
         >>> from datetime import datetime
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> analysis = event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
-        ...   analysis_date=datetime.utcnow(),
-        ...   analysis_length=60*60*24*7*12,
-        ...   min_featurejob_period=60*60,
-        ...   exclude_late_job=True,
-        ...   blind_spot_buffer_setting=10,
-        ...   job_time_buffer_setting=5,
-        ...   late_data_allowance=0.5/100,
+        ...     analysis_date=datetime.utcnow(),
+        ...     analysis_length=60 * 60 * 24 * 7 * 12,
+        ...     min_featurejob_period=60 * 60,
+        ...     exclude_late_job=True,
+        ...     blind_spot_buffer_setting=10,
+        ...     job_time_buffer_setting=5,
+        ...     late_data_allowance=0.5 / 100,
         ... )
 
         The analysis could also be called with default values.
@@ -459,9 +452,7 @@ class EventTable(TableApiObject):
             job_time_buffer_setting=job_time_buffer_setting,
             late_data_allowance=late_data_allowance,
         )
-        job_setting_analysis = self.post_async_task(
-            route="/feature_job_setting_analysis", payload=payload.json_dict()
-        )
+        job_setting_analysis = self.post_async_task(route="/feature_job_setting_analysis", payload=payload.json_dict())
         analysis = FeatureJobSettingAnalysis.get_by_id(job_setting_analysis["_id"])
         analysis.display_report()
         return analysis

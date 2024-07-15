@@ -4,12 +4,11 @@ API Object Util
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional, Union
-
 import ctypes
 import threading
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from bson import ObjectId
 
@@ -76,7 +75,7 @@ class ProgressThread(threading.Thread):
                         # end of stream
                         if percent == -1:
                             break
-                        self.progress_bar(percent / 100)  # pylint: disable=not-callable
+                        self.progress_bar(percent / 100)
             finally:
                 pass
 
@@ -105,9 +104,7 @@ class ProgressThread(threading.Thread):
         """
         thread_id = self.get_id()
         if thread_id:
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(thread_id), ctypes.py_object(SystemExit)
-            )
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_id), ctypes.py_object(SystemExit))
             if res > 1:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
                 logger.warning("Exception raise failure")
@@ -216,9 +213,7 @@ def to_request_func(response_dict: dict[str, Any], page: int) -> bool:
     return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
 
-def get_api_object_by_id(
-    route: str, id_value: ObjectId, resource_url: Optional[str] = None
-) -> dict[str, Any]:
+def get_api_object_by_id(route: str, id_value: ObjectId, resource_url: Optional[str] = None) -> dict[str, Any]:
     """
     Retrieve api object by given route & id
 

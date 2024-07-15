@@ -59,9 +59,7 @@ def check_ingest_query_graph(ingest_query_graph):
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
     # check consistency of entity info
-    assert len(ingest_query_graph.primary_entity_ids) == len(
-        ingest_query_graph.primary_entity_dtypes
-    )
+    assert len(ingest_query_graph.primary_entity_ids) == len(ingest_query_graph.primary_entity_dtypes)
 
 
 @pytest.fixture(name="composite_feature")
@@ -94,16 +92,12 @@ def test_feature__ttl_and_non_ttl_components(
         ttl_component_graph = ingest_query_graphs[1]
         non_ttl_component_graph = ingest_query_graphs[0]
 
-    expected_feature_job_setting = FeatureJobSetting(
-        blind_spot="600s", period="1800s", offset="300s"
-    )
+    expected_feature_job_setting = FeatureJobSetting(blind_spot="600s", period="1800s", offset="300s")
     assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
     assert ttl_component_graph.node_name == "mul_1"
     assert ttl_component_graph.has_ttl is True
     assert ttl_component_graph.aggregation_nodes_info == [
-        AggregationNodeInfo(
-            node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
-        ),
+        AggregationNodeInfo(node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"),
     ]
     check_ingest_query_graph(ttl_component_graph)
 
@@ -111,9 +105,7 @@ def test_feature__ttl_and_non_ttl_components(
     assert non_ttl_component_graph.node_name == "sub_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
-        AggregationNodeInfo(
-            node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
-        ),
+        AggregationNodeInfo(node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"),
     ]
     check_ingest_query_graph(non_ttl_component_graph)
 
@@ -166,9 +158,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     assert ttl_component_graph.node_name == "project_1"
     assert ttl_component_graph.has_ttl is True
     assert ttl_component_graph.aggregation_nodes_info == [
-        AggregationNodeInfo(
-            node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
-        ),
+        AggregationNodeInfo(node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"),
     ]
     check_ingest_query_graph(ttl_component_graph)
 
@@ -176,16 +166,12 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     assert non_ttl_component_graph.node_name == "project_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
-        AggregationNodeInfo(
-            node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
-        ),
+        AggregationNodeInfo(node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"),
     ]
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
-    sql_fixture_path = os.path.join(
-        test_dir, "fixtures/on_demand_function/req_col_ttl_and_non_ttl.sql"
-    )
+    sql_fixture_path = os.path.join(test_dir, "fixtures/on_demand_function/req_col_ttl_and_non_ttl.sql")
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
     check_on_demand_feature_code_generation(
         feature_model=feature_model,
@@ -234,9 +220,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
-def test_feature__multiple_non_ttl_components(
-    snowflake_scd_table, snowflake_dimension_table, cust_id_entity
-):
+def test_feature__multiple_non_ttl_components(snowflake_scd_table, snowflake_dimension_table, cust_id_entity):
     """Test that a feature contains multiple non-ttl components."""
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
@@ -256,18 +240,12 @@ def test_feature__multiple_non_ttl_components(
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]
-    assert non_ttl_component_graph.feature_job_setting == FeatureJobSetting(
-        blind_spot="0s", period="1d", offset="0s"
-    )
+    assert non_ttl_component_graph.feature_job_setting == FeatureJobSetting(blind_spot="0s", period="1d", offset="0s")
     assert non_ttl_component_graph.node_name == "alias_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
-        AggregationNodeInfo(
-            node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"
-        ),
-        AggregationNodeInfo(
-            node_type=NodeType.LOOKUP, node_name="lookup_2", input_node_name="graph_2"
-        ),
+        AggregationNodeInfo(node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"),
+        AggregationNodeInfo(node_type=NodeType.LOOKUP, node_name="lookup_2", input_node_name="graph_2"),
     ]
     check_ingest_query_graph(non_ttl_component_graph)
 
@@ -360,9 +338,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     )
     event_view = snowflake_event_table_with_entity.get_view()
     grouped_event_view = event_view.groupby("cust_id")
-    feature_raw = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])[
-        "col_float"
-    ]
+    feature_raw = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])["col_float"]
     feature_avg = grouped_event_view.aggregate_over(
         value_column="col_float",
         method="avg",
@@ -474,9 +450,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
-def test_feature__composite_count_dict(
-    snowflake_event_table_with_entity, feature_group_feature_job_setting
-):
+def test_feature__composite_count_dict(snowflake_event_table_with_entity, feature_group_feature_job_setting):
     """Test that a feature with composite count dict feature."""
     another_entity = Entity.create(name="another_entity", serving_names=["another_entity"])
     snowflake_event_table_with_entity.col_text.as_entity(another_entity.name)
@@ -588,28 +562,20 @@ def test_feature_entity_dtypes(
         cust_id_entity.id: snowflake_event_table.col_int.info.dtype,
         transaction_entity.id: snowflake_event_table.col_text.info.dtype,
     }
-    assert feat.cached_model.entity_dtypes == [
-        expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids
-    ]
+    assert feat.cached_model.entity_dtypes == [expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids]
 
     # check ingest query graph
     offline_store_info = feat.cached_model.offline_store_info
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 1
     assert ingest_query_graphs[0].primary_entity_ids == [cust_id_entity.id]
-    assert ingest_query_graphs[0].primary_entity_dtypes == [
-        expected_entity_id_to_dtype[cust_id_entity.id]
-    ]
+    assert ingest_query_graphs[0].primary_entity_dtypes == [expected_entity_id_to_dtype[cust_id_entity.id]]
 
 
 @pytest.mark.asyncio
-async def test_on_demand_feature_view_code_generation__card_transaction_description_feature(
-    test_dir, persistent, user
-):
+async def test_on_demand_feature_view_code_generation__card_transaction_description_feature(test_dir, persistent, user):
     """Test on-demand feature view code generation for card_transaction_description feature."""
-    fixture_path = os.path.join(
-        test_dir, "fixtures/feature/card_txn_description_representation.json"
-    )
+    fixture_path = os.path.join(test_dir, "fixtures/feature/card_txn_description_representation.json")
     with open(fixture_path, "r") as file_handle:
         feature_dict = json_util.loads(file_handle.read())
         feature = FeatureModel(**feature_dict)

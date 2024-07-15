@@ -4,10 +4,9 @@ This module contains Feature related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 import traceback
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import pymongo
 from bson import ObjectId
@@ -82,15 +81,9 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     # - table columns used by the feature or target
     # - table feature job settings used by the feature or target
     # - table cleaning operations used by the feature or target
-    table_id_column_names: List[TableIdColumnNames] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    table_id_column_names: List[TableIdColumnNames] = Field(allow_mutation=False, default_factory=list)
+    table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(allow_mutation=False, default_factory=list)
+    table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(allow_mutation=False, default_factory=list)
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -98,30 +91,22 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    user_defined_function_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    user_defined_function_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
     # relationship info contains the bare enough entity relationship information between all the entities
     # for example, if there are following entity relationship (child -> parent):
     # transaction -> order -> customer -> city -> state
     # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
     # transaction and state will not be included as they are not used by the feature.
-    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
-    )
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(allow_mutation=False, default=None)
 
     # entity join steps contains the steps required to join the entities used by the feature or target
     # when it is None, it means that the attribute is not initialized (for backward compatibility)
-    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
-    )
+    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(allow_mutation=False, default=None)
 
     # offline store info contains the information used to construct the offline store table(s) required
     # by the feature or target.
-    internal_offline_store_info: Optional[Dict[str, Any]] = Field(
-        alias="offline_store_info", default=None
-    )
+    internal_offline_store_info: Optional[Dict[str, Any]] = Field(alias="offline_store_info", default=None)
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -164,21 +149,16 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 graph_dict = graph_dict.dict(by_alias=True)
             graph = QueryGraph(**graph_dict)
             node_name = values["node_name"]
-            decompose_state = graph.get_decompose_state(
-                node_name=node_name, relationships_info=None
-            )
+            decompose_state = graph.get_decompose_state(node_name=node_name, relationships_info=None)
             entity_ids = decompose_state.primary_entity_ids
 
             values["entity_ids"] = entity_ids
             values["entity_dtypes"] = [
-                decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
-                for entity_id in entity_ids
+                decompose_state.primary_entity_ids_to_dtypes_map[entity_id] for entity_id in entity_ids
             ]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
-                node_name=node_name
-            )
+            values["user_defined_function_ids"] = graph.get_user_defined_function_ids(node_name=node_name)
 
             # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
@@ -211,14 +191,10 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     @classmethod
     def _validate_asset_name(cls, value: Optional[str]) -> Optional[str]:
         if value and value.startswith("__"):
-            raise ValueError(
-                f"{cls.__name__} name cannot start with '__' as it is reserved for internal use."
-            )
+            raise ValueError(f"{cls.__name__} name cannot start with '__' as it is reserved for internal use.")
         return value
 
-    @validator(
-        "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
-    )
+    @validator("table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations")
     @classmethod
     def _sort_list_by_table_id_(cls, value: List[Any]) -> List[Any]:
         return sorted(value, key=lambda item: item.table_id)  # type: ignore
@@ -285,9 +261,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def extract_operation_structure(
-        self, keep_all_source_columns: bool = False
-    ) -> GroupOperationStructure:
+    def extract_operation_structure(self, keep_all_source_columns: bool = False) -> GroupOperationStructure:
         """
         Extract feature or target operation structure based on query graph. This method is mainly
         used for deriving feature or target metadata used in feature/target info.
@@ -307,9 +281,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         )
         return operation_structure.to_group_operation_structure()
 
-    def extract_table_id_feature_job_settings(
-        self, keep_first_only: bool = False
-    ) -> List[TableIdFeatureJobSetting]:
+    def extract_table_id_feature_job_settings(self, keep_first_only: bool = False) -> List[TableIdFeatureJobSetting]:
         """
         Extract table id feature job settings
 
@@ -323,9 +295,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         List[TableIdFeatureJobSetting]
             List of table id feature job settings
         """
-        table_id_feature_job_settings = self.graph.extract_table_id_feature_job_settings(
-            target_node=self.node
-        )
+        table_id_feature_job_settings = self.graph.extract_table_id_feature_job_settings(target_node=self.node)
         if not keep_first_only:
             return table_id_feature_job_settings
 
@@ -365,9 +335,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
         return output
 
-    def extract_table_id_cleaning_operations(
-        self, keep_all_columns: bool = True
-    ) -> List[TableIdCleaningOperation]:
+    def extract_table_id_cleaning_operations(self, keep_all_columns: bool = True) -> List[TableIdCleaningOperation]:
         """
         Extract table cleaning operations
 
@@ -381,9 +349,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         List[TableIdCleaningOperation]
             List of table cleaning operations
         """
-        return self.graph.extract_table_id_cleaning_operations(
-            target_node=self.node, keep_all_columns=keep_all_columns
-        )
+        return self.graph.extract_table_id_cleaning_operations(target_node=self.node, keep_all_columns=keep_all_columns)
 
     def extract_table_cleaning_operations(
         self, table_id_to_name: Dict[ObjectId, str], keep_all_columns: bool = True
@@ -404,9 +370,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             List of table cleaning operations
         """
         output = []
-        for cleaning_operation in self.extract_table_id_cleaning_operations(
-            keep_all_columns=keep_all_columns
-        ):
+        for cleaning_operation in self.extract_table_id_cleaning_operations(keep_all_columns=keep_all_columns):
             output.append(
                 TableCleaningOperation(
                     table_name=table_id_to_name[cleaning_operation.table_id],
@@ -425,9 +389,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             List of request column nodes
         """
         output = []
-        for node in self.graph.iterate_nodes(
-            target_node=self.node, node_type=NodeType.REQUEST_COLUMN
-        ):
+        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.REQUEST_COLUMN):
             assert isinstance(node, RequestColumnNode)
             output.append(node)
         return output
@@ -553,16 +515,12 @@ class FeatureModel(BaseFeatureModel):
     # ID related fields associated with this feature
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
     online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
     agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
-    last_updated_by_scheduled_task_at: Optional[datetime] = Field(
-        allow_mutation=False, default=None
-    )
+    last_updated_by_scheduled_task_at: Optional[datetime] = Field(allow_mutation=False, default=None)
 
     @root_validator
     @classmethod

@@ -4,11 +4,10 @@ List handler
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type
-
 import json
 from functools import partial
 from itertools import groupby
+from typing import Any, Dict, List, Optional, Type
 
 import pandas as pd
 from pandas import DataFrame
@@ -55,9 +54,7 @@ class ListHandler:
         self.list_fields = list_fields or ["name", "created_at"]
         self.list_foreign_keys = list_foreign_keys or []
 
-    def list(
-        self, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
-    ) -> DataFrame:
+    def list(self, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None) -> DataFrame:
         """
         List the object name store at the persistent
 
@@ -135,9 +132,7 @@ class ListHandler:
                     if "." in foreign_key_field:
                         # foreign_key is a dict
                         foreign_key_field, object_id_field = foreign_key_field.split(".")
-                        mapping_function = partial(
-                            map_dict_list_to_name, object_map, object_id_field
-                        )
+                        mapping_function = partial(map_dict_list_to_name, object_map, object_id_field)
                     else:
                         # foreign_key is an objectid
                         mapping_function = partial(map_object_id_to_name, object_map)

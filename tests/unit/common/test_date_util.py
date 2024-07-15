@@ -53,21 +53,15 @@ def test_get_next_job_datetime():
 
     input_dt = datetime(2022, 12, 1, 12, 0, 55)
     expect_dt = datetime(2022, 12, 1, 12, 1, 20)
-    next_job = date_util.get_next_job_datetime(
-        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
-    )
+    next_job = date_util.get_next_job_datetime(input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20)
     assert next_job == expect_dt
 
     input_dt = datetime(2022, 12, 1, 12, 1, 19)
     expect_dt = datetime(2022, 12, 1, 12, 1, 20)
-    next_job = date_util.get_next_job_datetime(
-        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
-    )
+    next_job = date_util.get_next_job_datetime(input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20)
     assert next_job == expect_dt
 
     input_dt = datetime(2022, 12, 1, 12, 1, 20)
     expect_dt = datetime(2022, 12, 1, 12, 18, 20)
-    next_job = date_util.get_next_job_datetime(
-        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
-    )
+    next_job = date_util.get_next_job_datetime(input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20)
     assert next_job == expect_dt

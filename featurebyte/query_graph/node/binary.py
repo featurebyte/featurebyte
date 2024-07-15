@@ -4,9 +4,9 @@ This module contains binary operation node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import ClassVar, List, Sequence, Tuple
-from typing_extensions import Literal
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -197,9 +197,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -220,9 +218,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_op: str = input_var_name_expressions[0].as_input()
         if len(node_inputs) == 1:
-            stats, out_expr = super()._derive_on_demand_view_code(
-                node_inputs, var_name_generator, config
-            )
+            stats, out_expr = super()._derive_on_demand_view_code(node_inputs, var_name_generator, config)
             # cast to boolean
             expr = ExpressionStr(f"{out_expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))")
             return stats, expr
@@ -241,9 +237,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
-            return super()._derive_user_defined_function_code(
-                node_inputs, var_name_generator, config
-            )
+            return super()._derive_user_defined_function_code(node_inputs, var_name_generator, config)
 
         # handle case when right_operand is an array feature (constructed from count dictionary feature)
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)

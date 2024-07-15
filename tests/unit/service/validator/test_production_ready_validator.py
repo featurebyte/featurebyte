@@ -37,9 +37,7 @@ def source_version_creator_fixture(version_service, feature_service):
         data = docs["data"]
         assert len(data) == 1
         feature = data[0]
-        source_feature = await version_service.create_new_feature_version_using_source_settings(
-            feature["_id"]
-        )
+        source_feature = await version_service.create_new_feature_version_using_source_settings(feature["_id"])
         if source_feature is None:
             return None
         return source_feature.node, source_feature.graph
@@ -98,9 +96,7 @@ async def test_validate(
     )
 
     # Verify that validate does not throw an error if ignore_guardrails is True
-    await production_ready_validator.validate(
-        promoted_feature=feature.cached_model, ignore_guardrails=True
-    )
+    await production_ready_validator.validate(promoted_feature=feature.cached_model, ignore_guardrails=True)
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(DocumentUpdateError) as exc:
@@ -131,9 +127,7 @@ async def test_validate(
 
 
 @pytest.mark.asyncio
-async def test_assert_no_other_production_ready_feature__exists(
-    production_ready_validator, production_ready_feature
-):
+async def test_assert_no_other_production_ready_feature__exists(production_ready_validator, production_ready_feature):
     """
     Test that assert throws an error if there are other production ready features with the same name.
 
@@ -159,9 +153,7 @@ async def test_assert_no_other_production_ready_feature__no_error_if_promoted_fe
     Test that assert does not throw an error if the feature that is already production ready is the same as the
     feature that is _being_ promoted to production ready.
     """
-    await production_ready_validator._assert_no_other_production_ready_feature(
-        production_ready_feature
-    )
+    await production_ready_validator._assert_no_other_production_ready_feature(production_ready_feature)
 
 
 @pytest.mark.asyncio
@@ -206,9 +198,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
     """
     # update event table w/ a feature job setting
-    snowflake_event_table_with_entity.update_default_feature_job_setting(
-        feature_group_feature_job_setting
-    )
+    snowflake_event_table_with_entity.update_default_feature_job_setting(feature_group_feature_job_setting)
 
     # create a feature with a different feature job setting from the event table
     event_view = snowflake_event_table_with_entity.get_view()

@@ -4,9 +4,8 @@ DimensionTable API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import APIRouter, Request
 
@@ -41,15 +40,11 @@ router = APIRouter(prefix="/dimension_table")
 
 
 class DimensionTableRouter(
-    BaseApiRouter[
-        DimensionTableModel, DimensionTableList, DimensionTableCreate, DimensionTableController
-    ]
+    BaseApiRouter[DimensionTableModel, DimensionTableList, DimensionTableCreate, DimensionTableController]
 ):
     """
     Dimension table router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = DimensionTableModel
     list_object_model = DimensionTableList
@@ -103,9 +98,7 @@ class DimensionTableRouter(
             status_code=HTTPStatus.OK,
         )
 
-    async def get_object(
-        self, request: Request, dimension_table_id: PyObjectId
-    ) -> DimensionTableModel:
+    async def get_object(self, request: Request, dimension_table_id: PyObjectId) -> DimensionTableModel:
         return await super().get_object(request, dimension_table_id)
 
     async def list_audit_logs(
@@ -133,9 +126,7 @@ class DimensionTableRouter(
     ) -> DimensionTableModel:
         return await super().update_description(request, dimension_table_id, data)
 
-    async def create_object(
-        self, request: Request, data: DimensionTableCreate
-    ) -> DimensionTableModel:
+    async def create_object(self, request: Request, data: DimensionTableCreate) -> DimensionTableModel:
         controller = self.get_controller_for_request(request)
         return await controller.create_table(data=data)
 
@@ -213,9 +204,7 @@ class DimensionTableRouter(
         )
         return dimension_table
 
-    async def delete_object(
-        self, request: Request, dimension_table_id: PyObjectId
-    ) -> DeleteResponse:
+    async def delete_object(self, request: Request, dimension_table_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=dimension_table_id)
         return DeleteResponse()

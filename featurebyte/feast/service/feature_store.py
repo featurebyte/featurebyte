@@ -2,10 +2,8 @@
 This module contains classes for constructing feast repository config
 """
 
-# pylint: disable=no-name-in-module
-from typing import Any, Optional
-
 import tempfile
+from typing import Any, Optional
 
 from asyncache import cached
 from bson import ObjectId
@@ -172,14 +170,10 @@ class FeastFeatureStoreService:
     async def _get_effective_online_store_doc(
         self, online_store_id: Optional[ObjectId], catalog: CatalogModel
     ) -> Optional[OnlineStoreModel]:
-        effective_online_store_id = (
-            online_store_id if online_store_id is not None else catalog.online_store_id
-        )
+        effective_online_store_id = online_store_id if online_store_id is not None else catalog.online_store_id
         online_store_doc = None
         if effective_online_store_id:
-            online_store_doc = await self.online_store_service.get_document(
-                effective_online_store_id
-            )
+            online_store_doc = await self.online_store_service.get_document(effective_online_store_id)
         return online_store_doc
 
     async def get_feast_feature_store(
@@ -205,21 +199,15 @@ class FeastFeatureStoreService:
             Feast feature store
         """
         logger.info("Creating feast feature store for registry %s", str(feast_registry.id))
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feast_registry.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=feast_registry.feature_store_id)
         credentials = await self.credential_provider.get_credential(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
 
         # Get online store feast config
         catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
-        online_store_doc = await self._get_effective_online_store_doc(
-            online_store_id=online_store_id, catalog=catalog
-        )
-        online_store_config = FeastRegistryBuilder.get_online_store_config(
-            online_store=online_store_doc
-        )
+        online_store_doc = await self._get_effective_online_store_doc(online_store_id=online_store_id, catalog=catalog)
+        online_store_config = FeastRegistryBuilder.get_online_store_config(online_store=online_store_doc)
         logger.info("Feast feature store cache size: %d", len(feast_feature_store_cache))
         feast_feature_store = await _get_feast_feature_store(
             feast_registry=feast_registry,
@@ -230,9 +218,7 @@ class FeastFeatureStoreService:
         )
         return feast_feature_store  # type:ignore
 
-    async def get_feast_feature_store_for_deployment(
-        self, deployment: DeploymentModel
-    ) -> Optional[FeastFeatureStore]:
+    async def get_feast_feature_store_for_deployment(self, deployment: DeploymentModel) -> Optional[FeastFeatureStore]:
         """
         Retrieve a FeastFeatureStore object for the current catalog
 
@@ -289,9 +275,7 @@ class FeastFeatureStoreService:
         if not feast_stores or first_registry is None:
             return None
 
-        feature_store = await self.feature_store_service.get_document(
-            document_id=first_registry.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=first_registry.feature_store_id)
         offline_store_credentials = await self.credential_provider.get_credential(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
@@ -299,20 +283,14 @@ class FeastFeatureStoreService:
             feature_store_model=feature_store, offline_store_credentials=offline_store_credentials
         )
         catalog = await self.catalog_service.get_document(first_registry.catalog_id)
-        online_store_doc = await self._get_effective_online_store_doc(
-            online_store_id=online_store_id, catalog=catalog
-        )
-        online_store_config = FeastRegistryBuilder.get_online_store_config(
-            online_store=online_store_doc
-        )
-        registry_proto = (
-            FeastRegistryBuilder.create_feast_registry_proto_for_feature_materialization(
-                project_name=first_registry.name,
-                offline_store_config=offline_store_config,
-                online_store=online_store_doc,
-                feature_table_name=feature_table_model.name,
-                feast_stores=feast_stores,
-            )
+        online_store_doc = await self._get_effective_online_store_doc(online_store_id=online_store_id, catalog=catalog)
+        online_store_config = FeastRegistryBuilder.get_online_store_config(online_store=online_store_doc)
+        registry_proto = FeastRegistryBuilder.create_feast_registry_proto_for_feature_materialization(
+            project_name=first_registry.name,
+            offline_store_config=offline_store_config,
+            online_store=online_store_doc,
+            feature_table_name=feature_table_model.name,
+            feast_stores=feast_stores,
         )
         feast_feature_store = create_feast_feature_store(
             project_name=first_registry.name,

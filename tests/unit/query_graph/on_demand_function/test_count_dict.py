@@ -23,85 +23,75 @@ NODE_PARAMS = {"name": "node_name"}
 @pytest.fixture(name="count_dict_feature1")
 def fixture_count_dict_feature1():
     """Fixture for the count dict feature"""
-    return pd.Series(
-        [
-            None,
-            {"a": 1},
-            {},
-            {"a": 1, "b": 1, "c": 1},
-            {"a": 1, "b": 2, "c": 3, "__MISSING__": 4},
-            {"0": 0.5, "1": 1, "2": 2, "3": 3},
-            {"0": 1, "1": 2, "2": 3, "3": 4},
-        ]
-    )
+    return pd.Series([
+        None,
+        {"a": 1},
+        {},
+        {"a": 1, "b": 1, "c": 1},
+        {"a": 1, "b": 2, "c": 3, "__MISSING__": 4},
+        {"0": 0.5, "1": 1, "2": 2, "3": 3},
+        {"0": 1, "1": 2, "2": 3, "3": 4},
+    ])
 
 
 @pytest.fixture(name="count_dict_feature2")
 def fixture_count_dict_feature2():
     """Fixture for the count dict feature"""
-    return pd.Series(
-        [
-            {"a": 1},
-            None,
-            {"b": 1},
-            {"a": 1, "b": 1, "c": 1},
-            {"a": 1, "b": 2},
-            {"0": 1, "1": 1.5, "2": 2.5},
-            {"0": 1.5, "1": 1, "2": 3},
-        ]
-    )
+    return pd.Series([
+        {"a": 1},
+        None,
+        {"b": 1},
+        {"a": 1, "b": 1, "c": 1},
+        {"a": 1, "b": 2},
+        {"0": 1, "1": 1.5, "2": 2.5},
+        {"0": 1.5, "1": 1, "2": 3},
+    ])
 
 
 @pytest.fixture(name="rank_feat")
 def fixture_rank_feat():
     """Fixture for testing get rank"""
-    return pd.Series(
-        [
-            None,
-            {"a": 1},
-            {"a": 1, "b": 1, "c": 1},
-            {"a": 1, "b": 1, "c": 1},
-            {"a": 1, "b": 1, "c": 1},
-            {"a": 1, "b": 2},
-            {"a": 1, "b": 2},
-            {"0": 0.5, "1": 1, "2": 2},
-            {"0": 1, "1": 2, "2": 3},
-        ]
-    )
+    return pd.Series([
+        None,
+        {"a": 1},
+        {"a": 1, "b": 1, "c": 1},
+        {"a": 1, "b": 1, "c": 1},
+        {"a": 1, "b": 1, "c": 1},
+        {"a": 1, "b": 2},
+        {"a": 1, "b": 2},
+        {"0": 0.5, "1": 1, "2": 2},
+        {"0": 1, "1": 2, "2": 3},
+    ])
 
 
 @pytest.fixture(name="item_feature")
 def fixture_item_feature():
     """Fixture for the item feature"""
-    return pd.Series(
-        [
-            "a",
-            None,
-            "a",
-            "b",
-            "d",
-            "0",
-            None,
-        ]
-    )
+    return pd.Series([
+        "a",
+        None,
+        "a",
+        "b",
+        "d",
+        "0",
+        None,
+    ])
 
 
 @pytest.fixture(name="rank_key_feat")
 def fixture_rank_key_feat():
     """Fixture for key for get rank"""
-    return pd.Series(
-        [
-            "a",
-            None,
-            "non_existing_key",
-            "a",
-            "b",
-            "a",
-            "b",
-            "1",
-            None,
-        ]
-    )
+    return pd.Series([
+        "a",
+        None,
+        "non_existing_key",
+        "a",
+        "b",
+        "a",
+        "b",
+        "1",
+        None,
+    ])
 
 
 @pytest.mark.parametrize(
@@ -194,7 +184,7 @@ def test_derive_on_demand_view_code__cosine_similarity(
 def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_config, udf_config):
     """Test derive_on_demand_view_code"""
     node = DictionaryKeysNode(**NODE_PARAMS)
-    node_inputs = [VariableNameStr(f"feat")]
+    node_inputs = [VariableNameStr("feat")]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -214,23 +204,19 @@ def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_c
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
-        expected_output=pd.Series(
-            [
-                np.nan,
-                ["a"],
-                [],
-                ["a", "b", "c"],
-                ["a", "b", "c", "__MISSING__"],
-                ["0", "1", "2", "3"],
-                ["0", "1", "2", "3"],
-            ]
-        ),
+        expected_output=pd.Series([
+            np.nan,
+            ["a"],
+            [],
+            ["a", "b", "c"],
+            ["a", "b", "c", "__MISSING__"],
+            ["0", "1", "2", "3"],
+            ["0", "1", "2", "3"],
+        ]),
     )
 
 
-def test_derive_on_demand_view_code__dictionary_get_value(
-    count_dict_feature1, item_feature, odfv_config, udf_config
-):
+def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, item_feature, odfv_config, udf_config):
     """Test derive_on_demand_view_code"""
     # test on two operands
     node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={})
@@ -300,12 +286,8 @@ def test_derive_on_demand_view_code__dictionary_get_value(
         (
             GetRelativeFrequencyFromDictionaryNode,
             {},
-            pd.Series(
-                [np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 1.0 / 3.5, np.nan]
-            ),
-            pd.Series(
-                [np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3, np.nan, np.nan]
-            ),
+            pd.Series([np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 1.0 / 3.5, np.nan]),
+            pd.Series([np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3, np.nan, np.nan]),
         ),
     ],
 )

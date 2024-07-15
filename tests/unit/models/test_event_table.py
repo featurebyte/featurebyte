@@ -61,9 +61,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         name="my_event_table",
         tabular_source={
             "feature_store_id": snowflake_feature_store.id,
-            "table_details": TableDetails(
-                database_name="database", schema_name="schema", table_name="table"
-            ),
+            "table_details": TableDetails(database_name="database", schema_name="schema", table_name="table"),
         },
         columns_info=columns_info,
         event_id_column="event_id",

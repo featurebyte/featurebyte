@@ -2,9 +2,8 @@
 UserDefinedFunction API routes
 """
 
-from typing import Optional, cast
-
 from http import HTTPStatus
+from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
@@ -82,9 +81,7 @@ async def update_user_defined_function(
 
 
 @router.delete("/{user_defined_function_id}", response_model=DeleteResponse)
-async def delete_user_defined_function(
-    request: Request, user_defined_function_id: PyObjectId
-) -> DeleteResponse:
+async def delete_user_defined_function(request: Request, user_defined_function_id: PyObjectId) -> DeleteResponse:
     """
     Delete UserDefinedFunction
     """

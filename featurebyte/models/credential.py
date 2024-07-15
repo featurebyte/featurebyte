@@ -2,16 +2,15 @@
 Document model for stored credentials
 """
 
-from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
-from typing_extensions import Annotated
-
-import base64  # pylint: disable=wrong-import-order
+import base64
 import json
-import os  # pylint: disable=wrong-import-order
+import os
+from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
 
 import pymongo
 from cryptography.fernet import Fernet
 from pydantic import Field, StrictStr, root_validator
+from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
@@ -23,9 +22,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 
-PASSWORD_SECRET = os.environ.get(
-    "CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI="
-)
+PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI=")
 HIDDEN_VALUE = "********"
 
 
@@ -137,15 +134,13 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     Examples
     --------
     >>> username_password_credential = UsernamePasswordCredential(
-    ...   username="username",
-    ...   password="password",
+    ...     username="username",
+    ...     password="password",
     ... )
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.UsernamePasswordCredential"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
 
     # instance variables
     type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
@@ -168,9 +163,7 @@ class AccessTokenCredential(BaseDatabaseCredential):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
 
     # instance variables
-    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
-        DatabaseCredentialType.ACCESS_TOKEN, const=True
-    )
+    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(DatabaseCredentialType.ACCESS_TOKEN, const=True)
     access_token: StrictStr = Field(description="The access token used to connect.")
 
 
@@ -181,19 +174,15 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
     Examples
     --------
     >>> kerberos_key_tab_credential = KerberosKeytabCredential.from_file(
-    ... keytab="/path/to/keytab", principal="user@FEATUREBYTE.COM"
+    ...     keytab="/path/to/keytab", principal="user@FEATUREBYTE.COM"
     ... )  # doctest: +SKIP
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.KerberosKeytabCredential"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")
 
     # instance variables
-    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(
-        DatabaseCredentialType.KERBEROS_KEYTAB, const=True
-    )
+    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(DatabaseCredentialType.KERBEROS_KEYTAB, const=True)
     principal: StrictStr = Field(description="The principal used to connect.")
     encoded_key_tab: StrictStr = Field(description="The key tab used to connect.")
 
@@ -263,8 +252,7 @@ class S3StorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> s3_storage_credential = S3StorageCredential(
-    ...   s3_access_key_id="access_key_id",
-    ...   s3_secret_access_key="s3_secret_access_key"
+    ...     s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
     ... )
     """
 
@@ -273,9 +261,7 @@ class S3StorageCredential(BaseStorageCredential):
 
     # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
-    s3_access_key_id: StrictStr = Field(
-        description="S3 access key ID used for connecting to your S3 store."
-    )
+    s3_access_key_id: StrictStr = Field(description="S3 access key ID used for connecting to your S3 store.")
     s3_secret_access_key: StrictStr = Field(
         description="S3 secret access key used for connecting to your S3 store."
         "Avoid storing this in plain text, or in a public repository."
@@ -289,7 +275,7 @@ class GCSStorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> gcs_storage_credential = GCSStorageCredential(
-    ...   service_account_info={"type": "service_account", "private_key": "private_key"}
+    ...     service_account_info={"type": "service_account", "private_key": "private_key"}
     ... )
     """
 
@@ -318,15 +304,13 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> azure_blob_storage_credential = AzureBlobStorageCredential(
-    ...   account_name="my_azure_storage",
-    ...   account_key="my_azure_storage_key",
+    ...     account_name="my_azure_storage",
+    ...     account_key="my_azure_storage_key",
     ... )
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.AzureBlobStorageCredential"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AzureBlobStorageCredential")
 
     # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.AZURE, const=True)

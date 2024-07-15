@@ -2,9 +2,8 @@
 Base materialize table test class
 """
 
-from typing import Any, Dict, Type, TypeVar
-
 from abc import abstractmethod
+from typing import Any, Dict, Type, TypeVar
 
 import pandas as pd
 import pytest
@@ -55,9 +54,7 @@ class BaseMaterializedTableApiTest:
             "BatchFeatureTable": "batch_feature_table",
         }
         if self.table_type_name not in table_type_to_fixture_name_map:
-            pytest.fail(
-                f"Invalid type `{self.table_type_name}` found. Please use a valid ApiObject type."
-            )
+            pytest.fail(f"Invalid type `{self.table_type_name}` found. Please use a valid ApiObject type.")
         table_type_fixture_name = table_type_to_fixture_name_map[self.table_type_name]
         return request.getfixturevalue(table_type_fixture_name)
 

@@ -82,16 +82,10 @@ async def test_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_observation_table_min_interval_between_entities(
-    catalog, session, data_source, normal_user_id_entity
-):
+async def test_observation_table_min_interval_between_entities(catalog, session, data_source, normal_user_id_entity):
     _ = catalog, normal_user_id_entity
-    df = pd.read_csv(
-        os.path.join(os.path.dirname(__file__), "fixtures", "observation_table_time_interval.csv")
-    )
-    df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-        df[SpecialColumnName.POINT_IN_TIME].astype(str)
-    )
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "observation_table_time_interval.csv"))
+    df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(df[SpecialColumnName.POINT_IN_TIME].astype(str))
     table_name = "observation_table_time_interval"
     await session.register_table(table_name, df)
 
@@ -102,15 +96,13 @@ async def test_observation_table_min_interval_between_entities(
     )
     sample_rows = 123
     observation_table = database_table.create_observation_table(
-        f"MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
+        "MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
     )
     assert observation_table.min_interval_secs_between_entities == 3600
 
 
 @pytest.mark.asyncio
-async def test_observation_table_from_view(
-    event_table, scd_table, session, source_type, user_entity
-):
+async def test_observation_table_from_view(event_table, scd_table, session, source_type, user_entity):
     """
     Test creating an observation table from a view
     """
@@ -143,12 +135,8 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
     """
 
     async def _get_num_observation_tables():
-        tables = await session.list_tables(
-            database_name=session.database_name, schema_name=session.schema_name
-        )
-        observation_table_names = [
-            table.name for table in tables if table.name.startswith("OBSERVATION_TABLE")
-        ]
+        tables = await session.list_tables(database_name=session.database_name, schema_name=session.schema_name)
+        observation_table_names = [table.name for table in tables if table.name.startswith("OBSERVATION_TABLE")]
         return len(observation_table_names)
 
     view = scd_table.get_view()
@@ -173,9 +161,7 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
 @pytest.mark.parametrize("file_type", ["csv", "parquet"])
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_observation_table_upload(
-    feature_store, catalog, customer_entity, session, source_type, file_type
-):
+async def test_observation_table_upload(feature_store, catalog, customer_entity, session, source_type, file_type):
     _ = catalog, customer_entity
 
     # Upload observation table

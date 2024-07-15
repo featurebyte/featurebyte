@@ -2,8 +2,6 @@
 Read configurations from ini file
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
-
 import json
 import os
 import ssl
@@ -11,6 +9,7 @@ import time
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import requests
 import websocket
@@ -49,7 +48,7 @@ def get_home_path() -> Path:
     default_home_path: Path = Path.home()
     try:
         # check if we are in DataBricks environment and valid secrets are present create a profile automatically
-        from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
+        from databricks.sdk.runtime import dbutils
 
         db_user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
         default_home_path = Path(f"/Workspace/Users/{db_user}")
@@ -221,9 +220,7 @@ class APIClient(BaseAPIClient):
                 **kwargs,
             )
         except requests.exceptions.ConnectionError:
-            raise InvalidSettingsError(
-                f"Service endpoint is inaccessible: {self.base_url}"
-            ) from None
+            raise InvalidSettingsError(f"Service endpoint is inaccessible: {self.base_url}") from None
 
 
 class WebsocketClient:
@@ -255,9 +252,7 @@ class WebsocketClient:
         """
         Reconnect websocket connection
         """
-        self._ws = websocket.create_connection(
-            self._url, enable_multithread=True, sslopt=self._get_sslopt()
-        )
+        self._ws = websocket.create_connection(self._url, enable_multithread=True, sslopt=self._get_sslopt())
 
     def close(self) -> None:
         """
@@ -353,9 +348,7 @@ class Configurations:
         if not hasattr(self, "_config_file_path") or force or config_file_path is not None:
             # Default values set
             self._config_file_path: Path = (
-                Path(config_file_path)
-                if config_file_path
-                else get_home_path().joinpath("config.yaml")
+                Path(config_file_path) if config_file_path else get_home_path().joinpath("config.yaml")
             )
             self.storage: LocalStorageSettings = LocalStorageSettings()
             self.default_profile_name: Optional[str] = None
@@ -532,7 +525,6 @@ class Configurations:
             API client
         """
         if not is_server_mode():
-            # pylint: disable=import-outside-toplevel,cyclic-import
             from featurebyte.logging import configure_featurebyte_logger
 
             # configure logger

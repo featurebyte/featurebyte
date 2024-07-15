@@ -8,9 +8,7 @@ from featurebyte.api.target import Target
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
-def test_forward_aggregate_asat__valid(
-    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
-):
+def test_forward_aggregate_asat__valid(snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id):
     """
     Test valid usage of forward_aggregate_asat
     """
@@ -129,7 +127,4 @@ def test_forward_aggregate_as_at_latest(snowflake_scd_view_with_entity):
             target_name="asat_feature",
             offset="7d",
         )
-    assert (
-        str(exc_info.value)
-        == "latest aggregation method is not supported for forward_aggregate_asat"
-    )
+    assert str(exc_info.value) == "latest aggregation method is not supported for forward_aggregate_asat"

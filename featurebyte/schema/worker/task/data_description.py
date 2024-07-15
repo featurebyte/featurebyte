@@ -35,6 +35,4 @@ class DataDescriptionTaskPayload(BaseTaskPayload):
         -------
         Optional[str]
         """
-        return (
-            f"/{self.output_collection_name}?path=data_description/{self.output_document_id}.json"
-        )
+        return f"/{self.output_collection_name}?path=data_description/{self.output_document_id}.json"

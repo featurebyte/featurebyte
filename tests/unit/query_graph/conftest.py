@@ -92,18 +92,16 @@ def snowflake_feature_store_details_fixture():
     """
     Fixture for a FeatureStoreDetails object
     """
-    return FeatureStoreDetails(
-        **{
-            "type": "snowflake",
-            "details": {
-                "database_name": "db",
-                "schema_name": "public",
-                "role_name": "role",
-                "account": "account",
-                "warehouse": "warehouse",
-            },
-        }
-    )
+    return FeatureStoreDetails(**{
+        "type": "snowflake",
+        "details": {
+            "database_name": "db",
+            "schema_name": "public",
+            "role_name": "role",
+            "account": "account",
+            "warehouse": "warehouse",
+        },
+    })
 
 
 @pytest.fixture(name="database_details")
@@ -126,7 +124,7 @@ def entity_id_fixture():
 @pytest.fixture(name="input_node")
 def input_node_fixture(global_graph, input_details):
     """Fixture of a query with some operations ready to run groupby"""
-    # pylint: disable=duplicate-code
+
     node_params = {
         "type": "event_table",
         "columns": [
@@ -240,7 +238,7 @@ def dimension_table_input_node_fixture(global_graph, dimension_table_input_detai
 @pytest.fixture(name="event_table_input_node")
 def event_table_input_node_fixture(global_graph, input_details):
     """Fixture of an EventTable input node"""
-    # pylint: disable=duplicate-code
+
     node_params = {
         "type": "event_table",
         "columns": [
@@ -264,7 +262,7 @@ def event_table_input_node_fixture(global_graph, input_details):
 @pytest.fixture(name="query_graph_and_assign_node")
 def query_graph_and_assign_node_fixture(global_graph, input_node):
     """Fixture of a query with some operations ready to run groupby"""
-    # pylint: disable=duplicate-code
+
     proj_a = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -438,9 +436,7 @@ def query_graph_with_forward_aggregate_fixture(query_graph_and_assign_node, even
 
 
 @pytest.fixture(name="query_graph_with_groupby_no_entity_ids")
-def query_graph_with_groupby_fixture_no_entity_ids(
-    query_graph_and_assign_node, groupby_node_params
-):
+def query_graph_with_groupby_fixture_no_entity_ids(query_graph_and_assign_node, groupby_node_params):
     """
     Fixture of a query graph with a groupby operation (DEV-556: old version without entity_ids)
     """
@@ -614,9 +610,7 @@ def relation_table_id_fixture():
 
 
 @pytest.fixture(name="relation_table")
-def relation_table_fixture(
-    relation_table_id, snowflake_feature_store, customer_entity_id, business_entity_id
-):
+def relation_table_fixture(relation_table_id, snowflake_feature_store, customer_entity_id, business_entity_id):
     return DimensionTableModel(
         _id=relation_table_id,
         dimension_id_column="relation_cust_id",
@@ -624,16 +618,14 @@ def relation_table_fixture(
             {"name": "relation_cust_id", "dtype": DBVarType.INT, "entity_id": customer_entity_id},
             {"name": "relation_biz_id", "dtype": DBVarType.INT, "entity_id": business_entity_id},
         ],
-        tabular_source=TabularSource(
-            **{
-                "feature_store_id": snowflake_feature_store.id,
-                "table_details": {
-                    "database_name": "db",
-                    "schema_name": "public",
-                    "table_name": "some_table_name",
-                },
-            }
-        ),
+        tabular_source=TabularSource(**{
+            "feature_store_id": snowflake_feature_store.id,
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "some_table_name",
+            },
+        }),
     )
 
 
@@ -715,9 +707,7 @@ def item_table_join_event_table_node_fixture(
 
 
 @pytest.fixture(name="item_table_joined_event_table_feature_node")
-def item_table_joined_event_table_feature_node_fixture(
-    global_graph, item_table_join_event_table_node
-):
+def item_table_joined_event_table_feature_node_fixture(global_graph, item_table_join_event_table_node):
     """
     Fixture of a feature using item table joined with event table as input
     """
@@ -736,9 +726,7 @@ def item_table_joined_event_table_feature_node_fixture(
         "names": ["item_type_count_30d"],
         "windows": ["30d"],
     }
-    groupby_node = add_groupby_operation(
-        global_graph, node_params, item_table_join_event_table_node
-    )
+    groupby_node = add_groupby_operation(global_graph, node_params, item_table_join_event_table_node)
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["item_type_count_30d"]},
@@ -1083,9 +1071,7 @@ def scd_lookup_node_fixture(global_graph, scd_lookup_node_parameters, scd_table_
 
 
 @pytest.fixture(name="scd_lookup_without_current_flag_node")
-def scd_lookup_without_current_flag_node_fixture(
-    global_graph, scd_lookup_node_parameters, scd_table_input_node
-):
+def scd_lookup_without_current_flag_node_fixture(global_graph, scd_lookup_node_parameters, scd_table_input_node):
     """
     Fixture of a SCD lookup node without current flag column
     """
@@ -1193,12 +1179,8 @@ def latest_value_groupby_node_parameters_fixture():
 
 
 @pytest.fixture(name="latest_value_without_window_feature_node")
-def latest_value_without_window_feature_node_fixture(
-    global_graph, input_node, latest_value_groupby_node_parameters
-):
-    groupby_node = add_groupby_operation(
-        global_graph, latest_value_groupby_node_parameters, input_node
-    )
+def latest_value_without_window_feature_node_fixture(global_graph, input_node, latest_value_groupby_node_parameters):
+    groupby_node = add_groupby_operation(global_graph, latest_value_groupby_node_parameters, input_node)
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_latest_value"]},
@@ -1425,9 +1407,7 @@ def get_event_table_details_fixture():
 
 
 @pytest.fixture(name="graph_single_node")
-def query_graph_single_node(
-    global_graph, event_table_details, snowflake_feature_store_details_dict
-):
+def query_graph_single_node(global_graph, event_table_details, snowflake_feature_store_details_dict):
     """
     Query graph with a single node
     """
@@ -1518,9 +1498,7 @@ def query_graph_three_nodes(graph_two_nodes):
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "eq_1"},
     ]
-    assert node_eq == construct_node(
-        name="eq_1", type="eq", parameters={"value": 1}, output_type="series"
-    )
+    assert node_eq == construct_node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
     yield graph, node_input, node_proj, node_eq
 
 
@@ -1553,9 +1531,7 @@ def query_graph_four_nodes(graph_three_nodes):
         {"source": "input_1", "target": "filter_1"},
         {"source": "eq_1", "target": "filter_1"},
     ]
-    assert node_filter == construct_node(
-        name="filter_1", type="filter", parameters={}, output_type="frame"
-    )
+    assert node_filter == construct_node(name="filter_1", type="filter", parameters={}, output_type="frame")
     yield graph, node_input, node_proj, node_eq, node_filter
 
 
@@ -1663,9 +1639,7 @@ def query_graph_with_lag_node_fixture(global_graph, input_node):
 
 
 @pytest.fixture(name="query_graph_with_cleaning_ops_and_groupby")
-def query_graph_with_cleaning_ops_and_groupby_fixture(
-    query_graph_with_cleaning_ops_graph_node, groupby_node_params
-):
+def query_graph_with_cleaning_ops_and_groupby_fixture(query_graph_with_cleaning_ops_graph_node, groupby_node_params):
     """Fixture of a query graph (with cleaning operations) and a groupby operation"""
     graph, graph_node = query_graph_with_cleaning_ops_graph_node
     node_params = groupby_node_params
@@ -1708,87 +1682,83 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
     """
     Fixture for the expected pruned graph and node
     """
-    graph = QueryGraphModel(
-        **{
-            "edges": [
-                {"source": "input_1", "target": "groupby_1"},
-                {"source": "groupby_1", "target": "project_1"},
-            ],
-            "nodes": [
-                {
-                    "name": "input_1",
-                    "type": "input",
-                    "output_type": "frame",
-                    "parameters": {
-                        "columns": [
-                            {"name": "ts", "dtype": "TIMESTAMP"},
-                            {"name": "cust_id", "dtype": "INT"},
-                            {"name": "a", "dtype": "FLOAT"},
-                            {"name": "b", "dtype": "FLOAT"},
-                        ],
-                        "table_details": {
+    graph = QueryGraphModel(**{
+        "edges": [
+            {"source": "input_1", "target": "groupby_1"},
+            {"source": "groupby_1", "target": "project_1"},
+        ],
+        "nodes": [
+            {
+                "name": "input_1",
+                "type": "input",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {"name": "ts", "dtype": "TIMESTAMP"},
+                        {"name": "cust_id", "dtype": "INT"},
+                        {"name": "a", "dtype": "FLOAT"},
+                        {"name": "b", "dtype": "FLOAT"},
+                    ],
+                    "table_details": {
+                        "database_name": "db",
+                        "schema_name": "public",
+                        "table_name": "event_table",
+                    },
+                    "feature_store_details": {
+                        "type": "snowflake",
+                        "details": {
+                            "account": "account",
+                            "warehouse": "warehouse",
                             "database_name": "db",
                             "schema_name": "public",
-                            "table_name": "event_table",
+                            "role_name": "role",
                         },
-                        "feature_store_details": {
-                            "type": "snowflake",
-                            "details": {
-                                "account": "account",
-                                "warehouse": "warehouse",
-                                "database_name": "db",
-                                "schema_name": "public",
-                                "role_name": "role",
-                            },
-                        },
-                        "type": "event_table",
-                        "id": None,
-                        "timestamp_column": "ts",
-                        "id_column": None,
-                        "event_timestamp_timezone_offset": None,
-                        "event_timestamp_timezone_offset_column": None,
                     },
+                    "type": "event_table",
+                    "id": None,
+                    "timestamp_column": "ts",
+                    "id_column": None,
+                    "event_timestamp_timezone_offset": None,
+                    "event_timestamp_timezone_offset_column": None,
                 },
-                {
-                    "name": "groupby_1",
-                    "type": "groupby",
-                    "output_type": "frame",
-                    "parameters": {
-                        "keys": ["cust_id"],
-                        "parent": "a",
-                        "agg_func": "avg",
-                        "value_by": None,
-                        "serving_names": ["CUSTOMER_ID"],
-                        "entity_ids": ["637516ebc9c18f5a277a78db"],
-                        "windows": ["2h"],
-                        "timestamp": "ts",
-                        "feature_job_setting": {
-                            "blind_spot": "900s",
-                            "offset": "1800s",
-                            "period": "3600s",
-                        },
-                        "names": ["a_2h_average"],
-                        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+            },
+            {
+                "name": "groupby_1",
+                "type": "groupby",
+                "output_type": "frame",
+                "parameters": {
+                    "keys": ["cust_id"],
+                    "parent": "a",
+                    "agg_func": "avg",
+                    "value_by": None,
+                    "serving_names": ["CUSTOMER_ID"],
+                    "entity_ids": ["637516ebc9c18f5a277a78db"],
+                    "windows": ["2h"],
+                    "timestamp": "ts",
+                    "feature_job_setting": {
+                        "blind_spot": "900s",
+                        "offset": "1800s",
+                        "period": "3600s",
                     },
+                    "names": ["a_2h_average"],
+                    "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                    "aggregation_id": f"avg_{groupby_node_aggregation_id}",
                 },
-                {
-                    "name": "project_1",
-                    "type": "project",
-                    "output_type": "series",
-                    "parameters": {"columns": ["a_2h_average"]},
-                },
-            ],
-        }
-    )
-    node = construct_node(
-        **{
-            "name": "project_1",
-            "type": "project",
-            "output_type": "series",
-            "parameters": {"columns": ["a_2h_average"]},
-        }
-    )
+            },
+            {
+                "name": "project_1",
+                "type": "project",
+                "output_type": "series",
+                "parameters": {"columns": ["a_2h_average"]},
+            },
+        ],
+    })
+    node = construct_node(**{
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["a_2h_average"]},
+    })
     return {
         "pruned_graph": graph,
         "pruned_node": node,
@@ -1797,87 +1767,83 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
 
 @pytest.fixture
 def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
-    graph = QueryGraphModel(
-        **{
-            "edges": [
-                {"source": "input_1", "target": "groupby_1"},
-                {"source": "groupby_1", "target": "project_1"},
-            ],
-            "nodes": [
-                {
-                    "name": "input_1",
-                    "type": "input",
-                    "output_type": "frame",
-                    "parameters": {
-                        "columns": [
-                            {"name": "ts", "dtype": "TIMESTAMP"},
-                            {"name": "cust_id", "dtype": "INT"},
-                            {"name": "a", "dtype": "FLOAT"},
-                            {"name": "b", "dtype": "FLOAT"},
-                        ],
-                        "table_details": {
+    graph = QueryGraphModel(**{
+        "edges": [
+            {"source": "input_1", "target": "groupby_1"},
+            {"source": "groupby_1", "target": "project_1"},
+        ],
+        "nodes": [
+            {
+                "name": "input_1",
+                "type": "input",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {"name": "ts", "dtype": "TIMESTAMP"},
+                        {"name": "cust_id", "dtype": "INT"},
+                        {"name": "a", "dtype": "FLOAT"},
+                        {"name": "b", "dtype": "FLOAT"},
+                    ],
+                    "table_details": {
+                        "database_name": "db",
+                        "schema_name": "public",
+                        "table_name": "event_table",
+                    },
+                    "feature_store_details": {
+                        "type": "snowflake",
+                        "details": {
+                            "account": "account",
+                            "warehouse": "warehouse",
                             "database_name": "db",
                             "schema_name": "public",
-                            "table_name": "event_table",
+                            "role_name": "role",
                         },
-                        "feature_store_details": {
-                            "type": "snowflake",
-                            "details": {
-                                "account": "account",
-                                "warehouse": "warehouse",
-                                "database_name": "db",
-                                "schema_name": "public",
-                                "role_name": "role",
-                            },
-                        },
-                        "type": "event_table",
-                        "id": None,
-                        "timestamp_column": "ts",
-                        "id_column": None,
-                        "event_timestamp_timezone_offset": None,
-                        "event_timestamp_timezone_offset_column": None,
                     },
+                    "type": "event_table",
+                    "id": None,
+                    "timestamp_column": "ts",
+                    "id_column": None,
+                    "event_timestamp_timezone_offset": None,
+                    "event_timestamp_timezone_offset_column": None,
                 },
-                {
-                    "name": "groupby_1",
-                    "type": "groupby",
-                    "output_type": "frame",
-                    "parameters": {
-                        "keys": ["cust_id"],
-                        "parent": "a",
-                        "agg_func": "avg",
-                        "value_by": None,
-                        "serving_names": ["CUSTOMER_ID"],
-                        "entity_ids": ["637516ebc9c18f5a277a78db"],
-                        "windows": ["48h"],
-                        "timestamp": "ts",
-                        "feature_job_setting": {
-                            "blind_spot": "900s",
-                            "offset": "1800s",
-                            "period": "3600s",
-                        },
-                        "names": ["a_48h_average"],
-                        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+            },
+            {
+                "name": "groupby_1",
+                "type": "groupby",
+                "output_type": "frame",
+                "parameters": {
+                    "keys": ["cust_id"],
+                    "parent": "a",
+                    "agg_func": "avg",
+                    "value_by": None,
+                    "serving_names": ["CUSTOMER_ID"],
+                    "entity_ids": ["637516ebc9c18f5a277a78db"],
+                    "windows": ["48h"],
+                    "timestamp": "ts",
+                    "feature_job_setting": {
+                        "blind_spot": "900s",
+                        "offset": "1800s",
+                        "period": "3600s",
                     },
+                    "names": ["a_48h_average"],
+                    "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                    "aggregation_id": f"avg_{groupby_node_aggregation_id}",
                 },
-                {
-                    "name": "project_1",
-                    "type": "project",
-                    "output_type": "series",
-                    "parameters": {"columns": ["a_48h_average"]},
-                },
-            ],
-        }
-    )
-    node = construct_node(
-        **{
-            "name": "project_1",
-            "type": "project",
-            "output_type": "series",
-            "parameters": {"columns": ["a_48h_average"]},
-        }
-    )
+            },
+            {
+                "name": "project_1",
+                "type": "project",
+                "output_type": "series",
+                "parameters": {"columns": ["a_48h_average"]},
+            },
+        ],
+    })
+    node = construct_node(**{
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["a_48h_average"]},
+    })
     return {
         "pruned_graph": graph,
         "pruned_node": node,

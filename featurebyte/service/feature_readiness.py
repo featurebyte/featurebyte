@@ -52,9 +52,7 @@ class FeatureReadinessService:
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = production_ready_validator
 
-    async def _get_default_feature_list_doc(
-        self, feature_list_ids: Sequence[ObjectId]
-    ) -> Dict[str, Any]:
+    async def _get_default_feature_list_doc(self, feature_list_ids: Sequence[ObjectId]) -> Dict[str, Any]:
         """
         Get default feature from list of feature IDs
 
@@ -72,9 +70,7 @@ class FeatureReadinessService:
         async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list_ids}}
         ):
-            readiness_dist = FeatureReadinessDistribution(
-                __root__=feature_list["readiness_distribution"]
-            )
+            readiness_dist = FeatureReadinessDistribution(__root__=feature_list["readiness_distribution"])
             if default_feature_list is None:
                 default_feature_list = feature_list
             else:
@@ -110,9 +106,7 @@ class FeatureReadinessService:
         -------
         FeatureListNamespaceModel
         """
-        document = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list_namespace_id
-        )
+        document = await self.feature_list_namespace_service.get_document(document_id=feature_list_namespace_id)
         excluded_feature_list_ids = set(deleted_feature_list_ids or [])
         update_dict: dict[str, Any] = {}
         feature_list_ids = [
@@ -133,9 +127,7 @@ class FeatureReadinessService:
                 data=FeatureListNamespaceServiceUpdate(**update_dict),
                 return_document=False,
             )
-            return await self.feature_list_namespace_service.get_document(
-                document_id=feature_list_namespace_id
-            )
+            return await self.feature_list_namespace_service.get_document(document_id=feature_list_namespace_id)
         return document
 
     async def update_feature_list(
@@ -162,13 +154,9 @@ class FeatureReadinessService:
         """
         document = await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
         if from_readiness != to_readiness:
-            doc_readiness_dist = FeatureReadinessDistribution(
-                __root__=document["readiness_distribution"]
-            )
+            doc_readiness_dist = FeatureReadinessDistribution(__root__=document["readiness_distribution"])
             readiness_dist = doc_readiness_dist.update_readiness(
-                transition=FeatureReadinessTransition(
-                    from_readiness=from_readiness, to_readiness=to_readiness
-                ),
+                transition=FeatureReadinessTransition(from_readiness=from_readiness, to_readiness=to_readiness),
             )
             await self.feature_list_service.update_readiness_distribution(
                 document_id=feature_list_id,
@@ -197,9 +185,7 @@ class FeatureReadinessService:
         ):
             if default_feature is None:
                 default_feature = feature
-            elif FeatureReadiness(feature["readiness"]) > FeatureReadiness(
-                default_feature["readiness"]
-            ):
+            elif FeatureReadiness(feature["readiness"]) > FeatureReadiness(default_feature["readiness"]):
                 # when doing non-equality comparison, must cast it explicitly to FeatureReadiness
                 # otherwise, it will become normal string comparison
                 default_feature = feature
@@ -230,16 +216,10 @@ class FeatureReadinessService:
         -------
         Optional[FeatureNamespaceModel]
         """
-        document = await self.feature_namespace_service.get_document(
-            document_id=feature_namespace_id
-        )
+        document = await self.feature_namespace_service.get_document(document_id=feature_namespace_id)
         excluded_feature_ids = set(deleted_feature_ids or [])
         update_dict: dict[str, Any] = {}
-        feature_ids = [
-            feature_id
-            for feature_id in document.feature_ids
-            if feature_id not in excluded_feature_ids
-        ]
+        feature_ids = [feature_id for feature_id in document.feature_ids if feature_id not in excluded_feature_ids]
         if feature_ids != document.feature_ids:
             update_dict["feature_ids"] = feature_ids
 
@@ -250,9 +230,7 @@ class FeatureReadinessService:
                 update_dict["default_feature_id"] = default_feature["_id"]
                 update_dict["readiness"] = default_feature["readiness"]
         else:
-            assert (
-                document.default_feature_id not in excluded_feature_ids
-            ), "default feature should not be deleted"
+            assert document.default_feature_id not in excluded_feature_ids, "default feature should not be deleted"
             # use projection to reduce the amount of data transfer &
             # default feature is used within this function only
             default_feature = await self.feature_service.get_document_as_dict(
@@ -271,9 +249,7 @@ class FeatureReadinessService:
                 document=document,
                 return_document=False,
             )
-            return await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
+            return await self.feature_namespace_service.get_document(document_id=feature_namespace_id)
 
         return document
 
@@ -288,16 +264,10 @@ class FeatureReadinessService:
                 ignore_guardrails=ignore_guardrails,
             )
 
-        if (
-            document.readiness != FeatureReadiness.DRAFT
-            and target_readiness == FeatureReadiness.DRAFT
-        ):
+        if document.readiness != FeatureReadiness.DRAFT and target_readiness == FeatureReadiness.DRAFT:
             raise DocumentUpdateError("Cannot update feature readiness to DRAFT.")
 
-        if (
-            document.readiness == FeatureReadiness.DRAFT
-            and target_readiness == FeatureReadiness.DEPRECATED
-        ):
+        if document.readiness == FeatureReadiness.DRAFT and target_readiness == FeatureReadiness.DEPRECATED:
             raise DocumentUpdateError(
                 "Not allowed to update feature readiness from DRAFT to DEPRECATED. "
                 "Valid transitions are DRAFT -> PUBLIC_DRAFT or DRAFT -> PRODUCTION_READY. "
@@ -306,9 +276,7 @@ class FeatureReadinessService:
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(
-            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
-        ),
+        wait=wait_chain(*[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]),
     )
     async def update_feature(
         self,
@@ -340,9 +308,7 @@ class FeatureReadinessService:
         )
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
-                await self.feature_service.update_readiness(
-                    document_id=feature_id, readiness=readiness
-                )
+                await self.feature_service.update_readiness(document_id=feature_id, readiness=readiness)
                 # use projection to reduce the amount of data transfer &
                 # feature is used within this function only
                 feature = await self.feature_service.get_document_as_dict(

@@ -20,9 +20,7 @@ class LaggableViewColumn(ViewColumn):
     """
 
     @typechecked
-    def lag(
-        self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1
-    ) -> LagColumnTypeT:
+    def lag(self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1) -> LagColumnTypeT:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
         a view.
@@ -56,9 +54,7 @@ class LaggableViewColumn(ViewColumn):
 
         Create a new column that indicates the 2nd prior event timestamp for a Customer.
 
-        >>> lagged_2_column = event_view["Timestamp"].lag(
-        ...   "GroceryCustomerGuid", offset=2
-        ... )
+        >>> lagged_2_column = event_view["Timestamp"].lag("GroceryCustomerGuid", offset=2)
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]

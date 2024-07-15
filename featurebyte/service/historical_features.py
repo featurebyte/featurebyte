@@ -4,9 +4,8 @@ HistoricalFeaturesService
 
 from __future__ import annotations
 
-from typing import Optional
-
 from dataclasses import dataclass
+from typing import Optional
 
 from pydantic import Field
 
@@ -111,9 +110,7 @@ class HistoricalFeaturesValidationParametersService:
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
 
-    async def get_validation_parameters(
-        self, request: FeatureListGetHistoricalFeatures
-    ) -> ValidationParameters:
+    async def get_validation_parameters(self, request: FeatureListGetHistoricalFeatures) -> ValidationParameters:
         """
         Get ValidationParameters from FeatureListGetHistoricalFeatures
 
@@ -131,9 +128,7 @@ class HistoricalFeaturesValidationParametersService:
             feature_list_model = None
         else:
             assert request.feature_list_id is not None
-            feature_list_model = await self.feature_list_service.get_document(
-                request.feature_list_id
-            )
+            feature_list_model = await self.feature_list_service.get_document(request.feature_list_id)
             assert feature_list_model.feature_clusters is not None
             feature_clusters = feature_list_model.feature_clusters
 
@@ -152,9 +147,7 @@ class HistoricalFeaturesValidationParametersService:
         )
 
 
-class HistoricalFeaturesService(
-    Computer[FeatureListGetHistoricalFeatures, HistoricalFeatureExecutorParams]
-):
+class HistoricalFeaturesService(Computer[FeatureListGetHistoricalFeatures, HistoricalFeatureExecutorParams]):
     """
     HistoricalFeaturesService is responsible for requesting for historical features for a Feature List.
     """
@@ -177,18 +170,10 @@ class HistoricalFeaturesService(
             task_progress_updater,
         )
         self.feature_list_service = feature_list_service
-        self.historical_features_validation_parameters_service = (
-            historical_features_validation_parameters_service
-        )
+        self.historical_features_validation_parameters_service = historical_features_validation_parameters_service
 
-    async def get_validation_parameters(
-        self, request: FeatureListGetHistoricalFeatures
-    ) -> ValidationParameters:
-        return (
-            await self.historical_features_validation_parameters_service.get_validation_parameters(
-                request
-            )
-        )
+    async def get_validation_parameters(self, request: FeatureListGetHistoricalFeatures) -> ValidationParameters:
+        return await self.historical_features_validation_parameters_service.get_validation_parameters(request)
 
     async def get_executor_params(
         self,

@@ -2,11 +2,10 @@
 Tile Generate Schedule script
 """
 
-from typing import Any, Dict, List, Optional
-
 import time
 import traceback
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 import dateutil.parser
 
@@ -78,7 +77,7 @@ class TileTaskExecutor:
                     status=final_status,
                 )
 
-    async def _execute(  # pylint: disable=too-many-locals,too-many-statements
+    async def _execute(
         self,
         session: BaseSession,
         params: TileScheduledJobParameters,
@@ -113,16 +112,12 @@ class TileTaskExecutor:
         monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
-        tile_model = await self.tile_registry_service.get_tile_model(
-            params.tile_id, params.aggregation_id
-        )
+        tile_model = await self.tile_registry_service.get_tile_model(params.tile_id, params.aggregation_id)
         if tile_model is not None and tile_model.last_run_metadata_online is not None:
             registry_last_tile_start_ts = tile_model.last_run_metadata_online.tile_end_date
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
-            if registry_last_tile_start_ts.strftime(DATE_FORMAT) < tile_start_ts.strftime(
-                DATE_FORMAT
-            ):
+            if registry_last_tile_start_ts.strftime(DATE_FORMAT) < tile_start_ts.strftime(DATE_FORMAT):
                 logger.info(
                     f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )
@@ -155,9 +150,7 @@ class TileTaskExecutor:
 
         monitor_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_start_ts_str + "'"
-        ).replace(
-            f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'"
-        )
+        ).replace(f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'")
 
         tile_end_ts_str = tile_end_ts.strftime(DATE_FORMAT)
         generate_input_sql = params.sql.replace(

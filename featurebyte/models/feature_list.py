@@ -4,11 +4,10 @@ This module contains Feature list related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set
-
 import functools
 from collections import defaultdict
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 
 import pymongo
 from bson import ObjectId
@@ -121,9 +120,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         this_dist_map = cls._to_count_per_readiness_map(this_dist)
         other_dist_map = cls._to_count_per_readiness_map(other_dist)
         if sum(this_dist_map.values()) != sum(other_dist_map.values()):
-            raise ValueError(
-                "Invalid comparison between two feature readiness distributions with different sums."
-            )
+            raise ValueError("Invalid comparison between two feature readiness distributions with different sums.")
         return this_dist_map, other_dist_map
 
     @typechecked
@@ -149,9 +146,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         # the one with the lower number of readiness should be preferred
         # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
         for feature_readiness in FeatureReadiness:
-            compare_readiness = (
-                this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
-            )
+            compare_readiness = this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
             if compare_readiness:
                 continue
             return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
@@ -171,9 +166,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
                 production_ready_cnt += readiness_count.count
         return production_ready_cnt / max(self.total_count, 1)
 
-    def update_readiness(
-        self, transition: FeatureReadinessTransition
-    ) -> FeatureReadinessDistribution:
+    def update_readiness(self, transition: FeatureReadinessTransition) -> FeatureReadinessDistribution:
         """
         Construct a new readiness distribution based on current distribution & readiness transition
 
@@ -200,9 +193,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         for feature_readiness in FeatureReadiness:
             count = this_dist_map[feature_readiness]
             if count:
-                readiness_dist.append(
-                    FeatureReadinessCount(readiness=feature_readiness, count=count)
-                )
+                readiness_dist.append(FeatureReadinessCount(readiness=feature_readiness, count=count))
         return FeatureReadinessDistribution(__root__=readiness_dist)
 
     def worst_case(self) -> FeatureReadinessDistribution:
@@ -214,9 +205,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         FeatureReadinessDistribution
         """
         return FeatureReadinessDistribution(
-            __root__=[
-                FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
-            ]
+            __root__=[FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)]
         )
 
 
@@ -239,9 +228,7 @@ class FeatureCluster(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]] = Field(
-        default=None
-    )
+    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]] = Field(default=None)
     feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = Field(default=None)
     combined_relationships_info: List[EntityRelationshipInfo] = Field(allow_mutation=False)
 
@@ -325,20 +312,13 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None  # DEV-556
+        allow_mutation=False,
+        default=None,  # DEV-556
     )
-    features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
-        allow_mutation=False, default=None
-    )
-    supported_serving_entity_ids: List[ServingEntity] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    readiness_distribution: FeatureReadinessDistribution = Field(
-        allow_mutation=False, default_factory=list
-    )
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(allow_mutation=False, default=None)
+    supported_serving_entity_ids: List[ServingEntity] = Field(allow_mutation=False, default_factory=list)
+    readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False, default_factory=list)
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False, default_factory=list)
     deployed: bool = Field(allow_mutation=False, default=False)
 
     # special handling for those attributes that are expensive to deserialize
@@ -351,16 +331,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    features_primary_entity_ids: List[List[PydanticObjectId]] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    feature_list_namespace_id: PydanticObjectId = Field(
-        allow_mutation=False, default_factory=ObjectId
-    )
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    feature_list_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
@@ -378,13 +352,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     @validator("supported_serving_entity_ids")
     @classmethod
-    def _validate_supported_serving_entity_ids(
-        cls, value: List[ServingEntity]
-    ) -> List[ServingEntity]:
-        return [
-            sorted(set(serving_entity))
-            for serving_entity in sorted(value, key=lambda e: (len(e), e))
-        ]
+    def _validate_supported_serving_entity_ids(cls, value: List[ServingEntity]) -> List[ServingEntity]:
+        return [sorted(set(serving_entity)) for serving_entity in sorted(value, key=lambda e: (len(e), e))]
 
     @root_validator(pre=True)
     @classmethod
@@ -416,13 +385,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             values["table_ids"] = sorted(table_ids)
 
             # some sanity check
-            total_count = sum(
-                read_count.count for read_count in values["readiness_distribution"].__root__
-            )
+            total_count = sum(read_count.count for read_count in values["readiness_distribution"].__root__)
             if total_count != len(values["feature_ids"]):
-                raise ValueError(
-                    "readiness_distribution total count is different from total feature ids."
-                )
+                raise ValueError("readiness_distribution total count is different from total feature ids.")
         return values
 
     @staticmethod
@@ -466,10 +431,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         dtype_count_map: dict[DBVarType, int] = defaultdict(int)
         for feature in features:
             dtype_count_map[feature.dtype] += 1
-        return [
-            FeatureTypeFeatureCount(dtype=dtype, count=count)
-            for dtype, count in dtype_count_map.items()
-        ]
+        return [FeatureTypeFeatureCount(dtype=dtype, count=count) for dtype, count in dtype_count_map.items()]
 
     @staticmethod
     def derive_feature_clusters(features: List[FeatureModel]) -> List[FeatureCluster]:
@@ -494,9 +456,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # create a FeatureCluster for each group
         feature_clusters = []
         for feature_store_id, group_features in groups.items():
-            pruned_graph, mapped_nodes = get_combined_graph_and_nodes(
-                feature_objects=group_features
-            )
+            pruned_graph, mapped_nodes = get_combined_graph_and_nodes(feature_objects=group_features)
             feature_node_relationships_info = []
             feature_node_definition_hashes = []
             for feature, mapped_node in zip(group_features, mapped_nodes):
@@ -550,9 +510,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         if self.internal_feature_clusters is None:
             return None
         if self._feature_clusters is None:
-            self._feature_clusters = [
-                FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
-            ]
+            self._feature_clusters = [FeatureCluster(**cluster) for cluster in self.internal_feature_clusters]
         return self._feature_clusters
 
     @classmethod

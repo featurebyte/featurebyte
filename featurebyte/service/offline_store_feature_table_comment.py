@@ -4,9 +4,8 @@ OfflineStoreFeatureTableCommentService
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
-
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
@@ -82,7 +81,7 @@ class OfflineStoreFeatureTableCommentService:
                     await session.comment_table(entry.table_name, entry.comment)
                 else:
                     await session.comment_column(entry.table_name, entry.column_name, entry.comment)
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 if isinstance(entry, TableComment):
                     extra = {"table_name": entry.table_name}
                 else:
@@ -94,14 +93,10 @@ class OfflineStoreFeatureTableCommentService:
                 if isinstance(entry, TableComment):
                     message = f"Added comment for table {entry.table_name}"
                 else:
-                    message = (
-                        f"Added comment for column {entry.column_name} in table {entry.table_name}"
-                    )
+                    message = f"Added comment for column {entry.column_name} in table {entry.table_name}"
                 await update_progress(percent, message)
 
-    async def generate_table_comment(
-        self, feature_table_model: OfflineStoreFeatureTableModel
-    ) -> TableComment:
+    async def generate_table_comment(self, feature_table_model: OfflineStoreFeatureTableModel) -> TableComment:
         """
         Generate comment for an offline feature table
 
@@ -114,18 +109,14 @@ class OfflineStoreFeatureTableCommentService:
         -------
         TableComment
         """
-        primary_entities = await self.entity_service.get_entities(
-            set(feature_table_model.primary_entity_ids)
-        )
+        primary_entities = await self.entity_service.get_entities(set(feature_table_model.primary_entity_ids))
 
         def _format_entity(entity_model: EntityModel) -> str:
             return f"{entity_model.name} (serving name: {entity_model.serving_names[0]})"
 
         primary_entities_info = ", ".join([_format_entity(entity) for entity in primary_entities])
         if feature_table_model.primary_entity_ids:
-            sentences = [
-                f"This feature table consists of features for primary entity {primary_entities_info}"
-            ]
+            sentences = [f"This feature table consists of features for primary entity {primary_entities_info}"]
         else:
             sentences = ["This feature table consists of features without a primary entity"]
         if feature_table_model.feature_job_setting:
@@ -138,9 +129,7 @@ class OfflineStoreFeatureTableCommentService:
         comment = ". ".join(sentences) + "."
         return TableComment(table_name=feature_table_model.name, comment=comment)
 
-    async def generate_column_comments(
-        self, feature_models: List[FeatureModel]
-    ) -> List[ColumnComment]:
+    async def generate_column_comments(self, feature_models: List[FeatureModel]) -> List[ColumnComment]:
         """
         Generate comments for columns in offline feature tables corresponding to the features
 
@@ -161,9 +150,7 @@ class OfflineStoreFeatureTableCommentService:
                 await self.feature_namespace_service.get_document(feature.feature_namespace_id)
             ).description
 
-            offline_ingest_graphs = (
-                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
-            )
+            offline_ingest_graphs = feature.offline_store_info.extract_offline_store_ingest_query_graphs()
             for offline_ingest_graph in offline_ingest_graphs:
                 table_name = offline_ingest_graph.offline_store_table_name
                 if feature.offline_store_info.is_decomposed:
@@ -175,9 +162,7 @@ class OfflineStoreFeatureTableCommentService:
                         comment += f". Description of {feature.name}: {feature_description}"
                     comments[(table_name, offline_ingest_graph.output_column_name)] = comment
                 elif feature_description is not None:
-                    comments[(table_name, offline_ingest_graph.output_column_name)] = (
-                        feature_description
-                    )
+                    comments[(table_name, offline_ingest_graph.output_column_name)] = feature_description
 
         out = [
             ColumnComment(

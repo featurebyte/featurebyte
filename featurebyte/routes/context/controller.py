@@ -26,9 +26,7 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class ContextController(
-    BaseDocumentController[ContextModel, ContextService, ContextList]
-):  # pylint: disable=too-many-instance-attributes
+class ContextController(BaseDocumentController[ContextModel, ContextService, ContextList]):
     """
     Context controller
     """
@@ -81,13 +79,9 @@ class ContextController(
         ContextModel
         """
         try:
-            await self.primary_entity_validator.validate_entities_are_primary_entities(
-                data.primary_entity_ids
-            )
+            await self.primary_entity_validator.validate_entities_are_primary_entities(data.primary_entity_ids)
         except ValueError as exc:
-            raise DocumentCreationError(
-                "Context entity ids must all be primary entity ids"
-            ) from exc
+            raise DocumentCreationError("Context entity ids must all be primary entity ids") from exc
         result: ContextModel = await self.context_service.create_document(data=data)
         return result
 
@@ -140,9 +134,7 @@ class ContextController(
         if data.remove_default_preview_table:
             context = await self.get(document_id=context_id)
             if not context.default_preview_table_id:
-                raise ObservationTableInvalidContextError(
-                    "Context does not have a default preview table"
-                )
+                raise ObservationTableInvalidContextError("Context does not have a default preview table")
 
             await self.service.update_documents(
                 query_filter={"_id": context_id},
@@ -152,9 +144,7 @@ class ContextController(
         if data.remove_default_eda_table:
             context = await self.get(document_id=context_id)
             if not context.default_eda_table_id:
-                raise ObservationTableInvalidContextError(
-                    "Context does not have a default eda table"
-                )
+                raise ObservationTableInvalidContextError("Context does not have a default eda table")
 
             await self.service.update_documents(
                 query_filter={"_id": context_id},
@@ -199,16 +189,12 @@ class ContextController(
 
         default_preview_table_name = None
         if context.default_preview_table_id:
-            default_preview_table = await self.observation_table_service.get_document(
-                context.default_preview_table_id
-            )
+            default_preview_table = await self.observation_table_service.get_document(context.default_preview_table_id)
             default_preview_table_name = default_preview_table.name
 
         default_eda_table_name = None
         if context.default_eda_table_id:
-            default_eda_table = await self.observation_table_service.get_document(
-                context.default_eda_table_id
-            )
+            default_eda_table = await self.observation_table_service.get_document(context.default_eda_table_id)
             default_eda_table_name = default_eda_table.name
 
         entity_briefs = [

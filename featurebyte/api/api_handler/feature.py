@@ -15,7 +15,5 @@ class FeatureListHandler(ListHandler):
 
     def additional_post_processing(self, features: pd.DataFrame) -> pd.DataFrame:
         # convert version strings
-        features["version"] = features["version"].apply(
-            lambda version: VersionIdentifier(**version).to_str()
-        )
+        features["version"] = features["version"].apply(lambda version: VersionIdentifier(**version).to_str())
         return features

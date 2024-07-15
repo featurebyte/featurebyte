@@ -16,9 +16,7 @@ from featurebyte.schema.item_table import ItemTableCreate
 
 
 @pytest.mark.asyncio
-async def test_table_document_services__retrieval(
-    event_table_service, item_table_service, event_table, item_table
-):
+async def test_table_document_services__retrieval(event_table_service, item_table_service, event_table, item_table):
     """Test table document services retrieval"""
     retrieved_event_table = await event_table_service.get_document(document_id=event_table.id)
     assert retrieved_event_table == event_table
@@ -46,9 +44,7 @@ async def test_table_document_services__retrieval(
 
     with pytest.raises(DocumentNotFoundError) as exc:
         await item_table_service.get_document(document_id=event_table.id)
-    expected_msg = (
-        f'ItemTable (id: "{event_table.id}") not found. Please save the ItemTable object first.'
-    )
+    expected_msg = f'ItemTable (id: "{event_table.id}") not found. Please save the ItemTable object first.'
     assert expected_msg in str(exc.value)
 
 
@@ -81,9 +77,7 @@ async def test_table_document_services__creation_conflict(
 
 
 @pytest.mark.asyncio
-async def test_table_document_service__update_column_description(
-    scd_table_service, scd_table, app_container, entity
-):
+async def test_table_document_service__update_column_description(scd_table_service, scd_table, app_container, entity):
     """Test table document service - update column description"""
     # add block_by_modification
     reference_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())

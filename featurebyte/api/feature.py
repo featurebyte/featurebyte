@@ -2,18 +2,16 @@
 Feature and FeatureList classes
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
-from typing_extensions import Literal
-
 from http import HTTPStatus
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature import FeatureListHandler
@@ -81,7 +79,6 @@ logger = get_logger(__name__)
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Feature"}
 
 
-# pylint: disable=too-many-ancestors
 class Feature(
     Series,
     DeletableApiObject,
@@ -91,7 +88,7 @@ class Feature(
     FeatureJobMixin,
     FeatureDtAccessorMixin,
     FeatureStrAccessorMixin,
-):  # pylint: disable=too-many-public-methods
+):
     """
     A feature is input data that is used to train Machine Learning models and compute predictions.
 
@@ -167,41 +164,39 @@ class Feature(
         ),
         format_kwargs=DOCSTRING_FORMAT_PARAMS,
     )
-    def version(self) -> str:  # pylint: disable=missing-function-docstring
+    def version(self) -> str:
         return self._get_version()
 
     @property
     @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
+    def catalog_id(self) -> ObjectId:
         return self._get_catalog_id()
 
     @property
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    def entity_ids(self) -> Sequence[ObjectId]:
         return self._get_entity_ids()
 
     @property
-    @substitute_docstring(
-        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
-    )
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity_ids(
         self,
-    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    ) -> Sequence[ObjectId]:
         return self._get_primary_entity_ids()
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def entities(self) -> List[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def primary_entity(self) -> List[Entity]:
         return self._get_primary_entity()
 
     @property
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    def table_ids(self) -> Sequence[ObjectId]:
         return self._get_table_ids()
 
     @property
@@ -226,7 +221,7 @@ class Feature(
         ),
         format_kwargs={"object_type": "feature"},
     )
-    def definition(self) -> str:  # pylint: disable=missing-function-docstring
+    def definition(self) -> str:
         return self._generate_definition()
 
     @typechecked
@@ -362,9 +357,7 @@ class Feature(
         pd.DataFrame
             Table of features
         """
-        return FeatureNamespace.list(
-            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
-        )
+        return FeatureNamespace.list(include_id=include_id, primary_entity=primary_entity, primary_table=primary_table)
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
@@ -381,7 +374,6 @@ class Feature(
         include_id: Optional[bool] = True,
         feature_list_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
-        # pylint: disable=line-too-long
         """
         Returns a DataFrame that presents a summary of the feature versions belonging to the namespace of the
         Feature object. The DataFrame contains multiple attributes of the feature versions, such as their version
@@ -429,7 +421,6 @@ class Feature(
         return cls._list(include_id=include_id, params=params)
 
     def _list_versions_with_same_name(self, include_id: bool = True) -> pd.DataFrame:
-        # pylint: disable=line-too-long
         """
         List feature versions with the same name
 
@@ -580,9 +571,7 @@ class Feature(
         bool
             True if the feature is time based, False otherwise.
         """
-        operation_structure = self.graph.extract_operation_structure(
-            self.node, keep_all_source_columns=True
-        )
+        operation_structure = self.graph.extract_operation_structure(self.node, keep_all_source_columns=True)
         return operation_structure.is_time_based
 
     @property
@@ -630,9 +619,7 @@ class Feature(
         try:
             return self.cached_model.used_request_column
         except RecordRetrievalException:
-            return self.graph.has_node_type(
-                target_node=self.node, node_type=NodeType.REQUEST_COLUMN
-            )
+            return self.graph.has_node_type(target_node=self.node, node_type=NodeType.REQUEST_COLUMN)
 
     @property
     def table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:
@@ -646,9 +633,7 @@ class Feature(
         return self.graph.extract_table_id_feature_job_settings(target_node=self.node)
 
     @typechecked
-    def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
         """
         Adds a Feature object to the catalog.
 
@@ -673,10 +658,10 @@ class Feature(
         --------
         >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
         >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
-        ...   value_column="Amount",
-        ...   method="avg",
-        ...   feature_names=["InvoiceAmountAvg_60days"],
-        ...   windows=["60d"],
+        ...     value_column="Amount",
+        ...     method="avg",
+        ...     feature_names=["InvoiceAmountAvg_60days"],
+        ...     windows=["60d"],
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
@@ -688,9 +673,7 @@ class Feature(
             # feature definition and save the feature. The task is executed asynchronously. The feature definition is
             # validated before saving the feature.
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-                target_node_names=[self.node_name]
-            )
+            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(target_node_names=[self.node_name])
             feature_item = BatchFeatureItem(
                 id=self.id,
                 name=self.name,
@@ -791,7 +774,7 @@ class Feature(
     )
     @enforce_observation_set_row_order
     @typechecked
-    def preview(  # pylint: disable=missing-function-docstring
+    def preview(
         self,
         observation_set: Union[ObservationTable, pd.DataFrame],
     ) -> pd.DataFrame:
@@ -856,16 +839,16 @@ class Feature(
         Create a new feature with a different feature job setting:
 
         >>> new_feature = feature.create_new_version(
-        ...   table_feature_job_settings=[
-        ...     fb.TableFeatureJobSetting(
-        ...       table_name="GROCERYINVOICE",
-        ...       feature_job_setting=fb.FeatureJobSetting(
-        ...         blind_spot="60s",
-        ...         period="3600s",
-        ...         offset="90s",
-        ...       )
-        ...     )
-        ...   ]
+        ...     table_feature_job_settings=[
+        ...         fb.TableFeatureJobSetting(
+        ...             table_name="GROCERYINVOICE",
+        ...             feature_job_setting=fb.FeatureJobSetting(
+        ...                 blind_spot="60s",
+        ...                 period="3600s",
+        ...                 offset="90s",
+        ...             ),
+        ...         )
+        ...     ]
         ... )
         >>> new_feature.info()["table_feature_job_setting"]
         {'this': [{'table_name': 'GROCERYINVOICE',
@@ -888,17 +871,17 @@ class Feature(
         Create a new version of a feature with different table cleaning operations:
 
         >>> new_feature = feature.create_new_version(
-        ...   table_cleaning_operations=[
-        ...     fb.TableCleaningOperation(
-        ...       table_name="GROCERYINVOICE",
-        ...       column_cleaning_operations=[
-        ...         fb.ColumnCleaningOperation(
-        ...           column_name="Amount",
-        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...     table_cleaning_operations=[
+        ...         fb.TableCleaningOperation(
+        ...             table_name="GROCERYINVOICE",
+        ...             column_cleaning_operations=[
+        ...                 fb.ColumnCleaningOperation(
+        ...                     column_name="Amount",
+        ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...                 )
+        ...             ],
         ...         )
-        ...       ],
-        ...     )
-        ...   ]
+        ...     ]
         ... )
         >>> new_feature.info()["table_cleaning_operation"]
         {'this': [{'table_name': 'GROCERYINVOICE',
@@ -916,17 +899,17 @@ class Feature(
         table name or column name is not used by the feature):
 
         >>> feature.create_new_version(
-        ...   table_cleaning_operations=[
-        ...     fb.TableCleaningOperation(
-        ...       table_name="GROCERYPRODUCT",
-        ...       column_cleaning_operations=[
-        ...         fb.ColumnCleaningOperation(
-        ...           column_name="GroceryProductGuid",
-        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0)],
+        ...     table_cleaning_operations=[
+        ...         fb.TableCleaningOperation(
+        ...             table_name="GROCERYPRODUCT",
+        ...             column_cleaning_operations=[
+        ...                 fb.ColumnCleaningOperation(
+        ...                     column_name="GroceryProductGuid",
+        ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0)],
+        ...                 )
+        ...             ],
         ...         )
-        ...       ],
-        ...     )
-        ...   ]
+        ...     ]
         ... )
         Traceback (most recent call last):
         ...
@@ -947,17 +930,12 @@ class Feature(
             json={
                 "source_feature_id": str(self.id),
                 "table_feature_job_settings": (
-                    [
-                        table_feature_job_setting.dict()
-                        for table_feature_job_setting in table_feature_job_settings
-                    ]
+                    [table_feature_job_setting.dict() for table_feature_job_setting in table_feature_job_settings]
                     if table_feature_job_settings
                     else None
                 ),
                 "table_cleaning_operations": (
-                    [clean_ops.dict() for clean_ops in table_cleaning_operations]
-                    if table_cleaning_operations
-                    else None
+                    [clean_ops.dict() for clean_ops in table_cleaning_operations] if table_cleaning_operations else None
                 ),
             },
         )
@@ -1015,9 +993,7 @@ class Feature(
         )
 
     @typechecked
-    def update_default_version_mode(
-        self, default_version_mode: Union[DefaultVersionMode, str]
-    ) -> None:
+    def update_default_version_mode(self, default_version_mode: Union[DefaultVersionMode, str]) -> None:
         """
         Sets the default version mode of a feature.
 
@@ -1114,7 +1090,7 @@ class Feature(
             """
         ),
     )
-    def isnull(self) -> Feature:  # pylint: disable=missing-function-docstring
+    def isnull(self) -> Feature:
         return super().isnull()
 
     @substitute_docstring(
@@ -1127,7 +1103,7 @@ class Feature(
             """
         ),
     )
-    def notnull(self) -> Feature:  # pylint: disable=missing-function-docstring
+    def notnull(self) -> Feature:
         return super().notnull()
 
     # descriptors

@@ -2,7 +2,6 @@
 FeatureListNamespace API routes
 """
 
-# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import Optional, cast
@@ -69,11 +68,9 @@ async def update_feature_list_namespace(
     Update FeatureListNamespace
     """
     controller = request.state.app_container.feature_list_namespace_controller
-    feature_list_namespace: FeatureListNamespaceModelResponse = (
-        await controller.update_feature_list_namespace(
-            feature_list_namespace_id=feature_list_namespace_id,
-            data=data,
-        )
+    feature_list_namespace: FeatureListNamespaceModelResponse = await controller.update_feature_list_namespace(
+        feature_list_namespace_id=feature_list_namespace_id,
+        data=data,
     )
     return feature_list_namespace
 
@@ -143,9 +140,7 @@ async def get_feature_list_namespace_info(
     return cast(FeatureListNamespaceInfo, info)
 
 
-@router.patch(
-    "/{feature_list_namespace_id}/description", response_model=FeatureListNamespaceModelResponse
-)
+@router.patch("/{feature_list_namespace_id}/description", response_model=FeatureListNamespaceModelResponse)
 async def update_feature_list_namespace_description(
     request: Request,
     feature_list_namespace_id: PyObjectId,

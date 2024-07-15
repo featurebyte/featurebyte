@@ -4,8 +4,6 @@ Storage base class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional
-
 import asyncio
 import json
 import os
@@ -13,6 +11,7 @@ import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, AsyncGenerator, Optional
 
 import aiofiles
 import pandas as pd
@@ -149,9 +148,7 @@ class Storage(ABC):
         except FileNotFoundError:
             pass
 
-    async def get(
-        self, remote_path: Path, local_path: Path, cache_key: Optional[str] = None
-    ) -> None:
+    async def get(self, remote_path: Path, local_path: Path, cache_key: Optional[str] = None) -> None:
         """
         Download file from storage to local path with caching if cache_key is provided
 
@@ -190,9 +187,7 @@ class Storage(ABC):
         """
 
     @abstractmethod
-    async def get_file_stream(
-        self, remote_path: Path, chunk_size: int = 255 * 1024
-    ) -> AsyncGenerator[bytes, None]:
+    async def get_file_stream(self, remote_path: Path, chunk_size: int = 255 * 1024) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 

@@ -46,18 +46,12 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
     task_id = uuid4()
-    app_container.override_instances_for_test(
-        {
-            "task_id": task_id,
-            "progress": Mock(),
-        }
-    )
-    task_executor = TaskExecutor(
-        payload=job_details.kwargs, task_id=task_id, app_container=app_container
-    )
-    with mock.patch(
-        "featurebyte.service.feature_store.FeatureStoreService.get_document"
-    ) as mock_feature_store_service:
+    app_container.override_instances_for_test({
+        "task_id": task_id,
+        "progress": Mock(),
+    })
+    task_executor = TaskExecutor(payload=job_details.kwargs, task_id=task_id, app_container=app_container)
+    with mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document") as mock_feature_store_service:
         mock_feature_store_service.return_value = feature_store
         await task_executor.execute()
 
@@ -73,7 +67,7 @@ async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
     """
     Test generate_tiles with scheduler - avoid duplicate tile job
     """
-    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    _tile_scheduler, tile_spec, _job_id = scheduler_fixture
     sql = await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
     assert sql is not None
 
@@ -88,7 +82,7 @@ async def test_generate_tiles_with_scheduler__tile_job_exists(
     """
     Test generate_tiles with scheduler - test tile_job_exists
     """
-    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    _tile_scheduler, tile_spec, _job_id = scheduler_fixture
 
     exists = await tile_manager_service.tile_job_exists(tile_spec=tile_spec)
     assert exists is False

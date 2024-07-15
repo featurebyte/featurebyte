@@ -4,9 +4,8 @@ TargetNamespace API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
-
 from http import HTTPStatus
+from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
@@ -46,9 +45,7 @@ class TargetNamespaceRouter(BaseRouter):
 
 
 @router.post("", response_model=TargetNamespaceModel, status_code=HTTPStatus.CREATED)
-async def create_target_namespace(
-    request: Request, data: TargetNamespaceCreate
-) -> TargetNamespaceModel:
+async def create_target_namespace(request: Request, data: TargetNamespaceCreate) -> TargetNamespaceModel:
     """
     Create target namespace
     """
@@ -58,9 +55,7 @@ async def create_target_namespace(
 
 
 @router.get("/{target_namespace_id}", response_model=TargetNamespaceModel)
-async def get_target_namespace(
-    request: Request, target_namespace_id: PyObjectId
-) -> TargetNamespaceModel:
+async def get_target_namespace(request: Request, target_namespace_id: PyObjectId) -> TargetNamespaceModel:
     """
     Retrieve Target Namespace
     """
@@ -82,8 +77,8 @@ async def update_target_namespace(
     Update TargetNamespace
     """
     controller = request.state.app_container.target_namespace_controller
-    target_namespace: TargetNamespaceModel = (
-        await controller.target_namespace_service.update_document(target_namespace_id, data)
+    target_namespace: TargetNamespaceModel = await controller.target_namespace_service.update_document(
+        target_namespace_id, data
     )
     return target_namespace
 

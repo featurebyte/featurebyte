@@ -4,9 +4,8 @@ HistoricalFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from pathlib import Path
+from typing import Any, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -36,7 +35,7 @@ class HistoricalFeatureTableService(
     HistoricalFeatureTableService class
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -103,12 +102,8 @@ class HistoricalFeatureTableService(
         )
 
         if observation_set_dataframe is not None:
-            observation_set_storage_path = (
-                f"historical_feature_table/observation_set/{output_document_id}.parquet"
-            )
-            await self.temp_storage.put_dataframe(
-                observation_set_dataframe, Path(observation_set_storage_path)
-            )
+            observation_set_storage_path = f"historical_feature_table/observation_set/{output_document_id}.parquet"
+            await self.temp_storage.put_dataframe(observation_set_dataframe, Path(observation_set_storage_path))
         else:
             observation_set_storage_path = None
 

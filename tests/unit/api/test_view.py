@@ -3,7 +3,6 @@ Test view class
 """
 
 from typing import Any, Dict, List, Optional
-
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -136,14 +135,10 @@ def test_get_key_if_entity__diff_entities_in_both_is_no_match():
     Test get_key_if_entity__diff_entities_in_both_is_no_match
     """
     current_view = SimpleTestView(
-        columns_info=[
-            ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-        ]
+        columns_info=[ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())]
     )
     other_view = SimpleTestView(
-        columns_info=[
-            ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-        ]
+        columns_info=[ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())]
     )
     other_view.set_join_col_override("colB")
     response = current_view._get_key_if_entity(other_view)
@@ -368,9 +363,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
 
     # do the join
-    joined_view = current_view.join(
-        other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix", rprefix="_"
-    )
+    joined_view = current_view.join(other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix", rprefix="_")
 
     # assert updated view params
     assert joined_view.columns_info == [
@@ -413,9 +406,7 @@ def patch_graph_operations_fixture():
     """
     mocked_new_node = MagicMock()
     mocked_new_node.name = "new_node"
-    with patch(
-        "featurebyte.query_graph.graph.GlobalQueryGraph.add_operation", return_value=mocked_new_node
-    ):
+    with patch("featurebyte.query_graph.graph.GlobalQueryGraph.add_operation", return_value=mocked_new_node):
         yield
 
 
@@ -452,12 +443,8 @@ def test_validate_join__one_overlapping_column():
         ColumnInfo(name="colC", dtype=DBVarType.INT),
     )
     base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_b.name)
-    view_with_overlap = SimpleTestView(
-        columns_info=[col_info_b, col_info_c], join_col=col_info_b.name
-    )
-    view_with_overlap_not_join_key = SimpleTestView(
-        columns_info=[col_info_a, col_info_c], join_col=col_info_c.name
-    )
+    view_with_overlap = SimpleTestView(columns_info=[col_info_b, col_info_c], join_col=col_info_b.name)
+    view_with_overlap_not_join_key = SimpleTestView(columns_info=[col_info_a, col_info_c], join_col=col_info_c.name)
 
     # overlapping column names here should have error since the overlapping name is not the join key
     with pytest.raises(NoJoinKeyFoundError):
@@ -481,9 +468,7 @@ def test_validate_join__multiple_overlapping_columns():
         ColumnInfo(name="colC", dtype=DBVarType.INT),
         ColumnInfo(name="colD", dtype=DBVarType.INT),
     )
-    base_view = SimpleTestView(
-        columns_info=[col_info_a, col_info_b, col_info_d], join_col=col_info_b.name
-    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b, col_info_d], join_col=col_info_b.name)
     view_with_multiple_overlapping = SimpleTestView(
         columns_info=[col_info_a, col_info_b, col_info_c, col_info_d], join_col=col_info_b.name
     )

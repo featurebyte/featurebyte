@@ -4,11 +4,10 @@ This module contains the mixin class used by api objects.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Union
-
 import time
 from datetime import datetime
 from http import HTTPStatus
+from typing import Any, Optional, Tuple, Union
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -87,7 +86,7 @@ class AsyncMixin(FeatureByteBaseModel):
 
                 if status == TaskStatus.SUCCESS:
                     progress_bar.title = "Done!"
-                    progress_bar(1)  # pylint: disable=not-callable
+                    progress_bar(1)
             except KeyboardInterrupt:
                 # try to revoke task
                 client.patch(f"/task/{task_id}", json={"revoke": True})
@@ -176,9 +175,7 @@ class AsyncMixin(FeatureByteBaseModel):
         )
 
     @classmethod
-    def patch_async_task(
-        cls, route: str, payload: dict[str, Any], delay: float = POLLING_INTERVAL
-    ) -> None:
+    def patch_async_task(cls, route: str, payload: dict[str, Any], delay: float = POLLING_INTERVAL) -> None:
         """
         Patch async task to the worker & wait for the task to finish (blocking)
 
@@ -269,9 +266,7 @@ class SampleMixin(AsyncMixin):
             feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
-        response = client.post(
-            url=f"/feature_store/preview?limit={limit}", json=payload.json_dict()
-        )
+        response = client.post(url=f"/feature_store/preview?limit={limit}", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         return dataframe_from_json(response.json())
@@ -407,9 +402,7 @@ class SampleMixin(AsyncMixin):
         """
         payload = self._get_sample_payload(from_timestamp, to_timestamp, **kwargs)  # type: ignore[misc]
         client = Configurations().get_client()
-        response = client.post(
-            url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()
-        )
+        response = client.post(url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         return dataframe_from_json(response.json())

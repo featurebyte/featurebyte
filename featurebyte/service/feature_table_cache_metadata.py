@@ -81,9 +81,7 @@ class FeatureTableCacheMetadataService(
         if documents:
             document = documents[0]
         else:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=observation_table_id
-            )
+            observation_table = await self.observation_table_service.get_document(document_id=observation_table_id)
             document = FeatureTableCacheMetadataModel(
                 observation_table_id=observation_table.id,
                 table_name=f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{str(observation_table.id)}",
@@ -121,8 +119,6 @@ class FeatureTableCacheMetadataService(
 
         await self.update_document(
             document_id=document.id,
-            data=FeatureTableCacheMetadataUpdate(
-                feature_definitions=list(existing_features.values())
-            ),
+            data=FeatureTableCacheMetadataUpdate(feature_definitions=list(existing_features.values())),
             return_document=False,
         )

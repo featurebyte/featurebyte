@@ -3,6 +3,7 @@ This module contains nested graph related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,11 +17,9 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Annotated, Literal
-
-from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
+from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -75,9 +74,7 @@ class ProxyInputNode(BaseNode):
     def max_input_count(self) -> int:
         return 0
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
@@ -89,13 +86,9 @@ class ProxyInputNode(BaseNode):
         proxy_input_order = self.parameters.input_order
         operation_structure = global_state.proxy_input_operation_structures[proxy_input_order]
         return OperationStructure(
-            columns=[
-                col.clone(node_names={self.name}, node_name=self.name)
-                for col in operation_structure.columns
-            ],
+            columns=[col.clone(node_names={self.name}, node_name=self.name) for col in operation_structure.columns],
             aggregations=[
-                agg.clone(node_names={self.name}, node_name=self.name)
-                for agg in operation_structure.aggregations
+                agg.clone(node_names={self.name}, node_name=self.name) for agg in operation_structure.aggregations
             ],
             output_type=operation_structure.output_type,
             output_category=operation_structure.output_category,
@@ -106,7 +99,7 @@ class ProxyInputNode(BaseNode):
 class BaseGraphNodeParameters(FeatureByteBaseModel):
     """Graph node parameters"""
 
-    graph: "QueryGraphModel"  # type: ignore[name-defined]
+    graph: "QueryGraphModel"  # type: ignore[name-defined]  # noqa
     output_node_name: str
     type: GraphNodeType
 
@@ -238,14 +231,12 @@ class ViewMetadata(FeatureByteBaseModel):
         -------
         ViewMetadataT
         """
-        return type(self)(
-            **{
-                **self.dict(by_alias=True),
-                "view_mode": view_mode,
-                "column_cleaning_operations": column_cleaning_operations,
-                **kwargs,
-            }
-        )
+        return type(self)(**{
+            **self.dict(by_alias=True),
+            "view_mode": view_mode,
+            "column_cleaning_operations": column_cleaning_operations,
+            **kwargs,
+        })
 
 
 class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
@@ -270,15 +261,11 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
         """
         return type(self.metadata)(**self._prune_metadata(target_columns, input_nodes))
 
-    def _prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
+    def _prune_metadata(self, target_columns: List[str], input_nodes: Sequence[NodeT]) -> Dict[str, Any]:
         _ = input_nodes
         metadata = self.metadata.dict(by_alias=True)
         metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
+            col for col in self.metadata.column_cleaning_operations if col.column_name in target_columns
         ]
         return metadata
 
@@ -301,9 +288,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
         return [
             ClassEnum.COLUMN_CLEANING_OPERATION(
                 column_name=col_clean_op.column_name,
-                cleaning_operations=[
-                    col.derive_sdk_code() for col in col_clean_op.cleaning_operations
-                ],
+                cleaning_operations=[col.derive_sdk_code() for col in col_clean_op.cleaning_operations],
             )
             for col_clean_op in column_cleaning_operations
         ]
@@ -385,9 +370,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         )
         return [(view_var_name, expression)], view_var_name
 
-    def _prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
+    def _prune_metadata(self, target_columns: List[str], input_nodes: Sequence[NodeT]) -> Dict[str, Any]:
         metadata = super()._prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
         # for item view graph node, we need to use the event view graph node's metadata
         # to generate the event column cleaning operations
@@ -395,9 +378,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         event_view_node = input_nodes[1]
         assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
         event_view_metadata = event_view_node.parameters.metadata
-        metadata["event_column_cleaning_operations"] = (
-            event_view_metadata.column_cleaning_operations
-        )
+        metadata["event_column_cleaning_operations"] = event_view_metadata.column_cleaning_operations
         return metadata
 
 
@@ -490,9 +471,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
         feature_job_setting: Optional[ObjectClass] = None
         if self.metadata.default_feature_job_setting:
-            feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(
-                **self.metadata.default_feature_job_setting
-            )
+            feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(**self.metadata.default_feature_job_setting)
 
         assert len(input_var_name_expressions) == 1
         table_var_name = input_var_name_expressions[0]
@@ -522,9 +501,7 @@ GRAPH_NODE_PARAMETERS_TYPES = [
 if TYPE_CHECKING:
     GraphNodeParameters = BaseGraphNodeParameters
 else:
-    GraphNodeParameters = Annotated[
-        Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")
-    ]
+    GraphNodeParameters = Annotated[Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")]
 
 
 class BaseGraphNode(BasePrunableNode):
@@ -551,9 +528,7 @@ class BaseGraphNode(BasePrunableNode):
 
     @property
     def max_input_count(self) -> int:
-        node_iter = self.parameters.graph.iterate_nodes(
-            target_node=self.output_node, node_type=NodeType.PROXY_INPUT
-        )
+        node_iter = self.parameters.graph.iterate_nodes(target_node=self.output_node, node_type=NodeType.PROXY_INPUT)
         return len(list(node_iter))
 
     @property
@@ -567,14 +542,10 @@ class BaseGraphNode(BasePrunableNode):
         """
         return self.parameters.type == GraphNodeType.CLEANING
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
-        for node in self.parameters.graph.iterate_nodes(
-            target_node=self.output_node, node_type=NodeType.PROXY_INPUT
-        ):
+        for node in self.parameters.graph.iterate_nodes(target_node=self.output_node, node_type=NodeType.PROXY_INPUT):
             assert isinstance(node, ProxyInputNode)
             if node.parameters.input_order == input_index:
                 proxy_input_node = node
@@ -654,9 +625,7 @@ class BaseGraphNode(BasePrunableNode):
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
         if node_params.null_filling_value is not None:
             var = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            null_fill_expr = null_filling_func(
-                input_var_name_expr, ValueStr(node_params.null_filling_value)
-            )
+            null_fill_expr = null_filling_func(input_var_name_expr, ValueStr(node_params.null_filling_value))
             statements.append((var, null_fill_expr))
             input_var_name_expr = var
 
@@ -673,35 +642,29 @@ class BaseGraphNode(BasePrunableNode):
                 )
 
             # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
-            statements.append(
-                (
-                    var_name_map["request_time"],
-                    self._to_datetime_expr(
-                        ExpressionStr(
-                            subset_frame_column_expr(
-                                VariableNameStr(input_df_name),
-                                SpecialColumnName.POINT_IN_TIME.value,
-                            )
-                        ),
-                        to_handle_none=is_databricks_udf,
+            statements.append((
+                var_name_map["request_time"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(
+                            VariableNameStr(input_df_name),
+                            SpecialColumnName.POINT_IN_TIME.value,
+                        )
                     ),
-                )
-            )
+                    to_handle_none=is_databricks_udf,
+                ),
+            ))
             statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
                 (
                     var_name_map["cutoff"],
-                    ExpressionStr(
-                        f"{var_name_map['request_time']} - pd.Timedelta(seconds={ttl_seconds})"
-                    ),
+                    ExpressionStr(f"{var_name_map['request_time']} - pd.Timedelta(seconds={ttl_seconds})"),
                 )
             )
             statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
                 (
                     var_name_map["feat_ts"],
                     self._to_datetime_expr(
-                        ExpressionStr(
-                            subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
-                        ),
+                        ExpressionStr(subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)),
                         to_handle_none=False,
                         unit="s",
                     ),
@@ -717,19 +680,15 @@ class BaseGraphNode(BasePrunableNode):
                 )
             )
             statements.append(  # inputs.loc["feat"][~mask] = np.nan
-                StatementStr(
-                    f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
-                )
+                StatementStr(f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan")
             )
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            statements.append(
-                (
-                    var_name,
-                    self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
-                )
-            )
+            statements.append((
+                var_name,
+                self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+            ))
             return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():
@@ -753,9 +712,7 @@ class BaseGraphNode(BasePrunableNode):
             return ExpressionStr(out_expr)
 
         input_df_name = config.input_df_name
-        column_name = cast(
-            OfflineStoreIngestQueryGraphNodeParameters, self.parameters
-        ).output_column_name
+        column_name = cast(OfflineStoreIngestQueryGraphNodeParameters, self.parameters).output_column_name
         input_var_name_expr = VariableNameStr(
             subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
         )
@@ -786,9 +743,7 @@ class BaseGraphNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        output_dtype = cast(
-            OfflineStoreIngestQueryGraphNodeParameters, self.parameters
-        ).output_dtype
+        output_dtype = cast(OfflineStoreIngestQueryGraphNodeParameters, self.parameters).output_dtype
         associated_node_name = None
         if (
             output_dtype not in DBVarType.supported_timestamp_types()
@@ -803,11 +758,7 @@ class BaseGraphNode(BasePrunableNode):
         return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name,
-            json_conversion_func=lambda expr: ExpressionStr(
-                f"np.nan if pd.isna({expr}) else {expr}"
-            ),
-            null_filling_func=lambda expr, val: ExpressionStr(
-                f"{val.as_input()} if pd.isna({expr}) else {expr}"
-            ),
+            json_conversion_func=lambda expr: ExpressionStr(f"np.nan if pd.isna({expr}) else {expr}"),
+            null_filling_func=lambda expr, val: ExpressionStr(f"{val.as_input()} if pd.isna({expr}) else {expr}"),
             is_databricks_udf=True,
         )

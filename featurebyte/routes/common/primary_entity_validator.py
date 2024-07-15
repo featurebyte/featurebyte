@@ -22,9 +22,7 @@ class PrimaryEntityValidator:
         self.entity_service = entity_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
 
-    async def validate_entities_are_primary_entities(
-        self, entity_ids: List[PydanticObjectId]
-    ) -> None:
+    async def validate_entities_are_primary_entities(self, entity_ids: List[PydanticObjectId]) -> None:
         """
         Validate that all entities provided in the list of entity IDs are primary entities.
 
@@ -50,11 +48,7 @@ class PrimaryEntityValidator:
             raise ValueError("Entity ids must not include any parent entity ids")
 
         # validate all entity ids are primary entity ids
-        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-            entity_ids=entity_ids
-        )
+        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(entity_ids=entity_ids)
         if set(primary_entity_ids) != set(entity_ids):
             not_primary = set(entity_ids).difference(set(primary_entity_ids))
-            raise ValueError(
-                f"Entity ids must all be primary entity ids: {[str(x) for x in not_primary]}"
-            )
+            raise ValueError(f"Entity ids must all be primary entity ids: {[str(x) for x in not_primary]}")

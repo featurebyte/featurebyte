@@ -82,10 +82,7 @@ class TestItemView(BaseViewTestSuite):
         assert row_subset.item_id_column == view_under_test.item_id_column
         assert row_subset.event_table_id == view_under_test.event_table_id
         assert row_subset.event_view.dict() == view_under_test.event_view.dict()
-        assert (
-            row_subset.default_feature_job_setting.dict()
-            == view_under_test.default_feature_job_setting.dict()
-        )
+        assert row_subset.default_feature_job_setting.dict() == view_under_test.default_feature_job_setting.dict()
 
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
         return {
@@ -287,10 +284,7 @@ def test_default_feature_job_setting(snowflake_item_view, snowflake_event_table)
     """
     Test that ItemView inherits the same feature job setting from the EventTable
     """
-    assert (
-        snowflake_item_view.default_feature_job_setting
-        == snowflake_event_table.default_feature_job_setting
-    )
+    assert snowflake_item_view.default_feature_job_setting == snowflake_event_table.default_feature_job_setting
 
 
 def test_setitem__str_key_series_value(
@@ -554,9 +548,7 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
     }
 
 
-def test_item_view_groupby__item_table_column(
-    snowflake_item_view, snowflake_item_table, snowflake_event_table
-):
+def test_item_view_groupby__item_table_column(snowflake_item_view, snowflake_item_table, snowflake_event_table):
     """
     Test aggregating a column from ItemTable using an EventTable entity is allowed
     """
@@ -620,9 +612,7 @@ def test_item_view_groupby__event_table_column(snowflake_item_view, groupby_feat
     )
 
 
-def test_item_view_groupby__event_table_column_derived(
-    snowflake_item_view, groupby_feature_job_setting
-):
+def test_item_view_groupby__event_table_column_derived(snowflake_item_view, groupby_feature_job_setting):
     """
     Test aggregating a column derived from EventTable column using EventTable entity is not allowed
     """
@@ -649,9 +639,7 @@ def test_item_view_groupby__event_table_column_derived_mixed(
     Test aggregating a column derived from both EventTable and ItemTable is allowed
     """
     snowflake_item_view = snowflake_item_view.join_event_table_attributes(["col_float"])
-    snowflake_item_view["new_col"] = (
-        snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
-    )
+    snowflake_item_view["new_col"] = snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     feat = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         "new_col",
         method="sum",
@@ -698,9 +686,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_
     )
 
 
-def test_item_view_groupby__event_id_column(
-    snowflake_item_table, snowflake_event_table, transaction_entity
-):
+def test_item_view_groupby__event_id_column(snowflake_item_table, snowflake_event_table, transaction_entity):
     """
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
@@ -762,9 +748,7 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
     snowflake_item_view.validate_join(snowflake_item_view)
 
 
-def test_validate_simple_aggregate_parameters(
-    snowflake_item_table, transaction_entity, cust_id_entity
-):
+def test_validate_simple_aggregate_parameters(snowflake_item_table, transaction_entity, cust_id_entity):
     """
     Test validate_simple_aggregate_parameters
     """
@@ -791,9 +775,7 @@ def test_validate_simple_aggregate_parameters(
     snowflake_item_view.validate_simple_aggregate_parameters(group_by.keys, None)
 
 
-def test_validate_aggregate_over_parameters(
-    snowflake_item_table, transaction_entity, cust_id_entity
-):
+def test_validate_aggregate_over_parameters(snowflake_item_table, transaction_entity, cust_id_entity):
     """
     Test validate_aggregate_over_parameters
     """
@@ -847,9 +829,7 @@ def test_non_time_based_feature__create_new_version(item_event_saved_feature):
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="45m", period="30m", offset="15m"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
                 )
             ],
             table_cleaning_operations=None,
@@ -917,9 +897,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
     )
 
 
-def test_as_feature__from_view_column(
-    saved_item_table, item_entity, update_fixtures, mock_deployment_flow
-):
+def test_as_feature__from_view_column(saved_item_table, item_entity, update_fixtures, mock_deployment_flow):
     """
     Test calling as_feature() from ItemView column
     """
@@ -1003,9 +981,7 @@ def test_as_feature__from_view_column(
 
     # create another new version & check SDK code generation
     version_without_clean_ops = new_version.create_new_version(
-        table_cleaning_operations=[
-            TableCleaningOperation(table_name="sf_item_table", column_cleaning_operations=[])
-        ]
+        table_cleaning_operations=[TableCleaningOperation(table_name="sf_item_table", column_cleaning_operations=[])]
     )
     check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
 
@@ -1052,9 +1028,7 @@ def test_sdk_code_generation(saved_item_table, saved_event_table, update_fixture
             ColumnCleaningOperation(
                 column_name="col_char",
                 cleaning_operations=[
-                    UnexpectedValueImputation(
-                        expected_values=["a", "b", "c", "unknown"], imputed_value="unknown"
-                    ),
+                    UnexpectedValueImputation(expected_values=["a", "b", "c", "unknown"], imputed_value="unknown"),
                 ],
             ),
         ],

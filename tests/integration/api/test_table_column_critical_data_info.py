@@ -19,9 +19,7 @@ def test_event_table_timestamp_imputation(event_table):
     assert event_table.dtypes.loc["ËVENT_TIMESTAMP"] == "TIMESTAMP_TZ"
     event_table["ËVENT_TIMESTAMP"].update_critical_data_info(
         cleaning_operations=[
-            ValueBeyondEndpointImputation(
-                type="less_than", end_point="2020-01-01", imputed_value="2020-01-01"
-            ),
+            ValueBeyondEndpointImputation(type="less_than", end_point="2020-01-01", imputed_value="2020-01-01"),
         ]
     )
     event_view = event_table.get_view()
@@ -64,17 +62,11 @@ def test_event_table_update_critical_data_info(event_table):
     )
     event_table.PRODUCT_ACTION.update_critical_data_info(
         cleaning_operations=[
-            UnexpectedValueImputation(
-                expected_values=["detail", "purchase", "rëmove"], imputed_value="missing"
-            ),
+            UnexpectedValueImputation(expected_values=["detail", "purchase", "rëmove"], imputed_value="missing"),
         ]
     )
-    event_table.TRANSACTION_ID.update_critical_data_info(
-        cleaning_operations=[StringValueImputation(imputed_value=0)]
-    )
-    event_table.CUST_ID.update_critical_data_info(
-        cleaning_operations=[StringValueImputation(imputed_value=0)]
-    )
+    event_table.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[StringValueImputation(imputed_value=0)])
+    event_table.CUST_ID.update_critical_data_info(cleaning_operations=[StringValueImputation(imputed_value=0)])
     assert event_table.frame.node.type == "input"
 
     # create feature group & preview
@@ -122,12 +114,8 @@ def test_event_table_update_critical_data_info(event_table):
     assert feat_preview_df.COUNT_24h.iloc[0] == 1
 
     # check historical request
-    df_training_events = pd.DataFrame(
-        {"POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]), "cust_id": [938]}
-    )
-    hist_feat = FeatureList([feature_group], name="feature_list").compute_historical_features(
-        df_training_events
-    )
+    df_training_events = pd.DataFrame({"POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]), "cust_id": [938]})
+    hist_feat = FeatureList([feature_group], name="feature_list").compute_historical_features(df_training_events)
     pd.testing.assert_frame_equal(feat_preview_df, hist_feat, check_dtype=False)
 
     # remove critical data info
@@ -156,31 +144,25 @@ def test_item_table_update_critical_data_info(item_table):
         windows=["12h"],
         feature_names=["count_12h"],
     )["count_12h"]
-    window_preview_df = window_feature.preview(
-        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
-    )
+    window_preview_df = window_feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
     assert window_preview_df.count_12h.iloc[0] == {"type_84": 1}
 
     feature = item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
-    preview_df = feature.preview(
-        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"}])
-    )
+    preview_df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"}]))
     assert preview_df["order_size"].iloc[0] == 6
 
     # check historical request
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"]),
-            "üser id": [1, 1],
-            "order_id": ["T236", "T236"],
-        }
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"]),
+        "üser id": [1, 1],
+        "order_id": ["T236", "T236"],
+    })
+    hist_feat = FeatureList([feature, window_feature], name="feature_list").compute_historical_features(
+        df_training_events
     )
-    hist_feat = FeatureList(
-        [feature, window_feature], name="feature_list"
-    ).compute_historical_features(df_training_events)
     assert list(hist_feat.columns) == [
         "POINT_IN_TIME",
         "üser id",

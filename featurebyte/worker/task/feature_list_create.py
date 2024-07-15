@@ -4,9 +4,8 @@ Feature list creation task
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 from bson import ObjectId, json_util
 
@@ -50,9 +49,7 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
         return f'Save feature list "{payload.feature_list_name}"'
 
     async def execute(self, payload: FeatureListCreateTaskPayload) -> Any:
-        features_parameters_data = await self.storage.get_text(
-            Path(payload.features_parameters_path)
-        )
+        features_parameters_data = await self.storage.get_text(Path(payload.features_parameters_path))
         features_parameters = FeaturesParameters(**json_util.loads(features_parameters_data))
 
         # extract feature ids from payload
@@ -64,9 +61,7 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
             elif isinstance(feature, ObjectId):
                 request_feature_ids.append(feature)
 
-        saved_feature_ids = await self.batch_feature_creator.identify_saved_feature_ids(
-            feature_ids=request_feature_ids
-        )
+        saved_feature_ids = await self.batch_feature_creator.identify_saved_feature_ids(feature_ids=request_feature_ids)
         conflict_to_resolution_feature_id_map = (
             await self.batch_feature_creator.get_conflict_to_resolution_feature_id_mapping(
                 conflict_resolution=payload.features_conflict_resolution,
@@ -99,6 +94,4 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
             data=feature_list_create,
             progress_callback=self.task_progress_updater.update_progress,
         )
-        await self.task_progress_updater.update_progress(
-            percent=100, message="Completed feature list creation"
-        )
+        await self.task_progress_updater.update_progress(percent=100, message="Completed feature list creation")

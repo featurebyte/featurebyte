@@ -19,9 +19,7 @@ def check_quick_pruned_graph(original_graph, quick_pruned_graph, target_nodes, m
         target_node_quick = quick_pruned_graph.get_node_by_name(mapped_node_name)
 
         # perform pruning on quick-pruned graph
-        pruned_graph_from_quick_pruned, node_name_map = quick_pruned_graph.prune(
-            target_node=target_node_quick
-        )
+        pruned_graph_from_quick_pruned, node_name_map = quick_pruned_graph.prune(target_node=target_node_quick)
         pruned_target_node_name_from_quick_pruned = node_name_map[target_node_quick.name]
 
         # compare both pruned graphs and they should be the same
@@ -40,9 +38,7 @@ def check_quick_pruned_graph(original_graph, quick_pruned_graph, target_nodes, m
 def test_quick_prune__simple_case(dataframe, target_columns, expected_node_num):
     """Test quick pruning a simple graph"""
     target_nodes = [dataframe[col].node for col in target_columns]
-    pruned_graph, node_name_map = dataframe.graph.quick_prune(
-        target_node_names=[node.name for node in target_nodes]
-    )
+    pruned_graph, node_name_map = dataframe.graph.quick_prune(target_node_names=[node.name for node in target_nodes])
     mapped_node_names = [node_name_map[node.name] for node in target_nodes]
     check_quick_pruned_graph(dataframe.graph, pruned_graph, target_nodes, mapped_node_names)
     assert len(pruned_graph.nodes) == expected_node_num
@@ -65,9 +61,7 @@ def test_quick_prune(
         order_size_feature_node,
         lookup_node,
     ][:target_node_num]
-    quick_pruned_graph, node_name_map = graph.quick_prune(
-        target_node_names=[node.name for node in target_nodes]
-    )
+    quick_pruned_graph, node_name_map = graph.quick_prune(target_node_names=[node.name for node in target_nodes])
     mapped_node_names = [node_name_map[node.name] for node in target_nodes]
     check_quick_pruned_graph(
         graph,

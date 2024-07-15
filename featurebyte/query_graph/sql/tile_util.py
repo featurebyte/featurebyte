@@ -64,9 +64,7 @@ def calculate_first_and_last_tile_indices(
     )
     if window_size is not None:
         num_tiles = window_size // frequency
-        first_tile_index_expr = expressions.Sub(
-            this=last_tile_index_expr, expression=make_literal_value(num_tiles)
-        )
+        first_tile_index_expr = expressions.Sub(this=last_tile_index_expr, expression=make_literal_value(num_tiles))
     else:
         first_tile_index_expr = None
     return first_tile_index_expr, last_tile_index_expr
@@ -102,9 +100,7 @@ def calculate_last_tile_index_expr(
     point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_expr)
     last_tile_index_expr = cast(
         Expression,
-        parse_one(
-            f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
-        ),
+        parse_one(f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"),
     )
     if offset is not None:
         offset_num_tiles = offset // frequency
@@ -149,9 +145,7 @@ def update_maximum_window_size_dict(
             max_window_size_dict[key] = max(existing_window_size, window_size)
 
 
-def get_previous_job_epoch_expr(
-    point_in_time_epoch_expr: Expression, tile_info: TileGenSql
-) -> Expression:
+def get_previous_job_epoch_expr(point_in_time_epoch_expr: Expression, tile_info: TileGenSql) -> Expression:
     """Get the SQL expression for the epoch second of previous feature job
 
     Parameters
@@ -194,9 +188,7 @@ def get_earliest_tile_start_date_expr(
     Expression
     """
     # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
-    tile_boundaries_offset = expressions.Paren(
-        this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
-    )
+    tile_boundaries_offset = expressions.Paren(this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot))
     tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
         tile_boundaries_offset, "second", "microsecond"
     )

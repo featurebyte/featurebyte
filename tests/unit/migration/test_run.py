@@ -68,9 +68,7 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 @pytest.mark.asyncio
 async def test_migrate_method_generator(user, persistent, get_credential, schema_metadata_service):
     """Test migrate method generator"""
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
-    )
+    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA.value)
 
     expected_method_num = len(retrieve_all_migration_methods())
     method_generator = migrate_method_generator(
@@ -93,9 +91,7 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
     assert updated_schema_metadata.description == "Some description"
 
     # check generator output
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
-    )
+    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA.value)
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
@@ -114,13 +110,9 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator__exclude_warehouse(
-    user, persistent, get_credential, schema_metadata_service
-):
+async def test_migrate_method_generator__exclude_warehouse(user, persistent, get_credential, schema_metadata_service):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
-    )
+    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA.value)
 
     expected_num_warehouse_migrations = 3
     expected_method_num = len(retrieve_all_migration_methods()) - expected_num_warehouse_migrations
@@ -180,23 +172,17 @@ async def test_post_migration_sanity_check(app_container):
 
     docs = sorted(docs, key=lambda d: d.id, reverse=True)
     step_size = len(docs) // 5
-    called_document_ids = [
-        call_args.kwargs["document_id"] for call_args in mock_call.call_args_list
-    ]
+    called_document_ids = [call_args.kwargs["document_id"] for call_args in mock_call.call_args_list]
     expected_document_ids = [doc.id for i, doc in enumerate(docs) if i % step_size == 0]
     # Additional feature store document is created during the test
     assert called_document_ids[:-1] == expected_document_ids
 
 
 @pytest.mark.asyncio
-async def test_run_migration(
-    migration_check_persistent, user, get_credential, schema_metadata_service
-):
+async def test_run_migration(migration_check_persistent, user, get_credential, schema_metadata_service):
     """Test run migration function"""
     persistent = migration_check_persistent
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
-    )
+    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA.value)
 
     # perform migration on testing samples to check the migration logic
     await run_migration(
@@ -244,9 +230,7 @@ async def test_run_migration(
             assert max_audit_record_nums > 3, delegate_service
 
     # check version in schema_metadata after migration
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
-    )
+    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA.value)
     assert schema_metadata.version == version
     assert schema_metadata.description == description
 
@@ -279,6 +263,4 @@ async def test_data_warehouse_migration_get_session(
     # check get_credential called parameters
     mock_session_manager.return_value.get_session = AsyncMock()
     _ = await warehouse_migration.get_session(feature_store=feature_store)
-    get_credential_func.assert_called_with(
-        user_id=feature_store_user_id, feature_store_name=feature_store.name
-    )
+    get_credential_func.assert_called_with(user_id=feature_store_user_id, feature_store_name=feature_store.name)

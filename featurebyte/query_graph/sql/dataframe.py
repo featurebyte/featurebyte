@@ -13,9 +13,7 @@ from sqlglot.expressions import Expression, select
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
-def construct_dataframe_sql_expr(
-    request_dataframe: pd.DataFrame, date_cols: list[str]
-) -> expressions.Select:
+def construct_dataframe_sql_expr(request_dataframe: pd.DataFrame, date_cols: list[str]) -> expressions.Select:
     """Construct a SELECT statement that uploads the request data
 
     This does not use write_pandas and should only be used for small request data (e.g. request data

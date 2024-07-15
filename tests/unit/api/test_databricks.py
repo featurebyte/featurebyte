@@ -6,7 +6,7 @@ import freezegun
 import pandas as pd
 import pytest
 
-from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
+from featurebyte import Context, DatabricksDetails, FeatureList, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
@@ -116,7 +116,7 @@ def databricks_deployment_fixture(
                 http_path="sql/protocalv1/some_path",
                 catalog_name="feature_engineering",
                 schema_name="some_schema",
-                storage_path=f"dbfs:/FileStore/some_storage_path",
+                storage_path="dbfs:/FileStore/some_storage_path",
             ),
         )
         mock_get_document.return_value = feature_store
@@ -137,9 +137,7 @@ def cust_id_30m_suffix_fixture(databricks_deployment):
 @pytest.fixture(name="mock_is_databricks_env")
 def mock_is_databricks_env_fixture():
     """Mock is_databricks_environment"""
-    with patch(
-        "featurebyte.api.accessor.databricks._is_databricks_environment"
-    ) as mock_is_databricks_env:
+    with patch("featurebyte.api.accessor.databricks._is_databricks_environment") as mock_is_databricks_env:
         yield mock_is_databricks_env
 
 
@@ -351,9 +349,7 @@ def test_databricks_specs(
     assert feat_specs.strip() == textwrap.dedent(expected).strip()
 
     # test skip exclude columns
-    feat_specs = databricks_deployment.databricks.get_feature_specs_definition(
-        skip_exclude_columns=["transaction_id"]
-    )
+    feat_specs = databricks_deployment.databricks.get_feature_specs_definition(skip_exclude_columns=["transaction_id"])
     expected_sub_string = """
     exclude_columns = [
         "POINT_IN_TIME",

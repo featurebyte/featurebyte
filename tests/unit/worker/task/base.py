@@ -4,10 +4,9 @@ Base class for testing worker tasks
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
-
 import json
 from abc import abstractmethod
+from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
@@ -85,7 +84,7 @@ class BaseTaskTestSuite:
         """
         Execute task with payload
         """
-        # pylint: disable=not-callable
+
         user = User(id=payload.get("user_id"))
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("user", user)
@@ -97,9 +96,7 @@ class BaseTaskTestSuite:
         await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
-    async def task_completed(
-        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container
-    ):
+    async def task_completed(self, mongo_persistent, progress, storage, temp_storage, catalog, app_container):
         """
         Test execution of the task
         """

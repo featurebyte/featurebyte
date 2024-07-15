@@ -86,9 +86,7 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
                 primary_entity_ids=primary_entity_ids,
             )
             document["primary_entity_ids"] = sorted(primary_entity_ids)
-            document["relationships_info"] = [
-                relationship.dict(by_alias=True) for relationship in relationships_info
-            ]
+            document["relationships_info"] = [relationship.dict(by_alias=True) for relationship in relationships_info]
         return documents
 
     @migrate(version=4, description="Add primary_entity_ids & relationships_info to feature record")
@@ -179,9 +177,7 @@ class FeatureMigrationServiceV8(BaseMongoCollectionMigration):
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
 
-    @migrate(
-        version=10, description="Migrate feature job settings to new format (feature collection)."
-    )
+    @migrate(version=10, description="Migrate feature job settings to new format (feature collection).")
     async def migrate_feature_job_setting_to_new_format(self) -> None:
         """Migrate feature job settings to new format"""
         sanity_check_sample_size = 10

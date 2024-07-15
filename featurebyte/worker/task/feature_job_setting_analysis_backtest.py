@@ -46,9 +46,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
         self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(
-        self, payload: FeatureJobSettingAnalysisBackTestTaskPayload
-    ) -> str:
+    async def get_task_description(self, payload: FeatureJobSettingAnalysisBackTestTaskPayload) -> str:
         analysis = await self.feature_job_setting_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id
         )
@@ -67,9 +65,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
 
         # retrieve analysis doc from persistent
         document_id = payload.feature_job_setting_analysis_id
-        analysis_doc = await self.feature_job_setting_analysis_service.get_document(
-            document_id=document_id
-        )
+        analysis_doc = await self.feature_job_setting_analysis_service.get_document(document_id=document_id)
         document = analysis_doc.dict(by_alias=True)
 
         # retrieve analysis data from storage
@@ -99,15 +95,11 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
             offset=payload.offset,
             feature_cutoff_modulo_frequency=0,
         )
-        backtest_result, backtest_report = analysis.backtest(
-            feature_job_setting=feature_job_setting
-        )
+        backtest_result, backtest_report = analysis.backtest(feature_job_setting=feature_job_setting)
 
         # update analysis with backtest summary
         late_series = backtest_result.results
-        total_pct_late_data = (
-            1 - late_series["count_on_time"].sum() / late_series["total_count"].sum()
-        )
+        total_pct_late_data = 1 - late_series["count_on_time"].sum() / late_series["total_count"].sum()
         pct_incomplete_jobs = (late_series.pct_late_data > 0).sum() / late_series.shape[0]
         await self.feature_job_setting_analysis_service.add_backtest_summary(
             document_id=document_id,

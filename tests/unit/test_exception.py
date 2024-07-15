@@ -49,8 +49,7 @@ def test_response_exception__response_detail(detail):
     response_exception = ResponseException(
         response=response,
         resolution=(
-            "\nIf the error is related to connection broken, "
-            "try to use a smaller `max_batch_size` parameter."
+            "\nIf the error is related to connection broken, " "try to use a smaller `max_batch_size` parameter."
         ),
     )
     with pytest.raises(ResponseException) as exc:

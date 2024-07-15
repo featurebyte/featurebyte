@@ -50,9 +50,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
     def _extract_additional_creation_kwargs(data: EntityCreate) -> dict[str, Any]:
         return {"serving_names": [data.serving_name]}
 
-    async def get_entities_with_serving_names(
-        self, serving_names_set: set[str]
-    ) -> list[EntityModel]:
+    async def get_entities_with_serving_names(self, serving_names_set: set[str]) -> list[EntityModel]:
         """
         Retrieve all entities matching the set of provided serving names
 
@@ -65,9 +63,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         -------
         list[EntityModel]
         """
-        docs = self.list_documents_iterator(
-            query_filter={"serving_names": {"$in": list(serving_names_set)}}
-        )
+        docs = self.list_documents_iterator(query_filter={"serving_names": {"$in": list(serving_names_set)}})
         return [doc async for doc in docs]
 
     async def get_entities(self, entity_ids: set[ObjectId]) -> list[EntityModel]:

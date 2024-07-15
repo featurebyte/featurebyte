@@ -1,8 +1,7 @@
-from typing import Any, Optional
-
 import time
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -75,8 +74,7 @@ def calculate_aggregate_over_ground_truth(
         get_epoch_seconds(point_in_time) - expected_feature_value_params.time_modulo_frequency
     ) // expected_feature_value_params.frequency
     last_job_epoch_seconds = (
-        last_job_index * expected_feature_value_params.frequency
-        + expected_feature_value_params.time_modulo_frequency
+        last_job_index * expected_feature_value_params.frequency + expected_feature_value_params.time_modulo_frequency
     )
 
     window_end_epoch_seconds = last_job_epoch_seconds - expected_feature_value_params.blind_spot
@@ -85,9 +83,7 @@ def calculate_aggregate_over_ground_truth(
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
 
     if expected_feature_value_params.window_size_secs is not None:
-        window_start_epoch_seconds = (
-            window_end_epoch_seconds - expected_feature_value_params.window_size_secs
-        )
+        window_start_epoch_seconds = window_end_epoch_seconds - expected_feature_value_params.window_size_secs
         window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
     else:
         window_start = None
@@ -123,25 +119,18 @@ def calculate_aggregate_asat_ground_truth(
     df = df[df[expected_feature_value_params.effective_timestamp_column] <= point_in_time]
 
     def _extract_current_record(sub_df):
-        latest_effective_timestamp = sub_df[
-            expected_feature_value_params.effective_timestamp_column
-        ].max()
+        latest_effective_timestamp = sub_df[expected_feature_value_params.effective_timestamp_column].max()
         latest_sub_df = sub_df[
-            sub_df[expected_feature_value_params.effective_timestamp_column]
-            == latest_effective_timestamp
+            sub_df[expected_feature_value_params.effective_timestamp_column] == latest_effective_timestamp
         ]
         if latest_sub_df.shape[0] == 0:
             return None
         assert latest_sub_df.shape[0] == 1
         return latest_sub_df.iloc[0]
 
-    df_current = df.groupby(expected_feature_value_params.natural_key_column_name).apply(
-        _extract_current_record
-    )
+    df_current = df.groupby(expected_feature_value_params.natural_key_column_name).apply(_extract_current_record)
 
-    df_filtered = df_current[
-        df_current[expected_feature_value_params.entity_column_name] == entity_value
-    ]
+    df_filtered = df_current[df_current[expected_feature_value_params.entity_column_name] == entity_value]
 
     return apply_agg_func_on_filtered_dataframe(
         expected_feature_value_params.agg_func,
@@ -161,12 +150,10 @@ def scd_observation_set(scd_dataframe):
     ).floor("h")
 
     rng = np.random.RandomState(0)
-    df = pd.DataFrame(
-        {
-            "POINT_IN_TIME": point_in_time_values,
-            "User Status": rng.choice(scd_dataframe["User Status"].unique(), num_rows),
-        }
-    )
+    df = pd.DataFrame({
+        "POINT_IN_TIME": point_in_time_values,
+        "User Status": rng.choice(scd_dataframe["User Status"].unique(), num_rows),
+    })
     # only TZ-naive timestamps in UTC supported for point-in-time
     df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
     return df
@@ -247,8 +234,7 @@ def add_inter_events_derived_columns(df, event_view):
     # Time since previous event
     col = f"TIME_SINCE_PREVIOUS_EVENT_BY_{by_column}"
     df[col] = (
-        df["ËVENT_TIMESTAMP"]
-        - get_lagged_series_pandas(df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", by_column)
+        df["ËVENT_TIMESTAMP"] - get_lagged_series_pandas(df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", by_column)
     ).dt.total_seconds()
     event_view[col] = event_view["ËVENT_TIMESTAMP"] - event_view["ËVENT_TIMESTAMP"].lag(by_column)
 
@@ -261,16 +247,12 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     """
     # expect point-in-time to be converted to UTC without timezone
     df_expected = df_expected.copy()
-    df_expected["POINT_IN_TIME"] = pd.to_datetime(
-        df_expected["POINT_IN_TIME"], utc=True
-    ).dt.tz_localize(None)
+    df_expected["POINT_IN_TIME"] = pd.to_datetime(df_expected["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
 
     tic = time.time()
     sampled_points = df_expected.sample(n=n_points, random_state=0).reset_index(drop=True)
     sampled_points.rename({"ÜSER ID": "üser id"}, axis=1, inplace=True)
-    output = feature_list[feature_list.feature_names].preview(
-        sampled_points[["POINT_IN_TIME", "üser id"]]
-    )
+    output = feature_list[feature_list.feature_names].preview(sampled_points[["POINT_IN_TIME", "üser id"]])
     fb_assert_frame_equal(output, sampled_points, dict_like_columns)
     elapsed = time.time() - tic
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
@@ -456,9 +438,7 @@ def test_aggregate_over(
     transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
 
     # Add inter-event derived columns
-    transaction_data_upper_case = add_inter_events_derived_columns(
-        transaction_data_upper_case, event_view
-    )
+    transaction_data_upper_case = add_inter_events_derived_columns(transaction_data_upper_case, event_view)
 
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
 
@@ -492,9 +472,7 @@ def check_aggregate_over(
     blind_spot,
 ):
     df_expected_all = [observation_set]
-    utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
-        None
-    )
+    utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(None)
 
     elapsed_time_ref = 0
     features = []
@@ -567,9 +545,7 @@ def check_aggregate_over(
     logger.debug(f"elapsed historical: {elapsed_historical}")
 
     # expect point-in-time to be converted to UTC without timezone
-    df_expected["POINT_IN_TIME"] = pd.to_datetime(
-        df_expected["POINT_IN_TIME"], utc=True
-    ).dt.tz_localize(None)
+    df_expected["POINT_IN_TIME"] = pd.to_datetime(df_expected["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
 
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 

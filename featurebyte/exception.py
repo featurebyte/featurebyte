@@ -4,9 +4,8 @@ List of Exceptions
 
 from __future__ import annotations
 
-from typing import Any
-
 from asyncio.exceptions import CancelledError
+from typing import Any
 
 from requests.exceptions import JSONDecodeError
 from requests.models import Response
@@ -309,9 +308,7 @@ class NoFeatureStorePresentError(BaseFailedDependencyError):
     """
 
     def __str__(self) -> str:
-        return (
-            "No feature store found. Please create one before trying to access this functionality."
-        )
+        return "No feature store found. Please create one before trying to access this functionality."
 
 
 class FeatureListNotOnlineEnabledError(FeatureByteException):

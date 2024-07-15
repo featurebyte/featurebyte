@@ -1,7 +1,7 @@
-# pylint: disable=too-many-lines
 """
 Common test fixtures used across unit test directories
 """
+
 import copy
 import json
 import logging
@@ -110,12 +110,8 @@ def mock_websocket_client_fixture(request):
     if "no_mock_websocket_client" in request.keywords:
         yield
     else:
-        with mock.patch(
-            "featurebyte.config.Configurations.get_websocket_client"
-        ) as mock_get_websocket_client:
-            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = (
-                None
-            )
+        with mock.patch("featurebyte.config.Configurations.get_websocket_client") as mock_get_websocket_client:
+            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = None
             yield mock_get_websocket_client
 
 
@@ -200,12 +196,8 @@ def snowflake_connector_cursor_fixture(snowflake_connector_patches):
 def snowflake_query_map_fixture():
     """snowflake query map fixture"""
     query_map = {
-        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [
-            {"DATABASE_NAME": "sf_database"}
-        ],
-        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [
-            {"SCHEMA_NAME": "sf_schema"}
-        ],
+        "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES": [{"DATABASE_NAME": "sf_database"}],
+        'SELECT SCHEMA_NAME FROM "sf_database".INFORMATION_SCHEMA.SCHEMATA': [{"SCHEMA_NAME": "sf_schema"}],
         (
             'SELECT TABLE_NAME, COMMENT FROM "sf_database".INFORMATION_SCHEMA.TABLES WHERE '
             "TABLE_SCHEMA = 'sf_schema'"
@@ -593,9 +585,7 @@ def snowflake_query_map_fixture():
             }
         ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
-        'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
-            {"row_count": 100}
-        ],
+        'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [{"row_count": 100}],
         (
             'SELECT\n  COUNT(*) AS "row_count"\nFROM (\n  SELECT\n    "event_timestamp" AS "POINT_IN_TIME",'
             '\n    "cust_id" AS "cust_id"\n  FROM (\n    SELECT\n      "col_int" AS "col_int",\n      '
@@ -663,9 +653,7 @@ def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
             return pd.DataFrame(res)
         return None
 
-    with mock.patch(
-        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-    ) as mock_execute_query:
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
         mock_execute_query.side_effect = side_effect
         yield mock_execute_query
 
@@ -1012,9 +1000,7 @@ def snowflake_scd_table_state_map_fixture(snowflake_data_source):
 
 
 @pytest.fixture(name="snowflake_scd_table_with_entity")
-def snowflake_scd_table_with_entity_fixture(
-    snowflake_scd_table, cust_id_entity, gender_entity, another_entity
-):
+def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity, gender_entity, another_entity):
     """
     Fixture for an SCD table with entity
     """
@@ -1132,9 +1118,7 @@ def another_entity_fixture(catalog):
     Another entity fixture
     """
     _ = catalog
-    entity = Entity(
-        name="another", serving_names=["another_key"], _id=ObjectId("65b123107011cad326ada330")
-    )
+    entity = Entity(name="another", serving_names=["another_key"], _id=ObjectId("65b123107011cad326ada330"))
     entity.save()
     yield entity
 
@@ -1145,9 +1129,7 @@ def group_entity_fixture(catalog):
     Another entity to support creating test cases
     """
     _ = catalog
-    entity = Entity(
-        name="group", serving_names=["group_key"], _id=ObjectId("66334f9527378f612b42067a")
-    )
+    entity = Entity(name="group", serving_names=["group_key"], _id=ObjectId("66334f9527378f612b42067a"))
     entity.save()
     yield entity
 
@@ -1158,9 +1140,7 @@ def item_entity_fixture(catalog):
     Item entity fixture
     """
     _ = catalog
-    entity = Entity(
-        name="item", serving_names=["item_id"], _id=ObjectId("664a3e617ac430c2ae37aede")
-    )
+    entity = Entity(name="item", serving_names=["item_id"], _id=ObjectId("664a3e617ac430c2ae37aede"))
     entity.save()
     yield entity
 
@@ -1171,9 +1151,7 @@ def item_type_entity_fixture(catalog):
     Item type entity fixture
     """
     _ = catalog
-    entity = Entity(
-        name="item_type", serving_names=["item_type"], _id=ObjectId("664a3e7d7ac430c2ae37aedf")
-    )
+    entity = Entity(name="item_type", serving_names=["item_type"], _id=ObjectId("664a3e7d7ac430c2ae37aedf"))
     entity.save()
     yield entity
 
@@ -1211,9 +1189,7 @@ def snowflake_event_table_with_entity_and_feature_job_fixture(
     Entity fixture that sets cust_id in snowflake_event_table as an Entity
     """
     snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_table.update_default_feature_job_setting(
-        feature_job_setting=arbitrary_default_feature_job_setting
-    )
+    snowflake_event_table.update_default_feature_job_setting(feature_job_setting=arbitrary_default_feature_job_setting)
     yield snowflake_event_table
 
 
@@ -1263,9 +1239,7 @@ def snowflake_event_view_entity_feature_job_fixture(
 
 
 @pytest.fixture(name="snowflake_item_view_with_entity")
-def snowflake_item_view_with_entity_fixture(
-    snowflake_item_table, transaction_entity, item_entity, item_type_entity
-):
+def snowflake_item_view_with_entity_fixture(snowflake_item_table, transaction_entity, item_entity, item_type_entity):
     """
     Snowflake item view with entity
     """
@@ -1383,9 +1357,7 @@ def snowflake_execute_query_invalid_batch_request_table(snowflake_connector, sno
             return pd.DataFrame(res)
         return None
 
-    with mock.patch(
-        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-    ) as mock_execute_query:
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
         mock_execute_query.side_effect = side_effect
         yield mock_execute_query
 
@@ -1435,9 +1407,7 @@ def snowflake_execute_query_for_materialized_table_fixture(
             return pd.DataFrame(res)
         return None
 
-    with mock.patch(
-        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-    ) as mock_execute_query:
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
         mock_execute_query.side_effect = side_effect
         yield mock_execute_query
 
@@ -1459,9 +1429,7 @@ def observation_table_from_source_fixture(
 
 
 @pytest.fixture(name="observation_table_from_view")
-def observation_table_from_view_fixture(
-    snowflake_event_view_with_entity, patched_observation_table_service
-):
+def observation_table_from_view_fixture(snowflake_event_view_with_entity, patched_observation_table_service):
     """
     Observation table created from EventView
     """
@@ -1473,23 +1441,17 @@ def observation_table_from_view_fixture(
 
 
 @pytest.fixture(name="static_source_table_from_source")
-def static_source_table_from_source_fixture(
-    snowflake_database_table, patched_static_source_table_service, catalog
-):
+def static_source_table_from_source_fixture(snowflake_database_table, patched_static_source_table_service, catalog):
     """
     Static source table created from SourceTable
     """
     _ = catalog
     _ = patched_static_source_table_service
-    return snowflake_database_table.create_static_source_table(
-        "static_source_table_from_source_table"
-    )
+    return snowflake_database_table.create_static_source_table("static_source_table_from_source_table")
 
 
 @pytest.fixture(name="static_source_table_from_view")
-def static_source_table_from_view_fixture(
-    snowflake_event_view, patched_static_source_table_service
-):
+def static_source_table_from_view_fixture(snowflake_event_view, patched_static_source_table_service):
     """
     Static source table created from EventView
     """
@@ -1517,9 +1479,7 @@ def historical_feature_table_fixture(
 
 
 @pytest.fixture(name="target_table")
-def target_table_fixture(
-    float_target, observation_table_from_source, snowflake_execute_query_for_materialized_table
-):
+def target_table_fixture(float_target, observation_table_from_source, snowflake_execute_query_for_materialized_table):
     """
     Fixture for a TargetTable
     """
@@ -1615,9 +1575,7 @@ def production_ready_feature_fixture(feature_group):
 
 
 @pytest.fixture(name="feature_with_cleaning_operations")
-def feature_with_cleaning_operations_fixture(
-    snowflake_event_table, cust_id_entity, feature_group_feature_job_setting
-):
+def feature_with_cleaning_operations_fixture(snowflake_event_table, cust_id_entity, feature_group_feature_job_setting):
     """
     Fixture to get a feature with cleaning operations
     """
@@ -1853,12 +1811,8 @@ def multiple_scd_joined_feature_fixture(
     scd_view = snowflake_scd_table.get_view()
     state_view = snowflake_scd_table_state_map.get_view()
     event_view_cols = ["col_int", "event_timestamp"]
-    event_view = event_view[event_view_cols].join(
-        scd_view[["col_int", "col_boolean"]], on="col_int"
-    )
-    event_view = event_view.join(
-        state_view[["col_boolean", "state_code"]], on="col_boolean", rsuffix="_scd"
-    )
+    event_view = event_view[event_view_cols].join(scd_view[["col_int", "col_boolean"]], on="col_int")
+    event_view = event_view.join(state_view[["col_boolean", "state_code"]], on="col_boolean", rsuffix="_scd")
 
     feature = event_view.groupby("state_code_scd").aggregate_over(
         None,
@@ -1966,9 +1920,7 @@ def descendant_of_gender_feature(snowflake_dimension_table, group_entity, gender
 
 
 @pytest.fixture(name="feature_with_internal_parent_child_relationships")
-def feature_with_internal_parent_child_relationships_fixture(
-    scd_lookup_feature, aggregate_asat_feature
-):
+def feature_with_internal_parent_child_relationships_fixture(scd_lookup_feature, aggregate_asat_feature):
     """
     Feature with internal parent child relationships, for example:
 
@@ -1982,9 +1934,7 @@ def feature_with_internal_parent_child_relationships_fixture(
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
+def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity, feature_group_feature_job_setting):
     """
     Fixture for a timestamp feature
     """
@@ -1999,9 +1949,7 @@ def latest_event_timestamp_feature_fixture(
 
 
 @pytest.fixture(name="latest_event_timestamp_overall_feature")
-def latest_event_timestamp_overall_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
+def latest_event_timestamp_overall_feature_fixture(snowflake_event_view_with_entity, feature_group_feature_job_setting):
     """
     Fixture for a timestamp feature
     """
@@ -2062,7 +2010,7 @@ def session_manager_fixture(credentials, snowflake_connector):
     """
     Session manager fixture
     """
-    # pylint: disable=E1101
+
     _ = snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)
@@ -2117,9 +2065,7 @@ def mock_snowflake_tile():
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(
-    mock_execute_query, snowflake_connector, snowflake_event_view_with_entity
-):
+def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view_with_entity):
     """Fixture for a Feature object"""
     mock_execute_query.size_effect = None
     _ = snowflake_connector
@@ -2227,9 +2173,7 @@ def patched_catalog_get_create_payload_fixture(catalog_id, snowflake_feature_sto
     """
     Patch catalog get create payload
     """
-    with mock.patch(
-        "featurebyte.api.catalog.Catalog._get_create_payload"
-    ) as mock_get_create_payload:
+    with mock.patch("featurebyte.api.catalog.Catalog._get_create_payload") as mock_get_create_payload:
         mock_get_create_payload.return_value = CatalogCreate(
             _id=catalog_id,
             name="catalog",
@@ -2349,7 +2293,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 

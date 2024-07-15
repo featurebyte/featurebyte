@@ -4,9 +4,8 @@ This module contains groupby related class
 
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, Union
-
 import warnings
+from typing import ClassVar, List, Optional, Union
 
 from typeguard import typechecked
 
@@ -51,11 +50,11 @@ class GroupBy:
     >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")
     >>> # Declare features that measure the discount received by customer
     >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
-    ...   "Discount",
-    ...   method=fb.AggFunc.SUM,
-    ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
-    ...   fill_value=0,
-    ...   windows=['7d', '28d']
+    ...     "Discount",
+    ...     method=fb.AggFunc.SUM,
+    ...     feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+    ...     fill_value=0,
+    ...     windows=["7d", "28d"],
     ... )
 
 
@@ -67,14 +66,11 @@ class GroupBy:
     >>> # Group items by the column GroceryCustomerGuid that references the customer entity
     >>> # And use ProductGroup as the column to perform operations across
     >>> items_by_customer_across_product_group = items_view.groupby(
-    ...   by_keys = "GroceryCustomerGuid", category="ProductGroup"
+    ...     by_keys="GroceryCustomerGuid", category="ProductGroup"
     ... )
     >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
     >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
-    ...   "TotalCost",
-    ...   method=fb.AggFunc.SUM,
-    ...   feature_names=["CustomerInventory_28d"],
-    ...   windows=['28d']
+    ...     "TotalCost", method=fb.AggFunc.SUM, feature_names=["CustomerInventory_28d"], windows=["28d"]
     ... )
     """
 
@@ -210,11 +206,11 @@ class GroupBy:
         >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")
         >>> # Declare features that measure the discount received by customer
         >>> customer_discounts = items_by_customer.aggregate_over(
-        ...   "Discount",
-        ...   method=fb.AggFunc.SUM,
-        ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
-        ...   fill_value=0,
-        ...   windows=['7d', '28d']
+        ...     "Discount",
+        ...     method=fb.AggFunc.SUM,
+        ...     feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+        ...     fill_value=0,
+        ...     windows=["7d", "28d"],
         ... )
 
 
@@ -226,14 +222,11 @@ class GroupBy:
         >>> # Group items by the column GroceryCustomerGuid that references the customer entity
         >>> # And use ProductGroup as the column to perform operations across
         >>> items_by_customer_across_product_group = items_view.groupby(
-        ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
+        ...     by_keys="GroceryCustomerGuid", category="ProductGroup"
         ... )
         >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
         >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
-        ...   "TotalCost",
-        ...   method=fb.AggFunc.SUM,
-        ...   feature_names=["CustomerInventory_28d"],
-        ...   windows=['28d']
+        ...     "TotalCost", method=fb.AggFunc.SUM, feature_names=["CustomerInventory_28d"], windows=["28d"]
         ... )
 
         See Also
@@ -333,23 +326,21 @@ class GroupBy:
         Count number of active cards per customer at a point-in-time.
 
         >>> # Filter active cards
-        >>> cond = credit_card_accounts['status'] == "active"  # doctest: +SKIP
+        >>> cond = credit_card_accounts["status"] == "active"  # doctest: +SKIP
         >>> # Group by customer
         >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
-        ...   "CustomerID"
+        ...     "CustomerID"
         ... )
         >>> feature = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="Number of Active Credit Cards",
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="Number of Active Credit Cards",
         ... )
 
 
         Count number of active cards per customer 12 weeks prior to a point-in-time
 
         >>> feature_12w_before = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="Number of Active Credit Cards 12 w before",
-        ...   offset="12w"
+        ...     method=fb.AggFunc.COUNT, feature_name="Number of Active Credit Cards 12 w before", offset="12w"
         ... )
         """
         if backward is False:
@@ -423,14 +414,12 @@ class GroupBy:
         >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
         >>> # Get the number of items in each invoice
         >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
-        ...   None,
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="InvoiceItemCount",
+        ...     None,
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="InvoiceItemCount",
         ... )
         """
-        return SimpleAggregator(
-            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
-        ).aggregate(
+        return SimpleAggregator(self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names).aggregate(
             value_column=value_column,
             method=method,
             feature_name=feature_name,
@@ -484,10 +473,7 @@ class GroupBy:
         >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
         >>> # Get the number of items in each invoice
         >>> invoice_item_count = items_by_invoice.forward_aggregate(  # doctest: +SKIP
-        ...   "TotalCost",
-        ...   method=fb.AggFunc.SUM,
-        ...   target_name="TargetCustomerInventory_28d",
-        ...   window='28d'
+        ...     "TotalCost", method=fb.AggFunc.SUM, target_name="TargetCustomerInventory_28d", window="28d"
         ... )
         """
         return ForwardAggregator(
@@ -577,23 +563,21 @@ class GroupBy:
         Count number of active cards per customer at a point-in-time.
 
         >>> # Filter active cards
-        >>> cond = credit_card_accounts['status'] == "active"  # doctest: +SKIP
+        >>> cond = credit_card_accounts["status"] == "active"  # doctest: +SKIP
         >>> # Group by customer
         >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
-        ...   "CustomerID"
+        ...     "CustomerID"
         ... )
         >>> target = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="Number of Active Credit Cards",
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="Number of Active Credit Cards",
         ... )
 
 
         Count number of active cards per customer 12 weeks after a point-in-time
 
         >>> target_12w_after = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="Number of Active Credit Cards 12 w after",
-        ...   offset="12w"
+        ...     method=fb.AggFunc.COUNT, feature_name="Number of Active Credit Cards 12 w after", offset="12w"
         ... )
         """
         return ForwardAsAtAggregator(

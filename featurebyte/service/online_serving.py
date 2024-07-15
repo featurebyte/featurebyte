@@ -4,13 +4,12 @@ OnlineServingService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
-
 import json
 import os
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
@@ -70,12 +69,12 @@ class RequestColumnsMetadata:
     df_extra_columns: Optional[pd.DataFrame]
 
 
-class OnlineServingService:  # pylint: disable=too-many-instance-attributes
+class OnlineServingService:
     """
     OnlineServingService is responsible for retrieving features from online store
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
@@ -136,9 +135,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             raise FeatureListNotOnlineEnabledError("Feature List is not online enabled")
 
         feature_cluster = feature_list.feature_clusters[0]
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_cluster.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=feature_cluster.feature_store_id)
 
         if isinstance(request_data, list):
             request_input = pd.DataFrame(request_data)
@@ -172,7 +169,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             return None
         return OnlineFeaturesResponseModel(features=features)
 
-    async def get_online_features_by_feast(  # pylint: disable=too-many-locals
+    async def get_online_features_by_feast(
         self,
         feature_list: FeatureListModel,
         deployment: DeploymentModel,
@@ -224,10 +221,8 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 required_entities=required_entities,
                 provided_entities=provided_entities,
             )
-            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                entity_info.format_missing_entities_error(
-                    [entity.id for entity in entity_info.missing_entities]
-                )
+            raise RequiredEntityNotProvidedError(
+                entity_info.format_missing_entities_error([entity.id for entity in entity_info.missing_entities])
             )
 
         # Map feature names to the original names
@@ -306,18 +301,14 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
 
         # Get required serving names and composite serving names that need further processing
-        offline_store_table_docs = (
-            await self.offline_store_feature_table_service.list_documents_as_dict(
-                query_filter={},
-                projection={"serving_names": 1},
-            )
+        offline_store_table_docs = await self.offline_store_feature_table_service.list_documents_as_dict(
+            query_filter={},
+            projection={"serving_names": 1},
         )
         composite_serving_names = set()
         for offline_store_table_doc in offline_store_table_docs["data"]:
             serving_names = tuple(offline_store_table_doc["serving_names"])
-            if len(serving_names) > 1 and all(
-                serving_name in request_data[0] for serving_name in serving_names
-            ):
+            if len(serving_names) > 1 and all(serving_name in request_data[0] for serving_name in serving_names):
                 composite_serving_names.add(serving_names)
 
         # Add concatenated composite serving names
@@ -328,9 +319,9 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 combined_serving_names_col = get_combined_serving_names(list(serving_names))
                 if combined_serving_names_col in required_feast_entity_columns:
                     for row in request_data:
-                        row[combined_serving_names_col] = get_combined_serving_names_python(
-                            [row[serving_name] for serving_name in serving_names]
-                        )
+                        row[combined_serving_names_col] = get_combined_serving_names_python([
+                            row[serving_name] for serving_name in serving_names
+                        ])
                     added_column_names.append(combined_serving_names_col)
 
         # Get exactly the columns that are required by feast
@@ -342,8 +333,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         for row in request_data:
             updated_request_data.append({k: v for (k, v) in row.items() if k in needed_columns})
         versioned_feature_names = [
-            feature_id_to_versioned_name[feature_id]
-            for feature_id in feature_id_to_versioned_name.keys()
+            feature_id_to_versioned_name[feature_id] for feature_id in feature_id_to_versioned_name.keys()
         ]
 
         # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
@@ -384,7 +374,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                     return True
         return False
 
-    async def get_request_code_template(  # pylint: disable=too-many-locals
+    async def get_request_code_template(
         self,
         deployment: DeploymentModel,
         feature_list: FeatureListModel,
@@ -412,9 +402,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             When the provided language is not supported
         """
 
-        template_file_path = os.path.join(
-            os.path.dirname(__file__), f"templates/online_serving/{language}.tpl"
-        )
+        template_file_path = os.path.join(os.path.dirname(__file__), f"templates/online_serving/{language}.tpl")
         if not os.path.exists(template_file_path):
             raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
 
@@ -442,9 +430,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         return DeploymentRequestCodeTemplate(
             code_template=template.render(
                 headers=json.dumps(headers),
-                header_params=" \\\n    ".join(
-                    [f"-H '{key}: {value}'" for key, value in headers.items()]
-                ),
+                header_params=" \\\n    ".join([f"-H '{key}: {value}'" for key, value in headers.items()]),
                 serving_url=f"<FEATUREBYTE_SERVICE_URL>/deployment/{deployment.id}/online_features",
                 entity_serving_names=json.dumps(entity_serving_names),
             ),

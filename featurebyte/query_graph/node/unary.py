@@ -4,9 +4,9 @@ This module contains unary operation node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import ClassVar, List, Type, Union
-from typing_extensions import Literal
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -22,9 +22,9 @@ class NotNode(BaseSeriesOutputWithSingleOperandNode):
     type: Literal[NodeType.NOT] = Field(NodeType.NOT, const=True)
 
     # class variable
-    _derive_sdk_code_return_var_name_expression_type: ClassVar[
-        Union[Type[VariableNameStr], Type[ExpressionStr]]
-    ] = ExpressionStr
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[Union[Type[VariableNameStr], Type[ExpressionStr]]] = (
+        ExpressionStr
+    )
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL

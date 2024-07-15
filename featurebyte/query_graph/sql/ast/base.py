@@ -4,11 +4,10 @@ Module containing base classes and functions for building syntax tree
 
 from __future__ import annotations
 
-from typing import Optional, Type, TypeVar, cast
-
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
+from typing import Optional, Type, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
@@ -26,7 +25,7 @@ TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 @dataclass
-class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
+class SQLNodeContext:
     """
     Context containing information required when constructing instances of SQLNode
 
@@ -99,9 +98,7 @@ class SQLNode(ABC):
         """
 
     @classmethod
-    def build(  # pylint: disable=useless-return
-        cls: Type[SQLNodeT], context: SQLNodeContext
-    ) -> Optional[SQLNodeT]:
+    def build(cls: Type[SQLNodeT], context: SQLNodeContext) -> Optional[SQLNodeT]:
         """Create an instance of SQLNode given a context if applicable
 
         Parameters
@@ -170,10 +167,7 @@ class TableNode(SQLNode, ABC):
         """
 
         # QUALIFY clause if supported
-        if (
-            self.qualify_condition is not None
-            and self.context.adapter.is_qualify_clause_supported()
-        ):
+        if self.qualify_condition is not None and self.context.adapter.is_qualify_clause_supported():
             qualify_expr = expressions.Qualify(this=self.qualify_condition)
             select_expr = expressions.Select(qualify=qualify_expr)
         else:
@@ -228,10 +222,7 @@ class TableNode(SQLNode, ABC):
         -------
         bool
         """
-        return (
-            self.qualify_condition is not None
-            and not self.context.adapter.is_qualify_clause_supported()
-        )
+        return self.qualify_condition is not None and not self.context.adapter.is_qualify_clause_supported()
 
     def get_sql_for_expressions(
         self,
@@ -264,10 +255,7 @@ class TableNode(SQLNode, ABC):
         if aliases is None:
             named_exprs = exprs
         else:
-            named_exprs = [
-                expressions.alias_(expr, alias=alias, quoted=True)
-                for (expr, alias) in zip(exprs, aliases)
-            ]
+            named_exprs = [expressions.alias_(expr, alias=alias, quoted=True) for (expr, alias) in zip(exprs, aliases)]
 
         select_expr = self.get_select_statement_without_columns()
 
@@ -278,9 +266,7 @@ class TableNode(SQLNode, ABC):
         if self.require_nested_filter_post_select:
             assert aliases is not None
             assert self.qualify_condition is not None
-            select_expr = self.context.adapter.filter_with_window_function(
-                select_expr, aliases, self.qualify_condition
-            )
+            select_expr = self.context.adapter.filter_with_window_function(select_expr, aliases, self.qualify_condition)
 
         return select_expr
 
@@ -341,14 +327,10 @@ class TableNode(SQLNode, ABC):
         """
         columns_set = set(columns)
         subset_columns_map = {
-            column_name: expr
-            for (column_name, expr) in self.columns_map.items()
-            if column_name in columns_set
+            column_name: expr for (column_name, expr) in self.columns_map.items() if column_name in columns_set
         }
         subset_columns_node = {
-            column_name: node
-            for (column_name, node) in self.columns_node.items()
-            if column_name in columns_set
+            column_name: node for (column_name, node) in self.columns_node.items() if column_name in columns_set
         }
         subset_table = self.copy()
         subset_table.context.current_query_node = context.query_node

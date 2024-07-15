@@ -4,12 +4,11 @@ FeatureByte specific BaseModel
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
-
 import json
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from bson import ObjectId
@@ -60,7 +59,7 @@ def activate_catalog(catalog_id: Optional[ObjectId]) -> None:
     catalog_id: Optional[ObjectId]
         Catalog ID to set as active, or None to set no active catalog
     """
-    global ACTIVE_CATALOG_ID  # pylint: disable=global-statement
+    global ACTIVE_CATALOG_ID
     ACTIVE_CATALOG_ID = catalog_id
 
 
@@ -278,16 +277,10 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     id: PydanticObjectId = Field(
         default_factory=ObjectId, alias="_id", allow_mutation=False, description="Record identifier"
     )
-    user_id: Optional[PydanticObjectId] = Field(
-        default=None, allow_mutation=False, description="User identifier"
-    )
+    user_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False, description="User identifier")
     name: Optional[NameStr] = Field(default=None, description="Record name")
-    created_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record creation time"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record last updated time"
-    )
+    created_at: Optional[datetime] = Field(default=None, allow_mutation=False, description="Record creation time")
+    updated_at: Optional[datetime] = Field(default=None, allow_mutation=False, description="Record last updated time")
     block_modification_by: List[ReferenceInfo] = Field(
         default_factory=list,
         allow_mutation=False,

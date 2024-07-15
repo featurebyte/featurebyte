@@ -4,9 +4,8 @@ Module for tile related sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -32,7 +31,7 @@ from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggreg
 
 
 @dataclass
-class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
+class BuildTileNode(TableNode):
     """Tile builder node
 
     This node is responsible for generating the tile building SQL for a groupby operation.
@@ -63,9 +62,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             expressions.Anonymous(
                 this="F_TIMESTAMP_TO_INDEX",
                 expressions=[
-                    self.context.adapter.convert_to_utc_timestamp(
-                        quoted_identifier(self.timestamp)
-                    ),
+                    self.context.adapter.convert_to_utc_timestamp(quoted_identifier(self.timestamp)),
                     make_literal_value(self.time_modulo_frequency),
                     make_literal_value(self.blind_spot),
                     make_literal_value(self.frequency_minute),
@@ -107,9 +104,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         """
         select_expr = select("*").from_(self.input_node.sql_nested())
         timestamp = quoted_identifier(self.timestamp).sql()
-        start_cond = (
-            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
-        )
+        start_cond = f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         select_expr = select_expr.where(start_cond, end_cond, copy=False)
         return select_expr
@@ -144,17 +139,13 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         join_conditions.append(
             expressions.GTE(
                 this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=get_qualified_column_identifier(
-                    start_date, entity_table, quote_column=False
-                ),
+                expression=get_qualified_column_identifier(start_date, entity_table, quote_column=False),
             )
         )
         join_conditions.append(
             expressions.LT(
                 this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=get_qualified_column_identifier(
-                    end_date, entity_table, quote_column=False
-                ),
+                expression=get_qualified_column_identifier(end_date, entity_table, quote_column=False),
             )
         )
         join_conditions_expr = expressions.and_(*join_conditions)
@@ -234,13 +225,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             return window_expr
 
         window_exprs = [
-            alias_(
-                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")), alias=self.ROW_NUMBER
-            ),
-            *[
-                alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name)
-                for spec in self.tile_specs
-            ],
+            alias_(_make_window_expr(expressions.Anonymous(this="ROW_NUMBER")), alias=self.ROW_NUMBER),
+            *[alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name) for spec in self.tile_specs],
         ]
         inner_expr = select(
             "index",
@@ -297,14 +283,10 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         else:
             parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
             parent_column = InputColumn(name=parameters["parent"], dtype=parent_dtype)
-        aggregator = get_aggregator(
-            parameters["agg_func"], adapter=context.adapter, parent_dtype=parent_dtype
-        )
+        aggregator = get_aggregator(parameters["agg_func"], adapter=context.adapter, parent_dtype=parent_dtype)
         tile_specs = aggregator.tile(parent_column, parameters["aggregation_id"])
         columns = (
-            [InternalName.TILE_START_DATE.value]
-            + parameters["keys"]
-            + [spec.tile_column_name for spec in tile_specs]
+            [InternalName.TILE_START_DATE.value] + parameters["keys"] + [spec.tile_column_name for spec in tile_specs]
         )
         columns_map = {col: quoted_identifier(col) for col in columns}
         fjs = FeatureJobSetting(**parameters["feature_job_setting"])

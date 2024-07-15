@@ -3,13 +3,12 @@ This module contains SQL operation related to input node
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+from abc import abstractmethod
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
-from typing_extensions import Annotated, Literal
-
-from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
 from pydantic import Field, root_validator
+from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -152,9 +151,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         """
 
     @abstractmethod
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         """
         Construct comment for the input node
 
@@ -182,9 +179,7 @@ class SourceTableInputNodeParameters(BaseInputNodeParameters):
     def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         return None
 
 
@@ -193,9 +188,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
 
     type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
-    timestamp_column: Optional[InColumnStr] = Field(
-        default=None
-    )  # DEV-556: this should be compulsory
+    timestamp_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_timezone_offset: Optional[str] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
@@ -224,9 +217,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         output = None
         if self.id:
             table_name = table_id_to_info.get(self.id, {}).get("name")
@@ -257,17 +248,13 @@ class ItemTableInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         output = None
         if self.id and self.event_table_id:
             table_name = table_id_to_info.get(self.id, {}).get("name")
             event_table_name = table_id_to_info.get(self.event_table_id, {}).get("name")
             if table_name and event_table_name:
-                output = CommentStr(
-                    f'item_table name: "{table_name}", event_table name: "{event_table_name}"'
-                )
+                output = CommentStr(f'item_table name: "{table_name}", event_table name: "{event_table_name}"')
         return output
 
 
@@ -289,9 +276,7 @@ class DimensionTableInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         output = None
         if self.id:
             table_name = table_id_to_info.get(self.id, {}).get("name")
@@ -305,12 +290,8 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
 
     type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
-    natural_key_column: Optional[InColumnStr] = Field(
-        default=None
-    )  # DEV-556: this should be compulsory
-    effective_timestamp_column: Optional[InColumnStr] = Field(
-        default=None
-    )  # DEV-556: this should be compulsory
+    natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
+    effective_timestamp_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
     surrogate_key_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
     current_flag_column: Optional[InColumnStr] = Field(default=None)
@@ -330,9 +311,7 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
-    def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-    ) -> Optional[CommentStr]:
+    def construct_comment(self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]) -> Optional[CommentStr]:
         output = None
         if self.id:
             table_name = table_id_to_info.get(self.id, {}).get("name")
@@ -373,9 +352,7 @@ class InputNode(BaseNode):
     def max_input_count(self) -> int:
         return 0
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _derive_node_operation_info(
@@ -437,18 +414,14 @@ class InputNode(BaseNode):
             #     ...
             # )` statement
             assert config.database_details is not None, "database_details should not be None"
-            columns_info = table_info.get(
-                "columns_info", self.parameters.extract_columns_info_objects()
-            )
+            columns_info = table_info.get("columns_info", self.parameters.extract_columns_info_objects())
             right_op = table_class_enum(
                 name=table_name or str(table_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name,
                     database_details=config.database_details,
                 ),
-                tabular_source=self.parameters.extract_tabular_source_object(
-                    feature_store_id=config.feature_store_id
-                ),
+                tabular_source=self.parameters.extract_tabular_source_object(feature_store_id=config.feature_store_id),
                 columns_info=columns_info,
                 **self.parameters.extract_other_constructor_parameters(table_info),
             )

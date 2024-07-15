@@ -111,10 +111,7 @@ class Credential(DeletableApiObject, SavableApiObject):
 
         >>> credential = fb.Credential.create(  # doctest: +SKIP
         ...     feature_store_name="playground",
-        ...     database_credential=UsernamePasswordCredential(
-        ...         username="username",
-        ...         password="password"
-        ...     ),
+        ...     database_credential=UsernamePasswordCredential(username="username", password="password"),
         ...     storage_credential=S3StorageCredential(
         ...         s3_access_key_id="access_key_id",
         ...         s3_secret_access_key="s3_secret_access_key",

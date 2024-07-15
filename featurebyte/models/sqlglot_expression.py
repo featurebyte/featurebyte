@@ -50,6 +50,4 @@ class SqlglotExpressionModel(FeatureByteBaseModel):
         -------
         Expression
         """
-        return cast(
-            Expression, sqlglot.parse_one(self.formatted_expression, read=self._DIALECT_FORMAT)
-        )
+        return cast(Expression, sqlglot.parse_one(self.formatted_expression, read=self._DIALECT_FORMAT))

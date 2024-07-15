@@ -4,8 +4,6 @@ Common utility functions
 
 from __future__ import annotations
 
-from typing import Any, Generator, Iterator, List, Optional, Union
-
 import ast
 import functools
 import json
@@ -16,6 +14,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
+from typing import Any, Generator, Iterator, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -138,9 +137,7 @@ def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
         if field.metadata and ARROW_METADATA_DB_VAR_TYPE in field.metadata:
             db_var_type = field.metadata[ARROW_METADATA_DB_VAR_TYPE].decode()
             if db_var_type in encoded_types:
-                dataframe[field.name] = dataframe[field.name].apply(
-                    lambda x: json.loads(x) if x else None
-                )
+                dataframe[field.name] = dataframe[field.name].apply(lambda x: json.loads(x) if x else None)
     return dataframe
 
 
@@ -284,7 +281,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
         for col_name, dtype in type_conversions.items():
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
             if not col_name:
-                col_name = dataframe.columns[0]  # pylint: disable=no-member
+                col_name = dataframe.columns[0]
 
             if dtype == DBVarType.TIMESTAMP_TZ:
                 dataframe[col_name] = dataframe[col_name].apply(_to_datetime)
@@ -409,9 +406,7 @@ def is_server_mode() -> bool:
 
 
 @contextmanager
-def timer(
-    message: str, logger: logging.Logger, **logger_kwargs: Any
-) -> Generator[None, None, None]:
+def timer(message: str, logger: logging.Logger, **logger_kwargs: Any) -> Generator[None, None, None]:
     """
     Timer context manager to measure execution time.
 

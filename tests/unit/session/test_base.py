@@ -4,11 +4,10 @@ Unit test for base snowflake session.
 
 from __future__ import annotations
 
-from typing import Any, OrderedDict
-
 import collections
 import time
 from asyncio.exceptions import TimeoutError as AsyncIOTimeoutError
+from typing import Any, OrderedDict
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -77,9 +76,7 @@ def base_session_test_fixture():
             _ = timeout
             return collections.OrderedDict()
 
-        async def register_table(
-            self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-        ) -> None:
+        async def register_table(self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True) -> None:
             return None
 
         async def comment_table(self, table_name: str, comment: str) -> None:
@@ -131,10 +128,7 @@ def base_schema_initializer_fixture(base_schema_initializer_test, base_session_t
 def test_get_current_working_schema_version(base_schema_initializer_test, base_session_test):
     base_session = base_session_test()
     base_schema_initializer = base_schema_initializer_test(base_session)
-    assert (
-        base_schema_initializer.current_working_schema_version
-        == CURRENT_WORKING_SCHEMA_VERSION_TEST
-    )
+    assert base_schema_initializer.current_working_schema_version == CURRENT_WORKING_SCHEMA_VERSION_TEST
 
 
 @pytest.mark.asyncio
@@ -152,16 +146,12 @@ async def test_get_working_schema_version__no_data(base_session_test):
 async def test_get_working_schema_version__with_version_set(base_session_test):
     schema_version = 2
 
-    async def mocked_execute_query_with_version(
-        self, query, to_log_error=True
-    ) -> pd.DataFrame | None:
+    async def mocked_execute_query_with_version(self, query, to_log_error=True) -> pd.DataFrame | None:
         _ = self, query, to_log_error
-        return pd.DataFrame(
-            {
-                "WORKING_SCHEMA_VERSION": [schema_version],
-                "FEATURE_STORE_ID": "test_store_id",
-            }
-        )
+        return pd.DataFrame({
+            "WORKING_SCHEMA_VERSION": [schema_version],
+            "FEATURE_STORE_ID": "test_store_id",
+        })
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_version):
         metadata = await base_session_test().get_working_schema_metadata()
@@ -189,13 +179,9 @@ def get_mocked_working_schema_version(version: int):
 async def test_should_update_schema__users_version_gt_code(base_schema_initializer):
     # working schema version in users is greater than current working version in code
     # -> should not update
-    mocked_get_working_schema_version = get_mocked_working_schema_version(
-        CURRENT_WORKING_SCHEMA_VERSION_TEST + 1
-    )
+    mocked_get_working_schema_version = get_mocked_working_schema_version(CURRENT_WORKING_SCHEMA_VERSION_TEST + 1)
 
-    with patch.object(
-        BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version
-    ):
+    with patch.object(BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert not should_update_schema
 
@@ -204,13 +190,9 @@ async def test_should_update_schema__users_version_gt_code(base_schema_initializ
 async def test_should_update_schema__users_version_equals_code(base_schema_initializer):
     # working schema version in users is equal to current working version in code
     # -> should not update
-    mocked_get_working_schema_version = get_mocked_working_schema_version(
-        CURRENT_WORKING_SCHEMA_VERSION_TEST
-    )
+    mocked_get_working_schema_version = get_mocked_working_schema_version(CURRENT_WORKING_SCHEMA_VERSION_TEST)
 
-    with patch.object(
-        BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version
-    ):
+    with patch.object(BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert not should_update_schema
 
@@ -219,13 +201,9 @@ async def test_should_update_schema__users_version_equals_code(base_schema_initi
 async def test_should_update_schema__users_version_lt_code(base_schema_initializer):
     # working schema version in users is lesser than current working version in code
     # -> should update
-    mocked_get_working_schema_version = get_mocked_working_schema_version(
-        CURRENT_WORKING_SCHEMA_VERSION_TEST - 1
-    )
+    mocked_get_working_schema_version = get_mocked_working_schema_version(CURRENT_WORKING_SCHEMA_VERSION_TEST - 1)
 
-    with patch.object(
-        BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version
-    ):
+    with patch.object(BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
 
@@ -237,9 +215,7 @@ async def test_should_update_schema__not_registered(base_schema_initializer):
         MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
     )
 
-    with patch.object(
-        BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version
-    ):
+    with patch.object(BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
 
@@ -251,9 +227,7 @@ async def test_should_update_schema__no_results_found(base_schema_initializer):
         MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
     )
 
-    with patch.object(
-        BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version
-    ):
+    with patch.object(BaseSession, "get_working_schema_metadata", mocked_get_working_schema_version):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
 

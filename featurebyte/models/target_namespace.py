@@ -47,9 +47,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     default_target_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False)
 
     # pydantic validators
-    _sort_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(construct_sort_validator())
     _duration_validator = validator("window", pre=True, allow_reuse=True)(duration_string_validator)
 
     class Settings(BaseFeatureNamespaceModel.Settings):

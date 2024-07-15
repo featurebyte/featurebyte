@@ -20,9 +20,7 @@ class CriticalDataInfo(FeatureByteBaseModel):
 
     @validator("cleaning_operations")
     @classmethod
-    def _validate_cleaning_operation(
-        cls, values: List[CleaningOperation]
-    ) -> List[CleaningOperation]:
+    def _validate_cleaning_operation(cls, values: List[CleaningOperation]) -> List[CleaningOperation]:
         error_message = (
             "Column values imputed by {first_imputation} will be imputed by {second_imputation}. "
             "Please revise the imputations so that no value could be imputed twice."
@@ -35,8 +33,6 @@ class CriticalDataInfo(FeatureByteBaseModel):
             for other_imputation in imputations[(i + 1) :]:
                 if other_imputation.check_condition(imputation.imputed_value):
                     raise InvalidImputationsError(
-                        error_message.format(
-                            first_imputation=imputation, second_imputation=other_imputation
-                        )
+                        error_message.format(first_imputation=imputation, second_imputation=other_imputation)
                     )
         return values

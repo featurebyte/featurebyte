@@ -4,9 +4,8 @@ Generic function related SQLNode
 
 from __future__ import annotations
 
-from typing import Any, List, cast
-
 from dataclasses import dataclass
+from typing import Any, List, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -40,9 +39,7 @@ class GenericFunctionNode(ExpressionNode):
                 node_index += 1
             else:
                 cast_as_timestamp = func_param["dtype"] == DBVarType.TIMESTAMP
-                parameters.append(
-                    make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp)
-                )
+                parameters.append(make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp))
 
         table_node = None
         if input_sql_nodes:

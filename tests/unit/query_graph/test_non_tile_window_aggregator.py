@@ -2,8 +2,6 @@
 Tests for NonTileWindowAggregator
 """
 
-import textwrap
-
 import pytest
 from sqlglot.expressions import select
 
@@ -51,9 +49,7 @@ def test_non_tile_window_aggregate(agg_specs, update_fixtures):
         update_fixture=update_fixtures,
     )
     assert_equal_with_expected_fixture(
-        construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
-        .select(1)
-        .sql(pretty=True),
+        construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE")).select(1).sql(pretty=True),
         "tests/fixtures/aggregator/expected_non_tile_window_aggregator_ctes.sql",
         update_fixture=update_fixtures,
     )

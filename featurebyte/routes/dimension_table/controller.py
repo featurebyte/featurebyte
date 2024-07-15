@@ -39,7 +39,7 @@ class DimensionTableController(
         "dimension_id_column": SemanticType.DIMENSION_ID,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         dimension_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -83,9 +83,7 @@ class DimensionTableController(
         DimensionTableInfo
         """
         dimension_table = await self.service.get_document(document_id=document_id)
-        table_dict = await self.table_info_service.get_table_info(
-            data_document=dimension_table, verbose=verbose
-        )
+        table_dict = await self.table_info_service.get_table_info(data_document=dimension_table, verbose=verbose)
         return DimensionTableInfo(
             **table_dict,
             dimension_id_column=dimension_table.dimension_id_column,

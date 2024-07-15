@@ -2,10 +2,9 @@
 Unit tests for the UserDefinedFunctionInjector class.
 """
 
-from typing import Union
-
 import inspect
 import textwrap
+from typing import Union
 
 import pandas as pd
 import pytest
@@ -103,9 +102,7 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
 
     # check mis-matched series type
     with pytest.raises(TypeError) as exc:
-        function_parameter_processor._extract_node_parameters(
-            snowflake_event_view.col_int, float_feature
-        )
+        function_parameter_processor._extract_node_parameters(snowflake_event_view.col_int, float_feature)
     assert 'Input "sum_1d" has type Feature but expected ViewColumn.' in str(exc.value)
 
     # check missing series type
@@ -119,15 +116,12 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
             snowflake_event_view.col_int, snowflake_item_view.item_amount
         )
     expected_error = (
-        'The row of the input ViewColumns "col_int" does not match the row of the '
-        'input ViewColumns "item_amount".'
+        'The row of the input ViewColumns "col_int" does not match the row of the ' 'input ViewColumns "item_amount".'
     )
     assert expected_error in str(exc.value)
 
 
-def test_function_parameter_processor_process(
-    function_parameters, snowflake_event_view, float_feature
-):
+def test_function_parameter_processor_process(function_parameters, snowflake_event_view, float_feature):
     """Test FunctionParameterProcessor.process"""
     function_parameter_processor = FunctionParameterProcessor(function_parameters)
 
@@ -187,9 +181,7 @@ def test_user_defined_function_injector_create_and_add_function(user_defined_fun
     assert not hasattr(accessor, user_defined_function.name)
 
     # create function & add it to the accessor
-    UserDefinedFunctionInjector.create_and_add_function(
-        func_accessor=accessor, udf=user_defined_function
-    )
+    UserDefinedFunctionInjector.create_and_add_function(func_accessor=accessor, udf=user_defined_function)
     method = accessor.udf_func
     assert callable(method)
 
@@ -199,9 +191,7 @@ def test_user_defined_function_injector_create_and_add_function(user_defined_fun
     # check signature
     signature = inspect.signature(method)
     assert list(signature.parameters.values()) == [
-        inspect.Parameter(
-            "x", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=Union[int, ViewColumn, Feature]
-        ),
+        inspect.Parameter("x", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=Union[int, ViewColumn, Feature]),
         inspect.Parameter(
             "y",
             inspect.Parameter.POSITIONAL_OR_KEYWORD,

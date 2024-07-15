@@ -6,10 +6,9 @@ This contains all our registrations for dependency injection.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
-
 import inspect
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
 
 from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 
@@ -44,9 +43,7 @@ def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str
     return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub(r"_\1", class_name).lower()
 
 
-def _get_constructor_params_from_class(
-    class_: type, dependency_override: Optional[dict[str, str]] = None
-) -> List[str]:
+def _get_constructor_params_from_class(class_: type, dependency_override: Optional[dict[str, str]] = None) -> List[str]:
     """
     Helper method to get constructor params from class.
 
@@ -116,9 +113,7 @@ class AppContainerConfig:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
 
-    def register_factory_method(
-        self, factory_method: Callable[..., Any], name_override: Optional[str] = None
-    ) -> None:
+    def register_factory_method(self, factory_method: Callable[..., Any], name_override: Optional[str] = None) -> None:
         """
         Register a factory method. The name of the dependency will be based the name of the class that the factory
         method returns. For example, if the factory method returns a `TestClassA`, the name of the dependency will be
@@ -254,9 +249,7 @@ class AppContainerConfig:
                 )
             neighbour = class_def_mapping[neighbour_name]
             if not visited_nodes.get(neighbour.name, False):
-                is_cyclic, path = self._is_cyclic_dfs(
-                    neighbour, visited_nodes, recursive_stack, class_def_mapping
-                )
+                is_cyclic, path = self._is_cyclic_dfs(neighbour, visited_nodes, recursive_stack, class_def_mapping)
                 if is_cyclic:
                     return True, path
             elif recursive_stack[neighbour.name]:
@@ -288,14 +281,10 @@ class AppContainerConfig:
         for node in self.classes_with_deps:
             # Only need to recurse on nodes we have not been to before.
             if not visited_nodes.get(node.name, False):
-                is_cyclic, path = self._is_cyclic_dfs(
-                    node, visited_nodes, recursive_stack, class_def_mapping
-                )
+                is_cyclic, path = self._is_cyclic_dfs(node, visited_nodes, recursive_stack, class_def_mapping)
                 if is_cyclic:
                     path_str = " -> ".join(path)
-                    raise ValueError(
-                        f"There's a circular dependency in the dependency graph.\n{path_str}"
-                    )
+                    raise ValueError(f"There's a circular dependency in the dependency graph.\n{path_str}")
 
     def validate(self) -> None:
         """

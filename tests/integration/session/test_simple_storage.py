@@ -67,9 +67,7 @@ def test_webhdfs_storage():
     # create a temporary krb5.conf file to specify the KDC
     with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as krb5_config_file:
         kdc = "analytics-cluster-m.us-central1-c.c.vpc-host-nonprod-xa739-xz970.internal"
-        krb5_config_file.write(
-            f"[realms]\nDATAPROC.FEATUREBYTE.COM = {{\n  kdc = {kdc}\n  admin_server = {kdc}\n}}"
-        )
+        krb5_config_file.write(f"[realms]\nDATAPROC.FEATUREBYTE.COM = {{\n  kdc = {kdc}\n  admin_server = {kdc}\n}}")
         krb5_config_file.flush()
         os.environ["KRB5_CONFIG"] = krb5_config_file.name
         session = SparkSession(

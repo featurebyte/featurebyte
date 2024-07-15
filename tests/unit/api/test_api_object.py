@@ -79,13 +79,11 @@ def test_list(mock_util_configuration):
     output = ApiObject.list()
     assert_frame_equal(
         output,
-        pd.DataFrame(
-            {
-                "id": [f"637b87ee8959fd0e36a0bc{i:02d}" for i in range(11)],
-                "name": [f"item_{i}" for i in range(11)],
-                "created_at": ["2022-11-21T14:00:49.255000"] * 11,
-            }
-        ),
+        pd.DataFrame({
+            "id": [f"637b87ee8959fd0e36a0bc{i:02d}" for i in range(11)],
+            "name": [f"item_{i}" for i in range(11)],
+            "created_at": ["2022-11-21T14:00:49.255000"] * 11,
+        }),
     )
 
 
@@ -132,9 +130,7 @@ def mock_clients_fixture():
                     "id": "success_id",
                 },
             ),
-            "/post_failure": FakeResponse(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, response_dict={}
-            ),
+            "/post_failure": FakeResponse(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, response_dict={}),
             "/post_success_task_started": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={"status": TaskStatus.STARTED, "id": "failure_id"},
@@ -168,15 +164,9 @@ def mock_clients_fixture():
                     "id": "success_id",
                 },
             ),
-            "/task/failure_id": FakeResponse(
-                status_code=HTTPStatus.OK, response_dict={"status": TaskStatus.FAILURE}
-            ),
-            "/task/get_failure_id": FakeResponse(
-                status_code=HTTPStatus.NOT_FOUND, response_dict={}
-            ),
-            "/get_result_success": FakeResponse(
-                status_code=HTTPStatus.OK, response_dict={"result": "some_value"}
-            ),
+            "/task/failure_id": FakeResponse(status_code=HTTPStatus.OK, response_dict={"status": TaskStatus.FAILURE}),
+            "/task/get_failure_id": FakeResponse(status_code=HTTPStatus.NOT_FOUND, response_dict={}),
+            "/get_result_success": FakeResponse(status_code=HTTPStatus.OK, response_dict={"result": "some_value"}),
             "/get_result_failure": FakeResponse(status_code=HTTPStatus.NOT_FOUND, response_dict={}),
         }[url]
 
@@ -190,27 +180,21 @@ def mock_clients_fixture():
         yield mock_client, mock_ws_client
 
 
-@pytest.mark.parametrize(
-    "route", ["/success_task_pending", "/success_task_started", "/success_task_success"]
-)
+@pytest.mark.parametrize("route", ["/success_task_pending", "/success_task_started", "/success_task_success"])
 def test_post_async_task__success(mock_clients, route):
     """Test post async task (success)"""
     output = ApiObject.post_async_task(route=route, payload={})
     assert output == {"result": "some_value"}
 
 
-@pytest.mark.parametrize(
-    "route", ["/post_failure", "/post_success_task_started", "/post_success_task_failure"]
-)
+@pytest.mark.parametrize("route", ["/post_failure", "/post_success_task_started", "/post_success_task_failure"])
 def test_post_async_task__record_creation_exception(mock_clients, route):
     """Test post async task (success)"""
     with pytest.raises(RecordCreationException):
         ApiObject.post_async_task(route=route, payload={})
 
 
-@pytest.mark.parametrize(
-    "route", ["/post_success_get_task_failure", "/post_success_get_result_failure"]
-)
+@pytest.mark.parametrize("route", ["/post_success_get_task_failure", "/post_success_get_result_failure"])
 def test_post_async_task__record_retrieval_exception(mock_clients, route):
     """Test post async task (success)"""
 
@@ -230,10 +214,7 @@ def test_api_object_repr(mock_configuration):
     with patch.object(ApiObject, "info") as mock_info:
         mock_info.return_value = "mock_info_result"
         item = ApiObject.get("item_1")
-        assert (
-            repr(item)
-            == f"<featurebyte.api.api_object.ApiObject at {hex(id(item))}>\n'mock_info_result'"
-        )
+        assert repr(item) == f"<featurebyte.api.api_object.ApiObject at {hex(id(item))}>\n'mock_info_result'"
 
 
 def test_api_object_list_empty():

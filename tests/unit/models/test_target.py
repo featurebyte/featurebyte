@@ -54,7 +54,5 @@ async def test_derive_window(float_target, lookup_target, app_container):
     assert target.derive_window() == "1d"
 
     lookup_target.save()
-    lookup_target_doc = await app_container.target_service.get_document(
-        document_id=lookup_target.id
-    )
+    lookup_target_doc = await app_container.target_service.get_document(document_id=lookup_target.id)
     assert lookup_target_doc.derive_window() == "7d"

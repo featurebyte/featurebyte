@@ -4,9 +4,8 @@ Feature Job Setting Analysis task
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
@@ -39,7 +38,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
     payload_class = FeatureJobSettingAnalysisTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         storage: Storage,
         event_table_service: EventTableService,
@@ -59,9 +58,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
     async def get_task_description(self, payload: FeatureJobSettingAnalysisTaskPayload) -> str:
         # retrieve event data
         if payload.event_table_id:
-            event_table_document = await self.event_table_service.get_document(
-                document_id=payload.event_table_id
-            )
+            event_table_document = await self.event_table_service.get_document(document_id=payload.event_table_id)
             event_table_name = event_table_document.name
         else:
             # event table candidate should be provided if event table is not
@@ -74,9 +71,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
         # retrieve event data
         if payload.event_table_id:
-            event_table_document = await self.event_table_service.get_document(
-                document_id=payload.event_table_id
-            )
+            event_table_document = await self.event_table_service.get_document(document_id=payload.event_table_id)
             event_table = EventTableCandidate(
                 name=event_table_document.name,
                 tabular_source=event_table_document.tabular_source,
@@ -127,9 +122,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         )
 
         await self.task_progress_updater.update_progress(percent=95, message="Saving Analysis")
-        analysis_doc = await self.feature_job_setting_analysis_service.create_document(
-            data=analysis_doc
-        )
+        analysis_doc = await self.feature_job_setting_analysis_service.create_document(data=analysis_doc)
         assert analysis_doc.id == payload.output_document_id
 
         # store analysis data in storage

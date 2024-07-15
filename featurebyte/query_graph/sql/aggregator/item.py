@@ -67,15 +67,13 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         # Construct input to be aggregated using GROUP BY
         if self.to_inner_join_with_request_table:
             request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
-            join_condition = expressions.and_(
-                *[
-                    expressions.EQ(
-                        this=get_qualified_column_identifier(serving_name, "REQ"),
-                        expression=get_qualified_column_identifier(key, "ITEM"),
-                    )
-                    for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
-                ]
-            )
+            join_condition = expressions.and_(*[
+                expressions.EQ(
+                    this=get_qualified_column_identifier(serving_name, "REQ"),
+                    expression=get_qualified_column_identifier(key, "ITEM"),
+                )
+                for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+            ])
             groupby_input_expr = (
                 select()
                 .from_(
@@ -113,16 +111,12 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
                 parent_expr=(
-                    get_qualified_column_identifier(s.parameters.parent, "ITEM")
-                    if s.parameters.parent
-                    else None
+                    get_qualified_column_identifier(s.parameters.parent, "ITEM") if s.parameters.parent else None
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
                 parent_cols=(
-                    [get_qualified_column_identifier(s.parameters.parent, "ITEM")]
-                    if s.parameters.parent
-                    else []
+                    [get_qualified_column_identifier(s.parameters.parent, "ITEM")] if s.parameters.parent else []
                 ),
             )
             for s in agg_specs
@@ -167,6 +161,4 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         )
 
     def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
-        return self.non_time_aware_request_table_plan.construct_request_table_ctes(
-            request_table_name
-        )
+        return self.non_time_aware_request_table_plan.construct_request_table_ctes(request_table_name)

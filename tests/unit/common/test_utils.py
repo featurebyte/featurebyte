@@ -26,12 +26,10 @@ def data_to_convert_fixture():
     """
     Dataframe fixture for conversion test
     """
-    dataframe = pd.DataFrame(
-        {
-            "a": range(10),
-            "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
-        }
-    )
+    dataframe = pd.DataFrame({
+        "a": range(10),
+        "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
+    })
     type_conversions = {"b": DBVarType.TIMESTAMP_TZ}
     return dataframe, type_conversions
 
@@ -115,9 +113,7 @@ def create_batch_feature_create(features):
     return BatchFeatureCreate(graph=query_graph, features=feature_items)
 
 
-def create_feature_list_batch_feature_create(
-    features, feature_list_name, feature_list_id, conflict_resolution
-):
+def create_feature_list_batch_feature_create(features, feature_list_name, feature_list_id, conflict_resolution):
     """Create feature list batch feature create object"""
     feature_items, query_graph = create_batch_feature_items_and_graph(features)
     return FeatureListCreateWithBatchFeatureCreation(

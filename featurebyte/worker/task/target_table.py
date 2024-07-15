@@ -32,7 +32,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
 
     payload_class = TargetTableTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -55,20 +55,13 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         return f'Save target table "{payload.name}"'
 
     async def execute(self, payload: TargetTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=payload.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         observation_set = await self.observation_set_helper.get_observation_set(
             payload.observation_table_id, payload.observation_set_storage_path
         )
-        location = await self.observation_table_service.generate_materialized_table_location(
-            payload.feature_store_id
-        )
-        has_row_index = (
-            isinstance(observation_set, ObservationTableModel)
-            and observation_set.has_row_index is True
-        )
+        location = await self.observation_table_service.generate_materialized_table_location(payload.feature_store_id)
+        has_row_index = isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
 
         # track target_namespace_id if target_id is provided in the payload
         target_namespace_id = None
@@ -110,9 +103,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 output_table_details=location.table_details,
             )
             entity_ids = graph.get_entity_ids(node_names[0])
-            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids
-            )
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(entity_ids)
 
             if not has_row_index:
                 # Note: For now, a new row index column is added to this newly created observation
@@ -124,15 +115,13 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     location.table_details,
                 )
 
-            additional_metadata = (
-                await self.observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session,
-                    location.table_details,
-                    feature_store=feature_store,
-                    serving_names_remapping=payload.serving_names_mapping,
-                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
-                    primary_entity_ids=primary_entity_ids,  # type: ignore[arg-type]
-                )
+            additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                db_session,
+                location.table_details,
+                feature_store=feature_store,
+                serving_names_remapping=payload.serving_names_mapping,
+                skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                primary_entity_ids=primary_entity_ids,  # type: ignore[arg-type]
             )
 
             purpose: Optional[Purpose] = None

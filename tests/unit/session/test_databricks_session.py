@@ -160,45 +160,25 @@ async def test_databricks_session(databricks_session_dict):
     assert await session.list_table_schema(
         database_name="hive_metastore", schema_name="default", table_name="transactions"
     ) == {
-        "col_binary": ColumnSpecWithDescription(
-            name="col_binary", dtype=DBVarType.BINARY, description="Binary Column"
-        ),
-        "col_bool": ColumnSpecWithDescription(
-            name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
-        ),
-        "col_date": ColumnSpecWithDescription(
-            name="col_date", dtype=DBVarType.DATE, description="Date Column"
-        ),
-        "col_double": ColumnSpecWithDescription(
-            name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
-        ),
-        "col_float": ColumnSpecWithDescription(
-            name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
-        ),
-        "col_int": ColumnSpecWithDescription(
-            name="col_int", dtype=DBVarType.INT, description="Int Column"
-        ),
+        "col_binary": ColumnSpecWithDescription(name="col_binary", dtype=DBVarType.BINARY, description="Binary Column"),
+        "col_bool": ColumnSpecWithDescription(name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"),
+        "col_date": ColumnSpecWithDescription(name="col_date", dtype=DBVarType.DATE, description="Date Column"),
+        "col_double": ColumnSpecWithDescription(name="col_double", dtype=DBVarType.FLOAT, description="Double Column"),
+        "col_float": ColumnSpecWithDescription(name="col_float", dtype=DBVarType.FLOAT, description="Float Column"),
+        "col_int": ColumnSpecWithDescription(name="col_int", dtype=DBVarType.INT, description="Int Column"),
         "col_interval": ColumnSpecWithDescription(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
         ),
-        "col_void": ColumnSpecWithDescription(
-            name="col_void", dtype=DBVarType.VOID, description="Void Column"
-        ),
+        "col_void": ColumnSpecWithDescription(name="col_void", dtype=DBVarType.VOID, description="Void Column"),
         "col_timestamp": ColumnSpecWithDescription(
             name="col_timestamp", dtype=DBVarType.TIMESTAMP, description="Timestamp Column"
         ),
-        "col_array": ColumnSpecWithDescription(
-            name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
-        ),
-        "col_map": ColumnSpecWithDescription(
-            name="col_map", dtype=DBVarType.DICT, description="Map Column"
-        ),
+        "col_array": ColumnSpecWithDescription(name="col_array", dtype=DBVarType.ARRAY, description="Array Column"),
+        "col_map": ColumnSpecWithDescription(name="col_map", dtype=DBVarType.DICT, description="Map Column"),
         "col_decimal": ColumnSpecWithDescription(
             name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
         ),
-        "col_struct": ColumnSpecWithDescription(
-            name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
-        ),
+        "col_struct": ColumnSpecWithDescription(name="col_struct", dtype=DBVarType.DICT, description="Struct Column"),
         "col_string": ColumnSpecWithDescription(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
         ),
@@ -216,9 +196,7 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     """
     Test Databricks session register_table
     """
-    with patch(
-        "featurebyte.session.databricks.DatabricksSession.execute_query"
-    ) as mock_execute_query:
+    with patch("featurebyte.session.databricks.DatabricksSession.execute_query") as mock_execute_query:
         with (
             patch("featurebyte.session.databricks.WorkspaceClient"),
             patch("featurebyte.session.databricks.DbfsExt"),

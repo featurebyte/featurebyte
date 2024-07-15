@@ -36,9 +36,7 @@ def test_point_in_time_request_column():
     }
 
 
-def test_point_in_time_minus_timestamp_feature(
-    latest_event_timestamp_feature, update_fixtures, mock_deployment_flow
-):
+def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, update_fixtures, mock_deployment_flow):
     """
     Test an on-demand feature involving point in time
     """
@@ -83,10 +81,7 @@ def test_point_in_time_minus_timestamp_feature(
     }
     graph_node_param = output.graph.nodes_map["graph_1"].parameters
     assert graph_node_param.type == GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-    assert (
-        graph_node_param.output_column_name
-        == f"__Time Since Last Event (days)_{get_version()}__part0"
-    )
+    assert graph_node_param.output_column_name == f"__Time Since Last Event (days)_{get_version()}__part0"
 
     # check output node hash
     check_decomposed_graph_output_node_hash(

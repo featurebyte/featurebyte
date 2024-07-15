@@ -92,9 +92,7 @@ class FeatureJobSettingAnalysisService(
 
         # check that event table exists
         if data.event_table_id:
-            event_table = await self.event_table_service.get_document(
-                document_id=data.event_table_id
-            )
+            event_table = await self.event_table_service.get_document(document_id=data.event_table_id)
             if not event_table.record_creation_timestamp_column:
                 raise DocumentError("Creation date column is not available for the event table.")
 
@@ -135,9 +133,7 @@ class FeatureJobSettingAnalysisService(
             output_document_id=output_document_id,
         )
 
-    async def add_backtest_summary(
-        self, document_id: ObjectId, backtest_summary: BackTestSummary
-    ) -> None:
+    async def add_backtest_summary(self, document_id: ObjectId, backtest_summary: BackTestSummary) -> None:
         """
         Add backtest summary to feature job setting analysis document
 

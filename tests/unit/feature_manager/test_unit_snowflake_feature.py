@@ -85,12 +85,8 @@ async def test_online_enable(
     """
     mock_snowflake_session.execute_query.return_value = []
 
-    with mock.patch(
-        "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
-    ) as mock_tile_job_exists:
-        with mock.patch(
-            "featurebyte.service.tile_registry_service.TileRegistryService.update_backfill_metadata"
-        ):
+    with mock.patch("featurebyte.service.tile_manager.TileManagerService.tile_job_exists") as mock_tile_job_exists:
+        with mock.patch("featurebyte.service.tile_registry_service.TileRegistryService.update_backfill_metadata"):
             mock_tile_job_exists.return_value = False
             await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
 
@@ -101,9 +97,7 @@ async def test_online_enable(
     # Expected execute_query calls are triggered by TileScheduleOnlineStore:
 
     # 1. Check if online store table exists (execute_query)
-    mock_snowflake_session.table_exists.assert_called_once_with(
-        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-    )
+    mock_snowflake_session.table_exists.assert_called_once_with("online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c")
 
     # 2. Compute online store values and store in a temporary table
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
@@ -139,15 +133,11 @@ async def test_online_enable_duplicate_tile_task(
         None,
         None,
     ]
-    with mock.patch(
-        "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
-    ) as mock_tile_job_exists:
+    with mock.patch("featurebyte.service.tile_manager.TileManagerService.tile_job_exists") as mock_tile_job_exists:
         with mock.patch(
             "featurebyte.service.feature_manager.FeatureManagerService._backfill_tiles"
         ) as mock_generate_historical_tiles:
-            with mock.patch(
-                "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
-            ) as _:
+            with mock.patch("featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store") as _:
                 mock_tile_job_exists.return_value = True
                 await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
 
@@ -181,15 +171,11 @@ async def test_online_enable_aggregation_results_already_scheduled(
         None,
         None,
     ]
-    with mock.patch(
-        "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
-    ) as mock_tile_job_exists:
+    with mock.patch("featurebyte.service.tile_manager.TileManagerService.tile_job_exists") as mock_tile_job_exists:
         with mock.patch(
             "featurebyte.service.feature_manager.FeatureManagerService._backfill_tiles"
         ) as mock_generate_historical_tiles:
-            with mock.patch(
-                "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
-            ) as _:
+            with mock.patch("featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store") as _:
                 mock_tile_job_exists.return_value = True
                 await feature_manager_service.online_enable(
                     mock_snowflake_session, feature_spec_with_scheduled_aggregations
@@ -217,9 +203,7 @@ async def test_online_disable(
     )
 
     mock_snowflake_session.execute_query.side_effect = [None, None, None, None]
-    with mock.patch(
-        "featurebyte.service.tile_manager.TileManagerService.remove_tile_jobs"
-    ) as mock_tile_manager:
+    with mock.patch("featurebyte.service.tile_manager.TileManagerService.remove_tile_jobs") as mock_tile_manager:
         mock_tile_manager.side_effect = None
         with mock.patch(
             "featurebyte.service.online_store_compute_query_service.OnlineStoreComputeQueryService.delete_by_result_name"
@@ -230,20 +214,16 @@ async def test_online_disable(
 
 
 @pytest.mark.asyncio
-async def test_retrieve_feature_tile_inconsistency_data(
-    mock_snowflake_session, feature_manager_service
-):
+async def test_retrieve_feature_tile_inconsistency_data(mock_snowflake_session, feature_manager_service):
     """
     Test retrieve_feature_tile_inconsistency_data
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m", "sum_30m"],
-            "VERSION": ["v1", "v1"],
-            "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-            "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-        }
-    )
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame.from_dict({
+        "NAME": ["sum_30m", "sum_30m"],
+        "VERSION": ["v1", "v1"],
+        "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
+        "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
+    })
     result = await feature_manager_service.retrieve_feature_tile_inconsistency_data(
         mock_snowflake_session,
         query_start_ts="2022-06-05 15:43:00",

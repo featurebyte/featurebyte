@@ -103,9 +103,7 @@ def test_from_event_table(snowflake_event_table, mock_api_object_cache):
     )
 
 
-def test_getitem__list_of_str_contains_protected_column(
-    snowflake_event_table, snowflake_event_view
-):
+def test_getitem__list_of_str_contains_protected_column(snowflake_event_table, snowflake_event_view):
     """
     Test retrieving subset of the event table features
     """
@@ -118,10 +116,7 @@ def test_getitem__list_of_str_contains_protected_column(
         "col_float",
     }
     assert event_view_subset1.row_index_lineage == snowflake_event_view.row_index_lineage
-    assert (
-        event_view_subset1.default_feature_job_setting
-        == snowflake_event_view.default_feature_job_setting
-    )
+    assert event_view_subset1.default_feature_job_setting == snowflake_event_view.default_feature_job_setting
 
     # case 2: select a non-protected column with a timestamp column
     event_view_subset2 = snowflake_event_view[["col_float", "col_int", "event_timestamp"]]
@@ -132,10 +127,7 @@ def test_getitem__list_of_str_contains_protected_column(
         "col_float",
     }
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
-    assert (
-        event_view_subset2.default_feature_job_setting
-        == snowflake_event_view.default_feature_job_setting
-    )
+    assert event_view_subset2.default_feature_job_setting == snowflake_event_view.default_feature_job_setting
 
     # both event table subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
@@ -149,9 +141,7 @@ def test_getitem__list_of_str_contains_protected_column(
         ("col_text", 2, DBVarType.VARCHAR),
     ],
 )
-def test_event_view_column_lag(
-    snowflake_event_view, snowflake_event_table, column, offset, expected_var_type
-):
+def test_event_view_column_lag(snowflake_event_view, snowflake_event_table, column, offset, expected_var_type):
     """
     Test EventViewColumn lag operation
     """
@@ -232,9 +222,7 @@ def test_event_view_copy(snowflake_event_view):
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_event_view_groupby__prune(
-    snowflake_event_view_with_entity, snowflake_event_table_with_entity
-):
+def test_event_view_groupby__prune(snowflake_event_view_with_entity, snowflake_event_table_with_entity):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
     feature_job_setting = FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
@@ -258,7 +246,7 @@ def test_event_view_groupby__prune(
         )["sum_a_plus_one_24h"]
         * b
     )
-    pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
+    pruned_graph, _mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
         "add_1": ["add_2", "assign_1"],
@@ -375,15 +363,10 @@ def test_validate_feature_addition__request_column_derived_feature(
     """
     Test _validate_feature_addition with request column derived feature
     """
-    req_col_feat = (
-        non_time_based_feature
-        + (RequestColumn.point_in_time() - RequestColumn.point_in_time()).dt.day
-    )
+    req_col_feat = non_time_based_feature + (RequestColumn.point_in_time() - RequestColumn.point_in_time()).dt.day
     req_col_feat.name = "req_col_feat"
     event_view = snowflake_event_view_with_entity
-    expected_msg = (
-        "We currently only support the addition of features that do not use request columns."
-    )
+    expected_msg = "We currently only support the addition of features that do not use request columns."
     with pytest.raises(ValueError, match=re.escape(expected_msg)):
         event_view.add_feature("random_col", req_col_feat)
 
@@ -407,9 +390,7 @@ def test_validate_feature_addition__non_time_based_no_override(
     Test _validate_feature_addition non-time based with no override col
     """
     # Should run with no errors
-    snowflake_event_view_with_entity._validate_feature_addition(
-        "random_col", non_time_based_feature, None
-    )
+    snowflake_event_view_with_entity._validate_feature_addition("random_col", non_time_based_feature, None)
 
 
 def test_validate_feature_addition__non_time_based_with_override(
@@ -449,9 +430,7 @@ def test_get_feature_entity_col(production_ready_feature):
     assert_entity_identifiers_raises_errors(["col_a", "col_b"], production_ready_feature)
 
 
-def test_get_feature_entity_id(
-    non_time_based_feature, float_feature, transaction_entity, cust_id_entity
-):
+def test_get_feature_entity_id(non_time_based_feature, float_feature, transaction_entity, cust_id_entity):
     """
     Test get_feature_entity_col
     """
@@ -462,9 +441,10 @@ def test_get_feature_entity_id(
     assert entity_id == cust_id_entity.id
     comp_feature = non_time_based_feature + float_feature
     comp_feature.name = "comp_feature"
-    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted(
-        [cust_id_entity.id, transaction_entity.id]
-    )
+    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted([
+        cust_id_entity.id,
+        transaction_entity.id,
+    ])
 
     # verify that multiple entity IDs raises error
     with pytest.raises(ValueError) as exc_info:
@@ -512,9 +492,7 @@ def test_get_col_with_entity_id(event_view_with_col_infos):
     assert col is None
 
 
-def test_get_view_entity_column__entity_col_provided(
-    snowflake_event_view, production_ready_feature
-):
+def test_get_view_entity_column__entity_col_provided(snowflake_event_view, production_ready_feature):
     """
     Test _get_view_entity_column - entity col provided
     """
@@ -525,9 +503,7 @@ def test_get_view_entity_column__entity_col_provided(
     # Test column is passed in - we don't have to validate whether the column exists in the view, since we
     # would've done that beforehand already.
     entity_col_name = "entity_col"
-    col_to_use = snowflake_event_view._get_view_entity_column(
-        production_ready_feature, entity_col_name
-    )
+    col_to_use = snowflake_event_view._get_view_entity_column(production_ready_feature, entity_col_name)
     assert col_to_use == entity_col_name
 
 
@@ -581,9 +557,7 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(
-    snowflake_event_table, snowflake_event_view, snowflake_item_table, non_time_based_feature
-):
+def test_add_feature(snowflake_event_table, snowflake_event_view, snowflake_item_table, non_time_based_feature):
     """
     Test add feature
     """
@@ -592,9 +566,7 @@ def test_add_feature(
     # Add feature
     node_name_before = snowflake_event_view.node.name
     new_view = snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
-    assert (
-        snowflake_event_view.node.name == node_name_before
-    )  # check that original view is not modified
+    assert snowflake_event_view.node.name == node_name_before  # check that original view is not modified
 
     # assert updated view params
     assert new_view.columns_info == [
@@ -693,15 +665,10 @@ def test_add_feature__wrong_type(snowflake_event_view):
     with pytest.raises(TypeError) as exc_info:
         col = snowflake_event_view["col_int"]
         snowflake_event_view.add_feature("new_col", col, "cust_id")
-    assert (
-        str(exc_info.value)
-        == 'type of argument "feature" must be Feature; got EventViewColumn instead'
-    )
+    assert str(exc_info.value) == 'type of argument "feature" must be Feature; got EventViewColumn instead'
 
 
-def test_combine_simple_aggregate_with_its_window_aggregate(
-    snowflake_event_table, non_time_based_feature
-):
+def test_combine_simple_aggregate_with_its_window_aggregate(snowflake_event_table, non_time_based_feature):
     """
     Test combining simple aggregate with its window aggregates after added to EventView
     """
@@ -770,7 +737,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     feat = feature_group["sum_30m"]
 
     # check pruned graph's nested graph nodes
-    pruned_graph, node = feat.extract_pruned_graph_and_node()
+    pruned_graph, _node = feat.extract_pruned_graph_and_node()
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
 
@@ -1009,9 +976,7 @@ def test_shape(snowflake_event_table, snowflake_query_map):
             return pd.DataFrame(res)
         return pd.DataFrame({"count": [1000]})
 
-    with mock.patch(
-        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-    ) as mock_execute_query:
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
         mock_execute_query.side_effect = side_effect
         assert view.shape() == (1000, 8)
         # Check that the correct query was executed
@@ -1090,9 +1055,7 @@ def test_event_view_as_feature(
         feature_job_setting=feature_group_feature_job_setting,
     )
     event_view = snowflake_event_table_with_entity.get_view()
-    feature = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])[
-        "col_float"
-    ]
+    feature = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])["col_float"]
     feature.save()
     deploy_features_through_api([feature])
 

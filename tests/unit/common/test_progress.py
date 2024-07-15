@@ -37,12 +37,8 @@ async def test_get_ranged_progress_callback_nested(progress_callback):
     """
     Test that nested get_ranged_progress_callback calls work as expected
     """
-    new_callback = get_ranged_progress_callback(
-        progress_callback, 10, 20
-    )  # covers the full range's 10% - 20%
-    newer_callback = get_ranged_progress_callback(
-        new_callback, 50, 100
-    )  # covers the full range's 15% - 20%
+    new_callback = get_ranged_progress_callback(progress_callback, 10, 20)  # covers the full range's 10% - 20%
+    newer_callback = get_ranged_progress_callback(new_callback, 50, 100)  # covers the full range's 15% - 20%
     for i in [0, 50, 100]:
         await newer_callback(i, "Doing a smaller subtask")
     assert progress_callback.call_args_list == [

@@ -4,11 +4,10 @@ Logging formatting
 
 from __future__ import annotations
 
-from typing import Any, Mapping
-
 import logging
 import os
 import sys
+from typing import Any, Mapping
 
 from featurebyte.common.env_util import is_notebook
 from featurebyte.config import Configurations, LogLevel
@@ -19,7 +18,7 @@ class CustomLogger(logging.Logger):
     Custom logger to capture extra field
     """
 
-    def makeRecord(  # pylint: disable=too-many-arguments
+    def makeRecord(
         self,
         name: str,
         level: int,
@@ -86,9 +85,7 @@ class CustomFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         record.msg = self.colorize(record.msg, self.level_colors.get(record.levelname, "grey"))
-        record.levelname = self.colorize(
-            record.levelname.ljust(8), self.level_colors.get(record.levelname, "grey")
-        )
+        record.levelname = self.colorize(record.levelname.ljust(8), self.level_colors.get(record.levelname, "grey"))
         return super().format(record)
 
 

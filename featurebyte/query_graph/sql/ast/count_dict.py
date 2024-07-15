@@ -4,12 +4,11 @@ Module for count dict sql generation
 
 from __future__ import annotations
 
-from typing_extensions import Literal
-
 from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.count_dict import (
@@ -49,18 +48,11 @@ class CountDictTransformNode(ExpressionNode):
                 this="OBJECT_DELETE",
                 expressions=[self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
             )
-        output_expr = expressions.Anonymous(
-            this=function_name, expressions=[counts_expr]
-        )  # type: Expression
-        if (
-            self.transform_type
-            in CountDictTransformQueryGraphNode.transform_types_with_varchar_output
-        ):
+        output_expr = expressions.Anonymous(this=function_name, expressions=[counts_expr])  # type: Expression
+        if self.transform_type in CountDictTransformQueryGraphNode.transform_types_with_varchar_output:
             # Some UDFs such as F_COUNT_DICT_MOST_FREQUENT produce a VARIANT type. Cast to string to
             # prevent double quoting in the feature output ('remove' vs '"remove"')
-            output_expr = expressions.Cast(
-                this=output_expr, to=expressions.DataType.build("VARCHAR")
-            )
+            output_expr = expressions.Cast(this=output_expr, to=expressions.DataType.build("VARCHAR"))
         return output_expr
 
     @classmethod

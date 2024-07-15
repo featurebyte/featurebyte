@@ -4,10 +4,9 @@ ObservationTableService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
-
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -116,13 +115,9 @@ class ObservationTableStats:
         -------
         dict[str, int]
         """
-        return {
-            entity_stat.column_name: entity_stat.count for entity_stat in self.entity_columns_stats
-        }
+        return {entity_stat.column_name: entity_stat.count for entity_stat in self.entity_columns_stats}
 
-    def get_columns_with_missing_values(
-        self, entity_ids_to_check: Optional[list[PydanticObjectId]]
-    ) -> list[str]:
+    def get_columns_with_missing_values(self, entity_ids_to_check: Optional[list[PydanticObjectId]]) -> list[str]:
         """
         Return list of column names with missing values
 
@@ -139,10 +134,7 @@ class ObservationTableStats:
         if self.point_in_time_stats.percentage_missing > 0:
             out.append(SpecialColumnName.POINT_IN_TIME.value)
         for entity_stats in self.entity_columns_stats:
-            if (
-                entity_ids_to_check is not None
-                and entity_stats.entity_id not in entity_ids_to_check
-            ):
+            if entity_ids_to_check is not None and entity_stats.entity_id not in entity_ids_to_check:
                 continue
             if entity_stats.percentage_missing > 0:
                 out.append(entity_stats.column_name)
@@ -188,9 +180,7 @@ def validate_columns_info(
     columns_info_mapping = {info.name: info for info in columns_info}
 
     if SpecialColumnName.POINT_IN_TIME not in columns_info_mapping:
-        raise MissingPointInTimeColumnError(
-            f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
-        )
+        raise MissingPointInTimeColumnError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
     point_in_time_dtype = columns_info_mapping[SpecialColumnName.POINT_IN_TIME].dtype
     if point_in_time_dtype not in {
@@ -202,9 +192,7 @@ def validate_columns_info(
         )
 
     if not skip_entity_validation_checks:
-        entity_ids_from_cols = {
-            info.entity_id for info in columns_info if info.entity_id is not None
-        }
+        entity_ids_from_cols = {info.entity_id for info in columns_info if info.entity_id is not None}
 
         # Check that there's at least one entity mapped in the columns info
         if len(entity_ids_from_cols) == 0:
@@ -230,9 +218,7 @@ def validate_columns_info(
                 )
 
 
-class ObservationTableService(
-    BaseMaterializedTableService[ObservationTableModel, ObservationTableModel]
-):
+class ObservationTableService(BaseMaterializedTableService[ObservationTableModel, ObservationTableModel]):
     """
     ObservationTableService class
     """
@@ -240,7 +226,7 @@ class ObservationTableService(
     document_class = ObservationTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.OBSERVATION_TABLE
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -310,9 +296,7 @@ class ObservationTableService(
                 query_filter={"name": target_column}
             )
             if target_namespaces["total"] == 0:
-                raise ObservationTableInvalidTargetNameError(
-                    f"Target name not found: {target_column}"
-                )
+                raise ObservationTableInvalidTargetNameError(f"Target name not found: {target_column}")
 
             # validate target namespace has same primary entity ids
             target_namespace = target_namespaces["data"][0]
@@ -324,23 +308,17 @@ class ObservationTableService(
 
             # check if target namespace already has a definition
             if target_namespace["target_ids"]:
-                raise ObservationTableTargetDefinitionExistsError(
-                    f'Target "{target_column}" already has a definition.'
-                )
+                raise ObservationTableTargetDefinitionExistsError(f'Target "{target_column}" already has a definition.')
 
         else:
             target_namespace_id = None
 
         if missing_columns:
-            raise ObservationTableMissingColumnsError(
-                f"Required column(s) not found: {', '.join(missing_columns)}"
-            )
+            raise ObservationTableMissingColumnsError(f"Required column(s) not found: {', '.join(missing_columns)}")
 
         return target_namespace_id
 
-    async def get_observation_table_task_payload(
-        self, data: ObservationTableCreate
-    ) -> ObservationTableTaskPayload:
+    async def get_observation_table_task_payload(self, data: ObservationTableCreate) -> ObservationTableTaskPayload:
         """
         Validate and convert a ObservationTableCreate schema to a ObservationTableTaskPayload schema
         which will be used to initiate the ObservationTable creation task.
@@ -368,28 +346,20 @@ class ObservationTableService(
             await self.context_service.get_document(document_id=data.context_id)
 
         if isinstance(data.request_input, BaseRequestInput):
-            feature_store = await self.feature_store_service.get_document(
-                document_id=data.feature_store_id
-            )
+            feature_store = await self.feature_store_service.get_document(document_id=data.feature_store_id)
             db_session = await self.session_manager_service.get_feature_store_session(feature_store)
             # validate columns
             available_columns = await data.request_input.get_column_names(db_session)
             columns_rename_mapping = data.request_input.columns_rename_mapping
             if columns_rename_mapping:
-                available_columns = [
-                    columns_rename_mapping.get(col, col) for col in available_columns
-                ]
+                available_columns = [columns_rename_mapping.get(col, col) for col in available_columns]
             target_namespace_id = await self._validate_columns(
                 available_columns=available_columns,
                 primary_entity_ids=data.primary_entity_ids,
                 target_column=data.target_column,
             )
-        elif (
-            isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None
-        ):
-            target = await self.target_service.get_document(
-                document_id=data.request_input.target_id
-            )
+        elif isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None:
+            target = await self.target_service.get_document(document_id=data.request_input.target_id)
             target_namespace_id = target.target_namespace_id
         else:
             target_namespace_id = None
@@ -444,9 +414,7 @@ class ObservationTableService(
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
-        await self.temp_storage.put_dataframe(
-            observation_set_dataframe, Path(observation_set_storage_path)
-        )
+        await self.temp_storage.put_dataframe(observation_set_dataframe, Path(observation_set_storage_path))
 
         return ObservationTableUploadTaskPayload(
             **data.dict(by_alias=True),
@@ -496,17 +464,11 @@ class ObservationTableService(
             get_fully_qualified_table_name(table_details.dict())
         )
 
-        datediff_expr = adapter.datediff_microsecond(
-            previous_point_in_time_quoted, point_in_time_quoted
-        )
+        datediff_expr = adapter.datediff_microsecond(previous_point_in_time_quoted, point_in_time_quoted)
         # Convert microseconds to seconds
         quoted_interval_identifier = quoted_identifier("INTERVAL")
-        interval_secs_expr = expressions.Div(
-            this=datediff_expr, expression=make_literal_value(1000000)
-        )
-        difference_expr = expressions.Alias(
-            this=interval_secs_expr, alias=quoted_interval_identifier
-        )
+        interval_secs_expr = expressions.Div(this=datediff_expr, expression=make_literal_value(1000000))
+        difference_expr = expressions.Alias(this=interval_secs_expr, alias=quoted_interval_identifier)
         iet_expr = expressions.select(difference_expr).from_(inner_query.subquery())
         aliased_min = expressions.Alias(
             this=expressions.Min(this=quoted_interval_identifier),
@@ -515,13 +477,7 @@ class ObservationTableService(
         return (
             expressions.select(aliased_min)
             .from_(iet_expr.subquery())
-            .where(
-                expressions.Not(
-                    this=expressions.Is(
-                        this=quoted_interval_identifier, expression=expressions.Null()
-                    )
-                )
-            )
+            .where(expressions.Not(this=expressions.Is(this=quoted_interval_identifier, expression=expressions.Null())))
         )
 
     async def _get_min_interval_secs_between_entities(
@@ -549,9 +505,7 @@ class ObservationTableService(
         """
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
         # Construct SQL
-        sql_expr = self.get_minimum_iet_sql_expr(
-            entity_col_names, table_details, db_session.source_type
-        )
+        sql_expr = self.get_minimum_iet_sql_expr(entity_col_names, table_details, db_session.source_type)
 
         # Execute SQL
         sql_string = sql_to_string(sql_expr, db_session.source_type)
@@ -587,7 +541,6 @@ class ObservationTableService(
         -------
         ObservationTableStats
         """
-        # pylint: disable=no-member
 
         # Get describe statistics
         source_table = SourceTable(
@@ -627,9 +580,7 @@ class ObservationTableService(
         least_recent_time_str = _convert_ts_to_str(least_recent_time_str)
         most_recent_time_str = describe_stats_dataframe.loc["max", SpecialColumnName.POINT_IN_TIME]
         most_recent_time_str = _convert_ts_to_str(most_recent_time_str)
-        percentage_missing = describe_stats_dataframe.loc[
-            "%missing", SpecialColumnName.POINT_IN_TIME
-        ]
+        percentage_missing = describe_stats_dataframe.loc["%missing", SpecialColumnName.POINT_IN_TIME]
         point_in_time_stats = PointInTimeStats(
             least_recent=least_recent_time_str,
             most_recent=most_recent_time_str,
@@ -687,15 +638,11 @@ class ObservationTableService(
         )
         # Perform validation on primary entity IDs. We always perform this check if the primary entity IDs exist.
         if primary_entity_ids is not None:
-            await self.primary_entity_validator.validate_entities_are_primary_entities(
-                primary_entity_ids
-            )
+            await self.primary_entity_validator.validate_entities_are_primary_entities(primary_entity_ids)
 
         # Perform validation on column info
         if target_namespace_id is not None:
-            target_namespace = await self.target_namespace_service.get_document(
-                document_id=target_namespace_id
-            )
+            target_namespace = await self.target_namespace_service.get_document(document_id=target_namespace_id)
         else:
             target_namespace = None
         validate_columns_info(
@@ -709,13 +656,9 @@ class ObservationTableService(
             db_session, columns_info, table_details
         )
         # Get entity statistics metadata
-        observation_table_stats = await self._get_observation_table_stats(
-            feature_store, table_details, columns_info
-        )
+        observation_table_stats = await self._get_observation_table_stats(feature_store, table_details, columns_info)
         point_in_time_stats = observation_table_stats.point_in_time_stats
-        columns_with_missing_values = observation_table_stats.get_columns_with_missing_values(
-            primary_entity_ids
-        )
+        columns_with_missing_values = observation_table_stats.get_columns_with_missing_values(primary_entity_ids)
         if columns_with_missing_values:
             raise ValueError(
                 "These columns in the observation table must not contain any missing values: "
@@ -731,7 +674,7 @@ class ObservationTableService(
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
 
-    async def update_observation_table(  # pylint: disable=too-many-branches
+    async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate
     ) -> Optional[ObservationTableModel]:
         """
@@ -769,9 +712,7 @@ class ObservationTableService(
                     raise ObservationTableInvalidUseCaseError(
                         f"Cannot add UseCase {data.use_case_id_to_add} as it is already associated with the ObservationTable."
                     )
-                use_case = await self.use_case_service.get_document(
-                    document_id=data.use_case_id_to_add
-                )
+                use_case = await self.use_case_service.get_document(document_id=data.use_case_id_to_add)
                 if use_case.context_id != observation_table.context_id:
                     raise ObservationTableInvalidUseCaseError(
                         f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched contexts."
@@ -820,9 +761,7 @@ class ObservationTableService(
 
             if observation_table.context_id:
                 if observation_table.context_id != data.context_id:
-                    exist_context = await self.context_service.get_document(
-                        document_id=observation_table.context_id
-                    )
+                    exist_context = await self.context_service.get_document(document_id=observation_table.context_id)
                     if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
                         raise ObservationTableInvalidContextError(
                             "Cannot update Context as the entities are different from the existing Context."

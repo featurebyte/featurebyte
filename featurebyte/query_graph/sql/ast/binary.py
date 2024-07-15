@@ -4,9 +4,8 @@ Module for binary operations sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression

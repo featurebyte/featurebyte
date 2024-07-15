@@ -72,9 +72,7 @@ def lookup_assign_feature_node_fixture(global_graph, dimension_table_input_node,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_entity_node],
     )
-    feature_node = add_project_operation(
-        graph=global_graph, input_node=lookup_node, column_names=["cust_attr"]
-    )
+    feature_node = add_project_operation(graph=global_graph, input_node=lookup_node, column_names=["cust_attr"])
     return feature_node
 
 
@@ -130,9 +128,7 @@ def prune_graph_and_check_definition(graph, first_target_node, second_target_nod
     first_mapped_node = first_pruned_graph.get_node_by_name(node_name_map[first_target_node.name])
 
     second_pruned_graph, node_name_map = graph.prune(target_node=second_target_node)
-    second_mapped_node = second_pruned_graph.get_node_by_name(
-        node_name_map[second_target_node.name]
-    )
+    second_mapped_node = second_pruned_graph.get_node_by_name(node_name_map[second_target_node.name])
 
     # check that the definition hash is the same
     first_definition_extractor = DefinitionHashExtractor(graph=first_pruned_graph)
@@ -157,12 +153,8 @@ def test_extract_definition__simple(graph_three_nodes):
 def test_extract_definition__assign_column_remapped(query_graph_and_assign_nodes):
     """Test extract definition (with column name remap)"""
     graph, assign_node, another_assign_node = query_graph_and_assign_nodes
-    first_target_node = add_project_operation(
-        graph=graph, input_node=assign_node, column_names=["c"]
-    )
-    second_target_node = add_project_operation(
-        graph=graph, input_node=another_assign_node, column_names=["d"]
-    )
+    first_target_node = add_project_operation(graph=graph, input_node=assign_node, column_names=["c"])
+    second_target_node = add_project_operation(graph=graph, input_node=another_assign_node, column_names=["d"])
 
     # check definition
     prune_graph_and_check_definition(graph, first_target_node, second_target_node)
@@ -239,9 +231,7 @@ def test_extract_definition__filter_node(query_graph_and_assign_nodes):
     """Test extract definition for filtering node"""
     graph, assign_node, another_assign_node = query_graph_and_assign_nodes
     node_input = graph.get_input_node(assign_node.name)
-    proj_cust_id = add_project_operation(
-        graph=graph, input_node=node_input, column_names=["cust_id"]
-    )
+    proj_cust_id = add_project_operation(graph=graph, input_node=node_input, column_names=["cust_id"])
     node_eq = graph.add_operation(
         node_type=NodeType.EQ,
         node_params={"value": 1},
@@ -260,12 +250,8 @@ def test_extract_definition__filter_node(query_graph_and_assign_nodes):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[another_assign_node, node_eq],
     )
-    first_target_node = add_project_operation(
-        graph=graph, input_node=first_filter_node, column_names=["c"]
-    )
-    second_target_node = add_project_operation(
-        graph=graph, input_node=second_filter_node, column_names=["d"]
-    )
+    first_target_node = add_project_operation(graph=graph, input_node=first_filter_node, column_names=["c"])
+    second_target_node = add_project_operation(graph=graph, input_node=second_filter_node, column_names=["d"])
 
     # check definition
     prune_graph_and_check_definition(graph, first_target_node, second_target_node)
@@ -283,9 +269,7 @@ def test_extract_definition__aggregate_over(query_graph_and_assign_nodes, groupb
         groupby_node_params=groupby_node_params,
         input_node=assign_node,
     )
-    first_target_node = add_project_operation(
-        graph=graph, input_node=groupby_node, column_names=["feat_48h"]
-    )
+    first_target_node = add_project_operation(graph=graph, input_node=groupby_node, column_names=["feat_48h"])
 
     groupby_node_params["parent"] = "d"
     groupby_node_params["value_by"] = "d"
@@ -296,9 +280,7 @@ def test_extract_definition__aggregate_over(query_graph_and_assign_nodes, groupb
         groupby_node_params=groupby_node_params,
         input_node=another_assign_node,
     )
-    second_target_node = add_project_operation(
-        graph=graph, input_node=another_groupby_node, column_names=["feat_2d"]
-    )
+    second_target_node = add_project_operation(graph=graph, input_node=another_groupby_node, column_names=["feat_2d"])
 
     # check definition
     prune_graph_and_check_definition(graph, first_target_node, second_target_node)
@@ -341,9 +323,7 @@ def test_extract_definition__aggregate(query_graph_and_assign_nodes, entity_id):
     prune_graph_and_check_definition(graph, first_target_node, second_target_node)
 
 
-def test_extract_definition__lookup(
-    global_graph, dimension_table_input_node, entity_id, lookup_feature_node
-):
+def test_extract_definition__lookup(global_graph, dimension_table_input_node, entity_id, lookup_feature_node):
     """Test extract definition for lookup"""
     # construct another equivalent lookup feature with different user specified column names
     node_params = {
@@ -455,16 +435,10 @@ def test_extract_definition__join_with_groupby(
     )
 
 
-def compute_aggregate_over_changes(
-    graph, input_node, prev_col, next_col, diff_column, feat_name, groupby_node_params
-):
+def compute_aggregate_over_changes(graph, input_node, prev_col, next_col, diff_column, feat_name, groupby_node_params):
     """Compute aggregate over changes"""
-    proj_prev_node = add_project_operation(
-        graph=graph, input_node=input_node, column_names=[prev_col]
-    )
-    proj_next_node = add_project_operation(
-        graph=graph, input_node=input_node, column_names=[next_col]
-    )
+    proj_prev_node = add_project_operation(graph=graph, input_node=input_node, column_names=[prev_col])
+    proj_next_node = add_project_operation(graph=graph, input_node=input_node, column_names=[next_col])
     subtract_node = graph.add_operation(
         node_type=NodeType.SUB,
         node_params={},
@@ -485,15 +459,11 @@ def compute_aggregate_over_changes(
         groupby_node_params=groupby_node_params,
         input_node=assign_node,
     )
-    feature_node = add_project_operation(
-        graph=graph, input_node=groupby_node, column_names=[feat_name]
-    )
+    feature_node = add_project_operation(graph=graph, input_node=groupby_node, column_names=[feat_name])
     return feature_node
 
 
-def test_extract_definition__track_changes(
-    global_graph, scd_table_input_details, groupby_node_params
-):
+def test_extract_definition__track_changes(global_graph, scd_table_input_details, groupby_node_params):
     """Test extract definition for track changes"""
     scd_node_params = {
         "type": "scd_table",
@@ -569,9 +539,7 @@ def test_extract_definition__track_changes(
     )
 
 
-def test_extract_definition__aggregate_asat(
-    global_graph, aggregate_asat_feature_node, scd_table_input_node
-):
+def test_extract_definition__aggregate_asat(global_graph, aggregate_asat_feature_node, scd_table_input_node):
     """Test extract definition for aggregate asat"""
     asat_node = global_graph.get_node_by_name("aggregate_as_at_1")
     asat_node_params = asat_node.parameters.dict()
@@ -710,9 +678,7 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_entity_node],
     )
-    proj_target = add_project_operation(
-        graph=graph, input_node=forward_node, column_names=["target"]
-    )
+    proj_target = add_project_operation(graph=graph, input_node=forward_node, column_names=["target"])
     definition_extractor = DefinitionHashExtractor(graph=graph)
     output = definition_extractor.extract(node=proj_target)
 
@@ -734,9 +700,7 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
         },
     )
     project_node = output.graph.get_node_by_name("project_3")
-    assert project_node.parameters.dict() == {
-        "columns": ["target_fd6dbe7f77a1fad176370bdb7712f82d794c23af"]
-    }
+    assert project_node.parameters.dict() == {"columns": ["target_fd6dbe7f77a1fad176370bdb7712f82d794c23af"]}
 
 
 def test_extract_definition__join_feature(
@@ -837,9 +801,7 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
             "metadata": None,
             "right_input_columns": ["membership_status"],
             "right_on": "cust_id",
-            "right_output_columns": [
-                "right_12df77dffe89c83f748c1f45ab846022d67d6ddd_membership_status"
-            ],
+            "right_output_columns": ["right_12df77dffe89c83f748c1f45ab846022d67d6ddd_membership_status"],
             "scd_parameters": {
                 "current_flag_column": None,
                 "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
@@ -851,9 +813,7 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
     )
 
 
-def test_extract_definition__scd_lookup(
-    global_graph, scd_lookup_node_parameters, scd_table_input_node
-):
+def test_extract_definition__scd_lookup(global_graph, scd_lookup_node_parameters, scd_table_input_node):
     """Test extract definition for scd lookup"""
     assign_effective_timestamp = global_graph.add_operation(
         node_type=NodeType.ASSIGN,
@@ -924,9 +884,7 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
         expected={
             "entity_column": "order_id",
             "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
-            "event_parameters": {
-                "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823"
-            },
+            "event_parameters": {"event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823"},
             "feature_names": ["feat_98d843176d15410f62195cdc6698331e04d6a1dd_order_method"],
             "input_column_names": ["order_method"],
             "scd_parameters": None,

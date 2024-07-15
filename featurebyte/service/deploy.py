@@ -2,11 +2,8 @@
 DeployService class
 """
 
-# pylint: disable=too-many-lines
-
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
-
 import traceback
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
 from bson import ObjectId
 
@@ -64,9 +61,7 @@ class DeployFeatureManagementService:
         self.feature_service = feature_service
         self.online_enable_service = online_enable_service
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
-        self.offline_store_feature_table_manager_service = (
-            offline_store_feature_table_manager_service
-        )
+        self.offline_store_feature_table_manager_service = offline_store_feature_table_manager_service
 
     async def validate_online_feature_enablement(self, feature_ids: Sequence[ObjectId]) -> None:
         """
@@ -87,17 +82,11 @@ class DeployFeatureManagementService:
             query_filter=query_filter, projection={"readiness": 1}
         ):
             if FeatureReadiness(feature["readiness"]) != FeatureReadiness.PRODUCTION_READY:
-                raise DocumentUpdateError(
-                    "Only FeatureList object of all production ready features can be deployed."
-                )
+                raise DocumentUpdateError("Only FeatureList object of all production ready features can be deployed.")
 
-    async def _update_feature_offline_store_info(
-        self, feature: FeatureModel, table_name_prefix: str
-    ) -> FeatureModel:
-        store_info = (
-            await self.offline_store_info_initialization_service.initialize_offline_store_info(
-                feature=feature, table_name_prefix=table_name_prefix
-            )
+    async def _update_feature_offline_store_info(self, feature: FeatureModel, table_name_prefix: str) -> FeatureModel:
+        store_info = await self.offline_store_info_initialization_service.initialize_offline_store_info(
+            feature=feature, table_name_prefix=table_name_prefix
         )
         await self.feature_service.update_offline_store_info(
             document_id=feature.id, store_info=store_info.dict(by_alias=True)
@@ -200,15 +189,11 @@ class DeployFeatureManagementService:
 
         if not feature.online_enabled:
             # update data warehouse and backward-fill tiles if the feature is not already online
-            await self.online_enable_service.update_data_warehouse(
-                feature=feature, target_online_enabled=True
-            )
+            await self.online_enable_service.update_data_warehouse(feature=feature, target_online_enabled=True)
 
         return feature
 
-    async def online_disable_feature(
-        self, feature: FeatureModel, feature_list: FeatureListModel
-    ) -> FeatureModel:
+    async def online_disable_feature(self, feature: FeatureModel, feature_list: FeatureListModel) -> FeatureModel:
         """
         Disable feature online
 
@@ -232,9 +217,7 @@ class DeployFeatureManagementService:
 
         if not updated_feature.online_enabled:
             # update data warehouse and backward-fill tiles
-            await self.online_enable_service.update_data_warehouse(
-                feature=feature, target_online_enabled=False
-            )
+            await self.online_enable_service.update_data_warehouse(feature=feature, target_online_enabled=False)
 
         return updated_feature
 
@@ -258,9 +241,7 @@ class DeploymentServingEntityService:
         self.use_case_service = use_case_service
         self.context_service = context_service
 
-    async def get_serving_entity_specs(
-        self, serving_entity_ids: List[PydanticObjectId]
-    ) -> List[ColumnSpec]:
+    async def get_serving_entity_specs(self, serving_entity_ids: List[PydanticObjectId]) -> List[ColumnSpec]:
         """
         Get serving entity name & dtype for the given serving entity ids
 
@@ -327,9 +308,7 @@ class DeploymentServingEntityService:
         """
         # Get context from use case if not directly available
         feature_list_primary_entity_ids = (
-            await self.feature_list_service.get_document_as_dict(
-                feature_list_id, projection={"primary_entity_ids": 1}
-            )
+            await self.feature_list_service.get_document_as_dict(feature_list_id, projection={"primary_entity_ids": 1})
         )["primary_entity_ids"]
         if context_id is None:
             if use_case_id is None:
@@ -401,9 +380,7 @@ class DeployFeatureListManagementService:
         feature_list_id: ObjectId,
         feature_list_to_deploy: bool,
     ) -> None:
-        document = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list_namespace_id
-        )
+        document = await self.feature_list_namespace_service.get_document(document_id=feature_list_namespace_id)
         deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
             deployed_feature_list_ids.add(feature_list_id)
@@ -412,9 +389,7 @@ class DeployFeatureListManagementService:
 
         await self.feature_list_namespace_service.update_document(
             document_id=feature_list_namespace_id,
-            data=FeatureListNamespaceServiceUpdate(
-                deployed_feature_list_ids=sorted(deployed_feature_list_ids)
-            ),
+            data=FeatureListNamespaceServiceUpdate(deployed_feature_list_ids=sorted(deployed_feature_list_ids)),
             document=document,
             return_document=False,
         )
@@ -538,9 +513,7 @@ class FeastIntegrationService:
         self.feast_registry_service = feast_registry_service
         self.feature_list_service = feature_list_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
-        self.offline_store_feature_table_manager_service = (
-            offline_store_feature_table_manager_service
-        )
+        self.offline_store_feature_table_manager_service = offline_store_feature_table_manager_service
         self.deployment_service = deployment_service
         self.deployment_serving_entity_service = deployment_serving_entity_service
 
@@ -583,9 +556,7 @@ class FeastIntegrationService:
         -------
         Optional[FeastRegistryModel]
         """
-        feature_registry = await self.feast_registry_service.get_feast_registry(
-            deployment=deployment
-        )
+        feature_registry = await self.feast_registry_service.get_feast_registry(deployment=deployment)
         return feature_registry
 
     async def handle_online_enabled_features(
@@ -661,14 +632,10 @@ class FeastIntegrationService:
         serving_entity_specs: Optional[List[ColumnSpec]] = None
         serving_names = set()
         if deployment.serving_entity_ids:
-            serving_entity_specs = (
-                await self.deployment_serving_entity_service.get_serving_entity_specs(
-                    serving_entity_ids=deployment.serving_entity_ids
-                )
+            serving_entity_specs = await self.deployment_serving_entity_service.get_serving_entity_specs(
+                serving_entity_ids=deployment.serving_entity_ids
             )
-            serving_names = set(
-                entity_serving_spec.name for entity_serving_spec in serving_entity_specs
-            )
+            serving_names = set(entity_serving_spec.name for entity_serving_spec in serving_entity_specs)
 
         feature_table_map = {}
         feat_table_service = self.offline_store_feature_table_service
@@ -723,9 +690,7 @@ class DeployService:
         await self.feature_list_management_service.validate_feature_list_status(
             feature_list_namespace_id=feature_list.feature_list_namespace_id
         )
-        await self.feature_management_service.validate_online_feature_enablement(
-            feature_ids=feature_list.feature_ids
-        )
+        await self.feature_management_service.validate_online_feature_enablement(feature_ids=feature_list.feature_ids)
 
     async def _enable_deployment(
         self,
@@ -738,20 +703,14 @@ class DeployService:
         # create or get feast registry
         feast_registry = None
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
-            feast_registry = await self.feast_integration_service.get_or_create_feast_registry(
-                deployment=deployment
-            )
+            feast_registry = await self.feast_integration_service.get_or_create_feast_registry(deployment=deployment)
             deployment = await self.deployment_service.get_document(document_id=deployment.id)
 
         # enable features online
-        feature_update_progress = get_ranged_progress_callback(
-            self.task_progress_updater.update_progress, 2, 70
-        )
+        feature_update_progress = get_ranged_progress_callback(self.task_progress_updater.update_progress, 2, 70)
         features_offline_feature_table_to_update = []
         for i, feature_id in enumerate(feature_list.feature_ids):
-            feature = await self.feature_management_service.feature_service.get_document(
-                document_id=feature_id
-            )
+            feature = await self.feature_management_service.feature_service.get_document(document_id=feature_id)
             feature = await self.feature_management_service.online_enable_feature(
                 feature=feature,
                 feast_registry=feast_registry,
@@ -769,20 +728,16 @@ class DeployService:
                 features=features_offline_feature_table_to_update,
                 feature_list_to_online_enable=feature_list,
                 deployment=deployment,
-                update_progress=get_ranged_progress_callback(
-                    self.task_progress_updater.update_progress, 72, 95
-                ),
+                update_progress=get_ranged_progress_callback(self.task_progress_updater.update_progress, 72, 95),
             )
 
         features = []
         for feature_id in feature_list.feature_ids:
             # update online enabled flag of the feature(s)
-            updated_feature = (
-                await self.feature_management_service.update_feature_online_enabled_status(
-                    feature_id=feature_id,
-                    feature_list_id=feature_list.id,
-                    feature_list_to_deploy=True,
-                )
+            updated_feature = await self.feature_management_service.update_feature_online_enabled_status(
+                feature_id=feature_id,
+                feature_list_id=feature_list.id,
+                feature_list_to_deploy=True,
             )
             features.append(updated_feature)
 
@@ -794,9 +749,7 @@ class DeployService:
         )
 
         if feast_registry:
-            await self._update_progress(
-                96, f"Updating deployed feature list ({feature_list.name}) ..."
-            )
+            await self._update_progress(96, f"Updating deployed feature list ({feature_list.name}) ...")
             await self.feast_integration_service.handle_deployed_feature_list(
                 deployment=deployment, feature_list=feature_list, online_enabled_features=features
             )
@@ -881,14 +834,10 @@ class DeployService:
             feature_list_id=feature_list.id, exclude_deployment_id=deployment.id
         ):
             # disable features online
-            feature_update_progress = get_ranged_progress_callback(
-                self.task_progress_updater.update_progress, 0, 70
-            )
+            feature_update_progress = get_ranged_progress_callback(self.task_progress_updater.update_progress, 0, 70)
             features = []
             for feature_id in feature_list.feature_ids:
-                feature = await self.feature_management_service.feature_service.get_document(
-                    document_id=feature_id
-                )
+                feature = await self.feature_management_service.feature_service.get_document(document_id=feature_id)
                 updated_feature = await self.feature_management_service.online_disable_feature(
                     feature=feature,
                     feature_list=feature_list,
@@ -919,9 +868,7 @@ class DeployService:
                 await self.feast_integration_service.handle_online_disabled_features(
                     feature_list_to_online_disable=feature_list,
                     deployment=deployment,
-                    update_progress=get_ranged_progress_callback(
-                        self.task_progress_updater.update_progress, 72, 99
-                    ),
+                    update_progress=get_ranged_progress_callback(self.task_progress_updater.update_progress, 72, 99),
                 )
 
         # update deployment status
@@ -964,20 +911,14 @@ class DeployService:
         DocumentCreationError
             When there is an unexpected error during deployment creation
         """
-        feature_list = await self.feature_list_management_service.get_feature_list(
-            feature_list_id=feature_list_id
-        )
-        default_deployment_name = (
-            f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
-        )
+        feature_list = await self.feature_list_management_service.get_feature_list(feature_list_id=feature_list_id)
+        default_deployment_name = f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
         deployment = None
         try:
-            serving_entity_ids = (
-                await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
-                    feature_list_id=feature_list_id,
-                    use_case_id=use_case_id,
-                    context_id=context_id,
-                )
+            serving_entity_ids = await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
+                feature_list_id=feature_list_id,
+                use_case_id=use_case_id,
+                context_id=context_id,
             )
             deployment = await self.deployment_service.create_document(
                 data=DeploymentModel(

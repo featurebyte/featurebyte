@@ -22,7 +22,7 @@ class TargetStrAccessorMixin:
     """
 
     @property
-    def str(self: Target) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
+    def str(self: Target) -> StringAccessor:  # type: ignore
         """
         str accessor object
 
@@ -242,9 +242,7 @@ class TargetStringAccessor(StringAccessor):
         """
         return super().contains(pat=pat, case=case)  # type: ignore[return-value]
 
-    def slice(
-        self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
-    ) -> Target:
+    def slice(self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None) -> Target:
         """
         Slices substring from each string element.
 

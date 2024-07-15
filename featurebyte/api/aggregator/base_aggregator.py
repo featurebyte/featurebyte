@@ -4,9 +4,8 @@ This module contains base aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, Union
-
 from abc import ABC, abstractmethod
+from typing import List, Optional, Type, Union
 
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
@@ -39,9 +38,7 @@ class BaseAggregator(ABC):
         self.keys = keys
         self.serving_names = serving_names
         if not isinstance(self.view, tuple(self.supported_views)):
-            supported_views_formatted = ", ".join(
-                [view_cls.__name__ for view_cls in self.supported_views]
-            )
+            supported_views_formatted = ", ".join([view_cls.__name__ for view_cls in self.supported_views])
             raise AggregationNotSupportedForViewError(
                 f"{self.aggregation_method_name}() is only available for {supported_views_formatted}"
             )
@@ -79,9 +76,7 @@ class BaseAggregator(ABC):
         """
         return None
 
-    def _validate_method_and_value_column(
-        self, method: Optional[str], value_column: Optional[str]
-    ) -> None:
+    def _validate_method_and_value_column(self, method: Optional[str], value_column: Optional[str]) -> None:
         if method is None:
             raise ValueError("method is required")
 
@@ -102,25 +97,19 @@ class BaseAggregator(ABC):
 
         unsupported_methods = self.not_supported_aggregation_methods
         if unsupported_methods is not None and method in unsupported_methods:
-            raise ValueError(
-                f"{method} aggregation method is not supported for {self.aggregation_method_name}"
-            )
+            raise ValueError(f"{method} aggregation method is not supported for {self.aggregation_method_name}")
 
         validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 
     @staticmethod
-    def _validate_fill_value_and_skip_fill_na(
-        fill_value: OptionalScalar, skip_fill_na: bool
-    ) -> None:
+    def _validate_fill_value_and_skip_fill_na(fill_value: OptionalScalar, skip_fill_na: bool) -> None:
         if fill_value is not None and skip_fill_na:
             raise ValueError(
                 "Specifying both fill_value and skip_fill_na is not allowed;"
                 " try setting fill_value to None or skip_fill_na to False"
             )
 
-    def get_output_var_type(
-        self, agg_method: AggFuncType, method: str, value_column: str
-    ) -> DBVarType:
+    def get_output_var_type(self, agg_method: AggFuncType, method: str, value_column: str) -> DBVarType:
         """
         Get output variable type for aggregation method.
 
@@ -145,12 +134,8 @@ class BaseAggregator(ABC):
         # value_column is None for count-like aggregation method
         input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)
         if not agg_method.is_var_type_supported(input_var_type):
-            raise ValueError(
-                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
-            )
-        return agg_method.derive_output_var_type(
-            input_var_type=input_var_type, category=self.category
-        )
+            raise ValueError(f'Aggregation method "{method}" does not support "{input_var_type}" input variable')
+        return agg_method.derive_output_var_type(input_var_type=input_var_type, category=self.category)
 
     def _project_feature_from_aggregation_node(
         self,

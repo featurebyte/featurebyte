@@ -56,7 +56,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         -------
         LeftJoinableSubquery
         """
-        # pylint: disable=too-many-locals
+
         spec = specs[0]
 
         # End point expression
@@ -71,9 +71,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
 
         # Get valid records (timestamp column is within the point in time, and point in time + window)
         # TODO: update to range join
-        table_timestamp_col = get_qualified_column_identifier(
-            spec.parameters.timestamp_col, "SOURCE_TABLE"
-        )
+        table_timestamp_col = get_qualified_column_identifier(spec.parameters.timestamp_col, "SOURCE_TABLE")
         start_point_expr: expressions.Expression
         if spec.parameters.offset is not None:
             offset_in_seconds = parse_duration_string(spec.parameters.offset)

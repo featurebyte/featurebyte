@@ -4,9 +4,8 @@ Test task
 
 from __future__ import annotations
 
-from typing import Any
-
 import asyncio
+from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.test import TestTaskPayload

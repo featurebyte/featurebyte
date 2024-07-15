@@ -21,9 +21,7 @@ class TestSemanticApi(BaseRelationshipApiTestSuite):
     payload = {"_id": str(semantic_id), "name": "EVENT_TIMESTAMP"}
     semantic_names = []
     quoted_semantic_names = []
-    create_conflict_payload_expected_detail_pairs = [
-        (payload, f'Semantic (id: "{payload["_id"]}") already exists.')
-    ]
+    create_conflict_payload_expected_detail_pairs = [(payload, f'Semantic (id: "{payload["_id"]}") already exists.')]
     create_unprocessable_payload_expected_detail_pairs = []
     create_parent_unprocessable_payload_expected_detail_pairs = [
         (

@@ -2,15 +2,14 @@
 Customized Hive Connection class
 """
 
-from typing import Any, Mapping, Optional
-
 import logging
 from ssl import CERT_NONE, create_default_context
+from typing import Any, Mapping, Optional
 
 from pyhive import hive
 from pyhive.exc import OperationalError
 from pyhive.hive import Connection
-from pyhive.hive import Cursor as BaseCursor  # pylint: disable=protected-access
+from pyhive.hive import Cursor as BaseCursor
 from pyhive.hive import _logger as hive_logger
 from thrift.transport.THttpClient import THttpClient
 from thrift.transport.TTransport import TTransportBase
@@ -48,7 +47,7 @@ class Cursor(BaseCursor):
         """
         try:
             super().close()
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             logger.error("Failed to close cursor", exc_info=True)
 
 
@@ -58,7 +57,7 @@ class HiveConnection(Connection):
     """
 
     @typechecked
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self: Any,
         host: Optional[str] = "127.0.0.1",
         port: Optional[int] = 10000,
@@ -133,7 +132,7 @@ class HiveConnection(Connection):
         """
         try:
             super().close()
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             logger.error("Failed to close connection", exc_info=True)
 
     def cursor(self, *args: Any, **kwargs: Any) -> Cursor:

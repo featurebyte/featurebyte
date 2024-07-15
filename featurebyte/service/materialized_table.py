@@ -90,9 +90,7 @@ class BaseMaterializedTableService(
             collection_name=self.document_class.collection_name(),
         )
 
-    async def generate_materialized_table_location(
-        self, feature_store_id: ObjectId
-    ) -> TabularSource:
+    async def generate_materialized_table_location(self, feature_store_id: ObjectId) -> TabularSource:
         """
         Generate a TabularSource object for a new materialized table to be created
 
@@ -123,9 +121,7 @@ class BaseMaterializedTableService(
         self, column_names: List[str], serving_names_remapping: Optional[Dict[str, str]]
     ) -> Dict[str, PydanticObjectId]:
         serving_names_remapping = {} if serving_names_remapping is None else serving_names_remapping
-        serving_names_reverse_lookup = {
-            value: key for key, value in serving_names_remapping.items()
-        }
+        serving_names_reverse_lookup = {value: key for key, value in serving_names_remapping.items()}
 
         # Build mapping of entity serving name to entity id
         entity_serving_name_to_entity_id = {}
@@ -138,9 +134,7 @@ class BaseMaterializedTableService(
         for col_name in column_names:
             base_serving_name = serving_names_reverse_lookup.get(col_name, col_name)
             if base_serving_name in entity_serving_name_to_entity_id:
-                name_to_entity_id[col_name] = entity_serving_name_to_entity_id[
-                    str(base_serving_name)
-                ]
+                name_to_entity_id[col_name] = entity_serving_name_to_entity_id[str(base_serving_name)]
         return name_to_entity_id
 
     async def get_columns_info_and_num_rows(
@@ -182,9 +176,7 @@ class BaseMaterializedTableService(
 
         # Get name to entity id mapping
         column_names = [name for name, _ in table_schema.items()]
-        col_name_to_entity_ids = await self._get_column_name_to_entity_ids(
-            column_names, serving_names_remapping
-        )
+        col_name_to_entity_ids = await self._get_column_name_to_entity_ids(column_names, serving_names_remapping)
 
         columns_info = [
             ColumnSpecWithEntityId(

@@ -29,10 +29,9 @@ class TileGenerate(TileCommon):
         """
         Execute tile generate operation
         """
-        # pylint: disable=too-many-statements
+
         tile_table_exist_flag = await self.table_exists(self.tile_id)
 
-        # pylint: disable=duplicate-code
         await TileRegistry(
             session=self._session,
             sql=self.sql,
@@ -57,9 +56,7 @@ class TileGenerate(TileCommon):
         for element in self.entity_column_names:
             quote_element = self.quote_column(element.strip())
             entity_insert_cols.append(f"b.{quote_element}")
-            entity_filter_cols.append(
-                self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}")
-            )
+            entity_filter_cols.append(self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}"))
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)
@@ -128,9 +125,7 @@ class TileGenerate(TileCommon):
 
     def _construct_tile_sql_with_index(self) -> str:
         if self.entity_column_names:
-            entity_and_value_column_names_str = (
-                f"{self.entity_column_names_str}, {self.value_column_names_str}"
-            )
+            entity_and_value_column_names_str = f"{self.entity_column_names_str}, {self.value_column_names_str}"
         else:
             entity_and_value_column_names_str = self.value_column_names_str
 

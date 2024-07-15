@@ -70,9 +70,7 @@ def test_feature_new_version_create_schema_validation():
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version(
-    version_service, feature, feature_namespace_service, api_object_to_id
-):
+async def test_create_new_feature_version(version_service, feature, feature_namespace_service, api_object_to_id):
     """Test create new feature version"""
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
@@ -80,9 +78,7 @@ async def test_create_new_feature_version(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         )
@@ -132,9 +128,7 @@ async def test_create_new_feature_version(
     # compare edges & other nodes
     assert feature.graph.edges == version.graph.edges
     for node_name in ["input_1", "project_1"]:
-        assert feature.graph.get_node_by_name(node_name) == version.graph.get_node_by_name(
-            node_name
-        )
+        assert feature.graph.get_node_by_name(node_name) == version.graph.get_node_by_name(node_name)
     _ = feature
 
     # check version
@@ -152,9 +146,7 @@ async def test_create_new_feature_version(
     assert version.online_enabled is False
 
     # check feature namespace service get updated
-    namespace = await feature_namespace_service.get_document(
-        document_id=feature.feature_namespace_id
-    )
+    namespace = await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
     assert namespace.feature_ids == [feature.id, version.id]
 
 
@@ -185,9 +177,7 @@ async def test_create_new_feature_version__document_error(version_service, featu
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
                 table_feature_job_settings=[
-                    TableFeatureJobSetting(
-                        table_name=event_table.name, feature_job_setting=same_feature_job_setting
-                    )
+                    TableFeatureJobSetting(table_name=event_table.name, feature_job_setting=same_feature_job_setting)
                 ],
             ),
         )
@@ -236,9 +226,7 @@ async def test_create_new_feature_version__document_error(version_service, featu
             )
         )
 
-    expected_msg = (
-        "Feature job setting and table cleaning operation(s) do not result a new feature version."
-    )
+    expected_msg = "Feature job setting and table cleaning operation(s) do not result a new feature version."
     assert expected_msg in str(exc.value)
 
 
@@ -262,9 +250,7 @@ async def feature_list_fixture(test_dir, feature, feature_sum_2h, feature_list_s
         payload = json.loads(fhandle.read())
         feature_list = None
         try:
-            feature_list = await feature_list_service.create_document(
-                data=FeatureListServiceCreate(**payload)
-            )
+            feature_list = await feature_list_service.create_document(data=FeatureListServiceCreate(**payload))
             yield feature_list
         finally:
             if feature_list:
@@ -272,15 +258,11 @@ async def feature_list_fixture(test_dir, feature, feature_sum_2h, feature_list_s
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_list_version__document_error__no_change_detected(
-    version_service, feature_list_multi
-):
+async def test_create_new_feature_list_version__document_error__no_change_detected(version_service, feature_list_multi):
     """Test create new feature version (error due to no change detected)"""
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_list_version(
-            data=FeatureListNewVersionCreate(
-                source_feature_list_id=feature_list_multi.id, features=[]
-            ),
+            data=FeatureListNewVersionCreate(source_feature_list_id=feature_list_multi.id, features=[]),
         )
 
     expected_msg = "No change detected on the new feature list version."
@@ -296,9 +278,7 @@ async def test_create_new_feature_list_version__document_error__unexpected_featu
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
                 source_feature_list_id=feature_list.id,
-                features=[
-                    FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)
-                ],
+                features=[FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)],
             ),
         )
     expected_msg = 'Features ("sum_2h") are not in the original FeatureList'
@@ -321,9 +301,7 @@ async def test_create_new_feature_list_version__without_specifying_features_mode
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name=event_table.name,
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         ),
@@ -341,9 +319,7 @@ async def test_create_new_feature_list_version__without_specifying_features_mode
     # check document error (due to no change is detected)
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_list_version(
-            data=FeatureListNewVersionCreate(
-                source_feature_list_id=new_flist_version.id, features=[]
-            ),
+            data=FeatureListNewVersionCreate(source_feature_list_id=new_flist_version.id, features=[]),
         )
 
     expected_msg = "No change detected on the new feature list version."
@@ -366,9 +342,7 @@ async def test_create_new_feature_list_version__specifying_features(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name=event_table.name,
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         ),
@@ -391,9 +365,7 @@ async def test_create_new_feature_list_version__specifying_features(
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
                 source_feature_list_id=feature_list_multi.id,
-                features=[
-                    FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)
-                ],
+                features=[FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)],
             ),
         )
 
@@ -418,17 +390,13 @@ def create_table_cleaning_operations(data_name, column_names):
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version__with_event_table_cleaning_operations(
-    version_service, feature, event_table
-):
+async def test_create_new_feature_version__with_event_table_cleaning_operations(version_service, feature, event_table):
     """Test create new feature version with event table cleaning operations"""
     _ = event_table
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            table_cleaning_operations=[
-                create_table_cleaning_operations(event_table.name, ["col_float"])
-            ],
+            table_cleaning_operations=[create_table_cleaning_operations(event_table.name, ["col_float"])],
         )
     )
 
@@ -625,9 +593,7 @@ async def test_create_new_feature_version__with_item_event_feature(
     # check consistencies
     event_metadata = new_event_view_graph_node.parameters.metadata
     item_metadata = new_item_view_graph_node.parameters.metadata
-    assert (
-        item_metadata.event_column_cleaning_operations == event_metadata.column_cleaning_operations
-    )
+    assert item_metadata.event_column_cleaning_operations == event_metadata.column_cleaning_operations
     assert item_metadata.event_drop_column_names == event_metadata.drop_column_names
 
     # graph structure (edges) should be the same
@@ -644,33 +610,25 @@ async def test_create_new_feature_version_using_source_settings(
     assert view_graph_params.metadata.column_cleaning_operations == []
 
     group_by_params = feature.graph.get_node_by_name("groupby_1").parameters
-    assert group_by_params.feature_job_setting == FeatureJobSetting(
-        blind_spot="600s", period="1800s", offset="300s"
-    )
+    assert group_by_params.feature_job_setting == FeatureJobSetting(blind_spot="600s", period="1800s", offset="300s")
 
     # prepare event table before create new version from source settings
     columns_info_with_cdi = []
     for col in event_table.columns_info:
         if col.name == "col_float":
-            col.critical_data_info = CriticalDataInfo(
-                cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
-            )
+            col.critical_data_info = CriticalDataInfo(cleaning_operations=[MissingValueImputation(imputed_value=0.0)])
         columns_info_with_cdi.append(col)
 
     await event_table_service.update_document(
         document_id=event_table.id,
         data=EventTableServiceUpdate(
-            default_feature_job_setting=FeatureJobSetting(
-                blind_spot="1h", period="2h", offset="30m"
-            ),
+            default_feature_job_setting=FeatureJobSetting(blind_spot="1h", period="2h", offset="30m"),
             columns_info=columns_info_with_cdi,
         ),
     )
 
     # create new version from source settings & check the feature job setting & table cleaning operations
-    new_version = await version_service.create_new_feature_version_using_source_settings(
-        document_id=feature.id
-    )
+    new_version = await version_service.create_new_feature_version_using_source_settings(document_id=feature.id)
     view_graph_params = new_version.graph.get_node_by_name("graph_1").parameters
     assert view_graph_params.metadata.column_cleaning_operations == [
         ColumnCleaningOperation(
@@ -679,9 +637,7 @@ async def test_create_new_feature_version_using_source_settings(
     ]
 
     group_by_params = new_version.graph.get_node_by_name("groupby_1").parameters
-    assert group_by_params.feature_job_setting == FeatureJobSetting(
-        blind_spot="3600s", period="7200s", offset="1800s"
-    )
+    assert group_by_params.feature_job_setting == FeatureJobSetting(blind_spot="3600s", period="7200s", offset="1800s")
 
 
 @pytest.mark.asyncio
@@ -727,9 +683,7 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         )
@@ -781,9 +735,7 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h30s"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h30s"),
                 )
             ],
         )
@@ -808,9 +760,7 @@ async def test_feature_create_new_version_without_save(app_container, feature, e
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name=event_table.name,
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         ),

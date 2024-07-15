@@ -189,9 +189,7 @@ def test_use_profile_invalid_endpoint():
         mock_request.side_effect = requests.exceptions.ConnectionError()
         with pytest.raises(InvalidSettingsError) as exc_info:
             config.use_profile("invalid")
-        assert (
-            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
-        )
+        assert str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
 
 
 def test_empty_configuration_file():

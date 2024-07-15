@@ -36,9 +36,7 @@ def test_extend_base_task_payload():
 
     user_id = ObjectId()
     document_id = ObjectId()
-    payload_obj = RandomTaskPayload(
-        user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id
-    )
+    payload_obj = RandomTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id)
     assert payload_obj.dict() == {
         "command": "random_command",
         "user_id": user_id,
@@ -77,12 +75,10 @@ async def test_task_executor(random_task_class, persistent, app_container):
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
-    app_container.override_instances_for_test(
-        {
-            "persistent": persistent,
-            "user": User(id=user_id),
-        }
-    )
+    app_container.override_instances_for_test({
+        "persistent": persistent,
+        "user": User(id=user_id),
+    })
     await TaskExecutor(
         payload={
             "command": "random_command",
@@ -104,9 +100,7 @@ async def test_task_executor(random_task_class, persistent, app_container):
     }
 
     # check task start time and description is updated
-    document = await persistent.find_one(
-        collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}
-    )
+    document = await persistent.find_one(collection_name="celery_taskmeta", query_filter={"_id": str(task_id)})
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"
 
@@ -118,11 +112,11 @@ async def test_task_executor(random_task_class, persistent, app_container):
 
 def run_process_task(state: Value, exception_value: Value, timeout: int):
     """Run task in a separate process using greenlet thread"""
-    from gevent import monkey  # pylint: disable=import-outside-toplevel
+    from gevent import monkey
 
     # all imports should be done after monkey patch
     monkey.patch_all()
-    import time  # pylint: disable=import-outside-toplevel
+    import time
 
     initialize_asyncio_event_loop()
 
@@ -135,7 +129,7 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
         """Run task in a separate greenlet"""
         try:
             run_async(coro=async_task(state), request_id=uuid4(), timeout=timeout)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             error_message = str(exc).encode("utf-8")
             for idx, byte in enumerate(error_message[:100]):
                 exception_value[idx] = byte

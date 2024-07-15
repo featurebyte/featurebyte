@@ -124,7 +124,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     """
     Test serialization & deserialization of query graph object (non-empty global query graph)
     """
-    # pylint: disable=too-many-locals
+
     # construct a graph
     dataframe["feature"] = dataframe["VALUE"] * dataframe["CUST_ID"] / 100.0
     dataframe = dataframe[dataframe["MASK"]]
@@ -133,9 +133,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     node_names = set(dataframe.graph.nodes_map)
     pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
-    query_before_serialization = GraphInterpreter(
-        pruned_graph, SourceType.SNOWFLAKE
-    ).construct_preview_sql(node_name=mapped_node.name)
+    query_before_serialization = GraphInterpreter(pruned_graph, SourceType.SNOWFLAKE).construct_preview_sql(
+        node_name=mapped_node.name
+    )
 
     # further modify the global graph & check the global query graph are updated
     dataframe["feature"] = dataframe["VALUE"] / dataframe["CUST_ID"]
@@ -151,25 +151,21 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     }
 
     # construct the query of the last node
-    node_before_load, columns_before_load = dataframe.node, dataframe.columns
-    pruned_graph_before_load, node_name_map_before_load = dataframe.graph.prune(
-        target_node=node_before_load
-    )
+    node_before_load, _columns_before_load = dataframe.node, dataframe.columns
+    pruned_graph_before_load, node_name_map_before_load = dataframe.graph.prune(target_node=node_before_load)
     mapped_node_before_load = pruned_graph_before_load.get_node_by_name(
         node_name_map_before_load[node_before_load.name]
     )
-    query_before_load = GraphInterpreter(
-        pruned_graph_before_load, SourceType.SNOWFLAKE
-    ).construct_preview_sql(mapped_node_before_load.name)
+    query_before_load = GraphInterpreter(pruned_graph_before_load, SourceType.SNOWFLAKE).construct_preview_sql(
+        mapped_node_before_load.name
+    )
 
     # deserialize the graph, load the graph to global query graph & check the generated query
     graph = QueryGraph.parse_obj(pruned_graph.dict())
     _, node_name_map = GlobalQueryGraph().load(graph)
     node_global = GlobalQueryGraph().get_node_by_name(node_name_map[mapped_node.name])
     assert (
-        GraphInterpreter(GlobalQueryGraph(), SourceType.SNOWFLAKE).construct_preview_sql(
-            node_global.name
-        )
+        GraphInterpreter(GlobalQueryGraph(), SourceType.SNOWFLAKE).construct_preview_sql(node_global.name)
         == query_before_serialization
     )
     assert isinstance(graph.edges_map, defaultdict)
@@ -178,9 +174,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
 
     # check that loading the deserialized graph back to global won't affect other node
     pruned_graph_after_load, _ = GlobalQueryGraph().prune(target_node=node_before_load)
-    query_after_load = GraphInterpreter(
-        pruned_graph_after_load, SourceType.SNOWFLAKE
-    ).construct_preview_sql(mapped_node_before_load.name)
+    query_after_load = GraphInterpreter(pruned_graph_after_load, SourceType.SNOWFLAKE).construct_preview_sql(
+        mapped_node_before_load.name
+    )
     assert query_before_load == query_after_load
 
 
@@ -199,9 +195,7 @@ def test_global_graph_attributes():
 
 def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     """Test reconstruct class method (edge case)"""
-    output, _ = query_graph_with_groupby.reconstruct(
-        node_name_to_replacement_node={}, regenerate_groupby_hash=False
-    )
+    output, _ = query_graph_with_groupby.reconstruct(node_name_to_replacement_node={}, regenerate_groupby_hash=False)
     expected_tile_id = "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624"
     assert output.edges_map == query_graph_with_groupby.edges_map
     assert output.nodes_map["groupby_1"] == query_graph_with_groupby.nodes_map["groupby_1"]
@@ -209,9 +203,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
 
     # check that tile id is different if regenerate_groupby_hash=True
     expected_tile_id = "TILE_F3600_M1800_B900_514EE37FCE3041A788AE511395751132A2B50839"
-    output, _ = query_graph_with_groupby.reconstruct(
-        node_name_to_replacement_node={}, regenerate_groupby_hash=True
-    )
+    output, _ = query_graph_with_groupby.reconstruct(node_name_to_replacement_node={}, regenerate_groupby_hash=True)
     assert output.edges_map == query_graph_with_groupby.edges_map
     assert output.nodes_map["groupby_1"] != query_graph_with_groupby.nodes_map["groupby_1"]
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
@@ -220,11 +212,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
 @pytest.mark.parametrize(
     "replacement_map",
     [
-        {
-            "groupby_1": {
-                "feature_job_setting": {"blind_spot": "300s", "offset": "1800s", "period": "3600s"}
-            }
-        },
+        {"groupby_1": {"feature_job_setting": {"blind_spot": "300s", "offset": "1800s", "period": "3600s"}}},
         {"assign_1": {"name": "hello"}},
         {"input_1": {"columns": ["hello", "world"]}},
     ],
@@ -458,27 +446,15 @@ def test_query_graph_insensitive_to_node_name(
     assert query_graph_abc != query_graph_cab
     assert query_graph_cab != query_graph_bca
 
-    pruned_graph_abc, node_name_map_abc = query_graph_abc.quick_prune(
-        target_node_names=[node_abc.name]
-    )
-    pruned_graph_cab, node_name_map_cab = query_graph_cab.quick_prune(
-        target_node_names=[node_cab.name]
-    )
-    pruned_graph_bca, node_name_map_bca = query_graph_bca.quick_prune(
-        target_node_names=[node_bca.name]
-    )
+    pruned_graph_abc, node_name_map_abc = query_graph_abc.quick_prune(target_node_names=[node_abc.name])
+    pruned_graph_cab, node_name_map_cab = query_graph_cab.quick_prune(target_node_names=[node_cab.name])
+    pruned_graph_bca, node_name_map_bca = query_graph_bca.quick_prune(target_node_names=[node_bca.name])
     assert pruned_graph_abc == pruned_graph_cab == pruned_graph_bca
-    assert (
-        node_name_map_abc[node_abc.name]
-        == node_name_map_cab[node_cab.name]
-        == node_name_map_bca[node_bca.name]
-    )
+    assert node_name_map_abc[node_abc.name] == node_name_map_cab[node_cab.name] == node_name_map_bca[node_bca.name]
 
 
 @pytest.fixture(name="invalid_query_graph_groupby_node")
-def invalid_query_graph_groupby_node_fixture(
-    snowflake_feature_store_details_dict, snowflake_table_details_dict
-):
+def invalid_query_graph_groupby_node_fixture(snowflake_feature_store_details_dict, snowflake_table_details_dict):
     """Invalid query graph fixture"""
     groupby_node_params = {
         "keys": ["cust_id"],
@@ -516,9 +492,7 @@ def invalid_query_graph_groupby_node_fixture(
     return graph, node_group_by
 
 
-def test_get_table_ids(
-    event_table_details, item_table_input_details, snowflake_feature_store_details_dict
-):
+def test_get_table_ids(event_table_details, item_table_input_details, snowflake_feature_store_details_dict):
     """Test get_table_ids method (check that duplicated table ids are not returned)"""
     query_graph = QueryGraph()
     table_id = ObjectId()

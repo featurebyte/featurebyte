@@ -2,13 +2,11 @@
 ObservationTable class
 """
 
-# pylint: disable=duplicate-code
 from __future__ import annotations
-
-from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import os
 from pathlib import Path
+from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -43,9 +41,7 @@ from featurebyte.schema.observation_table import (
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 
 
-class ObservationTable(
-    PrimaryEntityMixin, MaterializedTableMixin
-):  # pylint: disable=too-many-public-methods
+class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     """
     ObservationTable class
     """
@@ -84,22 +80,20 @@ class ObservationTable(
         return entity_ids
 
     @property
-    @substitute_docstring(
-        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
-    )
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity_ids(
         self,
-    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    ) -> Sequence[ObjectId]:
         return self.cached_model.primary_entity_ids
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def entities(self) -> List[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def primary_entity(self) -> List[Entity]:
         return [Entity.get_by_id(entity_id) for entity_id in self.primary_entity_ids]
 
     @property
@@ -127,7 +121,7 @@ class ObservationTable(
         Optional[Any]
             Target of the observation table.
         """
-        from featurebyte.api.target import Target  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.target import Target
 
         if isinstance(self.cached_model.request_input, TargetInput):
             target_id = self.cached_model.request_input.target_id

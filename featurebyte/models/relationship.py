@@ -38,9 +38,7 @@ class Relationship(FeatureByteBaseDocumentModel):
 
     # pydantic validators
     _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
-    _sort_parent_validator = validator("parents", allow_reuse=True)(
-        construct_sort_validator(field="id")
-    )
+    _sort_parent_validator = validator("parents", allow_reuse=True)(construct_sort_validator(field="id"))
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

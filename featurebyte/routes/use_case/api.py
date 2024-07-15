@@ -2,9 +2,8 @@
 UseCase API routes
 """
 
-from typing import Optional, cast
-
 from http import HTTPStatus
+from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
@@ -132,9 +131,7 @@ async def list_use_case_deployments(
 
 
 @router.patch("/{use_case_id}", response_model=UseCaseModel)
-async def update_use_case(
-    request: Request, use_case_id: PyObjectId, data: UseCaseUpdate
-) -> UseCaseModel:
+async def update_use_case(request: Request, use_case_id: PyObjectId, data: UseCaseUpdate) -> UseCaseModel:
     """
     Update Use Case
     """

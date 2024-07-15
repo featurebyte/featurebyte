@@ -2,8 +2,6 @@
 Tests for FeatureList route
 """
 
-# pylint: disable=too-many-lines
-
 import collections
 import os
 import textwrap
@@ -29,19 +27,15 @@ from tests.unit.common.test_utils import create_feature_list_batch_feature_creat
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureListApi(BaseCatalogApiTestSuite):
     """
     TestFeatureListApi class
     """
 
     class_name = "FeatureList"
     base_route = "/feature_list"
-    payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_list_single.json"
-    )
-    payload_multi = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_list_multi.json"
-    )
+    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
+    payload_multi = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_list_multi.json")
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -155,9 +149,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
         for i in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
-            response = self._save_a_new_feature_version(
-                api_client, feature_payload["_id"], f"{i + 1}h"
-            )
+            response = self._save_a_new_feature_version(api_client, feature_payload["_id"], f"{i + 1}h")
             assert response.status_code == HTTPStatus.CREATED
             new_version_id = response.json()["_id"]
 
@@ -184,9 +176,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         test_api_client, _ = test_api_client_persistent
         # create a new feature
-        feature_response = self._save_a_new_feature_version(
-            test_api_client, result["feature_ids"][0]
-        )
+        feature_response = self._save_a_new_feature_version(test_api_client, result["feature_ids"][0])
         feature_id = feature_response.json()["_id"]
         response = test_api_client.patch(
             f"/feature/{feature_id}",
@@ -195,18 +185,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.OK, response.json()
 
         # create a new feature list version
-        response = test_api_client.post(
-            self.base_route, json={"source_feature_list_id": result["_id"], "features": []}
-        )
+        response = test_api_client.post(self.base_route, json={"source_feature_list_id": result["_id"], "features": []})
         expected_readiness_dist = [{"count": 1, "readiness": "PRODUCTION_READY"}]
         new_fl_dict = response.json()
         assert new_fl_dict["readiness_distribution"] == expected_readiness_dist
         assert new_fl_dict["feature_list_namespace_id"] == result["feature_list_namespace_id"]
 
         # check feature list namespace
-        namespace_response = test_api_client.get(
-            f"/feature_list_namespace/{result['feature_list_namespace_id']}"
-        )
+        namespace_response = test_api_client.get(f"/feature_list_namespace/{result['feature_list_namespace_id']}")
         namespace_response_dict = namespace_response.json()
         assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
         assert namespace_response_dict["default_feature_list_id"] == new_fl_dict["_id"]
@@ -233,9 +219,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.json()["feature_ids"] == payload_multi["feature_ids"]
 
     @pytest.fixture(name="new_feature_list_version_response")
-    def new_feature_list_version_response_fixture(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def new_feature_list_version_response_fixture(self, test_api_client_persistent, create_success_response):
         """New feature list version response"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -253,19 +237,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.json()["feature_ids"] == [feature_response_dict["_id"]]
         return response
 
-    def test_create_201__create_new_version(
-        self, create_success_response, new_feature_list_version_response
-    ):
+    def test_create_201__create_new_version(self, create_success_response, new_feature_list_version_response):
         """Test create new version (success)"""
         create_response_dict = create_success_response.json()
         response = new_feature_list_version_response
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
-        assert (
-            response_dict["feature_list_namespace_id"]
-            == create_response_dict["feature_list_namespace_id"]
-        )
+        assert response_dict["feature_list_namespace_id"] == create_response_dict["feature_list_namespace_id"]
 
     def test_create_422__different_feature_stores(self, test_api_client_persistent):
         """
@@ -279,9 +258,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         feature_store["_id"] = str(ObjectId())
         feature_store["name"] = f'new_{feature_store["name"]}'
-        feature_store["details"] = {
-            key: f"{value}_1" for key, value in feature_store["details"].items()
-        }
+        feature_store["details"] = {key: f"{value}_1" for key, value in feature_store["details"].items()}
 
         event_table = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         event_table["_id"] = str(ObjectId())
@@ -335,9 +312,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "Two Feature objects must not share the same name in a FeatureList object."
         )
 
-    def test_create_422__create_new_version(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_create_422__create_new_version(self, test_api_client_persistent, create_success_response):
         """Test create new version (unprocessable entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -388,9 +363,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["_id"] == create_response_dict["_id"]
 
-    def test_list_200__filter_by_name_and_version(
-        self, test_api_client_persistent, create_multiple_success_responses
-    ):
+    def test_list_200__filter_by_name_and_version(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (success) when filtering by name and version"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_multiple_success_responses[0].json()
@@ -428,9 +401,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response_dict["total"] == 1
         assert response_dict["data"] == [new_version_response_dict]
 
-    def test_list_200__filter_by_namespace_id(
-        self, test_api_client_persistent, create_multiple_success_responses
-    ):
+    def test_list_200__filter_by_namespace_id(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (filtered by feature list namespace id)"""
         test_api_client, _ = test_api_client_persistent
         namespace_map = defaultdict(set)
@@ -439,32 +410,24 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             namespace_map[response_dict["feature_list_namespace_id"]].add(response_dict["_id"])
 
         for namespace_id, ids in namespace_map.items():
-            filter_response = test_api_client.get(
-                self.base_route, params={"feature_list_namespace_id": namespace_id}
-            )
+            filter_response = test_api_client.get(self.base_route, params={"feature_list_namespace_id": namespace_id})
             filter_response_dict = filter_response.json()
             assert filter_response_dict["total"] == len(ids)
             response_ids = set(item["_id"] for item in filter_response_dict["data"])
             assert response_ids == ids
 
         # test negative cases
-        negative_response = test_api_client.get(
-            self.base_route, params={"feature_list_namespace_id": str(ObjectId())}
-        )
+        negative_response = test_api_client.get(self.base_route, params={"feature_list_namespace_id": str(ObjectId())})
         assert negative_response.json()["total"] == 0, negative_response.json()
 
-    def test_update_200__deploy_with_make_production_ready(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_update_200__deploy_with_make_production_ready(self, test_api_client_persistent, create_success_response):
         """Test update (success) with make production ready"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
 
         # deploy the feature list
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"make_production_ready": True}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"make_production_ready": True})
         assert response.status_code == HTTPStatus.ACCEPTED
 
         response = test_api_client.post("/deployment", json={"feature_list_id": doc_id})
@@ -482,18 +445,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.json()["status"] == "SUCCESS"
 
         # check serving endpoint populated in info
-        response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
         version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
-            ],
-            "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
-            ],
+            "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
+            "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
             "status": "DEPLOYED",
@@ -568,9 +525,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         namespace_dict = test_api_client.get(f"/feature_list_namespace/{namespace_id}").json()
         assert namespace_dict["feature_list_ids"] == [new_doc_id]
 
-    def test_delete_422__non_draft_feature_list(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_delete_422__non_draft_feature_list(self, test_api_client_persistent, create_success_response):
         """Test delete (unprocessible entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -578,9 +533,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         namespace_id = create_response_dict["feature_list_namespace_id"]
 
         # change status to public draft
-        response = test_api_client.patch(
-            f"/feature_list_namespace/{namespace_id}", json={"status": "PUBLIC_DRAFT"}
-        )
+        response = test_api_client.patch(f"/feature_list_namespace/{namespace_id}", json={"status": "PUBLIC_DRAFT"})
         assert response.status_code == HTTPStatus.OK
 
         # check that feature list cannot be deleted
@@ -600,18 +553,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
         version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
-            ],
-            "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
-            ],
+            "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
+            "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 1,
@@ -626,9 +573,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert "created_at" in response_dict
         assert response_dict["versions_info"] is None
 
-        verbose_response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
-        )
+        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
@@ -636,9 +581,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert verbose_response_dict["versions_info"] is not None
 
     @pytest.fixture(name="featurelist_feature_clusters")
-    def featurelist_feature_clusters_fixture(
-        self, create_success_response, test_api_client_persistent
-    ):
+    def featurelist_feature_clusters_fixture(self, create_success_response, test_api_client_persistent):
         """
         featurelist_preview_payload fixture
         """
@@ -705,9 +648,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using feature clusters
-        response = test_api_client.post(
-            f"{self.base_route}/preview", json=featurelist_preview_payload
-        )
+        response = test_api_client.post(f"{self.base_route}/preview", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
@@ -729,9 +670,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         # test preview using feature list id
         featurelist_preview_payload.pop("feature_clusters")
         featurelist_preview_payload["feature_list_id"] = featurelist["_id"]
-        response = test_api_client.post(
-            f"{self.base_route}/preview", json=featurelist_preview_payload
-        )
+        response = test_api_client.post(f"{self.base_route}/preview", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
@@ -745,20 +684,18 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.list_table_schema.return_value = collections.OrderedDict(
-            {
-                "cust_id": ColumnSpecWithDescription(
-                    name="cust_id",
-                    dtype=DBVarType.INT,
-                    description=None,
-                ),
-                "POINT_IN_TIME": ColumnSpecWithDescription(
-                    name="POINT_IN_TIME",
-                    dtype=DBVarType.TIMESTAMP,
-                    description=None,
-                ),
-            }
-        )
+        mock_session.list_table_schema.return_value = collections.OrderedDict({
+            "cust_id": ColumnSpecWithDescription(
+                name="cust_id",
+                dtype=DBVarType.INT,
+                description=None,
+            ),
+            "POINT_IN_TIME": ColumnSpecWithDescription(
+                name="POINT_IN_TIME",
+                dtype=DBVarType.TIMESTAMP,
+                description=None,
+            ),
+        })
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table
@@ -767,16 +704,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.CREATED, response.json()
         response = self.wait_for_results(test_api_client, response)
         assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
-        obs_table_df = pd.DataFrame(
-            {"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]}
-        )
+        obs_table_df = pd.DataFrame({"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]})
         mock_session.execute_query.side_effect = (obs_table_df, expected_df)
 
         featurelist_preview_payload.pop("point_in_time_and_serving_name_list")
         featurelist_preview_payload["observation_table_id"] = "646f6c1c0ed28a5271fb02d7"
-        response = test_api_client.post(
-            f"{self.base_route}/preview", json=featurelist_preview_payload
-        )
+        response = test_api_client.post(f"{self.base_route}/preview", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
@@ -788,9 +721,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         """Test feature list preview with too many features"""
         with patch.dict(os.environ, {"FEATUREBYTE_FEATURE_LIST_PREVIEW_MAX_FEATURE_NUM": "0"}):
             test_api_client, _ = test_api_client_persistent
-            response = test_api_client.post(
-                f"{self.base_route}/preview", json=featurelist_preview_payload
-            )
+            response = test_api_client.post(f"{self.base_route}/preview", json=featurelist_preview_payload)
             assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
             assert response.json()["detail"] == "Feature list preview must have 0 features or less"
 
@@ -819,9 +750,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             ).strip()
         )
 
-    def test_feature_clusters_derived_and_stored(
-        self, create_success_response, featurelist_feature_clusters
-    ):
+    def test_feature_clusters_derived_and_stored(self, create_success_response, featurelist_feature_clusters):
         """Test feature_clusters field is derived and stored"""
         feature_clusters = create_success_response.json()["feature_clusters"]
         assert isinstance(feature_clusters, list)
@@ -852,59 +781,47 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         groupby_node = graph.get_node_by_name("groupby_1")
         aggregation_id = groupby_node.parameters.aggregation_id
 
-        job_logs = pd.DataFrame(
-            {
-                "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": [aggregation_id] * 6,
-                "CREATED_AT": pd.to_datetime(
-                    [
-                        "2020-01-02 18:00:00",
-                        "2020-01-02 18:01:00",
-                        "2020-01-02 18:02:00",
-                        "2020-01-02 18:03:00",
-                        "2020-01-02 18:00:00",
-                        "2020-01-02 18:05:00",
-                    ]
-                ),
-                "STATUS": [
-                    "STARTED",
-                    "MONITORED",
-                    "GENERATED",
-                    "COMPLETED",
-                    "STARTED",
-                    "GENERATED_FAILED",
-                ],
-                "MESSAGE": [""] * 5 + ["Some error has occurred"],
-            }
-        )
-        with patch(
-            "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
-        ) as mock_get_jobs_dataframe:
+        job_logs = pd.DataFrame({
+            "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
+            "AGGREGATION_ID": [aggregation_id] * 6,
+            "CREATED_AT": pd.to_datetime([
+                "2020-01-02 18:00:00",
+                "2020-01-02 18:01:00",
+                "2020-01-02 18:02:00",
+                "2020-01-02 18:03:00",
+                "2020-01-02 18:00:00",
+                "2020-01-02 18:05:00",
+            ]),
+            "STATUS": [
+                "STARTED",
+                "MONITORED",
+                "GENERATED",
+                "COMPLETED",
+                "STARTED",
+                "GENERATED_FAILED",
+            ],
+            "MESSAGE": [""] * 5 + ["Some error has occurred"],
+        })
+        with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
             mock_get_jobs_dataframe.return_value = job_logs
             response = test_api_client.get(f"{self.base_route}/{feature_list_id}/feature_job_logs")
         assert response.status_code == HTTPStatus.OK
-        expected_df = pd.DataFrame(
-            {
-                "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": [aggregation_id] * 2,
-                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
-                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
-                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
-                "QUEUE_DURATION": [1500.0] * 2,
-                "COMPUTE_DURATION": [180.0, np.nan],
-                "TOTAL_DURATION": [1680.0, np.nan],
-                "ERROR": [np.nan, "Some error has occurred"],
-            }
-        )
+        expected_df = pd.DataFrame({
+            "SESSION_ID": ["SID1", "SID2"],
+            "AGGREGATION_ID": [aggregation_id] * 2,
+            "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
+            "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
+            "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
+            "QUEUE_DURATION": [1500.0] * 2,
+            "COMPUTE_DURATION": [180.0, np.nan],
+            "TOTAL_DURATION": [1680.0, np.nan],
+            "ERROR": [np.nan, "Some error has occurred"],
+        })
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-        assert mock_get_jobs_dataframe.call_args == call(
-            aggregation_ids=[aggregation_id], hour_limit=24
-        )
+        assert mock_get_jobs_dataframe.call_args == call(aggregation_ids=[aggregation_id], hour_limit=24)
 
     @pytest.mark.asyncio
-    async def test_feature_list_batch_feature_create__success(
-        self, test_api_client_persistent, mock_snowflake_session
-    ):
+    async def test_feature_list_batch_feature_create__success(self, test_api_client_persistent, mock_snowflake_session):
         """Test feature list batch feature create async task (success)"""
         _ = mock_snowflake_session
         test_api_client, _ = test_api_client_persistent
@@ -989,8 +906,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
         expected_traceback = (
-            "Inconsistent feature definitions detected: sum_2h\n"
-            "The inconsistent features have been deleted."
+            "Inconsistent feature definitions detected: sum_2h\n" "The inconsistent features have been deleted."
         )
         assert expected_traceback in response_dict["traceback"]
         assert response_dict["status"] == "FAILURE"
@@ -1078,9 +994,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert task_response.status_code == HTTPStatus.CREATED
         assert task_response.json()["status"] == "FAILURE"
         traceback = task_response.json()["traceback"]
-        expected_message = (
-            f'Feature (id: "{unsaved_feature_id}") not found. Please save the Feature object first.'
-        )
+        expected_message = f'Feature (id: "{unsaved_feature_id}") not found. Please save the Feature object first.'
         assert expected_message in traceback
 
     def test_feature_list_creation_job(self, test_api_client_persistent):
@@ -1097,9 +1011,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "features": [{"name": feat_payload["name"], "id": feat_payload["_id"]}],
             "features_conflict_resolution": "raise",
         }
-        task_response = test_api_client.post(
-            f"{self.base_route}/job", json=feature_list_create_payload
-        )
+        task_response = test_api_client.post(f"{self.base_route}/job", json=feature_list_create_payload)
         self.wait_for_results(test_api_client, task_response)
         assert task_response.status_code == HTTPStatus.CREATED
         assert task_response.json()["status"] == "SUCCESS"
@@ -1113,12 +1025,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         # check when the feature is not found
         unknown_feature_id = str(ObjectId())
         feature_list_create_payload["features"][0]["id"] = unknown_feature_id
-        task_response = test_api_client.post(
-            f"{self.base_route}/job", json=feature_list_create_payload
-        )
-        expected_error = (
-            f'Feature (id: "{unknown_feature_id}") not found. Please save the Feature object first.'
-        )
+        task_response = test_api_client.post(f"{self.base_route}/job", json=feature_list_create_payload)
+        expected_error = f'Feature (id: "{unknown_feature_id}") not found. Please save the Feature object first.'
         assert task_response.status_code == HTTPStatus.CREATED
         assert task_response.json()["status"] == "FAILURE"
         assert expected_error in task_response.json()["traceback"]
@@ -1128,16 +1036,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         feature_list_create_payload["name"] = "another_test_feature_list"
         feature_list_create_payload["_id"] = another_test_feature_list_id
         feature_list_create_payload["features_conflict_resolution"] = "retrieve"
-        task_response = test_api_client.post(
-            f"{self.base_route}/job", json=feature_list_create_payload
-        )
+        task_response = test_api_client.post(f"{self.base_route}/job", json=feature_list_create_payload)
         assert task_response.status_code == HTTPStatus.CREATED
         assert task_response.json()["status"] == "SUCCESS"
 
         # check newly created feature list
-        feature_list_response = test_api_client.get(
-            f"{self.base_route}/{another_test_feature_list_id}"
-        )
+        feature_list_response = test_api_client.get(f"{self.base_route}/{another_test_feature_list_id}")
         feature_list_dict = feature_list_response.json()
         assert feature_list_response.status_code == HTTPStatus.OK
         assert feature_list_dict["name"] == "another_test_feature_list"
@@ -1157,9 +1061,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "features": [feat_payload["_id"]],
             "features_conflict_resolution": "raise",
         }
-        task_response = test_api_client.post(
-            f"{self.base_route}/job", json=feature_list_create_payload
-        )
+        task_response = test_api_client.post(f"{self.base_route}/job", json=feature_list_create_payload)
         self.wait_for_results(test_api_client, task_response)
         assert task_response.status_code == HTTPStatus.CREATED
         assert task_response.json()["status"] == "SUCCESS"
@@ -1180,9 +1082,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "features": [],
             "features_conflict_resolution": "raise",
         }
-        task_response = test_api_client.post(
-            f"{self.base_route}/job", json=feature_list_create_payload
-        )
+        task_response = test_api_client.post(f"{self.base_route}/job", json=feature_list_create_payload)
         assert task_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert task_response.json()["detail"][0]["msg"] == "ensure this value has at least 1 items"
 
@@ -1198,19 +1098,17 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame(
-                [
-                    {
-                        "cust_id": 1,
-                    },
-                    {
-                        "cust_id": 2,
-                    },
-                    {
-                        "cust_id": 3,
-                    },
-                ]
-            )
+            return pd.DataFrame([
+                {
+                    "cust_id": 1,
+                },
+                {
+                    "cust_id": 2,
+                },
+                {
+                    "cust_id": 3,
+                },
+            ])
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query

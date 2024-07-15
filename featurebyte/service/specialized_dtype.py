@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import json
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -62,11 +61,7 @@ class SpecializedDtypeDetectionService:
             feature_store_details=feature_store.get_feature_store_details(),
             table_data_dict=table.dict(by_alias=True),
         )
-        columns = [
-            col.name
-            for col in table.columns_info
-            if col.dtype in DBVarType.supported_detection_types()
-        ]
+        columns = [col.name for col in table.columns_info if col.dtype in DBVarType.supported_detection_types()]
         if not columns:
             return
 
@@ -87,7 +82,7 @@ class SpecializedDtypeDetectionService:
                 seed=RANDOM_SEED,
             )
         )
-        if sample.shape[0] > 0:  # pylint: disable=no-member
+        if sample.shape[0] > 0:
             for detector in self.detectors:
                 await detector.detect(table.columns_info, sample)
 
@@ -135,9 +130,7 @@ class ArrayEmbeddingDtypeDetector(BaseSpecializedDtypeDetector):
                     continue
 
                 # skip if arrays
-                all_num = series.apply(
-                    lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce")))
-                )
+                all_num = series.apply(lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce"))))
                 if all_num.all():
                     column.dtype = DBVarType.EMBEDDING
 

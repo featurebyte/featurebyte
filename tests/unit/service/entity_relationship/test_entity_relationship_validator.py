@@ -2,7 +2,6 @@
 Test entity relationship validator
 """
 
-# pylint: disable=protected-access
 import pytest
 from bson import ObjectId
 
@@ -38,9 +37,7 @@ async def test_validator__case_1(
 
 
 @pytest.mark.asyncio
-async def test_validator__case_2(
-    entity_relationship_validator, relationship_grandpa_father, relationship_mother_son
-):
+async def test_validator__case_2(entity_relationship_validator, relationship_grandpa_father, relationship_mother_son):
     """Test validator case 2"""
     validator = entity_relationship_validator
     await validator._validate([relationship_grandpa_father], feature_name="feat1")

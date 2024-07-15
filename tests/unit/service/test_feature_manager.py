@@ -116,9 +116,7 @@ async def get_tile_model(app_container, feature_model):
     """
     tile_specs = ExtendedFeatureModel(**feature_model.dict(by_alias=True)).tile_specs
     assert len(tile_specs) == 1
-    return await app_container.tile_registry_service.get_tile_model(
-        tile_specs[0].tile_id, tile_specs[0].aggregation_id
-    )
+    return await app_container.tile_registry_service.get_tile_model(tile_specs[0].tile_id, tile_specs[0].aggregation_id)
 
 
 @pytest.mark.asyncio

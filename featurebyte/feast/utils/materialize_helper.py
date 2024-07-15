@@ -4,10 +4,9 @@ Helper function for feature materialization
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import copy
 from datetime import datetime
+from typing import Any, List, Optional
 from unittest.mock import patch
 
 from cachetools import TTLCache
@@ -83,16 +82,14 @@ async def materialize_partial(
 
     assert start_date < end_date
 
-    provider = feature_store._get_provider()  # pylint: disable=protected-access
+    provider = feature_store._get_provider()
 
     def silent_tqdm_builder(length: int) -> tqdm:
         return tqdm(total=length, ncols=100, disable=True)
 
     partial_feature_view = copy.deepcopy(feature_view)
     partial_feature_view.features = _filter_by_name(feature_view.features, columns)
-    partial_feature_view.projection.features = _filter_by_name(
-        feature_view.projection.features, columns
-    )
+    partial_feature_view.projection.features = _filter_by_name(feature_view.projection.features, columns)
 
     # FIXME: This patch modifies the cache used by the SnowflakeOfflineStore to introduce
     # ttl of 10 minutes to recover from a stale connection.
@@ -122,7 +119,7 @@ async def materialize_partial(
                 feature_view=partial_feature_view,
                 start_date=start_date,
                 end_date=end_date,
-                registry=feature_store._registry,  # pylint: disable=protected-access
+                registry=feature_store._registry,
                 project=feature_store.project,
                 tqdm_builder=silent_tqdm_builder,
             )

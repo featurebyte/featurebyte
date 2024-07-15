@@ -2,11 +2,10 @@
 Mixin class containing common methods for feature or target classes
 """
 
-from typing import Any, Sequence, Union, cast
-
 import time
 from abc import ABC
 from http import HTTPStatus
+from typing import Any, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -37,9 +36,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
     """
 
     # pydantic instance variable (internal use)
-    internal_catalog_id: PydanticObjectId = Field(
-        default_factory=get_active_catalog_id, alias="catalog_id"
-    )
+    internal_catalog_id: PydanticObjectId = Field(default_factory=get_active_catalog_id, alias="catalog_id")
 
     @property
     def _cast_cached_model(self) -> BaseFeatureModel:
@@ -47,41 +44,39 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
     def _get_version(self) -> str:
         # helper function to get version
-        return self._cast_cached_model.version.to_str()  # pylint: disable=no-member
+        return self._cast_cached_model.version.to_str()
 
     def _get_catalog_id(self) -> ObjectId:
         # helper function to get catalog id
         try:
-            return self._cast_cached_model.catalog_id  # pylint: disable=no-member
+            return self._cast_cached_model.catalog_id
         except RecordRetrievalException:
             return self.internal_catalog_id
 
     def _get_entity_ids(self) -> Sequence[ObjectId]:
         # helper function to get entity ids
         try:
-            return self._cast_cached_model.entity_ids  # pylint: disable=no-member
+            return self._cast_cached_model.entity_ids
         except RecordRetrievalException:
             return self.graph.get_entity_ids(node_name=self.node_name)
 
     def _get_table_ids(self) -> Sequence[ObjectId]:
         try:
-            return self._cast_cached_model.table_ids  # pylint: disable=no-member
+            return self._cast_cached_model.table_ids
         except RecordRetrievalException:
             return self.graph.get_table_ids(node_name=self.node_name)
 
     def _generate_definition(self) -> str:
         # helper function to generate definition
         try:
-            definition = self._cast_cached_model.definition  # pylint: disable=no-member
+            definition = self._cast_cached_model.definition
             object_type = type(self).__name__.lower()
             assert definition is not None, f"Saved {object_type}'s definition should not be None."
         except RecordRetrievalException:
             definition = self._generate_code(to_format=True, to_use_saved_data=True)
         return CodeStr(definition)
 
-    def _preview(
-        self, observation_set: Union[ObservationTable, pd.DataFrame], url: str
-    ) -> pd.DataFrame:
+    def _preview(self, observation_set: Union[ObservationTable, pd.DataFrame], url: str) -> pd.DataFrame:
         # helper function to preview
         tic = time.time()
 
@@ -94,9 +89,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
         if isinstance(observation_set, ObservationTable):
             preview_params["observation_table_id"] = observation_set.id
         else:
-            preview_params["point_in_time_and_serving_name_list"] = observation_set.to_dict(
-                orient="records"
-            )
+            preview_params["point_in_time_and_serving_name_list"] = observation_set.to_dict(orient="records")
 
         payload = FeatureOrTargetPreview(**preview_params)
         client = Configurations().get_client()
@@ -107,7 +100,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return dataframe_from_json(result)
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

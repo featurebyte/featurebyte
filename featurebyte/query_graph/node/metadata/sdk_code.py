@@ -4,13 +4,12 @@ This module contains models used for sdk code extractor.
 
 from __future__ import annotations
 
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
-
 import ast
 import json
 import os
 from collections import defaultdict
 from enum import Enum
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from black import FileMode, format_str
 from bson import ObjectId
@@ -251,9 +250,7 @@ class ClassEnum(Enum):
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
 
-    def __call__(
-        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
-    ) -> ObjectClass:
+    def __call__(self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
             module_path=module_path,
@@ -264,9 +261,7 @@ class ClassEnum(Enum):
         )
 
 
-def get_object_class_from_function_call(
-    callable_name: str, *args: Any, **kwargs: Any
-) -> ObjectClass:
+def get_object_class_from_function_call(callable_name: str, *args: Any, **kwargs: Any) -> ObjectClass:
     """
     Get an instance of ObjectClass to represent a function call
 
@@ -304,9 +299,7 @@ def get_object_class_from_function_call(
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 VarNameExpressionInfo = Union[VariableNameStr, ExpressionStr, InfoDict]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[  # pylint: disable=invalid-name
-    StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]
-]
+StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
 
 
 class CodeGenerationContext(FeatureByteBaseModel):
@@ -374,9 +367,7 @@ class VariableNameGenerator(FeatureByteBaseModel):
             else:
                 pre_variable_name = "feat"
 
-        return self.convert_to_variable_name(
-            variable_name_prefix=pre_variable_name, node_name=node_name
-        )
+        return self.convert_to_variable_name(variable_name_prefix=pre_variable_name, node_name=node_name)
 
     def convert_to_variable_name(
         self,
@@ -478,7 +469,7 @@ class UnusedVariableFinder(ast.NodeVisitor):
         self.variables: Set[str] = set()
         self.used_variables: Set[str] = set()
 
-    def visit_Name(self, node: ast.Name) -> None:  # pylint: disable=invalid-name
+    def visit_Name(self, node: ast.Name) -> None:
         """
         Visit the Name node in the ast.
 
@@ -535,9 +526,7 @@ class CodeGenerator(FeatureByteBaseModel):
         """
         self.statements.extend(statements)
 
-    def _generate(
-        self, unused_variables: Optional[Set[str]] = None
-    ) -> Tuple[str, Set[ImportPathPair]]:
+    def _generate(self, unused_variables: Optional[Set[str]] = None) -> Tuple[str, Set[ImportPathPair]]:
         # process statements & extract required imports
         statement_lines = []
         import_pairs = set()

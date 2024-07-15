@@ -3,11 +3,11 @@ Unit tests for featurebyte/query_graph/node/base.py
 """
 
 from typing import Any, List
-from typing_extensions import Literal
 
 import pandas as pd
 import pytest
 from pydantic import BaseModel, Field
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.base import BaseNode
@@ -48,9 +48,7 @@ def node_fixture():
 
         def _derive_node_operation_info(self, inputs, branch_state, global_state):
             _ = inputs, branch_state, global_state
-            return OperationStructure(
-                output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
-            )
+            return OperationStructure(output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW)
 
     return Node(
         name="node_name",

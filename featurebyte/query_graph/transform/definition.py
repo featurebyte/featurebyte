@@ -2,9 +2,8 @@
 Definition extractor used to extract the definition hash of a query graph.
 """
 
-from typing import Any, Dict, List, Tuple
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -52,9 +51,7 @@ class DefinitionBranchState:
     """DefinitionBranchState class"""
 
 
-class DefinitionHashExtractor(
-    BaseGraphExtractor[DefinitionHashOutput, DefinitionBranchState, DefinitionGlobalState]
-):
+class DefinitionHashExtractor(BaseGraphExtractor[DefinitionHashOutput, DefinitionBranchState, DefinitionGlobalState]):
     """
     DefinitionHashExtractor class used to extract the definition hash of a query graph. To generate
     the definition hash, we need to do the following and then reconstruct the graph:
@@ -109,14 +106,11 @@ class DefinitionHashExtractor(
                 input_node_names.append(input_node_name)
 
         # normalize & create the node
-        input_node_hashes = [
-            global_state.graph.node_name_to_ref[input_node.name] for input_node in inputs
-        ]
+        input_node_hashes = [global_state.graph.node_name_to_ref[input_node.name] for input_node in inputs]
         normalized_node, column_name_remap = node.normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=[
-                global_state.node_name_to_column_name_remap[input_node_name]
-                for input_node_name in input_node_names
+                global_state.node_name_to_column_name_remap[input_node_name] for input_node_name in input_node_names
             ],
         )
 
@@ -125,9 +119,7 @@ class DefinitionHashExtractor(
             # if the node is an alias node, we do not need to add it to the graph, use the input node instead
             mapped_node = inputs[0]
         else:
-            mapped_node = global_state.graph.add_operation_node(
-                node=normalized_node, input_nodes=inputs
-            )
+            mapped_node = global_state.graph.add_operation_node(node=normalized_node, input_nodes=inputs)
 
         global_state.node_name_map[node.name] = mapped_node.name
         global_state.node_name_to_column_name_remap[node.name] = column_name_remap

@@ -26,9 +26,7 @@ def test_construct_dataframe_sql_expr_one_row():
 
 
 def test_construct_dataframe_sql_expr_multiple_rows():
-    df = pd.DataFrame(
-        {"a": [1, 100], "b": [2, 200], "c": [3, 300], "dt": ["2022-01-01", "2022-02-01"]}
-    )
+    df = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300], "dt": ["2022-01-01", "2022-02-01"]})
     expr = construct_dataframe_sql_expr(df, [])
     expr_text = expr.sql(pretty=True)
     expected_sql = textwrap.dedent(
@@ -50,9 +48,7 @@ def test_construct_dataframe_sql_expr_multiple_rows():
 
 
 def test_construct_dataframe_sql_expr_different_types():
-    df = pd.DataFrame(
-        {"a": ["V1", "V2"], "b": [2, np.nan], "c": [3, 300], "dt": ["2022-01-01", None]}
-    )
+    df = pd.DataFrame({"a": ["V1", "V2"], "b": [2, np.nan], "c": [3, 300], "dt": ["2022-01-01", None]})
     expr = construct_dataframe_sql_expr(df, ["dt"])
     expr_text = expr.sql(pretty=True)
     expected_sql = textwrap.dedent(

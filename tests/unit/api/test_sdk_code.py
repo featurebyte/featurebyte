@@ -16,13 +16,7 @@ def test_sdk_code_generation__complex_arithmetic_expression(saved_event_table, u
     """Check SDK code generation for complex arithmetic expression"""
     event_view = saved_event_table.get_view()
     col_a, col_b = event_view["col_int"], event_view["col_float"]
-    output = (
-        (1 - col_a) * (col_b - 1) / (col_a + col_b)
-        + 1 / (col_a - col_b)
-        + col_a % 10
-        - col_b.pow(2)
-        + col_a
-    )
+    output = (1 - col_a) * (col_b - 1) / (col_a + col_b) + 1 / (col_a - col_b) + col_a % 10 - col_b.pow(2) + col_a
     check_sdk_code_generation(
         output,
         to_use_saved_data=True,
@@ -37,9 +31,7 @@ def test_sdk_code_generation__complex_relational_expression(saved_event_table, u
     """SDK code generation for complex relational expression"""
     event_view = saved_event_table.get_view()
     col_a = event_view["col_int"]
-    output = (
-        (col_a > 1) & (col_a < 10) | (col_a == 1) | (col_a != 10) | (col_a >= 1) | (col_a <= 10)
-    )
+    output = (col_a > 1) & (col_a < 10) | (col_a == 1) | (col_a != 10) | (col_a >= 1) | (col_a <= 10)
     check_sdk_code_generation(
         output,
         to_use_saved_data=True,
@@ -86,9 +78,7 @@ def test_sdk_code_generation__complex_date_related_operations(saved_event_table,
     )
     # create complex timedelta related operations
     output_timedelta = (
-        col_b.dt.day * col_b.dt.hour
-        - col_b.dt.minute / col_b.dt.second * col_b.dt.millisecond
-        + col_b.dt.microsecond
+        col_b.dt.day * col_b.dt.hour - col_b.dt.minute / col_b.dt.second * col_b.dt.millisecond + col_b.dt.microsecond
     )
     # create complex date related operations
     output_date = (col_a + col_b).dt.second + (col_a - col_a).dt.minute
@@ -128,9 +118,7 @@ def test_sdk_code_generation__complex_string_related_operations(saved_event_tabl
     )
 
 
-def test_sdk_code_generation__complex_feature(
-    saved_event_table, saved_item_table, transaction_entity, update_fixtures
-):
+def test_sdk_code_generation__complex_feature(saved_event_table, saved_item_table, transaction_entity, update_fixtures):
     """SDK code generation for complex feature"""
     saved_item_table.event_id_col.as_entity(transaction_entity.name)
 
@@ -178,9 +166,7 @@ def test_sdk_code_generation__complex_feature(
     primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
     assert [node.parameters.id for node in primary_input_nodes] == [saved_event_table.id]
 
-    primary_input_nodes = feat_item_sum.graph.get_primary_input_nodes(
-        node_name=feat_item_sum.node_name
-    )
+    primary_input_nodes = feat_item_sum.graph.get_primary_input_nodes(node_name=feat_item_sum.node_name)
     assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
 
     temp = feat_item_sum + output
@@ -194,9 +180,7 @@ def test_sdk_code_generation__complex_feature(
     assert feat_item_sum.entity_ids == [transaction_entity.id]
     assert feat_event_sum.entity_ids == [saved_event_table.cust_id.info.entity_id]
     comp = feat_event_sum + feat_item_sum
-    assert comp.entity_ids == sorted(
-        [saved_event_table.cust_id.info.entity_id, transaction_entity.id]
-    )
+    assert comp.entity_ids == sorted([saved_event_table.cust_id.info.entity_id, transaction_entity.id])
     feat_empty_keys = event_view.groupby([]).aggregate_over(
         value_column=feat_item_sum.name,
         method="sum",
@@ -215,9 +199,7 @@ def test_sdk_code_generation__complex_feature(
     assert comp.cached_model.entity_dtypes == ["INT", "INT"]
 
 
-def test_sdk_code_generation__lookup_target(
-    saved_event_table, cust_id_entity, transaction_entity, update_fixtures
-):
+def test_sdk_code_generation__lookup_target(saved_event_table, cust_id_entity, transaction_entity, update_fixtures):
     """Test SDK code generation for lookup target"""
     saved_event_table.col_int.as_entity(cust_id_entity.name)
     saved_event_table.col_float.as_entity(transaction_entity.name)
@@ -238,9 +220,7 @@ def test_sdk_code_generation__lookup_target(
     )
 
 
-def test_sdk_code_generation__forward_aggregate_target(
-    saved_event_table, cust_id_entity, update_fixtures
-):
+def test_sdk_code_generation__forward_aggregate_target(saved_event_table, cust_id_entity, update_fixtures):
     """Test SDK code generation for lookup target"""
     saved_event_table.col_int.as_entity(cust_id_entity.name)
     event_view = saved_event_table.get_view()
@@ -255,9 +235,7 @@ def test_sdk_code_generation__forward_aggregate_target(
     )
 
 
-def test_sdk_code_generation__forward_aggregate_asat(
-    snowflake_scd_table_with_entity, update_fixtures
-):
+def test_sdk_code_generation__forward_aggregate_asat(snowflake_scd_table_with_entity, update_fixtures):
     """Test SDK code generation for forward aggregate asat target"""
     scd_view = snowflake_scd_table_with_entity.get_view()
     aggregate_asat_target = scd_view.groupby("col_boolean").forward_aggregate_asat(
@@ -288,9 +266,7 @@ def test_sdk_code_generation__multi_table_feature(
             cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
         )
     for col in ["event_id_col", "item_id_col", "item_amount"]:
-        saved_item_table[col].update_critical_data_info(
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
-        )
+        saved_item_table[col].update_critical_data_info(cleaning_operations=[MissingValueImputation(imputed_value=0.0)])
 
     # tag entities
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
@@ -479,9 +455,7 @@ def test_sdk_code_generation__fraction_feature(
     )
 
 
-def test_sdk_code_generation__operating_system_feature(
-    saved_scd_table, cust_id_entity, update_fixtures
-):
+def test_sdk_code_generation__operating_system_feature(saved_scd_table, cust_id_entity, update_fixtures):
     """Test SDK code generation for operating system feature"""
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = saved_scd_table.get_view()
@@ -560,9 +534,7 @@ def test_isin_column_sdk_code_generation(saved_event_table, update_fixtures):
     )
 
 
-def test_isin_feature_sdk_code_generation(
-    saved_event_table, cust_id_entity, transaction_entity, update_fixtures
-):
+def test_isin_feature_sdk_code_generation(saved_event_table, cust_id_entity, transaction_entity, update_fixtures):
     """
     Test SDK code generation for isin operation with Feature
     """

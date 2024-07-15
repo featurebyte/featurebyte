@@ -43,9 +43,7 @@ def tabular_source_fixture():
     """Tabular source fixture"""
     return TabularSource(
         feature_store_id=ObjectId(),
-        table_details=TableDetails(
-            database_name="db_name", schema_name="schema_name", table_name="table_name"
-        ),
+        table_details=TableDetails(database_name="db_name", schema_name="schema_name", table_name="table_name"),
     )
 
 
@@ -112,9 +110,7 @@ def item_table_data_fixture(tabular_source, event_table_data):
             ColumnInfo(
                 name="item_amount",
                 dtype=DBVarType.FLOAT,
-                critical_data_info=CriticalDataInfo(
-                    cleaning_operations=[MissingValueImputation(imputed_value=0)]
-                ),
+                critical_data_info=CriticalDataInfo(cleaning_operations=[MissingValueImputation(imputed_value=0)]),
             ),
         ],
         tabular_source=tabular_source,
@@ -135,9 +131,7 @@ def dimension_table_data_fixture(tabular_source):
                 dtype=DBVarType.VARCHAR,
                 critical_data_info=CriticalDataInfo(
                     cleaning_operations=[
-                        UnexpectedValueImputation(
-                            expected_values=["male", "female"], imputed_value=None
-                        )
+                        UnexpectedValueImputation(expected_values=["male", "female"], imputed_value=None)
                     ]
                 ),
             ),
@@ -216,9 +210,7 @@ def item_input_node_fixture(feature_store_details, item_table_data):
 @pytest.fixture(name="dimension_input_node")
 def dimension_input_node_fixture(feature_store_details, dimension_table_data):
     """Dimension table input node"""
-    input_node = dimension_table_data.construct_input_node(
-        feature_store_details=feature_store_details
-    )
+    input_node = dimension_table_data.construct_input_node(feature_store_details=feature_store_details)
     assert input_node.dict() == {
         "type": "input",
         "name": "temp",
@@ -239,23 +231,15 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
     return input_node
 
 
-def test_construct_cleaning_recipe_node__missing_critical_data_info(
-    source_table_data, source_table_input_node
-):
+def test_construct_cleaning_recipe_node__missing_critical_data_info(source_table_data, source_table_input_node):
     """Test construct_cleaning_recipe_node on a source table without any critical data info"""
-    output = source_table_data.construct_cleaning_recipe_node(
-        input_node=source_table_input_node, skip_column_names=[]
-    )
+    output = source_table_data.construct_cleaning_recipe_node(input_node=source_table_input_node, skip_column_names=[])
     assert output is None
 
 
-def test_construct_cleaning_recipe_node__check_skip_columns_works_as_expected(
-    event_table_data, event_input_node
-):
+def test_construct_cleaning_recipe_node__check_skip_columns_works_as_expected(event_table_data, event_input_node):
     """Test construct_cleaning_recipe_node (skip columns)"""
-    output = event_table_data.construct_cleaning_recipe_node(
-        input_node=event_input_node, skip_column_names=["amount"]
-    )
+    output = event_table_data.construct_cleaning_recipe_node(input_node=event_input_node, skip_column_names=["amount"])
     assert output is None
 
 
@@ -264,9 +248,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     # construct an input node & a graph node
     query_graph = QueryGraph()
     inserted_input_node = query_graph.add_node(node=event_input_node, input_nodes=[])
-    graph_node = event_table_data.construct_cleaning_recipe_node(
-        input_node=inserted_input_node, skip_column_names=[]
-    )
+    graph_node = event_table_data.construct_cleaning_recipe_node(input_node=inserted_input_node, skip_column_names=[])
     output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
     # generate query
@@ -297,9 +279,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     )
 
 
-def test_construct_cleaning_recipe_node__dimension_table(
-    dimension_table_data, dimension_input_node
-):
+def test_construct_cleaning_recipe_node__dimension_table(dimension_table_data, dimension_input_node):
     """Test construct_cleaning_recipe_node (SQL generation is not ready for IS_IN and IS_STRING node)"""
     graph_node = dimension_table_data.construct_cleaning_recipe_node(
         input_node=dimension_input_node, skip_column_names=[]
@@ -351,9 +331,10 @@ def test_event_view_graph_node(event_table_data, event_input_node):
     )
     # only amount is required as it is used in cleaning nested graph
     # since we drop event_timestamp, only "amount" is in columns_info
-    assert set(
-        graph_node._get_required_input_columns(input_index=0, available_column_names=[])
-    ) == {"amount", "event_id"}
+    assert set(graph_node._get_required_input_columns(input_index=0, available_column_names=[])) == {
+        "amount",
+        "event_id",
+    }
     compare_pydantic_obj(
         columns_info,
         expected=[
@@ -418,16 +399,12 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
         ),
     )
 
-    assert set(
-        item_graph_node._get_required_input_columns(input_index=0, available_column_names=[])
-    ) == {
+    assert set(item_graph_node._get_required_input_columns(input_index=0, available_column_names=[])) == {
         "item_name",
         "item_amount",
         "item_id",
     }
-    assert set(
-        item_graph_node._get_required_input_columns(input_index=1, available_column_names=[])
-    ) == {
+    assert set(item_graph_node._get_required_input_columns(input_index=1, available_column_names=[])) == {
         "amount",
         "event_id",
         "event_timestamp",

@@ -123,15 +123,13 @@ def saved_event_table_fixture(snowflake_event_table):
     event_table_list = EventTable.list()
     assert_frame_equal(
         event_table_list,
-        pd.DataFrame(
-            {
-                "name": [snowflake_event_table.name],
-                "type": [snowflake_event_table.type],
-                "status": [snowflake_event_table.status],
-                "entities": event_table_list["entities"],
-                "created_at": [snowflake_event_table.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "name": [snowflake_event_table.name],
+            "type": [snowflake_event_table.type],
+            "status": [snowflake_event_table.status],
+            "entities": event_table_list["entities"],
+            "created_at": [snowflake_event_table.created_at.isoformat()],
+        }),
     )
     yield snowflake_event_table
 
@@ -279,15 +277,13 @@ def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item
     item_table_list = ItemTable.list()
     assert_frame_equal(
         item_table_list,
-        pd.DataFrame(
-            {
-                "name": [snowflake_item_table.name],
-                "type": [snowflake_item_table.type],
-                "status": [snowflake_item_table.status],
-                "entities": [["item"]],
-                "created_at": [snowflake_item_table.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "name": [snowflake_item_table.name],
+            "type": [snowflake_item_table.type],
+            "status": [snowflake_item_table.status],
+            "entities": [["item"]],
+            "created_at": [snowflake_item_table.created_at.isoformat()],
+        }),
     )
 
     yield snowflake_item_table
@@ -330,16 +326,12 @@ def snowflake_change_view(snowflake_scd_table):
 
 
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(
-    snowflake_event_table, config, arbitrary_default_feature_job_setting
-):
+def snowflake_event_view_fixture(snowflake_event_table, config, arbitrary_default_feature_job_setting):
     """
     EventTable object fixture
     """
     _ = config
-    snowflake_event_table.update_default_feature_job_setting(
-        feature_job_setting=arbitrary_default_feature_job_setting
-    )
+    snowflake_event_table.update_default_feature_job_setting(feature_job_setting=arbitrary_default_feature_job_setting)
     event_view = snowflake_event_table.get_view()
     yield event_view
 
@@ -380,9 +372,7 @@ def batch_request_table_from_source_fixture(
 ):
     """Batch request table from source table fixture"""
     _ = catalog, snowflake_execute_query_for_materialized_table
-    return snowflake_database_table.create_batch_request_table(
-        "batch_request_table_from_source_table"
-    )
+    return snowflake_database_table.create_batch_request_table("batch_request_table_from_source_table")
 
 
 @pytest.fixture(name="batch_request_table_from_view")
@@ -467,9 +457,7 @@ def mock_source_table_fixture():
             )
         ),
     )
-    with patch(
-        "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
-    ):
+    with patch("featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store):
         yield mock_source_table
 
 

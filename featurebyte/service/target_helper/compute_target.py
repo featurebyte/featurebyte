@@ -33,9 +33,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
     def __init__(self, feature_table_cache_service: FeatureTableCacheService):
         self.feature_table_cache_service = feature_table_cache_service
 
-    async def execute(  # pylint: disable=too-many-locals
-        self, executor_params: ExecutorParams
-    ) -> ExecutionResult:
+    async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
         """
         Get targets.
 
@@ -98,12 +96,8 @@ class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):
             task_progress_updater,
         )
 
-    async def get_validation_parameters(
-        self, request: ComputeTargetRequest
-    ) -> ValidationParameters:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=request.feature_store_id
-        )
+    async def get_validation_parameters(self, request: ComputeTargetRequest) -> ValidationParameters:
+        feature_store = await self.feature_store_service.get_document(document_id=request.feature_store_id)
         return ValidationParameters(
             graph=request.graph,
             nodes=request.nodes,

@@ -33,9 +33,7 @@ async def feature_list_namespace_deployed_fixture(
 ):
     """Feature list namespace deployed fixture"""
     _ = mock_update_data_warehouse
-    namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
+    namespace = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
     assert namespace.status == FeatureListStatus.DRAFT
     for feature_id in feature_list.feature_ids:
         await feature_readiness_service.update_feature(
@@ -102,8 +100,7 @@ async def check_transit_to_draft_is_not_allow(feature_list_status_service, featu
         )
 
     expected_msg = (
-        f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
-        "to draft status."
+        f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") ' "to draft status."
     )
     assert expected_msg in str(exc.value)
 
@@ -123,9 +120,7 @@ async def test_feature_list_status__deployed_feature_list_transition_check(
 ):
     """Test that a deployed feature list cannot be updated to any other status."""
     if feature_list_status == FeatureListStatus.DRAFT:
-        await check_transit_to_draft_is_not_allow(
-            feature_list_status_service, feature_list_namespace_deployed
-        )
+        await check_transit_to_draft_is_not_allow(feature_list_status_service, feature_list_namespace_deployed)
     else:
         with pytest.raises(DocumentUpdateError) as exc:
             await feature_list_status_service.update_feature_list_namespace_status(
@@ -165,9 +160,7 @@ async def test_feature_list_status__deployed_feature_namespace_transit_to_public
             to_enable_deployment=False,
         )
 
-    namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list_namespace_deployed.id
-    )
+    namespace = await feature_list_namespace_service.get_document(document_id=feature_list_namespace_deployed.id)
     assert namespace.deployed_feature_list_ids == []
     assert namespace.status == FeatureListStatus.PUBLIC_DRAFT
 
@@ -186,9 +179,7 @@ async def test_feature_list_status__allowed_status_transition(
         feature_list_namespace_id=feature_list_namespace.id,
         target_feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
     )
-    namespace = await feature_list_namespace_service.get_document(
-        document_id=feature_list_namespace.id
-    )
+    namespace = await feature_list_namespace_service.get_document(document_id=feature_list_namespace.id)
     assert namespace.status == FeatureListStatus.PUBLIC_DRAFT
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
@@ -245,7 +236,6 @@ async def test_feature_list_status__deployed_can_only_transit_to_public_draft(
         )
 
     expected_msg = (
-        f'Deployed FeatureList (name: "{feature_list_namespace.name}") can only be updated '
-        "to public draft status."
+        f'Deployed FeatureList (name: "{feature_list_namespace.name}") can only be updated ' "to public draft status."
     )
     assert expected_msg in str(exc.value)

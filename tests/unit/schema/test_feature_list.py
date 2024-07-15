@@ -54,8 +54,7 @@ def test_feature_list_batch_feature_creation(payload_class):
         )
 
     expected_error = (
-        "features count must be less than or equal to 500 "
-        "if skip_batch_feature_creation is not set to True."
+        "features count must be less than or equal to 500 " "if skip_batch_feature_creation is not set to True."
     )
     assert expected_error in str(exc.value)
 

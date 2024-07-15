@@ -33,9 +33,7 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
         new_credential = Credential.create(
             feature_store_name=snowflake_feature_store.name,
-            database_credential=UsernamePasswordCredential(
-                username="username", password="password"
-            ),
+            database_credential=UsernamePasswordCredential(username="username", password="password"),
             storage_credential=S3StorageCredential(
                 s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
             ),
@@ -69,9 +67,7 @@ def test_credential_creation__conflict(snowflake_feature_store):
     with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
         with pytest.raises(DuplicatedRecordException) as exc:
             Credential.create(feature_store_name=snowflake_feature_store.name)
-    assert f'Credential (feature_store_id: "{snowflake_feature_store.id}") already exists' in str(
-        exc.value
-    )
+    assert f'Credential (feature_store_id: "{snowflake_feature_store.id}") already exists' in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -309,9 +305,9 @@ async def test_get_credential_user_access(credential, persistent):
 
     with pytest.raises(RecordRetrievalException) as exc:
         Credential.get_by_id(credential.id)
-    assert (
-        f'Credential (id: "{credential.id}") not found. ' "Please save the Credential object first."
-    ) in str(exc.value)
+    assert (f'Credential (id: "{credential.id}") not found. ' "Please save the Credential object first.") in str(
+        exc.value
+    )
 
     credentials = Credential.list()
     assert credentials.shape[0] == 0

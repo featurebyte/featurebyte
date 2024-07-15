@@ -121,7 +121,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         storage_path="file:///opt/spark/data/staging/featurebyte",
         ...         catalog_name="spark_catalog",
         ...         schema_name="playground",
-        ...     )
+        ...     ),
         ... )
         """
         # Construct object, and save to persistent layer.
@@ -184,7 +184,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         storage_path="file:///opt/spark/data/staging/featurebyte",
         ...         catalog_name="spark_catalog",
         ...         schema_name="playground",
-        ...     )
+        ...     ),
         ... )
         >>> FeatureStore.list()[["name", "type"]]
                   name   type
@@ -229,9 +229,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         return super().get(name)
 
     @classmethod
-    def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureStore:
+    def get_by_id(cls, id: ObjectId) -> FeatureStore:
         """
         Returns a FeatureStore object by its unique identifier (ID).
 
@@ -309,9 +307,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         """
         self._delete()
 
-    def update_details(
-        self, http_path: Optional[str] = None, warehouse: Optional[str] = None
-    ) -> None:
+    def update_details(self, http_path: Optional[str] = None, warehouse: Optional[str] = None) -> None:
         """
         Updates the details of the feature store.
 
@@ -330,9 +326,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         >>> feature_store.update_details(warehouse="feature_engineering")  # doctest: +SKIP
         """
         self.update(
-            update_payload=DatabaseDetailsUpdate(
-                http_path=http_path, warehouse=warehouse
-            ).json_dict(),
+            update_payload=DatabaseDetailsUpdate(http_path=http_path, warehouse=warehouse).json_dict(),
             allow_update_local=False,
             url=f"{self._route}/{self.id}/details",
             skip_update_schema_check=True,

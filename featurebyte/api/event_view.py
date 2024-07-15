@@ -4,9 +4,8 @@ EventView class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
-
 import copy
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from bson import ObjectId
 from pydantic import Field
@@ -144,12 +143,10 @@ class EventView(View, GroupByMixin, RawMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update(
-            {
-                "default_feature_job_setting": self.default_feature_job_setting,
-                "event_id_column": self.event_id_column,
-            }
-        )
+        params.update({
+            "default_feature_job_setting": self.default_feature_job_setting,
+            "event_id_column": self.event_id_column,
+        })
         return params
 
     def get_join_column(self) -> str:
@@ -181,9 +178,7 @@ class EventView(View, GroupByMixin, RawMixin):
             raised when the entity_col provided is an empty string, or if it's not a column on the event view
         """
         if entity_col == "":
-            raise ValueError(
-                "Entity column override provided is an empty string. Please provide a specific column."
-            )
+            raise ValueError("Entity column override provided is an empty string. Please provide a specific column.")
 
         # Check that the column is an entity column in the view.
         current_columns = {col.name for col in self.columns_info}
@@ -246,9 +241,7 @@ class EventView(View, GroupByMixin, RawMixin):
 
         # Validate whether request column is used in feature definition
         if feature.used_request_column:
-            raise ValueError(
-                "We currently only support the addition of features that do not use request columns."
-            )
+            raise ValueError("We currently only support the addition of features that do not use request columns.")
 
         # Validate entity_col_override
         if entity_col_override is not None:
@@ -375,9 +368,7 @@ class EventView(View, GroupByMixin, RawMixin):
             f"from the EventView columns: {sorted(self.columns)}"
         )
 
-    def add_feature(
-        self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
-    ) -> EventView:
+    def add_feature(self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None) -> EventView:
         """
         Adds a simple aggregate feature obtained from an Item View to the corresponding Event View. Once the feature
         is integrated in this manner, it can be aggregated as any other column over a time frame to create Aggregate
@@ -410,9 +401,9 @@ class EventView(View, GroupByMixin, RawMixin):
         >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")  # doctest: +SKIP
         >>> # Get the number of items in each invoice
         >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
-        ...   None,
-        ...   method=fb.AggFunc.COUNT,
-        ...   feature_name="InvoiceItemCount",
+        ...     None,
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="InvoiceItemCount",
         ... )
         >>> event_view = catalog.get_view("GROCERYINVOICE")  # doctest: +SKIP
         >>> event_view = event_view.add_feature("InvoiceItemCount", invoice_item_count)  # doctest: +SKIP
@@ -446,6 +437,4 @@ class EventView(View, GroupByMixin, RawMixin):
         )
 
         # create a new view and return it
-        return self._create_joined_view(
-            new_node_name=node.name, joined_columns_info=updated_columns_info
-        )
+        return self._create_joined_view(new_node_name=node.name, joined_columns_info=updated_columns_info)

@@ -2,11 +2,10 @@
 Spark Thrift Server Offline Store
 """
 
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
-
 import json
 from abc import abstractmethod
 from datetime import datetime
+from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -132,10 +131,7 @@ class SparkThriftOfflineStore(OfflineStore):
             this=expressions.RowNumber(),
             partition_by=partition_by_cols,
             order=expressions.Order(
-                expressions=[
-                    expressions.Ordered(this=timestamp_col, desc=True)
-                    for timestamp_col in timestamp_cols
-                ]
+                expressions=[expressions.Ordered(this=timestamp_col, desc=True) for timestamp_col in timestamp_cols]
             ),
             over=expressions.WindowSpec(),
         )
@@ -144,8 +140,7 @@ class SparkThriftOfflineStore(OfflineStore):
         select_fields = join_key_cols + feature_name_cols + timestamp_cols
         inner_expr = (
             expressions.Select(
-                expressions=select_fields
-                + [expressions.alias_(feast_row_expr, "feast_row_", quoted=True)],
+                expressions=select_fields + [expressions.alias_(feast_row_expr, "feast_row_", quoted=True)],
             )
             .from_(
                 expressions.Table(
@@ -286,9 +281,7 @@ class SparkThriftRetrievalJob(RetrievalJob):
         for column in result.columns:
             if result[column].dtype == "object":
                 if isinstance(result[column].iloc[0], np.ndarray):
-                    result[column] = result[column].apply(
-                        lambda x: json.dumps(x.tolist()) if x is not None else None
-                    )
+                    result[column] = result[column].apply(lambda x: json.dumps(x.tolist()) if x is not None else None)
         return result
 
     def _to_arrow_internal(self, timeout: Optional[int] = None) -> pyarrow.Table:

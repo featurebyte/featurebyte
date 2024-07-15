@@ -4,9 +4,8 @@ UserDefinedFunction API object
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union, cast
-
 from http import HTTPStatus
+from typing import Any, ClassVar, Dict, List, Optional, Union, cast
 
 from bson import ObjectId
 from pydantic import Field
@@ -66,9 +65,7 @@ def _synchronize_user_defined_function(func_accessor: FunctionAccessor, route: s
             # Cannot synchronize user-defined functions without specifying a feature store
             return
 
-        for udf_dict in iterate_api_object_using_paginated_routes(
-            route, params={"feature_store_id": feature_store_id}
-        ):
+        for udf_dict in iterate_api_object_using_paginated_routes(route, params={"feature_store_id": feature_store_id}):
             udf = UserDefinedFunctionModel(**udf_dict)
             assert udf.name is not None, "User-defined function name cannot be None."
             if udf.name in name_to_udf_dict and udf.catalog_id is None:
@@ -300,7 +297,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> fb.FeatureGroup([feature, cos_feat]).preview(
         ...     observation_set=pd.DataFrame({
         ...         "POINT_IN_TIME": ["2022-06-01 00:00:00"],
-        ...         "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3" ]
+        ...         "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3"],
         ...     })
         ... )
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  cos(InvoiceCount_60days)
@@ -363,9 +360,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf.sql_function_name
         'sin'
         """
-        self.update(
-            update_payload={"sql_function_name": sql_function_name}, allow_update_local=False
-        )
+        self.update(update_payload={"sql_function_name": sql_function_name}, allow_update_local=False)
 
     @typechecked
     def update_function_parameters(self, function_parameters: List[FunctionParameter]) -> None:
@@ -384,9 +379,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf.function_parameters
         [FunctionParameter(name='value', dtype='FLOAT', default_value=None, test_value=None)]
         """
-        self.update(
-            update_payload={"function_parameters": function_parameters}, allow_update_local=False
-        )
+        self.update(update_payload={"function_parameters": function_parameters}, allow_update_local=False)
 
     @typechecked
     def update_output_dtype(self, output_dtype: Union[DBVarType, str]) -> None:

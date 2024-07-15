@@ -77,13 +77,9 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
 
     async def _run_materialize(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> None:
         session = None
-        total_count = (await self.offline_store_feature_table_service.list_documents_as_dict())[
-            "total"
-        ]
+        total_count = (await self.offline_store_feature_table_service.list_documents_as_dict())["total"]
         current_table_index = 0
-        async for (
-            feature_table_model
-        ) in self.offline_store_feature_table_service.list_documents_iterator({}):
+        async for feature_table_model in self.offline_store_feature_table_service.list_documents_iterator({}):
             logger.info(
                 "Updating online store for offline feature store table",
                 extra={
@@ -99,17 +95,13 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
             current_table_index += 1
 
             if session is None:
-                session = await self.feature_materialize_service._get_session(  # pylint: disable=protected-access
-                    feature_table_model
-                )
+                session = await self.feature_materialize_service._get_session(feature_table_model)
 
             if feature_table_model.deployment_ids:
                 service = self.feast_feature_store_service
-                feast_feature_store = (
-                    await service.get_feast_feature_store_for_feature_materialization(
-                        feature_table_model=feature_table_model,
-                        online_store_id=payload.online_store_id,
-                    )
+                feast_feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                    feature_table_model=feature_table_model,
+                    online_store_id=payload.online_store_id,
                 )
                 if feast_feature_store:
                     await self.feature_materialize_service.update_online_store(

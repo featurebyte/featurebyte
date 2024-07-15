@@ -4,10 +4,9 @@ FeatureList API route controller
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
-
 import copy
 from http import HTTPStatus
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
 
 from bson import ObjectId, json_util
 from fastapi import UploadFile
@@ -75,17 +74,13 @@ from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.storage import Storage
 
 
-# pylint: disable=too-many-instance-attributes
-class FeatureListController(
-    BaseDocumentController[FeatureListModel, FeatureListService, FeatureListPaginatedList]
-):
+class FeatureListController(BaseDocumentController[FeatureListModel, FeatureListService, FeatureListPaginatedList]):
     """
     FeatureList controller
     """
 
     paginated_document_class = FeatureListPaginatedList
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         feature_list_service: FeatureListService,
@@ -134,14 +129,12 @@ class FeatureListController(
         Optional[Task]
             Task object
         """
-        payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(
-            **{
-                **data.dict(by_alias=True),
-                "user_id": self.service.user.id,
-                "catalog_id": self.service.catalog_id,
-                "output_document_id": data.id,
-            }
-        )
+        payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(**{
+            **data.dict(by_alias=True),
+            "user_id": self.service.user.id,
+            "catalog_id": self.service.catalog_id,
+            "output_document_id": data.id,
+        })
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
@@ -164,20 +157,16 @@ class FeatureListController(
             f"feature_list/{data.id}/features_parameters_{ObjectId()}.json"
         )
         feature_parameters = FeaturesParameters(features=data.features)
-        await self.storage.put_text(
-            json_util.dumps(feature_parameters.dict(by_alias=True)), features_parameters_path
-        )
-        payload = FeatureListCreateTaskPayload(
-            **{
-                "feature_list_id": data.id,
-                "feature_list_name": data.name,
-                "features_parameters_path": str(features_parameters_path),
-                "features_conflict_resolution": data.features_conflict_resolution,
-                "user_id": self.service.user.id,
-                "catalog_id": self.service.catalog_id,
-                "output_document_id": data.id,
-            }
-        )
+        await self.storage.put_text(json_util.dumps(feature_parameters.dict(by_alias=True)), features_parameters_path)
+        payload = FeatureListCreateTaskPayload(**{
+            "feature_list_id": data.id,
+            "feature_list_name": data.name,
+            "features_parameters_path": str(features_parameters_path),
+            "features_conflict_resolution": data.features_conflict_resolution,
+            "user_id": self.service.user.id,
+            "catalog_id": self.service.catalog_id,
+            "output_document_id": data.id,
+        })
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
@@ -210,9 +199,7 @@ class FeatureListController(
             document = await self.feature_list_facade_service.create_new_version(data=data)
         return await self.get(document_id=document.id)
 
-    async def get(
-        self, document_id: ObjectId, exception_detail: str | None = None
-    ) -> FeatureListModelResponse:
+    async def get(self, document_id: ObjectId, exception_detail: str | None = None) -> FeatureListModelResponse:
         document = await self.service.get_document(
             document_id=document_id,
             exception_detail=exception_detail,
@@ -308,7 +295,7 @@ class FeatureListController(
         FeatureListPaginatedList
             List of documents fulfilled the filtering condition
         """
-        # pylint: disable=too-many-locals
+
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).dict()
@@ -328,9 +315,7 @@ class FeatureListController(
         )
 
         # prepare mappings to add additional attributes
-        namespace_ids = {
-            document["feature_list_namespace_id"] for document in document_data["data"]
-        }
+        namespace_ids = {document["feature_list_namespace_id"] for document in document_data["data"]}
         namespace_id_to_default_id = {}
         async for namespace in self.feature_list_namespace_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(namespace_ids)}},
@@ -341,9 +326,7 @@ class FeatureListController(
         # prepare output
         output = []
         for feature_list in document_data["data"]:
-            default_feature_list_id = namespace_id_to_default_id.get(
-                feature_list["feature_list_namespace_id"]
-            )
+            default_feature_list_id = namespace_id_to_default_id.get(feature_list["feature_list_namespace_id"])
             output.append(
                 FeatureListPaginatedItem(
                     **feature_list,
@@ -374,13 +357,9 @@ class FeatureListController(
             Invalid request payload
         """
         try:
-            return await self.feature_preview_service.preview_featurelist(
-                featurelist_preview=featurelist_preview
-            )
+            return await self.feature_preview_service.preview_featurelist(featurelist_preview=featurelist_preview)
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
+            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]) from exc
 
     async def get_info(
         self,
@@ -408,13 +387,9 @@ class FeatureListController(
             return VersionIdentifier(**version_dict).to_str()
 
         def _to_prod_ready_fraction(readiness_dist: List[Dict[str, Any]]) -> float:
-            return FeatureReadinessDistribution(
-                __root__=readiness_dist
-            ).derive_production_ready_fraction()
+            return FeatureReadinessDistribution(__root__=readiness_dist).derive_production_ready_fraction()
 
-        def _to_default_feature_fraction(
-            feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]
-        ) -> float:
+        def _to_default_feature_fraction(feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]) -> float:
             count = 0
             for feat_id in feature_ids:
                 if feat_id in default_feat_ids:
@@ -438,16 +413,10 @@ class FeatureListController(
         entities, tables = updated_docs
         primary_entity_data = copy.deepcopy(entities)
         primary_entity_data["data"] = sorted(
-            [
-                entity
-                for entity in entities["data"]
-                if entity["_id"] in feature_list["primary_entity_ids"]
-            ],
+            [entity for entity in entities["data"] if entity["_id"] in feature_list["primary_entity_ids"]],
             key=lambda doc: doc["_id"],  # type: ignore
         )
-        default_feature_list = await self.service.get_document_as_dict(
-            document_id=namespace["default_feature_list_id"]
-        )
+        default_feature_list = await self.service.get_document_as_dict(document_id=namespace["default_feature_list_id"])
 
         versions_info = None
         if verbose:
@@ -475,12 +444,8 @@ class FeatureListController(
                 "default": _to_prod_ready_fraction(default_feature_list["readiness_distribution"]),
             },
             default_feature_fraction={
-                "this": _to_default_feature_fraction(
-                    feature_list["feature_ids"], default_feature_ids
-                ),
-                "default": _to_default_feature_fraction(
-                    default_feature_list["feature_ids"], default_feature_ids
-                ),
+                "this": _to_default_feature_fraction(feature_list["feature_ids"], default_feature_ids),
+                "default": _to_default_feature_fraction(default_feature_list["feature_ids"], default_feature_ids),
             },
             versions_info=versions_info,
             catalog_name=catalog_name,
@@ -546,13 +511,9 @@ class FeatureListController(
                 featurelist_get_historical_features=featurelist_get_historical_features,
             )
         except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
+            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]) from exc
 
-    async def get_feature_job_logs(
-        self, feature_list_id: ObjectId, hour_limit: int
-    ) -> dict[str, Any]:
+    async def get_feature_job_logs(self, feature_list_id: ObjectId, hour_limit: int) -> dict[str, Any]:
         """
         Retrieve data preview for query graph node
 
@@ -583,9 +544,7 @@ class FeatureListController(
             hour_limit=hour_limit,
         )
 
-    async def get_sample_entity_serving_names(
-        self, feature_list_id: ObjectId, count: int
-    ) -> SampleEntityServingNames:
+    async def get_sample_entity_serving_names(self, feature_list_id: ObjectId, count: int) -> SampleEntityServingNames:
         """
         Get sample entity serving names for feature list
 

@@ -6,9 +6,8 @@ We split this into a separate service, as these typically require a session obje
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, List, Optional, Tuple
-
 import os
+from typing import Any, AsyncGenerator, List, Optional, Tuple
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
@@ -35,9 +34,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 
-MAX_TABLE_CELLS = int(
-    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
-)  # 10 million rows, 300 columns
+MAX_TABLE_CELLS = int(os.environ.get("MAX_TABLE_CELLS", 10000000 * 300))  # 10 million rows, 300 columns
 
 
 logger = get_logger(__name__)
@@ -71,14 +68,10 @@ class FeatureStoreWarehouseService:
         feature_store: FeatureStoreModel
             Feature store model
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store=feature_store)
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
-    async def list_databases(
-        self, feature_store: FeatureStoreModel, get_credential: Optional[Any]
-    ) -> List[str]:
+    async def list_databases(self, feature_store: FeatureStoreModel, get_credential: Optional[Any]) -> List[str]:
         """
         List databases in feature store
 
@@ -124,9 +117,7 @@ class FeatureStoreWarehouseService:
         List[str]
             List of schema names
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store=feature_store)
         try:
             return await db_session.list_schemas(database_name=database_name)
         except db_session.no_schema_error as exc:
@@ -147,13 +138,9 @@ class FeatureStoreWarehouseService:
         return False
 
     @staticmethod
-    async def _is_featurebyte_schema(
-        db_session: BaseSession, database_name: str, schema_name: str
-    ) -> bool:
+    async def _is_featurebyte_schema(db_session: BaseSession, database_name: str, schema_name: str) -> bool:
         try:
-            sql_expr = get_feature_store_id_expr(
-                database_name=database_name, schema_name=schema_name
-            )
+            sql_expr = get_feature_store_id_expr(database_name=database_name, schema_name=schema_name)
             sql = sql_to_string(
                 sql_expr,
                 source_type=db_session.source_type,
@@ -192,22 +179,14 @@ class FeatureStoreWarehouseService:
             List of tables
         """
 
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
-        is_featurebyte_schema = await self._is_featurebyte_schema(
-            db_session, database_name, schema_name
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store=feature_store)
+        is_featurebyte_schema = await self._is_featurebyte_schema(db_session, database_name, schema_name)
         try:
-            tables = await db_session.list_tables(
-                database_name=database_name, schema_name=schema_name
-            )
+            tables = await db_session.list_tables(database_name=database_name, schema_name=schema_name)
         except db_session.no_schema_error as exc:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
 
-        return [
-            table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
-        ]
+        return [table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)]
 
     async def list_columns(
         self,
@@ -240,9 +219,7 @@ class FeatureStoreWarehouseService:
         List[ColumnSpecWithDescription]
             List of ColumnSpecWithDescription object
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store=feature_store)
 
         try:
             table_schema = await db_session.list_table_schema(
@@ -252,9 +229,7 @@ class FeatureStoreWarehouseService:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
 
         table_schema = {  # type: ignore[assignment]
-            col_name: v
-            for (col_name, v) in table_schema.items()
-            if col_name != InternalName.TABLE_ROW_INDEX
+            col_name: v for (col_name, v) in table_schema.items() if col_name != InternalName.TABLE_ROW_INDEX
         }
         return list(table_schema.values())
 
@@ -289,9 +264,7 @@ class FeatureStoreWarehouseService:
         TableDetails
         """
 
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store=feature_store)
         try:
             return await db_session.get_table_details(
                 database_name=database_name, schema_name=schema_name, table_name=table_name
@@ -312,11 +285,7 @@ class FeatureStoreWarehouseService:
         assert result is not None
         columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
         has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
-        columns = [
-            col_name
-            for col_name in columns_specs.keys()
-            if col_name != InternalName.TABLE_ROW_INDEX
-        ]
+        columns = [col_name for col_name in columns_specs.keys() if col_name != InternalName.TABLE_ROW_INDEX]
         return (
             (result["row_count"].iloc[0], len(columns)),
             has_row_index,
@@ -337,9 +306,7 @@ class FeatureStoreWarehouseService:
         FeatureStoreShape
             Row and column counts
         """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=location.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
@@ -362,9 +329,7 @@ class FeatureStoreWarehouseService:
         dict[str, Any]
             Dataframe converted to json string
         """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=location.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
@@ -403,9 +368,7 @@ class FeatureStoreWarehouseService:
         LimitExceededError
             Table size exceeds the limit.
         """
-        feature_store = await self.feature_store_service.get_document(
-            document_id=location.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=location.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )

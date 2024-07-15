@@ -56,14 +56,10 @@ def filter_feature_list(
     target_tables = convert_to_list_of_strings(primary_table)
     if target_entities:
         feature_list = feature_list[
-            feature_list.primary_entities.apply(
-                lambda entities: all(entity in entities for entity in target_entities)
-            )
+            feature_list.primary_entities.apply(lambda entities: all(entity in entities for entity in target_entities))
         ]
     if target_tables:
         feature_list = feature_list[
-            feature_list.primary_tables.apply(
-                lambda tables: all(table in tables for table in target_tables)
-            )
+            feature_list.primary_tables.apply(lambda tables: all(table in tables for table in target_tables))
         ]
     return feature_list

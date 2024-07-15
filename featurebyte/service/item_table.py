@@ -12,9 +12,7 @@ from featurebyte.service.base_table_document import BaseTableDocumentService
 from featurebyte.service.event_table import EventTableService
 
 
-class ItemTableService(
-    BaseTableDocumentService[ItemTableModel, ItemTableCreate, ItemTableServiceUpdate]
-):
+class ItemTableService(BaseTableDocumentService[ItemTableModel, ItemTableCreate, ItemTableServiceUpdate]):
     """
     ItemTableService class
     """
@@ -32,9 +30,7 @@ class ExtendedItemTableService:
     ExtendedItemTableService class
     """
 
-    def __init__(
-        self, item_table_service: ItemTableService, event_table_service: EventTableService
-    ):
+    def __init__(self, item_table_service: ItemTableService, event_table_service: EventTableService):
         self.item_table_service = item_table_service
         self.event_table_service = event_table_service
 

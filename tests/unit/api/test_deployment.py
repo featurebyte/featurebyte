@@ -46,18 +46,16 @@ def test_list(deployment):
     Test listing Deployment objects
     """
     df = deployment.list()
-    expected = pd.DataFrame(
-        [
-            {
-                "id": str(deployment.id),
-                "name": deployment.name,
-                "feature_list_name": "my_feature_list",
-                "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
-                "num_feature": 1,
-                "enabled": False,
-            }
-        ]
-    )
+    expected = pd.DataFrame([
+        {
+            "id": str(deployment.id),
+            "name": deployment.name,
+            "feature_list_name": "my_feature_list",
+            "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
+            "num_feature": 1,
+            "enabled": False,
+        }
+    ])
     pd.testing.assert_frame_equal(df, expected[df.columns.tolist()])
 
 
@@ -191,13 +189,9 @@ def test_get_online_serving_code(deployment, catalog, config_file):
 @freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status(deployment, feature_job_logs):
     """Test get feature job status"""
-    with patch(
-        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
-    ) as mock_get_jobs_dataframe:
+    with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
         mock_get_jobs_dataframe.return_value = feature_job_logs
-        feature_job_status = deployment.get_feature_jobs_status(
-            job_history_window=24, job_duration_tolerance=1700
-        )
+        feature_job_status = deployment.get_feature_jobs_status(job_history_window=24, job_duration_tolerance=1700)
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     expected_session_logs = pd.read_parquet(fixture_path)
@@ -232,20 +226,14 @@ def test_associated_object_list_deployment(deployment, historical_feature_table)
     assert list_deployments.name.iloc[0] == another_deployment.name
 
 
-def test_deployment_creation__primary_entity_validation(
-    latest_event_timestamp_overall_feature, use_case
-):
+def test_deployment_creation__primary_entity_validation(latest_event_timestamp_overall_feature, use_case):
     """Test deployment creation with primary entity validation"""
     feature_list = FeatureList([latest_event_timestamp_overall_feature], name="my_feature_list")
     feature_list.save()
 
-    expected_error = (
-        "Primary entity of the use case is not in the feature list's supported serving entities."
-    )
+    expected_error = "Primary entity of the use case is not in the feature list's supported serving entities."
     with pytest.raises(RecordCreationException, match=expected_error):
-        feature_list.deploy(
-            make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
-        )
+        feature_list.deploy(make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name)
 
 
 def test_deployment_with_unbounded_window(
@@ -303,10 +291,7 @@ def test_deployment_with_unbounded_window(
 
     offline_store_info_combined = feat_latest_combined.cached_model.offline_store_info
     assert offline_store_info_combined.metadata.has_ttl is True
-    assert (
-        offline_store_info_combined.metadata.feature_job_setting
-        == feature_group_feature_job_setting
-    )
+    assert offline_store_info_combined.metadata.feature_job_setting == feature_group_feature_job_setting
     assert offline_store_info_combined.metadata.aggregation_nodes_info == [
         AggregationNodeInfo(node_type="groupby", input_node_name="graph_1", node_name="groupby_1"),
         AggregationNodeInfo(node_type="groupby", input_node_name="graph_1", node_name="groupby_2"),
@@ -336,9 +321,6 @@ def test_deployment_with_unbounded_window(
         df.fillna(np.nan, inplace=True)
         return df
     """
-    assert (
-        offline_store_info_combined.odfv_info.codes.strip()
-        == textwrap.dedent(expected_odfv_codes).strip()
-    )
+    assert offline_store_info_combined.odfv_info.codes.strip() == textwrap.dedent(expected_odfv_codes).strip()
 
     deployment.disable()

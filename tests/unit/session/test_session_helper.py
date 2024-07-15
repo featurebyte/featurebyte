@@ -26,9 +26,9 @@ def mock_snowflake_session_fixture(mock_snowflake_session, is_output_row_index_v
     """
     Mock query result
     """
-    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
-        {"is_row_index_valid": [is_output_row_index_valid]}
-    )
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "is_row_index_valid": [is_output_row_index_valid]
+    })
     yield mock_snowflake_session
 
 
@@ -56,9 +56,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
     Test validate_output_row_index on error case
     """
     with pytest.raises(ValueError) as exc_info:
-        await validate_output_row_index(
-            session=mock_snowflake_session, output_table_name="my_table"
-        )
+        await validate_output_row_index(session=mock_snowflake_session, output_table_name="my_table")
     assert str(exc_info.value) == "Row index column is invalid in the output table"
 
 

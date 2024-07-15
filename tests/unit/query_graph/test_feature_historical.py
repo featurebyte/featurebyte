@@ -84,23 +84,17 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
 
 def test_validate_historical_requests_point_in_time():
     """Test validate_historical_requests_point_in_time work with timestamps that contain timezone"""
-    original_observation_set = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.date_range("2020-01-01T10:00:00+08:00", freq="D", periods=10),
-        }
-    )
+    original_observation_set = pd.DataFrame({
+        "POINT_IN_TIME": pd.date_range("2020-01-01T10:00:00+08:00", freq="D", periods=10),
+    })
     observation_set = original_observation_set.copy()
 
     # this should not fail and convert point-in-time values to UTC
     converted_observation_set = convert_point_in_time_dtype_if_needed(observation_set)
-    validate_historical_requests_point_in_time(
-        get_internal_observation_set(converted_observation_set)
-    )
-    expected_df = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
-        }
-    )
+    validate_historical_requests_point_in_time(get_internal_observation_set(converted_observation_set))
+    expected_df = pd.DataFrame({
+        "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
+    })
     assert_frame_equal(converted_observation_set, expected_df)
 
     # observation_set should not be modified

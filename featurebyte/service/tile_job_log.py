@@ -4,10 +4,9 @@ TileJobStatusService class
 
 from __future__ import annotations
 
-from typing import Any, List
-
 import datetime
 from collections import defaultdict
+from typing import Any, List
 
 import pandas as pd
 
@@ -20,9 +19,7 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 
 
-class TileJobLogService(
-    BaseDocumentService[TileJobLogModel, TileJobLogModel, BaseDocumentServiceUpdateSchema]
-):
+class TileJobLogService(BaseDocumentService[TileJobLogModel, TileJobLogModel, BaseDocumentServiceUpdateSchema]):
     """
     TileJobLogService class
 
@@ -97,9 +94,7 @@ class TileJobLogService(
             for tile_spec in feature.tile_specs:
                 aggregation_ids.append(tile_spec.aggregation_id)
 
-        result = await self.get_logs_dataframe(
-            aggregation_ids=aggregation_ids, hour_limit=hour_limit
-        )
+        result = await self.get_logs_dataframe(aggregation_ids=aggregation_ids, hour_limit=hour_limit)
 
         return dataframe_to_json(self._summarize_logs(result, features))
 
@@ -138,9 +133,7 @@ class TileJobLogService(
 
             # extract timestamps for key steps
             standard_statuses = ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
-            summarized_logs = pd.DataFrame(
-                {status: [timestamps.get(status, pd.NaT)] for status in standard_statuses}
-            )
+            summarized_logs = pd.DataFrame({status: [timestamps.get(status, pd.NaT)] for status in standard_statuses})
 
             # extract error message if any
             summarized_logs["ERROR"] = None
@@ -153,20 +146,14 @@ class TileJobLogService(
         tile_specs_cols = ["aggregation_id", "frequency_minute", "time_modulo_frequency_second"]
         for feature in features:
             if feature.tile_specs:
-                _tile_specs = pd.DataFrame.from_dict(
-                    [tile_spec.dict() for tile_spec in feature.tile_specs]
-                )
+                _tile_specs = pd.DataFrame.from_dict([tile_spec.dict() for tile_spec in feature.tile_specs])
                 tile_specs.append(_tile_specs[tile_specs_cols])
         feature_tile_specs = (
-            pd.concat(tile_specs).drop_duplicates()
-            if tile_specs
-            else pd.DataFrame(columns=tile_specs_cols)
+            pd.concat(tile_specs).drop_duplicates() if tile_specs else pd.DataFrame(columns=tile_specs_cols)
         )
 
         # summarize logs by session
-        sessions = logs.groupby(["SESSION_ID", "AGGREGATION_ID"], group_keys=True).apply(
-            _summarize_session
-        )
+        sessions = logs.groupby(["SESSION_ID", "AGGREGATION_ID"], group_keys=True).apply(_summarize_session)
         output_columns = [
             "SESSION_ID",
             "AGGREGATION_ID",
@@ -181,9 +168,7 @@ class TileJobLogService(
         if sessions.shape[0] > 0:
             # exclude sessions that started before the range
             sessions = sessions[~sessions["STARTED"].isnull()].reset_index()
-            sessions = sessions.merge(
-                feature_tile_specs, left_on="AGGREGATION_ID", right_on="aggregation_id"
-            )
+            sessions = sessions.merge(feature_tile_specs, left_on="AGGREGATION_ID", right_on="aggregation_id")
             if sessions.shape[0] > 0:
                 sessions["SCHEDULED"] = sessions.apply(
                     lambda row: get_next_job_datetime(
@@ -191,14 +176,8 @@ class TileJobLogService(
                     ),
                     axis=1,
                 ) - pd.to_timedelta(sessions.frequency_minute, unit="minute")
-                sessions["COMPUTE_DURATION"] = (
-                    sessions["COMPLETED"] - sessions["STARTED"]
-                ).dt.total_seconds()
-                sessions["QUEUE_DURATION"] = (
-                    sessions["STARTED"] - sessions["SCHEDULED"]
-                ).dt.total_seconds()
-                sessions["TOTAL_DURATION"] = (
-                    sessions["COMPLETED"] - sessions["SCHEDULED"]
-                ).dt.total_seconds()
+                sessions["COMPUTE_DURATION"] = (sessions["COMPLETED"] - sessions["STARTED"]).dt.total_seconds()
+                sessions["QUEUE_DURATION"] = (sessions["STARTED"] - sessions["SCHEDULED"]).dt.total_seconds()
+                sessions["TOTAL_DURATION"] = (sessions["COMPLETED"] - sessions["SCHEDULED"]).dt.total_seconds()
                 return sessions[output_columns]
         return pd.DataFrame(columns=output_columns)

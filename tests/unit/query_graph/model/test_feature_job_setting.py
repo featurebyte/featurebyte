@@ -17,15 +17,11 @@ def test_equality_of_feature_job_setting():
     feature_job_setting_2 = FeatureJobSetting(blind_spot="1h", period="1d", offset="1h")
     assert feature_job_setting_1 == feature_job_setting_2
 
-    feature_job_setting_3 = FeatureJobSetting(
-        blind_spot="1h", period="1d", offset="2h"
-    )  # this is different
+    feature_job_setting_3 = FeatureJobSetting(blind_spot="1h", period="1d", offset="2h")  # this is different
     assert feature_job_setting_1 != feature_job_setting_3
 
     # create a job setting equivalent to feature_job_setting_1, but with units all defined in seconds
-    feature_job_setting_4 = FeatureJobSetting(
-        blind_spot="3600s", period=f"{60*60*24}s", offset="3600s"
-    )
+    feature_job_setting_4 = FeatureJobSetting(blind_spot="3600s", period=f"{60 * 60 * 24}s", offset="3600s")
     assert feature_job_setting_4 == feature_job_setting_1
 
 

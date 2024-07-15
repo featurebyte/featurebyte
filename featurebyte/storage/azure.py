@@ -4,9 +4,8 @@ Azure Storage Blob Class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator
-
 from pathlib import Path
+from typing import Any, AsyncGenerator
 
 import aiofiles
 from azure.core.exceptions import ResourceNotFoundError
@@ -128,9 +127,7 @@ class AzureBlobStorage(Storage):
             except ResourceNotFoundError as exc:
                 raise FileNotFoundError("Remote file does not exist") from exc
 
-    async def get_file_stream(
-        self, remote_path: Path, chunk_size: int = 255 * 1024
-    ) -> AsyncGenerator[bytes, None]:
+    async def get_file_stream(self, remote_path: Path, chunk_size: int = 255 * 1024) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 

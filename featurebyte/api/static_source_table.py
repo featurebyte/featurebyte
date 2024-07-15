@@ -4,9 +4,8 @@ StaticSourceTable class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
-
 from pathlib import Path
+from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 

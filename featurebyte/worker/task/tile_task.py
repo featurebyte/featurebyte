@@ -23,7 +23,7 @@ class TileTask(BaseTask[TileTaskPayload]):
 
     payload_class = TileTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -35,16 +35,12 @@ class TileTask(BaseTask[TileTaskPayload]):
         self.tile_task_executor = tile_task_executor
 
     async def get_task_description(self, payload: TileTaskPayload) -> str:
-        return (
-            f'Generate tile for "{payload.parameters.tile_id}:{payload.parameters.aggregation_id}"'
-        )
+        return f'Generate tile for "{payload.parameters.tile_id}:{payload.parameters.aggregation_id}"'
 
     async def execute(self, payload: TileTaskPayload) -> Any:
         logger.debug("Tile task started")
         # get feature store
-        feature_store = await self.feature_store_service.get_document(
-            document_id=payload.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
 
         # establish database session
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)

@@ -291,9 +291,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
-    op_struct = pruned_graph.extract_operation_structure(
-        node=pruned_node, keep_all_source_columns=True
-    )
+    op_struct = pruned_graph.extract_operation_structure(node=pruned_node, keep_all_source_columns=True)
     assert to_dict(op_struct.columns) == expected_op_struct_columns
     assert to_dict(op_struct.aggregations) == expected_op_struct_aggregations
 
@@ -306,9 +304,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
-    op_struct = pruned_graph.extract_operation_structure(
-        node=pruned_node, keep_all_source_columns=True
-    )
+    op_struct = pruned_graph.extract_operation_structure(node=pruned_node, keep_all_source_columns=True)
     col_names = [col.name for col in op_struct.columns]
     expected_col_names = [col["name"] for col in expected_op_struct_columns]
     assert set(col_names) == set(expected_col_names)
@@ -333,17 +329,13 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph, _, _ = prune_query_graph(
         graph=global_graph,
         node=join_node,
-        target_columns=groupby_node._get_required_input_columns(
-            input_index=0, available_column_names=[]
-        ),
+        target_columns=groupby_node._get_required_input_columns(input_index=0, available_column_names=[]),
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     compare_pydantic_obj(pruned_join_node.parameters, expected=expected_pruned_join_node_params)
 
 
-def test_join_is_prunable(
-    global_graph, event_table_input_node, item_table_input_node, groupby_node_params
-):
+def test_join_is_prunable(global_graph, event_table_input_node, item_table_input_node, groupby_node_params):
     """Test join node parameters pruning"""
     # construct a join node to join an item table & an event table (with a redundant column)
     join_node_parameters = {
@@ -369,9 +361,7 @@ def test_join_is_prunable(
     pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_table_input_node.name])
 
     # check operation structure of the join node output
-    op_struct = pruned_graph.extract_operation_structure(
-        node=join_node, keep_all_source_columns=True
-    )
+    op_struct = pruned_graph.extract_operation_structure(node=join_node, keep_all_source_columns=True)
     kwargs = {"include": ["name", "node_names"]}
     input_only_names = ["cust_id", "order_id", "order_method"]
     input_and_join_names = ["item_type", "item_name"]
@@ -490,7 +480,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_c],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=gfunc_1)
+    pruned_graph, _node_name_map = graph.prune(target_node=gfunc_1)
     assert pruned_graph.edges_map == {
         "add_1": ["assign_1"],
         "assign_1": ["project_3", "project_4"],
@@ -516,7 +506,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=gfunc_2)
+    pruned_graph, _node_name_map = graph.prune(target_node=gfunc_2)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1"],
         "project_1": ["generic_function_1"],

@@ -51,9 +51,7 @@ TableDocumentServiceT = TypeVar(
 )
 
 
-class BaseTableDocumentController(  # pylint: disable=too-many-instance-attributes
-    BaseDocumentController[TableDocumentT, TableDocumentServiceT, PaginatedDocument]
-):
+class BaseTableDocumentController(BaseDocumentController[TableDocumentT, TableDocumentServiceT, PaginatedDocument]):
     """
     BaseTableDocumentController for API routes
     """
@@ -63,7 +61,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         "record_creation_timestamp_column": SemanticType.RECORD_CREATION_TIMESTAMP,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -102,9 +100,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         """
         column_semantic_map = {}
         for field, semantic_type in self.semantic_tag_rules.items():
-            semantic_id = await self.semantic_service.get_or_create_document(
-                name=semantic_type.value
-            )
+            semantic_id = await self.semantic_service.get_or_create_document(name=semantic_type.value)
             special_column_name = getattr(document, field)
             if special_column_name:
                 column_semantic_map[special_column_name] = semantic_id
@@ -139,9 +135,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         )
         return cast(TableDocumentT, output)
 
-    async def _add_table_description_from_warehouse(
-        self, document: TableDocumentT
-    ) -> TableDocumentT:
+    async def _add_table_description_from_warehouse(self, document: TableDocumentT) -> TableDocumentT:
         """Check if description of the table exists in data warehouse and use it.
 
         Parameters
@@ -167,9 +161,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
             document.tabular_source.table_details.table_name,
         )
         if table_details.description:
-            document = await self.update_description(
-                document_id=document.id, description=table_details.description
-            )
+            document = await self.update_description(document_id=document.id, description=table_details.description)
         return document
 
     async def create_table(self, data: DocumentCreate) -> TableDocumentT:
@@ -312,9 +304,7 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         if col_info and col_info[0].semantic_id:
             semantic = await self.semantic_service.get_document(document_id=col_info[0].semantic_id)
             if semantic and semantic.name == SemanticType.SCD_SURROGATE_KEY_ID.value:
-                raise EntityTaggingIsNotAllowedError(
-                    f"Surrogate key column {column_name} cannot be tagged as entity"
-                )
+                raise EntityTaggingIsNotAllowedError(f"Surrogate key column {column_name} cannot be tagged as entity")
 
         return await self.update_table_columns_info(
             document_id=document_id,

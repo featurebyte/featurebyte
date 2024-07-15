@@ -4,11 +4,10 @@ Feature or target table controller
 
 from __future__ import annotations
 
-from typing import Any, Generic, List, Optional, TypeVar
-
 from abc import abstractmethod
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import Any, Generic, List, Optional, TypeVar
 
 import pandas as pd
 from bson import ObjectId
@@ -80,9 +79,7 @@ class ValidationParameters:
 
 
 class FeatureOrTargetTableController(
-    BaseMaterializedTableController[
-        MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument
-    ],
+    BaseMaterializedTableController[MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument],
     Generic[
         MaterializedTableDocumentT,
         MaterializedTableDocumentServiceT,
@@ -106,17 +103,13 @@ class FeatureOrTargetTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
     ):
-        super().__init__(
-            service=service, feature_store_warehouse_service=feature_store_warehouse_service
-        )
+        super().__init__(service=service, feature_store_warehouse_service=feature_store_warehouse_service)
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
 
     @abstractmethod
-    async def get_additional_info_params(
-        self, document: BaseFeatureOrTargetTableModel
-    ) -> dict[str, Any]:
+    async def get_additional_info_params(self, document: BaseFeatureOrTargetTableModel) -> dict[str, Any]:
         """
         Get additional info params
 
@@ -196,9 +189,7 @@ class FeatureOrTargetTableController(
 
         # Validate the observation_table_id
         if data.observation_table_id is not None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=data.observation_table_id
-            )
+            observation_table = await self.observation_table_service.get_document(document_id=data.observation_table_id)
             observation_set_dataframe = None
             request_column_names = {col.name for col in observation_table.columns_info}
         else:
@@ -216,15 +207,11 @@ class FeatureOrTargetTableController(
         )
 
         # prepare task payload and submit task
-        payload = await self.get_payload(
-            table_create=data, observation_set_dataframe=observation_set_dataframe
-        )
+        payload = await self.get_payload(table_create=data, observation_set_dataframe=observation_set_dataframe)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def get_basic_info(
-        self, document: BaseFeatureOrTargetTableModel
-    ) -> BaseFeatureOrTargetTableInfo:
+    async def get_basic_info(self, document: BaseFeatureOrTargetTableModel) -> BaseFeatureOrTargetTableInfo:
         """
         Get common table info
 

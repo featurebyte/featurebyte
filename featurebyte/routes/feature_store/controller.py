@@ -42,9 +42,7 @@ from featurebyte.session.base import MetadataSchemaInitializer
 logger = get_logger(__name__)
 
 
-class FeatureStoreController(
-    BaseDocumentController[FeatureStoreModel, FeatureStoreService, FeatureStoreList]
-):
+class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureStoreService, FeatureStoreList]):
     """
     FeatureStore controller
     """
@@ -148,9 +146,7 @@ class FeatureStoreController(
             logger.debug("End validate_feature_store_id_not_used_in_warehouse")
 
             session = await self.session_manager_service.get_feature_store_session(
-                feature_store=FeatureStoreModel(
-                    name=data.name, type=data.type, details=data.details
-                ),
+                feature_store=FeatureStoreModel(name=data.name, type=data.type, details=data.details),
                 get_credential=_temp_get_credential,
             )
             # Try to persist credential
@@ -348,9 +344,7 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.feature_store_warehouse_service.table_preview(
-            location=location, limit=limit
-        )
+        return await self.feature_store_warehouse_service.table_preview(location=location, limit=limit)
 
     async def sample(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
@@ -449,14 +443,10 @@ class FeatureStoreController(
         -------
         InfoDocument
         """
-        info_document = await self.service.get_feature_store_info(
-            document_id=document_id, verbose=verbose
-        )
+        info_document = await self.service.get_feature_store_info(document_id=document_id, verbose=verbose)
         return info_document
 
-    async def update_details(
-        self, feature_store_id: ObjectId, data: DatabaseDetailsUpdate
-    ) -> FeatureStoreModel:
+    async def update_details(self, feature_store_id: ObjectId, data: DatabaseDetailsUpdate) -> FeatureStoreModel:
         """
         Update feature store details
 

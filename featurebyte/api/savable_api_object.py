@@ -4,9 +4,8 @@ SavableApiObject class
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from http import HTTPStatus
+from typing import Any, Optional
 
 from bson import ObjectId
 from typeguard import typechecked
@@ -40,14 +39,10 @@ class SavableApiObject(ApiObject):
 
     def _check_object_not_been_saved(self, conflict_resolution: ConflictResolution) -> None:
         if self.saved and conflict_resolution == "raise":
-            raise ObjectHasBeenSavedError(
-                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
-            )
+            raise ObjectHasBeenSavedError(f'{type(self).__name__} (id: "{self.id}") has been saved before.')
 
     @typechecked
-    def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
         """
         Save an object to the persistent data store.
 

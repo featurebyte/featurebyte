@@ -4,9 +4,8 @@ Utility functions for credential management
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from abc import ABC, abstractmethod
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -20,9 +19,7 @@ class CredentialProvider(ABC):
     """
 
     @abstractmethod
-    async def get_credential(
-        self, user_id: ObjectId | None, feature_store_name: str
-    ) -> CredentialModel | None:
+    async def get_credential(self, user_id: ObjectId | None, feature_store_name: str) -> CredentialModel | None:
         """
         Retrieve credentials from some persistent source.
 
@@ -48,9 +45,7 @@ class MongoBackedCredentialProvider(CredentialProvider):
     def __init__(self, persistent: Any):
         self.persistent = persistent
 
-    async def get_credential(
-        self, user_id: Optional[ObjectId], feature_store_name: str
-    ) -> Optional[CredentialModel]:
+    async def get_credential(self, user_id: Optional[ObjectId], feature_store_name: str) -> Optional[CredentialModel]:
         feature_store = await self.persistent.find_one(
             collection_name=FeatureStoreModel.collection_name(),
             query_filter={"name": feature_store_name},

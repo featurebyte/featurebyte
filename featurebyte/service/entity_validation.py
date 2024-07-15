@@ -4,9 +4,8 @@ Module to support serving using parent-child relationship
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
-
 from dataclasses import dataclass
+from typing import List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
@@ -68,9 +67,7 @@ class EntityRelationshipsContextParameters:
     relationships_info: Optional[List[EntityRelationshipInfo]]
 
     @classmethod
-    def from_feature_list(
-        cls, feature_list_model: FeatureListModel
-    ) -> Optional[EntityRelationshipsContextParameters]:
+    def from_feature_list(cls, feature_list_model: FeatureListModel) -> Optional[EntityRelationshipsContextParameters]:
         """
         Create EntityRelationshipsContextParameters from a FeatureListModel
 
@@ -184,9 +181,7 @@ class EntityValidationService:
 
         # Infer provided entities from provided request columns
         candidate_serving_names = {_get_original_serving_name(col) for col in request_column_names}
-        provided_entities = await self.entity_service.get_entities_with_serving_names(
-            candidate_serving_names
-        )
+        provided_entities = await self.entity_service.get_entities_with_serving_names(candidate_serving_names)
 
         # Extract required entities from feature cluster (faster) or graph
         required_entity_ids: Optional[Sequence[ObjectId]] = None
@@ -274,12 +269,8 @@ class EntityValidationService:
         )
 
         if serving_names_mapping is not None:
-            provided_serving_names = {
-                entity.serving_names[0] for entity in entity_info.provided_entities
-            }
-            unexpected_keys = {
-                k for k in serving_names_mapping.keys() if k not in provided_serving_names
-            }
+            provided_serving_names = {entity.serving_names[0] for entity in entity_info.provided_entities}
+            unexpected_keys = {k for k in serving_names_mapping.keys() if k not in provided_serving_names}
             if unexpected_keys:
                 unexpected_keys_str = ", ".join(sorted(unexpected_keys))
                 raise UnexpectedServingNamesMappingError(
@@ -300,10 +291,8 @@ class EntityValidationService:
                     ),
                 )
             except RequiredEntityNotProvidedError:
-                raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                    entity_info.format_missing_entities_error(
-                        [entity.id for entity in entity_info.missing_entities]
-                    )
+                raise RequiredEntityNotProvidedError(
+                    entity_info.format_missing_entities_error([entity.id for entity in entity_info.missing_entities])
                 )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())
@@ -341,10 +330,8 @@ class EntityValidationService:
     ) -> EntityRelationshipsContext:
         all_relationships = set(parameters.relationships_info or [])
         all_relationships.update(parameters.feature_cluster.combined_relationships_info)
-        entity_lookup_step_creator = (
-            await self.parent_entity_lookup_service.get_entity_lookup_step_creator(
-                list(all_relationships)
-            )
+        entity_lookup_step_creator = await self.parent_entity_lookup_service.get_entity_lookup_step_creator(
+            list(all_relationships)
         )
         return EntityRelationshipsContext(
             feature_list_primary_entity_ids=parameters.primary_entity_ids,

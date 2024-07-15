@@ -66,16 +66,14 @@ def mock_get_target_fixture():
 async def observation_table_fixture(event_table, user, observation_table_service):
     """Observation table fixture"""
     request_input = SourceTableRequestInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     observation_table = ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
@@ -139,9 +137,7 @@ async def regular_feature_list_fixture(features, feature_list_service):
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list")
-async def deployed_feature_list_fixture(
-    production_ready_features, feature_list_service, deploy_service
-):
+async def deployed_feature_list_fixture(production_ready_features, feature_list_service, deploy_service):
     """Fixture to create deployed feature list"""
     data = FeatureListServiceCreate(
         name="My Deployed Feature List",
@@ -273,10 +269,8 @@ async def test_create_feature_table_cache(
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 2
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 2
 
@@ -323,10 +317,8 @@ async def test_update_feature_table_cache(
     assert params["nodes"] == feature_list.feature_clusters[0].nodes[:1]
     assert mock_snowflake_session.execute_query_long_running.await_count == 2
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 1
 
@@ -368,10 +360,8 @@ async def test_update_feature_table_cache(
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 2
 
@@ -425,10 +415,8 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
     )
     assert mock_get_historical_features.await_count == 1
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 1
 
@@ -454,10 +442,8 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 2
 
@@ -520,10 +506,8 @@ async def test_create_view_from_cache__create_cache(
     assert mock_snowflake_session.execute_query_long_running.await_count == 3
     assert is_output_view is True
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
 
     call_args = mock_snowflake_session.execute_query_long_running.await_args_list
@@ -607,10 +591,8 @@ async def test_create_view_from_cache__update_cache(
     assert mock_get_historical_features.await_count == 1
     assert mock_snowflake_session.execute_query_long_running.await_count == 4
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
 
     call_args = mock_snowflake_session.execute_query_long_running.await_args_list
@@ -684,10 +666,8 @@ async def test_create_view_from_cache__create_view_failed(
     assert mock_snowflake_session.execute_query_long_running.await_count == 4
     assert is_output_view is False
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
 
     call_args = mock_snowflake_session.execute_query_long_running.await_args_list
@@ -764,10 +744,8 @@ async def test_create_feature_table_cache__with_target(
 
     assert mock_snowflake_session.execute_query_long_running.await_count == 2
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
     assert len(feature_table_cache.feature_definitions) == 1
 
@@ -816,10 +794,8 @@ async def test_read_from_cache(
     )
     assert mock_snowflake_session.execute_query_long_running.await_count == 1
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
     )
 
     call_args = mock_snowflake_session.execute_query_long_running.await_args_list

@@ -4,9 +4,8 @@ Audit logging for persistent operations
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
-
 from functools import wraps
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -36,9 +35,7 @@ def get_audit_collection_name(collection_name: str) -> str:
     return f"__audit__{collection_name}"
 
 
-def get_audit_doc_name(
-    action_type: AuditActionType, original_doc: Document, updated_doc: Document
-) -> str:
+def get_audit_doc_name(action_type: AuditActionType, original_doc: Document, updated_doc: Document) -> str:
     """
     Retrieve document name for audit log record names
 
@@ -66,9 +63,7 @@ def get_audit_doc_name(
     return f"{action_type.lower()}: {doc_name}"
 
 
-def get_previous_and_current_values(
-    original_doc: Document, updated_doc: Document
-) -> tuple[Document, Document]:
+def get_previous_and_current_values(original_doc: Document, updated_doc: Document) -> tuple[Document, Document]:
     """
     Get values in original document that has been changed in updated document
 
@@ -85,12 +80,8 @@ def get_previous_and_current_values(
         Previous values documents (document with values in original document that has been updated)
         and current values documents (document with values in current document that has been updated)
     """
-    previous_values = {
-        key: value for key, value in original_doc.items() if value != updated_doc.get(key, np.nan)
-    }
-    current_values = {
-        key: value for key, value in updated_doc.items() if value != original_doc.get(key, np.nan)
-    }
+    previous_values = {key: value for key, value in original_doc.items() if value != updated_doc.get(key, np.nan)}
+    current_values = {key: value for key, value in updated_doc.items() if value != original_doc.get(key, np.nan)}
     return previous_values, current_values
 
 
@@ -111,7 +102,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         Return from function
     """
 
-    async def _execute_transaction(  # pylint: disable=unused-argument
+    async def _execute_transaction(
         persistent: Any,
         collection_name: str,
         async_execution: Any,
@@ -153,7 +144,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         else:
             # retrieve original document(s)
             if mode == AuditTransactionMode.SINGLE:
-                original_doc = await persistent._find_one(  # pylint: disable=protected-access
+                original_doc = await persistent._find_one(
                     collection_name=collection_name,
                     query_filter=query_filter,
                 )
@@ -162,7 +153,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 else:
                     original_docs = [original_doc]
             else:
-                original_docs, _ = await persistent._find(  # pylint: disable=protected-access
+                original_docs, _ = await persistent._find(
                     collection_name=collection_name,
                     query_filter=query_filter,
                 )
@@ -201,7 +192,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             (
                 updated_docs,
                 num_updated_docs,
-            ) = await persistent._find(  # pylint: disable=protected-access
+            ) = await persistent._find(
                 collection_name=collection_name,
                 query_filter={"_id": {"$in": [doc["_id"] for doc in original_docs]}},
             )
@@ -224,9 +215,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             else:
                 updated_doc = {}
 
-            previous_values, current_values = get_previous_and_current_values(
-                original_doc, updated_doc
-            )
+            previous_values, current_values = get_previous_and_current_values(original_doc, updated_doc)
             audit_docs.append(
                 AuditDocument(
                     user_id=user_id,
@@ -238,9 +227,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 ).dict(by_alias=True)
             )
 
-        await persistent._insert_many(  # pylint: disable=protected-access
-            collection_name=get_audit_collection_name(collection_name), documents=audit_docs
-        )
+        await persistent._insert_many(collection_name=get_audit_collection_name(collection_name), documents=audit_docs)
 
     def inner(func: Any) -> Any:
         """

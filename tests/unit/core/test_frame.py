@@ -163,9 +163,7 @@ def test__getitem__type_not_supported(dataframe):
         ("bool_col", True, DBVarType.BOOL, 7),
     ],
 )
-def test__setitem__str_key_scalar_value(
-    dataframe, key, value, expected_type, expected_column_count
-):
+def test__setitem__str_key_scalar_value(dataframe, key, value, expected_type, expected_column_count):
     """
     Test scalar value assignment
     """
@@ -219,9 +217,7 @@ def test__setitem__tuple_assignment_with_mask(dataframe):
         ("PRODUCT_ACTION", "MASK", DBVarType.BOOL, 6),
     ],
 )
-def test__setitem__str_key_series_value(
-    dataframe, key, value_key, expected_type, expected_column_count
-):
+def test__setitem__str_key_series_value(dataframe, key, value_key, expected_type, expected_column_count):
     """
     Test Series object value assignment
     """
@@ -543,9 +539,7 @@ def test_frame__setitem_with_multiple_assignments(dataframe):
 
     # check that there is no duplicated 'new_column' column info
     assert dataframe.columns_info == [
-        ColumnInfo(
-            name="CUST_ID", dtype="INT", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
+        ColumnInfo(name="CUST_ID", dtype="INT", entity_id=None, semantic_id=None, critical_data_info=None),
         ColumnInfo(
             name="PRODUCT_ACTION",
             dtype="VARCHAR",
@@ -553,12 +547,8 @@ def test_frame__setitem_with_multiple_assignments(dataframe):
             semantic_id=None,
             critical_data_info=None,
         ),
-        ColumnInfo(
-            name="VALUE", dtype="FLOAT", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
-        ColumnInfo(
-            name="MASK", dtype="BOOL", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
+        ColumnInfo(name="VALUE", dtype="FLOAT", entity_id=None, semantic_id=None, critical_data_info=None),
+        ColumnInfo(name="MASK", dtype="BOOL", entity_id=None, semantic_id=None, critical_data_info=None),
         ColumnInfo(
             name="TIMESTAMP",
             dtype="TIMESTAMP",

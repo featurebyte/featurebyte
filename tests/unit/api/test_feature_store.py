@@ -24,9 +24,7 @@ from featurebyte.session.manager import SessionManager
 
 
 @pytest.mark.asyncio
-async def test_get_session(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, credentials
-):
+async def test_get_session(snowflake_connector, snowflake_execute_query, snowflake_feature_store, credentials):
     """
     Test DatabaseSource.get_session return expected session
     """
@@ -167,14 +165,12 @@ async def saved_snowflake_feature_store_fixture(
     feature_stores = FeatureStore.list()
     assert_frame_equal(
         feature_stores,
-        pd.DataFrame(
-            {
-                "id": [str(snowflake_feature_store.id)],
-                "name": [snowflake_feature_store.name],
-                "type": ["snowflake"],
-                "created_at": [snowflake_feature_store.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(snowflake_feature_store.id)],
+            "name": [snowflake_feature_store.name],
+            "type": ["snowflake"],
+            "created_at": [snowflake_feature_store.created_at.isoformat()],
+        }),
     )
     yield snowflake_feature_store
 
@@ -232,9 +228,7 @@ def test_get(saved_snowflake_feature_store):
     expected_audit_history["action_type"] = "INSERT"
     expected_audit_history["name"] = 'insert: "sf_featurestore"'
     expected_audit_history["old_value"] = np.nan
-    pd.testing.assert_frame_equal(
-        audit_history[expected_audit_history.columns], expected_audit_history
-    )
+    pd.testing.assert_frame_equal(audit_history[expected_audit_history.columns], expected_audit_history)
 
 
 def test_get__unexpected_retrieval_exception():
@@ -250,9 +244,7 @@ def test_get__unexpected_retrieval_exception():
 
 
 @pytest.mark.asyncio
-async def test_feature_store_create(
-    mock_get_persistent, snowflake_connector, snowflake_execute_query
-):
+async def test_feature_store_create(mock_get_persistent, snowflake_connector, snowflake_execute_query):
     """
     Test the create feature store static method.
     """
@@ -279,9 +271,7 @@ async def test_feature_store_create(
             database_name="sf_database",
             role_name="TESTING",
         ),
-        database_credential=UsernamePasswordCredential(
-            username="sf_username", password="sf_password"
-        ),
+        database_credential=UsernamePasswordCredential(username="sf_username", password="sf_password"),
     )
     # assert that we have a correct instance returned
     assert isinstance(snowflake_feature_store, FeatureStore)

@@ -50,9 +50,7 @@ def scd_aggregation_source(scd_table_sql):
 
 
 @pytest.fixture
-def aggregation_spec_without_end_timestamp(
-    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
-):
+def aggregation_spec_without_end_timestamp(aggregate_as_at_node_parameters, scd_aggregation_source, entity_id):
     return AggregateAsAtSpec(
         node_name="aggregate_as_at_1",
         feature_name=aggregate_as_at_node_parameters.name,
@@ -186,9 +184,7 @@ def aggregation_spec_with_category(
 
 
 @pytest.fixture
-def aggregation_spec_with_offset(
-    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
-):
+def aggregation_spec_with_offset(aggregate_as_at_node_parameters, scd_aggregation_source, entity_id):
     parameters = aggregate_as_at_node_parameters.copy()
     parameters.offset = "7d"
     return AggregateAsAtSpec(
@@ -205,9 +201,7 @@ def aggregation_spec_with_offset(
 
 
 @pytest.fixture
-def forward_aggregation_spec_with_offset(
-    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
-):
+def forward_aggregation_spec_with_offset(aggregate_as_at_node_parameters, scd_aggregation_source, entity_id):
     parameters = aggregate_as_at_node_parameters.copy()
     parameters.offset = "7d"
     return ForwardAggregateAsAtSpec(

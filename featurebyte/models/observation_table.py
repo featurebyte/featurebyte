@@ -4,14 +4,13 @@ ObservationTableModel models
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Dict, List, Optional, Union
-from typing_extensions import Annotated, Literal
-
-from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
 from bson import ObjectId
 from pydantic import Field, StrictStr, validator
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -149,9 +148,7 @@ class ObservationTableModel(MaterializedTableModel):
     has_row_index: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
-    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(construct_sort_validator())
 
     @property
     def target_id(self) -> Optional[ObjectId]:

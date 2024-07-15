@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 """
 Test for FeatureStore route
 """
@@ -34,7 +33,7 @@ from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureStoreApi(BaseApiTestSuite):
     """
     TestFeatureStoreApi
     """
@@ -74,9 +73,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            payload["details"] = {
-                key: f"{value}_{i}" for key, value in self.payload["details"].items()
-            }
+            payload["details"] = {key: f"{value}_{i}" for key, value in self.payload["details"].items()}
             yield payload
 
     @pytest.mark.asyncio
@@ -105,9 +102,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         )
         assert "created_at" in response_dict
 
-    def test_list_databases__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_databases__200(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list databases
         """
@@ -162,9 +157,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         }
 
-    def test_list_schemas__424(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_schemas__424(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list schemas with non-existent database
         """
@@ -174,17 +167,13 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         mock_get_session.return_value.no_schema_error = ProgrammingError
         mock_get_session.return_value.list_schemas.side_effect = ProgrammingError()
-        response = test_api_client.post(
-            f"{self.base_route}/schema/?database_name=some_database", json=feature_store
-        )
+        response = test_api_client.post(f"{self.base_route}/schema/?database_name=some_database", json=feature_store)
         assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
         assert response.json() == {
             "detail": "Database not found. Please specify a valid database name.",
         }
 
-    def test_list_schemas__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_schemas__200(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list schemas
         """
@@ -195,9 +184,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         mock_get_session.return_value.list_databases.return_value = ["x"]
         schemas = ["a", "b", "c"]
         mock_get_session.return_value.list_schemas.return_value = schemas
-        response = test_api_client.post(
-            f"{self.base_route}/schema?database_name=X", json=feature_store
-        )
+        response = test_api_client.post(f"{self.base_route}/schema?database_name=X", json=feature_store)
         assert response.status_code == HTTPStatus.OK
         assert response.json() == schemas
 
@@ -226,9 +213,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         }
 
-    def test_list_tables__424(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_tables__424(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list tables with non-existent schema
         """
@@ -265,12 +250,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         mock_get_session.return_value.list_databases.return_value = ["x"]
         mock_get_session.return_value.list_schemas.return_value = ["y"]
         tables = ["a", "b", "c", "__d", "__e", "__f"]
-        mock_get_session.return_value.list_tables.return_value = [
-            TableSpec(name=tb) for tb in tables
-        ]
-        response = test_api_client.post(
-            f"{self.base_route}/table?database_name=X&schema_name=Y", json=feature_store
-        )
+        mock_get_session.return_value.list_tables.return_value = [TableSpec(name=tb) for tb in tables]
+        response = test_api_client.post(f"{self.base_route}/table?database_name=X&schema_name=Y", json=feature_store)
         assert response.status_code == HTTPStatus.OK, response.text
         # tables with names that has a "__" prefix should be excluded
         assert response.json() == tables[:3]
@@ -305,9 +286,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         }
 
-    def test_list_columns__424(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_columns__424(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list columns with non-existent table
         """
@@ -326,9 +305,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             "detail": "Table not found. Please specify a valid table name.",
         }
 
-    def test_list_columns__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
-    ):
+    def test_list_columns__200(self, test_api_client_persistent, create_success_response, mock_get_session):
         """
         Test list columns
         """
@@ -538,9 +515,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ]
         }
 
-    def test_sample_422__invalid_timestamp_range(
-        self, test_api_client_persistent, data_sample_payload
-    ):
+    def test_sample_422__invalid_timestamp_range(self, test_api_client_persistent, data_sample_payload):
         """Test table sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
@@ -562,9 +537,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ]
         }
 
-    def test_description_200(
-        self, test_api_client_persistent, data_sample_payload, mock_get_session, update_fixtures
-    ):
+    def test_description_200(self, test_api_client_persistent, data_sample_payload, mock_get_session, update_fixtures):
         """Test table description (success)"""
         test_api_client, _ = test_api_client_persistent
 
@@ -621,42 +594,40 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query_long_running.return_value = pd.DataFrame(
-            {
-                "a_dtype": ["FLOAT"],
-                "a_unique": [5],
-                "a_%missing": [1.0],
-                "a_%empty": [np.nan],
-                "a_entropy": [np.nan],
-                "a_top": [np.nan],
-                "a_freq": [np.nan],
-                "a_mean": [0.256],
-                "a_std": [0.00123],
-                "a_min": [0],
-                "a_p25": [0.01],
-                "a_p50": [0.155],
-                "a_p75": [0.357],
-                "a_max": [1.327],
-                "a_min_offset": [np.nan],
-                "a_max_offset": [np.nan],
-                "b_dtype": ["VARCHAR"],
-                "b_unique": [5],
-                "b_%missing": [3.0],
-                "b_%empty": [0.1],
-                "b_entropy": [0.123],
-                "b_top": ["a"],
-                "b_freq": [5],
-                "b_mean": [np.nan],
-                "b_std": [np.nan],
-                "b_min": [np.nan],
-                "b_p25": [np.nan],
-                "b_p50": [np.nan],
-                "b_p75": [np.nan],
-                "b_max": [np.nan],
-                "b_min_offset": [np.nan],
-                "b_max_offset": [np.nan],
-            }
-        )
+        mock_session.execute_query_long_running.return_value = pd.DataFrame({
+            "a_dtype": ["FLOAT"],
+            "a_unique": [5],
+            "a_%missing": [1.0],
+            "a_%empty": [np.nan],
+            "a_entropy": [np.nan],
+            "a_top": [np.nan],
+            "a_freq": [np.nan],
+            "a_mean": [0.256],
+            "a_std": [0.00123],
+            "a_min": [0],
+            "a_p25": [0.01],
+            "a_p50": [0.155],
+            "a_p75": [0.357],
+            "a_max": [1.327],
+            "a_min_offset": [np.nan],
+            "a_max_offset": [np.nan],
+            "b_dtype": ["VARCHAR"],
+            "b_unique": [5],
+            "b_%missing": [3.0],
+            "b_%empty": [0.1],
+            "b_entropy": [0.123],
+            "b_top": ["a"],
+            "b_freq": [5],
+            "b_mean": [np.nan],
+            "b_std": [np.nan],
+            "b_min": [np.nan],
+            "b_p25": [np.nan],
+            "b_p50": [np.nan],
+            "b_p75": [np.nan],
+            "b_max": [np.nan],
+            "b_min_offset": [np.nan],
+            "b_max_offset": [np.nan],
+        })
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float", "col_text"]
@@ -671,9 +642,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             update_fixture=update_fixtures,
         )
 
-    def test_description_200_numeric_only(
-        self, test_api_client_persistent, data_sample_payload, mock_get_session
-    ):
+    def test_description_200_numeric_only(self, test_api_client_persistent, data_sample_payload, mock_get_session):
         """Test table description with numeric columns only (success)"""
         test_api_client, _ = test_api_client_persistent
 
@@ -695,26 +664,24 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             ],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query_long_running.return_value = pd.DataFrame(
-            {
-                "a_dtype": ["FLOAT"],
-                "a_unique": [20],
-                "a_%missing": [1.0],
-                "a_%empty": [np.nan],
-                "a_entropy": [np.nan],
-                "a_top": [np.nan],
-                "a_freq": [np.nan],
-                "a_mean": [0.256],
-                "a_std": [0.00123],
-                "a_min": [0],
-                "a_p25": [0.01],
-                "a_p50": [0.155],
-                "a_p75": [0.357],
-                "a_max": [1.327],
-                "a_min_offset": [np.nan],
-                "a_max_offset": [np.nan],
-            }
-        )
+        mock_session.execute_query_long_running.return_value = pd.DataFrame({
+            "a_dtype": ["FLOAT"],
+            "a_unique": [20],
+            "a_%missing": [1.0],
+            "a_%empty": [np.nan],
+            "a_entropy": [np.nan],
+            "a_top": [np.nan],
+            "a_freq": [np.nan],
+            "a_mean": [0.256],
+            "a_std": [0.00123],
+            "a_min": [0],
+            "a_p25": [0.01],
+            "a_p50": [0.155],
+            "a_p75": [0.357],
+            "a_max": [1.327],
+            "a_min_offset": [np.nan],
+            "a_max_offset": [np.nan],
+        })
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float"]
@@ -722,9 +689,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
 
-    def test_sample_empty_table(
-        self, test_api_client_persistent, data_sample_payload, mock_get_session
-    ):
+    def test_sample_empty_table(self, test_api_client_persistent, data_sample_payload, mock_get_session):
         """Test table sample works with empty table"""
         test_api_client, _ = test_api_client_persistent
 
@@ -790,15 +755,11 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         expected_df = pd.DataFrame({"row_count": [100]})
         mock_session = mock_get_session.return_value
-        mock_session.list_table_schema.return_value = {
-            f"col_{i}": {"name": f"col_{i}"} for i in range(9)
-        }
+        mock_session.list_table_schema.return_value = {f"col_{i}": {"name": f"col_{i}"} for i in range(9)}
         mock_session.execute_query.return_value = expected_df
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
-        response = test_api_client.post(
-            "/feature_store/table_shape", json=tabular_source.json_dict()
-        )
+        response = test_api_client.post("/feature_store/table_shape", json=tabular_source.json_dict())
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == {"num_rows": 100, "num_cols": 9}
         assert (
@@ -816,18 +777,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         """Test table preview (success)"""
         test_api_client, _ = test_api_client_persistent
 
-        expected_df = pd.DataFrame(
-            {
-                "col_int": [1, 2, 3],
-            }
-        )
+        expected_df = pd.DataFrame({
+            "col_int": [1, 2, 3],
+        })
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
-        response = test_api_client.post(
-            "/feature_store/table_preview?limit=3", json=tabular_source.json_dict()
-        )
+        response = test_api_client.post("/feature_store/table_preview?limit=3", json=tabular_source.json_dict())
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == dataframe_to_json(expected_df)
         assert (
@@ -932,9 +889,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "FeatureStore is referenced by Catalog: grocery"
 
-    def test_update_database_details_200(
-        self, test_api_client_persistent, create_success_response, user_id
-    ):
+    def test_update_database_details_200(self, test_api_client_persistent, create_success_response, user_id):
         """Test update database details (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -989,12 +944,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
             "name": "sf_featurestore",
             "storage_credential": {
                 "type": "GCS",
-                "service_account_info": json.dumps(
-                    {
-                        "type": "service_account",
-                        "private_key": "private_key",
-                    }
-                ),
+                "service_account_info": json.dumps({
+                    "type": "service_account",
+                    "private_key": "private_key",
+                }),
             },
             "type": "spark",
         }

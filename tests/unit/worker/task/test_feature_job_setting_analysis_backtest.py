@@ -31,9 +31,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
     """
 
     task_class = FeatureJobSettingAnalysisBacktestTask
-    payload = BaseTaskTestSuite.load_payload(
-        "tests/fixtures/task_payloads/feature_job_setting_analysis_backtest.json"
-    )
+    payload = BaseTaskTestSuite.load_payload("tests/fixtures/task_payloads/feature_job_setting_analysis_backtest.json")
 
     async def setup_persistent_storage(self, persistent, storage, temp_storage, catalog):
         """
@@ -61,7 +59,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(  # pylint: disable=W0221
+    async def setup(
         self,
         mongo_persistent,
         storage,
@@ -76,9 +74,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
 
         # save analyse
-        payload = self.load_payload(
-            "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
-        )
+        payload = self.load_payload("tests/fixtures/task_payloads/feature_job_setting_analysis.json")
         payload["catalog_id"] = catalog.id
         await self.execute_task(
             task_class=FeatureJobSettingAnalysisTask,
@@ -91,7 +87,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_success(  # pylint: disable=too-many-locals
+    async def test_execute_success(
         self,
         mongo_persistent,
         task_completed,
@@ -158,9 +154,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         }
 
     @pytest.mark.asyncio
-    async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
-    ):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage, app_container):
         """
         Test failed task execution
         """
@@ -201,7 +195,4 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         app_container.override_instance_for_test("catalog_id", catalog.id)
         task = app_container.get(FeatureJobSettingAnalysisBacktestTask)
         payload = task.get_payload_obj(self.payload)
-        assert (
-            await task.get_task_description(payload)
-            == 'Backtest feature job settings for table "sf_event_table"'
-        )
+        assert await task.get_task_description(payload) == 'Backtest feature job settings for table "sf_event_table"'

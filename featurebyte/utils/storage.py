@@ -4,11 +4,10 @@ Utility functions for file storage
 
 from __future__ import annotations
 
-from typing import AsyncIterator
-
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator
 
 from aiobotocore.client import AioBaseClient
 from aiobotocore.session import get_session
@@ -62,16 +61,18 @@ async def get_azure_storage_blob_client() -> AsyncIterator[ContainerClient]:
     AsyncIterator[AioBaseClient]
         azure blob storage client
     """
-    async with ContainerClient.from_connection_string(  # type: ignore
-        conn_str=(
-            f"AccountName={AZURE_STORAGE_ACCOUNT_NAME};DefaultEndpointsProtocol=https;"
-            "EndpointSuffix=core.windows.net"
-        ),
-        container_name=AZURE_STORAGE_CONTAINER_NAME,
-        credential=AzureNamedKeyCredential(
-            name=str(AZURE_STORAGE_ACCOUNT_NAME), key=str(AZURE_STORAGE_ACCOUNT_KEY)
-        ),
-    ) as client:
+    async with (
+        ContainerClient.from_connection_string(  # type: ignore
+            conn_str=(
+                f"AccountName={AZURE_STORAGE_ACCOUNT_NAME};DefaultEndpointsProtocol=https;"
+                "EndpointSuffix=core.windows.net"
+            ),
+            container_name=AZURE_STORAGE_CONTAINER_NAME,
+            credential=AzureNamedKeyCredential(
+                name=str(AZURE_STORAGE_ACCOUNT_NAME), key=str(AZURE_STORAGE_ACCOUNT_KEY)
+            ),
+        ) as client
+    ):
         yield client
 
 
@@ -90,9 +91,7 @@ def get_storage() -> Storage:
         Invalid storage type
     """
     if STORAGE_TYPE == "local":
-        local_path = os.environ.get(
-            "FEATUREBYTE_LOCAL_STORAGE_PATH", str(Configurations().storage.local_path)
-        )
+        local_path = os.environ.get("FEATUREBYTE_LOCAL_STORAGE_PATH", str(Configurations().storage.local_path))
         return LocalStorage(base_path=Path(local_path))
     if STORAGE_TYPE == "s3":
         return S3Storage(get_client=get_client, bucket_name=S3_BUCKET_NAME)

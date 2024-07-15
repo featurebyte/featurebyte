@@ -36,9 +36,7 @@ async def deployment_id_fixture(app_container, feature_list):
     """Fixture for test deployment"""
     feature_readiness_service = app_container.feature_readiness_service
     for feature_id in feature_list.feature_ids:
-        await feature_readiness_service.update_feature(
-            feature_id=feature_id, readiness="PRODUCTION_READY"
-        )
+        await feature_readiness_service.update_feature(feature_id=feature_id, readiness="PRODUCTION_READY")
 
     deploy_service = app_container.deploy_service
     deployment_id = ObjectId()
@@ -86,9 +84,7 @@ async def registry_without_path_fixture(
     registry_doc["_id"] = registry_id
     registry_doc["registry_path"] = None
     registry_doc["registry"] = registry_with_path.registry
-    await persistent.insert_one(
-        collection_name="feast_registry", document=registry_doc, user_id=user_id
-    )
+    await persistent.insert_one(collection_name="feast_registry", document=registry_doc, user_id=user_id)
 
     registry = await registry_service.get_document(document_id=registry_id)
     assert registry.registry_path is None
@@ -118,9 +114,7 @@ async def test_get_document__registry_with_path(registry_with_path, registry_ser
 
 
 @pytest.mark.asyncio
-async def test_update_document__registry_without_path(
-    registry_without_path, registry_service, storage, feature_list
-):
+async def test_update_document__registry_without_path(registry_without_path, registry_service, storage, feature_list):
     """Test update document on older record (registry without path)"""
     registry = await registry_service.update_document(
         document_id=registry_without_path.id,

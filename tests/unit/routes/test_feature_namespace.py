@@ -18,9 +18,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
 
     class_name = "FeatureNamespace"
     base_route = "/feature_namespace"
-    payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_sum_30m.json"
-    )
+    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
 
@@ -112,9 +110,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         feature_id = payload["_id"]
         feature_response = test_api_client.get(f"/feature/{feature_id}")
         doc_id = feature_response.json()["feature_namespace_id"]
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"})
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["default_version_mode"] == "MANUAL"
@@ -129,9 +125,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         # upgrade default feature_sum_30m to production ready & check the default feature readiness get updated
         doc_id = response_dict["_id"]
         feature_id = response_dict["default_feature_id"]
-        response = test_api_client.patch(
-            f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
-        )
+        response = test_api_client.patch(f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"})
         assert response.status_code == HTTPStatus.OK
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         response_dict = response.json()
@@ -159,9 +153,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert namespace_response_dict["readiness"] == "PUBLIC_DRAFT"
 
         # test update new default feature ID
-        response = test_api_client.patch(
-            f"feature/{new_feature_id}", json={"readiness": "PUBLIC_DRAFT"}
-        )
+        response = test_api_client.patch(f"feature/{new_feature_id}", json={"readiness": "PUBLIC_DRAFT"})
         assert response.status_code == HTTPStatus.OK
         update_response = test_api_client.patch(
             f"{self.base_route}/{feature_namespace_id}", json={"default_feature_id": new_feature_id}
@@ -198,9 +190,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
 
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -208,18 +198,10 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "name": "sum_30m",
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
-            ],
-            "primary_entity": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
-            ],
-            "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
-            ],
-            "primary_table": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
-            ],
+            "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
+            "primary_entity": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
+            "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
+            "primary_table": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],
             "dtype": "FLOAT",
@@ -228,7 +210,5 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "description": None,
         }
 
-        verbose_response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
-        )
+        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text

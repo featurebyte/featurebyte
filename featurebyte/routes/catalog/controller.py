@@ -194,9 +194,7 @@ class CatalogController(
 
         # retrieve online store name
         if catalog.online_store_id:
-            online_store = await self.online_store_service.get_document(
-                document_id=catalog.online_store_id
-            )
+            online_store = await self.online_store_service.get_document(document_id=catalog.online_store_id)
             online_store_name = online_store.name
         else:
             online_store_name = None

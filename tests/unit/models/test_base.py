@@ -52,9 +52,7 @@ def test_featurebyte_base_model__pydantic_model_type_error_message():
 
     with pytest.raises(ValidationError) as exc:
         Basket(items="hello")
-    expected_msg = (
-        "value is not a valid Items type (type=type_error.featurebytetype; object_type=Items)"
-    )
+    expected_msg = "value is not a valid Items type (type=type_error.featurebytetype; object_type=Items)"
     assert expected_msg in str(exc.value)
 
 

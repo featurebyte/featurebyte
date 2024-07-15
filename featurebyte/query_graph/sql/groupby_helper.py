@@ -4,9 +4,8 @@ Utilities related to SQL generation for groupby operations
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-
 from dataclasses import dataclass
+from typing import List, Optional, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -205,7 +204,7 @@ def get_vector_agg_column_snowflake(
     -------
     VectorAggColumn
     """
-    # pylint: disable=too-many-locals
+
     initial_data_table_name = "INITIAL_DATA"
     select_keys = [
         alias_(
@@ -215,9 +214,7 @@ def get_vector_agg_column_snowflake(
         )
         for k in groupby_keys
     ]
-    partition_by_keys = [
-        get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys
-    ]
+    partition_by_keys = [get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys]
 
     agg_name = f"AGG_{index}"
     # The VECTOR_AGG_RESULT column value here, is a constant and is the name of the return value defined in the
@@ -339,9 +336,7 @@ def update_aggregation_expression_for_columns(
     """
     output: list[GroupbyColumn] = []
     for column in groupby_columns:
-        if not (
-            column.parent_dtype in DBVarType.array_types() and adapter_type == SourceType.SNOWFLAKE
-        ):
+        if not (column.parent_dtype in DBVarType.array_types() and adapter_type == SourceType.SNOWFLAKE):
             aggregation_expression = get_aggregation_expression(
                 agg_func=column.agg_func,
                 input_column=column.parent_cols[0] if column.parent_cols else None,
@@ -380,9 +375,7 @@ def get_groupby_expr(
     -------
     Select
     """
-    updated_groupby_columns = update_aggregation_expression_for_columns(
-        groupby_columns, adapter.source_type
-    )
+    updated_groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter.source_type)
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
         input_expr,
         groupby_keys,

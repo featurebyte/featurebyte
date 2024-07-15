@@ -14,17 +14,13 @@ async def test_get_join_steps__no_op(entity_a, entity_b, parent_entity_lookup_se
     """
     Test no joins required as all required entities are provided
     """
-    entity_info = EntityInfo(
-        required_entities=[entity_a, entity_b], provided_entities=[entity_a, entity_b]
-    )
+    entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a, entity_b])
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == []
 
 
 @pytest.mark.asyncio
-async def test_get_join_steps__one_step(
-    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service
-):
+async def test_get_join_steps__one_step(entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service):
     """
     Test looking up parent entity in one join
 
@@ -121,9 +117,7 @@ async def test_get_join_steps__two_branches(
     data_a_to_b, rel_a_to_b = b_is_parent_of_a
     data_b_to_c, rel_b_to_c = c_is_parent_of_b
     data_b_to_d, rel_b_to_d = d_is_parent_of_b
-    entity_info = EntityInfo(
-        required_entities=[entity_a, entity_c, entity_d], provided_entities=[entity_a]
-    )
+    entity_info = EntityInfo(required_entities=[entity_a, entity_c, entity_d], provided_entities=[entity_a])
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         EntityLookupStep(

@@ -2,12 +2,11 @@
 This module contains common table related models.
 """
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
-from typing_extensions import Literal
-
 from abc import abstractmethod
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
 from pydantic import Field, validator
+from typing_extensions import Literal
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
@@ -49,9 +48,7 @@ class BaseTableData(FeatureByteBaseModel):
         TableDataType.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE,
         TableDataType.SCD_TABLE,
-    ] = Field(
-        description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table"
-    )
+    ] = Field(description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table")
 
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
@@ -84,9 +81,7 @@ class BaseTableData(FeatureByteBaseModel):
             if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
         ]
 
-    def clone(
-        self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]
-    ) -> TableDataT:
+    def clone(self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]) -> TableDataT:
         """
         Create a new table with the specified column cleaning operations
 
@@ -101,14 +96,11 @@ class BaseTableData(FeatureByteBaseModel):
         """
         columns_info = []
         col_to_cleaning_ops = {
-            col_clean_op.column_name: col_clean_op.cleaning_operations
-            for col_clean_op in column_cleaning_operations
+            col_clean_op.column_name: col_clean_op.cleaning_operations for col_clean_op in column_cleaning_operations
         }
         for col in self.columns_info:
             if col.name in col_to_cleaning_ops:
-                col.critical_data_info = CriticalDataInfo(
-                    cleaning_operations=col_to_cleaning_ops[col.name]
-                )
+                col.critical_data_info = CriticalDataInfo(cleaning_operations=col_to_cleaning_ops[col.name])
             else:
                 col.critical_data_info = None
             columns_info.append(col)

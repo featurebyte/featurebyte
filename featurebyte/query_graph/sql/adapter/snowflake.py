@@ -4,14 +4,13 @@ SnowflakeAdapter class for generating Snowflake specific SQL expressions
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-from typing_extensions import Literal
-
 import re
 import string
+from typing import List, Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
@@ -26,7 +25,7 @@ from featurebyte.query_graph.sql.common import (
 )
 
 
-class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
+class SnowflakeAdapter(BaseAdapter):
     """
     Helper class to generate Snowflake specific SQL expressions
     """
@@ -60,14 +59,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
 
     @classmethod
     def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
-        return expressions.Cast(
-            this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP")
-        )
+        return expressions.Cast(this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP"))
 
     @classmethod
-    def str_trim(
-        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
-    ) -> Expression:
+    def str_trim(cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]) -> Expression:
         expression_class = {
             "left": fb_expressions.LTrim,
             "right": fb_expressions.RTrim,
@@ -82,26 +77,18 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # pandas: Monday=0, Sunday=6; snowflake: Sunday=0, Saturday=6
         # to follow pandas behavior, add 6 then modulo 7 to perform left-shift
         return expressions.Mod(
-            this=expressions.Paren(
-                this=expressions.Add(this=extracted_expr, expression=make_literal_value(6))
-            ),
+            this=expressions.Paren(this=expressions.Add(this=extracted_expr, expression=make_literal_value(6))),
             expression=make_literal_value(7),
         )
 
     @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["second", quantity_expr, timestamp_expr]
-        )
+        output_expr = expressions.Anonymous(this="DATEADD", expressions=["second", quantity_expr, timestamp_expr])
         return output_expr
 
     @classmethod
-    def dateadd_microsecond(
-        cls, quantity_expr: Expression, timestamp_expr: Expression
-    ) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
-        )
+    def dateadd_microsecond(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        output_expr = expressions.Anonymous(this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr])
         return output_expr
 
     @classmethod
@@ -133,9 +120,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
-        input_to_variant_expr = expressions.Anonymous(
-            this="TO_VARIANT", expressions=[input_expression]
-        )
+        input_to_variant_expr = expressions.Anonymous(this="TO_VARIANT", expressions=[input_expression])
         output_expr = expressions.Anonymous(
             this="ARRAY_CONTAINS",
             expressions=[input_to_variant_expr, array_expression],
@@ -149,18 +134,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return output_expr
 
     @classmethod
-    def get_value_from_dictionary(
-        cls, dictionary_expression: Expression, key_expression: Expression
-    ) -> Expression:
-        return expressions.Anonymous(
-            this="GET", expressions=[dictionary_expression, key_expression]
-        )
+    def get_value_from_dictionary(cls, dictionary_expression: Expression, key_expression: Expression) -> Expression:
+        return expressions.Anonymous(this="GET", expressions=[dictionary_expression, key_expression])
 
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
-        return expressions.Anonymous(
-            this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
-        )
+        return expressions.Anonymous(this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr])
 
     @classmethod
     def current_timestamp(cls) -> Expression:
@@ -305,9 +284,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
     def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
         order_expr = expressions.Order(expressions=[expressions.Ordered(this=input_expr)])
         return expressions.WithinGroup(
-            this=expressions.Anonymous(
-                this="percentile_cont", expressions=[make_literal_value(quantile)]
-            ),
+            this=expressions.Anonymous(this="percentile_cont", expressions=[make_literal_value(quantile)]),
             expression=order_expr,
         )
 
@@ -388,7 +365,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         Select
             The group by query
         """
-        # pylint: disable=too-many-locals
+
         # If there are no vector aggregate expressions, we can use the standard group by.
         normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
         if not vector_aggregate_columns:
@@ -399,9 +376,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         for idx, vector_agg_col in enumerate(vector_aggregate_columns):
             vector_agg_select_keys.append(
                 alias_(
-                    get_qualified_column_identifier(
-                        vector_agg_col.result_name, cls._get_groupby_table_alias(idx)
-                    ),
+                    get_qualified_column_identifier(vector_agg_col.result_name, cls._get_groupby_table_alias(idx)),
                     alias=f"{vector_agg_col.result_name}",
                     quoted=quote_vector_agg_aliases,
                 )
@@ -440,14 +415,12 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                     quoted=should_quote_alias,
                 )
             )
-        left_expression = select(
-            *renamed_table_select_keys, *new_groupby_exprs, *vector_agg_select_keys
-        ).from_(vector_expr)
+        left_expression = select(*renamed_table_select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
+            vector_expr
+        )
         # Chain the remaining joins with the remaining vector aggregates if there are more than one
         for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
-            right_expr = vector_agg_expr.aggr_expr.subquery(
-                alias=cls._get_groupby_table_alias(idx + 1)
-            )
+            right_expr = vector_agg_expr.aggr_expr.subquery(alias=cls._get_groupby_table_alias(idx + 1))
             join_conditions = []
             for select_key in select_keys:
                 join_conditions.append(
@@ -515,9 +488,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
     ) -> str:
         alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}"
         first = sql_to_string(columns[0], source_type=cls.source_type)
-        rest = ",\n".join(
-            [sql_to_string(col, source_type=cls.source_type) for col in columns[1:]]
-        ).strip()
+        rest = ",\n".join([sql_to_string(col, source_type=cls.source_type) for col in columns[1:]]).strip()
         alter_table_sql += f" ADD COLUMN {first}"
         if rest:
             alter_table_sql += f",\n{rest}"
@@ -530,9 +501,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 this=expressions.Anonymous(
                     this="BITAND",
                     expressions=[
-                        expressions.Anonymous(
-                            this="RANDOM", expressions=[make_literal_value(seed)]
-                        ),
+                        expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)]),
                         make_literal_value(2147483647),
                     ],
                 ),

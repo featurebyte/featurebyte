@@ -49,9 +49,7 @@ class OfflineStoreInfoInitializationService:
     ) -> None:
         self.catalog_service = catalog_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
-        self.offline_store_feature_table_construction_service = (
-            offline_store_feature_table_construction_service
-        )
+        self.offline_store_feature_table_construction_service = offline_store_feature_table_construction_service
         self.entity_serving_names_service = entity_serving_names_service
 
     async def offline_store_feature_table_creator(
@@ -96,9 +94,7 @@ class OfflineStoreInfoInitializationService:
             table_name_prefix=table_name_prefix,
             entity_id_to_serving_name=entity_id_to_serving_name,
         )
-        persist_table = await self.offline_store_feature_table_service.get_or_create_document(
-            data=table
-        )
+        persist_table = await self.offline_store_feature_table_service.get_or_create_document(data=table)
         return persist_table.name
 
     async def reconstruct_decomposed_graph(
@@ -136,26 +132,20 @@ class OfflineStoreInfoInitializationService:
         query_graph = QueryGraph(**graph.dict(by_alias=True))
 
         node_name_to_repl_node: Dict[str, BaseNode] = {}
-        for node in query_graph.iterate_sorted_graph_nodes(
-            graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
-        ):
+        for node in query_graph.iterate_sorted_graph_nodes(graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}):
             assert isinstance(node.parameters, OfflineStoreIngestQueryGraphNodeParameters)
             if not dry_run:
-                node.parameters.offline_store_table_name = (
-                    await self.offline_store_feature_table_creator(
-                        primary_entity_ids=node.parameters.primary_entity_ids,
-                        feature_job_setting=node.parameters.feature_job_setting,
-                        has_ttl=node.parameters.has_ttl,
-                        catalog_id=catalog_id,
-                        table_name_prefix=table_name_prefix,
-                        entity_id_to_serving_name=entity_id_to_serving_name,
-                    )
+                node.parameters.offline_store_table_name = await self.offline_store_feature_table_creator(
+                    primary_entity_ids=node.parameters.primary_entity_ids,
+                    feature_job_setting=node.parameters.feature_job_setting,
+                    has_ttl=node.parameters.has_ttl,
+                    catalog_id=catalog_id,
+                    table_name_prefix=table_name_prefix,
+                    entity_id_to_serving_name=entity_id_to_serving_name,
                 )
                 node_params = node.parameters
                 extractor = NullFillingValueExtractor(graph=node_params.graph)
-                state = extractor.extract(
-                    node=node_params.graph.get_node_by_name(node_params.output_node_name)
-                )
+                state = extractor.extract(node=node_params.graph.get_node_by_name(node_params.output_node_name))
                 node.parameters.null_filling_value = state.fill_value
 
             node_name_to_repl_node[node.name] = node
@@ -226,10 +216,8 @@ class OfflineStoreInfoInitializationService:
         """
         if entity_id_to_serving_name is None:
             serv_name_service = self.entity_serving_names_service
-            entity_id_to_serving_name = (
-                await serv_name_service.get_entity_id_to_serving_name_for_offline_store(
-                    entity_ids=feature.entity_ids
-                )
+            entity_id_to_serving_name = await serv_name_service.get_entity_id_to_serving_name_for_offline_store(
+                entity_ids=feature.entity_ids
             )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
@@ -243,9 +231,7 @@ class OfflineStoreInfoInitializationService:
 
         null_filling_value = None
         if not dry_run:
-            null_filling_value = (
-                NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
-            )
+            null_filling_value = NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
 
         if result.is_decomposed:
             decomposed_graph, output_node_name = await self.reconstruct_decomposed_graph(
@@ -260,14 +246,12 @@ class OfflineStoreInfoInitializationService:
         else:
             decomposed_graph = feature.graph
             output_node_name = feature.node.name
-            feature_job_setting = FeatureJobSettingExtractor(
-                graph=feature.graph
-            ).extract_from_target_node(node=feature.node)
+            feature_job_setting = FeatureJobSettingExtractor(graph=feature.graph).extract_from_target_node(
+                node=feature.node
+            )
 
             has_ttl = False
-            for node in feature.graph.iterate_nodes(
-                target_node=feature.node, node_type=NodeType.GROUPBY
-            ):
+            for node in feature.graph.iterate_nodes(target_node=feature.node, node_type=NodeType.GROUPBY):
                 assert isinstance(node.parameters, GroupByNodeParameters)
                 has_ttl = any(node.parameters.windows)
                 if any(node.parameters.windows):
@@ -299,9 +283,7 @@ class OfflineStoreInfoInitializationService:
                 output_column_name=feature.versioned_name,
                 output_dtype=feature.dtype,
                 primary_entity_ids=feature.primary_entity_ids,
-                primary_entity_dtypes=[
-                    entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids
-                ],
+                primary_entity_dtypes=[entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids],
                 null_filling_value=null_filling_value,
             )
 
@@ -321,9 +303,7 @@ class OfflineStoreInfoInitializationService:
             offline_store_info.initialize(
                 feature_versioned_name=feature.versioned_name,
                 feature_dtype=feature.dtype,
-                feature_job_settings=[
-                    setting.feature_job_setting for setting in feature.table_id_feature_job_settings
-                ],
+                feature_job_settings=[setting.feature_job_setting for setting in feature.table_id_feature_job_settings],
                 feature_id=feature.id,
                 has_ttl=metadata.has_ttl if metadata else False,
                 null_filling_value=null_filling_value,

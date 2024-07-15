@@ -43,9 +43,7 @@ class FeatureNamespaceRouter(BaseRouter):
 
 
 @router.get("/{feature_namespace_id}", response_model=FeatureNamespaceModelResponse)
-async def get_feature_namespace(
-    request: Request, feature_namespace_id: PyObjectId
-) -> FeatureNamespaceModelResponse:
+async def get_feature_namespace(request: Request, feature_namespace_id: PyObjectId) -> FeatureNamespaceModelResponse:
     """
     Retrieve Feature Namespace
     """

@@ -57,9 +57,7 @@ def get_combined_serving_names_expr(
     for serving_name in serving_names:
         if isinstance(serving_name, str):
             if serving_names_table_alias is not None:
-                serving_name_expr = get_qualified_column_identifier(
-                    serving_name, serving_names_table_alias
-                )
+                serving_name_expr = get_qualified_column_identifier(serving_name, serving_names_table_alias)
             else:
                 serving_name_expr = quoted_identifier(serving_name)
         else:

@@ -41,7 +41,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         "end_timestamp_column": SemanticType.SCD_END_TIMESTAMP,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         scd_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -85,9 +85,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         SCDTableInfo
         """
         scd_table = await self.service.get_document(document_id=document_id)
-        table_dict = await self.table_info_service.get_table_info(
-            data_document=scd_table, verbose=verbose
-        )
+        table_dict = await self.table_info_service.get_table_info(data_document=scd_table, verbose=verbose)
         return SCDTableInfo(
             **table_dict,
             natural_key_column=scd_table.natural_key_column,

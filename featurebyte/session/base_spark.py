@@ -4,11 +4,10 @@ BaseSparkSession class
 
 from __future__ import annotations
 
-from typing import Any, Optional, OrderedDict, cast
-
 import collections
 import os
 from abc import ABC, abstractmethod
+from typing import Any, Optional, OrderedDict, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -111,9 +110,7 @@ class BaseSparkSession(BaseSession, ABC):
         """
 
     @abstractmethod
-    def upload_file_to_storage(
-        self, local_path: str, remote_path: str, is_binary: bool = True
-    ) -> None:
+    def upload_file_to_storage(self, local_path: str, remote_path: str, is_binary: bool = True) -> None:
         """
         Upload file to storage
 
@@ -184,7 +181,7 @@ class BaseSparkSession(BaseSession, ABC):
         return pyarrow_type
 
     @staticmethod
-    def _convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
+    def _convert_to_internal_variable_type(
         spark_type: str,
     ) -> DBVarType:
         if spark_type.endswith("INT"):
@@ -208,9 +205,7 @@ class BaseSparkSession(BaseSession, ABC):
             logger.warning(f"Spark: Not supported data type '{spark_type}'")
         return db_vartype
 
-    async def register_table_with_query(
-        self, table_name: str, query: str, temporary: bool = True
-    ) -> None:
+    async def register_table_with_query(self, table_name: str, query: str, temporary: bool = True) -> None:
         if temporary:
             create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         else:
@@ -222,9 +217,9 @@ class BaseSparkSession(BaseSession, ABC):
         # truncate timestamps to microseconds to avoid parquet and Spark issues
         if dataframe.shape[0] > 0:
             for colname in dataframe.columns:
-                if pd.api.types.is_datetime64_any_dtype(
+                if pd.api.types.is_datetime64_any_dtype(dataframe[colname]) or pd.api.types.is_datetime64tz_dtype(
                     dataframe[colname]
-                ) or pd.api.types.is_datetime64tz_dtype(dataframe[colname]):
+                ):
                     dataframe[colname] = dataframe[colname].dt.floor("us")
 
         # write to parquet file
@@ -241,7 +236,7 @@ class BaseSparkSession(BaseSession, ABC):
             # clean up staging file
             try:
                 self.delete_path_from_storage(remote_path=temp_filename)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
+            except Exception as exc:
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
     async def list_databases(self) -> list[str]:
@@ -260,7 +255,7 @@ class BaseSparkSession(BaseSession, ABC):
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(f"SHOW SCHEMAS IN `{database_name}`")
-        except self._no_schema_error as exc:  # pylint: disable=broad-exception-caught
+        except self._no_schema_error as exc:
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
                 schemas = await self.execute_query_interactive("SHOW SCHEMAS")
@@ -300,9 +295,7 @@ class BaseSparkSession(BaseSession, ABC):
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            for _, (column_name, var_info, comment) in schema[
-                ["col_name", "data_type", "comment"]
-            ].iterrows():
+            for _, (column_name, var_info, comment) in schema[["col_name", "data_type", "comment"]].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
                 # Skip the remaining entries once we run into an empty column name
                 if column_name == "" or column_name.startswith("# "):
@@ -329,9 +322,7 @@ class BaseSparkSession(BaseSession, ABC):
         table_details_found = False
         details = {}
         if schema is not None:
-            for _, (column_name, var_info, _) in schema[
-                ["col_name", "data_type", "comment"]
-            ].iterrows():
+            for _, (column_name, var_info, _) in schema[["col_name", "data_type", "comment"]].iterrows():
                 # Only collect details after the table details section (# Detailed Table Information)
                 if column_name.startswith("# Detailed Table Information"):
                     table_details_found = True
@@ -340,14 +331,14 @@ class BaseSparkSession(BaseSession, ABC):
                         break
                     details[column_name] = var_info
 
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": table_name,
+            "schema_name": schema_name,
+            "database_name": database_name,
+        })
         return TableDetails(
             details=details,
-            fully_qualified_name=sql_to_string(
-                fully_qualified_table_name, source_type=self.source_type
-            ),
+            fully_qualified_name=sql_to_string(fully_qualified_table_name, source_type=self.source_type),
         )
 
     def _format_comment(self, comment: str) -> str:
@@ -381,7 +372,7 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
         """
         try:
             await self.session.execute_query("SELECT * FROM METADATA_SCHEMA")
-        except self.session._no_schema_error:  # pylint: disable=protected-access
+        except self.session._no_schema_error:
             return False
         return True
 
@@ -502,13 +493,11 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         df_result = await self.list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
-            out.extend(
-                [
-                    function_name
-                    for function_name in df_result["function"].apply(_function_name_to_identifier)
-                    if function_name is not None
-                ]
-            )
+            out.extend([
+                function_name
+                for function_name in df_result["function"].apply(_function_name_to_identifier)
+                if function_name is not None
+            ])
         return out
 
     def register_jar(self) -> None:
@@ -521,9 +510,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
         # upload jar file to storage
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        session.upload_file_to_storage(
-            local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name
-        )
+        session.upload_file_to_storage(local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name)
 
     async def register_missing_objects(self) -> None:
         self.register_jar()

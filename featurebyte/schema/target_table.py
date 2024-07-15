@@ -45,21 +45,15 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
             # Valid if target_id is provided, and no graph and node_names are provided
             if both_are_none:
                 return values
-            raise ValueError(
-                "If target_id is provided, graph and node_names should not be provided."
-            )
+            raise ValueError("If target_id is provided, graph and node_names should not be provided.")
 
         # If target is not provided, graph and node_names should be provided.
         both_are_not_none = graph is not None and node_names is not None
         if both_are_not_none:
             if target_id is not None:
-                raise ValueError(
-                    "If graph and node_names are provided, target_id should not be provided."
-                )
+                raise ValueError("If graph and node_names are provided, target_id should not be provided.")
             return values
-        raise ValueError(
-            "Both graph and node_names should be provided, or neither should be provided."
-        )
+        raise ValueError("Both graph and node_names should be provided, or neither should be provided.")
 
     @property
     def nodes(self) -> List[Node]:

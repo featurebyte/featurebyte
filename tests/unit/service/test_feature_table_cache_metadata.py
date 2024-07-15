@@ -19,16 +19,14 @@ from featurebyte.query_graph.model.common_table import TabularSource
 def observation_table_fixture(event_table, user):
     """Observation table fixture"""
     request_input = SourceTableRequestInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
@@ -58,10 +56,7 @@ async def test_get_or_create_feature_table_cache_creates_from_scratch(
     )
     assert document.id
     assert document.observation_table_id == observation_table_doc.id
-    assert (
-        document.table_name
-        == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}"
-    )
+    assert document.table_name == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}"
     assert document.feature_definitions == []
 
 

@@ -2,10 +2,9 @@
 Target correctness tests.
 """
 
-from typing import Optional
-
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Optional
 
 import pandas as pd
 import pytest
@@ -119,9 +118,7 @@ def calculate_forward_aggregate_ground_truth(
     df_filtered = df[mask]
 
     # Apply the aggregation function
-    return apply_agg_func_on_filtered_dataframe(
-        agg_func, category, df_filtered, variable_column_name
-    )
+    return apply_agg_func_on_filtered_dataframe(agg_func, category, df_filtered, variable_column_name)
 
 
 def get_expected_target_values(
@@ -160,9 +157,7 @@ def get_expected_target_values(
     return df_expected
 
 
-def test_forward_aggregate(
-    event_table, target_parameters, transaction_data_upper_case, observation_set, user_entity
-):
+def test_forward_aggregate(event_table, target_parameters, transaction_data_upper_case, observation_set, user_entity):
     """
     Test forward aggregate.
     """
@@ -178,9 +173,7 @@ def test_forward_aggregate(
             window, offset = target_parameter.window, None
 
         # Get expected target values
-        utc_event_timestamps = pd.to_datetime(
-            df[event_timestamp_column_name], utc=True
-        ).dt.tz_localize(None)
+        utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(None)
         expected_values = get_expected_target_values(
             observation_set,
             entity_column_name,
@@ -210,12 +203,10 @@ def test_forward_aggregate(
         fb_assert_frame_equal(results, preview_expected_values)
 
         # Build full materialized Target
-        df_targets = target.compute_targets(
-            observation_set, serving_names_mapping={"üser id": "ÜSER ID"}
+        df_targets = target.compute_targets(observation_set, serving_names_mapping={"üser id": "ÜSER ID"})
+        expected_values["POINT_IN_TIME"] = pd.to_datetime(expected_values["POINT_IN_TIME"], utc=True).dt.tz_localize(
+            None
         )
-        expected_values["POINT_IN_TIME"] = pd.to_datetime(
-            expected_values["POINT_IN_TIME"], utc=True
-        ).dt.tz_localize(None)
         fb_assert_frame_equal(df_targets, expected_values)
 
         # Build full materialized Target observation table

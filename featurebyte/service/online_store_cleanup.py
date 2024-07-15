@@ -50,9 +50,7 @@ class OnlineStoreCleanupService:
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         logger.info("Cleaning up online store table", extra={"table_name": online_store_table_name})
         if await BaseSqlModel(session=db_session).table_exists(online_store_table_name):
-            query = sql_to_string(
-                self._get_cleanup_query(online_store_table_name), db_session.source_type
-            )
+            query = sql_to_string(self._get_cleanup_query(online_store_table_name), db_session.source_type)
             await db_session.execute_query_long_running(query)
 
     @staticmethod
@@ -83,9 +81,7 @@ class OnlineStoreCleanupService:
                     quoted=True,
                 ),
                 alias_(
-                    expressions.Max(
-                        this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN)
-                    ),
+                    expressions.Max(this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN)),
                     "max_version",
                     quoted=True,
                 ),
@@ -110,9 +106,7 @@ class OnlineStoreCleanupService:
                 ),
             ),
             expressions=[
-                expressions.When(
-                    this=expressions.Identifier(this="MATCHED"), then=expressions.Var(this="DELETE")
-                )
+                expressions.When(this=expressions.Identifier(this="MATCHED"), then=expressions.Var(this="DELETE"))
             ],
         )
         return merge_expr

@@ -2,9 +2,8 @@
 Test module for generating payload fixtures for testing api route
 """
 
-from typing import Any
-
 import json
+from typing import Any
 
 import pytest
 from bson import ObjectId
@@ -81,7 +80,7 @@ def update_or_check_payload_fixture(request_payload_dir, name, json_payload, upd
             )
 
 
-def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
+def test_save_payload_fixtures(
     reset_configurations,
     update_fixtures,
     request_payload_dir,
@@ -100,7 +99,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     """
     Write request payload for testing api route
     """
-    # pylint: disable=too-many-locals
+
     _ = reset_configurations
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
@@ -125,9 +124,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     )
     feature_item_event = replace_obj_id(feature_item_event, ObjectId("646f6c1c0ed28a5271fb02d1"))
 
-    feature_list = FeatureList(
-        [feature_sum_30m], name="sf_feature_list", _id="646f6c1c0ed28a5271fb02d2"
-    )
+    feature_list = FeatureList([feature_sum_30m], name="sf_feature_list", _id="646f6c1c0ed28a5271fb02d2")
     feature_list_repeated = FeatureList(
         [feature_sum_30m], name="sf_feature_list_repeated", _id="6594d7dd2cc1a1b9c7f6c037"
     )
@@ -154,9 +151,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="transaction_context",
         primary_entity_ids=[cust_id_entity.id],
     )
-    deployment = DeploymentCreate(
-        _id="646f6c1c0ed28a5271fb02d6", name="my_deployment", feature_list_id=feature_list.id
-    )
+    deployment = DeploymentCreate(_id="646f6c1c0ed28a5271fb02d6", name="my_deployment", feature_list_id=feature_list.id)
     relationship_info = RelationshipInfoCreate(
         _id="63f6a145e549df8ccf123456",
         name="child_parent_relationship",
@@ -242,9 +237,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             password="pass",
         ),
     )
-    mysql_online_store = OnlineStoreCreate(
-        _id="646f6c190ed28a5271fb02b9", **mysql_online_store_config
-    )
+    mysql_online_store = OnlineStoreCreate(_id="646f6c190ed28a5271fb02b9", **mysql_online_store_config)
     graph, node = snowflake_event_table.frame.extract_pruned_graph_and_node()
     feature_store_sample = FeatureStoreSample(
         graph=QueryGraph(**graph.dict(by_alias=True)),
@@ -317,9 +310,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         update_or_check_payload_fixture(request_payload_dir, name, json_to_write, update_fixtures)
 
 
-def test_generate_user_defined_function(
-    update_fixtures, request_payload_dir, snowflake_feature_store_id
-):
+def test_generate_user_defined_function(update_fixtures, request_payload_dir, snowflake_feature_store_id):
     """
     Write request payload for user defined function route
 
@@ -335,6 +326,4 @@ def test_generate_user_defined_function(
         feature_store_id=snowflake_feature_store_id,
     )
     json_payload = user_defined_function.json_dict()
-    update_or_check_payload_fixture(
-        request_payload_dir, "user_defined_function", json_payload, update_fixtures
-    )
+    update_or_check_payload_fixture(request_payload_dir, "user_defined_function", json_payload, update_fixtures)

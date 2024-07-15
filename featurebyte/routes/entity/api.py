@@ -4,9 +4,8 @@ Entity API routes
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-
 from http import HTTPStatus
+from typing import List, Optional, cast
 
 from fastapi import APIRouter, Request
 

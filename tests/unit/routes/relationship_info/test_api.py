@@ -23,9 +23,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
 
     class_name = "RelationshipInfo"
     base_route = "/relationship_info"
-    payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/relationship_info.json"
-    )
+    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/relationship_info.json")
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
 
@@ -82,9 +80,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         )
 
     @pytest_asyncio.fixture
-    async def create_success_response(
-        self, test_api_client_persistent, user_id, default_catalog_id
-    ):  # pylint: disable=arguments-differ
+    async def create_success_response(self, test_api_client_persistent, user_id, default_catalog_id):
         """Post a relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -93,19 +89,15 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         )
 
         # create relationship info
-        relationship_info = (
-            await app_container.relationship_info_controller.create_relationship_info(
-                data=RelationshipInfoCreate(**self.payload)
-            )
+        relationship_info = await app_container.relationship_info_controller.create_relationship_info(
+            data=RelationshipInfoCreate(**self.payload)
         )
         response = test_api_client.get(f"{self.base_route}/{relationship_info.id}")
         assert response.status_code == HTTPStatus.OK, response.text
         return response
 
     @pytest_asyncio.fixture
-    async def create_multiple_success_responses(
-        self, test_api_client_persistent, user_id, default_catalog_id
-    ):  # pylint: disable=arguments-differ
+    async def create_multiple_success_responses(self, test_api_client_persistent, user_id, default_catalog_id):
         """Post multiple relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -116,10 +108,8 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         # create multiple relationship info
         output = []
         for payload in self.multiple_success_payload_generator(test_api_client):
-            relationship_info = (
-                await app_container.relationship_info_controller.create_relationship_info(
-                    data=RelationshipInfoCreate(**payload)
-                )
+            relationship_info = await app_container.relationship_info_controller.create_relationship_info(
+                data=RelationshipInfoCreate(**payload)
             )
             response = test_api_client.get(f"{self.base_route}/{relationship_info.id}")
             assert response.status_code == HTTPStatus.OK, response.text
@@ -148,9 +138,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         doc_id = create_response_dict["_id"]
 
         # Get info
-        response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
         assert response_dict["relationship_type"] == "child_parent"
@@ -169,9 +157,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
 
         # Update enabled to False
         data_update = RelationshipInfoUpdate(enabled=False)
-        response = test_api_client.patch(
-            f"{self.base_route}/{response_dict['_id']}", json=data_update.dict()
-        )
+        response = test_api_client.patch(f"{self.base_route}/{response_dict['_id']}", json=data_update.dict())
         assert response.status_code == HTTPStatus.OK
 
         # Verify enabled is False

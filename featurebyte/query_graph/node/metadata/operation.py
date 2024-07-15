@@ -2,6 +2,8 @@
 This module contains models used to store node output operation info
 """
 
+import dataclasses
+from collections import defaultdict
 from typing import (
     Any,
     DefaultDict,
@@ -18,12 +20,9 @@ from typing import (
     Union,
     overload,
 )
-from typing_extensions import Annotated  # pylint: disable=wrong-import-order
-
-import dataclasses
-from collections import defaultdict
 
 from pydantic import Field
+from typing_extensions import Annotated
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -203,11 +202,7 @@ class BaseDerivedColumn(BaseColumn):
             cur_col = column_map[key]
             column_map[key] = column.clone(
                 node_names=cur_col.node_names.union(column.node_names),
-                node_name=(
-                    cur_col.node_name
-                    if len(cur_col.node_names) > len(column.node_names)
-                    else column.node_name
-                ),
+                node_name=(cur_col.node_name if len(cur_col.node_names) > len(column.node_names) else column.node_name),
                 filter=cur_col.filter or column.filter,
             )
         return column_map
@@ -296,9 +291,7 @@ class BaseDerivedColumn(BaseColumn):
         **kwargs: Any,
     ) -> "BaseDerivedColumn":
         columns = [
-            col.clone_without_internal_nodes(
-                proxy_node_name_map, graph_node_name, graph_node_transform, **kwargs
-            )
+            col.clone_without_internal_nodes(proxy_node_name_map, graph_node_name, graph_node_transform, **kwargs)
             for col in self.columns
         ]
         return super().clone_without_internal_nodes(
@@ -414,9 +407,7 @@ class PostAggregationColumn(BaseDerivedColumn):
         return hash(key)
 
 
-FeatureDataColumn = Annotated[
-    Union[AggregationColumn, PostAggregationColumn], Field(discriminator="type")
-]
+FeatureDataColumn = Annotated[Union[AggregationColumn, PostAggregationColumn], Field(discriminator="type")]
 
 
 class GroupOperationStructure(FeatureByteBaseModel):
@@ -571,9 +562,7 @@ class OperationStructure:
             if isinstance(column, (DerivedDataColumn, PostAggregationColumn)):
                 derived_column_map[column] = None
                 for inner_column in column.columns:
-                    input_column_map = BaseDerivedColumn.insert_column(
-                        input_column_map, inner_column
-                    )
+                    input_column_map = BaseDerivedColumn.insert_column(input_column_map, inner_column)
             else:
                 input_column_map = BaseDerivedColumn.insert_column(input_column_map, column)
 
@@ -640,7 +629,7 @@ class OperationStructure:
         -------
         GroupOperationStructure
         """
-        # pylint: disable=unpacking-non-sequence
+
         source_columns, derived_columns = self._split_column_by_type(columns=self.columns)
         aggregations, post_aggregations = self._split_column_by_type(columns=self.aggregations)
         assert len(post_aggregations) <= 1

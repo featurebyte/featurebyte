@@ -52,9 +52,7 @@ class StringAccessor:
 
     def __getitem__(self, item: slice) -> FrozenSeries:
         if not isinstance(item, slice):
-            raise TypeError(
-                f'type of argument "item" must be slice; got {type(item).__name__} instead'
-            )
+            raise TypeError(f'type of argument "item" must be slice; got {type(item).__name__} instead')
         return self.slice(start=item.start, stop=item.stop, step=item.step)
 
     def len(self) -> FrozenSeries:

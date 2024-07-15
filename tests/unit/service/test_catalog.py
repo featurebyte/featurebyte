@@ -20,9 +20,7 @@ async def test_catalog_get_and_list_raw_query_filter(app_container, catalog):
 
     with catalog_service.allow_use_raw_query_filter():
         # test get
-        retrieved_catalog = await catalog_service.get_document(
-            document_id=catalog.id, use_raw_query_filter=True
-        )
+        retrieved_catalog = await catalog_service.get_document(document_id=catalog.id, use_raw_query_filter=True)
         assert retrieved_catalog.id == catalog.id
 
         # test list
@@ -33,8 +31,6 @@ async def test_catalog_get_and_list_raw_query_filter(app_container, catalog):
         # test list iterator
         output = [
             catalog.id
-            async for catalog in catalog_service.list_documents_iterator(
-                query_filter={}, use_raw_query_filter=True
-            )
+            async for catalog in catalog_service.list_documents_iterator(query_filter={}, use_raw_query_filter=True)
         ]
         assert output == [catalog.id]

@@ -4,9 +4,8 @@ Feature API payload schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 from datetime import datetime
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, validator
@@ -156,9 +155,7 @@ class VersionComparison(FeatureByteBaseModel):
     default: str
 
     @classmethod
-    def from_version_identifier(
-        cls, this: VersionIdentifier, default: VersionIdentifier
-    ) -> VersionComparison:
+    def from_version_identifier(cls, this: VersionIdentifier, default: VersionIdentifier) -> VersionComparison:
         """
         Construct VersionComparison object using VersionIdentifier objects
 

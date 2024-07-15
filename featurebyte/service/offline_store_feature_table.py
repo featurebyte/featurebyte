@@ -4,10 +4,9 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Optional
-
 from datetime import datetime
 from pathlib import Path
+from typing import Any, AsyncIterator, Dict, Optional
 
 from bson import ObjectId, json_util
 from redis.lock import Lock
@@ -26,9 +25,7 @@ OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT = 120  # a maximum life for the l
 
 
 class OfflineStoreFeatureTableService(
-    BaseDocumentService[
-        OfflineStoreFeatureTableModel, OfflineStoreFeatureTableModel, OfflineStoreFeatureTableUpdate
-    ]
+    BaseDocumentService[OfflineStoreFeatureTableModel, OfflineStoreFeatureTableModel, OfflineStoreFeatureTableUpdate]
 ):
     """
     OfflineStoreFeatureTableService class
@@ -54,9 +51,7 @@ class OfflineStoreFeatureTableService(
         """
         return self.redis.lock(f"offline_store_feature_table_update:{document_id}", timeout=timeout)
 
-    async def get_or_create_document(
-        self, data: OfflineStoreFeatureTableModel
-    ) -> OfflineStoreFeatureTableModel:
+    async def get_or_create_document(self, data: OfflineStoreFeatureTableModel) -> OfflineStoreFeatureTableModel:
         """
         Get or create an offline store feature table
 
@@ -69,9 +64,7 @@ class OfflineStoreFeatureTableService(
         -------
         OfflineStoreFeatureTableModel
         """
-        query_result = await self.list_documents_as_dict(
-            query_filter=data.table_signature, page_size=1
-        )
+        query_result = await self.list_documents_as_dict(query_filter=data.table_signature, page_size=1)
         if query_result["total"]:
             return OfflineStoreFeatureTableModel(**query_result["data"][0])
         return await self.create_document(data)
@@ -92,16 +85,12 @@ class OfflineStoreFeatureTableService(
             f"offline_store_feature_table/{document.id}/feature_cluster.json"
         )
         assert isinstance(document.feature_cluster, FeatureCluster)
-        await self.storage.put_text(
-            json_util.dumps(document.feature_cluster.json_dict()), feature_cluster_path
-        )
+        await self.storage.put_text(json_util.dumps(document.feature_cluster.json_dict()), feature_cluster_path)
         document.feature_cluster_path = str(feature_cluster_path)
         document.feature_cluster = None
         return document
 
-    async def _create_document(
-        self, data: OfflineStoreFeatureTableModel
-    ) -> OfflineStoreFeatureTableModel:
+    async def _create_document(self, data: OfflineStoreFeatureTableModel) -> OfflineStoreFeatureTableModel:
         if data.entity_lookup_info is None and data.precomputed_lookup_feature_table_info is None:
             # check if name already exists
             data.base_name = data.get_basename()
@@ -132,9 +121,7 @@ class OfflineStoreFeatureTableService(
                 await self.storage.delete(Path(data.feature_cluster_path))
             raise exc
 
-    async def create_document(
-        self, data: OfflineStoreFeatureTableModel
-    ) -> OfflineStoreFeatureTableModel:
+    async def create_document(self, data: OfflineStoreFeatureTableModel) -> OfflineStoreFeatureTableModel:
         """
         Create a new document
 
@@ -147,9 +134,7 @@ class OfflineStoreFeatureTableService(
         -------
         OfflineStoreFeatureTableModel
         """
-        with self.get_feature_cluster_storage_lock(
-            data.id, timeout=OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT
-        ):
+        with self.get_feature_cluster_storage_lock(data.id, timeout=OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT):
             return await self._create_document(data)
 
     async def _update_offline_feature_table(
@@ -160,20 +145,14 @@ class OfflineStoreFeatureTableService(
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
     ) -> OfflineStoreFeatureTableModel:
-        original_doc = await self.get_document(
-            document_id=document_id, populate_remote_attributes=False
-        )
+        original_doc = await self.get_document(document_id=document_id, populate_remote_attributes=False)
         if isinstance(data, FeaturesUpdate):
-            assert (
-                data.feature_cluster_path is None
-            ), "feature_cluster_path should not be set in update"
+            assert data.feature_cluster_path is None, "feature_cluster_path should not be set in update"
             if original_doc.feature_cluster_path:
                 # attempt to remove the old feature cluster
                 await self.storage.try_delete_if_exists(Path(original_doc.feature_cluster_path))
 
-            table = OfflineStoreFeatureTableModel(
-                **{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)}
-            )
+            table = OfflineStoreFeatureTableModel(**{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)})
             table = await self._move_feature_cluster_to_storage(table)
             data.feature_cluster = None
             data.feature_cluster_path = table.feature_cluster_path
@@ -237,17 +216,13 @@ class OfflineStoreFeatureTableService(
         last_materialized_at: datetime
             Last materialized at timestamp to use
         """
-        document = await self.get_document(
-            document_id=document_id, populate_remote_attributes=False
-        )
+        document = await self.get_document(document_id=document_id, populate_remote_attributes=False)
         new_entry = OnlineStoreLastMaterializedAt(
             online_store_id=online_store_id,
             value=last_materialized_at,
         )
         updated_online_stores_last_materialized_at = [new_entry] + [
-            entry
-            for entry in document.online_stores_last_materialized_at
-            if entry.online_store_id != online_store_id
+            entry for entry in document.online_stores_last_materialized_at if entry.online_store_id != online_store_id
         ]
         update_schema = OnlineStoresLastMaterializedAtUpdate(
             online_stores_last_materialized_at=updated_online_stores_last_materialized_at
@@ -349,9 +324,7 @@ class OfflineStoreFeatureTableService(
             List query output
         """
         async for doc in self.list_documents_iterator(
-            query_filter={
-                "precomputed_lookup_feature_table_info.source_feature_table_id": source_feature_table_id
-            }
+            query_filter={"precomputed_lookup_feature_table_info.source_feature_table_id": source_feature_table_id}
         ):
             yield doc
 
@@ -395,7 +368,5 @@ class OfflineStoreFeatureTableService(
         AsyncIterator[OfflineStoreFeatureTableModel]
             List query output
         """
-        async for doc in self.list_documents_iterator(
-            query_filter={"aggregation_ids": aggregation_id}
-        ):
+        async for doc in self.list_documents_iterator(query_filter={"aggregation_ids": aggregation_id}):
             yield doc

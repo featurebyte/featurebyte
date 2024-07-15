@@ -93,9 +93,7 @@ def feature_store_preview_project_column_fixture(feature_store_preview, project_
     """
     Fixture for a FeatureStorePreview with a project column
     """
-    project_node = next(
-        node for node in feature_store_preview.graph.nodes if node.type == "project"
-    )
+    project_node = next(node for node in feature_store_preview.graph.nodes if node.type == "project")
     project_node.parameters.columns = [project_column]
     return feature_store_preview
 
@@ -109,9 +107,7 @@ def feature_store_sample_fixture(feature_store_preview):
 
 
 @pytest.mark.asyncio
-async def test_preview_feature__time_based_feature_without_point_in_time_errors(
-    feature_preview_service, float_feature
-):
+async def test_preview_feature__time_based_feature_without_point_in_time_errors(feature_preview_service, float_feature):
     """
     Test preview feature
     """
@@ -168,16 +164,12 @@ async def test_preview_feature__missing_entity(feature_preview_service, producti
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await feature_preview_service.preview_target_or_feature(feature_preview)
-    expected = (
-        'Required entities are not provided in the request: customer (serving name: "cust_id")'
-    )
+    expected = 'Required entities are not provided in the request: customer (serving name: "cust_id")'
     assert str(exc.value) == expected
 
 
 @pytest.mark.asyncio
-async def test_preview_featurelist__time_based_feature_errors_without_time(
-    feature_preview_service, float_feature
-):
+async def test_preview_featurelist__time_based_feature_errors_without_time(feature_preview_service, float_feature):
     """
     Test preview featurelist
     """
@@ -228,9 +220,7 @@ async def test_preview_featurelist__non_time_based_feature_no_error_without_time
 
 
 @pytest.mark.asyncio
-async def test_preview_featurelist__missing_entity(
-    feature_preview_service, production_ready_feature_list
-):
+async def test_preview_featurelist__missing_entity(feature_preview_service, production_ready_feature_list):
     """
     Test preview featurelist but without providing the required entity
     """
@@ -246,9 +236,7 @@ async def test_preview_featurelist__missing_entity(
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await feature_preview_service.preview_featurelist(feature_list_preview)
-    expected = (
-        'Required entities are not provided in the request: customer (serving name: "cust_id")'
-    )
+    expected = 'Required entities are not provided in the request: customer (serving name: "cust_id")'
     assert str(exc.value) == expected
 
 
@@ -264,17 +252,12 @@ async def test_describe_drop_all_null_stats(
     Test describe
     """
 
-    # pylint: disable=no-member
     async def mock_execute_query(query):
         if "%missing" not in query:
             return pd.DataFrame({"count": [100]})
-        result_column_names = [
-            col.alias_or_name for col in parse_one(query, read="snowflake").expressions
-        ]
+        result_column_names = [col.alias_or_name for col in parse_one(query, read="snowflake").expressions]
         # Make %missing stats null in all columns
-        data = {
-            col: ["some_value"] if "%missing" not in col else [None] for col in result_column_names
-        }
+        data = {col: ["some_value"] if "%missing" not in col else [None] for col in result_column_names}
         return pd.DataFrame(data)
 
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
@@ -302,12 +285,10 @@ async def test_value_counts(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
-        {
-            "key": ["1", "2", None],
-            "count": [100, 50, 3],
-        }
-    )
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
     result = await preview_service.value_counts(
         feature_store_preview,
         num_rows=100000,
@@ -348,12 +329,10 @@ async def test_value_counts_not_convert_keys_to_string(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
-        {
-            "key": keys,
-            "count": [100, 50, 3],
-        }
-    )
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
+        "key": keys,
+        "count": [100, 50, 3],
+    })
     result = await preview_service.value_counts(
         feature_store_preview_project_column,
         num_rows=100000,

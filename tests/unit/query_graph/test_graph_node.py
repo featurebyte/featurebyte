@@ -46,9 +46,7 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
     }
     assert nested_input_nodes == []
     compare_pydantic_obj(graph_node.output_node, expected=expected_nested_input_node)
-    compare_pydantic_obj(
-        graph_node.parameters.graph, expected={"nodes": [expected_nested_input_node], "edges": []}
-    )
+    compare_pydantic_obj(graph_node.parameters.graph, expected={"nodes": [expected_nested_input_node], "edges": []})
     assert graph_node.parameters.output_node_name == "input_1"
 
     # test further operate on the graph node
@@ -98,7 +96,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     )
     expected_proxy_nodes = [
         {
-            "name": f"proxy_input_{i+1}",
+            "name": f"proxy_input_{i + 1}",
             "type": "proxy_input",
             "parameters": {"input_order": i},
             "output_type": "series",
@@ -126,12 +124,8 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     assert graph_node.parameters.output_node_name == "add_1"
 
     # insert graph node into the graph & check operation structure output
-    inserted_graph_node = graph.add_node(
-        node=graph_node, input_nodes=[proj_int_node, proj_float_node]
-    )
-    operation_structure = graph.extract_operation_structure(
-        node=inserted_graph_node, keep_all_source_columns=True
-    )
+    inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[proj_int_node, proj_float_node])
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node, keep_all_source_columns=True)
     # internal node names should not be included (node_names: add_1)
     assert to_dict(operation_structure) == {
         "aggregations": [],
@@ -174,7 +168,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "is_time_based": False,
     }
     # check neither node nor edge is pruned
-    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    pruned_graph, _node_name_map = graph.prune(target_node=inserted_graph_node)
     assert len(pruned_graph.nodes) == len(graph.nodes)
     assert len(pruned_graph.edges) == len(graph.edges)
 
@@ -211,9 +205,7 @@ def nested_input_graph_fixture(input_node_params):
     compare_pydantic_obj(graph.edges, expected=[{"source": "graph_1", "target": "add_1"}])
 
     # internal node names should not be included (node_names: input_1, project_1)
-    operation_structure = graph.extract_operation_structure(
-        node=add_node, keep_all_source_columns=True
-    )
+    operation_structure = graph.extract_operation_structure(node=add_node, keep_all_source_columns=True)
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -282,9 +274,7 @@ def nested_output_graph_fixture(input_node_params):
     compare_pydantic_obj(graph.edges, expected=[{"source": "input_1", "target": "graph_1"}])
 
     # internal node names should not be included (node_names: project_1, add_1)
-    operation_structure = graph.extract_operation_structure(
-        node=inserted_graph_node, keep_all_source_columns=True
-    )
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node, keep_all_source_columns=True)
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -348,9 +338,7 @@ def deep_nested_graph_fixture(input_node_params):
         node_type=NodeType.PROJECT,
         node_params={"columns": ["col_int"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[
-            inner_graph_node.output_node
-        ],  # inner_graph_node.output_node: nested input node
+        input_nodes=[inner_graph_node.output_node],  # inner_graph_node.output_node: nested input node
     )
     graph_node, _ = GraphNode.create(
         node_type=NodeType.GRAPH,
@@ -370,18 +358,12 @@ def deep_nested_graph_fixture(input_node_params):
     inserted_inner_graph = graph.nodes[0].parameters.graph
     inserted_deeper_graph = inserted_inner_graph.nodes[0].parameters.graph
     inserted_deepest_graph = inserted_deeper_graph.nodes[0].parameters.graph
-    compare_pydantic_obj(
-        inserted_inner_graph.edges, expected=[{"source": "graph_1", "target": "add_1"}]
-    )
-    compare_pydantic_obj(
-        inserted_deeper_graph.edges, expected=[{"source": "graph_1", "target": "project_1"}]
-    )
+    compare_pydantic_obj(inserted_inner_graph.edges, expected=[{"source": "graph_1", "target": "add_1"}])
+    compare_pydantic_obj(inserted_deeper_graph.edges, expected=[{"source": "graph_1", "target": "project_1"}])
     compare_pydantic_obj(inserted_deepest_graph.edges, expected=[])
 
     # internal node names should not be included (node_names: project_1, add_1)
-    operation_structure = graph.extract_operation_structure(
-        node=inserted_graph_node, keep_all_source_columns=True
-    )
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node, keep_all_source_columns=True)
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -420,9 +402,7 @@ def deep_nested_graph_fixture(input_node_params):
     return graph
 
 
-def test_flatten_nested_graph(
-    nested_input_graph, nested_output_graph, deep_nested_graph, input_node_params
-):
+def test_flatten_nested_graph(nested_input_graph, nested_output_graph, deep_nested_graph, input_node_params):
     """Test query graph flatten logic"""
     expected_flattened_graph = {
         "edges": [
@@ -460,7 +440,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
 
     def add_graph_node(query_graph, input_nodes):
         # construct a graph node which contains a single node (ASSIGN node)
-        node_graph, proxy_inputs = GraphNode.create(
+        node_graph, _proxy_inputs = GraphNode.create(
             node_type=NodeType.ASSIGN,
             node_params={"name": "col_int_plus_one"},
             node_output_type=NodeOutputType.FRAME,
@@ -498,9 +478,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node],
     )
-    operation_structure = graph.extract_operation_structure(
-        node=proj_node, keep_all_source_columns=True
-    )
+    operation_structure = graph.extract_operation_structure(node=proj_node, keep_all_source_columns=True)
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -521,7 +499,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         "is_time_based": False,
     }
     # the cleaning graph node is pruned as it does not contribute to the final output
-    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
+    pruned_graph, _node_name_map = graph.prune(target_node=proj_node)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
 
 
@@ -669,6 +647,4 @@ def test_graph_node_keep_only_required_target_columns(input_node_params):
     pruned_graph, _ = graph.prune(target_node=filter_node)
     graph_node = pruned_graph.get_node_by_name("graph_1")
     assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1", "assign_1"]
-    compare_pydantic_obj(
-        graph_node.parameters.graph.edges, expected=[{"source": "input_1", "target": "assign_1"}]
-    )
+    compare_pydantic_obj(graph_node.parameters.graph.edges, expected=[{"source": "input_1", "target": "assign_1"}])

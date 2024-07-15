@@ -4,10 +4,9 @@ Module for TileCache and its implementors
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Iterator, Optional, cast
-
 import time
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
 from bson import ObjectId
 from sqlglot import expressions, parse_one
@@ -67,9 +66,7 @@ class TileInfoKey:
         -------
         TileInfoKey
         """
-        return cls(
-            aggregation_id=tile_info.aggregation_id, tile_id_version=tile_info.tile_id_version
-        )
+        return cls(aggregation_id=tile_info.aggregation_id, tile_id_version=tile_info.tile_id_version)
 
     def get_entity_tracker_table_name(self) -> str:
         """
@@ -82,9 +79,7 @@ class TileInfoKey:
         aggregation_id, tile_id_version = self.aggregation_id, self.tile_id_version
         if tile_id_version == 1:
             return f"{aggregation_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
-        return (
-            f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
-        )
+        return f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
 
     def get_working_table_column_name(self) -> str:
         """
@@ -283,7 +278,7 @@ class TileCache:
             )
         self._materialized_temp_table_names = set()
 
-    async def get_required_computation(  # pylint: disable=too-many-locals
+    async def get_required_computation(
         self,
         request_id: str,
         graph: QueryGraph,
@@ -316,9 +311,7 @@ class TileCache:
         if progress_callback is None:
             graph_progress, query_progress = None, None
         else:
-            graph_progress, query_progress = divide_progress_callback(
-                progress_callback, at_percent=20
-            )
+            graph_progress, query_progress = divide_progress_callback(progress_callback, at_percent=20)
         tile_cache_status = await self._get_tile_cache_status(
             graph=graph,
             nodes=nodes,
@@ -476,21 +469,15 @@ class TileCache:
             for info in infos:
                 if info.aggregation_id not in out:
                     if serving_names_mapping is not None:
-                        info.serving_names = apply_serving_names_mapping(
-                            info.serving_names, serving_names_mapping
-                        )
+                        info.serving_names = apply_serving_names_mapping(info.serving_names, serving_names_mapping)
                     out[TileInfoKey.from_tile_info(info)] = info
             if i % 10 == 0 and progress_callback is not None:
-                await progress_callback(
-                    int(i + 1 / len(nodes) * 100), "Checking tile cache availability"
-                )
+                await progress_callback(int(i + 1 / len(nodes) * 100), "Checking tile cache availability")
         if progress_callback is not None:
             await progress_callback(100, "Checking tile cache availability")
         return out
 
-    async def _filter_keys_with_tracker(
-        self, tile_info_keys: list[TileInfoKey]
-    ) -> list[TileInfoKey]:
+    async def _filter_keys_with_tracker(self, tile_info_keys: list[TileInfoKey]) -> list[TileInfoKey]:
         """Query tracker tables in data warehouse to identify aggregation IDs with existing tracking
         tables
 
@@ -569,7 +556,7 @@ class TileCache:
         request_table_name : str
             Name of the request table
         """
-        # pylint: disable=too-many-locals
+
         table_expr = select().from_(f"{request_table_name} AS REQ")
 
         columns = []
@@ -578,9 +565,7 @@ class TileCache:
             tracker_table_name = key.get_entity_tracker_table_name()
             table_alias = f"T{table_index}"
             join_conditions = []
-            for serving_name, entity_column_name in zip(
-                tile_info.serving_names, tile_info.entity_columns
-            ):
+            for serving_name, entity_column_name in zip(tile_info.serving_names, tile_info.entity_columns):
                 join_conditions.append(
                     parse_one(
                         f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(entity_column_name).sql()}"
@@ -603,9 +588,7 @@ class TileCache:
 
         table_expr = table_expr.select("REQ.*", *columns)
 
-        tile_cache_working_table_name = (
-            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
-        )
+        tile_cache_working_table_name = f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         await session.create_table_as(
             TableDetails(
                 database_name=session.database_name,
@@ -648,16 +631,12 @@ class TileCache:
         key_to_result_name_mapping: dict[TileInfoKey, str] = {
             key: f"{key.aggregation_id}_{key.tile_id_version}" for key in keys
         }
-        result_name_to_key_mapping: dict[str, TileInfoKey] = {
-            v: k for (k, v) in key_to_result_name_mapping.items()
-        }
+        result_name_to_key_mapping: dict[str, TileInfoKey] = {v: k for (k, v) in key_to_result_name_mapping.items()}
 
         for key in keys:
             tile_info = unique_tile_infos[key]
             point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
-            last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-                point_in_time_epoch_expr, tile_info
-            )
+            last_tile_start_date_expr = self._get_last_tile_start_date_expr(point_in_time_epoch_expr, tile_info)
             is_tile_updated = expressions.Sum(
                 this=expressions.Cast(
                     this=expressions.Case(
@@ -672,26 +651,20 @@ class TileCache:
                         ],
                         default=expressions.LTE(
                             this=last_tile_start_date_expr,
-                            expression=expressions.Identifier(
-                                this=key.get_working_table_column_name()
-                            ),
+                            expression=expressions.Identifier(this=key.get_working_table_column_name()),
                         ),
                     ),
                     to=expressions.DataType.build("BIGINT"),
                 )
             )
             expr = expressions.alias_(
-                expressions.EQ(
-                    this=is_tile_updated, expression=expressions.Count(this=expressions.Star())
-                ),
+                expressions.EQ(this=is_tile_updated, expression=expressions.Count(this=expressions.Star())),
                 alias=key_to_result_name_mapping[key],
                 quoted=False,
             )
             validity_exprs.append(expr)
 
-        tile_cache_working_table_name = (
-            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
-        )
+        tile_cache_working_table_name = f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         tile_cache_validity_sql = sql_to_string(
             select(*validity_exprs).from_(quoted_identifier(tile_cache_working_table_name)),
             source_type=session.source_type,
@@ -724,18 +697,12 @@ class TileCache:
 
         # Filter for rows where tile cache are outdated
         point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
-        last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            point_in_time_epoch_expr, tile_info
-        )
-        working_table_column_name = TileInfoKey.from_tile_info(
-            tile_info
-        ).get_working_table_column_name()
+        last_tile_start_date_expr = self._get_last_tile_start_date_expr(point_in_time_epoch_expr, tile_info)
+        working_table_column_name = TileInfoKey.from_tile_info(tile_info).get_working_table_column_name()
         working_table_filter = expressions.Case(
             ifs=[
                 expressions.If(
-                    this=expressions.Is(
-                        this=working_table_column_name, expression=expressions.Null()
-                    ),
+                    this=expressions.Is(this=working_table_column_name, expression=expressions.Null()),
                     true=expressions.true(),
                 ),
             ],
@@ -747,23 +714,15 @@ class TileCache:
 
         # Expressions to inform the date range for tile building
         point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
-        last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            point_in_time_epoch_expr, tile_info
-        )
-        start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
-            point_in_time_epoch_expr, tile_info
-        )
+        last_tile_start_date_expr = self._get_last_tile_start_date_expr(point_in_time_epoch_expr, tile_info)
+        start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(point_in_time_epoch_expr, tile_info)
 
         # Entity table can be constructed from the working table by filtering for rows with outdated
         # tiles that require recomputation
-        tile_cache_working_table_name = (
-            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
-        )
+        tile_cache_working_table_name = f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         entity_source_expr = (
             select(
-                expressions.alias_(
-                    last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value
-                ),
+                expressions.alias_(last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value),
             )
             .from_(tile_cache_working_table_name)
             .where(working_table_filter)
@@ -777,11 +736,9 @@ class TileCache:
 
         tile_compute_sql = cast(
             str,
-            tile_info.sql_template.render(
-                {
-                    InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
-                }
-            ),
+            tile_info.sql_template.render({
+                InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
+            }),
         )
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_info.tile_table_id,
@@ -804,23 +761,17 @@ class TileCache:
         -------
         str
         """
-        point_in_time_identifier = expressions.Identifier(
-            this=SpecialColumnName.POINT_IN_TIME.value
-        )
+        point_in_time_identifier = expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value)
         if in_groupby_context:
             # When this is True, we are interested in the latest point-in-time for each entity (the
             # groupby key).
-            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
-                expressions.Max(this=point_in_time_identifier)
-            )
+            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(expressions.Max(this=point_in_time_identifier))
         else:
             point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_identifier)
         return point_in_time_epoch_expr
 
     @staticmethod
-    def _get_last_tile_start_date_expr(
-        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
-    ) -> Expression:
+    def _get_last_tile_start_date_expr(point_in_time_epoch_expr: Expression, tile_info: TileGenSql) -> Expression:
         """Get the SQL expression for the "last tile start date" corresponding to the point-in-time
 
         Parameters
@@ -890,19 +841,13 @@ class TileCache:
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
         recorded_last_tile_start_date_expr = self.adapter.any_value(
-            expressions.Identifier(
-                this=TileInfoKey.from_tile_info(tile_info).get_working_table_column_name()
-            )
+            expressions.Identifier(this=TileInfoKey.from_tile_info(tile_info).get_working_table_column_name())
         )
-        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            frequency, "second", "microsecond"
-        )
+        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(frequency, "second", "microsecond")
         start_date_expr = expressions.Case(
             ifs=[
                 expressions.If(
-                    this=expressions.Is(
-                        this=recorded_last_tile_start_date_expr, expression=expressions.Null()
-                    ),
+                    this=expressions.Is(this=recorded_last_tile_start_date_expr, expression=expressions.Null()),
                     true=earliest_start_date_expr,
                 )
             ],

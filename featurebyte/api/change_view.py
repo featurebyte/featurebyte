@@ -4,9 +4,8 @@ ChangeView class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Union
-
 from datetime import datetime
+from typing import Any, ClassVar, List, Optional, Tuple, Union
 
 from pydantic import Field
 from typeguard import typechecked
@@ -29,9 +28,7 @@ class ChangeViewColumn(LaggableViewColumn):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
-    def lag(
-        self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1
-    ) -> ChangeViewColumn:
+    def lag(self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1) -> ChangeViewColumn:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
         a view.
@@ -60,9 +57,7 @@ class ChangeViewColumn(LaggableViewColumn):
         Get a ChangeView to track changes in Customer's State.
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
-        >>> change_view = scd_table.get_change_view(
-        ...   track_changes_column="State"
-        ... )
+        >>> change_view = scd_table.get_change_view(track_changes_column="State")
 
 
         Create a new column that indicates the prior past_State for a Customer
@@ -160,18 +155,14 @@ class ChangeView(View, GroupByMixin):
 
         before, after = prefixes
         if before is None and after is None:
-            raise ValueError(
-                "Prefixes provided are both None. Please indicate at least one prefix to update."
-            )
+            raise ValueError("Prefixes provided are both None. Please indicate at least one prefix to update.")
         if before == "" or after == "":
             raise ValueError(
                 "Please provide a non-empty string as a prefix value. If you want to use the default "
                 "value, please provide a `None` type instead."
             )
         if before == after:
-            raise ValueError(
-                f"Prefixes provided need to be different values. Current prefix value: {before}"
-            )
+            raise ValueError(f"Prefixes provided need to be different values. Current prefix value: {before}")
 
     @staticmethod
     def validate_inputs(
@@ -218,13 +209,11 @@ class ChangeView(View, GroupByMixin):
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         params = super()._getitem_frame_params
-        params.update(
-            {
-                "default_feature_job_setting": self.default_feature_job_setting,
-                "natural_key_column": self.natural_key_column,
-                "effective_timestamp_column": self.effective_timestamp_column,
-            }
-        )
+        params.update({
+            "default_feature_job_setting": self.default_feature_job_setting,
+            "natural_key_column": self.natural_key_column,
+            "effective_timestamp_column": self.effective_timestamp_column,
+        })
         return params
 
     @typechecked

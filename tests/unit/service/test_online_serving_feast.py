@@ -114,9 +114,7 @@ async def test_feature_no_point_in_time(
     """
     request_data = [{"cust_id": "a"}]
     feast_feature_store = await get_feast_feature_store(app_container, float_feat_deployment_id)
-    deployment = await get_deployment_from_feature_list(
-        app_container, deployed_feature_list_with_float_feature.id
-    )
+    deployment = await get_deployment_from_feature_list(app_container, deployed_feature_list_with_float_feature.id)
     result = await online_serving_service.get_online_features_by_feast(
         deployed_feature_list_with_float_feature, deployment, feast_feature_store, request_data
     )
@@ -146,9 +144,7 @@ async def test_feature_with_point_in_time(
         feast_feature_store,
         request_data,
     )
-    assert result.dict() == {
-        "features": [{"cust_id": "a", "feature_with_point_in_time_request_column": None}]
-    }
+    assert result.dict() == {"features": [{"cust_id": "a", "feature_with_point_in_time_request_column": None}]}
 
 
 @pytest.mark.asyncio
@@ -176,8 +172,7 @@ async def test_validate_required_serving_names(
             request_data,
         )
     assert (
-        str(exc_info.value)
-        == 'Required entities are not provided in the request: customer (serving name: "cust_id")'
+        str(exc_info.value) == 'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )
 
 
@@ -191,9 +186,7 @@ async def test_feature_requiring_parent_serving(
     """
     Test online serving feast with feature requiring parent serving
     """
-    feast_feature_store = await get_feast_feature_store(
-        app_container, fl_requiring_parent_serving_deployment_id
-    )
+    feast_feature_store = await get_feast_feature_store(app_container, fl_requiring_parent_serving_deployment_id)
     request_data = [{"cust_id": "a"}]
     deployment = await get_deployment_from_feature_list(
         app_container, deployed_feature_list_requiring_parent_serving.id
@@ -225,9 +218,7 @@ async def test_feature_requiring_parent_serving_composite_entity(
     """
     Test online serving feast with feature requiring parent serving
     """
-    feast_feature_store = await get_feast_feature_store(
-        app_container, fl_requiring_parent_serving_deployment_id
-    )
+    feast_feature_store = await get_feast_feature_store(app_container, fl_requiring_parent_serving_deployment_id)
     request_data = [{"another_key": "a", "group_key": "b"}]
     deployment = await get_deployment_from_feature_list(
         app_container, deployed_feature_list_requiring_parent_serving_composite_entity.id

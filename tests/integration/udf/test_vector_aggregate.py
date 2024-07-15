@@ -23,9 +23,7 @@ async def setup_test_data_fixture(session):
         (2, [4, 4, 10.0]),
         (2, [1, 12, 2.0]),
     ]
-    create_table_query = (
-        "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count float);"
-    )
+    create_table_query = "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count float);"
     insert_values = []
     for id_col, array_col in input_data:
         insert_values.append(f"({id_col}, '{array_col}')")

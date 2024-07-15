@@ -202,12 +202,8 @@ def test_create_dimension_table(snowflake_database_table, dimension_table_dict, 
     dimension_table_dict["updated_at"] = dimension_table.updated_at
     dimension_table_dict["description"] = None
     dimension_table_dict["block_modification_by"] = []
-    dimension_table_dict["columns_info"][0]["semantic_id"] = dimension_table.columns_info[
-        0
-    ].semantic_id
-    dimension_table_dict["columns_info"][7]["semantic_id"] = dimension_table.columns_info[
-        7
-    ].semantic_id
+    dimension_table_dict["columns_info"][0]["semantic_id"] = dimension_table.columns_info[0].semantic_id
+    dimension_table_dict["columns_info"][7]["semantic_id"] = dimension_table.columns_info[7].semantic_id
     assert output == dimension_table_dict
 
     # user input validation
@@ -231,10 +227,7 @@ def test_create_dimension_table__duplicated_record(saved_dimension_table, snowfl
             dimension_id_column="col_int",
             record_creation_timestamp_column="created_at",
         )
-    assert (
-        'DimensionTable (dimension_table.name: "sf_dimension_table") exists in saved record.'
-        in str(exc.value)
-    )
+    assert 'DimensionTable (dimension_table.name: "sf_dimension_table") exists in saved record.' in str(exc.value)
 
 
 def test_create_dimension_table__retrieval_exception(snowflake_database_table):
@@ -290,9 +283,7 @@ def test_accessing_saved_dimension_table_attributes(saved_dimension_table):
     # check synchronization
     cloned = DimensionTable.get_by_id(id=saved_dimension_table.id)
     assert cloned.record_creation_timestamp_column == "created_at"
-    saved_dimension_table.update_record_creation_timestamp_column(
-        record_creation_timestamp_column="event_timestamp"
-    )
+    saved_dimension_table.update_record_creation_timestamp_column(record_creation_timestamp_column="event_timestamp")
     assert saved_dimension_table.record_creation_timestamp_column == "event_timestamp"
     assert cloned.record_creation_timestamp_column == "event_timestamp"
 

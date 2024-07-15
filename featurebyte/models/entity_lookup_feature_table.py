@@ -4,9 +4,8 @@ Entity lookup feature table construction
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
-
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.event_table import EventTableModel
@@ -99,9 +98,7 @@ def get_entity_lookup_graph(
         input_nodes=[lookup_node],
     )
     op_struct = (
-        OperationStructureExtractor(graph=graph)
-        .extract(node=feature_node)
-        .operation_structure_map[feature_node.name]
+        OperationStructureExtractor(graph=graph).extract(node=feature_node).operation_structure_map[feature_node.name]
     )
     aggregations = op_struct.aggregations
     assert len(aggregations) == 1
@@ -110,7 +107,5 @@ def get_entity_lookup_graph(
         lookup_node=lookup_node,
         feature_node_name=feature_node.name,
         feature_dtype=aggregations[0].dtype,
-        feature_job_setting=FeatureJobSettingExtractor(graph=graph).extract_from_agg_node(
-            node=lookup_node
-        ),
+        feature_job_setting=FeatureJobSettingExtractor(graph=graph).extract_from_agg_node(node=lookup_node),
     )

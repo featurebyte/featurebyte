@@ -126,9 +126,7 @@ def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe, source_
     )
 
 
-def test_event_lookup_target_with_offset(
-    config, event_table, transaction_data_upper_case, source_type
-):
+def test_event_lookup_target_with_offset(config, event_table, transaction_data_upper_case, source_type):
     """
     Test creating event target from a event view with offset
     """

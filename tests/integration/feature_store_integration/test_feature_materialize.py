@@ -2,7 +2,6 @@
 Tests for feature materialization service
 """
 
-# pylint: disable=too-many-lines
 import json
 import os
 import textwrap
@@ -111,9 +110,7 @@ def udf_cos_fixture(catalog):
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(
-    event_table, scd_table, source_type, item_table, udf_cos
-):  # pylint: disable=too-many-locals
+def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
     """
     Fixture for feature
     """
@@ -170,16 +167,12 @@ def features_fixture(
         feature_names=["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"],
     )["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
 
-    cross_aggregate_feature2 = event_view.groupby(
-        ["CUST_ID"], category="PRODUCT_ACTION"
-    ).aggregate_over(
+    cross_aggregate_feature2 = event_view.groupby(["CUST_ID"], category="PRODUCT_ACTION").aggregate_over(
         "ÀMOUNT",
         method="sum",
         windows=["24d"],
         feature_names=["amount_sum_across_action_24d"],
-    )[
-        "amount_sum_across_action_24d"
-    ]
+    )["amount_sum_across_action_24d"]
 
     feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
     feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
@@ -340,11 +333,7 @@ async def saved_feature_list_composite_entities_fixture(features):
     """
     Fixture for saved feature list with composite entities feature
     """
-    features = [
-        feature
-        for feature in features
-        if feature.name == "Amount Sum by Customer x Product Action 24d"
-    ]
+    features = [feature for feature in features if feature.name == "Amount Sum by Customer x Product Action 24d"]
     feature_list = fb.FeatureList(features, name="EXTERNAL_FS_FEATURE_LIST_COMPOSITE_ENTITIES")
     feature_list.save()
     yield feature_list
@@ -398,9 +387,7 @@ async def _deploy_feature_list(app_container, saved_feature_list, deployment_nam
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
         deployment = saved_feature_list.deploy(deployment_name)
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
+        with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
             await deploy_service.update_deployment(
                 deployment_id=deployment.id,
@@ -439,9 +426,7 @@ async def deployed_feature_list_fixture(
         deployment = await _deploy_feature_list(
             app_container=app_container,
             saved_feature_list=saved_fl,
-            deployment_name=(
-                deployment_name if saved_fl.name == saved_feature_list_all.name else None
-            ),
+            deployment_name=(deployment_name if saved_fl.name == saved_feature_list_all.name else None),
         )
         deployments.append(deployment)
 
@@ -455,9 +440,7 @@ async def deployed_feature_list_fixture(
 
     if session.source_type == SourceType.DATABRICKS_UNITY:
         # check that on demand feature udf is dropped
-        df = await session.execute_query(
-            sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type)
-        )
+        df = await session.execute_query(sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type))
         all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
         udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
         assert len(udfs_for_on_demand_func) == 0
@@ -482,9 +465,7 @@ def order_use_case_fixture(order_entity):
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_composite_entities", scope="module")
-async def deployed_features_list_composite_entities_fixture(
-    saved_feature_list_composite_entities, app_container
-):
+async def deployed_features_list_composite_entities_fixture(saved_feature_list_composite_entities, app_container):
     """
     Fixture for deployed feature list
     """
@@ -502,9 +483,7 @@ async def deployed_features_list_composite_entities_fixture(
     )
 
 
-@pytest_asyncio.fixture(
-    name="deployed_feature_list_composite_entities_order_use_case", scope="module"
-)
+@pytest_asyncio.fixture(name="deployed_feature_list_composite_entities_order_use_case", scope="module")
 async def deployed_features_list_composite_entities_order_use_case_fixture(
     saved_feature_list_composite_entities,
     deployed_feature_list_composite_entities,
@@ -526,12 +505,8 @@ async def deployed_features_list_composite_entities_order_use_case_fixture(
         "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
-        deployment = feature_list.deploy(
-            "deployment order use case", use_case_name=order_use_case.name
-        )
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
+        deployment = feature_list.deploy("deployment order use case", use_case_name=order_use_case.name)
+        with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
             await deploy_service.update_deployment(
                 deployment_id=deployment.id,
@@ -601,9 +576,7 @@ async def deployed_feature_list_item_use_case_fixture(
         deployment = saved_feature_list_item_type_feature.deploy(
             "deployment item use case", use_case_name=item_use_case.name
         )
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
+        with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
             await deploy_service.update_deployment(
                 deployment_id=deployment.id,
@@ -624,9 +597,7 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     """
     _ = deployed_feature_list
     primary_entity_to_feature_table = {}
-    async for (
-        feature_table
-    ) in app_container.offline_store_feature_table_service.list_documents_iterator(
+    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={"precomputed_lookup_feature_table_info": None},
     ):
         primary_entity_to_feature_table[feature_table.name] = feature_table
@@ -641,9 +612,9 @@ async def offline_store_feature_tables_all_fixture(app_container, deployed_featu
     """
     _ = deployed_feature_list
     primary_entity_to_feature_table = {}
-    async for (
-        feature_table
-    ) in app_container.offline_store_feature_table_service.list_documents_iterator(query_filter={}):
+    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={}
+    ):
         primary_entity_to_feature_table[feature_table.name] = feature_table
     return primary_entity_to_feature_table
 
@@ -671,9 +642,7 @@ def get_relationship_info(feature_list_model, child_entity, parent_entity):
     for info in feature_list_model.relationships_info:
         if info.entity_id == child_entity.id and info.related_entity_id == parent_entity.id:
             return info
-    raise AssertionError(
-        f"Relationship with child as {child_entity.name} and parent as {parent_entity.name} not found"
-    )
+    raise AssertionError(f"Relationship with child as {child_entity.name} and parent as {parent_entity.name} not found")
 
 
 @pytest.fixture(name="expected_feature_table_names")
@@ -755,8 +724,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables_al
             output_column_names = next(
                 table
                 for table in offline_store_feature_tables_all.values()
-                if table.id
-                == feature_table.precomputed_lookup_feature_table_info.source_feature_table_id
+                if table.id == feature_table.precomputed_lookup_feature_table_info.source_feature_table_id
             ).output_column_names
         expected.update(output_column_names)
         if len(feature_table.serving_names) > 0:
@@ -769,23 +737,15 @@ async def test_feature_tables_populated(session, offline_store_feature_tables_al
             assert (df[DUMMY_ENTITY_COLUMN_NAME] == DUMMY_ENTITY_VALUE).all()
 
 
-async def _check_udf_with_container_input(
-    session, udfs_for_on_demand_func, offline_store_feature_tables
-):
+async def _check_udf_with_container_input(session, udfs_for_on_demand_func, offline_store_feature_tables):
     """Test that udf is created in databricks"""
     # check UDF taking count dictionary input as input
     table_name = "cat1_cust_id_1h"
-    cos_sim_udf = next(
-        udf
-        for udf in udfs_for_on_demand_func
-        if udf.startswith("udf_external_fs_cosine_similarity_")
-    )
+    cos_sim_udf = next(udf for udf in udfs_for_on_demand_func if udf.startswith("udf_external_fs_cosine_similarity_"))
     schema_name = session.schema_name
     table = offline_store_feature_tables[table_name]
     col_name = next(
-        colname
-        for colname in table.output_column_names
-        if colname.startswith("__EXTERNAL_FS_COSINE_SIMILARITY_")
+        colname for colname in table.output_column_names if colname.startswith("__EXTERNAL_FS_COSINE_SIMILARITY_")
     )
     query = f"""
     SELECT {cos_sim_udf}({col_name}, {col_name}) AS cos_sim
@@ -801,9 +761,7 @@ async def _check_udf_with_container_input(
 @pytest.mark.asyncio
 async def test_databricks_udf_created(session, offline_store_feature_tables, source_type):
     """Test that udf is created in databricks"""
-    df = await session.execute_query(
-        sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type)
-    )
+    df = await session.execute_query(sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type))
     all_udfs = set(df.function.apply(lambda x: x.split(".")[-1]).to_list())
     assert len(all_udfs) > 0
     udfs_for_on_demand_func = [udf for udf in all_udfs if udf.startswith("udf_")]
@@ -813,9 +771,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
         # udf_relativefrequency7d_<version>_<feature_id>
         assert len(udfs_for_on_demand_func) == 3
 
-        await _check_udf_with_container_input(
-            session, udfs_for_on_demand_func, offline_store_feature_tables
-        )
+        await _check_udf_with_container_input(session, udfs_for_on_demand_func, offline_store_feature_tables)
     else:
         assert len(udfs_for_on_demand_func) == 0
 
@@ -840,28 +796,23 @@ async def test_feast_registry(
         break
 
     assert deployment is not None
-    feature_store = (
-        await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
-            deployment=deployment
-        )
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
+        deployment=deployment
     )
 
     # check feature views (DO NOT CALL list_feature_views() as it will cache the list of feature views
     # and has side effect on the following call, this should be Feast specific issue).
-    assert {
-        fv.name
-        for fv in feature_store._list_feature_views(allow_cache=False, hide_dummy_entity=False)
-    } == {table.name for table in offline_store_feature_tables_all.values()}
+    assert {fv.name for fv in feature_store._list_feature_views(allow_cache=False, hide_dummy_entity=False)} == {
+        table.name for table in offline_store_feature_tables_all.values()
+    }
 
     # Check feature services
     feature_service_name = f"EXTERNAL_FS_FEATURE_LIST_{get_version()}"
     assert {fs.name for fs in feature_store.list_feature_services()} == {feature_service_name}
 
     # Check feast materialize and get_online_features
-    feature_store = (
-        await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
-            deployment=deployment
-        )
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store_for_deployment(
+        deployment=deployment
     )
     feature_service = feature_store.get_feature_service(feature_service_name)
     version = get_version()
@@ -1232,9 +1183,7 @@ def test_online_features__non_existing_order_id(
     entity_serving_name_non_exist = {"order_id": "non_existing_order_id"}
     with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
         mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
-        data = OnlineFeaturesRequestPayload(
-            entity_serving_names=[entity_serving_name, entity_serving_name_non_exist]
-        )
+        data = OnlineFeaturesRequestPayload(entity_serving_names=[entity_serving_name, entity_serving_name_non_exist])
         res = client.post(
             f"/deployment/{deployment.id}/online_features",
             json=data.json_dict(),
@@ -1244,13 +1193,9 @@ def test_online_features__non_existing_order_id(
     process_output_features_helper(features[0], source_type)
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
     expected_non_existing_order_id_features = entity_serving_name_non_exist.copy()
-    expected_non_existing_order_id_features.update(
-        {
-            feature_name: None
-            for feature_name in expected_features_order_id_T3850
-            if feature_name != "order_id"
-        }
-    )
+    expected_non_existing_order_id_features.update({
+        feature_name: None for feature_name in expected_features_order_id_T3850 if feature_name != "order_id"
+    })
     expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 194
     if source_type != SourceType.DATABRICKS_UNITY:
         expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0
@@ -1349,9 +1294,7 @@ async def test_simulated_materialize__ttl_feature_table(
     feature_table_model = user_entity_ttl_feature_table
     await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(
-        sql_to_string(
-            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
-        ),
+        sql_to_string(parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type),
     )
     version = get_version()
     expected = [
@@ -1430,9 +1373,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     assert feature_table_model.aggregation_ids == []
 
     df_0 = await session.execute_query(
-        sql_to_string(
-            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
-        ),
+        sql_to_string(parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type),
     )
     version = get_version()
     assert df_0.columns.tolist() == [
@@ -1454,9 +1395,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
     )
     await app_container.task_manager.submit(task_payload)
     df_1 = await session.execute_query(
-        sql_to_string(
-            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
-        ),
+        sql_to_string(parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type),
     )
     assert df_1.shape[0] == 18
     assert df_1["__feature_timestamp"].nunique() == 2
@@ -1532,9 +1471,7 @@ def test_online_features__patch_feast(config, deployed_feature_list):
             json=data.json_dict(),
         ).json()
 
-        data = OnlineFeaturesRequestPayload(
-            entity_serving_names=[entity_serving_name_non_exist, entity_serving_name]
-        )
+        data = OnlineFeaturesRequestPayload(entity_serving_names=[entity_serving_name_non_exist, entity_serving_name])
         res3 = client.post(
             f"/deployment/{deployment.id}/online_features",
             json=data.json_dict(),

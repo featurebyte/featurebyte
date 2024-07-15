@@ -3,10 +3,10 @@ This module contains Online Store related models
 """
 
 from typing import ClassVar, List, Literal, Optional, Union
-from typing_extensions import Annotated
 
 import pymongo
 from pydantic import Field, StrictStr
+from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import OnlineStoreType, RedisType
@@ -43,26 +43,22 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
     Examples
     --------
     >>> details = fb.RedisOnlineStoreDetails(
-    ...   redis_type="redis",
-    ...   connection_string="localhost:6379",
-    ...   key_ttl_seconds=3600,
-    ...   credential=fb.UsernamePasswordCredential(
-    ...     username="username",
-    ...     password="password",
-    ...   )
+    ...     redis_type="redis",
+    ...     connection_string="localhost:6379",
+    ...     key_ttl_seconds=3600,
+    ...     credential=fb.UsernamePasswordCredential(
+    ...         username="username",
+    ...         password="password",
+    ...     ),
     ... )
     """
 
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.RedisOnlineStoreDetails"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.RedisOnlineStoreDetails")
 
     # Online store type selector
     type: Literal[OnlineStoreType.REDIS] = OnlineStoreType.REDIS
 
-    redis_type: RedisType = Field(
-        default=RedisType.REDIS, description="Redis type: redis or redis_cluster."
-    )
+    redis_type: RedisType = Field(default=RedisType.REDIS, description="Redis type: redis or redis_cluster.")
     #  format: host:port,parameter1,parameter2 eg. redis:6379,db=0
     connection_string: StrictStr = Field(
         default="localhost:6379",
@@ -73,9 +69,7 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
         default=None, description="Redis key bin ttl (in seconds) for expiring entities."
     )
 
-    credential: Optional[UsernamePasswordCredential] = Field(
-        default=None, description="Redis user and password."
-    )
+    credential: Optional[UsernamePasswordCredential] = Field(default=None, description="Redis user and password.")
 
 
 class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
@@ -85,19 +79,14 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
     Examples
     --------
     >>> details = fb.MySQLOnlineStoreDetails(
-    ...   host="localhost",
-    ...   database="database",
-    ...   port=3306,
-    ...   credential=fb.UsernamePasswordCredential(
-    ...     username="user",
-    ...     password="password"
-    ...   )
+    ...     host="localhost",
+    ...     database="database",
+    ...     port=3306,
+    ...     credential=fb.UsernamePasswordCredential(username="user", password="password"),
     ... )
     """
 
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.MySQLOnlineStoreDetails"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.MySQLOnlineStoreDetails")
 
     # Online store type selector
     type: Literal[OnlineStoreType.MYSQL] = OnlineStoreType.MYSQL
@@ -108,9 +97,7 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
 
     port: int = Field(default=3306, description="MySQL connection port.")
 
-    credential: Optional[UsernamePasswordCredential] = Field(
-        default=None, description="MySQL user and password."
-    )
+    credential: Optional[UsernamePasswordCredential] = Field(default=None, description="MySQL user and password.")
 
 
 OnlineStoreDetails = Annotated[

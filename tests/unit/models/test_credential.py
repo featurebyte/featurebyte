@@ -23,9 +23,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature_store import FeatureStoreModel
 
 
-@pytest.fixture(
-    name="storage_credential", params=[None] + list(StorageCredentialType.__members__.values())
-)
+@pytest.fixture(name="storage_credential", params=[None] + list(StorageCredentialType.__members__.values()))
 def storage_credential_fixture(request):
     """
     Fixture for a StorageCredential object
@@ -144,20 +142,16 @@ def test_gcs_storage_credential_service_account_info():
     Test GCS storage credential accepts string service account info
     """
 
-    credential = CredentialModel(
-        **{
-            "feature_store_id": "668f81a61f685fdecfce9ee9",
-            "storage_credential": {
-                "type": "GCS",
-                "service_account_info": json.dumps(
-                    {
-                        "type": "service_account",
-                        "private_key": "private_key",
-                    }
-                ),
-            },
-        }
-    )
+    credential = CredentialModel(**{
+        "feature_store_id": "668f81a61f685fdecfce9ee9",
+        "storage_credential": {
+            "type": "GCS",
+            "service_account_info": json.dumps({
+                "type": "service_account",
+                "private_key": "private_key",
+            }),
+        },
+    })
     assert isinstance(credential.storage_credential, GCSStorageCredential)
     assert credential.storage_credential.service_account_info == {
         "type": "service_account",

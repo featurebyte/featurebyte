@@ -2,15 +2,13 @@
 BaseService class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
-
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -60,8 +58,7 @@ from featurebyte.storage import Storage
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 RAW_QUERY_FILTER_WARNING = (
-    "Using raw query filter breaks application logic. "
-    "It should only be used when absolutely necessary."
+    "Using raw query filter breaks application logic. " "It should only be used when absolutely necessary."
 )
 RETRY_MAX_WAIT_IN_SEC = 2
 RETRY_MAX_ATTEMPT_NUM = 3
@@ -101,16 +98,12 @@ def as_object_id(object_id: Any) -> ObjectId:
     return ObjectId(object_id)
 
 
-class BaseDocumentService(
-    Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin
-):
+class BaseDocumentService(Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin):
     """
     BaseDocumentService class is responsible to perform CRUD of the underlying persistent
     collection. It will perform model level validation before writing to persistent and after
     reading from the persistent.
     """
-
-    # pylint: disable=too-many-public-methods
 
     document_class: Type[Document]
     _remote_attribute_cache: Any = LRUCache(maxsize=1024)
@@ -132,9 +125,7 @@ class BaseDocumentService(
         self.storage = storage
         self.redis = redis
         if self.is_catalog_specific and not catalog_id:
-            raise CatalogNotSpecifiedError(
-                f"No active catalog specified for service: {self.__class__.__name__}"
-            )
+            raise CatalogNotSpecifiedError(f"No active catalog specified for service: {self.__class__.__name__}")
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:
@@ -533,11 +524,7 @@ class BaseDocumentService(
         return int(num_of_records_deleted)
 
     async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
-        for (
-            remote_path
-        ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
-            document_dict
-        ):
+        for remote_path in self.document_class._get_remote_attribute_paths(document_dict):
             await self.storage.try_delete_if_exists(remote_path)
 
     async def soft_delete_document(self, document_id: ObjectId) -> None:
@@ -667,9 +654,7 @@ class BaseDocumentService(
             If the persistent query is not supported
         """
         sort_by = sort_by or [("created_at", "desc")]
-        query_filter = self.construct_list_query_filter(
-            use_raw_query_filter=use_raw_query_filter, **kwargs
-        )
+        query_filter = self.construct_list_query_filter(use_raw_query_filter=use_raw_query_filter, **kwargs)
         try:
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,
@@ -715,9 +700,7 @@ class BaseDocumentService(
             If the persistent query is not supported
         """
         sort_by = sort_by or [("created_at", "desc")]
-        query_filter = self.construct_list_query_filter(
-            use_raw_query_filter=use_raw_query_filter, **kwargs
-        )
+        query_filter = self.construct_list_query_filter(use_raw_query_filter=use_raw_query_filter, **kwargs)
         try:
             docs = await self.persistent.get_iterator(
                 collection_name=self.collection_name,
@@ -764,9 +747,7 @@ class BaseDocumentService(
                 document = await self._populate_remote_attributes(document=document)
             yield document
 
-    def _construct_list_audit_query_filter(
-        self, query_filter: Optional[QueryFilter], **kwargs: Any
-    ) -> QueryFilter:
+    def _construct_list_audit_query_filter(self, query_filter: Optional[QueryFilter], **kwargs: Any) -> QueryFilter:
         """
         Construct query filter used in list audit route
 
@@ -831,9 +812,7 @@ class BaseDocumentService(
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
     @classmethod
-    def _get_field_history(
-        cls, field: str, audit_docs: List[Dict[str, Any]]
-    ) -> List[FieldValueHistory]:
+    def _get_field_history(cls, field: str, audit_docs: List[Dict[str, Any]]) -> List[FieldValueHistory]:
         """
         Construct list of audit history given field
 
@@ -881,9 +860,7 @@ class BaseDocumentService(
                 )
         return list(reversed(history))
 
-    async def list_document_field_history(
-        self, document_id: ObjectId, field: str
-    ) -> list[FieldValueHistory]:
+    async def list_document_field_history(self, document_id: ObjectId, field: str) -> list[FieldValueHistory]:
         """
         List historical values for a field in a document
 
@@ -931,15 +908,10 @@ class BaseDocumentService(
         str
             Error message for conflict exception
         """
-        formatted_conflict_signature = ", ".join(
-            f'{key}: "{value}"' for key, value in conflict_signature.items()
-        )
+        formatted_conflict_signature = ", ".join(f'{key}: "{value}"' for key, value in conflict_signature.items())
         message = f"{self.class_name} ({formatted_conflict_signature}) already exists."
         if resolution_signature:
-            if (
-                resolution_signature
-                in UniqueConstraintResolutionSignature.get_existing_object_type()
-            ):
+            if resolution_signature in UniqueConstraintResolutionSignature.get_existing_object_type():
                 resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
                     resolution_signature=resolution_signature,
                     class_name=self.class_name,
@@ -947,9 +919,7 @@ class BaseDocumentService(
                 )
                 message += f" Get the existing object by `{resolution_statement}`."
             if resolution_signature == UniqueConstraintResolutionSignature.RENAME:
-                message += (
-                    f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
-                )
+                message += f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
         return message
 
     async def _check_document_unique_constraint(
@@ -1043,9 +1013,7 @@ class BaseDocumentService(
                 for name, fields in constraint.conflict_fields_signature.items()
             }
             if conflict_signature.get("version"):
-                conflict_signature["version"] = VersionIdentifier(
-                    **conflict_signature["version"]
-                ).to_str()
+                conflict_signature["version"] = VersionIdentifier(**conflict_signature["version"]).to_str()
 
             yield UniqueConstraintData(
                 query_filter=query_filter,
@@ -1085,12 +1053,9 @@ class BaseDocumentService(
             )
 
     def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
-        if self.block_modification_handler.block_modification and document.get(
-            "block_modification_by"
-        ):
+        if self.block_modification_handler.block_modification and document.get("block_modification_by"):
             block_modification_by = [
-                f"{item['asset_name']}(id: {item['document_id']})"
-                for item in document.get("block_modification_by", [])
+                f"{item['asset_name']}(id: {item['document_id']})" for item in document.get("block_modification_by", [])
             ]
             raise DocumentModificationBlockedError(
                 f"Document {document['_id']} is blocked from modification by {block_modification_by}"
@@ -1175,9 +1140,7 @@ class BaseDocumentService(
         Optional[Document]
         """
         if document is None:
-            document = await self.get_document(
-                document_id=document_id, populate_remote_attributes=False
-            )
+            document = await self.get_document(document_id=document_id, populate_remote_attributes=False)
 
         # perform validation first before actual update
         update_dict = data.dict(
@@ -1202,9 +1165,7 @@ class BaseDocumentService(
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(
-            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
-        ),
+        wait=wait_chain(*[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]),
     )
     async def update_documents(
         self,
@@ -1235,9 +1196,7 @@ class BaseDocumentService(
         )
         return int(updated_count)
 
-    async def historical_document_generator(
-        self, document_id: ObjectId
-    ) -> AsyncIterator[Optional[Document]]:
+    async def historical_document_generator(self, document_id: ObjectId) -> AsyncIterator[Optional[Document]]:
         """
         Reconstruct documents of older history
 
@@ -1259,9 +1218,7 @@ class BaseDocumentService(
             else:
                 yield None
 
-    async def add_block_modification_by(
-        self, query_filter: QueryFilter, reference_info: ReferenceInfo
-    ) -> None:
+    async def add_block_modification_by(self, query_filter: QueryFilter, reference_info: ReferenceInfo) -> None:
         """
         Add block modification by to records matching query filter
 
@@ -1282,9 +1239,7 @@ class BaseDocumentService(
             disable_audit=self.should_disable_audit,
         )
 
-    async def remove_block_modification_by(
-        self, query_filter: QueryFilter, reference_info: ReferenceInfo
-    ) -> None:
+    async def remove_block_modification_by(self, query_filter: QueryFilter, reference_info: ReferenceInfo) -> None:
         """
         Remove block modification by from records matching query filter
 

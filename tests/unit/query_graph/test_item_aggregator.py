@@ -113,9 +113,7 @@ def test_item_aggregation(aggregation_specs):
     for spec in aggregation_specs:
         aggregator.update(spec)
 
-    result = aggregator.update_aggregation_table_expr(
-        select("a").from_("REQUEST_TABLE"), "POINT_IN_TIME", ["a"], 0
-    )
+    result = aggregator.update_aggregation_table_expr(select("a").from_("REQUEST_TABLE"), "POINT_IN_TIME", ["a"], 0)
 
     expected = textwrap.dedent(
         """

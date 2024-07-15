@@ -4,9 +4,8 @@ TaskManager service is responsible to submit task message
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 import datetime
+from typing import Any, Optional
 from uuid import UUID
 
 from bson import ObjectId
@@ -272,9 +271,7 @@ class TaskManager:
 
         # if time limit is not set default to interval length
         if not time_limit:
-            time_limit = int(
-                datetime.timedelta(**{str(interval.period): interval.every}).total_seconds()
-            )
+            time_limit = int(datetime.timedelta(**{str(interval.period): interval.every}).total_seconds())
 
         periodic_task = PeriodicTask(
             name=name,

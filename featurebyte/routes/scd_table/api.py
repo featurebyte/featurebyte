@@ -4,9 +4,8 @@ SCDTable API routes
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from http import HTTPStatus
+from typing import List, Optional
 
 from fastapi import APIRouter, Request
 
@@ -37,14 +36,10 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/scd_table")
 
 
-class SCDTableRouter(
-    BaseApiRouter[SCDTableModel, SCDTableList, SCDTableCreate, SCDTableController]
-):
+class SCDTableRouter(BaseApiRouter[SCDTableModel, SCDTableList, SCDTableCreate, SCDTableController]):
     """
     SCD table router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = SCDTableModel
     list_object_model = SCDTableList
@@ -151,9 +146,7 @@ class SCDTableRouter(
         )
         return info
 
-    async def update_scd_table(
-        self, request: Request, scd_table_id: PyObjectId, data: SCDTableUpdate
-    ) -> SCDTableModel:
+    async def update_scd_table(self, request: Request, scd_table_id: PyObjectId, data: SCDTableUpdate) -> SCDTableModel:
         """
         Update scd table
         """

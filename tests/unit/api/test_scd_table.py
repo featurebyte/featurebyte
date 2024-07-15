@@ -249,9 +249,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
         "execution_buffer": "0s",
     }
     for column_idx in [0, 2, 3, 6, 7, 9]:
-        scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[
-            column_idx
-        ].semantic_id
+        scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[column_idx].semantic_id
     assert output == scd_table_dict
 
     # user input validation
@@ -407,9 +405,7 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
     # check synchronization
     cloned = SCDTable.get_by_id(id=saved_scd_table.id)
     assert cloned.record_creation_timestamp_column is None
-    saved_scd_table.update_record_creation_timestamp_column(
-        record_creation_timestamp_column="created_at"
-    )
+    saved_scd_table.update_record_creation_timestamp_column(record_creation_timestamp_column="created_at")
     assert saved_scd_table.record_creation_timestamp_column == "created_at"
     assert cloned.record_creation_timestamp_column == "created_at"
 
@@ -449,10 +445,6 @@ def test_sdk_code_generation_on_saved_data(saved_scd_table, update_fixtures):
 
 def test_update_default_feature_job_setting(saved_scd_table, feature_group_feature_job_setting):
     """Test update feature job setting"""
-    assert saved_scd_table.default_feature_job_setting == FeatureJobSetting(
-        blind_spot="0h", offset="0h", period="24h"
-    )
-    saved_scd_table.update_default_feature_job_setting(
-        feature_job_setting=feature_group_feature_job_setting
-    )
+    assert saved_scd_table.default_feature_job_setting == FeatureJobSetting(blind_spot="0h", offset="0h", period="24h")
+    saved_scd_table.update_default_feature_job_setting(feature_job_setting=feature_group_feature_job_setting)
     assert saved_scd_table.default_feature_job_setting == feature_group_feature_job_setting

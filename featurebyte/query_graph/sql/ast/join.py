@@ -4,13 +4,12 @@ Module for join operation sql generation
 
 from __future__ import annotations
 
-from typing import Optional, cast
-from typing_extensions import Literal
-
 from dataclasses import dataclass
+from typing import Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -51,13 +50,9 @@ class Join(TableNode):
             return None
         parameters = context.parameters
         columns_map = {}
-        for input_col, output_col in zip(
-            parameters["left_input_columns"], parameters["left_output_columns"]
-        ):
+        for input_col, output_col in zip(parameters["left_input_columns"], parameters["left_output_columns"]):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
-        for input_col, output_col in zip(
-            parameters["right_input_columns"], parameters["right_output_columns"]
-        ):
+        for input_col, output_col in zip(parameters["right_input_columns"], parameters["right_output_columns"]):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
         node = Join(
             context=context,
@@ -76,8 +71,6 @@ class SCDJoin(TableNode):
     """
     SCDJoin joins the latest record per natural key from the right table to the left table
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     left_node: TableNode
     right_node: TableNode
@@ -148,9 +141,7 @@ class SCDJoin(TableNode):
         for output_col in parameters["left_output_columns"]:
             columns_map[output_col] = get_qualified_column_identifier(output_col, "L")
 
-        for input_col, output_col in zip(
-            parameters["right_input_columns"], parameters["right_output_columns"]
-        ):
+        for input_col, output_col in zip(parameters["right_input_columns"], parameters["right_output_columns"]):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
 
         node = SCDJoin(

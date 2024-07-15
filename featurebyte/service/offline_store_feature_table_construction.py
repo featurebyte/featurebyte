@@ -4,11 +4,10 @@ OfflineStoreFeatureTableConstructionService class
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Tuple
-
 import os
 import pickle
 from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import aiofiles
 from bson import ObjectId
@@ -97,8 +96,10 @@ class OfflineStoreFeatureTableConstructionService:
         OfflineStoreFeatureTableModel
         """
         if entity_id_to_serving_name is None:
-            entity_id_to_serving_name = await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
-                entity_ids=primary_entity_ids
+            entity_id_to_serving_name = (
+                await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
+                    entity_ids=primary_entity_ids
+                )
             )
 
         feature_cluster = FeatureCluster(
@@ -111,9 +112,7 @@ class OfflineStoreFeatureTableConstructionService:
             name_prefix=table_name_prefix,
             feature_ids=[],
             primary_entity_ids=primary_entity_ids,
-            serving_names=[
-                entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids
-            ],
+            serving_names=[entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids],
             feature_cluster=feature_cluster,
             output_column_names=[],
             output_dtypes=[],
@@ -215,9 +214,7 @@ class OfflineStoreFeatureTableConstructionService:
 
     async def get_entity_universe_model(
         self,
-        offline_ingest_graphs: List[
-            Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
-        ],
+        offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]],
         source_type: SourceType,
         feature_table_name: str,
     ) -> EntityUniverseModel:
@@ -260,8 +257,7 @@ class OfflineStoreFeatureTableConstructionService:
                 if non_primary_entity_ids:
                     entity_info = EntityInfo(
                         required_entities=[
-                            (await self.entity_service.get_document(entity_id))
-                            for entity_id in non_primary_entity_ids
+                            (await self.entity_service.get_document(entity_id)) for entity_id in non_primary_entity_ids
                         ],
                         provided_entities=primary_entities,
                     )
@@ -296,8 +292,4 @@ class OfflineStoreFeatureTableConstructionService:
         elif isinstance(node, LookupNode):
             node_entity_ids = [node.parameters.entity_id]
         assert node_entity_ids is not None
-        return [
-            entity_id
-            for entity_id in node_entity_ids
-            if entity_id not in offline_ingest_graph_primary_entity_ids
-        ]
+        return [entity_id for entity_id in node_entity_ids if entity_id not in offline_ingest_graph_primary_entity_ids]

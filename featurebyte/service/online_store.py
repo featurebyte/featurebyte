@@ -67,9 +67,7 @@ class OnlineStoreService(
         online_store = self.document_class(**data.dict(by_alias=True))
         if online_store.details.credential:
             online_store.details.credential.encrypt_values()
-        return await super().create_document(
-            data=OnlineStoreCreate(**online_store.dict(by_alias=True))
-        )
+        return await super().create_document(data=OnlineStoreCreate(**online_store.dict(by_alias=True)))
 
     async def get_online_store_info(self, document_id: ObjectId, verbose: bool) -> OnlineStoreInfo:
         """
@@ -88,9 +86,7 @@ class OnlineStoreService(
         """
         _ = verbose
         online_store = await self.get_document(document_id=document_id)
-        results = await self.catalog_service.list_documents_as_dict(
-            query_filter={"online_store_id": document_id}
-        )
+        results = await self.catalog_service.list_documents_as_dict(query_filter={"online_store_id": document_id})
         return OnlineStoreInfo(
             name=online_store.name,
             created_at=online_store.created_at,
@@ -159,9 +155,7 @@ class OnlineStoreService(
             new_document = self.document_class(**document_dict)
             if new_document.details.credential:
                 new_document.details.credential.encrypt_values()
-                update_dict["details"]["credential"] = new_document.details.credential.dict(
-                    by_alias=True
-                )
+                update_dict["details"]["credential"] = new_document.details.credential.dict(by_alias=True)
 
         return await super()._update_document(
             document=document,

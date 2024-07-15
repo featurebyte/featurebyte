@@ -5,11 +5,11 @@ SCDTable class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
-from typing_extensions import Literal
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -78,15 +78,9 @@ class SCDTable(TableApiObject):
     )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    internal_surrogate_key_column: Optional[StrictStr] = Field(
-        alias="surrogate_key_column", default=None
-    )
-    internal_end_timestamp_column: Optional[StrictStr] = Field(
-        alias="end_timestamp_column", default=None
-    )
-    internal_current_flag_column: Optional[StrictStr] = Field(
-        alias="current_flag_column", default=None
-    )
+    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column", default=None)
+    internal_end_timestamp_column: Optional[StrictStr] = Field(alias="end_timestamp_column", default=None)
+    internal_current_flag_column: Optional[StrictStr] = Field(alias="current_flag_column", default=None)
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -160,19 +154,19 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> scd_view = scd_table.get_view(
-        ...   view_mode="manual",
-        ...   drop_column_names=["record_available_at", "CurrentRecord"],
-        ...   column_cleaning_operations=[
-        ...     fb.ColumnCleaningOperation(
-        ...       column_name="Gender",
-        ...       cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value="Unknown"),
-        ...       ],
-        ...     )
-        ...   ],
+        ...     view_mode="manual",
+        ...     drop_column_names=["record_available_at", "CurrentRecord"],
+        ...     column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...             column_name="Gender",
+        ...             cleaning_operations=[
+        ...                 fb.MissingValueImputation(imputed_value="Unknown"),
+        ...             ],
+        ...         )
+        ...     ],
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.scd_view import SCDView
 
         self._validate_view_mode_params(
@@ -191,7 +185,7 @@ class SCDTable(TableApiObject):
         if view_mode == ViewMode.AUTO and self.current_flag_column:
             drop_column_names.append(self.current_flag_column)
 
-        data_node = self.frame.node  # pylint: disable=duplicate-code
+        data_node = self.frame.node
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, self.table_data)
         column_cleaning_operations = column_cleaning_operations or []
@@ -292,11 +286,11 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> change_view = scd_table.get_change_view(
-        ...   track_changes_column="State",
-        ...   prefixes=("previous_", "next_"),
+        ...     track_changes_column="State",
+        ...     prefixes=("previous_", "next_"),
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.change_view import ChangeView
 
         # Validate input
@@ -314,9 +308,7 @@ class SCDTable(TableApiObject):
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting or self.default_feature_job_setting
         )
-        col_names = SCDTableData.get_new_column_names(
-            track_changes_column, self.effective_timestamp_column, prefixes
-        )
+        col_names = SCDTableData.get_new_column_names(track_changes_column, self.effective_timestamp_column, prefixes)
         drop_column_names = drop_column_names or []
         if (
             view_mode == ViewMode.AUTO
@@ -481,7 +473,7 @@ class SCDTable(TableApiObject):
         return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> SCDTable:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> SCDTable:
         """
         Returns a SCDTable object by its unique identifier (ID).
 
@@ -519,9 +511,9 @@ class SCDTable(TableApiObject):
 
         >>> from featurebyte import FeatureJobSetting
         >>> new_feature_job_setting = FeatureJobSetting(
-        ...   blind_spot="10m",
-        ...   period="24h",
-        ...   offset="65m",
+        ...     blind_spot="10m",
+        ...     period="24h",
+        ...     offset="65m",
         ... )
 
 

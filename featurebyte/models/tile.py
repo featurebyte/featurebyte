@@ -134,9 +134,7 @@ class TileSpec(FeatureByteBaseModel):
             raise ValueError("frequency_minute should be a multiple of 60 if it is more than 60")
 
         if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
-            raise ValueError(
-                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
-            )
+            raise ValueError(f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}")
 
         return values
 

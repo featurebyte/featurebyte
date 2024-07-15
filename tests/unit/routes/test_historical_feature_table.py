@@ -115,15 +115,11 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         payload = copy.deepcopy(self.payload)
-        payload["featurelist_get_historical_features"]["serving_names_mapping"] = {
-            "random_name": "random_name"
-        }
+        payload["featurelist_get_historical_features"]["serving_names_mapping"] = {"random_name": "random_name"}
 
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == (
-            "Unexpected serving names provided in serving_names_mapping: random_name"
-        )
+        assert response.json()["detail"] == ("Unexpected serving names provided in serving_names_mapping: random_name")
 
     @pytest.mark.asyncio
     async def test_observation_table_delete_422__observation_table_failed_validation_check(
@@ -188,25 +184,19 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             "description": None,
         }
 
-    def test_provide_both_observation_table_id_and_dataframe_not_allowed(
-        self, test_api_client_persistent
-    ):
+    def test_provide_both_observation_table_id_and_dataframe_not_allowed(self, test_api_client_persistent):
         """
         Test that providing both observation_table_id and observation set DataFrame is not allowed
         """
         test_api_client, _ = test_api_client_persistent
-        df = pd.DataFrame(
-            {
-                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "CUST_ID": ["C1"],
-            }
-        )
+        df = pd.DataFrame({
+            "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+            "CUST_ID": ["C1"],
+        })
         files = {"observation_set": dataframe_to_arrow_bytes(df)}
         response = self.post(test_api_client, self.payload, files=files)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {
-            "detail": "Only one of observation_set file and observation_table_id can be set"
-        }
+        assert response.json() == {"detail": "Only one of observation_set file and observation_table_id can be set"}
 
     def test_create__success_feature_clusters_not_set(self, test_api_client_persistent):
         """Test created successfully when feature_clusters is not set"""
@@ -220,9 +210,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.json()["output_path"] is not None
         assert response.json()["status"] == "SUCCESS"
 
-    def test_create__failed_feature_clusters_and_feature_list_id_not_set(
-        self, test_api_client_persistent
-    ):
+    def test_create__failed_feature_clusters_and_feature_list_id_not_set(self, test_api_client_persistent):
         """Test created failed when neither feature_clusters nor feature_list_id is set"""
         test_api_client, _ = test_api_client_persistent
 
@@ -239,17 +227,13 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         """Test update name"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"name": "some other name"})
         assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
 
-    def test_delete_feature_list_of_historical_feature_table(
-        self, create_success_response, test_api_client_persistent
-    ):
+    def test_delete_feature_list_of_historical_feature_table(self, create_success_response, test_api_client_persistent):
         """Test delete feature list of historical feature table"""
         feature_list_id = create_success_response.json()["feature_list_id"]
 

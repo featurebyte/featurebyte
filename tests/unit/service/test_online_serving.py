@@ -94,9 +94,7 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
             feature_list=deployed_feature_list,
             request_data=[{"wrong_entity": 123}],
         )
-    expected = (
-        'Required entities are not provided in the request: customer (serving name: "cust_id")'
-    )
+    expected = 'Required entities are not provided in the request: customer (serving name: "cust_id")'
     assert str(exc.value) == expected
 
 
@@ -132,7 +130,7 @@ def patched_num_features_per_query():
 @pytest.fixture(name="expected_online_feature_query")
 def expected_online_feature_query_fixture():
     """Expected query for online feature"""
-    # pylint: disable=line-too-long
+
     return textwrap.dedent(
         '''
         WITH ONLINE_REQUEST_TABLE AS (
@@ -244,8 +242,7 @@ async def test_feature_list_deployed_with_output_table(
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
     expected_with_output_table = (
-        'CREATE TABLE "output_db_name"."output_schema_name"."output_table_name" AS\n'
-        + expected_online_feature_query
+        'CREATE TABLE "output_db_name"."output_schema_name"."output_table_name" AS\n' + expected_online_feature_query
     )
     assert args[0] == expected_with_output_table
 
@@ -295,7 +292,6 @@ async def test_feature_list_deployed_with_batch_request_table(
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
 
-    # pylint: disable=line-too-long
     expected = textwrap.dedent(
         '''
         CREATE TABLE "some_database"."some_schema"."some_table" AS

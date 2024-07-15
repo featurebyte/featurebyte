@@ -48,10 +48,7 @@ class TestTempDataApi:
         with test_api_client.stream("GET", f"/temp_data?path={dest_path}") as response:
             assert response.status_code == HTTPStatus.OK
             assert response.headers["content-type"] == "application/octet-stream"
-            assert (
-                response.headers["content-disposition"]
-                == "filename=62f301e841b9a757c9ff871b.parquet"
-            )
+            assert response.headers["content-disposition"] == "filename=62f301e841b9a757c9ff871b.parquet"
             content = b""
             for chunk in response.iter_bytes():
                 content += chunk

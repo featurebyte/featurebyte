@@ -4,14 +4,13 @@ ItemTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
-from typing_extensions import Literal
-
 import operator
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
 
 from bson import ObjectId
 from cachetools import cachedmethod
 from pydantic import Field, StrictStr, root_validator
+from typing_extensions import Literal
 
 from featurebyte.api.api_object import ApiObjectT, get_api_object_cache_key
 from featurebyte.api.base_table import TableApiObject
@@ -187,30 +186,28 @@ class ItemTable(TableApiObject):
 
         >>> item_table = catalog.get_table("INVOICEITEMS")
         >>> item_view = item_table.get_view(
-        ...   event_suffix=None,
-        ...   view_mode="manual",
-        ...   drop_column_names=[],
-        ...   column_cleaning_operations=[
-        ...     fb.ColumnCleaningOperation(
-        ...       column_name="Discount",
-        ...       cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(
-        ...           type="less_than", end_point=0, imputed_value=None
-        ...         ),
-        ...       ],
-        ...     )
-        ...   ],
-        ...   event_drop_column_names=["record_available_at"],
-        ...   event_column_cleaning_operations=[],
-        ...   event_join_column_names=[
-        ...     "Timestamp",
-        ...     "GroceryInvoiceGuid",
-        ...     "GroceryCustomerGuid",
-        ...   ],
+        ...     event_suffix=None,
+        ...     view_mode="manual",
+        ...     drop_column_names=[],
+        ...     column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...             column_name="Discount",
+        ...             cleaning_operations=[
+        ...                 fb.MissingValueImputation(imputed_value=0),
+        ...                 fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=None),
+        ...             ],
+        ...         )
+        ...     ],
+        ...     event_drop_column_names=["record_available_at"],
+        ...     event_column_cleaning_operations=[],
+        ...     event_join_column_names=[
+        ...         "Timestamp",
+        ...         "GroceryInvoiceGuid",
+        ...         "GroceryCustomerGuid",
+        ...     ],
         ... )
         """
-        from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.item_view import ItemView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -297,9 +294,7 @@ class ItemTable(TableApiObject):
             timestamp_timezone_offset_column = apply_column_name_modifiers(
                 [event_view.timestamp_timezone_offset_column], rsuffix=event_suffix, rprefix=None
             )[0]
-        inserted_graph_node = GlobalQueryGraph().add_node(
-            view_graph_node, input_nodes=[data_node, event_view.node]
-        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node, event_view.node])
         return ItemView(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
@@ -370,7 +365,7 @@ class ItemTable(TableApiObject):
         return None
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> ItemTable:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> ItemTable:
         """
         Returns an ItemTable object by its unique identifier (ID).
 

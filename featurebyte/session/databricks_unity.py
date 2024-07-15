@@ -134,9 +134,7 @@ class DatabricksUnitySession(DatabricksSession):
     def _delete_file_from_storage(self, path: str) -> None:
         self._files_client.delete(file_path=path)
 
-    async def set_owner(
-        self, kind: Literal["SCHEMA", "TABLE", "VIEW", "VOLUME", "FUNCTION"], name: str
-    ) -> None:
+    async def set_owner(self, kind: Literal["SCHEMA", "TABLE", "VIEW", "VOLUME", "FUNCTION"], name: str) -> None:
         """
         Set owner of the object
 
@@ -212,9 +210,7 @@ class DatabricksUnitySession(DatabricksSession):
 
         # grant ownership of the table to the group
         if isinstance(table_details, str):
-            table_details = TableDetails(
-                database_name=None, schema_name=None, table_name=table_details
-            )
+            table_details = TableDetails(database_name=None, schema_name=None, table_name=table_details)
         fully_qualified_table_name = sql_to_string(
             get_fully_qualified_table_name(table_details.dict()), source_type=self.source_type
         )

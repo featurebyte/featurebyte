@@ -22,9 +22,7 @@ from featurebyte.service.table import TableService
 
 
 class StaticSourceTableController(
-    BaseMaterializedTableController[
-        StaticSourceTableModel, StaticSourceTableService, StaticSourceTableList
-    ],
+    BaseMaterializedTableController[StaticSourceTableModel, StaticSourceTableService, StaticSourceTableList],
 ):
     """
     StaticSourceTable Controller

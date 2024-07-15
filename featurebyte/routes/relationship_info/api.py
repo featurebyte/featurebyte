@@ -66,9 +66,7 @@ async def list_relationship_info(
 
 
 @router.get("/{relationship_info_id}", response_model=RelationshipInfoModel)
-async def get_relationship_info(
-    request: Request, relationship_info_id: PyObjectId
-) -> RelationshipInfoModel:
+async def get_relationship_info(request: Request, relationship_info_id: PyObjectId) -> RelationshipInfoModel:
     """
     Retrieve relationship info
     """
@@ -89,9 +87,7 @@ async def update_relationship_info(
     Update RelationshipInfo
     """
     controller = request.state.app_container.relationship_info_controller
-    relationship_info = await controller.relationship_info_service.update_document(
-        relationship_info_id, data
-    )
+    relationship_info = await controller.relationship_info_service.update_document(relationship_info_id, data)
     return cast(RelationshipInfoModel, relationship_info)
 
 

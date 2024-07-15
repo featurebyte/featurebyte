@@ -18,9 +18,7 @@ async def test_start_transaction__success(mongo_persistent):
         await session.insert_one(collection_name=col, document={"key2": "value2"}, user_id=None)
 
     # check both records written to the mongodb
-    output = sorted(
-        database[col].find({}, {"_id": False, "created_at": False}), key=lambda d: list(d.keys())
-    )
+    output = sorted(database[col].find({}, {"_id": False, "created_at": False}), key=lambda d: list(d.keys()))
     assert output == [{"key1": "value1"}, {"key2": "value2"}]
 
 
@@ -54,12 +52,8 @@ async def test_crud(mongo_persistent):
     persistent, _ = mongo_persistent
     col = "test_col"
 
-    id1 = await persistent.insert_one(
-        collection_name=col, document={"key1": "value1"}, user_id=None
-    )
-    id2 = await persistent.insert_one(
-        collection_name=col, document={"key2": "value2"}, user_id=None
-    )
+    id1 = await persistent.insert_one(collection_name=col, document={"key1": "value1"}, user_id=None)
+    id2 = await persistent.insert_one(collection_name=col, document={"key2": "value2"}, user_id=None)
 
     # check both records written to the mongodb
     records, total = await persistent.find(collection_name=col, query_filter={})

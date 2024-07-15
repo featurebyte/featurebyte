@@ -57,28 +57,20 @@ class ProductionReadyValidator:
         # guardrails.
         if not ignore_guardrails:
             try:
-                source_feature = (
-                    await self.version_service.create_new_feature_version_using_source_settings(
-                        promoted_feature.id
-                    )
+                source_feature = await self.version_service.create_new_feature_version_using_source_settings(
+                    promoted_feature.id
                 )
             except NoChangesInFeatureVersionError:
                 # We can return here since there are no changes in the feature version.
                 return
 
-            feature_job_setting_diff = (
-                await self._get_feature_job_setting_diffs_table_source_vs_promoted_feature(
-                    source_feature.node, source_feature.graph, promoted_feature.graph
-                )
+            feature_job_setting_diff = await self._get_feature_job_setting_diffs_table_source_vs_promoted_feature(
+                source_feature.node, source_feature.graph, promoted_feature.graph
             )
-            cleaning_ops_diff = (
-                await self._get_cleaning_operations_diff_table_source_vs_promoted_feature(
-                    source_feature.graph, promoted_feature.graph
-                )
+            cleaning_ops_diff = await self._get_cleaning_operations_diff_table_source_vs_promoted_feature(
+                source_feature.graph, promoted_feature.graph
             )
-            ProductionReadyValidator._raise_error_if_diffs_present(
-                feature_job_setting_diff, cleaning_ops_diff
-            )
+            ProductionReadyValidator._raise_error_if_diffs_present(feature_job_setting_diff, cleaning_ops_diff)
 
     @staticmethod
     def _raise_error_if_diffs_present(
@@ -113,9 +105,7 @@ class ProductionReadyValidator:
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
         )
 
-    async def _assert_no_other_production_ready_feature(
-        self, promoted_feature: FeatureModel
-    ) -> None:
+    async def _assert_no_other_production_ready_feature(self, promoted_feature: FeatureModel) -> None:
         """
         Check to see if there are any other production ready features.
 
@@ -193,9 +183,7 @@ class ProductionReadyValidator:
         Dict[str, Any]
             feature job setting diffs
         """
-        for current_node in table_source_graph.iterate_nodes(
-            target_node=table_source_node, node_type=NodeType.GROUPBY
-        ):
+        for current_node in table_source_graph.iterate_nodes(target_node=table_source_node, node_type=NodeType.GROUPBY):
             # Get corresponding group by node in promoted graph
             promoted_group_by_node = promoted_feature_graph.get_node_by_name(current_node.name)
             assert isinstance(current_node, GroupByNode)
@@ -257,12 +245,8 @@ class ProductionReadyValidator:
             promoted_view_graph_node = promoted_feature_graph.get_node_by_name(view_graph_node.name)
 
             # get cleaning operations from source and promoted graph
-            source_cleaning_operations = self._get_cleaning_operations_from_view_graph_node(
-                view_graph_node
-            )
-            promoted_cleaning_operations = self._get_cleaning_operations_from_view_graph_node(
-                promoted_view_graph_node
-            )
+            source_cleaning_operations = self._get_cleaning_operations_from_view_graph_node(view_graph_node)
+            promoted_cleaning_operations = self._get_cleaning_operations_from_view_graph_node(promoted_view_graph_node)
 
             # compare cleaning operations
             if source_cleaning_operations != promoted_cleaning_operations:

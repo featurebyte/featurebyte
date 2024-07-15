@@ -4,9 +4,8 @@ SQL generation for online store compute queries
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, cast
-
 from dataclasses import dataclass
+from typing import List, Optional, Tuple, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
@@ -81,9 +80,7 @@ class OnlineStorePrecomputePlan:
         self.params_by_agg_result_name: dict[str, PrecomputeQueryParams] = {}
         self._update(graph, node, agg_result_name_include_serving_names)
 
-    def construct_online_store_precompute_queries(
-        self, source_type: SourceType
-    ) -> list[OnlineStoreComputeQueryModel]:
+    def construct_online_store_precompute_queries(self, source_type: SourceType) -> list[OnlineStoreComputeQueryModel]:
         """
         Construct SQL queries for online store pre-computation
 
@@ -252,9 +249,7 @@ class OnlineStorePrecomputePlan:
             select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
                 *[
-                    expressions.alias_(
-                        quoted_identifier(key_col), quoted_identifier(serving_name_col)
-                    )
+                    expressions.alias_(quoted_identifier(key_col), quoted_identifier(serving_name_col))
                     for key_col, serving_name_col in zip(keys, serving_names)
                 ],
             )
@@ -266,9 +261,7 @@ class OnlineStorePrecomputePlan:
 
         return OnlineStoreUniverse(expr=expr, columns=universe_columns)
 
-    def _update(
-        self, graph: QueryGraph, node: Node, agg_result_name_include_serving_names: bool
-    ) -> None:
+    def _update(self, graph: QueryGraph, node: Node, agg_result_name_include_serving_names: bool) -> None:
         """
         Update state given a query graph node
 

@@ -41,7 +41,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
 
     document_class = TargetModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -77,9 +77,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         self.entity_service = entity_service
         self.entity_serving_names_service = entity_serving_names_service
 
-    async def prepare_target_model(
-        self, data: TargetCreate, sanitize_for_definition: bool
-    ) -> TargetModel:
+    async def prepare_target_model(self, data: TargetCreate, sanitize_for_definition: bool) -> TargetModel:
         """
         Prepare the target model by pruning the query graph
 
@@ -94,14 +92,12 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         -------
         FeatureModel
         """
-        document = TargetModel(
-            **{
-                **data.dict(by_alias=True),
-                "version": await self.get_document_version(data.name),
-                "user_id": self.user.id,
-                "catalog_id": self.catalog_id,
-            }
-        )
+        document = TargetModel(**{
+            **data.dict(by_alias=True),
+            "version": await self.get_document_version(data.name),
+            "user_id": self.user.id,
+            "catalog_id": self.catalog_id,
+        })
 
         # prepare the graph to store
         graph, node_name = await self.namespace_handler.prepare_graph_to_store(
@@ -112,15 +108,13 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         derived_data = await self.extract_derived_data(graph=graph, node_name=node_name)
 
         # create a new target document (so that the derived attributes like table_ids is generated properly)
-        return TargetModel(
-            **{
-                **document.dict(by_alias=True),
-                "graph": graph,
-                "node_name": node_name,
-                "primary_entity_ids": derived_data.primary_entity_ids,
-                "relationships_info": derived_data.relationships_info,
-            }
-        )
+        return TargetModel(**{
+            **document.dict(by_alias=True),
+            "graph": graph,
+            "node_name": node_name,
+            "primary_entity_ids": derived_data.primary_entity_ids,
+            "relationships_info": derived_data.relationships_info,
+        })
 
     @staticmethod
     def derive_window(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:
@@ -222,9 +216,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                         all_parents_ids.append(parent.id)
 
                 if set(all_parents_ids).intersection(set(entity_ids)):
-                    raise DocumentCreationError(
-                        "Target entity ids must not include any parent entity ids"
-                    ) from exc
+                    raise DocumentCreationError("Target entity ids must not include any parent entity ids") from exc
 
                 await self.target_namespace_service.create_document(
                     data=TargetNamespaceCreate(
@@ -240,9 +232,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                 )
         return await self.get_document(document_id=insert_id)
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
-        self, target_id: ObjectId, count: int
-    ) -> List[Dict[str, str]]:
+    async def get_sample_entity_serving_names(self, target_id: ObjectId, count: int) -> List[Dict[str, str]]:
         """
         Get sample entity serving names for a target
 

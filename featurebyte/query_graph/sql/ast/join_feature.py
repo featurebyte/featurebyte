@@ -4,10 +4,9 @@ SQL generation for JOIN_FEATURE query node type
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, cast
-
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Optional, Tuple, cast
 
 from sqlglot.expressions import Expression, Select, select
 
@@ -111,16 +110,14 @@ class JoinFeature(TableNode):
         Select
         """
 
-        from featurebyte.query_graph.sql.aggregator.item import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.aggregator.item import (
             ItemAggregator,
         )
-        from featurebyte.query_graph.sql.specs import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.specs import (
             ItemAggregationSpec,
         )
 
-        item_aggregator = ItemAggregator(
-            source_type=source_type, to_inner_join_with_request_table=False
-        )
+        item_aggregator = ItemAggregator(source_type=source_type, to_inner_join_with_request_table=False)
         item_groupby_nodes = list(graph.iterate_nodes(feature_query_node, NodeType.ITEM_GROUPBY))
 
         agg_specs_mapping = defaultdict(list)
@@ -144,9 +141,9 @@ class JoinFeature(TableNode):
                 item_aggregator.update(agg_spec)
                 agg_specs_mapping[agg_spec.node_name].append(agg_spec)
 
-        view_table_expr = select(
-            *[get_qualified_column_identifier(col, "REQ") for col in view_node.columns]
-        ).from_(cast(Select, view_node.sql).subquery(alias="REQ"))
+        view_table_expr = select(*[get_qualified_column_identifier(col, "REQ") for col in view_node.columns]).from_(
+            cast(Select, view_node.sql).subquery(alias="REQ")
+        )
 
         result = item_aggregator.update_aggregation_table_expr(
             table_expr=view_table_expr,
@@ -182,7 +179,7 @@ class JoinFeature(TableNode):
         Expression
         """
 
-        from featurebyte.query_graph.sql.builder import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.builder import (
             SQLOperationGraph,
         )
 

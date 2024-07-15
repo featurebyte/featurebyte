@@ -2,10 +2,9 @@
 Tile Generate online store Job Script
 """
 
-from typing import List, Optional
-
 import textwrap
 from datetime import datetime
+from typing import List, Optional
 
 from pydantic import Field
 
@@ -43,7 +42,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
         """
         Execute tile schedule online store operation
         """
-        # pylint: disable=too-many-locals,too-many-statements
+
         compute_queries = await self._retrieve_online_store_compute_queries()
 
         for compute_query in compute_queries:
@@ -51,9 +50,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
             f_sql = compute_query.sql
             fs_table = compute_query.table_name
             f_entity_columns = compute_query.serving_names
-            f_sql = f_sql.replace(
-                "__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "'" + self.job_schedule_ts_str + "'"
-            )
+            f_sql = f_sql.replace("__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "'" + self.job_schedule_ts_str + "'")
 
             logger.debug(
                 "Populating online store table",
@@ -63,14 +60,10 @@ class TileScheduleOnlineStore(BaseSqlModel):
             # check if feature store table exists
             fs_table_exist_flag = await self.table_exists(fs_table)
 
-            quoted_result_name_column = self.quote_column(
-                InternalName.ONLINE_STORE_RESULT_NAME_COLUMN
-            )
+            quoted_result_name_column = self.quote_column(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN)
             quoted_value_column = self.quote_column(InternalName.ONLINE_STORE_VALUE_COLUMN)
             quoted_version_column = self.quote_column(InternalName.ONLINE_STORE_VERSION_COLUMN)
-            quoted_entity_columns = (
-                [self.quote_column(col) for col in f_entity_columns] if f_entity_columns else []
-            )
+            quoted_entity_columns = [self.quote_column(col) for col in f_entity_columns] if f_entity_columns else []
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # get current version
@@ -106,9 +99,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                 )
             else:
                 # feature store table already exists, insert records with the input feature sql
-                column_names = ", ".join(
-                    quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
-                )
+                column_names = ", ".join(quoted_entity_columns + [quoted_result_name_column, quoted_value_column])
                 async with register_temporary_physical_table(self._session, f_sql) as temp_table:
                     insert_query = textwrap.dedent(
                         f"""
@@ -137,15 +128,11 @@ class TileScheduleOnlineStore(BaseSqlModel):
     async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
             # Retrieve compute queries for a specific result name (e.g. sum_30d)
-            iterator = self.online_store_compute_query_service.list_by_result_names(
-                [self.aggregation_result_name]
-            )
+            iterator = self.online_store_compute_query_service.list_by_result_names([self.aggregation_result_name])
         else:
             # Retrieve all compute queries associated with an aggregation_id (e.g. sum_1d, sum_7d,
             # sum_30d, etc)
-            iterator = self.online_store_compute_query_service.list_by_aggregation_id(
-                self.aggregation_id
-            )
+            iterator = self.online_store_compute_query_service.list_by_aggregation_id(self.aggregation_id)
         out = []
         async for doc in iterator:
             out.append(doc)

@@ -2,8 +2,6 @@
 Tests for Feature route
 """
 
-# pylint: disable=too-many-lines
-
 import collections
 import textwrap
 from collections import defaultdict
@@ -35,13 +33,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     TestFeatureApi class
     """
 
-    # pylint: disable=too-many-public-methods
-
     class_name = "Feature"
     base_route = "/feature"
-    payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_sum_30m.json"
-    )
+    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -117,9 +111,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         yield mock_get_session
 
     @pytest.fixture(autouse=True)
-    def always_patched_observation_table_service(
-        self, patched_observation_table_service_for_preview
-    ):
+    def always_patched_observation_table_service(self, patched_observation_table_service_for_preview):
         """
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
@@ -152,16 +144,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             tabular_source = payload["tabular_source"]
             payload["tabular_source"] = {
                 "feature_store_id": tabular_source["feature_store_id"],
-                "table_details": {
-                    key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()
-                },
+                "table_details": {key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()},
             }
             yield payload
 
     @pytest.mark.asyncio
-    async def test_create_201(
-        self, test_api_client_persistent, create_success_response, user_id
-    ):  # pylint: disable=invalid-overridden-method
+    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
@@ -180,14 +168,10 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert feat_namespace_docs[0]["readiness"] == "DRAFT"
         assert feat_namespace_docs[0]["default_feature_id"] == ObjectId(self.payload["_id"])
         assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-        assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
-            response_dict["created_at"]
-        )
+        assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(response_dict["created_at"])
         assert feat_namespace_docs[0]["updated_at"] is None
 
-    def test_create_201__create_new_version(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_create_201__create_new_version(self, test_api_client_persistent, create_success_response):
         """Test new version creation (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -247,9 +231,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             expected=column_cleaning_operations,
         )
 
-    def test_create_422__create_new_version(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_create_422__create_new_version(self, test_api_client_persistent, create_success_response):
         """Test create new version (unprocessable entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -272,9 +254,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "table_cleaning_operations": [
-                    {"table_name": "random_data", "column_cleaning_operations": []}
-                ],
+                "table_cleaning_operations": [{"table_name": "random_data", "column_cleaning_operations": []}],
             },
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -286,9 +266,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         assert response_dict["detail"] == expected_msg
 
-    def test_list_200__filter_by_name_and_version(
-        self, test_api_client_persistent, create_multiple_success_responses
-    ):
+    def test_list_200__filter_by_name_and_version(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (success) when filtering by name and version"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_multiple_success_responses[0].json()
@@ -338,9 +316,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         _ = create_multiple_success_responses
         random_id = ObjectId()
         response = test_api_client.get(self.base_route, params={"feature_list_id": str(random_id)})
-        error_message = (
-            f'FeatureList (id: "{random_id}") not found. Please save the FeatureList object first.'
-        )
+        error_message = f'FeatureList (id: "{random_id}") not found. Please save the FeatureList object first.'
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json()["detail"] == error_message
 
@@ -376,9 +352,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response_dict["total"] == len(feature_ids)
         assert set(output_feature_ids) == set(feature_ids)
 
-    def test_list_200__filter_by_namespace_id(
-        self, test_api_client_persistent, create_multiple_success_responses
-    ):
+    def test_list_200__filter_by_namespace_id(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (filtered by feature namespace id)"""
         test_api_client, _ = test_api_client_persistent
         namespace_map = defaultdict(set)
@@ -387,18 +361,14 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             namespace_map[response_dict["feature_namespace_id"]].add(response_dict["_id"])
 
         for namespace_id, ids in namespace_map.items():
-            filter_response = test_api_client.get(
-                self.base_route, params={"feature_namespace_id": namespace_id}
-            )
+            filter_response = test_api_client.get(self.base_route, params={"feature_namespace_id": namespace_id})
             filter_response_dict = filter_response.json()
             assert filter_response_dict["total"] == len(ids)
             response_ids = set(item["_id"] for item in filter_response_dict["data"])
             assert response_ids == ids
 
         # test negative cases
-        negative_response = test_api_client.get(
-            self.base_route, params={"feature_namespace_id": str(ObjectId())}
-        )
+        negative_response = test_api_client.get(self.base_route, params={"feature_namespace_id": str(ObjectId())})
         assert negative_response.json()["total"] == 0, negative_response.json()
 
     def test_update_200_and_422(self, test_api_client_persistent, create_success_response):
@@ -407,17 +377,13 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         create_response_dict = create_success_response.json()
         assert create_response_dict["readiness"] == "DRAFT"
         doc_id = create_response_dict["_id"]
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"readiness": "PRODUCTION_READY"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"readiness": "PRODUCTION_READY"})
         assert response.status_code == HTTPStatus.OK
         assert response.json()["readiness"] == "PRODUCTION_READY"
 
         # create a new version & attempt to update to production ready
         new_feature_id = self.create_new_feature_version(test_api_client, doc_id)
-        response = test_api_client.patch(
-            f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"})
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         expected_error_message = (
             "Found another feature version that is already PRODUCTION_READY. "
@@ -429,15 +395,11 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.json()["detail"] == expected_error_message
 
         # deprecate the original feature
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"readiness": "DEPRECATED"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"readiness": "DEPRECATED"})
         assert response.status_code == HTTPStatus.OK
 
         # promote the new feature to production ready
-        response = test_api_client.patch(
-            f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"})
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         expected_error_message = (
             "Discrepancies found between the promoted feature version you are trying to promote to "
@@ -472,9 +434,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"/feature_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    def test_delete_204__namespace_not_deleted(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_delete_204__namespace_not_deleted(self, test_api_client_persistent, create_success_response):
         """Test delete (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -504,18 +464,14 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"/feature_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.OK
 
-    def test_delete_422__non_draft_feature(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_delete_422__non_draft_feature(self, test_api_client_persistent, create_success_response):
         """Test delete (unprocessible)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
 
         # change feature readiness to public draft
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"readiness": "PUBLIC_DRAFT"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"readiness": "PUBLIC_DRAFT"})
         assert response.status_code == HTTPStatus.OK
 
         # check that the feature cannot be deleted
@@ -526,13 +482,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.json()["detail"] == expected_error
 
         # check that the feature is not deleted
-        self.check_that_feature_is_not_deleted(
-            test_api_client, doc_id, create_response_dict["feature_namespace_id"]
-        )
+        self.check_that_feature_is_not_deleted(test_api_client, doc_id, create_response_dict["feature_namespace_id"])
 
-    def test_delete_422__manual_mode_default_feature(
-        self, test_api_client_persistent, create_success_response
-    ):
+    def test_delete_422__manual_mode_default_feature(self, test_api_client_persistent, create_success_response):
         """Test delete (unprocessible)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -540,9 +492,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         namespace_id = create_response_dict["feature_namespace_id"]
 
         # set the feature namespace default version mode to manual first
-        response = test_api_client.patch(
-            f"/feature_namespace/{namespace_id}", json={"default_version_mode": "MANUAL"}
-        )
+        response = test_api_client.patch(f"/feature_namespace/{namespace_id}", json={"default_version_mode": "MANUAL"})
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["default_version_mode"] == "MANUAL"
@@ -570,9 +520,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         doc_id = create_response_dict["_id"]
 
         # use the feature to create a saved feature list
-        response = test_api_client.post(
-            "/feature_list", json={"name": "test", "feature_ids": [doc_id]}
-        )
+        response = test_api_client.post("/feature_list", json={"name": "test", "feature_ids": [doc_id]})
         feature_list_dict = response.json()
         feature_list_id = feature_list_dict["_id"]
         feature_list_version = feature_list_dict["version"]["name"]
@@ -590,9 +538,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.json()["detail"] == expected_error
 
         # check that the feature is not deleted
-        self.check_that_feature_is_not_deleted(
-            test_api_client, doc_id, create_response_dict["feature_namespace_id"]
-        )
+        self.check_that_feature_is_not_deleted(test_api_client, doc_id, create_response_dict["feature_namespace_id"])
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
@@ -600,18 +546,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
         version = get_version()
         expected_info_response = {
             "name": "sum_30m",
-            "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
-            ],
-            "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
-            ],
+            "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
+            "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
@@ -625,9 +565,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert "created_at" in response_dict
         assert response_dict["versions_info"] is None
 
-        verbose_response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
-        )
+        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
@@ -707,20 +645,18 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.list_table_schema.return_value = collections.OrderedDict(
-            {
-                "cust_id": ColumnSpecWithDescription(
-                    name="cust_id",
-                    dtype=DBVarType.INT,
-                    description=None,
-                ),
-                "POINT_IN_TIME": ColumnSpecWithDescription(
-                    name="POINT_IN_TIME",
-                    dtype=DBVarType.TIMESTAMP,
-                    description=None,
-                ),
-            }
-        )
+        mock_session.list_table_schema.return_value = collections.OrderedDict({
+            "cust_id": ColumnSpecWithDescription(
+                name="cust_id",
+                dtype=DBVarType.INT,
+                description=None,
+            ),
+            "POINT_IN_TIME": ColumnSpecWithDescription(
+                name="POINT_IN_TIME",
+                dtype=DBVarType.TIMESTAMP,
+                description=None,
+            ),
+        })
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table
@@ -729,9 +665,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED, response.json()
         response = self.wait_for_results(test_api_client, response)
         assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
-        obs_table_df = pd.DataFrame(
-            {"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]}
-        )
+        obs_table_df = pd.DataFrame({"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]})
         mock_session.execute_query.side_effect = (obs_table_df, expected_df)
 
         feature_preview_payload.pop("point_in_time_and_serving_name_list")
@@ -740,9 +674,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
-    def test_preview_missing_point_in_time(
-        self, test_api_client_persistent, feature_preview_payload
-    ):
+    def test_preview_missing_point_in_time(self, test_api_client_persistent, feature_preview_payload):
         """
         Test feature preview validation missing point in time
         """
@@ -771,9 +703,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         Test feature preview validation but dict is not provided
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple(
-            ["2022-04-01", "C1"]
-        )
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple(["2022-04-01", "C1"])
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
@@ -818,54 +748,44 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         groupby_node = graph.get_node_by_name("groupby_1")
         aggregation_id = groupby_node.parameters.aggregation_id
 
-        job_logs = pd.DataFrame(
-            {
-                "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": [aggregation_id] * 6,
-                "CREATED_AT": pd.to_datetime(
-                    [
-                        "2020-01-02 18:00:00",
-                        "2020-01-02 18:01:00",
-                        "2020-01-02 18:02:00",
-                        "2020-01-02 18:03:00",
-                        "2020-01-02 18:00:00",
-                        "2020-01-02 18:05:00",
-                    ]
-                ),
-                "STATUS": [
-                    "STARTED",
-                    "MONITORED",
-                    "GENERATED",
-                    "COMPLETED",
-                    "STARTED",
-                    "GENERATED_FAILED",
-                ],
-                "MESSAGE": [""] * 5 + ["Some error has occurred"],
-            }
-        )
-        with patch(
-            "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
-        ) as mock_get_jobs_dataframe:
+        job_logs = pd.DataFrame({
+            "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
+            "AGGREGATION_ID": [aggregation_id] * 6,
+            "CREATED_AT": pd.to_datetime([
+                "2020-01-02 18:00:00",
+                "2020-01-02 18:01:00",
+                "2020-01-02 18:02:00",
+                "2020-01-02 18:03:00",
+                "2020-01-02 18:00:00",
+                "2020-01-02 18:05:00",
+            ]),
+            "STATUS": [
+                "STARTED",
+                "MONITORED",
+                "GENERATED",
+                "COMPLETED",
+                "STARTED",
+                "GENERATED_FAILED",
+            ],
+            "MESSAGE": [""] * 5 + ["Some error has occurred"],
+        })
+        with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
             mock_get_jobs_dataframe.return_value = job_logs
             response = test_api_client.get(f"{self.base_route}/{feature_id}/feature_job_logs")
         assert response.status_code == HTTPStatus.OK
-        expected_df = pd.DataFrame(
-            {
-                "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": [aggregation_id] * 2,
-                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
-                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
-                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
-                "QUEUE_DURATION": [1500.0] * 2,
-                "COMPUTE_DURATION": [180.0, np.nan],
-                "TOTAL_DURATION": [1680.0, np.nan],
-                "ERROR": [np.nan, "Some error has occurred"],
-            }
-        )
+        expected_df = pd.DataFrame({
+            "SESSION_ID": ["SID1", "SID2"],
+            "AGGREGATION_ID": [aggregation_id] * 2,
+            "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
+            "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
+            "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
+            "QUEUE_DURATION": [1500.0] * 2,
+            "COMPUTE_DURATION": [180.0, np.nan],
+            "TOTAL_DURATION": [1680.0, np.nan],
+            "ERROR": [np.nan, "Some error has occurred"],
+        })
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-        assert mock_get_jobs_dataframe.call_args == call(
-            aggregation_ids=[aggregation_id], hour_limit=24
-        )
+        assert mock_get_jobs_dataframe.call_args == call(aggregation_ids=[aggregation_id], hour_limit=24)
 
     @pytest.mark.asyncio
     async def test_batch_feature_create__success(
@@ -890,9 +810,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             assert response.status_code == HTTPStatus.NOT_FOUND
 
         # create batch feature create task
-        task_response = test_api_client.post(
-            f"{self.base_route}/batch", json=batch_feature_create.json_dict()
-        )
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=batch_feature_create.json_dict())
 
         # check user id
         task_dict = task_response.json()
@@ -938,19 +856,14 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         another_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
         feature_create1 = FeatureCreate(**self.payload)
         feature_create2 = FeatureCreate(**another_payload)
-        batch_feature_create = create_batch_feature_create(
-            features=[feature_create1, feature_create2]
-        )
+        batch_feature_create = create_batch_feature_create(features=[feature_create1, feature_create2])
 
         # create batch feature create task
-        task_response = test_api_client.post(
-            f"{self.base_route}/batch", json=batch_feature_create.json_dict()
-        )
+        task_response = test_api_client.post(f"{self.base_route}/batch", json=batch_feature_create.json_dict())
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
         expected_traceback = (
-            "Inconsistent feature definitions detected: sum_30m\n"
-            "The inconsistent features have been deleted."
+            "Inconsistent feature definitions detected: sum_30m\n" "The inconsistent features have been deleted."
         )
         assert expected_traceback in response_dict["traceback"]
         assert response_dict["status"] == "FAILURE"
@@ -987,19 +900,17 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame(
-                [
-                    {
-                        "cust_id": 1,
-                    },
-                    {
-                        "cust_id": 2,
-                    },
-                    {
-                        "cust_id": 3,
-                    },
-                ]
-            )
+            return pd.DataFrame([
+                {
+                    "cust_id": 1,
+                },
+                {
+                    "cust_id": 2,
+                },
+                {
+                    "cust_id": 3,
+                },
+            ])
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query

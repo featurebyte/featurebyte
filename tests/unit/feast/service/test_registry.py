@@ -35,18 +35,14 @@ def feast_feature_store_service_fixture(app_container):
 
 
 @pytest_asyncio.fixture(name="feast_registry")
-async def feast_registry_fixture(
-    feast_registry_service, feature_list, mock_deployment_flow, storage
-):
+async def feast_registry_fixture(feast_registry_service, feature_list, mock_deployment_flow, storage):
     """Feast registry fixture"""
     _ = mock_deployment_flow
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
     deployment.enable()
 
     deployment_model = deployment.cached_model
-    registry = await feast_registry_service.get_document(
-        document_id=deployment_model.registry_info.registry_id
-    )
+    registry = await feast_registry_service.get_document(document_id=deployment_model.registry_info.registry_id)
     assert registry is not None
 
     # check that the registry file is created
@@ -122,15 +118,9 @@ async def test_update_feast_registry(
     registry_proto = updated_doc.registry_proto()
     assert {entity.spec.name for entity in registry_proto.entities} == expected_entity_names
     assert {ds.name for ds in registry_proto.data_sources} == expected_data_source_names
-    assert {fv.spec.name for fv in registry_proto.feature_views} == set(
-        expected_feature_view_name_to_ttl
-    )
-    assert {
-        odfv.spec.name for odfv in registry_proto.on_demand_feature_views
-    } == expected_on_demand_feature_view_names
-    assert {fs.spec.name for fs in registry_proto.feature_services} == {
-        f"test_feature_list_{get_version()}"
-    }
+    assert {fv.spec.name for fv in registry_proto.feature_views} == set(expected_feature_view_name_to_ttl)
+    assert {odfv.spec.name for odfv in registry_proto.on_demand_feature_views} == expected_on_demand_feature_view_names
+    assert {fs.spec.name for fs in registry_proto.feature_services} == {f"test_feature_list_{get_version()}"}
 
 
 @pytest.mark.asyncio
@@ -143,9 +133,7 @@ async def test_get_feast_feature_store(
     expected_on_demand_feature_view_names,
 ):
     """Test get feast feature store"""
-    feast_fs = await feast_feature_store_service.get_feast_feature_store(
-        feast_registry=feast_registry
-    )
+    feast_fs = await feast_feature_store_service.get_feast_feature_store(feast_registry=feast_registry)
     assert feast_fs.config.entity_key_serialization_version == 2
 
     # check that assets in the registry can be retrieved
@@ -178,9 +166,7 @@ async def test_update_feast_registry__with_failure(
     feast_registry,
 ):
     """Test update feast registry"""
-    registry_path = os.path.join(
-        feast_registry_service.storage.base_path, feast_registry.registry_path
-    )
+    registry_path = os.path.join(feast_registry_service.storage.base_path, feast_registry.registry_path)
 
     assert os.path.exists(registry_path)
     with patch.object(feast_registry_service, "_move_registry_to_storage") as mock_move:
@@ -197,7 +183,5 @@ async def test_update_feast_registry__with_failure(
     updated_doc = await feast_registry_service.update_document(
         document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
     )
-    registry_path = os.path.join(
-        feast_registry_service.storage.base_path, updated_doc.registry_path
-    )
+    registry_path = os.path.join(feast_registry_service.storage.base_path, updated_doc.registry_path)
     assert os.path.exists(registry_path)

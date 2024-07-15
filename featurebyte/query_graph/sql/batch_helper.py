@@ -126,25 +126,18 @@ def construct_join_feature_sets_query(
             join_type="left",
             on=expressions.EQ(
                 this=get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "REQ"),
-                expression=get_qualified_column_identifier(
-                    InternalName.TABLE_ROW_INDEX, table_alias
-                ),
+                expression=get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, table_alias),
             ),
         )
         for feature_name in feature_set.feature_names:
             table_alias_by_feature[feature_name] = table_alias
 
-    return expr.select(
-        *[
-            get_qualified_column_identifier(name, table_alias_by_feature[name])
-            for name in output_feature_names
-        ]
-    )
+    return expr.select(*[
+        get_qualified_column_identifier(name, table_alias_by_feature[name]) for name in output_feature_names
+    ])
 
 
-def maybe_add_row_index_column(
-    request_table_columns: list[str], to_include_row_index_column: bool
-) -> list[str]:
+def maybe_add_row_index_column(request_table_columns: list[str], to_include_row_index_column: bool) -> list[str]:
     """
     Helper function to add table row index column to a list of columns name when needed
 

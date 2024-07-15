@@ -2,12 +2,11 @@
 SimpleStorage classes for basic object store operations
 """
 
-from typing import Any, Dict, Literal, Optional
-
 import os
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, Dict, Literal, Optional
 
 import boto3
 from azure.core.credentials import AzureNamedKeyCredential
@@ -32,9 +31,7 @@ class SimpleStorage(ABC):
     Base class for simple storage manager class
     """
 
-    def __init__(
-        self, storage_url: str, storage_credential: Optional[StorageCredential] = None
-    ) -> None:
+    def __init__(self, storage_url: str, storage_credential: Optional[StorageCredential] = None) -> None:
         """
         Initialize storage class
 
@@ -138,9 +135,7 @@ class S3SimpleStorage(SimpleStorage):
             session_params["aws_access_key_id"] = storage_credential.s3_access_key_id
             session_params["aws_secret_access_key"] = storage_credential.s3_secret_access_key
         else:
-            raise NotImplementedError(
-                f"Unsupported remote storage credential: {storage_credential}"
-            )
+            raise NotImplementedError(f"Unsupported remote storage credential: {storage_credential}")
 
         protocol, path = storage_url.split("//")
         parts = path.split("/")
@@ -178,9 +173,7 @@ class GCSStorage(SimpleStorage):
     ) -> None:
         super().__init__(storage_url=storage_url, storage_credential=storage_credential)
 
-        self.client = GCSClient.from_service_account_info(
-            info=storage_credential.service_account_info
-        )
+        self.client = GCSClient.from_service_account_info(info=storage_credential.service_account_info)
         protocol, path = storage_url.split("//")
         assert protocol == "gs:", "GCSStorage: Protocol must be gs for storage_url"
         parts = path.split("/")

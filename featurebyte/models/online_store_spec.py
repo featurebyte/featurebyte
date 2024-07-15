@@ -38,7 +38,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     precompute_queries: List[OnlineStoreComputeQueryModel] = []
 
     @validator("precompute_queries", always=True)
-    def _generate_precompute_queries(  # pylint: disable=no-self-argument
+    def _generate_precompute_queries(
         cls,
         val: List[OnlineStoreComputeQueryModel],
         values: Dict[str, Any],
@@ -95,9 +95,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
             derived event_table_ids
         """
         output = []
-        for input_node in self.feature.graph.iterate_nodes(
-            target_node=self.feature.node, node_type=NodeType.INPUT
-        ):
+        for input_node in self.feature.graph.iterate_nodes(target_node=self.feature.node, node_type=NodeType.INPUT):
             input_node2 = cast(InputNode, input_node)
             if input_node2.parameters.type == TableDataType.EVENT_TABLE:
                 e_id = input_node2.parameters.id

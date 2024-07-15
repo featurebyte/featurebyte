@@ -2,10 +2,9 @@
 Common fixture for both unit and integration tests
 """
 
-from typing import AsyncIterator, Tuple
-
 import os
 from contextlib import asynccontextmanager
+from typing import AsyncIterator, Tuple
 from unittest.mock import patch
 
 import pytest
@@ -55,9 +54,7 @@ async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
         Patched MongoDB object and MongoClient
     """
     mongo_client = AsyncMongoMockClient()
-    persistent = MongoDB(
-        uri="mongodb://server.example.com:27017", database="test", client=mongo_client
-    )
+    persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test", client=mongo_client)
 
     # skip session in unit tests
     @asynccontextmanager

@@ -2,9 +2,8 @@
 This module contains mixins used in node classes
 """
 
-from typing import List, Optional, Set
-
 from abc import ABC, abstractmethod
+from typing import List, Optional, Set
 
 from pydantic import Field
 
@@ -99,9 +98,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         """
         parent_columns = None
         if isinstance(self.parameters, BaseGroupbyParameters) and self.parameters.parent:
-            parent_column = next(
-                (col for col in columns if col.name == self.parameters.parent), None
-            )
+            parent_column = next((col for col in columns if col.name == self.parameters.parent), None)
             if parent_column:
                 parent_columns = [parent_column]
         return parent_columns
@@ -149,9 +146,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         parent_columns = self._get_parent_columns(input_operation_info.columns)
         agg_func = self._get_agg_func()
         if parent_columns:
-            wanted_columns.update(
-                [parent_column.name for parent_column in parent_columns if parent_column.name]
-            )
+            wanted_columns.update([parent_column.name for parent_column in parent_columns if parent_column.name])
 
         other_node_names = set()
         columns = []

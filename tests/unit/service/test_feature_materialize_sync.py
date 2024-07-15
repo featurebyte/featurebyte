@@ -324,9 +324,7 @@ async def test_run_feature_materialize__timeout(
     assert len(docs["data"][0]["completed"]) == 0
 
     # Check materialize task is triggered with a warning
-    assert (
-        caplog.records[-1].msg == "Running feature materialize task but prerequisites are not met"
-    )
+    assert caplog.records[-1].msg == "Running feature materialize task but prerequisites are not met"
     assert len(mock_task_manager_submit.call_args_list) == 1
     submitted_payload = mock_task_manager_submit.call_args[0][0].dict()
     assert {

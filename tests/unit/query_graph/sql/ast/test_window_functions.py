@@ -143,9 +143,7 @@ def test_window_function(global_graph, input_node):
         node_type=NodeType.GROUPBY,
         node_params={
             **node_params,
-            "tile_id": get_tile_table_identifier_v1(
-                row_index_lineage_hash="deadbeef1234", parameters=node_params
-            ),
+            "tile_id": get_tile_table_identifier_v1(row_index_lineage_hash="deadbeef1234", parameters=node_params),
             "aggregation_id": get_aggregation_identifier(
                 transformations_hash=graph.node_name_to_ref[assign_node.name],
                 parameters=node_params,
@@ -154,9 +152,7 @@ def test_window_function(global_graph, input_node):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE)
     sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         """
@@ -245,9 +241,7 @@ def test_window_function__as_filter(global_graph, input_node):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, binary_node],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
     sql_tree = sql_graph.build(filtered_node).sql
     expected = textwrap.dedent(
         """
@@ -270,9 +264,7 @@ def test_window_function__as_filter(global_graph, input_node):
 def test_window_function__multiple_filters(graph_with_window_function_filter):
     """Test when condition derived from window function is used as filter"""
     graph, filtered_node_2 = graph_with_window_function_filter
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
     sql_tree = sql_graph.build(filtered_node_2).sql
     expected = textwrap.dedent(
         """

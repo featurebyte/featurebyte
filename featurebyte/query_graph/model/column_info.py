@@ -50,13 +50,8 @@ class ColumnInfo(ColumnSpecWithDescription):
             # attempt to cast the cleaning operations to the dtype of the column
             cdi = CriticalDataInfo(**dict(critical_data_info))
             for cleaning_operation in cdi.cleaning_operations:
-                if (
-                    cleaning_operation.supported_dtypes is not None
-                    and dtype not in cleaning_operation.supported_dtypes
-                ):
-                    raise ValueError(
-                        f"Cleaning operation {cleaning_operation} does not support dtype {dtype}"
-                    )
+                if cleaning_operation.supported_dtypes is not None and dtype not in cleaning_operation.supported_dtypes:
+                    raise ValueError(f"Cleaning operation {cleaning_operation} does not support dtype {dtype}")
 
                 cleaning_operation.cast(dtype=dtype)
             values["critical_data_info"] = cdi

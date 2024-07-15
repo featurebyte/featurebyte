@@ -324,9 +324,7 @@ class WindowAggregator(TileBasedAggregator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.window_aggregation_spec_set = TileBasedAggregationSpecSet()
-        self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
-            source_type=self.source_type
-        )
+        self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(source_type=self.source_type)
 
     def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
@@ -415,7 +413,7 @@ class WindowAggregator(TileBasedAggregator):
             result_names.append(updated_agg_result_name)
         return output_columns, result_names
 
-    def construct_aggregation_sql(  # pylint: disable=too-many-arguments
+    def construct_aggregation_sql(
         self,
         expanded_request_table_name: str,
         tile_table_id: str,
@@ -621,9 +619,7 @@ class WindowAggregator(TileBasedAggregator):
                     expressions.Ordered(this="INDEX", desc=True),
                 ]
             )
-            window_expr = expressions.Window(
-                this=expr, partition_by=inner_group_by_keys, order=order
-            )
+            window_expr = expressions.Window(this=expr, partition_by=inner_group_by_keys, order=order)
             return window_expr
 
         window_exprs = [
@@ -640,9 +636,7 @@ class WindowAggregator(TileBasedAggregator):
             *inner_group_by_keys,
             *window_exprs,
         )
-        filter_condition = expressions.EQ(
-            this=quoted_identifier(ROW_NUMBER), expression=make_literal_value(1)
-        )
+        filter_condition = expressions.EQ(this=quoted_identifier(ROW_NUMBER), expression=make_literal_value(1))
         inner_agg_expr = select("*").from_(window_based_expr.subquery()).where(filter_condition)
         return inner_agg_expr
 
@@ -666,9 +660,7 @@ class WindowAggregator(TileBasedAggregator):
             # tile_table_id, keys, etc. Get the first one to access them.
             agg_spec = agg_specs[0]
             is_order_dependent = agg_specs[0].is_order_dependent
-            expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
-                agg_spec
-            )
+            expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(agg_spec)
             merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
             agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
             tile_value_columns_set = set()
@@ -683,9 +675,7 @@ class WindowAggregator(TileBasedAggregator):
                         agg_func=agg_spec.agg_func,
                         parent_expr=expressions.Identifier(this=agg_spec.merge_expr),
                         result_name=agg_spec.agg_result_name,
-                        parent_cols=[
-                            expressions.Identifier(this=col) for col in agg_spec.tile_value_columns
-                        ],
+                        parent_cols=[expressions.Identifier(this=col) for col in agg_spec.tile_value_columns],
                     )
                 )
 

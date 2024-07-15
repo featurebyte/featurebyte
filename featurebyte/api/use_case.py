@@ -50,12 +50,8 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         "description",
     ]
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
-        ForeignKeyMapping(
-            "default_preview_table_id", ObservationTable, "default_preview_table_name", "name"
-        ),
-        ForeignKeyMapping(
-            "default_eda_table_id", ObservationTable, "default_eda_table_name", "name"
-        ),
+        ForeignKeyMapping("default_preview_table_id", ObservationTable, "default_preview_table_name", "name"),
+        ForeignKeyMapping("default_eda_table_id", ObservationTable, "default_eda_table_name", "name"),
     ]
 
     # pydantic instance variable (public)
@@ -120,10 +116,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         Examples
         --------
         >>> fb.UseCase.create(  # doctest: +SKIP
-        ...     name="use_case_1",
-        ...     context_name="context_1",
-        ...     target_name="target_1",
-        ...     description="use case description."
+        ...     name="use_case_1", context_name="context_1", target_name="target_1", description="use case description."
         ... )
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
@@ -173,9 +166,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case.list_feature_tables()  # doctest: +SKIP
         """
         route = f"{self._route}/{self.id}/feature_tables"
-        return self._construct_table_result_df(
-            list(iterate_api_object_using_paginated_routes(route))
-        )
+        return self._construct_table_result_df(list(iterate_api_object_using_paginated_routes(route)))
 
     def list_deployments(self) -> pd.DataFrame:
         """
@@ -191,9 +182,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case.list_deployments()  # doctest: +SKIP
         """
         route = f"{self._route}/{self.id}/deployments"
-        return self._construct_table_result_df(
-            list(iterate_api_object_using_paginated_routes(route))
-        )
+        return self._construct_table_result_df(list(iterate_api_object_using_paginated_routes(route)))
 
     @typechecked
     def info(self, verbose: bool = False) -> Dict[str, Any]:
@@ -413,7 +402,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "UseCase":  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> "UseCase":
         """
         Returns a UseCase object by its unique identifier (ID).
 
@@ -436,9 +425,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return cls._get_by_id(id=id)
 
     @typechecked
-    def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
         """
         Adds a UseCase object to the catalog.
 
@@ -456,7 +443,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = UseCase(name="use_case", target_id=target_id, context_id=context_id) # doctest: +SKIP
+        >>> use_case = UseCase(name="use_case", target_id=target_id, context_id=context_id)  # doctest: +SKIP
         >>> use_case.save()  # doctest: +SKIP
         """
 

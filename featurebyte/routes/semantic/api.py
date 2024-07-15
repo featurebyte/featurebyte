@@ -4,9 +4,8 @@ Semantic API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Request
 
@@ -28,14 +27,10 @@ from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.semantic import SemanticCreate, SemanticList
 
 
-class SemanticRouter(
-    BaseApiRouter[SemanticModel, SemanticList, SemanticCreate, SemanticController]
-):
+class SemanticRouter(BaseApiRouter[SemanticModel, SemanticList, SemanticCreate, SemanticController]):
     """
     Semantic API router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = SemanticModel
     list_object_model = SemanticList
@@ -64,15 +59,11 @@ class SemanticRouter(
         Create semantic relationship
         """
         controller = request.state.app_container.semantic_controller
-        semantic: SemanticModel = await controller.create_relationship(
-            data=data, child_id=semantic_id
-        )
+        semantic: SemanticModel = await controller.create_relationship(data=data, child_id=semantic_id)
         return semantic
 
     @staticmethod
-    async def remove_parent(
-        request: Request, semantic_id: PyObjectId, parent_semantic_id: PyObjectId
-    ) -> SemanticModel:
+    async def remove_parent(request: Request, semantic_id: PyObjectId, parent_semantic_id: PyObjectId) -> SemanticModel:
         """
         Remove semantic relationship
         """

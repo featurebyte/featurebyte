@@ -50,21 +50,16 @@ class TileGenerateEntityTracking(BaseSqlModel):
             quote_element = self.quote_column(element.strip())
             entity_insert_cols.append(f"b.{quote_element}")
             escaped_entity_column_names.append(f"{quote_element}")
-            entity_filter_cols.append(
-                self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}")
-            )
+            entity_filter_cols.append(self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}"))
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
         # create table or insert new records or update existing records
         tile_last_start_date_column = InternalName.TILE_LAST_START_DATE
         if not tracking_table_exist_flag:
-            cols = ", ".join(
-                [
-                    self.quote_column(col)
-                    for col in self.entity_column_names + [tile_last_start_date_column]
-                ]
-            )
+            cols = ", ".join([
+                self.quote_column(col) for col in self.entity_column_names + [tile_last_start_date_column]
+            ])
             entity_table = f"select {cols} from ({self.entity_table})"
             await self._session.create_table_as(
                 table_details=tracking_table_name,

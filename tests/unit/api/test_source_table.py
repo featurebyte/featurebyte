@@ -18,19 +18,17 @@ def test_database_table(snowflake_database_table, expected_snowflake_table_previ
     Test SourceTable preview functionality
     """
     assert snowflake_database_table.preview_sql() == expected_snowflake_table_preview_query
-    expected_dtypes = pd.Series(
-        {
-            "col_int": DBVarType.INT,
-            "col_float": DBVarType.FLOAT,
-            "col_char": DBVarType.CHAR,
-            "col_text": DBVarType.VARCHAR,
-            "col_binary": DBVarType.BINARY,
-            "col_boolean": DBVarType.BOOL,
-            "event_timestamp": DBVarType.TIMESTAMP_TZ,
-            "created_at": DBVarType.TIMESTAMP_TZ,
-            "cust_id": DBVarType.INT,
-        }
-    )
+    expected_dtypes = pd.Series({
+        "col_int": DBVarType.INT,
+        "col_float": DBVarType.FLOAT,
+        "col_char": DBVarType.CHAR,
+        "col_text": DBVarType.VARCHAR,
+        "col_binary": DBVarType.BINARY,
+        "col_boolean": DBVarType.BOOL,
+        "event_timestamp": DBVarType.TIMESTAMP_TZ,
+        "created_at": DBVarType.TIMESTAMP_TZ,
+        "cust_id": DBVarType.INT,
+    })
     pd.testing.assert_series_equal(snowflake_database_table.dtypes, expected_dtypes)
 
 
@@ -63,9 +61,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     assert sdk_code == snowflake_database_table.frame._generate_code(to_use_saved_data=False)
 
 
-def test_get_or_create_event_table__get_from_persistent(
-    snowflake_database_table, snowflake_event_table
-):
+def test_get_or_create_event_table__get_from_persistent(snowflake_database_table, snowflake_event_table):
     """Test get or create event table"""
     assert (
         snowflake_database_table.get_or_create_event_table(
@@ -109,9 +105,7 @@ def test_get_or_create_dimension_table__get_from_persistent(
     )
 
 
-def test_get_or_create_scd_table__get_from_persistent(
-    snowflake_database_table_scd_table, snowflake_scd_table
-):
+def test_get_or_create_scd_table__get_from_persistent(snowflake_database_table_scd_table, snowflake_scd_table):
     """Test get or create scd table"""
     assert (
         snowflake_database_table_scd_table.get_or_create_scd_table(
@@ -142,9 +136,7 @@ def test_get_or_create_event_table__create(snowflake_database_table, catalog):
     assert event_table.record_creation_timestamp_column == "created_at"
 
 
-def test_get_or_create_item_table__create(
-    snowflake_database_table_item_table, snowflake_event_table
-):
+def test_get_or_create_item_table__create(snowflake_database_table_item_table, snowflake_event_table):
     """Test get or create item table"""
     item_table = snowflake_database_table_item_table.get_or_create_item_table(
         name="some_item_table",
@@ -243,9 +235,7 @@ def test_create_observation_table(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table_with_sample_rows(
-    snowflake_database_table, snowflake_execute_query, catalog
-):
+def test_create_observation_table_with_sample_rows(snowflake_database_table, snowflake_execute_query, catalog):
     """
     Test creating ObservationTable from SourceTable with sampling
     """
@@ -342,9 +332,7 @@ def test_table_preview(snowflake_database_table):
         "col_text": {0: ["abc", "def", "ghi"]},
         "col_binary": {0: [1, 0, 1]},
         "col_boolean": {0: [True, False, True]},
-        "event_timestamp": {
-            0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]
-        },
+        "event_timestamp": {0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]},
         "created_at": {0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]},
         "cust_id": {0: [1, 2, 3]},
     }

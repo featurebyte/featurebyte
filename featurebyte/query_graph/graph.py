@@ -2,6 +2,7 @@
 Implement graph data structure for query graph
 """
 
+from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
@@ -17,12 +18,10 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Literal
-
-from collections import OrderedDict, defaultdict
 
 from bson import ObjectId
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
@@ -205,9 +204,7 @@ class QueryGraph(QueryGraphModel):
         """
         output = []
         target_node = self.get_node_by_name(node_name)
-        for node in self.iterate_nodes(
-            target_node=target_node, node_type=NodeType.GENERIC_FUNCTION
-        ):
+        for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.GENERIC_FUNCTION):
             assert isinstance(node, GenericFunctionNode)
             output.append(node.parameters.function_id)
         return sorted(set(output))
@@ -258,9 +255,7 @@ class QueryGraph(QueryGraphModel):
         )
 
         def _iter_window_aggregate_nodes() -> Generator[Node, None, None]:
-            for group_by_node in self.iterate_nodes(
-                target_node=target_node, node_type=NodeType.GROUPBY
-            ):
+            for group_by_node in self.iterate_nodes(target_node=target_node, node_type=NodeType.GROUPBY):
                 yield group_by_node
             for non_tile_window_aggregate_node in self.iterate_nodes(
                 target_node=target_node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
@@ -271,11 +266,7 @@ class QueryGraph(QueryGraphModel):
             assert isinstance(node, (GroupByNode, NonTileWindowAggregateNode))
             group_by_op_struct = operation_structure_info.operation_structure_map[node.name]
             timestamp_col = next(
-                (
-                    col
-                    for col in group_by_op_struct.columns
-                    if col.name == node.parameters.timestamp
-                ),
+                (col for col in group_by_op_struct.columns if col.name == node.parameters.timestamp),
                 None,
             )
             assert timestamp_col is not None, "Timestamp column not found"
@@ -312,9 +303,7 @@ class QueryGraph(QueryGraphModel):
             List of table ID feature job settings in the query graph
         """
         table_feature_job_settings = []
-        node_table_id_iterator = self.iterate_group_by_node_and_table_id_pairs(
-            target_node=target_node
-        )
+        node_table_id_iterator = self.iterate_group_by_node_and_table_id_pairs(target_node=target_node)
         table_ids = set()
         for group_by_node, table_id in node_table_id_iterator:
             if keep_first_only and table_id in table_ids:
@@ -377,9 +366,7 @@ class QueryGraph(QueryGraphModel):
                                 column_name=col_name,
                                 cleaning_operations=col_to_clean_ops.get(col_name, []),
                             )
-                            for col_name in sorted(
-                                table_id_to_col_names[node_params.metadata.table_id]
-                            )
+                            for col_name in sorted(table_id_to_col_names[node_params.metadata.table_id])
                             if keep_all_columns or col_to_clean_ops.get(col_name)
                         ],
                     )
@@ -395,9 +382,7 @@ class QueryGraph(QueryGraphModel):
                         for column_name in sorted(column_names)
                     ]
                     table_column_operations.append(
-                        TableIdCleaningOperation(
-                            table_id=table_id, column_cleaning_operations=column_clean_ops
-                        )
+                        TableIdCleaningOperation(table_id=table_id, column_cleaning_operations=column_clean_ops)
                     )
 
         return table_column_operations
@@ -542,9 +527,7 @@ class QueryGraph(QueryGraphModel):
         -------
         GraphNodeNameMap
         """
-        return QuickGraphStructurePruningTransformer(graph=self).transform(
-            target_node_names=target_node_names
-        )
+        return QuickGraphStructurePruningTransformer(graph=self).transform(target_node_names=target_node_names)
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool

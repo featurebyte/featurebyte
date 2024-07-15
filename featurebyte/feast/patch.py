@@ -4,13 +4,10 @@ This module functions used to patch the Feast library.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Union
 
-from collections import defaultdict
-
 import pandas as pd
-
-# pylint: disable=no-name-in-module
 from feast import OnDemandFeatureView
 from feast.base_feature_view import BaseFeatureView
 from feast.feature_view_projection import FeatureViewProjection
@@ -46,7 +43,7 @@ def augment_response_with_on_demand_transforms(
         changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
         "customer_fv__daily_transactions").
     """
-    # pylint: disable=too-many-locals
+
     requested_odfv_map = {odfv.name: odfv for odfv in requested_on_demand_feature_views}
     requested_odfv_feature_names = requested_odfv_map.keys()
 
@@ -75,9 +72,7 @@ def augment_response_with_on_demand_transforms(
         # this is an additional step introduced to extract the correct dtypes for the transformed features
         odfv_dtype_map = {
             (
-                f"{odfv.projection.name_to_use()}__{feature.name}"
-                if full_feature_names
-                else feature.name
+                f"{odfv.projection.name_to_use()}__{feature.name}" if full_feature_names else feature.name
             ): feature.dtype.to_value_type()
             for feature in odfv.features
         }
@@ -85,9 +80,7 @@ def augment_response_with_on_demand_transforms(
         # pass the expected dtypes to the proto_values_to_proto_values function
         # (original implementation pass UNKNOWN as the dtype and let the function infer the dtype)
         proto_values = [
-            python_values_to_proto_values(
-                transformed_features_df[feature].values, odfv_dtype_map[feature]
-            )
+            python_values_to_proto_values(transformed_features_df[feature].values, odfv_dtype_map[feature])
             for feature in selected_subset
         ]
 
@@ -204,19 +197,15 @@ def _hash_feature(feature: Field) -> int:
     -------
     int
     """
-    return hash(
-        (
-            feature.name,
-            hash(feature.dtype),
-            hash(feature.description),
-            hash(frozenset(feature.tags.items())),
-        )
-    )
+    return hash((
+        feature.name,
+        hash(feature.dtype),
+        hash(feature.description),
+        hash(frozenset(feature.tags.items())),
+    ))
 
 
-def with_projection(
-    feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection
-) -> Any:
+def with_projection(feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection) -> Any:
     """
     Returns a copy of this base feature view with the feature view projection set to
     the given projection.
@@ -252,7 +241,6 @@ def with_projection(
                 f"which the FeatureView doesn't have."
             )
 
-    # pylint: disable=invalid-name,unnecessary-dunder-call
     cp = feature_view.__copy__()
     cp.projection = feature_view_projection
 

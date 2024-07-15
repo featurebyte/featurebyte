@@ -30,9 +30,7 @@ def mock_pymysql_connect_fixture():
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(
-    snowflake_event_view_with_entity, feature_group_feature_job_setting
-):
+def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity, feature_group_feature_job_setting):
     """
     Fixture for a timestamp feature
     """
@@ -47,9 +45,7 @@ def latest_event_timestamp_feature_fixture(
 
 
 @pytest.fixture(name="composite_feature_ttl_req_col")
-def composite_feature_ttl_req_col_fixture(
-    latest_event_timestamp_feature, float_feature, non_time_based_feature
-):
+def composite_feature_ttl_req_col_fixture(latest_event_timestamp_feature, float_feature, non_time_based_feature):
     """
     Fixture for a composite feature with TTL and required column
     """
@@ -87,9 +83,9 @@ def feature_list_fixture(feature_list_features):
 @pytest_asyncio.fixture(name="entity_lookup_steps_mapping")
 async def entity_lookup_steps_mapping_fixture(app_container, feature_list):
     """Fixture for entity_lookup_steps_mapping"""
-    return await app_container.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping(
-        [feature_list.cached_model]
-    )
+    return await app_container.entity_lookup_feature_table_service.get_entity_lookup_steps_mapping([
+        feature_list.cached_model
+    ])
 
 
 @pytest.fixture(name="feast_registry_proto")
@@ -128,9 +124,7 @@ def expected_entity_names_fixture():
 
 
 @pytest_asyncio.fixture(name="expected_cust_id_via_transaction_id_table_name")
-async def expected_cust_id_via_transaction_id_table_name_fixture(
-    app_container, transaction_entity, cust_id_entity
-):
+async def expected_cust_id_via_transaction_id_table_name_fixture(app_container, transaction_entity, cust_id_entity):
     """
     Fixture for the precomputed lookup feature table name that serves cust_id via transaction_id
     """
@@ -139,9 +133,7 @@ async def expected_cust_id_via_transaction_id_table_name_fixture(
         child_entity_id=transaction_entity.id,
         parent_entity_id=cust_id_entity.id,
     )
-    expected_suffix = get_lookup_steps_unique_identifier(
-        [transaction_to_customer_relationship_info]
-    )
+    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
     return f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
 
 
@@ -169,9 +161,7 @@ def expected_feature_view_name_to_ttl_fixture(expected_cust_id_via_transaction_i
 
 
 @pytest.fixture(name="expected_on_demand_feature_view_names")
-def expected_on_demand_feature_view_names_fixture(
-    float_feature, feature_without_entity, composite_feature_ttl_req_col
-):
+def expected_on_demand_feature_view_names_fixture(float_feature, feature_without_entity, composite_feature_ttl_req_col):
     """Fixture for expected on demand feature view names"""
     version = get_version().lower()
     return {

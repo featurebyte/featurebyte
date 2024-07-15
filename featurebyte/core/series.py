@@ -2,17 +2,15 @@
 Series class
 """
 
-# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
-from typing_extensions import Literal
-
 from functools import wraps
+from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.datetime import DtAccessorMixin
@@ -69,10 +67,7 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
         ValueError
             If the feature job settings of both series are inconsistent
         """
-        if (
-            isinstance(self.other, Series)
-            and self.input_series.output_category != self.other.output_category
-        ):
+        if isinstance(self.other, Series) and self.input_series.output_category != self.other.output_category:
             # Checking strict equality of types when both sides are Series is intentional. It is to
             # handle cases such as when self is EventViewColumn and other is Feature - they are both
             # Series but such operations are not allowed.
@@ -83,13 +78,11 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
 
         if isinstance(self.other, Series):
             # Check that the feature job settings of both series are consistent
-            table_id_feature_job_settings = (
-                self.input_series.graph.extract_table_id_feature_job_settings(
-                    target_node=self.input_series.node
-                )
+            table_id_feature_job_settings = self.input_series.graph.extract_table_id_feature_job_settings(
+                target_node=self.input_series.node
             )
-            other_table_id_feature_job_settings = (
-                self.other.graph.extract_table_id_feature_job_settings(target_node=self.other.node)
+            other_table_id_feature_job_settings = self.other.graph.extract_table_id_feature_job_settings(
+                target_node=self.other.node
             )
             table_id_to_feature_job_settings = {
                 table_id_feature_job_setting.table_id: table_id_feature_job_setting.feature_job_setting
@@ -101,8 +94,7 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                 this_feature_job_setting = table_id_to_feature_job_settings.get(table_id)
                 if (
                     this_feature_job_setting
-                    and this_feature_job_setting.to_seconds()
-                    != other_feature_job_setting.to_seconds()
+                    and this_feature_job_setting.to_seconds() != other_feature_job_setting.to_seconds()
                 ):
                     error_message = (
                         f"Feature job setting (table ID: {table_id}) of "
@@ -142,9 +134,7 @@ class FrozenSeries(
 
     @typechecked
     def __getitem__(self: FrozenSeriesT, item: FrozenSeries) -> FrozenSeriesT:
-        node = self._add_filter_operation(
-            item=self, mask=item, node_output_type=NodeOutputType.SERIES
-        )
+        node = self._add_filter_operation(item=self, mask=item, node_output_type=NodeOutputType.SERIES)
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
@@ -195,25 +185,17 @@ class FrozenSeries(
         }
         accepted_types = valid_assignment_map.get(self.dtype)
         if accepted_types is None:
-            raise ValueError(
-                f"Conditionally updating '{self}' of type {self.dtype} is not supported!"
-            )
+            raise ValueError(f"Conditionally updating '{self}' of type {self.dtype} is not supported!")
         if isinstance(value, Series):
             type_of_series = valid_assignment_map.get(value.dtype)
             if type_of_series != accepted_types:
-                raise ValueError(
-                    f"Conditionally updating '{self}' with type '{type(value).__name__}' is not allowed."
-                )
+                raise ValueError(f"Conditionally updating '{self}' with type '{type(value).__name__}' is not allowed.")
 
         elif not isinstance(value, accepted_types):
-            raise ValueError(
-                f"Conditionally updating '{self}' with value '{value}' is not supported!"
-            )
+            raise ValueError(f"Conditionally updating '{self}' with value '{value}' is not supported!")
 
     @staticmethod
-    def _is_a_series_of_var_type(
-        item: Any, var_type: Union[DBVarType, tuple[DBVarType, ...]]
-    ) -> bool:
+    def _is_a_series_of_var_type(item: Any, var_type: Union[DBVarType, tuple[DBVarType, ...]]) -> bool:
         """
         Check whether the input item is Series type and has any of the specified variable types
 
@@ -272,9 +254,7 @@ class FrozenSeries(
             additional_node_params=additional_node_params,
         )
 
-    def _binary_logical_op(
-        self: FrozenSeriesT, other: bool | FrozenSeries, node_type: NodeType
-    ) -> FrozenSeriesT:
+    def _binary_logical_op(self: FrozenSeriesT, other: bool | FrozenSeries, node_type: NodeType) -> FrozenSeriesT:
         """
         Apply binary logical operation between self & other objects
 
@@ -295,12 +275,8 @@ class FrozenSeries(
         TypeError
             if the left value or right value of the operator are not boolean
         """
-        if self.dtype != DBVarType.BOOL or (
-            isinstance(other, Series) and other.dtype != DBVarType.BOOL
-        ):
-            raise TypeError(
-                f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
-            )
+        if self.dtype != DBVarType.BOOL or (isinstance(other, Series) and other.dtype != DBVarType.BOOL):
+            raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
@@ -346,9 +322,7 @@ class FrozenSeries(
         if not self._is_a_series_of_var_type(other, supported_var_types) and (
             self.pytype_dbtype_map.get(type(other)) not in supported_var_types
         ):
-            raise TypeError(
-                f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
-            )
+            raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
@@ -406,9 +380,7 @@ class FrozenSeries(
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.dtype not in supported_types:
             raise TypeError(f"{self} does not support operation '{node_type}'.")
-        if (isinstance(other, FrozenSeries) and other.dtype in supported_types) or isinstance(
-            other, (int, float)
-        ):
+        if (isinstance(other, FrozenSeries) and other.dtype in supported_types) or isinstance(other, (int, float)):
             output_var_type = DBVarType.FLOAT
             if (
                 self.dtype == DBVarType.INT
@@ -426,9 +398,7 @@ class FrozenSeries(
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     @typechecked
-    def _date_diff_op(
-        self: FrozenSeriesT, other: FrozenSeries, right_op: bool = False
-    ) -> FrozenSeriesT:
+    def _date_diff_op(self: FrozenSeriesT, other: FrozenSeries, right_op: bool = False) -> FrozenSeriesT:
         """
         Apply date difference operation between two date Series
 
@@ -482,26 +452,19 @@ class FrozenSeries(
         )
 
     @typechecked
-    def __add__(
-        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
-    ) -> FrozenSeriesT:
+    def __add__(self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
-            return self._binary_op(
-                other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
-            )
+            return self._binary_op(other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR)
         if self.is_datetime and (
-            self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA)
-            or isinstance(other, pd.Timedelta)
+            self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA) or isinstance(other, pd.Timedelta)
         ):
             return self._date_add_op(other=other)
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     @typechecked
-    def __radd__(
-        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
-    ) -> FrozenSeriesT:
+    def __radd__(self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -1153,9 +1116,7 @@ class FrozenSeries(
         other_series = other
         if isinstance(other, FrozenSeries):
             if other.dtype != DBVarType.OBJECT:
-                raise ValueError(
-                    "we can only operate on other series if the other series is a dictionary series."
-                )
+                raise ValueError("we can only operate on other series if the other series is a dictionary series.")
             other_series = series_unary_operation(
                 input_series=other,
                 node_type=NodeType.DICTIONARY_KEYS,
@@ -1201,16 +1162,11 @@ class Series(FrozenSeries):
         return True
 
     @typechecked
-    def __setitem__(
-        self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]
-    ) -> None:
+    def __setitem__(self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]) -> None:
         if isinstance(value, Series):
-            if not self.validate_series_operation(value) or not value.validate_series_operation(
-                self
-            ):
+            if not self.validate_series_operation(value) or not value.validate_series_operation(self):
                 raise TypeError(
-                    f"Operation between {self.__class__.__name__} and {value.__class__.__name__} "
-                    f"is not supported"
+                    f"Operation between {self.__class__.__name__} and {value.__class__.__name__} " f"is not supported"
                 )
 
         if self.row_index_lineage != key.row_index_lineage:

@@ -10,9 +10,7 @@ from featurebyte.service.base_document import BaseDocumentService
 
 
 class FeatureListNamespaceService(
-    BaseDocumentService[
-        FeatureListNamespaceModel, FeatureListNamespaceModel, FeatureListNamespaceServiceUpdate
-    ],
+    BaseDocumentService[FeatureListNamespaceModel, FeatureListNamespaceModel, FeatureListNamespaceServiceUpdate],
 ):
     """
     FeatureListNamespaceService class

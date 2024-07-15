@@ -64,23 +64,17 @@ class PreviewService:
         """
         # get feature store
         if feature_store_id:
-            feature_store = await self.feature_store_service.get_document(
-                document_id=feature_store_id
-            )
+            feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
             assert feature_store
         else:
-            feature_store_dict = graph.get_input_node(
-                node_name
-            ).parameters.feature_store_details.dict()
+            feature_store_dict = graph.get_input_node(node_name).parameters.feature_store_details.dict()
             feature_stores = self.feature_store_service.list_documents_iterator(
                 query_filter={
                     "type": feature_store_dict["type"],
                     "details": feature_store_dict["details"],
                 }
             )
-            feature_store = (
-                await feature_stores.__anext__()  # pylint: disable=unnecessary-dunder-call
-            )
+            feature_store = await feature_stores.__anext__()
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
@@ -115,13 +109,11 @@ class PreviewService:
             logger,
             extra={"node_num": node_num, "edge_num": edge_num},
         ):
-            shape_sql, num_cols = GraphInterpreter(
-                preview.graph, source_type=feature_store.type
-            ).construct_shape_sql(node_name=preview.node_name)
+            shape_sql, num_cols = GraphInterpreter(preview.graph, source_type=feature_store.type).construct_shape_sql(
+                node_name=preview.node_name
+            )
 
-        with timer(
-            "PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}
-        ):
+        with timer("PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}):
             result = await session.execute_query(shape_sql)
 
         assert result is not None
@@ -243,9 +235,7 @@ class PreviewService:
         else:
             total_num_rows = None
 
-        describe_queries = GraphInterpreter(
-            sample.graph, source_type=feature_store.type
-        ).construct_describe_queries(
+        describe_queries = GraphInterpreter(sample.graph, source_type=feature_store.type).construct_describe_queries(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
@@ -325,9 +315,7 @@ class PreviewService:
             return output  # type: ignore
 
         # Cast int and float to native types
-        column_dtype = (
-            interpreter.extract_operation_structure_for_node(preview.node_name).columns[0].dtype
-        )
+        column_dtype = interpreter.extract_operation_structure_for_node(preview.node_name).columns[0].dtype
         cast_type: Optional[Type[int] | Type[float]]
         if column_dtype == DBVarType.INT:
             cast_type = int
@@ -348,9 +336,7 @@ class PreviewService:
 
     @staticmethod
     async def _get_row_count(session: BaseSession, sample: FeatureStoreSample) -> int:
-        query = GraphInterpreter(
-            sample.graph, source_type=session.source_type
-        ).construct_row_count_sql(
+        query = GraphInterpreter(sample.graph, source_type=session.source_type).construct_row_count_sql(
             node_name=sample.node_name,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,

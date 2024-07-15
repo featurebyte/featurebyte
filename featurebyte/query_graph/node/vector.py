@@ -2,12 +2,11 @@
 Vector node module
 """
 
-from typing import List, Sequence, Tuple
-from typing_extensions import Literal
-
 import textwrap
+from typing import List, Sequence, Tuple
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -31,9 +30,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 class VectorCosineSimilarityNode(BaseSeriesOutputNode):
     """VectorCosineSimilarityNode class"""
 
-    type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = Field(
-        NodeType.VECTOR_COSINE_SIMILARITY, const=True
-    )
+    type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = Field(NodeType.VECTOR_COSINE_SIMILARITY, const=True)
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -42,9 +39,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
@@ -58,9 +53,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in var_name_expressions[1:]]
-        expression = ExpressionStr(
-            f"{var_name_expression}.vec.cosine_similarity(other={other_operands[0]})"
-        )
+        expression = ExpressionStr(f"{var_name_expression}.vec.cosine_similarity(other={other_operands[0]})")
         return [], expression
 
     @staticmethod
@@ -94,9 +87,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, func_name = self._get_vector_cosine_similarity_function_name(
-            var_name_generator=var_name_generator
-        )
+        statements, func_name = self._get_vector_cosine_similarity_function_name(var_name_generator=var_name_generator)
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()
@@ -109,9 +100,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, func_name = self._get_vector_cosine_similarity_function_name(
-            var_name_generator=var_name_generator
-        )
+        statements, func_name = self._get_vector_cosine_similarity_function_name(var_name_generator=var_name_generator)
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()

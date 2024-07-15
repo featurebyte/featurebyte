@@ -60,9 +60,7 @@ def aggregate_asat_no_entity_graph_and_node(aggregate_asat_no_entity_feature):
     Fixture for an aggregate_asat aggregate node (no entity)
     """
     graph = aggregate_asat_no_entity_feature.graph
-    aggregate_asat_node = get_node_from_feature(
-        aggregate_asat_no_entity_feature, NodeType.AGGREGATE_AS_AT
-    )
+    aggregate_asat_node = get_node_from_feature(aggregate_asat_no_entity_feature, NodeType.AGGREGATE_AS_AT)
     return graph, aggregate_asat_node
 
 
@@ -84,9 +82,7 @@ def item_aggregate_graph_and_node(filtered_non_time_based_feature):
     Fixture for an item aggregate node
     """
     graph = filtered_non_time_based_feature.graph
-    item_aggregate_node = get_node_from_feature(
-        filtered_non_time_based_feature, NodeType.ITEM_GROUPBY
-    )
+    item_aggregate_node = get_node_from_feature(filtered_non_time_based_feature, NodeType.ITEM_GROUPBY)
     return graph, item_aggregate_node
 
 
@@ -367,9 +363,7 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
     assert universe.sql(pretty=True) == expected
 
 
-def test_combined_universe_deduplicate(
-    catalog, lookup_graph_and_node, lookup_graph_and_node_same_input
-):
+def test_combined_universe_deduplicate(catalog, lookup_graph_and_node, lookup_graph_and_node_same_input):
     """
     Test combined universe doesn't duplicate the same universe
     """
@@ -466,9 +460,7 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
     assert universe.sql(pretty=True) == expected
 
 
-def test_combined_universe__output_dummy_entity_universe(
-    catalog, window_aggregate_no_entity_graph_and_node
-):
+def test_combined_universe__output_dummy_entity_universe(catalog, window_aggregate_no_entity_graph_and_node):
     """
     Test combined universe should include dummy entity universe only when there are no other entity
     universes to be combined
@@ -591,9 +583,7 @@ def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_an
     graph, node = lookup_graph_and_node
     constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
     query_template = constructor.get_entity_universe_template()[0]
-    entity_universe_model = EntityUniverseModel(
-        query_template=SqlglotExpressionModel.create(query_template)
-    )
+    entity_universe_model = EntityUniverseModel(query_template=SqlglotExpressionModel.create(query_template))
     expected = textwrap.dedent(
         """
         SELECT DISTINCT

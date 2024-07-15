@@ -77,12 +77,8 @@ class TargetTableController(
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
-    async def get_validation_parameters(
-        self, table_create: TargetTableCreate
-    ) -> ValidationParameters:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=table_create.feature_store_id
-        )
+    async def get_validation_parameters(self, table_create: TargetTableCreate) -> ValidationParameters:
+        feature_store = await self.feature_store_service.get_document(document_id=table_create.feature_store_id)
         # Handle backward compatibility for requests from older SDK
         if isinstance(table_create.request_input, TargetInput):
             target_id = table_create.request_input.target_id
@@ -108,15 +104,11 @@ class TargetTableController(
             serving_names_mapping=table_create.serving_names_mapping,
         )
 
-    async def get_additional_info_params(
-        self, document: BaseFeatureOrTargetTableModel
-    ) -> dict[str, Any]:
+    async def get_additional_info_params(self, document: BaseFeatureOrTargetTableModel) -> dict[str, Any]:
         assert isinstance(document, TargetTableModel)
         if document.target_namespace_id is None:
             return {}
-        target_namespace = await self.target_namespace_service.get_document(
-            document.target_namespace_id
-        )
+        target_namespace = await self.target_namespace_service.get_document(document.target_namespace_id)
         return {"target_name": target_namespace.name}
 
     async def create_table(

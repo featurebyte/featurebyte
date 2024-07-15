@@ -70,9 +70,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @root_validator(pre=True)
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        entity_relationships_info: List[EntityRelationshipInfo] = values[
-            "entity_relationships_info"
-        ]
+        entity_relationships_info: List[EntityRelationshipInfo] = values["entity_relationships_info"]
         entities_by_id = values["entities_by_id"]
         tables_by_id = values["tables_by_id"]
         default_entity_lookup_steps = {}

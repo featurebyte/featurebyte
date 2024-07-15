@@ -3,7 +3,6 @@ Task progress updater
 """
 
 from typing import Any, Optional
-
 from uuid import UUID
 
 from featurebyte.models.task import Task
@@ -21,9 +20,7 @@ class TaskProgressUpdater:
         self.user = user
         self.progress = progress
 
-    async def update_progress(
-        self, percent: int, message: Optional[str] = None, **kwargs: Any
-    ) -> None:
+    async def update_progress(self, percent: int, message: Optional[str] = None, **kwargs: Any) -> None:
         """
         Update progress
 

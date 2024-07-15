@@ -50,9 +50,7 @@ class SqlExpressionTemplate:
         rendered_expr = self.sql_expr
         for placeholder_name, replacement_value in data.items():
             rendered_expr = rendered_expr.transform(
-                lambda node: self._replace_placeholder(
-                    node, placeholder_name, replacement_value  # pylint: disable=cell-var-from-loop
-                )
+                lambda node: self._replace_placeholder(node, placeholder_name, replacement_value)
             )
         if as_str:
             assert self.source_type is not None
@@ -60,9 +58,7 @@ class SqlExpressionTemplate:
         return rendered_expr
 
     @classmethod
-    def _replace_placeholder(
-        cls, node: expressions.Expression, placeholder_name: str, value: Any
-    ) -> Expression:
+    def _replace_placeholder(cls, node: expressions.Expression, placeholder_name: str, value: Any) -> Expression:
         if isinstance(node, expressions.Identifier) and node.this == placeholder_name:
             if isinstance(value, expressions.Expression):
                 return value

@@ -3,7 +3,9 @@ Base classes required for constructing query graph nodes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-# pylint: disable=too-many-lines
+
+import copy
+from abc import ABC, abstractmethod
 from typing import (
     Any,
     Callable,
@@ -17,9 +19,6 @@ from typing import (
     TypeVar,
     Union,
 )
-
-import copy
-from abc import ABC, abstractmethod
 
 from pydantic import Field
 
@@ -218,9 +217,7 @@ class BaseNode(FeatureByteBaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    def get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
         For example, a JoinNode will consume two input node and inside the JoinNode parameters,
@@ -246,9 +243,7 @@ class BaseNode(FeatureByteBaseModel):
         return self._get_required_input_columns(input_index, available_column_names)
 
     @abstractmethod
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         """
         Helper method for get_required_input_columns
 
@@ -289,9 +284,7 @@ class BaseNode(FeatureByteBaseModel):
             assert self.name in operation_info.all_node_names
 
         # update is_time_based based on the inputs, or if the derive_node_operation_info returns true
-        operation_info.is_time_based = (
-            any(input_.is_time_based for input_ in inputs) or operation_info.is_time_based
-        )
+        operation_info.is_time_based = any(input_.is_time_based for input_ in inputs) or operation_info.is_time_based
         return operation_info
 
     def _handle_statement_line_width(
@@ -749,9 +742,7 @@ class BaseNode(FeatureByteBaseModel):
         return input_columns
 
     @staticmethod
-    def _get_mapped_input_column(
-        column_name: str, input_node_column_mappings: List[Dict[str, str]]
-    ) -> str:
+    def _get_mapped_input_column(column_name: str, input_node_column_mappings: List[Dict[str, str]]) -> str:
         for input_node_column_mapping in input_node_column_mappings:
             if column_name in input_node_column_mapping:
                 return input_node_column_mapping[column_name]
@@ -763,13 +754,9 @@ class BaseNode(FeatureByteBaseModel):
         output = copy.deepcopy(nested_parameters)
         for param_name, value in nested_parameters.items():
             if isinstance(value, InColumnStr):
-                output[param_name] = self._get_mapped_input_column(
-                    value, input_node_column_mappings
-                )
+                output[param_name] = self._get_mapped_input_column(value, input_node_column_mappings)
             if isinstance(value, list) and all(isinstance(val, InColumnStr) for val in value):
-                output[param_name] = [
-                    self._get_mapped_input_column(val, input_node_column_mappings) for val in value
-                ]
+                output[param_name] = [self._get_mapped_input_column(val, input_node_column_mappings) for val in value]
         return output
 
     def normalize_and_recreate_node(
@@ -977,9 +964,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
@@ -1092,9 +1077,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         where_expr = f"np.where(pd.isna({left_operand}), np.nan, {expr})"
         return f"pd.Series({where_expr}, index={left_operand}.index)"
 
-    def _generate_odfv_expression_with_null_value_handling(
-        self, left_operand: str, right_operand: str
-    ) -> str:
+    def _generate_odfv_expression_with_null_value_handling(self, left_operand: str, right_operand: str) -> str:
         expr = self.generate_odfv_expression(left_operand, right_operand)
         where_expr = f"np.where(pd.isna({left_operand}) | pd.isna({right_operand}), np.nan, {expr})"
         return f"pd.Series({where_expr}, index={left_operand}.index)"
@@ -1108,9 +1091,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         _ = config
         generate_expression_func = self._generate_odfv_expression_with_null_value_handling
         if len(node_inputs) == 1:
-            generate_expression_func = (
-                self._generate_odfv_expression_with_null_value_handling_for_single_input
-            )
+            generate_expression_func = self._generate_odfv_expression_with_null_value_handling_for_single_input
         return self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -1124,9 +1105,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         expr = self.generate_udf_expression(left_operand, right_operand)
         return f"np.nan if pd.isna({left_operand}) else {expr}"
 
-    def _generate_udf_expression_with_null_value_handling(
-        self, left_operand: str, right_operand: str
-    ) -> str:
+    def _generate_udf_expression_with_null_value_handling(self, left_operand: str, right_operand: str) -> str:
         expr = self.generate_udf_expression(left_operand, right_operand)
         return f"np.nan if pd.isna({left_operand}) or pd.isna({right_operand}) else {expr}"
 
@@ -1139,9 +1118,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         _ = config
         generate_expression_func = self._generate_udf_expression_with_null_value_handling
         if len(node_inputs) == 1:
-            generate_expression_func = (
-                self._generate_udf_expression_with_null_value_handling_for_single_input
-            )
+            generate_expression_func = self._generate_udf_expression_with_null_value_handling_for_single_input
         return self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -1160,18 +1137,12 @@ class BinaryOpWithBoolOutputNode(BaseSeriesOutputWithAScalarParamNode):
         self, left_operand: str, right_operand: str
     ) -> str:
         # explicitly convert the result to bool type
-        expr = super()._generate_odfv_expression_with_null_value_handling_for_single_input(
-            left_operand, right_operand
-        )
+        expr = super()._generate_odfv_expression_with_null_value_handling_for_single_input(left_operand, right_operand)
         return f"{expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))"
 
-    def _generate_odfv_expression_with_null_value_handling(
-        self, left_operand: str, right_operand: str
-    ) -> str:
+    def _generate_odfv_expression_with_null_value_handling(self, left_operand: str, right_operand: str) -> str:
         # explicitly convert the result to bool type
-        expr = super()._generate_odfv_expression_with_null_value_handling(
-            left_operand, right_operand
-        )
+        expr = super()._generate_odfv_expression_with_null_value_handling(left_operand, right_operand)
         return f"{expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))"
 
 
@@ -1196,17 +1167,15 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     """BaseSingleOperandNode class"""
 
     # class variable
-    _derive_sdk_code_return_var_name_expression_type: ClassVar[
-        Union[Type[VariableNameStr], Type[ExpressionStr]]
-    ] = VariableNameStr
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[Union[Type[VariableNameStr], Type[ExpressionStr]]] = (
+        VariableNameStr
+    )
 
     @property
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     @abstractmethod
@@ -1279,9 +1248,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
-        expr = self._generate_odfv_expression_with_null_value_handling(
-            var_name_expression.as_input()
-        )
+        expr = self._generate_odfv_expression_with_null_value_handling(var_name_expression.as_input())
         return [], ExpressionStr(expr)
 
     def _generate_udf_expression_with_null_value_handling(self, operand: str) -> str:
@@ -1296,9 +1263,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
-        expr = self._generate_udf_expression_with_null_value_handling(
-            var_name_expression.as_input()
-        )
+        expr = self._generate_udf_expression_with_null_value_handling(var_name_expression.as_input())
         return [], ExpressionStr(expr)
 
 

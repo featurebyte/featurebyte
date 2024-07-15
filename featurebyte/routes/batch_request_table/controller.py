@@ -22,9 +22,7 @@ from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseSer
 
 
 class BatchRequestTableController(
-    BaseMaterializedTableController[
-        BatchRequestTableModel, BatchRequestTableService, BatchRequestTableList
-    ],
+    BaseMaterializedTableController[BatchRequestTableModel, BatchRequestTableService, BatchRequestTableList],
 ):
     """
     BatchRequestTable Controller

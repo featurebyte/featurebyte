@@ -4,9 +4,8 @@ BatchFeatureTable API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
-
 from http import HTTPStatus
+from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
@@ -59,16 +58,12 @@ async def create_batch_feature_table(
 
 
 @router.get("/{batch_feature_table_id}", response_model=BatchFeatureTableModel)
-async def get_batch_feature_table(
-    request: Request, batch_feature_table_id: PyObjectId
-) -> BatchFeatureTableModel:
+async def get_batch_feature_table(request: Request, batch_feature_table_id: PyObjectId) -> BatchFeatureTableModel:
     """
     Get BatchFeatureTable
     """
     controller = request.state.app_container.batch_feature_table_controller
-    batch_feature_table: BatchFeatureTableModel = await controller.get(
-        document_id=batch_feature_table_id
-    )
+    batch_feature_table: BatchFeatureTableModel = await controller.get(document_id=batch_feature_table_id)
     return batch_feature_table
 
 
@@ -143,9 +138,7 @@ async def get_batch_feature_table_info(
 
 
 @router.get("/pyarrow_table/{batch_feature_table_id}")
-async def download_table_as_pyarrow_table(
-    request: Request, batch_feature_table_id: PyObjectId
-) -> StreamingResponse:
+async def download_table_as_pyarrow_table(request: Request, batch_feature_table_id: PyObjectId) -> StreamingResponse:
     """
     Download BatchFeatureTable as pyarrow table
     """
@@ -157,9 +150,7 @@ async def download_table_as_pyarrow_table(
 
 
 @router.get("/parquet/{batch_feature_table_id}")
-async def download_table_as_parquet(
-    request: Request, batch_feature_table_id: PyObjectId
-) -> StreamingResponse:
+async def download_table_as_parquet(request: Request, batch_feature_table_id: PyObjectId) -> StreamingResponse:
     """
     Download BatchFeatureTable as parquet file
     """

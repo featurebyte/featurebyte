@@ -93,9 +93,7 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_di
 
 
 @pytest.fixture
-def snowflake_dimension_view_with_entity(
-    snowflake_dimension_table, cust_id_entity, mock_api_object_cache
-):
+def snowflake_dimension_view_with_entity(snowflake_dimension_table, cust_id_entity, mock_api_object_cache):
     """
     Fixture of a DimensionView with entity tagged
     """
@@ -238,9 +236,7 @@ def test_as_features__offset_provided_but_ignored(
     """
     # offset ignored but should not have error
     view = snowflake_dimension_view_with_entity
-    feature_group = view.as_features(
-        ["col_float", "col_char"], ["col_float", "col_char"], offset="7d"
-    )
+    feature_group = view.as_features(["col_float", "col_char"], ["col_float", "col_char"], offset="7d")
 
     # check SDK code generation
     dimension_table_columns_info = snowflake_dimension_table.dict(by_alias=True)["columns_info"]
@@ -278,15 +274,11 @@ def test_as_feature__special_column(snowflake_dimension_view_with_entity):
     assert feature.name == "IntFeature"
 
 
-def test_as_feature_same_column_name(
-    snowflake_dimension_view_with_entity, snowflake_scd_table, cust_id_entity
-):
+def test_as_feature_same_column_name(snowflake_dimension_view_with_entity, snowflake_scd_table, cust_id_entity):
     """
     Test lookup features with same column name
     """
-    feature_a = snowflake_dimension_view_with_entity["col_float"].as_feature(
-        "FloatFeatureDimensionView"
-    )
+    feature_a = snowflake_dimension_view_with_entity["col_float"].as_feature("FloatFeatureDimensionView")
 
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
@@ -384,9 +376,7 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
     view = snowflake_dimension_view_with_entity
     feature_1 = view["col_float"].as_feature("FloatFeature")
     feature_2 = view[["col_float", "col_char"]]["col_char"].as_feature("CharFeature")
-    feature_3_and_4 = view.as_features(
-        ["col_binary", "col_boolean"], ["BinaryFeature", "BoolFeature"]
-    )
+    feature_3_and_4 = view.as_features(["col_binary", "col_boolean"], ["BinaryFeature", "BoolFeature"])
     feature_list = FeatureList([feature_1, feature_2, feature_3_and_4], name="my_feature_list")
     feature_list_sql = feature_list.sql
     assert (

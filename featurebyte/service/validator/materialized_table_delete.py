@@ -61,9 +61,7 @@ class ObservationTableDeleteValidator:
         DocumentDeletionError
             If the document cannot be deleted
         """
-        document = await self.observation_table_service.get_document(
-            document_id=observation_table_id
-        )
+        document = await self.observation_table_service.get_document(document_id=observation_table_id)
         reference_ids = [
             str(doc["_id"])
             async for doc in self.historical_feature_table_service.list_documents_as_dict_iterator(

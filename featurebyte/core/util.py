@@ -179,7 +179,7 @@ def series_binary_operation(
     -------
     FrozenSeriesT
     """
-    # pylint: disable=import-outside-toplevel
+
     from featurebyte.core.series import FrozenSeries
 
     node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}

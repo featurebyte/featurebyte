@@ -24,9 +24,7 @@ class FeatureStoreService(
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
 
-    async def get_feature_store_info(
-        self, document_id: ObjectId, verbose: bool
-    ) -> FeatureStoreInfo:
+    async def get_feature_store_info(self, document_id: ObjectId, verbose: bool) -> FeatureStoreInfo:
         """
         Get feature store info
 

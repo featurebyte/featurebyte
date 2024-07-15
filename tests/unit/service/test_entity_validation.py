@@ -33,9 +33,7 @@ def graph_nodes_or_feature_list_fixture(request):
 
 
 @pytest.mark.asyncio
-async def test_required_entity__missing(
-    entity_validation_service, graph_nodes_or_feature_list, feature_store
-):
+async def test_required_entity__missing(entity_validation_service, graph_nodes_or_feature_list, feature_store):
     """
     Test a required entity is missing
     """
@@ -43,16 +41,12 @@ async def test_required_entity__missing(
         await entity_validation_service.validate_entities_or_prepare_for_parent_serving(
             request_column_names=["a"], feature_store=feature_store, **graph_nodes_or_feature_list
         )
-    expected = (
-        'Required entities are not provided in the request: customer (serving name: "cust_id")'
-    )
+    expected = 'Required entities are not provided in the request: customer (serving name: "cust_id")'
     assert str(exc.value) == expected
 
 
 @pytest.mark.asyncio
-async def test_required_entity__no_error(
-    entity_validation_service, graph_nodes_or_feature_list, feature_store
-):
+async def test_required_entity__no_error(entity_validation_service, graph_nodes_or_feature_list, feature_store):
     """
     Test required entity is provided
     """

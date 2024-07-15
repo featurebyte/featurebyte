@@ -63,9 +63,7 @@ def test_class_enum_and_object_class():
     object_id = ObjectId("63eaeafcbe3a62da29705ad1")
     event_table = ClassEnum.EVENT_TABLE(ClassEnum.OBJECT_ID(object_id), name="event_table")
     assert (
-        str(event_table)
-        == repr(event_table)
-        == 'EventTable(ObjectId("63eaeafcbe3a62da29705ad1"), name="event_table")'
+        str(event_table) == repr(event_table) == 'EventTable(ObjectId("63eaeafcbe3a62da29705ad1"), name="event_table")'
     )
     assert event_table.extract_import() == {ClassEnum.EVENT_TABLE.value, ClassEnum.OBJECT_ID.value}
 
@@ -134,9 +132,7 @@ def test_variable_name_generator():
         (True, ["col", "col", "col", "foo", "bar"], "col_3", 3),
     ],
 )
-def test_variable_name_generator__get_latest_variable_name(
-    one_based, inputs, expected_var_name, expected_count
-):
+def test_variable_name_generator__get_latest_variable_name(one_based, inputs, expected_var_name, expected_count):
     """Test VariableNameGenerator.get_latest_variable_name()"""
     var_gen = VariableNameGenerator(one_based=one_based)
     for var_name_prefix in inputs:
@@ -165,9 +161,7 @@ def test_code_generator():
     )
 
     code_gen.add_statements(
-        statements=[
-            (VariableNameStr("event_table_1"), ClassEnum.EVENT_TABLE(name="another_event_table"))
-        ],
+        statements=[(VariableNameStr("event_table_1"), ClassEnum.EVENT_TABLE(name="another_event_table"))],
     )
     assert code_gen.generate(remove_unused_variables=False).strip() == (
         "from featurebyte import EventTable\n\n"

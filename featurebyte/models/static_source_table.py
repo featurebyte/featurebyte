@@ -5,10 +5,10 @@ StaticSourceTableModel models
 from __future__ import annotations
 
 from typing import Union
-from typing_extensions import Annotated
 
 import pymongo
 from pydantic import Field
+from typing_extensions import Annotated
 
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
@@ -26,9 +26,7 @@ class SourceTableStaticSourceInput(SourceTableRequestInput):
     """
 
 
-StaticSourceInput = Annotated[
-    Union[ViewStaticSourceInput, SourceTableStaticSourceInput], Field(discriminator="type")
-]
+StaticSourceInput = Annotated[Union[ViewStaticSourceInput, SourceTableStaticSourceInput], Field(discriminator="type")]
 
 
 class StaticSourceTableModel(MaterializedTableModel):

@@ -4,13 +4,12 @@ Module containing string operations related sql generation
 
 from __future__ import annotations
 
-from typing import Optional
-from typing_extensions import Literal
-
 from dataclasses import dataclass
+from typing import Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
@@ -86,9 +85,7 @@ class TrimNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return self.context.adapter.str_trim(
-            expr=self.expr.sql, character=self.character, side=self.side
-        )
+        return self.context.adapter.str_trim(expr=self.expr.sql, character=self.character, side=self.side)
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> TrimNode:
@@ -176,9 +173,7 @@ class PadNode(ExpressionNode):
                 pad_char=self.pad,
             )
         else:
-            remain_width = expressions.Paren(
-                this=expressions.Sub(this=target_length_expr, expression=char_length_expr)
-            )
+            remain_width = expressions.Paren(this=expressions.Sub(this=target_length_expr, expression=char_length_expr))
             left_remain_width = expressions.Ceil(
                 this=expressions.Div(this=remain_width, expression=make_literal_value(2))
             )

@@ -4,10 +4,9 @@ FeatureJobSettingAnalysis class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
-
 from io import BytesIO
 from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -41,15 +40,13 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     Examples
     --------
     >>> analysis = invoice_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
-    ...   analysis_date=pd.Timestamp('2023-04-10'),
-    ...   analysis_length=3600*24*28,
+    ...     analysis_date=pd.Timestamp("2023-04-10"),
+    ...     analysis_length=3600 * 24 * 28,
     ... )
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.FeatureJobSettingAnalysis"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
     _route: ClassVar[str] = "/feature_job_setting_analysis"
     _list_schema: ClassVar[Any] = FeatureJobSettingAnalysisRecord
     _get_schema: ClassVar[Any] = FeatureJobSettingAnalysisModel
@@ -187,9 +184,9 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
         >>> # Backtest a manual setting
         >>> manual_setting = fb.FeatureJobSetting(  # doctest: +SKIP
-        ...   blind_spot="135s",
-        ...   period="60m",
-        ...   offset="90s",
+        ...     blind_spot="135s",
+        ...     period="60m",
+        ...     offset="90s",
         ... )
         >>> backtest_result = analysis.backtest(feature_job_setting=manual_setting)  # doctest: +SKIP
         """
@@ -242,9 +239,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         return super().info(verbose)
 
     @classmethod
-    def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureJobSettingAnalysis:
+    def get_by_id(cls, id: ObjectId) -> FeatureJobSettingAnalysis:
         """
         Retrieves an analysis of the data availability and freshness of a table. This returns a
         FeatureJobSettingAnalysis object that allows to access the result of the analysis.

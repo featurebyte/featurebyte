@@ -2,9 +2,8 @@
 Feature Facade Service which is responsible for handling high level feature operations
 """
 
-from typing import Optional
-
 from pprint import pformat
+from typing import Optional
 
 from bson import ObjectId
 
@@ -65,9 +64,7 @@ class FeatureFacadeService:
         output = await self.feature_service.get_document(document_id=document.id)
         return output
 
-    async def create_new_version(
-        self, data: FeatureNewVersionCreate, to_save: bool = True
-    ) -> FeatureModel:
+    async def create_new_version(self, data: FeatureNewVersionCreate, to_save: bool = True) -> FeatureModel:
         """
         Create a new version of a feature
 
@@ -135,9 +132,7 @@ class FeatureFacadeService:
         -------
         FeatureNamespaceModel
         """
-        document = await self.feature_namespace_service.get_document(
-            document_id=feature_namespace_id
-        )
+        document = await self.feature_namespace_service.get_document(document_id=feature_namespace_id)
         if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
@@ -148,9 +143,7 @@ class FeatureFacadeService:
             await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id,
             )
-            feature_namespace = await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
+            feature_namespace = await self.feature_namespace_service.get_document(document_id=feature_namespace_id)
             return feature_namespace
         return document
 
@@ -174,13 +167,9 @@ class FeatureFacadeService:
         """
         new_default_feature = await self.feature_service.get_document(document_id=feature_id)
         namespace_id = new_default_feature.feature_namespace_id
-        feature_namespace = await self.feature_namespace_service.get_document(
-            document_id=namespace_id
-        )
+        feature_namespace = await self.feature_namespace_service.get_document(document_id=namespace_id)
         if feature_namespace.default_version_mode != DefaultVersionMode.MANUAL:
-            raise DocumentUpdateError(
-                "Cannot set default feature ID when default version mode is not MANUAL."
-            )
+            raise DocumentUpdateError("Cannot set default feature ID when default version mode is not MANUAL.")
 
         # make sure the new default is the highest readiness level among all versions
         max_readiness = FeatureReadiness(new_default_feature.readiness)
@@ -205,9 +194,7 @@ class FeatureFacadeService:
             document_id=namespace_id,
             data=FeatureNamespaceServiceUpdate(default_feature_id=feature_id),
         )
-        await self.feature_readiness_service.update_feature_namespace(
-            feature_namespace_id=namespace_id
-        )
+        await self.feature_readiness_service.update_feature_namespace(feature_namespace_id=namespace_id)
         return await self.feature_namespace_service.get_document(document_id=namespace_id)
 
     async def delete_feature(self, feature_id: ObjectId) -> None:
@@ -227,9 +214,7 @@ class FeatureFacadeService:
             * If the feature is in any saved feature list
         """
         feature = await self.feature_service.get_document(document_id=feature_id)
-        feature_namespace = await self.feature_namespace_service.get_document(
-            document_id=feature.feature_namespace_id
-        )
+        feature_namespace = await self.feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
 
         if feature.readiness != FeatureReadiness.DRAFT:
             raise DocumentDeletionError("Only feature with draft readiness can be deleted.")
@@ -249,13 +234,11 @@ class FeatureFacadeService:
                 query_filter={"_id": {"$in": feature.feature_list_ids}},
                 projection={"_id": 1, "name": 1, "version": 1},
             ):
-                feature_list_info.append(
-                    {
-                        "id": str(feature_list["_id"]),
-                        "name": feature_list["name"],
-                        "version": VersionIdentifier(**feature_list["version"]).to_str(),
-                    }
-                )
+                feature_list_info.append({
+                    "id": str(feature_list["_id"]),
+                    "name": feature_list["name"],
+                    "version": VersionIdentifier(**feature_list["version"]).to_str(),
+                })
 
             raise DocumentDeletionError(
                 f"Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
@@ -275,6 +258,4 @@ class FeatureFacadeService:
             )
             if not feature_namespace.feature_ids:
                 # delete feature namespace if it has no more feature
-                await self.feature_namespace_service.delete_document(
-                    document_id=feature.feature_namespace_id
-                )
+                await self.feature_namespace_service.delete_document(document_id=feature.feature_namespace_id)

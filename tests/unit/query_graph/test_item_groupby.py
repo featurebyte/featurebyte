@@ -25,9 +25,7 @@ from featurebyte.query_graph.sql.common import SQLType
         ("item_id", AggFunc.NA_COUNT, 'SUM(CAST("item_id" IS NULL AS INTEGER))'),
     ],
 )
-def test_item_groupby_sql_node(
-    global_graph, item_table_input_node, parent, agg_func, expected_expr, value_by
-):
+def test_item_groupby_sql_node(global_graph, item_table_input_node, parent, agg_func, expected_expr, value_by):
     """
     Test ItemGroupby sql generation
     """
@@ -45,9 +43,7 @@ def test_item_groupby_sql_node(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[item_table_input_node],
     )
-    sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
     sql_tree = sql_graph.build(groupby_node).sql
     if value_by is None:
         expected = textwrap.dedent(

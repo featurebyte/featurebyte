@@ -4,13 +4,12 @@ Module for unary operations sql generation
 
 from __future__ import annotations
 
-from typing import Union, cast
-from typing_extensions import Literal
-
 from dataclasses import dataclass
+from typing import Union, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -65,9 +64,7 @@ class UnaryOp(ExpressionNode):
         else:
             expr_cls = cls.node_type_to_function[node_type]
 
-        node = UnaryOp(
-            context=context, table_node=table_node, expr=input_expr_node, operation=expr_cls
-        )
+        node = UnaryOp(context=context, table_node=table_node, expr=input_expr_node, operation=expr_cls)
         return node
 
 
@@ -80,9 +77,7 @@ class IsNullNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Paren(
-            this=expressions.Is(this=self.expr.sql, expression=expressions.Null())
-        )
+        return expressions.Paren(this=expressions.Is(this=self.expr.sql, expression=expressions.Null()))
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsNullNode:
@@ -147,9 +142,7 @@ class LagNode(ExpressionNode):
         partition_by = [entity_node.sql for entity_node in self.entity_nodes]
         order = expressions.Order(expressions=[expressions.Ordered(this=self.timestamp_node.sql)])
         output_expr = expressions.Window(
-            this=expressions.Anonymous(
-                this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
-            ),
+            this=expressions.Anonymous(this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]),
             partition_by=partition_by,
             order=order,
         )

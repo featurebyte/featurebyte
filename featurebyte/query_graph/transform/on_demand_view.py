@@ -2,9 +2,8 @@
 On demand feature view (for Feast) related classes and functions.
 """
 
-from typing import Any, Dict, List, Tuple
-
 import textwrap
+from typing import Any, Dict, List, Tuple
 
 from pydantic import Field
 
@@ -32,19 +31,13 @@ class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     """
 
     node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
-    code_generation_config: OnDemandViewCodeGenConfig = Field(
-        default_factory=OnDemandViewCodeGenConfig
-    )
+    code_generation_config: OnDemandViewCodeGenConfig = Field(default_factory=OnDemandViewCodeGenConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
-    code_generator: CodeGenerator = Field(
-        default_factory=lambda: CodeGenerator(template="on_demand_view.tpl")
-    )
+    code_generator: CodeGenerator = Field(default_factory=lambda: CodeGenerator(template="on_demand_view.tpl"))
 
 
 class OnDemandFeatureViewExtractor(
-    BaseGraphExtractor[
-        OnDemandFeatureViewGlobalState, FeatureByteBaseModel, OnDemandFeatureViewGlobalState
-    ]
+    BaseGraphExtractor[OnDemandFeatureViewGlobalState, FeatureByteBaseModel, OnDemandFeatureViewGlobalState]
 ):
     """
     On demand feature view extractor
@@ -133,9 +126,7 @@ class OnDemandFeatureViewExtractor(
         ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
 
         # expressions
-        subset_pit_expr = subset_frame_column_expr(
-            input_df_name, SpecialColumnName.POINT_IN_TIME.value
-        )
+        subset_pit_expr = subset_frame_column_expr(input_df_name, SpecialColumnName.POINT_IN_TIME.value)
         subset_feat_time_col_expr = subset_frame_column_expr(input_df_name, ttl_ts_column)
         subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
 
@@ -143,15 +134,11 @@ class OnDemandFeatureViewExtractor(
         req_time_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="request_time", node_name=None
         )
-        cutoff_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="cutoff", node_name=None
-        )
+        cutoff_var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="cutoff", node_name=None)
         feat_time_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="feature_timestamp", node_name=None
         )
-        mask_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="mask", node_name=None
-        )
+        mask_var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="mask", node_name=None)
         return StatementStr(
             textwrap.dedent(
                 f"""
@@ -196,9 +183,7 @@ class OnDemandFeatureViewExtractor(
         # expressions
         subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
         fill_value_expr = ValueStr(fill_value).as_input()
-        return StatementStr(
-            f"{subset_output_column_expr} = {input_column_expr}.fillna({fill_value_expr})"
-        )
+        return StatementStr(f"{subset_output_column_expr} = {input_column_expr}.fillna({fill_value_expr})")
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:
         feature_name_version = kwargs.get("feature_name_version", None)

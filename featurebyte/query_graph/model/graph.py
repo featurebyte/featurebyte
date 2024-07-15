@@ -2,9 +2,8 @@
 This model contains query graph internal model structures
 """
 
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
-
 from collections import defaultdict
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from pydantic import Field, PrivateAttr, root_validator, validator
 
@@ -80,26 +79,18 @@ class QueryGraphModel(FeatureByteBaseModel):
         # If edges map is used, the input order will be lost. After that, we reconstruct the edges map from
         # the sorted backward edges map (required for topological sort).
         edges_map = defaultdict(list)
-        sorted_backward_edges_keys = sorted(
-            self.backward_edges_map, key=lambda x: self.node_name_to_ref[x]
-        )
+        sorted_backward_edges_keys = sorted(self.backward_edges_map, key=lambda x: self.node_name_to_ref[x])
         for target_node_name in sorted_backward_edges_keys:
             for source_node_name in self.backward_edges_map[target_node_name]:
                 edges_map[source_node_name].append(target_node_name)
         self._sorted_edges_map_by_ref = edges_map
 
         # Update sorted node names by reference
-        self._sorted_node_names_by_ref = sorted(
-            self.nodes_map, key=lambda x: self.node_name_to_ref[x]
-        )
+        self._sorted_node_names_by_ref = sorted(self.nodes_map, key=lambda x: self.node_name_to_ref[x])
 
         # Update node topological order map
-        self._sorted_node_names = topological_sort(
-            self._sorted_node_names_by_ref, self._sorted_edges_map_by_ref
-        )
-        self._node_topological_order_map = {
-            value: idx for idx, value in enumerate(self._sorted_node_names)
-        }
+        self._sorted_node_names = topological_sort(self._sorted_node_names_by_ref, self._sorted_edges_map_by_ref)
+        self._node_topological_order_map = {value: idx for idx, value in enumerate(self._sorted_node_names)}
 
         # Update total node number to validate the cache
         self._total_node_num = len(self.nodes)
@@ -157,9 +148,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self._node_topological_order_map
 
     @staticmethod
-    def _derive_nodes_map(
-        nodes: List[Node], nodes_map: Optional[Dict[str, Node]]
-    ) -> Dict[str, Node]:
+    def _derive_nodes_map(nodes: List[Node], nodes_map: Optional[Dict[str, Node]]) -> Dict[str, Node]:
         if nodes_map is None:
             nodes_map = {}
         for node in nodes:
@@ -167,9 +156,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return nodes_map
 
     @staticmethod
-    def _derive_edges_map(
-        edges: List[Edge], edges_map: Optional[Dict[str, List[str]]]
-    ) -> Dict[str, List[str]]:
+    def _derive_edges_map(edges: List[Edge], edges_map: Optional[Dict[str, List[str]]]) -> Dict[str, List[str]]:
         if edges_map is None:
             edges_map = defaultdict(list)
         for edge in edges:
@@ -187,9 +174,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return backward_edges_map
 
     @staticmethod
-    def _derive_node_type_counter(
-        nodes: List[Node], node_type_counter: Optional[Dict[str, int]]
-    ) -> Dict[str, int]:
+    def _derive_node_type_counter(nodes: List[Node], node_type_counter: Optional[Dict[str, int]]) -> Dict[str, int]:
         if node_type_counter is None:
             node_type_counter = defaultdict(int)
         for node in nodes:
@@ -249,8 +234,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         sorted_node_names = topological_sort(list(nodes_map), edges_map)
         for node_name in sorted_node_names:
             input_node_refs = [
-                node_name_to_ref[input_node_name]
-                for input_node_name in backward_edges_map.get(node_name, [])
+                node_name_to_ref[input_node_name] for input_node_name in backward_edges_map.get(node_name, [])
             ]
             node = nodes_map[node_name]
             node_name_to_ref[node_name] = hash_node(
@@ -287,15 +271,11 @@ class QueryGraphModel(FeatureByteBaseModel):
 
         backward_edges_map = values.get("backward_edges_map")
         if not backward_edges_map and isinstance(values.get("edges"), list):
-            values["backward_edges_map"] = cls._derive_backward_edges_map(
-                values["edges"], backward_edges_map
-            )
+            values["backward_edges_map"] = cls._derive_backward_edges_map(values["edges"], backward_edges_map)
 
         node_type_counter = values.get("node_type_counter")
         if not node_type_counter and isinstance(values.get("nodes"), list):
-            values["node_type_counter"] = cls._derive_node_type_counter(
-                values["nodes"], node_type_counter
-            )
+            values["node_type_counter"] = cls._derive_node_type_counter(values["nodes"], node_type_counter)
 
         node_name_to_ref = values.get("node_name_to_ref")
         if not node_name_to_ref:
@@ -412,9 +392,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         assert node_name in self.edges_map, "Node name not found in edges_map"
         target_node_names = self.edges_map[node_name]
         if keep_target_node_names:
-            target_node_names = [
-                node_name for node_name in target_node_names if node_name in keep_target_node_names
-            ]
+            target_node_names = [node_name for node_name in target_node_names if node_name in keep_target_node_names]
         target_nodes = [self.get_node_by_name(node_name) for node_name in target_node_names]
         if target_nodes:
             # get the input column order from current node to the target nodes
@@ -504,18 +482,14 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Query graph nodes of the specified node type
         """
-        for node in dfs_traversal(
-            self, target_node, skip_node_type=skip_node_type, skip_node_names=skip_node_names
-        ):
+        for node in dfs_traversal(self, target_node, skip_node_type=skip_node_type, skip_node_names=skip_node_names):
             if node_type is None:
                 yield node
             else:
                 if node.type == node_type:
                     yield node
 
-    def iterate_sorted_graph_nodes(
-        self, graph_node_types: Set[GraphNodeType]
-    ) -> Iterator[BaseGraphNode]:
+    def iterate_sorted_graph_nodes(self, graph_node_types: Set[GraphNodeType]) -> Iterator[BaseGraphNode]:
         """
         Iterate all specified nodes in this query graph in a topologically sorted order
 

@@ -4,9 +4,8 @@ Session related helper functions
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Union
-
 import os
+from typing import Any, Callable, Coroutine, List, Optional, Union
 
 import pandas as pd
 from sqlglot import expressions
@@ -54,9 +53,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
             expressions.alias_(
                 expressions.EQ(
                     this=expressions.Count(
-                        this=expressions.Distinct(
-                            expressions=[quoted_identifier(InternalName.TABLE_ROW_INDEX.value)]
-                        ),
+                        this=expressions.Distinct(expressions=[quoted_identifier(InternalName.TABLE_ROW_INDEX.value)]),
                     ),
                     expression=expressions.Count(this=expressions.Star()),
                 ),

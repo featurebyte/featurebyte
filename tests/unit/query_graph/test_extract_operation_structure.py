@@ -27,9 +27,7 @@ def extract_column_parameters(input_node, other_node_names=None, node_name=None)
 
 def test_extract_operation__single_input_node(global_graph, input_node):
     """Test extract_operation_structure: single input node"""
-    op_struct = global_graph.extract_operation_structure(
-        node=input_node, keep_all_source_columns=True
-    )
+    op_struct = global_graph.extract_operation_structure(node=input_node, keep_all_source_columns=True)
     expected_columns = [
         {"name": col.name, "dtype": col.dtype, **extract_column_parameters(input_node)}
         for col in input_node.parameters.columns
@@ -55,9 +53,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     project_node = graph.get_node_by_name("project_1")
     op_struct = graph.extract_operation_structure(node=project_node, keep_all_source_columns=True)
-    expected_columns = [
-        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}
-    ]
+    expected_columns = [{"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}]
     assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -193,9 +189,7 @@ def test_extract_operation__filter(graph_four_nodes):
         other_node_names={"input_1", "project_1", "eq_1", "filter_1"},
         node_name="filter_1",
     )
-    expected_columns = [
-        {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
-    ]
+    expected_columns = [{"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}]
     assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -215,9 +209,7 @@ def test_extract_operation__filter(graph_four_nodes):
 def test_extract_operation__lag(query_graph_with_lag_node, input_node):
     """Test extract_operation_structure: lag"""
     global_graph, lag_node = query_graph_with_lag_node
-    op_struct = global_graph.extract_operation_structure(
-        node=lag_node, keep_all_source_columns=True
-    )
+    op_struct = global_graph.extract_operation_structure(node=lag_node, keep_all_source_columns=True)
     expected_source_columns = [
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
         {"name": "cust_id", "dtype": "INT", **extract_column_parameters(input_node, {"project_1"})},
@@ -259,9 +251,7 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
     graph = query_graph_with_groupby
     input_node = graph.get_node_by_name("input_1")
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    op_struct = graph.extract_operation_structure(
-        node=groupby_node, keep_all_source_columns=keep_all_source_columns
-    )
+    op_struct = graph.extract_operation_structure(node=groupby_node, keep_all_source_columns=keep_all_source_columns)
     common_column_params = extract_column_parameters(input_node)
     common_aggregation_params = {
         "keys": ["cust_id"],
@@ -278,12 +268,10 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
     expected_columns = []
     if keep_all_source_columns:
         # keep all source columns include also event_timestamp and group by columns
-        expected_columns.extend(
-            [
-                {"name": col_name, "dtype": var_type, **common_column_params}
-                for col_name, var_type in [("ts", "TIMESTAMP"), ("cust_id", "INT")]
-            ]
-        )
+        expected_columns.extend([
+            {"name": col_name, "dtype": var_type, **common_column_params}
+            for col_name, var_type in [("ts", "TIMESTAMP"), ("cust_id", "INT")]
+        ])
     expected_columns.append({"name": "a", "dtype": "FLOAT", **common_column_params})
     expected_aggregations = [
         {"name": "a_2h_average", "dtype": "FLOAT", "window": "2h", **common_aggregation_params},
@@ -311,9 +299,7 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[groupby_node],
     )
-    op_struct = graph.extract_operation_structure(
-        node=project_node, keep_all_source_columns=keep_all_source_columns
-    )
+    op_struct = graph.extract_operation_structure(node=project_node, keep_all_source_columns=keep_all_source_columns)
     expected_aggregation = {
         "name": "a_2h_average",
         "window": "2h",
@@ -340,9 +326,7 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[project_node, eq_node],
     )
-    op_struct = graph.extract_operation_structure(
-        node=filter_node, keep_all_source_columns=keep_all_source_columns
-    )
+    op_struct = graph.extract_operation_structure(node=filter_node, keep_all_source_columns=keep_all_source_columns)
     expected_filtered_aggregation = {
         "columns": [expected_aggregation],
         "filter": False,
@@ -567,12 +551,10 @@ def test_extract_operation__join_double_aggregations(
     ]
     expected_columns = []
     if keep_all_source_columns:
-        expected_columns.extend(
-            [
-                {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
-                {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
-            ]
-        )
+        expected_columns.extend([
+            {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
+            {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
+        ])
 
     assert to_dict(op_struct.columns) == expected_columns + [order_size_column]
     assert to_dict(op_struct.aggregations) == expected_aggregations
@@ -705,9 +687,7 @@ def test_extract_operation__event_lookup_feature(
     assert op_struct.is_time_based is True
 
     # check main input nodes
-    primary_input_nodes = global_graph.get_primary_input_nodes(
-        node_name=event_lookup_feature_node.name
-    )
+    primary_input_nodes = global_graph.get_primary_input_nodes(node_name=event_lookup_feature_node.name)
     assert primary_input_nodes == [event_table_input_node]
 
 
@@ -754,9 +734,7 @@ def test_extract_operation__scd_lookup_feature(
     assert op_struct.is_time_based is True
 
     # check main input nodes
-    primary_input_nodes = global_graph.get_primary_input_nodes(
-        node_name=scd_lookup_feature_node.name
-    )
+    primary_input_nodes = global_graph.get_primary_input_nodes(node_name=scd_lookup_feature_node.name)
     assert primary_input_nodes == [scd_table_input_node]
 
 
@@ -777,9 +755,7 @@ def test_extract_operation__aggregate_asat_feature(
         {"name": "cust_id", "dtype": "INT", **common_data_params},
     ]
     if keep_all_source_columns:
-        expected_columns.append(
-            {"name": "membership_status", "dtype": "VARCHAR", **common_data_params}
-        )
+        expected_columns.append({"name": "membership_status", "dtype": "VARCHAR", **common_data_params})
 
     expected_aggregations = [
         {
@@ -807,9 +783,7 @@ def test_extract_operation__aggregate_asat_feature(
     assert op_struct.is_time_based is True
 
     # check main input nodes
-    primary_input_nodes = global_graph.get_primary_input_nodes(
-        node_name=aggregate_asat_feature_node.name
-    )
+    primary_input_nodes = global_graph.get_primary_input_nodes(node_name=aggregate_asat_feature_node.name)
     assert primary_input_nodes == [scd_table_input_node]
 
 
@@ -827,14 +801,10 @@ def test_extract_operation__alias(global_graph, input_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[project_node],
     )
-    op_struct = global_graph.extract_operation_structure(
-        node=add_node, keep_all_source_columns=True
-    )
+    op_struct = global_graph.extract_operation_structure(node=add_node, keep_all_source_columns=True)
     expected_derived_columns = {
         "name": None,
-        "columns": [
-            {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}
-        ],
+        "columns": [{"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}],
         "transforms": ["add(value=10)"],
         "filter": False,
         "type": "derived",
@@ -849,9 +819,7 @@ def test_extract_operation__alias(global_graph, input_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[add_node],
     )
-    op_struct = global_graph.extract_operation_structure(
-        node=alias_node, keep_all_source_columns=True
-    )
+    op_struct = global_graph.extract_operation_structure(node=alias_node, keep_all_source_columns=True)
     assert to_dict(op_struct.columns) == [
         {
             **expected_derived_columns,
@@ -917,9 +885,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         expected={"name": "NEW_TIMESTAMP", "value": None},
     )
     # check on constant value assignment
-    op_struct = graph.extract_operation_structure(
-        node=dataframe["diff"].node, keep_all_source_columns=True
-    )
+    op_struct = graph.extract_operation_structure(node=dataframe["diff"].node, keep_all_source_columns=True)
     assert to_dict(op_struct.columns) == [
         {
             "name": "diff",
@@ -972,9 +938,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
     # check extract operation structure
     graph = dataframe.graph
     input_node = graph.get_node_by_name("input_1")
-    op_struct = graph.extract_operation_structure(
-        node=dataframe["diff"].node, keep_all_source_columns=True
-    )
+    op_struct = graph.extract_operation_structure(node=dataframe["diff"].node, keep_all_source_columns=True)
     assert to_dict(op_struct) == {
         "aggregations": [],
         "columns": [
@@ -988,9 +952,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     {
                         "name": "CUST_ID",
                         "dtype": "INT",
-                        **extract_column_parameters(
-                            input_node, {"project_2", "input_1", "project_4"}
-                        ),
+                        **extract_column_parameters(input_node, {"project_2", "input_1", "project_4"}),
                     },
                 ],
                 "filter": False,
@@ -1038,9 +1000,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    op_struct = graph.extract_operation_structure(
-        node=groupby_node, keep_all_source_columns=keep_all_source_columns
-    )
+    op_struct = graph.extract_operation_structure(node=groupby_node, keep_all_source_columns=keep_all_source_columns)
     common_agg_params = {
         "aggregation_type": "groupby",
         "category": None,
@@ -1089,9 +1049,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
 ):
     """Test row index lineage of the graph (cleaning type) node's operation structure"""
     query_graph, graph_node = query_graph_with_cleaning_ops_graph_node
-    op_struct = query_graph.extract_operation_structure(
-        node=graph_node, keep_all_source_columns=True
-    )
+    op_struct = query_graph.extract_operation_structure(node=graph_node, keep_all_source_columns=True)
 
     # check columns & aggregations
     common_params = {
@@ -1151,9 +1109,7 @@ def test_track_changes_operation_structure(global_graph, scd_table_input_node):
         input_nodes=[scd_table_input_node],
     )
 
-    op_struct = global_graph.extract_operation_structure(
-        node=track_changes_node, keep_all_source_columns=True
-    )
+    op_struct = global_graph.extract_operation_structure(node=track_changes_node, keep_all_source_columns=True)
     common_source_column_params = {
         "filter": False,
         "node_name": "input_1",
@@ -1187,9 +1143,7 @@ def test_track_changes_operation_structure(global_graph, scd_table_input_node):
 
 
 @pytest.mark.parametrize("keep_all_source_columns", [True, False])
-def test_request_column_operation_structure(
-    global_graph, time_since_last_event_feature_node, keep_all_source_columns
-):
+def test_request_column_operation_structure(global_graph, time_since_last_event_feature_node, keep_all_source_columns):
     """Test request column operation structure"""
     op_struct = global_graph.extract_operation_structure(
         node=time_since_last_event_feature_node, keep_all_source_columns=keep_all_source_columns

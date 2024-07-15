@@ -46,9 +46,7 @@ async def test_create_document__duplicated_feature_error(feature_list_service, f
 
 
 @pytest.mark.asyncio
-async def test_create_document__clean_up_remote_attributes_on_error(
-    feature, feature_list_service, storage
-):
+async def test_create_document__clean_up_remote_attributes_on_error(feature, feature_list_service, storage):
     """Test clean up remote attributes on feature list creation error"""
     feature_list_id = ObjectId()
     catalog_id = feature.catalog_id
@@ -69,9 +67,7 @@ async def test_create_document__clean_up_remote_attributes_on_error(
         # raise an error to simulate an error during feature list creation
         raise DocumentError("Some random error")
 
-    with patch(
-        "featurebyte.service.feature_list.FeatureListService._create_document"
-    ) as mock_feature_list:
+    with patch("featurebyte.service.feature_list.FeatureListService._create_document") as mock_feature_list:
         mock_feature_list.side_effect = _create_feature_list
         with pytest.raises(DocumentError) as exc:
             await feature_list_service.create_document(
@@ -88,9 +84,7 @@ async def test_create_document__clean_up_remote_attributes_on_error(
 
 
 @pytest.mark.asyncio
-async def test_create_document__clean_up_mongo(
-    feature, feature_list_service, feature_list_namespace_service
-):
+async def test_create_document__clean_up_mongo(feature, feature_list_service, feature_list_namespace_service):
     """Test clean up mongo on feature list creation error"""
     feature_list_id = ObjectId()
     namespace_id = ObjectId()
@@ -102,9 +96,7 @@ async def test_create_document__clean_up_mongo(
     )
 
     # test error during feature list creation (namespace not found)
-    with patch.object(
-        feature_list_service.feature_list_namespace_service, "create_document"
-    ) as mock_namespace_create:
+    with patch.object(feature_list_service.feature_list_namespace_service, "create_document") as mock_namespace_create:
         mock_namespace_create.side_effect = DocumentError("Some random error")
         with pytest.raises(DocumentError) as exc:
             await feature_list_service.create_document(data=create_data)
@@ -114,9 +106,7 @@ async def test_create_document__clean_up_mongo(
     with pytest.raises(DocumentNotFoundError):
         await feature_list_service.get_document(document_id=feature_list_id)
 
-    with patch.object(
-        feature_list_service.feature_service, "update_documents"
-    ) as mock_features_update:
+    with patch.object(feature_list_service.feature_service, "update_documents") as mock_features_update:
         mock_features_update.side_effect = DocumentError("Some random error")
         with pytest.raises(DocumentError) as exc:
             await feature_list_service.create_document(data=create_data)
@@ -144,9 +134,7 @@ async def test_create_document__clean_up_mongo(
     )
 
     # test error during feature list creation (namespace found)
-    with patch.object(
-        feature_list_service.feature_list_namespace_service, "update_document"
-    ) as mock_namespace_update:
+    with patch.object(feature_list_service.feature_list_namespace_service, "update_document") as mock_namespace_update:
         mock_namespace_update.side_effect = DocumentError("Some random error")
         with pytest.raises(DocumentError) as exc:
             await feature_list_service.create_document(data=create_data)
@@ -156,9 +144,7 @@ async def test_create_document__clean_up_mongo(
     with pytest.raises(DocumentNotFoundError):
         await feature_list_service.get_document(document_id=feature_list_id)
 
-    with patch.object(
-        feature_list_service.feature_service, "update_documents"
-    ) as mock_features_update:
+    with patch.object(feature_list_service.feature_service, "update_documents") as mock_features_update:
         mock_features_update.side_effect = DocumentError("Some random error")
         with pytest.raises(DocumentError) as exc:
             await feature_list_service.create_document(data=create_data)
@@ -173,9 +159,7 @@ async def test_create_document__clean_up_mongo(
 
 
 @pytest.mark.asyncio
-async def test_update_document__inconsistency_error(
-    feature_list_service, feature_service, feature_list, feature
-):
+async def test_update_document__inconsistency_error(feature_list_service, feature_service, feature_list, feature):
     """Test feature creation - document inconsistency error"""
     feat_data_dict = feature.dict(by_alias=True)
     feat_data_dict["_id"] = ObjectId()
@@ -212,7 +196,7 @@ async def test_update_document__inconsistency_error(
     assert expected_msg in str(exc.value)
 
 
-async def create_entity_family(  # pylint: disable=too-many-locals
+async def create_entity_family(
     entity_service,
     table_columns_info_service,
     entity_relationship_service,
@@ -331,9 +315,7 @@ async def test_feature_list__contains_relationships_info(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", period="1d", offset="1h"
-                    ),
+                    feature_job_setting=FeatureJobSetting(blind_spot="1d", period="1d", offset="1h"),
                 )
             ],
         )
@@ -410,13 +392,9 @@ async def test_delete_feature_list(
             await storage.get_text(Path(feature_list.feature_clusters_path))
 
     if situation == "feature_list_namespace_id_not_found":
-        await feature_list_namespace_service.delete_document(
-            document_id=feature_list.feature_list_namespace_id
-        )
+        await feature_list_namespace_service.delete_document(document_id=feature_list.feature_list_namespace_id)
         with pytest.raises(DocumentNotFoundError):
-            await feature_list_namespace_service.get_document(
-                document_id=feature_list.feature_list_namespace_id
-            )
+            await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
 
     if situation == "feature_does_not_reference_feature_list":
         await feature_service.update_documents(

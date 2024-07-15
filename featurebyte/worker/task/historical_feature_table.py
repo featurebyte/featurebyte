@@ -31,7 +31,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
 
     payload_class = HistoricalFeatureTableTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -54,9 +54,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         return f'Save historical feature table "{payload.name}"'
 
     async def execute(self, payload: HistoricalFeatureTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=payload.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         observation_set = await self.observation_set_helper.get_observation_set(
@@ -78,9 +76,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 query_filter={"_id": {"$in": feature_list_doc["feature_ids"]}},
                 projection={"name": 1, "_id": 1},
             ):
-                features_info.append(
-                    FeatureInfo(feature_name=feature_doc["name"], feature_id=feature_doc["_id"])
-                )
+                features_info.append(FeatureInfo(feature_name=feature_doc["name"], feature_id=feature_doc["_id"]))
         elif fl_get_historical_features.feature_clusters:
             features_info = []
             for cluster in fl_get_historical_features.feature_clusters:
@@ -88,9 +84,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                     for info in cluster.feature_node_definition_hashes:
                         if info.feature_id and info.feature_name:
                             features_info.append(
-                                FeatureInfo(
-                                    feature_id=info.feature_id, feature_name=info.feature_name
-                                )
+                                FeatureInfo(feature_id=info.feature_id, feature_name=info.feature_name)
                             )
 
             # reset num_features to None if the list is empty (to revert to the old behavior)
@@ -112,9 +106,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             ) = await self.historical_feature_table_service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )
-            logger.debug(
-                "Creating a new HistoricalFeatureTable", extra=location.table_details.dict()
-            )
+            logger.debug("Creating a new HistoricalFeatureTable", extra=location.table_details.dict())
             historical_feature_table = HistoricalFeatureTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,

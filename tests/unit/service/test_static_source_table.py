@@ -15,16 +15,14 @@ def static_source_table_from_source_table_fixture(event_table, user):
     Fixture for an StaticSourceTable from a source table
     """
     request_input = SourceTableRequestInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     return StaticSourceTableModel(
         name="static_source_table_from_source_table",
         location=location,
@@ -48,9 +46,7 @@ async def test_create_static_source_table_from_source_table(
     Test creating an StaticSourceTable from a source table
     """
     await static_source_table_service.create_document(static_source_table_from_source_table)
-    loaded_table = await static_source_table_service.get_document(
-        static_source_table_from_source_table.id
-    )
+    loaded_table = await static_source_table_service.get_document(static_source_table_from_source_table.id)
     loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
     expected_dict = static_source_table_from_source_table.dict(exclude={"created_at", "updated_at"})
     expected_dict["catalog_id"] = catalog.id

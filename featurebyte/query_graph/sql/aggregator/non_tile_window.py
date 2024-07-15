@@ -4,9 +4,8 @@ SQL generation for non-tile window aggregation
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, cast
-
 from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -97,9 +96,7 @@ class NonTileRequestTablePlan:
         )
         return key
 
-    def get_processed_request_table(
-        self, aggregation_spec: NonTileWindowAggregateSpec
-    ) -> ProcessedRequestTable:
+    def get_processed_request_table(self, aggregation_spec: NonTileWindowAggregateSpec) -> ProcessedRequestTable:
         """
         Get the process request table corresponding to an aggregation spec
 
@@ -134,9 +131,7 @@ class NonTileRequestTablePlan:
                 request_table_name=request_table_name,
                 aggregation_spec=processed_request_table.aggregation_spec,
             )
-            request_table_ctes.append(
-                (quoted_identifier(processed_request_table.name), processed_table_sql)
-            )
+            request_table_ctes.append((quoted_identifier(processed_request_table.name), processed_table_sql))
         return cast(CteStatements, request_table_ctes)
 
     def _construct_processed_request_table_sql(
@@ -160,9 +155,7 @@ class NonTileRequestTablePlan:
         Select
         """
         # Add window start and window end columns to prepare for join
-        point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
-            quoted_identifier(SpecialColumnName.POINT_IN_TIME)
-        )
+        point_in_time_epoch_expr = self.adapter.to_epoch_seconds(quoted_identifier(SpecialColumnName.POINT_IN_TIME))
         feature_job_settings = aggregation_spec.parameters.feature_job_setting
         job_epoch_expr = get_previous_job_epoch_expr_from_settings(
             point_in_time_epoch_expr=point_in_time_epoch_expr,
@@ -209,8 +202,8 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
         source_view_table_name = self.get_source_view_table_name(aggregation_spec)
         if source_view_table_name not in self.aggregation_source_views:
-            self.aggregation_source_views[source_view_table_name] = (
-                self.get_source_view_with_timestamp_epoch(aggregation_spec)
+            self.aggregation_source_views[source_view_table_name] = self.get_source_view_with_timestamp_epoch(
+                aggregation_spec
             )
 
     @staticmethod
@@ -229,9 +222,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         """
         return f"VIEW_{aggregation_spec.source_hash}"
 
-    def get_source_view_with_timestamp_epoch(
-        self, aggregation_spec: NonTileWindowAggregateSpec
-    ) -> Select:
+    def get_source_view_with_timestamp_epoch(self, aggregation_spec: NonTileWindowAggregateSpec) -> Select:
         """
         Get the source view augmented with timestamp converted to epoch seconds
 
@@ -267,9 +258,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
-    def _get_aggregation_subquery(
-        self, specs: list[NonTileWindowAggregateSpec]
-    ) -> LeftJoinableSubquery:
+    def _get_aggregation_subquery(self, specs: list[NonTileWindowAggregateSpec]) -> LeftJoinableSubquery:
         spec = specs[0]
 
         # Left table: processed request table
@@ -290,11 +279,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
             alias="VIEW",
             join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=[
-                agg_spec.parameters.parent
-                for agg_spec in specs
-                if agg_spec.parameters.parent is not None
-            ]
+            columns=[agg_spec.parameters.parent for agg_spec in specs if agg_spec.parameters.parent is not None]
             + ([spec.parameters.value_by] if spec.parameters.value_by is not None else []),
         )
         groupby_input_expr = range_join_tables(
@@ -327,14 +312,10 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         groupby_columns = [
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
-                parent_expr=(
-                    quoted_identifier(s.parameters.parent) if s.parameters.parent else None
-                ),
+                parent_expr=(quoted_identifier(s.parameters.parent) if s.parameters.parent else None),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
-                parent_cols=(
-                    [quoted_identifier(s.parameters.parent)] if s.parameters.parent else []
-                ),
+                parent_cols=([quoted_identifier(s.parameters.parent)] if s.parameters.parent else []),
             )
             for s in specs
         ]

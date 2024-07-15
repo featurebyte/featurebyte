@@ -2,13 +2,11 @@
 FeatureList API routes
 """
 
-# pylint: disable=duplicate-code
 from __future__ import annotations
-
-from typing import Any, Dict, Optional, Union, cast
 
 import json
 from http import HTTPStatus
+from typing import Any, Dict, Optional, Union, cast
 
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 
@@ -78,9 +76,7 @@ async def submit_feature_create_with_batch_feature_create_task(
     # TO BE DEPRECATED: Use /job instead
     # This endpoint is for backward compatibility
     controller = request.state.app_container.feature_list_controller
-    task: Task = await controller.submit_feature_list_create_with_batch_feature_create_task(
-        data=data
-    )
+    task: Task = await controller.submit_feature_list_create_with_batch_feature_create_task(data=data)
     return task
 
 
@@ -95,9 +91,7 @@ async def submit_feature_list_creation_job(request: Request, data: FeatureListCr
 
 
 @router.get("/{feature_list_id}", response_model=FeatureListModelResponse)
-async def get_feature_list(
-    request: Request, feature_list_id: PyObjectId
-) -> FeatureListModelResponse:
+async def get_feature_list(request: Request, feature_list_id: PyObjectId) -> FeatureListModelResponse:
     """
     Get FeatureList
     """
@@ -300,9 +294,7 @@ async def get_feature_list_sample_entity_serving_names(
     Get Feature List Sample Entity Serving Names
     """
     controller = request.state.app_container.feature_list_controller
-    sample_entity_serving_names: SampleEntityServingNames = (
-        await controller.get_sample_entity_serving_names(
-            feature_list_id=feature_list_id, count=count
-        )
+    sample_entity_serving_names: SampleEntityServingNames = await controller.get_sample_entity_serving_names(
+        feature_list_id=feature_list_id, count=count
     )
     return sample_entity_serving_names

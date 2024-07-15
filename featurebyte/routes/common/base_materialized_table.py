@@ -2,9 +2,8 @@
 Base class for materialized table routes
 """
 
-from typing import Any, AsyncGenerator, Optional, TypeVar
-
 from io import BytesIO
+from typing import Any, AsyncGenerator, Optional, TypeVar
 
 import pyarrow as pa
 from bson import ObjectId
@@ -51,9 +50,7 @@ MaterializedTableDocumentServiceT = TypeVar(
 
 
 class BaseMaterializedTableController(
-    BaseDocumentController[
-        MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument
-    ]
+    BaseDocumentController[MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument]
 ):
     """
     Base class for materialized table routes
@@ -61,9 +58,7 @@ class BaseMaterializedTableController(
 
     task_controller: TaskController
 
-    def __init__(
-        self, service: Any, feature_store_warehouse_service: FeatureStoreWarehouseService
-    ) -> None:
+    def __init__(self, service: Any, feature_store_warehouse_service: FeatureStoreWarehouseService) -> None:
         super().__init__(service)
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
@@ -85,9 +80,7 @@ class BaseMaterializedTableController(
         )
 
         # create task payload & submit task
-        payload = await self.service.get_materialized_table_delete_task_payload(
-            document_id=document_id
-        )
+        payload = await self.service.get_materialized_table_delete_task_payload(document_id=document_id)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
@@ -199,8 +192,7 @@ class BaseMaterializedTableController(
             media_type="application/octet-stream",
             headers={
                 "content-disposition": (
-                    'attachment; name="data"; '
-                    f'filename="{table.collection_name()}_{table.name}.parquet"'
+                    'attachment; name="data"; ' f'filename="{table.collection_name()}_{table.name}.parquet"'
                 )
             },
         )

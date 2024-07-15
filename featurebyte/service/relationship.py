@@ -4,9 +4,8 @@ RelationshipService class
 
 from __future__ import annotations
 
-from typing import TypeVar, cast
-
 from abc import abstractmethod
+from typing import TypeVar, cast
 
 from bson import ObjectId
 
@@ -75,9 +74,7 @@ class RelationshipService(OpsServiceMixin):
         """
 
     @staticmethod
-    def _validate_add_relationship_operation(
-        parent_obj: Relationship, child_obj: Relationship
-    ) -> None:
+    def _validate_add_relationship_operation(parent_obj: Relationship, child_obj: Relationship) -> None:
         if parent_obj.id == child_obj.id:
             raise DocumentUpdateError(f'Object "{parent_obj.name}" cannot be both parent & child.')
         if child_obj.id in parent_obj.ancestor_ids:
@@ -126,9 +123,7 @@ class RelationshipService(OpsServiceMixin):
 
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
-            async for obj in self.document_service.list_documents_as_dict_iterator(
-                query_filter=query_filter
-            ):
+            async for obj in self.document_service.list_documents_as_dict_iterator(query_filter=query_filter):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
@@ -140,14 +135,10 @@ class RelationshipService(OpsServiceMixin):
             return updated_document
 
     @staticmethod
-    def _validate_remove_relationship_operation(
-        parent_obj: Relationship, child_obj: Relationship
-    ) -> None:
+    def _validate_remove_relationship_operation(parent_obj: Relationship, child_obj: Relationship) -> None:
         has_relationship = [par for par in child_obj.parents if par.id == parent_obj.id]
         if not has_relationship:
-            raise DocumentUpdateError(
-                f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".'
-            )
+            raise DocumentUpdateError(f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".')
 
     async def remove_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
         """
@@ -168,9 +159,7 @@ class RelationshipService(OpsServiceMixin):
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
-        self._validate_remove_relationship_operation(
-            parent_obj=parent_object, child_obj=child_object
-        )
+        self._validate_remove_relationship_operation(parent_obj=parent_object, child_obj=child_object)
 
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(

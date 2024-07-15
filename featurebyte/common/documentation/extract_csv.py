@@ -2,10 +2,9 @@
 Extract documentation into a CSV file.
 """
 
-from typing import Dict, List, Literal
-
 import csv
 from dataclasses import dataclass
+from typing import Dict, List, Literal
 
 from featurebyte.common.documentation.doc_types import DocItems
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
@@ -115,33 +114,29 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
     logger.info("Writing to CSV")
     with open(file_name, "w") as f:
         writer = csv.writer(f)
-        writer.writerow(
-            [
-                "menu_item",
-                "class_method_or_attribute",
-                "link",
-                "docstring_description",
-                "parameters",
-                "returns",
-                "raises",
-                "examples",
-                "see_also",
-            ]
-        )
+        writer.writerow([
+            "menu_item",
+            "class_method_or_attribute",
+            "link",
+            "docstring_description",
+            "parameters",
+            "returns",
+            "raises",
+            "examples",
+            "see_also",
+        ])
         for doc_item in all_doc_items_to_generate:
-            writer.writerow(
-                [
-                    doc_item.menu_item,
-                    doc_item.class_method_or_attribute,
-                    doc_item.link,
-                    doc_item.docstring_description,
-                    doc_item.parameters,
-                    doc_item.returns,
-                    doc_item.raises,
-                    doc_item.examples,
-                    doc_item.see_also,
-                ]
-            )
+            writer.writerow([
+                doc_item.menu_item,
+                doc_item.class_method_or_attribute,
+                doc_item.link,
+                doc_item.docstring_description,
+                doc_item.parameters,
+                doc_item.returns,
+                doc_item.raises,
+                doc_item.examples,
+                doc_item.see_also,
+            ])
         logger.info(f"Success - done writing rows to {file_name}")
 
 
@@ -166,9 +161,7 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
         if doc_path_override is not None:
             # handle those with explicit overrides
             link_without_md = doc_path_override.replace(".md", "")
-            resource_details = get_resource_details_for_path(
-                link_without_md, bool(layout_item.is_pure_method)
-            )
+            resource_details = get_resource_details_for_path(link_without_md, bool(layout_item.is_pure_method))
             all_doc_items_to_generate.append(
                 DocItemToRender(
                     menu_item=" > ".join(layout_item.menu_header),

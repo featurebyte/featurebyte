@@ -2,12 +2,11 @@
 Distance node module
 """
 
-from typing import List, Sequence, Tuple
-from typing_extensions import Literal
-
 import textwrap
+from typing import List, Sequence, Tuple
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -43,9 +42,7 @@ class HaversineNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 4
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:

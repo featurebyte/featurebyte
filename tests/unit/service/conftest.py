@@ -2,13 +2,11 @@
 Fixture for Service related unit tests
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
-
-from typing import Optional
 
 import json
 import os.path
+from typing import Optional
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -252,9 +250,7 @@ def mock_get_feature_store_session_fixture():
 
 
 @pytest.fixture(name="preview_service")
-def preview_service_fixture(
-    app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session
-):
+def preview_service_fixture(app_container, feature_store, mock_snowflake_session, mock_get_feature_store_session):
     """PreviewService fixture"""
     with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
         mocked.return_value = feature_store, mock_snowflake_session
@@ -403,9 +399,7 @@ async def feature_store_fixture(test_dir, feature_store_service):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_store = await feature_store_service.create_document(
-            data=FeatureStoreCreate(**payload)
-        )
+        feature_store = await feature_store_service.create_document(data=FeatureStoreCreate(**payload))
         return feature_store
 
 
@@ -476,12 +470,8 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
             payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
             if remove_feature_job_setting:
                 payload["default_feature_job_setting"] = None
-            event_table = await event_table_service.create_document(
-                data=EventTableCreate(**payload)
-            )
-            event_timestamp_sem = await semantic_service.get_or_create_document(
-                name=SemanticType.EVENT_TIMESTAMP.value
-            )
+            event_table = await event_table_service.create_document(data=EventTableCreate(**payload))
+            event_timestamp_sem = await semantic_service.get_or_create_document(name=SemanticType.EVENT_TIMESTAMP.value)
             columns_info = []
             for col in event_table.columns_info:
                 col_dict = col.dict()
@@ -525,9 +515,7 @@ async def dimension_table_fixture(test_dir, feature_store, dimension_table_servi
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
-        dimension_table = await dimension_table_service.create_document(
-            data=DimensionTableCreate(**payload)
-        )
+        dimension_table = await dimension_table_service.create_document(data=DimensionTableCreate(**payload))
         return dimension_table
 
 
@@ -582,9 +570,7 @@ async def feature_iet_fixture(test_dir, event_table, entity, feature_service):
 
 
 @pytest_asyncio.fixture(name="feature_non_time_based")
-async def feature_non_time_based_fixture(
-    test_dir, event_table, item_table, entity_transaction, feature_service
-):
+async def feature_non_time_based_fixture(test_dir, event_table, item_table, entity_transaction, feature_service):
     """Feature model (non-time-based feature)"""
     _ = event_table, item_table, entity_transaction
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
@@ -595,9 +581,7 @@ async def feature_non_time_based_fixture(
 
 
 @pytest_asyncio.fixture(name="feature_item_event")
-async def feature_item_event_fixture(
-    test_dir, event_table, item_table, entity_transaction, feature_service
-):
+async def feature_item_event_fixture(test_dir, event_table, item_table, entity_transaction, feature_service):
     """Feature model (item-event feature)"""
     _ = event_table, item_table, entity_transaction
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
@@ -642,29 +626,21 @@ async def feature_list_fixture(test_dir, feature, feature_list_service, storage)
 async def feature_list_repeated_fixture(test_dir, feature, feature_list_service, storage):
     """Feature list model that has the same underlying features as feature_list"""
     _ = feature
-    fixture_path = os.path.join(
-        test_dir, "fixtures/request_payloads/feature_list_single_repeated.json"
-    )
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single_repeated.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        async with manage_document(
-            feature_list_service, FeatureListServiceCreate(**payload), storage
-        ) as feature_list:
+        async with manage_document(feature_list_service, FeatureListServiceCreate(**payload), storage) as feature_list:
             yield feature_list
 
 
 @pytest_asyncio.fixture(name="feature_list_namespace")
 async def feature_list_namespace_fixture(feature_list_namespace_service, feature_list):
     """FeatureListNamespace fixture"""
-    return await feature_list_namespace_service.get_document(
-        document_id=feature_list.feature_list_namespace_id
-    )
+    return await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
 
 
 @pytest_asyncio.fixture(name="production_ready_feature_list")
-async def production_ready_feature_list_fixture(
-    production_ready_feature, feature_list_service, storage
-):
+async def production_ready_feature_list_fixture(production_ready_feature, feature_list_service, storage):
     """Fixture for a production ready feature list"""
     data = FeatureListServiceCreate(
         name="Production Ready Feature List",
@@ -695,9 +671,7 @@ async def deployed_feature_list_fixture(
         deployment_name="test-deployment",
         to_enable_deployment=True,
     )
-    updated_feature_list = await feature_list_service.get_document(
-        document_id=production_ready_feature_list.id
-    )
+    updated_feature_list = await feature_list_service.get_document(document_id=production_ready_feature_list.id)
     return updated_feature_list
 
 
@@ -756,9 +730,7 @@ async def setup_for_feature_readiness_fixture(
     storage,
 ):
     """Setup for feature readiness test fixture"""
-    namespace = await feature_namespace_service.get_document(
-        document_id=feature.feature_namespace_id
-    )
+    namespace = await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
     assert namespace.default_version_mode == "AUTO"
     assert namespace.default_feature_id == feature.id
     assert namespace.feature_ids == [feature.id]
@@ -801,9 +773,7 @@ async def setup_for_feature_readiness_fixture(
         yield new_feature_id, new_flist.id
 
 
-async def create_event_table_with_entities(
-    data_name, test_dir, event_table_service, columns, table_facade_service
-):
+async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns, table_facade_service):
     """Helper function to create an EventTable with provided columns and entities"""
 
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
@@ -1089,9 +1059,7 @@ async def catalog_with_online_store_fixture(app_container, catalog, online_store
     Fixture for a catalog with an online store
     """
     catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
-    catalog = await app_container.catalog_service.update_document(
-        document_id=catalog.id, data=catalog_update
-    )
+    catalog = await app_container.catalog_service.update_document(document_id=catalog.id, data=catalog_update)
     return catalog
 
 
@@ -1150,9 +1118,7 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
 
     if is_online_store_registered_for_catalog:
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
-        await app_container.catalog_service.update_document(
-            document_id=app_container.catalog_id, data=catalog_update
-        )
+        await app_container.catalog_service.update_document(document_id=app_container.catalog_id, data=catalog_update)
 
     feature_list = await deploy_feature_ids(
         app_container,
@@ -1248,7 +1214,7 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_composite_entity")
-async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(  # pylint: disable=too-many-arguments
+async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(
     app_container,
     descendant_of_gender_feature,
     aggregate_asat_composite_entity_feature,
@@ -1284,9 +1250,7 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
 
     if is_online_store_registered_for_catalog:
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
-        await app_container.catalog_service.update_document(
-            document_id=app_container.catalog_id, data=catalog_update
-        )
+        await app_container.catalog_service.update_document(document_id=app_container.catalog_id, data=catalog_update)
 
     feature_list = await deploy_feature_ids(
         app_container,

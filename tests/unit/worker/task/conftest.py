@@ -16,12 +16,8 @@ def mock_event_dataset():
     """
     fixture_path = "tests/fixtures/feature_job_setting_analysis"
     count_data = pd.read_parquet(os.path.join(fixture_path, "count_data.parquet"))
-    count_per_creation_date = pd.read_parquet(
-        os.path.join(fixture_path, "count_per_creation_date.parquet")
-    )
-    count_per_creation_date["CREATION_DATE"] = pd.to_datetime(
-        count_per_creation_date["CREATION_DATE"]
-    )
+    count_per_creation_date = pd.read_parquet(os.path.join(fixture_path, "count_per_creation_date.parquet"))
+    count_per_creation_date["CREATION_DATE"] = pd.to_datetime(count_per_creation_date["CREATION_DATE"])
 
     mock_targets = [
         (

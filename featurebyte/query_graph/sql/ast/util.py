@@ -36,9 +36,7 @@ def prepare_binary_op_input_nodes(
     if len(input_sql_nodes) == 1:
         # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(
-            context=context, table_node=table_node, expr=literal_value
-        )
+        right_node = ParsedExpressionNode(context=context, table_node=table_node, expr=literal_value)
     else:
         # When the other value is a Series
         right_node = input_sql_nodes[1]

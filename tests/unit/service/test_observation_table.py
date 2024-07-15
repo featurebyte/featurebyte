@@ -31,16 +31,14 @@ def observation_table_from_source_table_fixture(event_table, user):
     Fixture for an ObservationTable from a source table
     """
     request_input = SourceTableRequestInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
@@ -127,9 +125,7 @@ async def test_create_observation_table_from_source_table(
     Test creating an ObservationTable from a source table
     """
     await observation_table_service.create_document(observation_table_from_source_table)
-    loaded_table = await observation_table_service.get_document(
-        observation_table_from_source_table.id
-    )
+    loaded_table = await observation_table_service.get_document(observation_table_from_source_table.id)
     loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
     expected_dict = observation_table_from_source_table.dict(exclude={"created_at", "updated_at"})
     expected_dict["catalog_id"] = catalog.id
@@ -137,9 +133,7 @@ async def test_create_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_validate__missing_point_in_time(
-    observation_table_service, snowflake_feature_store, table_details
-):
+async def test_validate__missing_point_in_time(observation_table_service, snowflake_feature_store, table_details):
     """
     Test validation of missing point in time
     """
@@ -150,9 +144,7 @@ async def test_validate__missing_point_in_time(
         return {
             "a": ColumnSpecWithDescription(name="a", dtype="INT"),
             "b": ColumnSpecWithDescription(name="b", dtype="FLOAT"),
-            "not_point_in_time": ColumnSpecWithDescription(
-                name="not_point_in_time", dtype="VARCHAR"
-            ),
+            "not_point_in_time": ColumnSpecWithDescription(name="not_point_in_time", dtype="VARCHAR"),
         }
 
     mock_db_session = Mock(
@@ -249,9 +241,7 @@ async def test_validate__most_recent_point_in_time(
         assert metadata == {
             "columns_info": [
                 ColumnSpecWithEntityId(name="POINT_IN_TIME", dtype="TIMESTAMP", entity_id=None),
-                ColumnSpecWithEntityId(
-                    name="cust_id", dtype="VARCHAR", entity_id=ObjectId("63f94ed6ea1f050131379214")
-                ),
+                ColumnSpecWithEntityId(name="cust_id", dtype="VARCHAR", entity_id=ObjectId("63f94ed6ea1f050131379214")),
             ],
             "least_recent_point_in_time": "2023-01-01T02:00:00",
             "most_recent_point_in_time": "2023-01-15T02:00:00",
@@ -351,9 +341,7 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
     """
     Test get_minimum_iet_sql_expr
     """
-    expr = observation_table_service.get_minimum_iet_sql_expr(
-        ["entity"], table_details, SourceType.SNOWFLAKE
-    )
+    expr = observation_table_service.get_minimum_iet_sql_expr(["entity"], table_details, SourceType.SNOWFLAKE)
     expr_sql = expr.sql(pretty=True)
     expected_query = textwrap.dedent(
         """
@@ -378,19 +366,11 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
 
 ENTITY_ID_1 = ObjectId("646f6c1b0ed28a5271123456")
 ENTITY_ID_2 = ObjectId("646f6c1b0ed28a5271234567")
-POINT_IN_TIME_COL = ColumnSpecWithEntityId(
-    name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.TIMESTAMP
-)
-INT_POINT_IN_TIME_COL = ColumnSpecWithEntityId(
-    name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.INT
-)
+POINT_IN_TIME_COL = ColumnSpecWithEntityId(name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.TIMESTAMP)
+INT_POINT_IN_TIME_COL = ColumnSpecWithEntityId(name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.INT)
 INT_COL = ColumnSpecWithEntityId(name="col2", dtype=DBVarType.INT, entity_id=None)
-INT_COL_WITH_ENTITY_1 = ColumnSpecWithEntityId(
-    name="col3", dtype=DBVarType.INT, entity_id=ENTITY_ID_1
-)
-INT_COL_WITH_ENTITY_2 = ColumnSpecWithEntityId(
-    name="col4", dtype=DBVarType.INT, entity_id=ENTITY_ID_2
-)
+INT_COL_WITH_ENTITY_1 = ColumnSpecWithEntityId(name="col3", dtype=DBVarType.INT, entity_id=ENTITY_ID_1)
+INT_COL_WITH_ENTITY_2 = ColumnSpecWithEntityId(name="col4", dtype=DBVarType.INT, entity_id=ENTITY_ID_2)
 
 
 class MockTargetNamespace(Mock):
@@ -489,11 +469,7 @@ def test_validate_columns_info(
     """
     if expected_error is not None:
         with pytest.raises(expected_error) as exc:
-            validate_columns_info(
-                columns_info, primary_entity_ids, skip_entity_checks, target_namespace
-            )
+            validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks, target_namespace)
         assert expected_msg in str(exc.value)
     else:
-        validate_columns_info(
-            columns_info, primary_entity_ids, skip_entity_checks, target_namespace
-        )
+        validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks, target_namespace)

@@ -14,17 +14,13 @@ async def test_get_or_create_document(schema_metadata_service):
     docs = await schema_metadata_service.list_documents_as_dict()
     assert len(docs["data"]) == 0
 
-    created_doc = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA
-    )
+    created_doc = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA)
     assert created_doc.version == 0
     docs = await schema_metadata_service.list_documents_as_dict()
     assert len(docs["data"]) == 1
     assert docs["data"][0] == created_doc.dict(by_alias=True)
 
-    retrieved_doc = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA
-    )
+    retrieved_doc = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA)
     assert retrieved_doc == created_doc
     docs = await schema_metadata_service.list_documents_as_dict()
     assert len(docs["data"]) == 1

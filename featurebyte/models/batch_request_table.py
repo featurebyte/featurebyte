@@ -5,10 +5,10 @@ BatchRequestTable models
 from __future__ import annotations
 
 from typing import Optional, Union
-from typing_extensions import Annotated
 
 import pymongo
 from pydantic import Field
+from typing_extensions import Annotated
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
@@ -27,9 +27,7 @@ class SourceTableBatchRequestInput(SourceTableRequestInput):
     """
 
 
-BatchRequestInput = Annotated[
-    Union[ViewBatchRequestInput, SourceTableBatchRequestInput], Field(discriminator="type")
-]
+BatchRequestInput = Annotated[Union[ViewBatchRequestInput, SourceTableBatchRequestInput], Field(discriminator="type")]
 
 
 class BatchRequestTableModel(MaterializedTableModel):

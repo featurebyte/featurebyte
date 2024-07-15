@@ -4,9 +4,8 @@ Module with utility functions to compute historical features
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional, Union
-
 import time
+from typing import Any, Callable, Coroutine, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -38,7 +37,7 @@ from featurebyte.session.session_helper import execute_feature_query_set
 logger = get_logger(__name__)
 
 
-async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
+async def compute_tiles_on_demand(
     session: BaseSession,
     tile_cache_service: TileCacheService,
     graph: QueryGraph,
@@ -117,7 +116,7 @@ async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
             )
 
 
-async def get_historical_features(  # pylint: disable=too-many-locals, too-many-arguments
+async def get_historical_features(
     session: BaseSession,
     tile_cache_service: TileCacheService,
     graph: QueryGraph,
@@ -199,18 +198,14 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
             feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
             parent_serving_preparation=parent_serving_preparation,
-            progress_callback=(
-                tile_cache_progress_callback if tile_cache_progress_callback else None
-            ),
+            progress_callback=(tile_cache_progress_callback if tile_cache_progress_callback else None),
         )
 
         elapsed = time.time() - tic
         logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
         if progress_callback:
-            await progress_callback(
-                TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
-            )
+            await progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES)
 
         # Generate SQL code that computes the features
         historical_feature_query_set = get_historical_features_query_set(

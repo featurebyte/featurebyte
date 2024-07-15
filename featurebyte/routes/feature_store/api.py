@@ -4,9 +4,8 @@ FeatureStore API routes
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 from http import HTTPStatus
+from typing import Any, Dict, List, Optional
 
 from fastapi import Query, Request
 
@@ -47,8 +46,6 @@ class FeatureStoreRouter(
     """
     Feature Store API router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = FeatureStoreModel
     list_object_model = FeatureStoreList
@@ -212,9 +209,7 @@ class FeatureStoreRouter(
         List databases
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
-        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
-            controller, feature_store
-        )
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(controller, feature_store)
         result: List[str] = await controller.list_databases(
             feature_store=feature_store,
         )
@@ -230,9 +225,7 @@ class FeatureStoreRouter(
         List schemas
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
-        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
-            controller, feature_store
-        )
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(controller, feature_store)
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
@@ -250,9 +243,7 @@ class FeatureStoreRouter(
         List schemas
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
-        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
-            controller, feature_store
-        )
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(controller, feature_store)
         result: List[str] = await controller.list_tables(
             feature_store=feature_store,
             database_name=database_name,
@@ -272,9 +263,7 @@ class FeatureStoreRouter(
         List columns
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
-        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
-            controller, feature_store
-        )
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(controller, feature_store)
         result: List[ColumnSpecWithDescription] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,

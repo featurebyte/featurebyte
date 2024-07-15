@@ -142,9 +142,7 @@ def test_resolve_project_node(input_node):
 def test_make_assign_node(input_node):
     """Test make_assign_node"""
     expr_node = ParsedExpressionNode(make_context(), input_node, parse_one("a + 1"))
-    result = make_assign_node(
-        make_context(input_sql_nodes=[input_node, expr_node], parameters={"name": "new_col"})
-    )
+    result = make_assign_node(make_context(input_sql_nodes=[input_node, expr_node], parameters={"name": "new_col"}))
     # should create a copy and not modify the original input node
     assert result is not input_node
     assert input_node.get_column_node("new_col") is None
@@ -184,9 +182,7 @@ def test_binary_operation_node__consecutive_ops_1(input_node):
     col_a = make_str_expression_node(table_node=input_node, expr="a")
     col_b = make_str_expression_node(table_node=input_node, expr="b")
     col_c = make_str_expression_node(table_node=input_node, expr="c")
-    a_plus_b = BinaryOp.build(
-        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
-    )
+    a_plus_b = BinaryOp.build(make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b]))
     a_plus_b_div_c = BinaryOp.build(
         make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[a_plus_b, col_c])
     )
@@ -198,9 +194,7 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
     col_a = make_str_expression_node(table_node=input_node, expr="a")
     col_b = make_str_expression_node(table_node=input_node, expr="b")
     col_c = make_str_expression_node(table_node=input_node, expr="c")
-    a_plus_b = BinaryOp.build(
-        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
-    )
+    a_plus_b = BinaryOp.build(make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b]))
     c_div_a_plus_b = BinaryOp.build(
         make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[col_c, a_plus_b])
     )
@@ -226,9 +220,7 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
     column1 = StrExpressionNode(make_context(), table_node=input_node, expr="a")
     input_nodes = [column1]
     parameters = {"value": value, "right_op": right_op}
-    node = BinaryOp.build(
-        make_context(node_type=node_type, input_sql_nodes=input_nodes, parameters=parameters)
-    )
+    node = BinaryOp.build(make_context(node_type=node_type, input_sql_nodes=input_nodes, parameters=parameters))
     assert node.sql.sql() == expected
 
 
@@ -420,9 +412,7 @@ def test_cast(parameters, expected, input_node):
 def test_is_string_node(input_node):
     """Test IS_STRING node SQL generation"""
     input_expr = make_str_expression_node(table_node=input_node, expr="a")
-    context = make_context(
-        node_type=NodeType.IS_STRING, parameters={}, input_sql_nodes=[input_expr]
-    )
+    context = make_context(node_type=NodeType.IS_STRING, parameters={}, input_sql_nodes=[input_expr])
     node = IsStringNode.build(context)
     assert node.sql.sql() == "IS_VARCHAR(TO_VARIANT(a))"
 
@@ -465,9 +455,7 @@ def test_date_difference(input_node):
     input_nodes = [column1, column2]
     context = make_context(parameters={}, input_sql_nodes=input_nodes)
     node = DateDiffNode.build(context)
-    assert node.sql.sql() == (
-        "(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
-    )
+    assert node.sql.sql() == ("(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))")
 
 
 def test_timedelta(input_node):
@@ -515,9 +503,7 @@ def test_date_add__datediff(input_node):
 def test_date_add__constant(input_node):
     """Test DateAdd node when the timedelta is a fixed constant"""
     date_column = make_str_expression_node(table_node=input_node, expr="date_col")
-    context = make_context(
-        node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column]
-    )
+    context = make_context(node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column])
     date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == (
         "DATEADD(microsecond, (3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
@@ -538,9 +524,7 @@ def test_date_add__constant(input_node):
 def test_convert_timedelta_unit(input_node, input_unit, output_unit, expected):
     """Test convert_timedelta_unit"""
     date_column = make_str_expression_node(table_node=input_node, expr="date_col")
-    converted = TimedeltaExtractNode.convert_timedelta_unit(
-        date_column.sql, input_unit, output_unit
-    )
+    converted = TimedeltaExtractNode.convert_timedelta_unit(date_column.sql, input_unit, output_unit)
     assert converted.sql() == expected
 
 

@@ -4,12 +4,11 @@ Unit test for Catalog class
 
 from __future__ import annotations
 
-from typing import Any
-
 import re
 from dataclasses import dataclass
 from datetime import datetime
 from inspect import signature
+from typing import Any
 from unittest import mock
 from unittest.mock import patch
 
@@ -149,9 +148,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_feature_list_by_id", FeatureList, "get_by_id"),
         MethodMetadata("get_table_by_id", Table, "get_by_id"),
         MethodMetadata("get_relationship_by_id", Relationship, "get_by_id"),
-        MethodMetadata(
-            "get_feature_job_setting_analysis_by_id", FeatureJobSettingAnalysis, "get_by_id"
-        ),
+        MethodMetadata("get_feature_job_setting_analysis_by_id", FeatureJobSettingAnalysis, "get_by_id"),
         MethodMetadata("get_feature_store_by_id", FeatureStore, "get_by_id"),
         MethodMetadata("get_entity_by_id", Entity, "get_by_id"),
         MethodMetadata("get_periodic_task_by_id", PeriodicTask, "get_by_id"),
@@ -174,17 +171,13 @@ def test_all_relevant_methods_are_in_list():
     """
     methods = dir(Catalog)
     # Verify all list methods are present
-    list_methods = {
-        method for method in methods if method.startswith("list_") and method != "list_handler"
-    }
+    list_methods = {method for method in methods if method.startswith("list_") and method != "list_handler"}
     assert len(list_methods) == len(catalog_list_methods_to_test_list())
     for method in catalog_list_methods_to_test_list():
         assert method.catalog_method_name in list_methods
 
     # Verify all relevant get methods are present
-    get_methods = {
-        method for method in methods if method.startswith("get_") and not method.endswith("by_id")
-    }
+    get_methods = {method for method in methods if method.startswith("get_") and not method.endswith("by_id")}
     excluded_methods = {
         "get_active",
         "get_or_create",
@@ -269,9 +262,7 @@ def _inheritors(class_obj):
     return subclasses
 
 
-@pytest.mark.parametrize(
-    "method_list", [catalog_list_methods_to_test_list(), catalog_get_methods_to_test_list()]
-)
+@pytest.mark.parametrize("method_list", [catalog_list_methods_to_test_list(), catalog_get_methods_to_test_list()])
 def test_all_methods_are_exposed_in_catalog(method_list):
     """
     Test that all inherited list methods are exposed in catalog.
@@ -399,9 +390,7 @@ def test_catalog__update_name(new_catalog):
     another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
     with pytest.raises(RecordRetrievalException) as exc:
         Catalog.get("CreditCard")
-    expected_msg = (
-        'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
-    )
+    expected_msg = 'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
     assert expected_msg in str(exc.value)
     assert another_catalog.name == "CreditCard"
     another_catalog.update_name("creditcard")
@@ -438,9 +427,7 @@ def test_catalog__update_online_store(new_catalog):
     another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
     with pytest.raises(RecordRetrievalException) as exc:
         Catalog.get("CreditCard")
-    expected_msg = (
-        'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
-    )
+    expected_msg = 'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
     assert expected_msg in str(exc.value)
     with pytest.raises(AssertionError) as exc:
         another_catalog.update_online_store("test_online_store")
@@ -474,8 +461,7 @@ def test_catalog_creation(new_catalog):
     with pytest.raises(DuplicatedRecordException) as exc:
         Catalog(name="grocery", default_feature_store_ids=[]).save()
     expected_msg = (
-        'Catalog (name: "grocery") already exists. '
-        'Get the existing object by `Catalog.get(name="grocery")`.'
+        'Catalog (name: "grocery") already exists. ' 'Get the existing object by `Catalog.get(name="grocery")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -524,9 +510,7 @@ def test_catalog_update_name(new_catalog):
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    pd.testing.assert_frame_equal(
-        audit_history[expected_audit_history.columns], expected_audit_history
-    )
+    pd.testing.assert_frame_equal(audit_history[expected_audit_history.columns], expected_audit_history)
 
     # create another catalog
     Catalog(name="creditcard", default_feature_store_ids=[]).save()
@@ -567,9 +551,7 @@ def test_get_catalog(catalog):
     assert get_grocery_catalog.saved is True
     assert get_grocery_catalog.dict(exclude=exclude) == grocery_catalog.dict(exclude=exclude)
     assert Catalog.get("grocery").dict(exclude=exclude) == get_grocery_catalog.dict(exclude=exclude)
-    assert Catalog.get("creditcard").dict(exclude=exclude) == creditcard_catalog.dict(
-        exclude=exclude
-    )
+    assert Catalog.get("creditcard").dict(exclude=exclude) == creditcard_catalog.dict(exclude=exclude)
     assert Catalog.get_by_id(id=healthcare_catalog.id) == healthcare_catalog
 
     # test unexpected retrieval exception for Catalog.get
@@ -581,29 +563,27 @@ def test_get_catalog(catalog):
     default_catalog = Catalog.activate(catalog.name)
     # test list catalog names
     catalog_list = Catalog.list()
-    expected_catalog_list = pd.DataFrame(
-        {
-            "id": [
-                str(healthcare_catalog.id),
-                str(creditcard_catalog.id),
-                str(grocery_catalog.id),
-                str(default_catalog.id),
-            ],
-            "name": [
-                healthcare_catalog.name,
-                creditcard_catalog.name,
-                grocery_catalog.name,
-                default_catalog.name,
-            ],
-            "created_at": [
-                healthcare_catalog.created_at.isoformat(),
-                creditcard_catalog.created_at.isoformat(),
-                grocery_catalog.created_at.isoformat(),
-                default_catalog.created_at.isoformat(),
-            ],
-            "active": [False, False, False, True],
-        }
-    )
+    expected_catalog_list = pd.DataFrame({
+        "id": [
+            str(healthcare_catalog.id),
+            str(creditcard_catalog.id),
+            str(grocery_catalog.id),
+            str(default_catalog.id),
+        ],
+        "name": [
+            healthcare_catalog.name,
+            creditcard_catalog.name,
+            grocery_catalog.name,
+            default_catalog.name,
+        ],
+        "created_at": [
+            healthcare_catalog.created_at.isoformat(),
+            creditcard_catalog.created_at.isoformat(),
+            grocery_catalog.created_at.isoformat(),
+            default_catalog.created_at.isoformat(),
+        ],
+        "active": [False, False, False, True],
+    })
     assert_frame_equal(catalog_list, expected_catalog_list)
 
     # test list with include_id=True
@@ -656,12 +636,8 @@ def test_functions_are_called_from_active_catalog(method_item, snowflake_feature
     """
     method_name = method_item.class_method_delegated
     print(Catalog.list())
-    credit_card_catalog = Catalog.create(
-        name="creditcard", feature_store_name=snowflake_feature_store.name
-    )
-    grocery_catalog = Catalog.create(
-        name="grocery", feature_store_name=snowflake_feature_store.name
-    )
+    credit_card_catalog = Catalog.create(name="creditcard", feature_store_name=snowflake_feature_store.name)
+    grocery_catalog = Catalog.create(name="grocery", feature_store_name=snowflake_feature_store.name)
     with patch.object(method_item.class_object, method_name):
         # Verify that there's no error even though the credit card catalog is not the current active catalog.
         # Also verify that there's no change in the global activate catalog_id.

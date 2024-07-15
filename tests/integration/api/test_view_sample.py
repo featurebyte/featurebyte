@@ -33,12 +33,8 @@ def test_event_table_sample(event_table):
 
     # check the sample result
     assert ev_ts.shape[0] == 10
-    assert maybe_tz_convert(event_table_df[ts_col].min()) >= pd.Timestamp(
-        sample_kwargs["from_timestamp"]
-    )
-    assert maybe_tz_convert(event_table_df[ts_col].max()) <= pd.Timestamp(
-        sample_kwargs["to_timestamp"]
-    )
+    assert maybe_tz_convert(event_table_df[ts_col].min()) >= pd.Timestamp(sample_kwargs["from_timestamp"])
+    assert maybe_tz_convert(event_table_df[ts_col].max()) <= pd.Timestamp(sample_kwargs["to_timestamp"])
 
 
 @pytest.mark.parametrize(
@@ -259,7 +255,5 @@ def test_dimension_view_sample_with_date_range(dimension_table):
     """
     dimension_view = dimension_table.get_view()
     with pytest.raises(ValidationError) as exc:
-        dimension_view.sample(
-            size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"
-        )
+        dimension_view.sample(size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14")
         assert "timestamp_column must be specified." in str(exc)

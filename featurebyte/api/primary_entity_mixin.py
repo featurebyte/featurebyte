@@ -2,9 +2,8 @@
 Primary entity mixin
 """
 
-from typing import List, Sequence
-
 from abc import abstractmethod
+from typing import List, Sequence
 
 from bson import ObjectId
 
@@ -24,7 +23,7 @@ class PrimaryEntityMixin(ApiObject):
 
     @property
     @abstractmethod
-    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    def entity_ids(self) -> Sequence[ObjectId]:
         """
         Returns the entity ids of the object.
 
@@ -59,11 +58,8 @@ class PrimaryEntityMixin(ApiObject):
         return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
     def _get_primary_entity(self) -> List[Entity]:
-        # pylint: disable=no-member
         try:
-            return [
-                Entity.get_by_id(entity_id) for entity_id in self.cached_model.primary_entity_ids
-            ]
+            return [Entity.get_by_id(entity_id) for entity_id in self.cached_model.primary_entity_ids]
         except RecordRetrievalException:
             entities = []
             for entity_id in self.entity_ids:
@@ -71,7 +67,6 @@ class PrimaryEntityMixin(ApiObject):
             return derive_primary_entity(entities)  # type: ignore
 
     def _get_primary_entity_ids(self) -> Sequence[ObjectId]:
-        # pylint: disable=no-member
         try:
             return self.cached_model.primary_entity_ids
         except RecordRetrievalException:

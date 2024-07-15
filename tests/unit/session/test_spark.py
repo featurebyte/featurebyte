@@ -45,16 +45,12 @@ def test_s3_storage(config, spark_session_params):
 
     # S3 Storage requires a S3StorageCredential
     with pytest.raises(NotImplementedError) as exc:
-        SparkSession(
-            storage_credential=GCSStorageCredential(service_account_info={}), **spark_session_params
-        )
+        SparkSession(storage_credential=GCSStorageCredential(service_account_info={}), **spark_session_params)
     assert "Unsupported storage credential for S3: GCSStorageCredential" in str(exc)
 
     # Success
     SparkSession(
-        storage_credential=S3StorageCredential(
-            s3_access_key_id="test", s3_secret_access_key="test"
-        ),
+        storage_credential=S3StorageCredential(s3_access_key_id="test", s3_secret_access_key="test"),
         **spark_session_params,
     )
 
@@ -67,9 +63,7 @@ def session_fixture(config, spark_session_params):
     """
     _ = config
     session = SparkSession(
-        storage_credential=S3StorageCredential(
-            s3_access_key_id="test", s3_secret_access_key="test"
-        ),
+        storage_credential=S3StorageCredential(s3_access_key_id="test", s3_secret_access_key="test"),
         **spark_session_params,
     )
     return session
@@ -101,9 +95,7 @@ def test_gcs_storage(config):
     # GCS Storage requires a GCSStorageCredential
     with pytest.raises(NotImplementedError) as exc:
         SparkSession(
-            storage_credential=S3StorageCredential(
-                s3_access_key_id="test", s3_secret_access_key="test"
-            ),
+            storage_credential=S3StorageCredential(s3_access_key_id="test", s3_secret_access_key="test"),
             **params,
         )
     assert "Unsupported storage credential for GCS: S3StorageCredential" in str(exc)
@@ -214,6 +206,4 @@ def test_convert_to_internal_variable_type(data_type, expected):
     Test convert_to_internal_variable_type
     """
 
-    assert (
-        SparkSession._convert_to_internal_variable_type(data_type) == expected
-    )  # pylint: disable=protected-access
+    assert SparkSession._convert_to_internal_variable_type(data_type) == expected

@@ -77,13 +77,9 @@ async def test_update_document__inconsistency_error(feature_service, feature):
 
 
 @pytest.mark.asyncio
-async def test_get_document_by_name_and_version(
-    feature_service, table_service, feature, app_container
-):
+async def test_get_document_by_name_and_version(feature_service, table_service, feature, app_container):
     """Test feature service - get_document_by_name_and_version"""
-    doc = await feature_service.get_document_by_name_and_version(
-        name=feature.name, version=feature.version
-    )
+    doc = await feature_service.get_document_by_name_and_version(name=feature.name, version=feature.version)
     assert doc == feature
 
     # check get document by name and version using different catalog ID
@@ -103,9 +99,7 @@ async def test_get_document_by_name_and_version(
             storage=app_container.storage,
             redis=app_container.redis,
         )
-        await another_feat_service.get_document_by_name_and_version(
-            name=feature.name, version=feature.version
-        )
+        await another_feat_service.get_document_by_name_and_version(name=feature.name, version=feature.version)
 
     expected_msg = (
         f'Feature (name: "{feature.name}", version: "{feature.version.to_str()}") not found. '
@@ -115,9 +109,7 @@ async def test_get_document_by_name_and_version(
 
     # check get document by name and version using random name
     with pytest.raises(DocumentNotFoundError) as exc:
-        await feature_service.get_document_by_name_and_version(
-            name="random_name", version=feature.version
-        )
+        await feature_service.get_document_by_name_and_version(name="random_name", version=feature.version)
     expected_msg = (
         f'Feature (name: "random_name", version: "{feature.version.to_str()}") not found. '
         f"Please save the Feature object first."
@@ -161,9 +153,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
     expected_raw_groupby_params["aggregation_id"] = "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     expected_raw_groupby_params["tile_id"] = "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
-    async for doc in feature_service.list_documents_as_dict_iterator(
-        query_filter={"_id": feature.id}
-    ):
+    async for doc in feature_service.list_documents_as_dict_iterator(query_filter={"_id": feature.id}):
         graph = QueryGraphModel(**doc["graph"])
         raw_graph = QueryGraphModel(**doc["raw_graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
@@ -176,9 +166,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
 async def test_update_readiness(feature_service, feature):
     """Test update readiness method checks for block modification by"""
     reference_info = ReferenceInfo(asset_name="some_asset_name", document_id=ObjectId())
-    await feature_service.add_block_modification_by(
-        query_filter={"_id": feature.id}, reference_info=reference_info
-    )
+    await feature_service.add_block_modification_by(query_filter={"_id": feature.id}, reference_info=reference_info)
     updated_feature = await feature_service.get_document(document_id=feature.id)
     assert updated_feature.block_modification_by == [reference_info]
 
@@ -200,9 +188,9 @@ async def test_update_last_updated_date(feature_service, feature):
 
     new_updated_feature = await feature_service.get_document(document_id=feature.id)
     date_format = "%Y-%m-%d %H:%M:%S"
-    assert new_updated_feature.last_updated_by_scheduled_task_at.strftime(
+    assert new_updated_feature.last_updated_by_scheduled_task_at.strftime(date_format) == last_updated_date.strftime(
         date_format
-    ) == last_updated_date.strftime(date_format)
+    )
 
 
 def test_validate_feature(feature_service, feature, snowflake_event_table_id):

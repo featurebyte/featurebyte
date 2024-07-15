@@ -2,10 +2,9 @@
 Utility module
 """
 
-from typing import Optional
-
 import inspect
 from http import HTTPStatus
+from typing import Optional
 
 import pandas as pd
 
@@ -27,9 +26,7 @@ def list_unsaved_features() -> pd.DataFrame:
 
     Examples
     --------
-    >>> customer_gender = catalog.get_view("GROCERYCUSTOMER")["Gender"].as_feature(
-    ...     feature_name="Customer Gender"
-    ... )
+    >>> customer_gender = catalog.get_view("GROCERYCUSTOMER")["Gender"].as_feature(feature_name="Customer Gender")
     >>> fb.list_unsaved_features()[["variable_name", "name", "catalog", "active_catalog"]]
          variable_name             name  catalog  active_catalog
     0  customer_gender  Customer Gender  grocery            True
@@ -51,9 +48,7 @@ def list_unsaved_features() -> pd.DataFrame:
         -------
         bool
         """
-        response = client.get(
-            url=f"/feature/{feature.id}", headers={"active-catalog-id": str(feature.catalog_id)}
-        )
+        response = client.get(url=f"/feature/{feature.id}", headers={"active-catalog-id": str(feature.catalog_id)})
         if response.status_code == HTTPStatus.OK:
             return True
         return False
@@ -70,25 +65,21 @@ def list_unsaved_features() -> pd.DataFrame:
             if var_name in processed_variables:
                 continue
             if isinstance(var_obj, Feature) and not _is_saved(var_obj):
-                unsaved_features.append(
-                    {
-                        "object_id": str(var_obj.id),
-                        "variable_name": var_name,
-                        "name": var_obj.name,
-                        "catalog_id": str(var_obj.catalog_id),
-                    }
-                )
+                unsaved_features.append({
+                    "object_id": str(var_obj.id),
+                    "variable_name": var_name,
+                    "name": var_obj.name,
+                    "catalog_id": str(var_obj.catalog_id),
+                })
             elif isinstance(var_obj, BaseFeatureGroup):
                 for name, feature in var_obj.feature_objects.items():
                     if not _is_saved(feature):
-                        unsaved_features.append(
-                            {
-                                "object_id": str(feature.id),
-                                "variable_name": f'{var_name}["{name}"]',
-                                "name": feature.name,
-                                "catalog_id": str(feature.catalog_id),
-                            }
-                        )
+                        unsaved_features.append({
+                            "object_id": str(feature.id),
+                            "variable_name": f'{var_name}["{name}"]',
+                            "name": feature.name,
+                            "catalog_id": str(feature.catalog_id),
+                        })
             processed_variables.add(var_name)
 
     if unsaved_features:
@@ -140,9 +131,7 @@ def list_deployments(
     - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
     """
     output = []
-    for item_dict in iterate_api_object_using_paginated_routes(
-        route="/deployment/all/", params={"enabled": True}
-    ):
+    for item_dict in iterate_api_object_using_paginated_routes(route="/deployment/all/", params={"enabled": True}):
         output.append(item_dict)
     columns = ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
     output_df = pd.DataFrame(

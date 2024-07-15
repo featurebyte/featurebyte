@@ -171,14 +171,10 @@ def range_join_tables(
     # 1. FLOOR(LEFT.RANGE_END / WINDOW) = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
     # 2. FLOOR(LEFT.RANGE_END / WINDOW) - 1 = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
     left_range_end_div_window = expressions.Floor(
-        expression=expressions.Div(
-            this=left_table.qualified_range_end, expression=make_literal_value(window_size)
-        ),
+        expression=expressions.Div(this=left_table.qualified_range_end, expression=make_literal_value(window_size)),
     )
     right_range_div_window = expressions.Floor(
-        expression=expressions.Div(
-            this=right_table.qualified_range_column, expression=make_literal_value(window_size)
-        )
+        expression=expressions.Div(this=right_table.qualified_range_column, expression=make_literal_value(window_size))
     )
     range_join_conditions = [
         expressions.EQ(  # Condition 1
@@ -194,9 +190,7 @@ def range_join_tables(
     req_joined_with_tiles = None
     for range_join_condition in range_join_conditions:
         join_conditions_lst: Any = [range_join_condition]
-        for left_key, right_key in zip(
-            left_table.qualified_join_keys, right_table.qualified_join_keys
-        ):
+        for left_key, right_key in zip(left_table.qualified_join_keys, right_table.qualified_join_keys):
             join_conditions_lst.append(
                 expressions.EQ(this=left_key, expression=right_key),
             )
@@ -205,15 +199,9 @@ def range_join_tables(
                 *left_table.qualified_columns,
                 *right_table.qualified_columns,
             )
-            .from_(
-                expressions.Table(
-                    this=left_table.name, alias=expressions.TableAlias(this=left_table.alias)
-                )
-            )
+            .from_(expressions.Table(this=left_table.name, alias=expressions.TableAlias(this=left_table.alias)))
             .join(
-                expressions.Table(
-                    this=right_table.name, alias=expressions.TableAlias(this=right_table.alias)
-                ),
+                expressions.Table(this=right_table.name, alias=expressions.TableAlias(this=right_table.alias)),
                 join_type="inner",
                 on=expressions.and_(*join_conditions_lst),
                 copy=False,

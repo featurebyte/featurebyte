@@ -4,9 +4,8 @@ FeatureNamespace API route controller
 
 from __future__ import annotations
 
-from typing import Any, cast
-
 import copy
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -29,9 +28,7 @@ from featurebyte.service.table import TableService
 
 
 class FeatureNamespaceController(
-    BaseDocumentController[
-        FeatureNamespaceModelResponse, FeatureNamespaceService, FeatureNamespaceList
-    ]
+    BaseDocumentController[FeatureNamespaceModelResponse, FeatureNamespaceService, FeatureNamespaceList]
 ):
     """
     FeatureName controller
@@ -66,9 +63,7 @@ class FeatureNamespaceController(
             document_id=document_id,
             exception_detail=exception_detail,
         )
-        default_feature = await self.feature_service.get_document(
-            document_id=document.default_feature_id
-        )
+        default_feature = await self.feature_service.get_document(document_id=document.default_feature_id)
         output = FeatureNamespaceModelResponse(
             **document.dict(by_alias=True),
             primary_table_ids=default_feature.primary_table_ids,
@@ -92,9 +87,7 @@ class FeatureNamespaceController(
         )
 
         # get all the default features & entities
-        default_feature_ids = set(
-            document["default_feature_id"] for document in document_data["data"]
-        )
+        default_feature_ids = set(document["default_feature_id"] for document in document_data["data"])
 
         feature_id_to_primary_table_ids = {}
         feature_id_to_primary_entity_ids = {}
@@ -149,9 +142,7 @@ class FeatureNamespaceController(
             )
 
         if data.default_feature_id:
-            await self.feature_facade_service.update_default_feature(
-                feature_id=data.default_feature_id
-            )
+            await self.feature_facade_service.update_default_feature(feature_id=data.default_feature_id)
 
         return await self.get(document_id=feature_namespace_id)
 
@@ -186,16 +177,12 @@ class FeatureNamespaceController(
         )
 
         # Add catalog name to entities and tables
-        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
-            namespace.catalog_id, [entities, tables]
-        )
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(namespace.catalog_id, [entities, tables])
         entities, tables = updated_docs
 
         # prepare primary entity & primary table
         primary_entity = copy.deepcopy(entities)
-        primary_entity["data"] = [
-            entity for entity in entities["data"] if entity["_id"] in feature.primary_entity_ids
-        ]
+        primary_entity["data"] = [entity for entity in entities["data"] if entity["_id"] in feature.primary_entity_ids]
         primary_tables = await self.feature_or_target_helper.get_primary_tables(
             namespace.table_ids,
             namespace.catalog_id,

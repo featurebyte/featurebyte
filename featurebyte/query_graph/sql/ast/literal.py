@@ -32,9 +32,7 @@ def make_literal_value_from_non_native_types(value: dict[str, Any]) -> expressio
     )
 
 
-def make_literal_value_from_native_types(
-    value: Any, cast_as_timestamp: bool = False
-) -> expressions.Expression:
+def make_literal_value_from_native_types(value: Any, cast_as_timestamp: bool = False) -> expressions.Expression:
     """
     Create a sqlglot literal value from native types
 

@@ -4,11 +4,10 @@ SQLiteSession class
 
 from __future__ import annotations
 
-from typing import Optional, OrderedDict
-
 import collections
 import os
 import sqlite3
+from typing import Optional, OrderedDict
 
 import pandas as pd
 from pydantic import Field
@@ -57,9 +56,7 @@ class SQLiteSession(BaseSession):
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
-        tables = await self.execute_query(
-            "SELECT name FROM sqlite_master WHERE type = 'table'", timeout=timeout
-        )
+        tables = await self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'", timeout=timeout)
         output = []
         if tables is not None:
             for _, (name,) in tables[["name"]].iterrows():
@@ -109,9 +106,7 @@ class SQLiteSession(BaseSession):
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()
 
-    async def execute_query(
-        self, query: str, timeout: float = 600, to_log_error: bool = True
-    ) -> pd.DataFrame | None:
+    async def execute_query(self, query: str, timeout: float = 600, to_log_error: bool = True) -> pd.DataFrame | None:
         # sqlite session cannot be used in across threads
         _ = timeout
         return super().execute_query_blocking(query=query)

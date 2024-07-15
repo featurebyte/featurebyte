@@ -83,9 +83,7 @@ def test_get_join_column(snowflake_scd_view):
     assert column == "col_text"
 
 
-def test_event_view_join_scd_view(
-    snowflake_event_view, snowflake_event_table, snowflake_scd_view, snowflake_scd_table
-):
+def test_event_view_join_scd_view(snowflake_event_view, snowflake_event_table, snowflake_scd_view, snowflake_scd_table):
     """
     Test additional join parameters are added for SCDView
     """
@@ -224,9 +222,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     assert subset_view.columns == ["col_float", "col_text", "effective_timestamp"]
 
 
-def test_scd_view_as_feature__special_column(
-    snowflake_scd_table, cust_id_entity, mock_deployment_flow
-):
+def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity, mock_deployment_flow):
     """
     Test SCDView as_feature selects a special column that is excluded by default
     """
@@ -320,9 +316,7 @@ def test_feature_derived_from_multiple_scd_joins(multiple_scd_joined_feature):
     assert table_names == ["scd_table_state_map", "sf_scd_table", "sf_event_table"]
 
 
-def test_event_view_join_scd_view__feature_info(
-    snowflake_event_view, snowflake_scd_view_with_entity
-):
+def test_event_view_join_scd_view__feature_info(snowflake_event_view, snowflake_scd_view_with_entity):
     """
     Test joining event view with SCD view and creating a feature
     """
@@ -351,9 +345,7 @@ def test_event_view_join_scd_view__feature_info(
     }
 
 
-def test_join_scd_view_repeated_effective_timestamp_column_allowed(
-    snowflake_event_view, snowflake_scd_table_v2
-):
+def test_join_scd_view_repeated_effective_timestamp_column_allowed(snowflake_event_view, snowflake_scd_table_v2):
     """
     Test effective timestamp column is excluded from repeated column validation
     """
@@ -401,7 +393,7 @@ def test_join_parameters_columns__should_not_trigger_graph_inconsistency(
 
     # create a feature without using the assigned column so that the assign operation is going to be pruned
     joined_view = snowflake_event_view_with_entity.join(snowflake_scd_view, rsuffix="_scd")
-    filtered_joined_view = joined_view[joined_view["col_boolean_scd"] == True]
+    filtered_joined_view = joined_view[joined_view["col_boolean_scd"] is True]
     feature = filtered_joined_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="max",

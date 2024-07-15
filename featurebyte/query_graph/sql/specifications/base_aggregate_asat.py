@@ -4,9 +4,8 @@ Base aggregate asat spec
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
-
 from dataclasses import dataclass
+from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 
@@ -55,9 +54,7 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [
-                str(entity_id) for entity_id in parameters_dict["entity_ids"]
-            ]
+            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
         params["parameters"] = parameters_dict
 
         return params

@@ -4,9 +4,8 @@ Info related schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 from datetime import datetime
+from typing import Any, List, Optional
 
 from pydantic import Field, root_validator, validator
 
@@ -280,9 +279,7 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     @classmethod
     def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
         if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
-            values["production_ready_fraction"] = values[
-                "readiness_distribution"
-            ].derive_production_ready_fraction()
+            values["production_ready_fraction"] = values["readiness_distribution"].derive_production_ready_fraction()
         return values
 
 

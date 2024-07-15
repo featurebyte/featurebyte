@@ -30,7 +30,5 @@ class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
         observation_set_storage_path = values.get("observation_set_storage_path", None)
         observation_table_id = values.get("observation_table_id", None)
         if observation_table_id is None and observation_set_storage_path is None:
-            raise ValueError(
-                "Either observation_table_id or observation_set_storage_path must be provided"
-            )
+            raise ValueError("Either observation_table_id or observation_set_storage_path must be provided")
         return values

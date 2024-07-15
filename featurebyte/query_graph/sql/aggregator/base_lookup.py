@@ -4,10 +4,9 @@ SQL generation for lookup features
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
-
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 
 import pandas as pd
 from sqlglot import expressions
@@ -42,12 +41,8 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     forward_point_in_time_offset: Optional[str]
     adapter: BaseAdapter
 
-    def get_expression_for_column(
-        self, main_alias: str, join_alias: str, column_name: str
-    ) -> expressions.Expression:
-        expr = super().get_expression_for_column(
-            main_alias=main_alias, join_alias=join_alias, column_name=column_name
-        )
+    def get_expression_for_column(self, main_alias: str, join_alias: str, column_name: str) -> expressions.Expression:
+        expr = super().get_expression_for_column(main_alias=main_alias, join_alias=join_alias, column_name=column_name)
 
         # For lookup from EventData, set the looked up value to NA if the point in time is prior to
         # the event timestamp
@@ -60,9 +55,7 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
             # Add the forward point in time offset to the point in time if it is present.
             if self.forward_point_in_time_offset is not None:
                 point_in_time_expr = self.adapter.dateadd_microsecond(
-                    make_literal_value(
-                        pd.Timedelta(self.forward_point_in_time_offset).total_seconds() * 1e6
-                    ),
+                    make_literal_value(pd.Timedelta(self.forward_point_in_time_offset).total_seconds() * 1e6),
                     point_in_time_expr,
                 )
 
@@ -74,9 +67,7 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
             is_point_in_time_prior_to_event_timestamp = expressions.LT(
                 this=point_in_time_expr, expression=event_timestamp_expr
             )
-            if_expr = expressions.If(
-                this=is_point_in_time_prior_to_event_timestamp, true=expressions.null()
-            )
+            if_expr = expressions.If(this=is_point_in_time_prior_to_event_timestamp, true=expressions.null())
             expr = expressions.Case(ifs=[if_expr], default=expr)
 
         return expr
@@ -145,9 +136,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             if not is_scd and not requires_scd_join:
                 yield specs
 
-    def get_forward_point_in_time_offset(  # pylint: disable=useless-return
-        self, base_lookup_spec: LookupSpecT
-    ) -> Optional[str]:
+    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupSpecT) -> Optional[str]:
         """
         Get the forward point in time offset for the lookup if it is provided.
 

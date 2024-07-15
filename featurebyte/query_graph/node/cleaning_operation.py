@@ -3,13 +3,12 @@ This module contains cleaning operation related classes.
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
-from typing_extensions import Annotated, Literal
-
-from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 import pandas as pd
 from pydantic import Field, validator
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, StrEnum
@@ -49,9 +48,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         class_name = self.__class__.__name__
         return f"{class_name}({self.dict()})"
 
-    def add_cleaning_operation(
-        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
-    ) -> "Node":
+    def add_cleaning_operation(self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType) -> "Node":
         """
         Add cleaning operation to the graph node
 
@@ -87,9 +84,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         return graph_node.output_node
 
     @staticmethod
-    def _cast_scalar_parameter_to_dtype(  # pylint: disable=too-many-return-statements
-        value: Any, dtype: DBVarType
-    ) -> Any:
+    def _cast_scalar_parameter_to_dtype(value: Any, dtype: DBVarType) -> Any:
         if value is not None:
             if dtype in {DBVarType.CHAR, DBVarType.VARCHAR}:
                 return str(value)
@@ -114,9 +109,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         return value
 
     @classmethod
-    def _cast_list_parameter_to_dtype(
-        cls, values: Sequence[Any], dtype: DBVarType
-    ) -> Sequence[Any]:
+    def _cast_list_parameter_to_dtype(cls, values: Sequence[Any], dtype: DBVarType) -> Sequence[Any]:
         output = []
         found_values = set()
         for item in values:
@@ -189,16 +182,14 @@ class MissingValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace missing value with 0
 
-    >>> fb.MissingValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.MissingValueImputation(imputed_value=0)  # doctest: +SKIP
     """
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.MISSING] = Field(ConditionOperationField.MISSING, const=True, repr=False)
     imputed_value: Scalar
 
     def derive_sdk_code(self) -> ObjectClass:
@@ -235,17 +226,11 @@ class DisguisedValueImputation(BaseCleaningOperation):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.DisguisedValueImputation"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True, repr=False
-    )
-    disguised_values: Sequence[OptionalScalar] = Field(
-        description="List of values that need to be replaced."
-    )
+    type: Literal[ConditionOperationField.DISGUISED] = Field(ConditionOperationField.DISGUISED, const=True, repr=False)
+    disguised_values: Sequence[OptionalScalar] = Field(description="List of values that need to be replaced.")
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
@@ -289,21 +274,15 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace value other than "buy" or "sell" to "missing"
 
-    >>> fb.UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
+    >>> fb.UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing")  # doctest: +SKIP
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.UnexpectedValueImputation"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True, repr=False
-    )
-    expected_values: Sequence[OptionalScalar] = Field(
-        description="List of values that are expected to be present."
-    )
+    type: Literal[ConditionOperationField.NOT_IN] = Field(ConditionOperationField.NOT_IN, const=True, repr=False)
+    expected_values: Sequence[OptionalScalar] = Field(description="List of values that are expected to be present.")
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
@@ -353,21 +332,17 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace value less than 0 to 0.
 
-    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0)  # doctest: +SKIP
 
 
     Create an imputation rule to ignore value higher than 1M.
 
-    >>> fb.ValueBeyondEndpointImputation(
-    ...   type="less_than", end_point=1e6, imputed_value=None
-    ... )
+    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=1e6, imputed_value=None)
     ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.ValueBeyondEndpointImputation"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.ValueBeyondEndpointImputation")
 
     # instance variables
     type: Literal[
@@ -448,16 +423,14 @@ class StringValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace string value with 0
 
-    >>> fb.StringValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.StringValueImputation(imputed_value=0)  # doctest: +SKIP
     """
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True, repr=False
-    )
+    type: Literal[ConditionOperationField.IS_STRING] = Field(ConditionOperationField.IS_STRING, const=True, repr=False)
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.STRING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
@@ -506,24 +479,22 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     Create a new version of a feature with different table cleaning operations:
 
     >>> new_feature = feature.create_new_version(  # doctest: +SKIP
-    ...   table_cleaning_operations=[
-    ...     fb.TableCleaningOperation(
-    ...       table_name="GROCERYINVOICE",
-    ...       column_cleaning_operations=[
-    ...         fb.ColumnCleaningOperation(
-    ...           column_name="Amount",
-    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...     table_cleaning_operations=[
+    ...         fb.TableCleaningOperation(
+    ...             table_name="GROCERYINVOICE",
+    ...             column_cleaning_operations=[
+    ...                 fb.ColumnCleaningOperation(
+    ...                     column_name="Amount",
+    ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...                 )
+    ...             ],
     ...         )
-    ...       ],
-    ...     )
-    ...   ]
+    ...     ]
     ... )
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.ColumnCleaningOperation"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
 
     column_name: str = Field(
         description="Name of the column that requires cleaning. The cleaning operations specified in the second "
@@ -558,17 +529,17 @@ class TableCleaningOperation(FeatureByteBaseModel):
     Create a new version of a feature with different table cleaning operations:
 
     >>> new_feature = feature.create_new_version(
-    ...   table_cleaning_operations=[
-    ...     fb.TableCleaningOperation(
-    ...       table_name="GROCERYINVOICE",
-    ...       column_cleaning_operations=[
-    ...         fb.ColumnCleaningOperation(
-    ...           column_name="Amount",
-    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...     table_cleaning_operations=[
+    ...         fb.TableCleaningOperation(
+    ...             table_name="GROCERYINVOICE",
+    ...             column_cleaning_operations=[
+    ...                 fb.ColumnCleaningOperation(
+    ...                     column_name="Amount",
+    ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...                 )
+    ...             ],
     ...         )
-    ...       ],
-    ...     )
-    ...   ]
+    ...     ]
     ... )
     """
 

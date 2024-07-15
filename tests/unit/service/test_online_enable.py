@@ -21,9 +21,7 @@ async def check_states_after_online_enabled_change(
     updated_feature = await feature_service.get_document(document_id=feature.id)
     assert updated_feature.online_enabled == expected_online_enabled
 
-    namespace = await feature_namespace_service.get_document(
-        document_id=feature.feature_namespace_id
-    )
+    namespace = await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
     assert namespace.online_enabled_feature_ids == expected_online_enabled_feature_ids
 
     # make sure there is something to test

@@ -2,7 +2,6 @@
 Catalog module
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
@@ -65,8 +64,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     simplify management of the data and features.
     """
 
-    # pylint: disable=too-many-public-methods
-
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Catalog")
     _route: ClassVar[str] = "/catalog"
@@ -76,12 +73,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     _list_fields: ClassVar[List[str]] = ["name", "created_at", "active"]
 
     # pydantic instance variable (internal use)
-    internal_default_feature_store_ids: List[PydanticObjectId] = Field(
-        alias="default_feature_store_ids"
-    )
-    internal_online_store_id: Optional[PydanticObjectId] = Field(
-        default=None, alias="online_store_id"
-    )
+    internal_default_feature_store_ids: List[PydanticObjectId] = Field(alias="default_feature_store_ids")
+    internal_online_store_id: Optional[PydanticObjectId] = Field(default=None, alias="online_store_id")
 
     @property
     def default_feature_store_ids(self) -> List[PydanticObjectId]:
@@ -109,7 +102,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Optional[PydanticObjectId]
         """
         try:
-            return self.cached_model.online_store_id  # pylint: disable=no-member
+            return self.cached_model.online_store_id
         except RecordRetrievalException:
             return self.internal_online_store_id
 
@@ -129,7 +122,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         if not self.online_store_id:
             raise ValueError("Catalog does not have an associated online store.")
-        return OnlineStore.get_by_id(self.online_store_id)  # pylint: disable=no-member
+        return OnlineStore.get_by_id(self.online_store_id)
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.dict(by_alias=True))
@@ -238,9 +231,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             online_store_id = OnlineStore.get(online_store_name).id
         else:
             online_store_id = None
-        catalog = cls(
-            name=name, default_feature_store_ids=[feature_store.id], online_store_id=online_store_id
-        )
+        catalog = cls(name=name, default_feature_store_ids=[feature_store.id], online_store_id=online_store_id)
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
@@ -410,7 +401,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().get(name)
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> Catalog:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> Catalog:
         """
         Returns a Catalog object by its unique identifier (ID).
 
@@ -532,13 +523,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         List all features having grocerycustomer or frenchstate as primary entity.
 
-        >>> customer_or_state_features = catalog.list_features(
-        ...   primary_entity = ["grocerycustomer", "frenchstate"]
-        ... )
+        >>> customer_or_state_features = catalog.list_features(primary_entity=["grocerycustomer", "frenchstate"])
         """
-        return Feature.list(
-            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
-        )
+        return Feature.list(include_id=include_id, primary_entity=primary_entity, primary_table=primary_table)
 
     @update_and_reset_catalog
     def list_feature_lists(
@@ -581,14 +568,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         >>> feature_lists = catalog.list_feature_lists()
         """
-        return FeatureList.list(
-            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
-        )
+        return FeatureList.list(include_id=include_id, primary_entity=primary_entity, entity=entity, table=table)
 
     @update_and_reset_catalog
-    def list_tables(
-        self, include_id: Optional[bool] = True, entity: Optional[str] = None
-    ) -> pd.DataFrame:
+    def list_tables(self, include_id: Optional[bool] = True, entity: Optional[str] = None) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered tables in the catalog, such as their
         names, types, statuses, creation dates, and associated entities.
@@ -714,11 +697,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         List all relationships.
 
-        >>> catalog.list_relationships()[[
-        ...     "relationship_type",
-        ...     "entity",
-        ...     "related_entity",
-        ... ]]
+        >>> catalog.list_relationships()[
+        ...     [
+        ...         "relationship_type",
+        ...         "entity",
+        ...         "related_entity",
+        ...     ]
+        ... ]
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
@@ -1033,7 +1018,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             len(self.internal_default_feature_store_ids) == 1
         ), "No active catalog in this session. Please activate an existing catalog or create a new one to proceed."
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
-        return feature_store.get_data_source()  # pylint: disable=no-member
+        return feature_store.get_data_source()
 
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:
@@ -1414,7 +1399,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved historical feature table.
 
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get(name=name)
 
@@ -1460,7 +1447,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name") # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
         """
         return BatchFeatureTable.get(name=name)
 

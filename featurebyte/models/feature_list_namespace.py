@@ -54,9 +54,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 

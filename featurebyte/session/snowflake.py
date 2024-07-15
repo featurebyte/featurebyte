@@ -4,12 +4,11 @@ SnowflakeSession class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
-
 import collections
 import datetime
 import json
 import logging
+from typing import Any, AsyncGenerator, OrderedDict
 
 import pandas as pd
 import pyarrow as pa
@@ -102,9 +101,7 @@ class SnowflakeSession(BaseSession):
             # the schema may not exist yet if the feature store is being created
             pass
         # set timezone to UTC
-        cursor.execute(
-            "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
-        )
+        cursor.execute("ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'")
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
@@ -121,9 +118,7 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query_interactive(
-            "SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES"
-        )
+        databases = await self.execute_query_interactive("SELECT DATABASE_NAME FROM INFORMATION_SCHEMA.DATABASES")
         output = []
         if databases is not None:
             output.extend(databases["DATABASE_NAME"].tolist())
@@ -187,7 +182,7 @@ class SnowflakeSession(BaseSession):
             When the cursor description is not as expected
         """
         fields = []
-        description = cursor._description or []  # pylint: disable=protected-access
+        description = cursor._description or []
         for field in description:
             if not hasattr(field, "type_code"):
                 raise CursorSchemaError()
@@ -197,16 +192,12 @@ class SnowflakeSession(BaseSession):
                 pa_type = pa.decimal128(field.precision, field.scale)
             else:
                 pa_type = field_type.pa_type(field)
-            db_var_type = self._convert_to_internal_variable_type(
-                {
-                    "type": field_type.name,
-                    "length": field.internal_size,
-                    "scale": field.scale,
-                }
-            )
-            fields.append(
-                pa.field(field.name, pa_type, metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type})
-            )
+            db_var_type = self._convert_to_internal_variable_type({
+                "type": field_type.name,
+                "length": field.internal_size,
+                "scale": field.scale,
+            })
+            fields.append(pa.field(field.name, pa_type, metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type}))
         return pa.schema(fields)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
@@ -245,9 +236,7 @@ class SnowflakeSession(BaseSession):
                 for batch in table.cast(schema).to_batches():
                     yield batch
             # return empty table to ensure correct schema is returned
-            yield pa.record_batch(
-                pd.DataFrame(columns=[field.name for field in schema]), schema=schema
-            )
+            yield pa.record_batch(pd.DataFrame(columns=[field.name for field in schema]), schema=schema)
         except (NotSupportedError, CursorSchemaError):
             batches = super().fetch_query_stream_impl(cursor)
             async for batch in batches:
@@ -303,9 +292,7 @@ class SnowflakeSession(BaseSession):
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            for _, (column_name, var_info, comment) in schema[
-                ["column_name", "data_type", "comment"]
-            ].iterrows():
+            for _, (column_name, var_info, comment) in schema[["column_name", "data_type", "comment"]].iterrows():
                 dtype = self._convert_to_internal_variable_type(json.loads(var_info))
                 column_name_type_map[column_name] = ColumnSpecWithDescription(
                     name=column_name,
@@ -329,18 +316,18 @@ class SnowflakeSession(BaseSession):
         if details is None or details.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": table_name,
+            "schema_name": schema_name,
+            "database_name": database_name,
+        })
         return TableDetails(
             details=json.loads(details.iloc[0].to_json(orient="index")),
-            fully_qualified_name=sql_to_string(
-                fully_qualified_table_name, source_type=self.source_type
-            ),
+            fully_qualified_name=sql_to_string(fully_qualified_table_name, source_type=self.source_type),
         )
 
     @staticmethod
-    def get_columns_schema_from_dataframe(  # pylint: disable=too-many-branches
+    def get_columns_schema_from_dataframe(
         dataframe: pd.DataFrame,
     ) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
@@ -372,16 +359,10 @@ class SnowflakeSession(BaseSession):
                 db_type = "DOUBLE"
             elif pd.api.types.is_integer_dtype(dtype):
                 db_type = "INT"
-            elif (
-                dataframe.shape[0] > 0
-                and dataframe[colname].apply(lambda x: x is None or isinstance(x, list)).all()
-            ):
+            elif dataframe.shape[0] > 0 and dataframe[colname].apply(lambda x: x is None or isinstance(x, list)).all():
                 # Consider the type as an ARRAY if all elements are None, or a list.
                 db_type = "ARRAY"
-            elif (
-                dataframe.shape[0] > 0
-                and dataframe[colname].apply(lambda x: x is None or isinstance(x, dict)).all()
-            ):
+            elif dataframe.shape[0] > 0 and dataframe[colname].apply(lambda x: x is None or isinstance(x, dict)).all():
                 # Consider the type as an OBJECT if all elements are None, or a dict.
                 db_type = "OBJECT"
             else:
@@ -390,9 +371,7 @@ class SnowflakeSession(BaseSession):
         return schema
 
     @staticmethod
-    def _prep_dataframe_before_write_pandas(
-        dataframe: pd.DataFrame, schema: list[tuple[str, str]]
-    ) -> pd.DataFrame:
+    def _prep_dataframe_before_write_pandas(dataframe: pd.DataFrame, schema: list[tuple[str, str]]) -> pd.DataFrame:
         # Ideally we should avoid making a copy, but so far the only way to get write_pandas() to
         # create DATETIME type columns in Snowflake for datetime columns in DataFrame is to specify
         # DATETIME type in the schema when creating table, and convert the dtype in DataFrame to
@@ -400,11 +379,7 @@ class SnowflakeSession(BaseSession):
         dataframe = dataframe.copy()
         for colname, coltype in schema:
             if coltype in {"TIMESTAMP_NTZ", "TIMESTAMP_TZ"}:
-                dataframe[colname] = (
-                    dataframe[colname]
-                    .astype(str)
-                    .str.replace(r"(\+\d+):(\d+)", r" \1\2", regex=True)
-                )
+                dataframe[colname] = dataframe[colname].astype(str).str.replace(r"(\+\d+):(\d+)", r" \1\2", regex=True)
         return dataframe
 
     def _format_comment(self, comment: str) -> str:
@@ -451,16 +426,12 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
         objects = await self.list_objects("USER FUNCTIONS")
         if objects.shape[0]:
-            for func_name_with_args in self._format_arguments_to_be_droppable(
-                objects["arguments"].tolist()
-            ):
+            for func_name_with_args in self._format_arguments_to_be_droppable(objects["arguments"].tolist()):
                 await self.drop_object("FUNCTION", func_name_with_args)
 
         objects = await self.list_objects("USER PROCEDURES")
         if objects.shape[0]:
-            for func_name_with_args in self._format_arguments_to_be_droppable(
-                objects["arguments"].tolist()
-            ):
+            for func_name_with_args in self._format_arguments_to_be_droppable(objects["arguments"].tolist()):
                 await self.drop_object("PROCEDURE", func_name_with_args)
 
         for name in await self.list_droppable_tables_in_working_schema():

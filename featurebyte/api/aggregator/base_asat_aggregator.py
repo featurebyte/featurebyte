@@ -4,9 +4,8 @@ This module contains as at aggregator base class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, cast
-
 from abc import abstractmethod
+from typing import List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
@@ -58,9 +57,7 @@ class BaseAsAtAggregator(BaseAggregator):
         view = cast(SCDView, self.view)
         for key in self.keys:
             if key == view.natural_key_column:
-                raise ValueError(
-                    "Natural key column cannot be used as a groupby key in aggregate_asat"
-                )
+                raise ValueError("Natural key column cannot be used as a groupby key in aggregate_asat")
 
         if offset is not None:
             validate_offset_string(offset)

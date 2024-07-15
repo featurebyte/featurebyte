@@ -129,8 +129,7 @@ class TableFacadeService:
 
         columns_info = table.columns_info
         col_name_to_cleaning_operations = {
-            col_clean_op.column_name: col_clean_op.cleaning_operations
-            for col_clean_op in column_cleaning_operations
+            col_clean_op.column_name: col_clean_op.cleaning_operations for col_clean_op in column_cleaning_operations
         }
         for col_info in columns_info:
             if col_info.name in col_name_to_cleaning_operations:
@@ -139,9 +138,7 @@ class TableFacadeService:
                 )
 
         if col_name_to_cleaning_operations:
-            raise ValueError(
-                f"Columns {list(col_name_to_cleaning_operations.keys())} not found in table {table_id}"
-            )
+            raise ValueError(f"Columns {list(col_name_to_cleaning_operations.keys())} not found in table {table_id}")
 
         await self.table_columns_info_service.update_columns_info(
             service=service, document_id=table_id, columns_info=columns_info
@@ -168,9 +165,7 @@ class TableFacadeService:
         if service is None:
             table = await self.table_service.get_document(table_id)
             service = self.get_specific_table_service(table.type)
-        await self.table_status_service.update_status(
-            service=service, document_id=table_id, status=status
-        )
+        await self.table_status_service.update_status(service=service, document_id=table_id, status=status)
 
     async def update_default_feature_job_setting(
         self, table_id: ObjectId, default_feature_job_setting: FeatureJobSetting

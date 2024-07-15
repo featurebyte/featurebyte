@@ -9,9 +9,7 @@ from typing import Optional
 from featurebyte.enum import AggFunc, DBVarType
 
 
-def should_use_element_wise_vector_aggregation(
-    agg_func: AggFunc, parent_dtype: Optional[DBVarType]
-) -> bool:
+def should_use_element_wise_vector_aggregation(agg_func: AggFunc, parent_dtype: Optional[DBVarType]) -> bool:
     """
     Check if the aggregation requires element-wise vector aggregation
 

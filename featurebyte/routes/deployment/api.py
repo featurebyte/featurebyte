@@ -2,9 +2,8 @@
 Deployment API routes
 """
 
-from typing import Literal, Optional, cast
-
 from http import HTTPStatus
+from typing import Literal, Optional, cast
 
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
@@ -155,9 +154,7 @@ async def get_deployment_info(
     Get Deployment Info
     """
     controller = request.state.app_container.deployment_controller
-    deployment_info: DeploymentInfo = await controller.get_info(
-        document_id=deployment_id, verbose=verbose
-    )
+    deployment_info: DeploymentInfo = await controller.get_info(document_id=deployment_id, verbose=verbose)
     return deployment_info
 
 
@@ -243,11 +240,9 @@ async def get_deployment_request_code_template(
     Get Deployment Request Code Template
     """
     controller = request.state.app_container.deployment_controller
-    request_code_template: DeploymentRequestCodeTemplate = (
-        await controller.get_request_code_template(
-            deployment_id=deployment_id,
-            language=language,
-        )
+    request_code_template: DeploymentRequestCodeTemplate = await controller.get_request_code_template(
+        deployment_id=deployment_id,
+        language=language,
     )
     return request_code_template
 
@@ -265,7 +260,7 @@ async def get_deployment_sample_entity_serving_names(
     Get Deployment Sample Entity Serving Names
     """
     controller = request.state.app_container.deployment_controller
-    sample_entity_serving_names: SampleEntityServingNames = (
-        await controller.get_sample_entity_serving_names(deployment_id=deployment_id, count=count)
+    sample_entity_serving_names: SampleEntityServingNames = await controller.get_sample_entity_serving_names(
+        deployment_id=deployment_id, count=count
     )
     return sample_entity_serving_names

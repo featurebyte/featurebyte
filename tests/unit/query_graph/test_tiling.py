@@ -34,23 +34,15 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         (
             AggFunc.SUM,
             None,
-            [
-                make_expected_tile_spec(
-                    tile_expr='SUM("a_column")', tile_column_name="value_1234beef"
-                )
-            ],
+            [make_expected_tile_spec(tile_expr='SUM("a_column")', tile_column_name="value_1234beef")],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.AVG,
             None,
             [
-                make_expected_tile_spec(
-                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
-                ),
-                make_expected_tile_spec(
-                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
-                ),
+                make_expected_tile_spec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
+                make_expected_tile_spec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
             ],
             "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
         ),
@@ -58,43 +50,27 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             AggFunc.AVG,
             DBVarType.FLOAT,  # adding a non-array parent type will use the normal average aggregator
             [
-                make_expected_tile_spec(
-                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
-                ),
-                make_expected_tile_spec(
-                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
-                ),
+                make_expected_tile_spec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
+                make_expected_tile_spec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
             ],
             "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
         ),
         (
             AggFunc.MIN,
             None,
-            [
-                make_expected_tile_spec(
-                    tile_expr='MIN("a_column")', tile_column_name="value_1234beef"
-                )
-            ],
+            [make_expected_tile_spec(tile_expr='MIN("a_column")', tile_column_name="value_1234beef")],
             "MIN(value_1234beef)",
         ),
         (
             AggFunc.MAX,
             None,
-            [
-                make_expected_tile_spec(
-                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
-                )
-            ],
+            [make_expected_tile_spec(tile_expr='MAX("a_column")', tile_column_name="value_1234beef")],
             "MAX(value_1234beef)",
         ),
         (
             AggFunc.MAX,
             DBVarType.FLOAT,  # adding a non-array parent type will use the normal max aggregator
-            [
-                make_expected_tile_spec(
-                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
-                )
-            ],
+            [make_expected_tile_spec(tile_expr='MAX("a_column")', tile_column_name="value_1234beef")],
             "MAX(value_1234beef)",
         ),
         (
@@ -122,12 +98,8 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
                     tile_expr='SUM("a_column" * "a_column")',
                     tile_column_name="sum_value_squared_1234beef",
                 ),
-                make_expected_tile_spec(
-                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
-                ),
-                make_expected_tile_spec(
-                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
-                ),
+                make_expected_tile_spec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
+                make_expected_tile_spec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
             ],
             (
                 "SQRT(CASE WHEN ({variance}) < 0 THEN 0 ELSE ({variance}) END)".format(
@@ -185,16 +157,12 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
 def test_tiling_aggregators(agg_func, parent_dtype, expected_tile_specs, expected_merge_expr):
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
-    agg = get_aggregator(
-        agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE), parent_dtype=parent_dtype
-    )
+    agg = get_aggregator(agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE), parent_dtype=parent_dtype)
     input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)
     assert [t.tile_expr.sql() for t in tile_specs] == [t["tile_expr"] for t in expected_tile_specs]
-    assert [t.tile_column_name for t in tile_specs] == [
-        t["tile_column_name"] for t in expected_tile_specs
-    ]
+    assert [t.tile_column_name for t in tile_specs] == [t["tile_column_name"] for t in expected_tile_specs]
     assert merge_expr == expected_merge_expr
 
 
@@ -232,11 +200,7 @@ def run_groupby_and_get_tile_table_identifier(
     """
     if groupby_kwargs is None:
         groupby_kwargs = {"by_keys": ["cust_id"]}
-    by_keys = (
-        [groupby_kwargs["by_keys"]]
-        if isinstance(groupby_kwargs["by_keys"], str)
-        else groupby_kwargs["by_keys"]
-    )
+    by_keys = [groupby_kwargs["by_keys"]] if isinstance(groupby_kwargs["by_keys"], str) else groupby_kwargs["by_keys"]
     event_view = event_table_or_event_view
     for by_key in by_keys:
         assert isinstance(by_key, str)
@@ -312,12 +276,8 @@ def test_tile_table_id__agg_parameters(
         if key in feature_job_setting_params:
             existing_fjs_dict[key] = overrides[key]
     aggregate_kwargs["feature_job_setting"] = FeatureJobSetting(**existing_fjs_dict)
-    aggregate_kwargs.update(
-        {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
-    )
-    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_table, aggregate_kwargs
-    )
+    aggregate_kwargs.update({key: val for key, val in overrides.items() if key not in feature_job_setting_params})
+    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(snowflake_event_table, aggregate_kwargs)
     assert (tile_id, agg_id) == (expected_tile_id, expected_agg_id)
 
 
@@ -353,20 +313,14 @@ def test_tile_table_id__groupby_parameters(
     snowflake_event_table, aggregate_kwargs, groupby_kwargs, expected_tile_id, expected_agg_id
 ):
     """Test tile table IDs are expected given different groupby() parameters"""
-    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_table, aggregate_kwargs, groupby_kwargs
-    )
+    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(snowflake_event_table, aggregate_kwargs, groupby_kwargs)
     assert (tile_id, agg_id) == (expected_tile_id, expected_agg_id)
 
 
 def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggregate_kwargs):
     """Test different transformations produce different aggregation IDs, but same tile ID"""
-    snowflake_event_view_with_entity["value_10"] = (
-        snowflake_event_view_with_entity["col_float"] * 10
-    )
-    snowflake_event_view_with_entity["value_100"] = (
-        snowflake_event_view_with_entity["col_float"] * 100
-    )
+    snowflake_event_view_with_entity["value_10"] = snowflake_event_view_with_entity["col_float"] * 10
+    snowflake_event_view_with_entity["value_100"] = snowflake_event_view_with_entity["col_float"] * 100
 
     # Tile table id based on value_10
     kwargs = copy.deepcopy(aggregate_kwargs)

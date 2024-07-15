@@ -49,9 +49,7 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
         serving_names=["serving_cust_id", "other_serving_key"],
         serving_names_mapping=None,
         parameters=forward_node_parameters,
-        aggregation_source=AggregationSource(
-            expr=select("*").from_("tab"), query_node_name="input_1"
-        ),
+        aggregation_source=AggregationSource(expr=select("*").from_("tab"), query_node_name="input_1"),
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
@@ -69,9 +67,7 @@ def forward_spec_with_offset_fixture(forward_node_parameters_with_offset, entity
         serving_names=["serving_cust_id", "other_serving_key"],
         serving_names_mapping=None,
         parameters=forward_node_parameters_with_offset,
-        aggregation_source=AggregationSource(
-            expr=select("*").from_("tab"), query_node_name="input_1"
-        ),
+        aggregation_source=AggregationSource(expr=select("*").from_("tab"), query_node_name="input_1"),
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,

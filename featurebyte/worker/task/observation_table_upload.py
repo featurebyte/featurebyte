@@ -4,9 +4,8 @@ ObservationTable creation task
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, UploadedFileInput
@@ -33,7 +32,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
     payload_class = ObservationTableUploadTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         temp_storage: Storage,
         feature_store_service: FeatureStoreService,
@@ -60,35 +59,25 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         # Retrieve uploaded file from temp storage
-        uploaded_dataframe = await self.temp_storage.get_dataframe(
-            Path(payload.observation_set_storage_path)
-        )
+        uploaded_dataframe = await self.temp_storage.get_dataframe(Path(payload.observation_set_storage_path))
 
-        await self.task_progress_updater.update_progress(
-            percent=20, message="Creating observation table"
-        )
+        await self.task_progress_updater.update_progress(percent=20, message="Creating observation table")
 
         # Get location for the new observation table
-        location = await self.observation_table_service.generate_materialized_table_location(
-            feature_store_id
-        )
+        location = await self.observation_table_service.generate_materialized_table_location(feature_store_id)
 
         # Write the file to the warehouse
         await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
-        await self.observation_table_service.add_row_index_column(
-            db_session, location.table_details
-        )
+        await self.observation_table_service.add_row_index_column(db_session, location.table_details)
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             # Validate table and retrieve metadata about the table
-            additional_metadata = (
-                await self.observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session,
-                    location.table_details,
-                    feature_store=feature_store,
-                    primary_entity_ids=payload.primary_entity_ids,
-                    target_namespace_id=payload.target_namespace_id,
-                )
+            additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                db_session,
+                location.table_details,
+                feature_store=feature_store,
+                primary_entity_ids=payload.primary_entity_ids,
+                target_namespace_id=payload.target_namespace_id,
             )
 
             # Store metadata of the observation table in mongo

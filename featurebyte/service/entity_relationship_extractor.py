@@ -2,11 +2,10 @@
 Entity Relationship Extractor Service
 """
 
-from typing import Dict, List, Optional, Sequence
-
 import itertools
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence
 
 from bson import ObjectId
 
@@ -89,20 +88,14 @@ class ServingEntityEnumeration:
         """
         reduced_entity_ids = self.reduce_entity_ids(entity_ids=entity_ids)
         entity_with_descendants_iterable = [
-            self.entity_ancestor_descendant_mapper.entity_id_to_descendant_ids[entity_id]
-            | {entity_id}
+            self.entity_ancestor_descendant_mapper.entity_id_to_descendant_ids[entity_id] | {entity_id}
             for entity_id in reduced_entity_ids
         ]
         all_serving_entity_ids = set()
         for entity_id_combination in itertools.product(*entity_with_descendants_iterable):
-            all_serving_entity_ids.add(
-                tuple(self.reduce_entity_ids(entity_ids=list(entity_id_combination)))
-            )
+            all_serving_entity_ids.add(tuple(self.reduce_entity_ids(entity_ids=list(entity_id_combination))))
 
-        output = [
-            list(serving_entity)
-            for serving_entity in sorted(all_serving_entity_ids, key=lambda e: (len(e), e))
-        ]
+        output = [list(serving_entity) for serving_entity in sorted(all_serving_entity_ids, key=lambda e: (len(e), e))]
         return output
 
 
@@ -225,9 +218,7 @@ class EntityRelationshipExtractorService:
 
         return path_map
 
-    async def _get_entity_relationships(
-        self, relationship_ids: List[ObjectId]
-    ) -> List[EntityRelationshipInfo]:
+    async def _get_entity_relationships(self, relationship_ids: List[ObjectId]) -> List[EntityRelationshipInfo]:
         """
         Get entity relationships from relationship IDs
 
@@ -247,9 +238,7 @@ class EntityRelationshipExtractorService:
             output.append(EntityRelationshipInfo(**relationship_info.dict(by_alias=True)))
         return output
 
-    async def get_entity_id_to_entity(
-        self, entity_ids: List[ObjectId]
-    ) -> Dict[ObjectId, EntityModel]:
+    async def get_entity_id_to_entity(self, entity_ids: List[ObjectId]) -> Dict[ObjectId, EntityModel]:
         """
         Construct entity ID to entity dictionary mapping
 
@@ -264,9 +253,7 @@ class EntityRelationshipExtractorService:
             Dictionary mapping entity ID to entity model
         """
         entity_id_to_entity: Dict[ObjectId, EntityModel] = {}
-        async for entity in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": entity_ids}}
-        ):
+        async for entity in self.entity_service.list_documents_iterator(query_filter={"_id": {"$in": entity_ids}}):
             entity_id_to_entity[entity.id] = entity
         return entity_id_to_entity
 

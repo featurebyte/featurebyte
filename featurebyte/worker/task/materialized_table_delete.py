@@ -29,7 +29,6 @@ from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-# pylint: disable=too-many-instance-attributes
 class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTableDeleteTaskPayload]):
     """
     Materialized Table Delete Task
@@ -37,7 +36,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
 
     payload_class = MaterializedTableDeleteTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,
@@ -77,9 +76,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             description = f"{description} table"
         return f'Delete {description} "{materialized_table.name}"'
 
-    async def _delete_batch_request_table(
-        self, payload: MaterializedTableDeleteTaskPayload
-    ) -> MaterializedTableModel:
+    async def _delete_batch_request_table(self, payload: MaterializedTableDeleteTaskPayload) -> MaterializedTableModel:
         document = await check_delete_batch_request_table(
             batch_request_table_service=self.batch_request_table_service,
             batch_feature_table_service=self.batch_feature_table_service,
@@ -89,19 +86,13 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         await self.batch_request_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_batch_feature_table(
-        self, payload: MaterializedTableDeleteTaskPayload
-    ) -> MaterializedTableModel:
-        document = await self.batch_feature_table_service.get_document(
-            document_id=payload.document_id
-        )
+    async def _delete_batch_feature_table(self, payload: MaterializedTableDeleteTaskPayload) -> MaterializedTableModel:
+        document = await self.batch_feature_table_service.get_document(document_id=payload.document_id)
         await self._delete_table_at_data_warehouse(document)
         await self.batch_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_observation_table(
-        self, payload: MaterializedTableDeleteTaskPayload
-    ) -> MaterializedTableModel:
+    async def _delete_observation_table(self, payload: MaterializedTableDeleteTaskPayload) -> MaterializedTableModel:
         validator: ObservationTableDeleteValidator = self.observation_table_delete_validator
         document = await validator.check_delete_observation_table(
             observation_table_id=payload.document_id,
@@ -113,16 +104,12 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
     async def _delete_historical_feature_table(
         self, payload: MaterializedTableDeleteTaskPayload
     ) -> MaterializedTableModel:
-        document = await self.historical_feature_table_service.get_document(
-            document_id=payload.document_id
-        )
+        document = await self.historical_feature_table_service.get_document(document_id=payload.document_id)
         await self._delete_table_at_data_warehouse(document)
         await self.historical_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_static_source_table(
-        self, payload: MaterializedTableDeleteTaskPayload
-    ) -> MaterializedTableModel:
+    async def _delete_static_source_table(self, payload: MaterializedTableDeleteTaskPayload) -> MaterializedTableModel:
         document = await check_delete_static_source_table(
             static_source_table_service=self.static_source_table_service,
             table_service=self.table_service,
@@ -134,9 +121,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
 
     async def _delete_table_at_data_warehouse(self, document: MaterializedTableModel) -> None:
         # delete table stored at data warehouse
-        feature_store = await self.feature_store_service.get_document(
-            document_id=document.location.feature_store_id
-        )
+        feature_store = await self.feature_store_service.get_document(document_id=document.location.feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         await db_session.drop_table(

@@ -23,9 +23,7 @@ def get_credential_provider_fixture(persistent):
 
 
 @pytest.mark.asyncio
-async def test_get_feature_store_id_from_details(
-    session_validator_service, snowflake_feature_store
-):
+async def test_get_feature_store_id_from_details(session_validator_service, snowflake_feature_store):
     """
     Test getting feature store ID from details
     """
@@ -65,9 +63,7 @@ async def test_validate_existing_session(session_validator_service, mock_session
     mock_session.get_working_schema_metadata.return_value = {
         "feature_store_id": object_id,
     }
-    validate_status = await session_validator_service.validate_existing_session(
-        mock_session, object_id
-    )
+    validate_status = await session_validator_service.validate_existing_session(mock_session, object_id)
     assert validate_status == ValidateStatus.FEATURE_STORE_ID_MATCHES
 
     mock_session.get_working_schema_metadata.return_value = {

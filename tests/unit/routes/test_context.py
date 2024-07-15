@@ -22,9 +22,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
     base_route = "/context"
     payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
     unknown_id = ObjectId()
-    create_conflict_payload_expected_detail_pairs = [
-        (payload, f'Context (id: "{payload["_id"]}") already exists.')
-    ]
+    create_conflict_payload_expected_detail_pairs = [(payload, f'Context (id: "{payload["_id"]}") already exists.')]
     create_unprocessable_payload_expected_detail_pairs = [
         (
             {"name": "some_context"},
@@ -177,14 +175,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         unknown_context_id = ObjectId()
-        response = test_api_client.patch(
-            f"{self.base_route}/{unknown_context_id}", json={"name": "random_name"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{unknown_context_id}", json={"name": "random_name"})
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
-            "detail": (
-                f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.'
-            )
+            "detail": (f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.')
         }
 
     def test_update_422(
@@ -200,9 +194,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         response_dict = create_success_response.json()
         context_id = response_dict["_id"]
         unprocessible_payload, expected_message = update_unprocessable_payload_expected_detail
-        response = test_api_client.patch(
-            f"{self.base_route}/{context_id}", json=unprocessible_payload
-        )
+        response = test_api_client.patch(f"{self.base_route}/{context_id}", json=unprocessible_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
@@ -233,9 +225,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         )
 
         response = test_api_client.delete(f"{self.base_route}/{context.id}")
-        assert response.json()["detail"] == (
-            f"Context is referenced by ObservationTable: {observation_table.name}"
-        )
+        assert response.json()["detail"] == (f"Context is referenced by ObservationTable: {observation_table.name}")
 
     def test_delete_422__used_by_use_case(
         self,
@@ -543,9 +533,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         """Test update name"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"name": "some other name"})
         assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK

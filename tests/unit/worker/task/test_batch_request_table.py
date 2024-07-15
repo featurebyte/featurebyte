@@ -29,7 +29,4 @@ async def test_get_task_description(catalog, app_container):
         ),
     )
     task = app_container.get(BatchRequestTableTask)
-    assert (
-        await task.get_task_description(payload)
-        == 'Save batch request table "Test Batch Request Table"'
-    )
+    assert await task.get_task_description(payload) == 'Save batch request table "Test Batch Request Table"'

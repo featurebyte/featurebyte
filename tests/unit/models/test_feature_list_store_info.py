@@ -57,9 +57,7 @@ def databricks_store_info_fixture():
         ),
     ],
 )
-def test_databricks_feature_specs_definition(
-    databricks_store_info, target_spec, expected_import, expected_field
-):
+def test_databricks_feature_specs_definition(databricks_store_info, target_spec, expected_import, expected_field):
     """Test DataBricks feature specs definition"""
     feature_specs = databricks_store_info.get_feature_specs_definition(target_spec=target_spec)
     expected = """
@@ -125,9 +123,7 @@ def test_databricks_feature_specs_definition(
         registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
     )
     """
-    expected = expected.replace("[IMPORTS]", expected_import).replace(
-        "[TARGET_FIELD]", expected_field
-    )
+    expected = expected.replace("[IMPORTS]", expected_import).replace("[TARGET_FIELD]", expected_field)
     if target_spec:
         expected = expected.replace("[TARGET_COLUMN]", target_spec.name)
     assert feature_specs.strip() == textwrap.dedent(expected).strip()

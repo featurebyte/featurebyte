@@ -5,10 +5,10 @@ DimensionTable class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
-from typing_extensions import Literal
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
+from typing_extensions import Literal
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -131,19 +131,19 @@ class DimensionTable(TableApiObject):
 
         >>> dimension_table = catalog.get_table("GROCERYPRODUCT")
         >>> dimension_view = dimension_table.get_view(
-        ...   view_mode="manual",
-        ...   drop_column_names=[],
-        ...   column_cleaning_operations=[
-        ...     fb.ColumnCleaningOperation(
-        ...       column_name="ProductGroup",
-        ...       cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value="Unknown"),
-        ...       ],
-        ...     )
-        ...   ],
+        ...     view_mode="manual",
+        ...     drop_column_names=[],
+        ...     column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...             column_name="ProductGroup",
+        ...             cleaning_operations=[
+        ...                 fb.MissingValueImputation(imputed_value="Unknown"),
+        ...             ],
+        ...         )
+        ...     ],
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.dimension_view import DimensionView
 
         self._validate_view_mode_params(
@@ -211,9 +211,7 @@ class DimensionTable(TableApiObject):
         return None
 
     @classmethod
-    def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> DimensionTable:
+    def get_by_id(cls, id: ObjectId) -> DimensionTable:
         """
         Returns a DimensionTable object by its unique identifier (ID).
 

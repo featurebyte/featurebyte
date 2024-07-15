@@ -31,9 +31,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
     )
 
 
-def test_get_feature_preview_sql__category_groupby(
-    query_graph_with_category_groupby, update_fixtures
-):
+def test_get_feature_preview_sql__category_groupby(query_graph_with_category_groupby, update_fixtures):
     """Test generated preview SQL with category groupby is as expected"""
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
@@ -55,9 +53,7 @@ def test_get_feature_preview_sql__category_groupby(
     )
 
 
-def test_get_feature_preview_sql__multiple_nodes(
-    query_graph_with_similar_groupby_nodes, update_fixtures
-):
+def test_get_feature_preview_sql__multiple_nodes(query_graph_with_similar_groupby_nodes, update_fixtures):
     """Test case for preview SQL for list of nodes of similar groupby operations"""
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",

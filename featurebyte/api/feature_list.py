@@ -2,9 +2,9 @@
 FeatureListVersion class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -18,8 +18,6 @@ from typing import (
     Union,
     cast,
 )
-
-from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
@@ -85,9 +83,7 @@ class FeatureListNamespaceListHandler(ListHandler):
         # add information about default feature list version
         feature_list_versions = FeatureList.list_versions(include_id=True)
         feature_lists = item_list.merge(
-            feature_list_versions[["id", "online_frac", "deployed"]].rename(
-                columns={"id": "default_feature_list_id"}
-            ),
+            feature_list_versions[["id", "online_frac", "deployed"]].rename(columns={"id": "default_feature_list_id"}),
             on="default_feature_list_id",
         )
 
@@ -250,17 +246,12 @@ class FeatureListNamespace(ApiObject):
                 feature_lists.primary_entity.apply(lambda ent: set(target_entities).issubset(ent))
             ]
         if entity:
-            feature_lists = feature_lists[
-                feature_lists.entities.apply(lambda entities: entity in entities)
-            ]
+            feature_lists = feature_lists[feature_lists.entities.apply(lambda entities: entity in entities)]
         if table:
-            feature_lists = feature_lists[
-                feature_lists.tables.apply(lambda table_list: table in table_list)
-            ]
+            feature_lists = feature_lists[feature_lists.tables.apply(lambda table_list: table in table_list)]
         return feature_lists
 
 
-# pylint: disable=too-many-public-methods
 class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, FeatureJobMixin):
     """
     The FeatureList class is used as a constructor to create a FeatureList Object.
@@ -287,10 +278,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     --------
     Create a feature list with two features.
 
-    >>> features = fb.FeatureList([
-    ...   catalog.get_feature("InvoiceCount_60days"),
-    ...   catalog.get_feature("InvoiceAmountAvg_60days"),
-    ... ], name="My new feature list")
+    >>> features = fb.FeatureList(
+    ...     [
+    ...         catalog.get_feature("InvoiceCount_60days"),
+    ...         catalog.get_feature("InvoiceAmountAvg_60days"),
+    ...     ],
+    ...     name="My new feature list",
+    ... )
     """
 
     # class variables
@@ -313,9 +307,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     ]
 
     # pydantic instance variable (internal use)
-    internal_catalog_id: PydanticObjectId = Field(
-        default_factory=get_active_catalog_id, alias="catalog_id"
-    )
+    internal_catalog_id: PydanticObjectId = Field(default_factory=get_active_catalog_id, alias="catalog_id")
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
     @root_validator
@@ -376,9 +368,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             return self.internal_catalog_id
 
     @property
-    @substitute_docstring(
-        doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "FeatureList"}
-    )
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "FeatureList"})
     def primary_entity(self) -> List[Entity]:
         if self.saved:
             primary_entity_ids = self.cached_model.primary_entity_ids  # type: ignore
@@ -619,9 +609,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
-        data = FeatureListCreate(
-            **{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
-        )
+        data = FeatureListCreate(**{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids})
         return data.json_dict()
 
     def list_deployments(self) -> pd.DataFrame:
@@ -638,14 +626,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_deployments()  # doctest: +SKIP
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.deployment import Deployment
 
         return Deployment.list(feature_list_id=self.id)
 
-    def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
         """
         Adds a FeatureList object to the catalog.
 
@@ -663,10 +649,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Examples
         --------
-        >>> feature_list = fb.FeatureList([
-        ...     catalog.get_feature("InvoiceCount_60days"),
-        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ], name="feature_lists_invoice_features")
+        >>> feature_list = fb.FeatureList(
+        ...     [
+        ...         catalog.get_feature("InvoiceCount_60days"),
+        ...         catalog.get_feature("InvoiceAmountAvg_60days"),
+        ...     ],
+        ...     name="feature_lists_invoice_features",
+        ... )
         >>> feature_list.save()  # doctest: +SKIP
         """
         assert self.name is not None, "FeatureList name cannot be None"
@@ -711,10 +700,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Examples
         --------
-        >>> feature_list = fb.FeatureList([
-        ...     catalog.get_feature("InvoiceCount_60days"),
-        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ], name="feature_lists_invoice_features")
+        >>> feature_list = fb.FeatureList(
+        ...     [
+        ...         catalog.get_feature("InvoiceCount_60days"),
+        ...         catalog.get_feature("InvoiceAmountAvg_60days"),
+        ...     ],
+        ...     name="feature_lists_invoice_features",
+        ... )
         >>> amount_only_feature_list = feature_list.drop(["InvoiceCount_60days"])
         """
         return super().drop(items=items)
@@ -765,20 +757,23 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         --------
         Create a feature list with two features.
 
-        >>> features = fb.FeatureList([
-        ...    catalog.get_feature("InvoiceCount_60days"),
-        ...    catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ], name="My new feature list")
+        >>> features = fb.FeatureList(
+        ...     [
+        ...         catalog.get_feature("InvoiceCount_60days"),
+        ...         catalog.get_feature("InvoiceAmountAvg_60days"),
+        ...     ],
+        ...     name="My new feature list",
+        ... )
 
 
         Prepare observation set with POINT_IN_TIME and serving names columns.
 
         >>> observation_set = pd.DataFrame({
-        ...    "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
-        ...    "GROCERYCUSTOMERGUID": [
-        ...      "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
-        ...      "ac479f28-e0ff-41a4-8e60-8678e670e80b",
-        ...    ],
+        ...     "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
+        ...     "GROCERYCUSTOMERGUID": [
+        ...         "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
+        ...         "ac479f28-e0ff-41a4-8e60-8678e670e80b",
+        ...     ],
         ... })
 
 
@@ -789,9 +784,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         0   2022-06-01     a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3  10.0                 7.938
         1   2022-06-02     ac479f28-e0ff-41a4-8e60-8678e670e80b  6.0                  9.870
         """
-        return super().preview(
-            observation_set=observation_set, serving_names_mapping=serving_names_mapping
-        )
+        return super().preview(observation_set=observation_set, serving_names_mapping=serving_names_mapping)
 
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
@@ -802,9 +795,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         -------
         FeatureListNamespace
         """
-        feature_list_namespace_id = cast(
-            FeatureListModel, self.cached_model
-        ).feature_list_namespace_id
+        feature_list_namespace_id = cast(FeatureListModel, self.cached_model).feature_list_namespace_id
         return FeatureListNamespace.get_by_id(id=feature_list_namespace_id)
 
     @property
@@ -819,9 +810,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         try:
             return self.cached_model.online_enabled_feature_ids
         except RecordRetrievalException:
-            return sorted(
-                feature.id for feature in self.feature_objects.values() if feature.online_enabled
-            )
+            return sorted(feature.id for feature in self.feature_objects.values() if feature.online_enabled)
 
     @property
     def readiness_distribution(self) -> FeatureReadinessDistribution:
@@ -1146,10 +1135,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Examples
         --------
         Create a feature list with two features.
-        >>> feature_list = fb.FeatureList([
-        ...     catalog.get_feature("InvoiceCount_60days"),
-        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ], name="InvoiceFeatures")
+        >>> feature_list = fb.FeatureList(
+        ...     [
+        ...         catalog.get_feature("InvoiceCount_60days"),
+        ...         catalog.get_feature("InvoiceAmountAvg_60days"),
+        ...     ],
+        ...     name="InvoiceFeatures",
+        ... )
 
         Prepare observation set with POINT_IN_TIME and serving names columns.
         >>> observation_set = pd.DataFrame({
@@ -1172,8 +1164,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Retrieve materialized historical features with serving names mapping.
         >>> historical_features = feature_list.compute_historical_features(  # doctest: +SKIP
-        ...   observation_set=observation_set,
-        ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
+        ...     observation_set=observation_set, serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
 
         See Also
@@ -1227,8 +1218,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> my_feature_list = catalog.get_feature_list(<feature_list_name>)  # doctest: +SKIP
         >>> # Decide the name of the historical feature table
         >>> training_table_name = (  # doctest: +SKIP
-        ...   '2y Features for Customer Purchase next 2w '
-        ...   'up to end 22 with Improved Feature List'
+        ...     "2y Features for Customer Purchase next 2w " "up to end 22 with Improved Feature List"
         ... )
         >>> # Compute the historical feature table
         >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP
@@ -1249,9 +1239,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         feature_store_id = self._features[0].tabular_source.feature_store_id
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
-            observation_table_id=(
-                observation_set.id if isinstance(observation_set, ObservationTable) else None
-            ),
+            observation_table_id=(observation_set.id if isinstance(observation_set, ObservationTable) else None),
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
@@ -1269,9 +1257,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return HistoricalFeatureTable.get_by_id(historical_feature_table_doc["_id"])
 
     @typechecked
-    def create_new_version(
-        self, features: Optional[List[FeatureVersionInfo]] = None
-    ) -> FeatureList:
+    def create_new_version(self, features: Optional[List[FeatureVersionInfo]] = None) -> FeatureList:
         """
         Creates a new feature version from a FeatureList object. The current default version of the features within the
         feature list is employed to create the new version, except when specific versions are indicated by the
@@ -1309,16 +1295,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         >>> current_feature = feature_list["InvoiceCount_60days"]
         >>> new_feature = current_feature.create_new_version(
-        ...   table_feature_job_settings=[
-        ...     fb.TableFeatureJobSetting(
-        ...       table_name="GROCERYINVOICE",
-        ...       feature_job_setting=fb.FeatureJobSetting(
-        ...         blind_spot="60s",
-        ...         period="3600s",
-        ...         offset="90s",
-        ...       )
-        ...     )
-        ...   ]
+        ...     table_feature_job_settings=[
+        ...         fb.TableFeatureJobSetting(
+        ...             table_name="GROCERYINVOICE",
+        ...             feature_job_setting=fb.FeatureJobSetting(
+        ...                 blind_spot="60s",
+        ...                 period="3600s",
+        ...                 offset="90s",
+        ...             ),
+        ...         )
+        ...     ]
         ... )
         >>> current_feature.update_readiness("DEPRECATED")
         >>> new_feature.update_default_version_mode("MANUAL")
@@ -1336,7 +1322,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Create new version of feature list by specifying feature:
 
         >>> new_feature_list = feature_list.create_new_version(
-        ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
+        ...     features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
         ... )
 
         Reset the default version mode of the feature to make original feature as default. Create a new version
@@ -1403,9 +1389,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
         status_value = FeatureListStatus(status).value
-        self.feature_list_namespace.update(
-            update_payload={"status": status_value}, allow_update_local=False
-        )
+        self.feature_list_namespace.update(update_payload={"status": status_value}, allow_update_local=False)
 
     @typechecked
     def deploy(
@@ -1446,9 +1430,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> deployment = feature_list.deploy(  # doctest: +SKIP
-        ...   deployment_name="new deploy",
-        ...   make_production_ready=True,
-        ...   use_case_name="fraud detection",
+        ...     deployment_name="new deploy",
+        ...     make_production_ready=True,
+        ...     use_case_name="fraud detection",
         ... )
 
         See Also
@@ -1464,15 +1448,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         )
 
         use_case_id = UseCase.get(use_case_name).id if use_case_name else None
-        deployment_payload = DeploymentCreate(
-            name=deployment_name, feature_list_id=self.id, use_case_id=use_case_id
-        )
+        deployment_payload = DeploymentCreate(name=deployment_name, feature_list_id=self.id, use_case_id=use_case_id)
         output = self.post_async_task(
             route="/deployment",
             payload=deployment_payload.json_dict(),
         )
 
-        from featurebyte.api.deployment import Deployment  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.deployment import Deployment
 
         return Deployment.get_by_id(ObjectId(output["_id"]))
 

@@ -2,12 +2,11 @@
 This module contains SQL operation related node classes
 """
 
-# pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
-from typing_extensions import Literal
 
 from pydantic import Field, root_validator, validator
+from typing_extensions import Literal
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -78,9 +77,7 @@ class ProjectNode(BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self.parameters.columns
 
     def prune(
@@ -200,9 +197,7 @@ class FilterNode(BaseNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         # the first input is the input view and the second input is the mask view
         if input_index == 0:
             # for the input view, all columns are required, otherwise it may drop some columns
@@ -269,9 +264,7 @@ class FilterNode(BaseNode):
             to_associate_with_node_name=False,
         )
         mask_name = var_name_expressions[1].as_input()
-        expr = filter_series_or_frame_expr(
-            series_or_frame_name=var_name, filter_expression=mask_name
-        )
+        expr = filter_series_or_frame_expr(series_or_frame_name=var_name, filter_expression=mask_name)
         if to_reindex:
             expr = f"{expr}.reindex(index={var_name}.index)"
         return statements, ExpressionStr(expr)
@@ -423,9 +416,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     def is_inplace_operation_in_sdk_code(self) -> bool:
         return True
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     @staticmethod
@@ -500,9 +491,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             else:
                 value = ValueStr.create(second_input["value"])
 
-            var_filter_expr = filter_series_or_frame_expr(
-                series_or_frame_name=var_expr, filter_expression=mask_var
-            )
+            var_filter_expr = filter_series_or_frame_expr(series_or_frame_name=var_expr, filter_expression=mask_var)
             statements.append((VariableNameStr(var_filter_expr), value))
         else:
             value = second_input if second_input else ValueStr.create(self.parameters.value)
@@ -528,9 +517,7 @@ class LagNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return len(self.parameters.entity_columns) + 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         # this node has the following input structure:
         # [0] column to lag
         # [1...n-1] entity column(s)
@@ -643,9 +630,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     def _is_time_based(self) -> bool:
         return True
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _derive_sdk_code(
@@ -726,9 +711,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -773,7 +756,8 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
             required_columns = set().union(
                 *(
                     node.get_required_input_columns(
-                        input_index=input_order, available_column_names=self.parameters.names  # type: ignore
+                        input_index=input_order,
+                        available_column_names=self.parameters.names,  # type: ignore
                     )
                     for node, input_order in target_node_input_order_pairs
                 )
@@ -909,9 +893,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -1028,9 +1010,7 @@ class LookupParameters(FeatureByteBaseModel):
 
     @root_validator(skip_on_failure=True)
     @classmethod
-    def _validate_input_column_names_feature_names_same_length(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _validate_input_column_names_feature_names_same_length(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         input_column_names = values["input_column_names"]
         feature_names = values["feature_names"]
         assert len(input_column_names) == len(feature_names)
@@ -1053,9 +1033,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
@@ -1063,10 +1041,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         return parent_columns
 
     def _is_time_based(self) -> bool:
-        return (
-            self.parameters.scd_parameters is not None
-            or self.parameters.event_parameters is not None
-        )
+        return self.parameters.scd_parameters is not None or self.parameters.event_parameters is not None
 
     def _get_aggregations(
         self,
@@ -1289,9 +1264,7 @@ class JoinNode(BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         if input_index == 0:
             return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
         return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
@@ -1370,11 +1343,7 @@ class JoinNode(BasePrunableNode):
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
                 # if the join type is left, current node is not a compulsory node for the column
-                node_names=(
-                    col.node_names.union([self.name])
-                    if params.join_type != "left"
-                    else col.node_names
-                ),
+                node_names=(col.node_names.union([self.name]) if params.join_type != "left" else col.node_names),
                 node_name=self.name,
             )
             for col in inputs[0].columns
@@ -1382,9 +1351,7 @@ class JoinNode(BasePrunableNode):
         }
         left_on_col = next(col for col in inputs[0].columns if col.name == self.parameters.left_on)
         right_columns = {}
-        right_on_col = next(
-            col for col in inputs[1].columns if col.name == self.parameters.right_on
-        )
+        right_on_col = next(col for col in inputs[1].columns if col.name == self.parameters.right_on)
         transform_info = self.transform_info
         for col in inputs[1].columns:
             if col.name in right_col_map:
@@ -1410,8 +1377,7 @@ class JoinNode(BasePrunableNode):
                     )
 
         is_event_item_join = (
-            self.parameters.metadata is not None
-            and self.parameters.metadata.type == "join_event_table_attributes"
+            self.parameters.metadata is not None and self.parameters.metadata.type == "join_event_table_attributes"
         )
         if self.parameters.join_type == "left" or is_event_item_join:
             row_index_lineage = inputs[0].row_index_lineage
@@ -1471,9 +1437,7 @@ class JoinNode(BasePrunableNode):
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )
 
-        var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="joined_view", node_name=self.name
-        )
+        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view", node_name=self.name)
         statements.append((var_name, expression))
         return statements, var_name
 
@@ -1582,9 +1546,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         if input_index == 0:
             view_required_columns = [self.parameters.view_entity_column]
             if self.parameters.view_point_in_time_column:
@@ -1597,9 +1559,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         columns = feature_op_structure.aggregations
         assert len(columns) == 1, "Feature should have exactly one aggregation"
         # For now, the supported feature should have an item_groupby node in its lineage
-        assert (
-            feature_op_structure.output_type == NodeOutputType.SERIES
-        ), "Output should be a series"
+        assert feature_op_structure.output_type == NodeOutputType.SERIES, "Output should be a series"
 
     def _derive_node_operation_info(
         self,
@@ -1686,9 +1646,7 @@ class TrackChangesNode(BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return [
             self.parameters.natural_key_column,
             self.parameters.effective_timestamp_column,
@@ -1708,14 +1666,10 @@ class TrackChangesNode(BaseNode):
             if column.name == self.parameters.effective_timestamp_column
         )
         tracked_source_column = next(
-            column
-            for column in input_operation_info.columns
-            if column.name == self.parameters.tracked_column
+            column for column in input_operation_info.columns if column.name == self.parameters.tracked_column
         )
         natural_key_source_column = next(
-            column
-            for column in input_operation_info.columns
-            if column.name == self.parameters.natural_key_column
+            column for column in input_operation_info.columns if column.name == self.parameters.natural_key_column
         )
         columns = [natural_key_source_column]
         track_dtype = tracked_source_column.dtype
@@ -1807,9 +1761,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -1892,9 +1844,7 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
 class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
     """ForwardAggregateAsAtNode class"""
 
-    type: Literal[NodeType.FORWARD_AGGREGATE_AS_AT] = Field(
-        NodeType.FORWARD_AGGREGATE_AS_AT, const=True
-    )
+    type: Literal[NodeType.FORWARD_AGGREGATE_AS_AT] = Field(NodeType.FORWARD_AGGREGATE_AS_AT, const=True)
 
     # feature definition hash generation configuration
     _normalized_output_prefix: ClassVar[str] = "target_"
@@ -1947,9 +1897,7 @@ class NonTileWindowAggregateNode(BaseWindowAggregateNode):
     NonTileWindowAggregateNode class.
     """
 
-    type: Literal[NodeType.NON_TILE_WINDOW_AGGREGATE] = Field(
-        NodeType.NON_TILE_WINDOW_AGGREGATE, const=True
-    )
+    type: Literal[NodeType.NON_TILE_WINDOW_AGGREGATE] = Field(NodeType.NON_TILE_WINDOW_AGGREGATE, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: NonTileWindowAggregateParameters
 
@@ -1974,9 +1922,7 @@ class AliasNode(BaseNode):
     def is_inplace_operation_in_sdk_code(self) -> bool:
         return True
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
@@ -2040,9 +1986,7 @@ class AliasNode(BaseNode):
             to_associate_with_node_name=True,
         )
         statements.extend(var_statements)
-        statements.append(
-            (VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name))
-        )
+        statements.append((VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name)))
         return statements, output_var_name
 
     def _derive_on_demand_view_code(
@@ -2077,9 +2021,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     def is_inplace_operation_in_sdk_code(self) -> bool:
         return True
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -2154,9 +2096,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
         # the conditional assignment should not update their parent view.
-        var_expr = filter_series_or_frame_expr(
-            series_or_frame_name=output_var_name, filter_expression=mask_var_name
-        )
+        var_expr = filter_series_or_frame_expr(series_or_frame_name=output_var_name, filter_expression=mask_var_name)
         statements.append((VariableNameStr(var_expr), value))
         return statements, output_var_name
 
@@ -2175,14 +2115,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         is_series_assignment = len(node_inputs) == 3
         if is_series_assignment:
             assert not isinstance(node_inputs[2], InfoDict)
-            expr = filter_series_or_frame_expr(
-                series_or_frame_name=node_inputs[2], filter_expression=mask_var_name
-            )
+            expr = filter_series_or_frame_expr(series_or_frame_name=node_inputs[2], filter_expression=mask_var_name)
             value = ExpressionStr(expr)
 
-        var_expr = filter_series_or_frame_expr(
-            series_or_frame_name=var_name, filter_expression=mask_var_name
-        )
+        var_expr = filter_series_or_frame_expr(series_or_frame_name=var_name, filter_expression=mask_var_name)
         statements.append((VariableNameStr(var_expr), value))
         return statements, var_name
 

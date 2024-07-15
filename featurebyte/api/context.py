@@ -332,7 +332,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "Context":  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> "Context":
         """
         Returns a Context object by its unique identifier (ID).
 
@@ -355,9 +355,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         return cls._get_by_id(id=id)
 
     @typechecked
-    def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
         """
         Adds a Context object to the catalog.
 

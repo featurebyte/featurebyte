@@ -2,9 +2,8 @@
 This module contains feature store details used to construct feast data source & offline store config
 """
 
-from typing import Any, Optional, Union, cast
-
 from abc import ABC, abstractmethod
+from typing import Any, Optional, Union, cast
 
 from feast import SnowflakeSource
 from feast.data_source import DataSource
@@ -26,10 +25,10 @@ from featurebyte.query_graph.node.schema import (
     BaseDatabaseDetails,
     DatabricksDetails,
     DatabricksUnityDetails,
+    SparkDetails,
 )
 from featurebyte.query_graph.node.schema import FeatureStoreDetails as BaseFeatureStoreDetails
 from featurebyte.query_graph.node.schema import SnowflakeDetails as BaseSnowflakeDetails
-from featurebyte.query_graph.node.schema import SparkDetails
 
 
 class AbstractDatabaseDetailsForFeast(BaseDatabaseDetails, ABC):
@@ -305,9 +304,7 @@ class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUni
         database_credential: Optional[BaseDatabaseCredential],
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
-        return DataBricksUnityOfflineStoreConfig(
-            **self.dict(), database_credential=database_credential
-        )
+        return DataBricksUnityOfflineStoreConfig(**self.dict(), database_credential=database_credential)
 
 
 FeastDatabaseDetails = Union[

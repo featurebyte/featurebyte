@@ -17,9 +17,7 @@ from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.session.base import BaseSession
 
 
-class StaticSourceTableService(
-    BaseMaterializedTableService[StaticSourceTableModel, StaticSourceTableModel]
-):
+class StaticSourceTableService(BaseMaterializedTableService[StaticSourceTableModel, StaticSourceTableModel]):
     """
     StaticSourceTableService class
     """
@@ -31,9 +29,7 @@ class StaticSourceTableService(
     def class_name(self) -> str:
         return "StaticSourceTable"
 
-    async def get_static_source_table_task_payload(
-        self, data: StaticSourceTableCreate
-    ) -> StaticSourceTableTaskPayload:
+    async def get_static_source_table_task_payload(self, data: StaticSourceTableCreate) -> StaticSourceTableTaskPayload:
         """
         Validate and convert a StaticSourceTableCreate schema to a StaticSourceTableTaskPayload schema
         which will be used to initiate the StaticSourceTable creation task.
