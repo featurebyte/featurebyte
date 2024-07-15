@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 
+import numpy as np
 from bson import ObjectId
 from pydantic import (
     BaseModel,
@@ -14,6 +15,7 @@ from pydantic import (
     Discriminator,
     Field,
     Tag,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -250,6 +252,22 @@ class PreviewObservationSet(FeatureByteBaseModel):
         min_length=1, max_length=FEATURE_PREVIEW_ROW_LIMIT, default=None
     )
     observation_table_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @field_serializer("point_in_time_and_serving_name_list", when_used="json")
+    def _serialize_point_in_time_and_serving_name_list(
+        self, value: Optional[List[Dict[str, Any]]]
+    ) -> Any:
+        if isinstance(value, list):
+            output = []
+            for item in value:
+                if isinstance(item, dict):
+                    item = {
+                        key: value.tolist() if isinstance(value, np.ndarray) else value
+                        for key, value in item.items()
+                    }
+                output.append(item)
+            return output
+        return value
 
     @model_validator(mode="after")
     def _validate_observation_set(self) -> "PreviewObservationSet":
