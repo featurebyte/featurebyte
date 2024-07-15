@@ -83,7 +83,13 @@ class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
     TableService update schema
     """
 
-    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
+
+class TableColumnsInfoUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Table columns info update payload schema
+    """
+
+    columns_info: List[ColumnInfo]
 
     # pydantic validators
     _columns_info_validator = field_validator("columns_info")(columns_info_validator)

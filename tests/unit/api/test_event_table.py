@@ -30,7 +30,10 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
+from featurebyte.query_graph.node.cleaning_operation import (
+    DisguisedValueImputation,
+    MissingValueImputation,
+)
 from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
@@ -1160,3 +1163,12 @@ def test_shape(snowflake_event_table, snowflake_query_map):
         )
         # test table colum shape
         assert snowflake_event_table["col_int"].shape() == (1000, 1)
+
+
+def test_update_critical_data_info_with_none_value(saved_event_table):
+    """Test update critical data info with None value"""
+    cleaning_operations = [DisguisedValueImputation(imputed_value=None, disguised_values=[-999])]
+    saved_event_table.col_int.update_critical_data_info(cleaning_operations=cleaning_operations)
+    assert (
+        saved_event_table.col_int.info.critical_data_info.cleaning_operations == cleaning_operations
+    )
