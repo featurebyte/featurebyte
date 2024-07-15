@@ -19,6 +19,7 @@ from featurebyte.models.base import (
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 IncompleteTileTaskReason = Literal["failure", "timeout"]
+CompletionStatus = Literal["success", "failure"]
 
 
 class IncompleteTileTask(FeatureByteBaseModel):
@@ -39,6 +40,7 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
     scheduled_job_ts: datetime
     feature_materialize_ts: Optional[datetime] = Field(default=None)
     completion_ts: Optional[datetime] = Field(default=None)
+    completion_status: Optional[CompletionStatus] = Field(default=None)
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
     incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
 
@@ -63,5 +65,6 @@ class FeatureMaterializeRunUpdate(BaseDocumentServiceUpdateSchema):
 
     feature_materialize_ts: Optional[datetime] = Field(default=None)
     completion_ts: Optional[datetime] = Field(default=None)
+    completion_status: Optional[CompletionStatus] = Field(default=None)
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
     incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)

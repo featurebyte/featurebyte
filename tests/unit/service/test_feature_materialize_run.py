@@ -97,17 +97,18 @@ async def test_feature_materialize_ts(service, feature_materialize_run_model):
 
 
 @pytest.mark.asyncio
-async def test_completion_ts(service, feature_materialize_run_model, completion_ts):
+async def test_set_completion(service, feature_materialize_run_model, completion_ts):
     """
-    Test update_completion_ts
+    Test set_completion
     """
     await service.create_document(feature_materialize_run_model)
 
-    await service.update_completion_ts(
-        feature_materialize_run_model.id, completion_ts=completion_ts
+    await service.set_completion(
+        feature_materialize_run_model.id, completion_ts=completion_ts, completion_status="success"
     )
 
     # Check document is correctly updated
     retrieved_model = await service.get_document(feature_materialize_run_model.id)
     assert retrieved_model.completion_ts == completion_ts
+    assert retrieved_model.completion_status == "success"
     assert retrieved_model.duration_from_scheduled_seconds == 10.0

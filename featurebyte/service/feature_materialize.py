@@ -564,12 +564,32 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             OfflineStoreFeatureTableModel object
         feature_materialize_run_id: Optional[ObjectId]
             Id of the feature materialize run
+
+        # noqa: DAR401
         """
         if feature_materialize_run_id is not None:
             await self.feature_materialize_run_service.update_feature_materialize_ts(
                 feature_materialize_run_id, datetime.utcnow()
             )
 
+        try:
+            await self._scheduled_materialize_features(feature_table_model)
+        except Exception:
+            if feature_materialize_run_id is not None:
+                await self.feature_materialize_run_service.set_completion(
+                    feature_materialize_run_id, datetime.utcnow(), "failure"
+                )
+            raise
+
+        if feature_materialize_run_id:
+            await self.feature_materialize_run_service.set_completion(
+                feature_materialize_run_id, datetime.utcnow(), "success"
+            )
+
+    async def _scheduled_materialize_features(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> None:
         session = await self._get_session(feature_table_model)
         feature_tables = []
         feature_timestamp = None
@@ -614,11 +634,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                         start_date=online_store_last_materialized_at,
                         end_date=feature_timestamp,  # type: ignore
                     )
-
-        if feature_materialize_run_id is not None:
-            await self.feature_materialize_run_service.update_completion_ts(
-                feature_materialize_run_id, datetime.utcnow()
-            )
 
     async def initialize_new_columns(
         self,

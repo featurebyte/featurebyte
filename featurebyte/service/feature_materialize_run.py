@@ -12,6 +12,7 @@ from bson import ObjectId
 
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_run import (
+    CompletionStatus,
     FeatureMaterializeRun,
     FeatureMaterializeRunUpdate,
     IncompleteTileTask,
@@ -72,7 +73,12 @@ class FeatureMaterializeRunService(
             document_id, FeatureMaterializeRunUpdate(feature_materialize_ts=feature_materialize_ts)
         )
 
-    async def update_completion_ts(self, document_id: ObjectId, completion_ts: datetime) -> None:
+    async def set_completion(
+        self,
+        document_id: ObjectId,
+        completion_ts: datetime,
+        completion_status: CompletionStatus,
+    ) -> None:
         """
         Update the completion timestamp for the document
 
@@ -82,6 +88,8 @@ class FeatureMaterializeRunService(
             Document identifier
         completion_ts: datetime
             Completion timestamp
+        completion_status: CompletionStatus
+            Completion status
         """
         document = await self.get_document(document_id)
         duration = (completion_ts - document.scheduled_job_ts).total_seconds()
@@ -89,6 +97,7 @@ class FeatureMaterializeRunService(
             document_id,
             FeatureMaterializeRunUpdate(
                 completion_ts=completion_ts,
+                completion_status=completion_status,
                 duration_from_scheduled_seconds=duration,
             ),
         )

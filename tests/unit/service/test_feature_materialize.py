@@ -422,6 +422,7 @@ async def test_scheduled_materialize_features(
     )
     assert feature_materialize_run.feature_materialize_ts is not None
     assert feature_materialize_run.completion_ts is not None
+    assert feature_materialize_run.completion_status == "success"
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
@@ -1284,3 +1285,32 @@ async def test_cleanup_error__drop_table(feature_materialize_service, caplog):
     lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
     assert len(lines) == 1
     assert lines[0] == "Unexpected error when attempting to modify offline store feature table"
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_scheduled_materialize_features_failure(
+    app_container,
+    feature_materialize_service,
+    offline_store_feature_table,
+    feature_materialize_run,
+):
+    """
+    Test FeatureMaterializeRun record updated on failure
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.FeatureMaterializeService._scheduled_materialize_features",
+        side_effect=RuntimeError("Fail on purpose"),
+    ):
+        with pytest.raises(RuntimeError):
+            await feature_materialize_service.scheduled_materialize_features(
+                offline_store_feature_table, feature_materialize_run.id
+            )
+
+    # Check FeatureMaterializeRun record is updated
+    feature_materialize_run = await app_container.feature_materialize_run_service.get_document(
+        feature_materialize_run.id
+    )
+    assert feature_materialize_run.feature_materialize_ts is not None
+    assert feature_materialize_run.completion_ts is not None
+    assert feature_materialize_run.completion_status == "failure"
