@@ -60,14 +60,13 @@ tasks:
     generates:
       - featurebyte/sql/spark/*.jar
     cmds:
-      - cd hive-udf && ./gradlew spotlessApply
-      - cd hive-udf && ./gradlew spotlessCheck
+      - cd hive-udf && ./gradlew spotlessApply  # format-java
+      - cd hive-udf && ./gradlew spotlessCheck  # lint-java
       - rm -f hive-udf/lib/build/libs/*.jar
       - cd hive-udf && ./gradlew shadowJar
-      - task: test-java
+      - cd hive-udf && ./gradlew test  # test-java
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
-      - cd hive-udf && ./gradlew test
 
   test:
     desc: Runs full test-suite
