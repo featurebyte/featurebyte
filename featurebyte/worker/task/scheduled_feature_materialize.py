@@ -42,4 +42,5 @@ class ScheduledFeatureMaterializeTask(BaseTask[ScheduledFeatureMaterializeTaskPa
         )
         await self.feature_materialize_service.scheduled_materialize_features(
             feature_table_model=feature_table,
+            feature_materialize_run_id=payload.feature_materialize_run_id,
         )

@@ -73,6 +73,7 @@ async def deprecated_scheduled_feature_materialize_task(service, offline_store_f
         catalog_id=service.catalog_id,
         offline_store_feature_table_name=offline_store_feature_table.name,
         offline_store_feature_table_id=offline_store_feature_table.id,
+        feature_materialize_run_id=ObjectId(),
     )
     task_name = service._get_deprecated_job_id(offline_store_feature_table.id)
     task_id = await service.task_manager.schedule_interval_task(

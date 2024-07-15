@@ -49,6 +49,7 @@ from featurebyte.query_graph.sql.online_serving import (
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_materialize_run import FeatureMaterializeRunService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -182,6 +183,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         entity_validation_service: EntityValidationService,
         deployment_service: DeploymentService,
+        feature_materialize_run_service: FeatureMaterializeRunService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -193,6 +195,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.entity_validation_service = entity_validation_service
         self.deployment_service = deployment_service
+        self.feature_materialize_run_service = feature_materialize_run_service
         self.redis = redis
 
     @asynccontextmanager
@@ -548,6 +551,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     async def scheduled_materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
+        feature_materialize_run_id: Optional[ObjectId] = None,
     ) -> None:
         """
         Materialize features for the provided offline store feature table. This method is expected
@@ -558,7 +562,37 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         ----------
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
+        feature_materialize_run_id: Optional[ObjectId]
+            Id of the feature materialize run
+
+        Raises
+        ------
+        Exception
+            If any error occurs during the materialization process
         """
+        if feature_materialize_run_id is not None:
+            await self.feature_materialize_run_service.update_feature_materialize_ts(
+                feature_materialize_run_id, datetime.utcnow()
+            )
+
+        try:
+            await self._scheduled_materialize_features(feature_table_model)
+        except Exception:
+            if feature_materialize_run_id is not None:
+                await self.feature_materialize_run_service.set_completion(
+                    feature_materialize_run_id, datetime.utcnow(), "failure"
+                )
+            raise
+
+        if feature_materialize_run_id:
+            await self.feature_materialize_run_service.set_completion(
+                feature_materialize_run_id, datetime.utcnow(), "success"
+            )
+
+    async def _scheduled_materialize_features(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+    ) -> None:
         session = await self._get_session(feature_table_model)
         feature_tables = []
         feature_timestamp = None

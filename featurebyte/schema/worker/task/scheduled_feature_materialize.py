@@ -2,7 +2,7 @@
 ScheduledFeatureMaterializeTaskPayload schema
 """
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -24,3 +24,4 @@ class ScheduledFeatureMaterializeTaskPayload(BaseTaskPayload):
     priority: TaskPriority = Field(default=TaskPriority.CRITICAL)
     offline_store_feature_table_name: str
     offline_store_feature_table_id: PydanticObjectId
+    feature_materialize_run_id: Optional[PydanticObjectId] = Field(default=None)
