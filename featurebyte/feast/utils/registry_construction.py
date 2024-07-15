@@ -2,14 +2,12 @@
 This module contains classes for constructing feast registry
 """
 
-# pylint: disable=no-name-in-module, too-many-lines
 from __future__ import annotations
-
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
 import tempfile
 from collections import defaultdict
 from datetime import timedelta
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 from unittest.mock import patch
 
 from feast import Entity as FeastEntity
@@ -779,7 +777,7 @@ class FeastRegistryBuilder:
         return registry_proto
 
     @classmethod
-    def create(  # pylint: disable=too-many-locals
+    def create(
         cls,
         feature_store: FeatureStoreModel,
         online_store: Optional[OnlineStoreModel],

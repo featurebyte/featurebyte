@@ -4,9 +4,8 @@ Base info related schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence
-
 from datetime import datetime
+from typing import Any, List, Optional, Sequence
 
 from pydantic import Field
 

@@ -5,10 +5,10 @@ Models for the value parameter used by SingleValueNodeParameters
 from __future__ import annotations
 
 from typing import Union, cast
-from typing_extensions import Literal
 
 import pandas as pd
 from pydantic import Field
+from typing_extensions import Literal
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel

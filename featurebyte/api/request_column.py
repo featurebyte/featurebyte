@@ -91,14 +91,14 @@ class RequestColumn(Series):
 
         >>> invoice_view = catalog.get_view("GROCERYINVOICE")
         >>> latest_invoice = invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
-        ... value_column="Timestamp",
-        ...   method="latest",
-        ...   windows=[None],
-        ...   feature_names=["Customer Latest Visit"],
+        ...     value_column="Timestamp",
+        ...     method="latest",
+        ...     windows=[None],
+        ...     feature_names=["Customer Latest Visit"],
         ... )
         >>> # Create feature that computes the time since the latest invoice
         >>> feature = (
-        ...    fb.RequestColumn.point_in_time() - latest_invoice["Customer Latest Visit"]
+        ...     fb.RequestColumn.point_in_time() - latest_invoice["Customer Latest Visit"]
         ... ).dt.hour
         >>> feature.name = "Customer number of hours since last visit"
         """

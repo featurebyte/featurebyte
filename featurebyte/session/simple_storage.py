@@ -2,12 +2,11 @@
 SimpleStorage classes for basic object store operations
 """
 
-from typing import Any, Dict, Literal, Optional
-
 import os
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, Dict, Literal, Optional
 
 import boto3
 from azure.core.credentials import AzureNamedKeyCredential

@@ -4,12 +4,11 @@ SnowflakeSession class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
-
 import collections
 import datetime
 import json
 import logging
+from typing import Any, AsyncGenerator, OrderedDict
 
 import pandas as pd
 import pyarrow as pa
@@ -187,7 +186,7 @@ class SnowflakeSession(BaseSession):
             When the cursor description is not as expected
         """
         fields = []
-        description = cursor._description or []  # pylint: disable=protected-access
+        description = cursor._description or []
         for field in description:
             if not hasattr(field, "type_code"):
                 raise CursorSchemaError()
@@ -197,13 +196,11 @@ class SnowflakeSession(BaseSession):
                 pa_type = pa.decimal128(field.precision, field.scale)
             else:
                 pa_type = field_type.pa_type(field)
-            db_var_type = self._convert_to_internal_variable_type(
-                {
-                    "type": field_type.name,
-                    "length": field.internal_size,
-                    "scale": field.scale,
-                }
-            )
+            db_var_type = self._convert_to_internal_variable_type({
+                "type": field_type.name,
+                "length": field.internal_size,
+                "scale": field.scale,
+            })
             fields.append(
                 pa.field(field.name, pa_type, metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type})
             )
@@ -329,9 +326,11 @@ class SnowflakeSession(BaseSession):
         if details is None or details.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": table_name,
+            "schema_name": schema_name,
+            "database_name": database_name,
+        })
         return TableDetails(
             details=json.loads(details.iloc[0].to_json(orient="index")),
             fully_qualified_name=sql_to_string(
@@ -340,7 +339,7 @@ class SnowflakeSession(BaseSession):
         )
 
     @staticmethod
-    def get_columns_schema_from_dataframe(  # pylint: disable=too-many-branches
+    def get_columns_schema_from_dataframe(
         dataframe: pd.DataFrame,
     ) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame

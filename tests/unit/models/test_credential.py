@@ -144,20 +144,16 @@ def test_gcs_storage_credential_service_account_info():
     Test GCS storage credential accepts string service account info
     """
 
-    credential = CredentialModel(
-        **{
-            "feature_store_id": "668f81a61f685fdecfce9ee9",
-            "storage_credential": {
-                "type": "GCS",
-                "service_account_info": json.dumps(
-                    {
-                        "type": "service_account",
-                        "private_key": "private_key",
-                    }
-                ),
-            },
-        }
-    )
+    credential = CredentialModel(**{
+        "feature_store_id": "668f81a61f685fdecfce9ee9",
+        "storage_credential": {
+            "type": "GCS",
+            "service_account_info": json.dumps({
+                "type": "service_account",
+                "private_key": "private_key",
+            }),
+        },
+    })
     assert isinstance(credential.storage_credential, GCSStorageCredential)
     assert credential.storage_credential.service_account_info == {
         "type": "service_account",

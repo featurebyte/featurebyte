@@ -4,9 +4,8 @@ SQL generation for as-at aggregation
 
 from __future__ import annotations
 
-from typing import Any, TypeVar, cast
-
 from abc import abstractmethod
+from typing import Any, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -101,15 +100,13 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             end_timestamp_column = spec.parameters.end_timestamp_column
 
         if spec.parameters.keys:
-            join_key_condition = expressions.and_(
-                *[
-                    expressions.EQ(
-                        this=get_qualified_column_identifier(serving_name, "REQ"),
-                        expression=get_qualified_column_identifier(key, "SCD"),
-                    )
-                    for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
-                ]
-            )
+            join_key_condition = expressions.and_(*[
+                expressions.EQ(
+                    this=get_qualified_column_identifier(serving_name, "REQ"),
+                    expression=get_qualified_column_identifier(key, "SCD"),
+                )
+                for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+            ])
         else:
             join_key_condition = expressions.true()
 

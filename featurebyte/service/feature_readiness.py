@@ -306,9 +306,9 @@ class FeatureReadinessService:
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(
-            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
-        ),
+        wait=wait_chain(*[
+            wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)
+        ]),
     )
     async def update_feature(
         self,

@@ -4,10 +4,9 @@ This module contains Feature related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 import traceback
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import pymongo
 from bson import ObjectId

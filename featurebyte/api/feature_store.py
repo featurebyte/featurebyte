@@ -121,7 +121,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         storage_path="file:///opt/spark/data/staging/featurebyte",
         ...         catalog_name="spark_catalog",
         ...         schema_name="playground",
-        ...     )
+        ...     ),
         ... )
         """
         # Construct object, and save to persistent layer.
@@ -184,7 +184,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         ...         storage_path="file:///opt/spark/data/staging/featurebyte",
         ...         catalog_name="spark_catalog",
         ...         schema_name="playground",
-        ...     )
+        ...     ),
         ... )
         >>> FeatureStore.list()[["name", "type"]]
                   name   type
@@ -229,9 +229,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         return super().get(name)
 
     @classmethod
-    def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> FeatureStore:
+    def get_by_id(cls, id: ObjectId) -> FeatureStore:
         """
         Returns a FeatureStore object by its unique identifier (ID).
 

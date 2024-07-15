@@ -2,7 +2,6 @@
 Test entity relationship validator
 """
 
-# pylint: disable=protected-access
 import pytest
 from bson import ObjectId
 

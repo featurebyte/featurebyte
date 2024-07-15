@@ -4,9 +4,8 @@ FeatureListNamespace API route controller
 
 from __future__ import annotations
 
-from typing import Any, cast
-
 import copy
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -81,16 +80,14 @@ class FeatureListNamespaceController(
                 "dtype_distribution": 1,
             },
         )
-        output = FeatureListNamespaceModelResponse(
-            **{
-                **document.dict(by_alias=True),
-                "primary_entity_ids": default_feature_list_doc["primary_entity_ids"],
-                "entity_ids": default_feature_list_doc["entity_ids"],
-                "table_ids": default_feature_list_doc["table_ids"],
-                "readiness_distribution": default_feature_list_doc["readiness_distribution"],
-                "dtype_distribution": default_feature_list_doc["dtype_distribution"],
-            }
-        )
+        output = FeatureListNamespaceModelResponse(**{
+            **document.dict(by_alias=True),
+            "primary_entity_ids": default_feature_list_doc["primary_entity_ids"],
+            "entity_ids": default_feature_list_doc["entity_ids"],
+            "table_ids": default_feature_list_doc["table_ids"],
+            "readiness_distribution": default_feature_list_doc["readiness_distribution"],
+            "dtype_distribution": default_feature_list_doc["dtype_distribution"],
+        })
         return cast(Document, output)
 
     async def list(
@@ -132,16 +129,14 @@ class FeatureListNamespaceController(
                 feature_list_namespace["default_feature_list_id"]
             ]
             output.append(
-                FeatureListNamespaceModelResponse(
-                    **{
-                        **feature_list_namespace,
-                        "primary_entity_ids": feature_list_doc["primary_entity_ids"],
-                        "entity_ids": feature_list_doc["entity_ids"],
-                        "table_ids": feature_list_doc["table_ids"],
-                        "readiness_distribution": feature_list_doc["readiness_distribution"],
-                        "dtype_distribution": feature_list_doc["dtype_distribution"],
-                    }
-                )
+                FeatureListNamespaceModelResponse(**{
+                    **feature_list_namespace,
+                    "primary_entity_ids": feature_list_doc["primary_entity_ids"],
+                    "entity_ids": feature_list_doc["entity_ids"],
+                    "table_ids": feature_list_doc["table_ids"],
+                    "readiness_distribution": feature_list_doc["readiness_distribution"],
+                    "dtype_distribution": feature_list_doc["dtype_distribution"],
+                })
             )
 
         document_data["data"] = output

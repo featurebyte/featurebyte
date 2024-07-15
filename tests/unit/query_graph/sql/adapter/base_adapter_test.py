@@ -2,10 +2,8 @@
 Base adapter test class that can be reused across all adapters
 """
 
-from typing import cast
-
 import textwrap
-from select import select
+from typing import cast
 
 from sqlglot import select
 from sqlglot.expressions import Identifier, Select, alias_

@@ -47,7 +47,6 @@ from featurebyte.schema.target_table import TargetTableCreate
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
 
 
-# pylint: disable=too-many-ancestors
 class Target(
     Series,
     DeletableApiObject,
@@ -55,7 +54,7 @@ class Target(
     FeatureOrTargetMixin,
     TargetDtAccessorMixin,
     TargetStrAccessorMixin,
-):  # pylint: disable=too-many-public-methods
+):
     """
     Target class used to represent a Target in FeatureByte.
     """
@@ -121,17 +120,17 @@ class Target(
         ),
         format_kwargs=DOCSTRING_FORMAT_PARAMS,
     )
-    def version(self) -> str:  # pylint: disable=missing-function-docstring
+    def version(self) -> str:
         return self._get_version()
 
     @property
     @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
+    def catalog_id(self) -> ObjectId:
         return self._get_catalog_id()
 
     @property
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    def entity_ids(self) -> Sequence[ObjectId]:
         return self._get_entity_ids()
 
     @property
@@ -140,22 +139,22 @@ class Target(
     )
     def primary_entity_ids(
         self,
-    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    ) -> Sequence[ObjectId]:
         return self._get_primary_entity_ids()
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def entities(self) -> List[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+    def primary_entity(self) -> List[Entity]:
         return self._get_primary_entity()
 
     @property
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+    def table_ids(self) -> Sequence[ObjectId]:
         return self._get_table_ids()
 
     @substitute_docstring(
@@ -168,7 +167,7 @@ class Target(
             """
         ),
     )
-    def isnull(self) -> Target:  # pylint: disable=missing-function-docstring
+    def isnull(self) -> Target:
         return super().isnull()
 
     @substitute_docstring(
@@ -181,7 +180,7 @@ class Target(
             """
         ),
     )
-    def notnull(self) -> Target:  # pylint: disable=missing-function-docstring
+    def notnull(self) -> Target:
         return super().notnull()
 
     @property
@@ -214,7 +213,7 @@ class Target(
         ),
         format_kwargs={"object_type": "target"},
     )
-    def definition(self) -> str:  # pylint: disable=missing-function-docstring
+    def definition(self) -> str:
         return self._generate_definition()
 
     @substitute_docstring(
@@ -224,7 +223,7 @@ class Target(
     )
     @enforce_observation_set_row_order
     @typechecked
-    def preview(  # pylint: disable=missing-function-docstring
+    def preview(
         self,
         observation_set: Union[ObservationTable, pd.DataFrame],
     ) -> pd.DataFrame:

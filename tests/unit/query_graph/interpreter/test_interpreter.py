@@ -260,7 +260,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 
     sql = tile_gen_sqls[0].sql
     expected_sql = textwrap.dedent(
-        f"""
+        """
         SELECT
           index,
           "cust_id",

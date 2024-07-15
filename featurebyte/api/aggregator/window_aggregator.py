@@ -4,9 +4,8 @@ This module contains window aggregator related class
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, cast
-
 import os
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView

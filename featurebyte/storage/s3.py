@@ -4,9 +4,8 @@ S3 Storage Class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator
-
 from pathlib import Path
+from typing import Any, AsyncGenerator
 
 import aiofiles
 from botocore.exceptions import ClientError

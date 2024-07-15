@@ -39,7 +39,7 @@ class DimensionTableController(
         "dimension_id_column": SemanticType.DIMENSION_ID,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         dimension_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,

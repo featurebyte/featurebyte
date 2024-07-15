@@ -165,19 +165,17 @@ def test_list(cos_udf, power_udf, date_sub_udf):
     udf_list = UserDefinedFunction.list()
     pd.testing.assert_frame_equal(
         udf_list,
-        pd.DataFrame(
-            {
-                "id": [str(date_sub_udf.id), str(power_udf.id), str(cos_udf.id)],
-                "signature": [date_sub_udf.signature, power_udf.signature, cos_udf.signature],
-                "sql_function_name": [
-                    date_sub_udf.sql_function_name,
-                    power_udf.sql_function_name,
-                    cos_udf.sql_function_name,
-                ],
-                "feature_store_name": "sf_featurestore",
-                "is_global": [date_sub_udf.is_global, power_udf.is_global, cos_udf.is_global],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(date_sub_udf.id), str(power_udf.id), str(cos_udf.id)],
+            "signature": [date_sub_udf.signature, power_udf.signature, cos_udf.signature],
+            "sql_function_name": [
+                date_sub_udf.sql_function_name,
+                power_udf.sql_function_name,
+                cos_udf.sql_function_name,
+            ],
+            "feature_store_name": "sf_featurestore",
+            "is_global": [date_sub_udf.is_global, power_udf.is_global, cos_udf.is_global],
+        }),
     )
 
 

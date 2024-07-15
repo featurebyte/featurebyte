@@ -2,9 +2,8 @@
 Customized MongoDB Scheduler
 """
 
-from typing import Any
-
 import datetime
+from typing import Any
 
 from celery import schedules
 from celerybeatmongo.schedulers import MongoScheduleEntry as BaseMongoScheduleEntry
@@ -43,9 +42,9 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
             last_run_at = self._task.last_run_at.replace(tzinfo=None)
 
             # compute total seconds since epoch shifted by time modulo frequency
-            interval_seconds = datetime.timedelta(
-                **{self._task.interval.period: self._task.interval.every}
-            ).total_seconds()
+            interval_seconds = datetime.timedelta(**{
+                self._task.interval.period: self._task.interval.every
+            }).total_seconds()
             total_seconds = (
                 now - self.epoch_time
             ).total_seconds() - self._task.time_modulo_frequency_second

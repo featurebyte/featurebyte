@@ -353,7 +353,10 @@ def test_event_view_graph_node(event_table_data, event_input_node):
     # since we drop event_timestamp, only "amount" is in columns_info
     assert set(
         graph_node._get_required_input_columns(input_index=0, available_column_names=[])
-    ) == {"amount", "event_id"}
+    ) == {
+        "amount",
+        "event_id",
+    }
     compare_pydantic_obj(
         columns_info,
         expected=[

@@ -152,7 +152,7 @@ class NullFillingValueExtractor(
         null_filling_value_codes += f"\n\nfill_value = extract_null_filling_value({input_params})\n"
         state.codes = null_filling_value_codes
         scope: Dict[str, Any] = {}
-        exec(null_filling_value_codes, scope)  # pylint: disable=exec-used  # nosec
+        exec(null_filling_value_codes, scope)  # nosec
         fill_value = scope["fill_value"]
 
         # if fill_value is not null, that implies the query graph has null filling operation

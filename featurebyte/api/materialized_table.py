@@ -2,10 +2,9 @@
 Materialized Table Mixin
 """
 
-from typing import Any, Callable, ClassVar, Optional, Tuple, Union
-
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, Callable, ClassVar, Optional, Tuple, Union
 
 import pandas as pd
 from typeguard import typechecked
@@ -106,18 +105,16 @@ class MaterializedTableMixin(MaterializedTableModel):
         """
 
         try:
-            from pyspark.sql import SparkSession  # pylint: disable=import-outside-toplevel
+            from pyspark.sql import SparkSession
 
             spark = SparkSession.builder.getOrCreate()
 
             fully_qualified_table_name = sql_to_string(
-                get_fully_qualified_table_name(
-                    {
-                        "table_name": self.location.table_details.table_name,
-                        "schema_name": self.location.table_details.schema_name,
-                        "database_name": self.location.table_details.database_name,
-                    }
-                ),
+                get_fully_qualified_table_name({
+                    "table_name": self.location.table_details.table_name,
+                    "schema_name": self.location.table_details.schema_name,
+                    "database_name": self.location.table_details.database_name,
+                }),
                 source_type=SourceType.SPARK,
             )
             return spark.table(fully_qualified_table_name)

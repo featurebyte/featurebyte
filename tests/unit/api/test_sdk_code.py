@@ -194,9 +194,10 @@ def test_sdk_code_generation__complex_feature(
     assert feat_item_sum.entity_ids == [transaction_entity.id]
     assert feat_event_sum.entity_ids == [saved_event_table.cust_id.info.entity_id]
     comp = feat_event_sum + feat_item_sum
-    assert comp.entity_ids == sorted(
-        [saved_event_table.cust_id.info.entity_id, transaction_entity.id]
-    )
+    assert comp.entity_ids == sorted([
+        saved_event_table.cust_id.info.entity_id,
+        transaction_entity.id,
+    ])
     feat_empty_keys = event_view.groupby([]).aggregate_over(
         value_column=feat_item_sum.name,
         method="sum",

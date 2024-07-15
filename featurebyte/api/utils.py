@@ -4,9 +4,8 @@ Utility functions for API Objects
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pyarrow as pa
@@ -47,7 +46,7 @@ def dataframe_from_arrow_stream_with_progress(buffer: Any, num_rows: int) -> pd.
             ) as progress_bar:
                 while True:
                     if batches[-1].num_rows > 0:
-                        progress_bar(batches[-1].num_rows)  # pylint: disable=not-callable
+                        progress_bar(batches[-1].num_rows)
                     batches.append(reader.read_next_batch())
         except StopIteration:
             pass
@@ -82,7 +81,7 @@ def parquet_from_arrow_stream(buffer: Any, output_path: Path, num_rows: int) -> 
                     table = pa.Table.from_batches([batch])
                     writer.write_table(table)
                     if table.num_rows > 0:
-                        progress_bar(table.num_rows)  # pylint: disable=not-callable
+                        progress_bar(table.num_rows)
                     batch = reader.read_next_batch()
         except StopIteration:
             pass

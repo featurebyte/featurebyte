@@ -5,9 +5,9 @@ This module contains Feature list store info related models
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
-from typing_extensions import Annotated
 
 from pydantic import Field
+from typing_extensions import Annotated
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

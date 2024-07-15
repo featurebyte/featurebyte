@@ -2,10 +2,8 @@
 This module contains session to Spark integration tests.
 """
 
-import json
 from collections import OrderedDict
 
-import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
@@ -35,30 +33,24 @@ async def test_schema_initializer(config, feature_store, credentials_mapping, se
     column_details = await session.list_table_schema(
         database_name="spark_catalog", schema_name=session.schema_name, table_name="metadata_schema"
     )
-    assert column_details == OrderedDict(
-        [
-            (
-                "WORKING_SCHEMA_VERSION",
-                ColumnSpecWithDescription(
-                    name="WORKING_SCHEMA_VERSION", dtype="INT", description=None
-                ),
-            ),
-            (
-                "MIGRATION_VERSION",
-                ColumnSpecWithDescription(name="MIGRATION_VERSION", dtype="INT", description=None),
-            ),
-            (
-                "FEATURE_STORE_ID",
-                ColumnSpecWithDescription(
-                    name="FEATURE_STORE_ID", dtype="VARCHAR", description=None
-                ),
-            ),
-            (
-                "CREATED_AT",
-                ColumnSpecWithDescription(name="CREATED_AT", dtype="TIMESTAMP", description=None),
-            ),
-        ]
-    )
+    assert column_details == OrderedDict([
+        (
+            "WORKING_SCHEMA_VERSION",
+            ColumnSpecWithDescription(name="WORKING_SCHEMA_VERSION", dtype="INT", description=None),
+        ),
+        (
+            "MIGRATION_VERSION",
+            ColumnSpecWithDescription(name="MIGRATION_VERSION", dtype="INT", description=None),
+        ),
+        (
+            "FEATURE_STORE_ID",
+            ColumnSpecWithDescription(name="FEATURE_STORE_ID", dtype="VARCHAR", description=None),
+        ),
+        (
+            "CREATED_AT",
+            ColumnSpecWithDescription(name="CREATED_AT", dtype="TIMESTAMP", description=None),
+        ),
+    ])
 
     # query for the table in the metadata schema table
     get_version_query = "SELECT * FROM METADATA_SCHEMA"
@@ -100,14 +92,12 @@ async def test_register_table(session):
     """
     Test the session register_table in spark works properly.
     """
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(
-                ["2001-01-02 10:00:00.123456789"] * 2 + ["2001-01-03 10:00:00.123456789"] * 3
-            ),
-            "üser id": [1, 2, 3, 4, 5],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(
+            ["2001-01-02 10:00:00.123456789"] * 2 + ["2001-01-03 10:00:00.123456789"] * 3
+        ),
+        "üser id": [1, 2, 3, 4, 5],
+    })
     table_name = "test_table_test_register_table"
     await session.register_table(table_name=table_name, dataframe=df_training_events)
     df_retrieve = await session.execute_query(f"SELECT * FROM {table_name}")

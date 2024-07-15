@@ -142,7 +142,7 @@ async def online_store_table_exists(session, feature_service, saved_feature):
     table_name = feature_model.online_store_table_names[0]
     try:
         await session.execute_query(f"select * from {table_name} limit 1")
-    except:
+    except:  # noqa
         return False
     return True
 

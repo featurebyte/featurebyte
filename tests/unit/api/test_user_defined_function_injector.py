@@ -2,10 +2,9 @@
 Unit tests for the UserDefinedFunctionInjector class.
 """
 
-from typing import Union
-
 import inspect
 import textwrap
+from typing import Union
 
 import pandas as pd
 import pytest

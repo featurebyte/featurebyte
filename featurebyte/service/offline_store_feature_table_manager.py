@@ -4,10 +4,9 @@ OfflineStoreFeatureTableUpdateService class
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
-
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from bson import ObjectId
 
@@ -131,7 +130,7 @@ class OfflineIngestGraphContainer:
             yield table_name, features
 
 
-class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes,too-many-arguments
+class OfflineStoreFeatureTableManagerService:
     """
     OfflineStoreFeatureTableManagerService class
     """
@@ -364,17 +363,15 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     set(feature_table_dict["feature_ids"]) - set(updated_feature_ids)
                 )
                 removed_features = []
-                async for feature in self.feature_service.list_documents_iterator(
-                    {"_id": {"$in": removed_feature_ids}}
-                ):
+                async for feature in self.feature_service.list_documents_iterator({
+                    "_id": {"$in": removed_feature_ids}
+                }):
                     removed_features.append(feature)
                 columns_to_drop = self._get_offline_store_feature_table_columns(removed_features)
                 await self.feature_materialize_service.drop_columns(
                     updated_feature_table, columns_to_drop
                 )
-                async for (
-                    lookup_feature_table
-                ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
+                async for lookup_feature_table in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
                     feature_table_dict["_id"]
                 ):
                     await self.feature_materialize_service.drop_columns(
@@ -701,9 +698,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         # Clean up precomputed lookup feature tables. Usually this is a no-op since those tables
         # would have been cleaned up by _update_precomputed_lookup_feature_tables_disable_deployment
         # already. The cleanup here is useful for handling bad state.
-        async for (
-            lookup_feature_table
-        ) in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
+        async for lookup_feature_table in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
             source_feature_table_id=feature_table_id,
         ):
             await self.feature_materialize_service.drop_table(lookup_feature_table)

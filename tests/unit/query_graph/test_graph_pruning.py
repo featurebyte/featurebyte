@@ -490,7 +490,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_c],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=gfunc_1)
+    pruned_graph, _node_name_map = graph.prune(target_node=gfunc_1)
     assert pruned_graph.edges_map == {
         "add_1": ["assign_1"],
         "assign_1": ["project_3", "project_4"],
@@ -516,7 +516,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=gfunc_2)
+    pruned_graph, _node_name_map = graph.prune(target_node=gfunc_2)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1"],
         "project_1": ["generic_function_1"],

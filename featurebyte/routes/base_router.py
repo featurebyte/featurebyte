@@ -2,9 +2,8 @@
 Base router
 """
 
-from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
-
 from http import HTTPStatus
+from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
 
 from fastapi import APIRouter, Request
 from fastapi.routing import APIRoute

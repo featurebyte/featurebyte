@@ -4,9 +4,8 @@ Entity lookup feature table construction
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
-
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.event_table import EventTableModel

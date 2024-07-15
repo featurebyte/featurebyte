@@ -2,8 +2,6 @@
 Test FeatureMaterializeService
 """
 
-# pylint: disable=too-many-lines
-
 from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import Mock, call, patch

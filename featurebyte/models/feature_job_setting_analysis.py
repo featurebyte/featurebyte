@@ -4,9 +4,8 @@ This module contains FeatureJobSettingAnalysis related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
-
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
 import pymongo
 from pydantic import Field

@@ -4,9 +4,8 @@ Module for groupby operation (non-time aware) sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot.expressions import Expression, select
 

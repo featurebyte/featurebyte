@@ -2,9 +2,6 @@
 Common test fixtures used across files in integration directory
 """
 
-# pylint: disable=too-many-lines
-from typing import Dict, List, cast
-
 import asyncio
 import json
 import os
@@ -17,6 +14,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, cast
 from unittest import mock
 from unittest.mock import Mock, patch
 from uuid import UUID, uuid4
@@ -256,7 +254,7 @@ def event_loop():
         loop = asyncio.get_event_loop()
         yield loop
         loop.close()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if "there is no current event loop in thread" in str(e):
             logger.exception(
                 "no event loop found. explicitly recreating and resetting new event loop.",
@@ -530,7 +528,7 @@ def transaction_dataframe(source_type):
     """
     Simulated transaction Dataframe
     """
-    # pylint: disable=no-member
+
     row_number = 24 * 366
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "àdd", "purchase", "rëmove", None]
@@ -539,29 +537,25 @@ def transaction_dataframe(source_type):
     # add more points to the first one month
     first_one_month_point_num = 24 * 31
     target_point_num = 4000
-    event_timestamps = np.concatenate(
-        [
-            rng.choice(timestamps.head(first_one_month_point_num), target_point_num),
-            rng.choice(
-                timestamps.tail(row_number - first_one_month_point_num),
-                row_number - target_point_num,
-            ),
-        ]
-    )
+    event_timestamps = np.concatenate([
+        rng.choice(timestamps.head(first_one_month_point_num), target_point_num),
+        rng.choice(
+            timestamps.tail(row_number - first_one_month_point_num),
+            row_number - target_point_num,
+        ),
+    ])
 
     # make timestamps unique (avoid ties when getting lags, for convenience of writing tests)
     event_timestamps += rng.rand(event_timestamps.shape[0]) * pd.Timedelta("1ms")
 
-    data = pd.DataFrame(
-        {
-            "ëvent_timestamp": event_timestamps,
-            "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
-            "cust_id": rng.randint(1, 1000, row_number),
-            "üser id": rng.randint(1, 10, row_number),
-            "product_action": rng.choice(product_actions, row_number),
-            "session_id": rng.randint(100, 1000, row_number),
-        }
-    )
+    data = pd.DataFrame({
+        "ëvent_timestamp": event_timestamps,
+        "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
+        "cust_id": rng.randint(1, 1000, row_number),
+        "üser id": rng.randint(1, 10, row_number),
+        "product_action": rng.choice(product_actions, row_number),
+        "session_id": rng.randint(100, 1000, row_number),
+    })
     amount = (rng.rand(row_number) * 100).round(2)
     amount[::5] = np.nan
     data["àmount"] = amount
@@ -619,7 +613,7 @@ def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based table corresponding to the transaction table
     """
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
     data = defaultdict(list)
     item_types = [f"type_{i}" for i in range(100)]
 
@@ -656,14 +650,12 @@ def dimension_dataframe_fixture(item_ids):
     item_names = [f"name_{i}" for i in range(num_of_rows)]
     item_types = [f"type_{i}" for i in range(num_of_rows)]
 
-    data = pd.DataFrame(
-        {
-            "created_at": pd.date_range("2001-01-01", freq="1min", periods=num_of_rows),
-            "item_id": item_ids,
-            "item_name": item_names,
-            "item_type": item_types,
-        }
-    )
+    data = pd.DataFrame({
+        "created_at": pd.date_range("2001-01-01", freq="1min", periods=num_of_rows),
+        "item_id": item_ids,
+        "item_name": item_names,
+        "item_type": item_types,
+    })
     yield data
 
 
@@ -672,7 +664,7 @@ def scd_dataframe_fixture(transaction_data):
     """
     DataFrame fixture with slowly changing dimension
     """
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
 
     natural_key_values = sorted(transaction_data["üser id"].unique())
     dates = pd.to_datetime(transaction_data["ëvent_timestamp"], utc=True).dt.floor("d")
@@ -684,14 +676,12 @@ def scd_dataframe_fixture(transaction_data):
     values = [f"STÀTUS_CODE_{i}" for i in range(50)]
 
     num_rows = 1000
-    data = pd.DataFrame(
-        {
-            "Effective Timestamp": rng.choice(effective_timestamp_values, num_rows),
-            "User ID": rng.choice(natural_key_values, num_rows),
-            "User Status": rng.choice(values, num_rows),
-            "ID": np.arange(num_rows),
-        }
-    )
+    data = pd.DataFrame({
+        "Effective Timestamp": rng.choice(effective_timestamp_values, num_rows),
+        "User ID": rng.choice(natural_key_values, num_rows),
+        "User Status": rng.choice(values, num_rows),
+        "ID": np.arange(num_rows),
+    })
     # Ensure there is only one active record per natural key as at any point in time
     data = (
         data.drop_duplicates(["User ID", "Effective Timestamp"])
@@ -724,7 +714,7 @@ def observation_set(transaction_data_upper_case):
     df.rename({"ËVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
 
     # Add random spikes to point in time of some rows
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
     spike_mask = rng.randint(0, 2, len(df)).astype(bool)
     spike_shift = pd.to_timedelta(rng.randint(0, 3601, len(df)), unit="s")
     df.loc[spike_mask, "POINT_IN_TIME"] = (
@@ -1180,25 +1170,23 @@ def create_transactions_event_table_from_data_source(
         schema_name=schema_name,
         table_name=table_name,
     )
-    expected_dtypes = pd.Series(
-        {
-            "ËVENT_TIMESTAMP": (
-                "TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"
-            ),
-            "CREATED_AT": "INT",
-            "CUST_ID": "INT",
-            "ÜSER ID": "INT",
-            "PRODUCT_ACTION": "VARCHAR",
-            "SESSION_ID": "INT",
-            "ÀMOUNT": "FLOAT",
-            "TZ_OFFSET": "VARCHAR",
-            "TRANSACTION_ID": "VARCHAR",
-            "EMBEDDING_ARRAY": "ARRAY",
-            "ARRAY": "ARRAY",
-            "FLAT_DICT": "DICT",
-            "NESTED_DICT": "DICT",
-        }
-    )
+    expected_dtypes = pd.Series({
+        "ËVENT_TIMESTAMP": (
+            "TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"
+        ),
+        "CREATED_AT": "INT",
+        "CUST_ID": "INT",
+        "ÜSER ID": "INT",
+        "PRODUCT_ACTION": "VARCHAR",
+        "SESSION_ID": "INT",
+        "ÀMOUNT": "FLOAT",
+        "TZ_OFFSET": "VARCHAR",
+        "TRANSACTION_ID": "VARCHAR",
+        "EMBEDDING_ARRAY": "ARRAY",
+        "ARRAY": "ARRAY",
+        "FLAT_DICT": "DICT",
+        "NESTED_DICT": "DICT",
+    })
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
     event_table = database_table.create_event_table(
         name=event_table_name,
@@ -1469,7 +1457,7 @@ def mock_task_manager(request, persistent, storage):
                     await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 

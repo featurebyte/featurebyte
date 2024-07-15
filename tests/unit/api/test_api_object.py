@@ -79,13 +79,11 @@ def test_list(mock_util_configuration):
     output = ApiObject.list()
     assert_frame_equal(
         output,
-        pd.DataFrame(
-            {
-                "id": [f"637b87ee8959fd0e36a0bc{i:02d}" for i in range(11)],
-                "name": [f"item_{i}" for i in range(11)],
-                "created_at": ["2022-11-21T14:00:49.255000"] * 11,
-            }
-        ),
+        pd.DataFrame({
+            "id": [f"637b87ee8959fd0e36a0bc{i:02d}" for i in range(11)],
+            "name": [f"item_{i}" for i in range(11)],
+            "created_at": ["2022-11-21T14:00:49.255000"] * 11,
+        }),
     )
 
 

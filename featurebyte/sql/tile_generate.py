@@ -30,10 +30,9 @@ class TileGenerate(TileCommon):
         """
         Execute tile generate operation
         """
-        # pylint: disable=too-many-statements
+
         tile_table_exist_flag = await self.table_exists(self.tile_id)
 
-        # pylint: disable=duplicate-code
         await TileRegistry(
             session=self._session,
             sql=self.sql,

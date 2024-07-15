@@ -124,13 +124,11 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         lists = Target.list()
 
         # Verify that there are 2 targets in the list.
-        expected_df = pd.DataFrame(
-            {
-                "name": ["float_target", "target_without_recipe"],
-                "dtype": ["FLOAT", "FLOAT"],
-                "entities": [["customer"], ["customer"]],
-            }
-        )
+        expected_df = pd.DataFrame({
+            "name": ["float_target", "target_without_recipe"],
+            "dtype": ["FLOAT", "FLOAT"],
+            "entities": [["customer"], ["customer"]],
+        })
         actual_df = lists[["name", "dtype", "entities"]]
         fb_assert_frame_equal(actual_df, expected_df, sort_by_columns=["name"])
 

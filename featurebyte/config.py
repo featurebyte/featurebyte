@@ -2,8 +2,6 @@
 Read configurations from ini file
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
-
 import json
 import os
 import ssl
@@ -11,6 +9,7 @@ import time
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import requests
 import websocket
@@ -49,7 +48,7 @@ def get_home_path() -> Path:
     default_home_path: Path = Path.home()
     try:
         # check if we are in DataBricks environment and valid secrets are present create a profile automatically
-        from databricks.sdk.runtime import dbutils  # pylint: disable=import-outside-toplevel
+        from databricks.sdk.runtime import dbutils
 
         db_user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
         default_home_path = Path(f"/Workspace/Users/{db_user}")
@@ -532,7 +531,6 @@ class Configurations:
             API client
         """
         if not is_server_mode():
-            # pylint: disable=import-outside-toplevel,cyclic-import
             from featurebyte.logging import configure_featurebyte_logger
 
             # configure logger

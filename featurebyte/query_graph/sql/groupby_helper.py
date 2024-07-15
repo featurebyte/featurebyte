@@ -4,9 +4,8 @@ Utilities related to SQL generation for groupby operations
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-
 from dataclasses import dataclass
+from typing import List, Optional, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -205,7 +204,7 @@ def get_vector_agg_column_snowflake(
     -------
     VectorAggColumn
     """
-    # pylint: disable=too-many-locals
+
     initial_data_table_name = "INITIAL_DATA"
     select_keys = [
         alias_(

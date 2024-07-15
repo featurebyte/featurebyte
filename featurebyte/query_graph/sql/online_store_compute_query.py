@@ -4,9 +4,8 @@ SQL generation for online store compute queries
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, cast
-
 from dataclasses import dataclass
+from typing import List, Optional, Tuple, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select

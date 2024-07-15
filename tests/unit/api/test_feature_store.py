@@ -167,14 +167,12 @@ async def saved_snowflake_feature_store_fixture(
     feature_stores = FeatureStore.list()
     assert_frame_equal(
         feature_stores,
-        pd.DataFrame(
-            {
-                "id": [str(snowflake_feature_store.id)],
-                "name": [snowflake_feature_store.name],
-                "type": ["snowflake"],
-                "created_at": [snowflake_feature_store.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(snowflake_feature_store.id)],
+            "name": [snowflake_feature_store.name],
+            "type": ["snowflake"],
+            "created_at": [snowflake_feature_store.created_at.isoformat()],
+        }),
     )
     yield snowflake_feature_store
 

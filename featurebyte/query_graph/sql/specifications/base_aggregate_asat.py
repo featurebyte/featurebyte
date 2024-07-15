@@ -4,9 +4,8 @@ Base aggregate asat spec
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
-
 from dataclasses import dataclass
+from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 

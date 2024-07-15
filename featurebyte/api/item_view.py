@@ -109,7 +109,9 @@ class ItemView(View, GroupByMixin, RawMixin):
         Join columns into an ItemView.
 
         >>> item_view = catalog.get_view("INVOICEITEMS")
-        >>> item_view = item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
+        >>> item_view = item_view.join_event_table_attributes(
+        ...     columns=["Timestamp"], event_suffix="_event"
+        ... )
 
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
@@ -190,16 +192,14 @@ class ItemView(View, GroupByMixin, RawMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update(
-            {
-                "event_id_column": self.event_id_column,
-                "item_id_column": self.item_id_column,
-                "event_table_id": self.event_table_id,
-                "default_feature_job_setting": self.default_feature_job_setting,
-                "event_view": self.event_view,
-                "timestamp_column_name": self.timestamp_column_name,
-            }
-        )
+        params.update({
+            "event_id_column": self.event_id_column,
+            "item_id_column": self.item_id_column,
+            "event_table_id": self.event_table_id,
+            "default_feature_job_setting": self.default_feature_job_setting,
+            "event_view": self.event_view,
+            "timestamp_column_name": self.timestamp_column_name,
+        })
         return params
 
     def _get_create_joined_view_parameters(self) -> dict[str, Any]:

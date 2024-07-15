@@ -2,10 +2,9 @@
 Local storage class
 """
 
-from typing import AsyncGenerator
-
 import shutil
 from pathlib import Path
+from typing import AsyncGenerator
 
 import aiofiles
 from aiofiles import os as async_os

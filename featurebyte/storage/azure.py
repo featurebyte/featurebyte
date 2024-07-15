@@ -4,9 +4,8 @@ Azure Storage Blob Class
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator
-
 from pathlib import Path
+from typing import Any, AsyncGenerator
 
 import aiofiles
 from azure.core.exceptions import ResourceNotFoundError

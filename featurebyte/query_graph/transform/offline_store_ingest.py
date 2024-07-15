@@ -2,9 +2,8 @@
 This module contains offline store ingest query extraction related classes.
 """
 
-from typing import Any, Dict, List, Optional, Set
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -65,7 +64,7 @@ def extract_dtype_from_graph(
 
 
 @dataclass
-class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-instance-attributes
+class OfflineStoreIngestQueryGraphGlobalState:
     """OfflineStoreIngestQueryGlobalState class"""
 
     # decomposed graph output

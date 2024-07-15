@@ -38,7 +38,7 @@ class TestWebdavStorage(BaseStorageTestSuite):
                 response = requests.get(url, timeout=3)
                 if response.status_code == 200:
                     break
-            except BaseException as _:  # pylint: disable=broad-except
+            except BaseException as _:
                 time.sleep(0.5)
 
         yield url
