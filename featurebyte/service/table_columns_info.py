@@ -22,6 +22,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
+from featurebyte.schema.table import TableColumnsInfoUpdate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -137,8 +138,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                 # update columns info
                 await service.update_document(
                     document_id=document_id,
-                    data=service.document_update_class(columns_info=columns_info),  # type: ignore
+                    data=TableColumnsInfoUpdate(columns_info=columns_info),  # type: ignore
                     skip_block_modification_check=skip_block_modification_check,
+                    exclude_none=False,
                 )
 
                 # update entity table reference

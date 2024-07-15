@@ -5,6 +5,7 @@ Databricks Tile Generate Job Script
 from typing import Optional
 
 import dateutil.parser
+from pydantic import Field
 
 from featurebyte.common import date_util
 from featurebyte.logging import get_logger
@@ -22,7 +23,7 @@ class TileGenerate(TileCommon):
     """
 
     tile_type: TileType
-    last_tile_start_str: Optional[str]
+    last_tile_start_str: Optional[str] = Field(default=None)
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:

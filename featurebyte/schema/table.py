@@ -82,6 +82,15 @@ class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
     TableService update schema
     """
 
+
+class TableColumnsInfoUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Table columns info update payload schema
+
+    As `exclude_none` should be set to False when updating columns_info (in service.update_document method),
+    a special schema is created for columns_info update.
+    """
+
     columns_info: Optional[List[ColumnInfo]] = Field(default=None)
 
     # pydantic validators
