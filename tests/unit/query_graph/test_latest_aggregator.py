@@ -84,7 +84,7 @@ def test_latest_aggregator(agg_specs_no_window):
     )
 
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           REQ."a" AS "a",
           REQ."b" AS "b",
@@ -158,7 +158,7 @@ def test_latest_aggregator(agg_specs_no_window):
     assert result.updated_table_expr.sql(pretty=True) == expected
 
     assert result.column_names == [
-        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+        f"_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
     ]
     assert result.updated_index == 0
 

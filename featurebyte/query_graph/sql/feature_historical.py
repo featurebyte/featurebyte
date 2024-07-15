@@ -4,9 +4,10 @@ Historical features SQL generation
 
 from __future__ import annotations
 
+from typing import List, Optional, Tuple, cast
+
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
@@ -296,7 +297,7 @@ def get_historical_features_expr(
     return historical_features_expr, feature_names
 
 
-def get_historical_features_query_set(
+def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-many-arguments
     request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],

@@ -104,11 +104,9 @@ def test_flatten_columns(source_col1, source_col2, derived_col1, derived_col2, t
     assert node_names == {"input_1", "add_1", "alias_1"}
 
     # general case
-    columns, transforms, node_names = DerivedDataColumn._flatten_columns([
-        source_col1,
-        source_col2,
-        derived_col1,
-    ])
+    columns, transforms, node_names = DerivedDataColumn._flatten_columns(
+        [source_col1, source_col2, derived_col1]
+    )
     assert columns == [source_col1, source_col2]
     assert transforms == [transform_add]
     assert node_names == {"input_1", "add_1"}

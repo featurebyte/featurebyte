@@ -2,8 +2,9 @@
 This module contains base class used in query graph transform directory.
 """
 
-from abc import abstractmethod
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
+
+from abc import abstractmethod
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node

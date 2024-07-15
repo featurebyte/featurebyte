@@ -4,11 +4,12 @@ API Object Util
 
 from __future__ import annotations
 
+from typing import Any, Dict, Iterator, List, Optional, Union
+
 import ctypes
 import threading
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Dict, Iterator, List, Optional, Union
 
 from bson import ObjectId
 
@@ -75,7 +76,7 @@ class ProgressThread(threading.Thread):
                         # end of stream
                         if percent == -1:
                             break
-                        self.progress_bar(percent / 100)
+                        self.progress_bar(percent / 100)  # pylint: disable=not-callable
             finally:
                 pass
 

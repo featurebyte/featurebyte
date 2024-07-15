@@ -177,7 +177,7 @@ def test_get_default_feature_job_setting():
     """
     # default is returned if nothing is provided
     feature_job_setting = ChangeView.get_default_feature_job_setting()
-    assert feature_job_setting == FeatureJobSetting(blind_spot="0", offset="11h15m", period="24h")
+    assert feature_job_setting == FeatureJobSetting(blind_spot="0", offset=f"11h15m", period="24h")
 
     job_setting_provided = FeatureJobSetting(blind_spot="1h", offset="1h", period="12h")
     # get back setting provided
@@ -630,7 +630,7 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
 def test_raw_accessor(snowflake_scd_table):
     """Test raw accessor"""
     change_view = snowflake_scd_table.get_change_view("col_int")
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError) as exc:
         _ = change_view.raw
 
 

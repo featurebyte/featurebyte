@@ -198,7 +198,7 @@ def test_graph_node__when_graph_node_is_output_node(input_details):
     )
 
     # check operation structure
-    pruned_graph, _node_name_map = graph.prune(target_node=proj_node)
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
     assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
 
     # check nested graph edges (check all the unused nested nodes get pruned)

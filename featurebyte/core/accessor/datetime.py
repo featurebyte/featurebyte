@@ -36,7 +36,7 @@ class DtAccessorMixin:
     """
 
     @property
-    def dt(self: FrozenSeries) -> DatetimeAccessor:  # type: ignore
+    def dt(self: FrozenSeries) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         dt accessor object
 
@@ -300,9 +300,7 @@ class DatetimeAccessor:
 
         >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["PreviousTimestamp"] = view["Timestamp"].lag("GroceryCustomerGuid")
-        >>> view["DaysSincePreviousTimestamp"] = (
-        ...     view["Timestamp"] - view["PreviousTimestamp"]
-        ... ).dt.day
+        >>> view["DaysSincePreviousTimestamp"] = (view["Timestamp"] - view["PreviousTimestamp"]).dt.day
         >>> view.preview(5).filter(regex="Timestamp|Customer")
                             GroceryCustomerGuid           Timestamp   PreviousTimestamp  DaysSincePreviousTimestamp
         0  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-07 12:02:17                 NaT                         NaN

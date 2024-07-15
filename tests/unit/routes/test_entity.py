@@ -217,10 +217,12 @@ class TestEntityApi(BaseCatalogApiTestSuite):
             )
             assert response.status_code == HTTPStatus.OK
             update_response_dict = response.json()
-            expected_history.append({
-                "created_at": update_response_dict["updated_at"],
-                "name": name,
-            })
+            expected_history.append(
+                {
+                    "created_at": update_response_dict["updated_at"],
+                    "name": name,
+                }
+            )
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(f"{self.base_route}/history/name/{document_id}")

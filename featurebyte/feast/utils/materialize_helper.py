@@ -4,9 +4,10 @@ Helper function for feature materialization
 
 from __future__ import annotations
 
+from typing import Any, List, Optional
+
 import copy
 from datetime import datetime
-from typing import Any, List, Optional
 from unittest.mock import patch
 
 from cachetools import TTLCache
@@ -82,7 +83,7 @@ async def materialize_partial(
 
     assert start_date < end_date
 
-    provider = feature_store._get_provider()
+    provider = feature_store._get_provider()  # pylint: disable=protected-access
 
     def silent_tqdm_builder(length: int) -> tqdm:
         return tqdm(total=length, ncols=100, disable=True)
@@ -121,7 +122,7 @@ async def materialize_partial(
                 feature_view=partial_feature_view,
                 start_date=start_date,
                 end_date=end_date,
-                registry=feature_store._registry,
+                registry=feature_store._registry,  # pylint: disable=protected-access
                 project=feature_store.project,
                 tqdm_builder=silent_tqdm_builder,
             )

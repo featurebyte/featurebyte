@@ -74,7 +74,7 @@ class EntityServingNamesService:
         unique_values: List[Any] = result[column_name].to_list()
         return unique_values
 
-    async def get_sample_entity_serving_names(
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
         self, entity_ids: Sequence[ObjectId], table_ids: Optional[Sequence[ObjectId]], count: int
     ) -> List[Dict[str, str]]:
         """
@@ -139,13 +139,13 @@ class EntityServingNamesService:
                     if existing_sample_values and column.name not in table.primary_key_columns:
                         continue
 
-                    entities[column.entity_id][
-                        "sample_value"
-                    ] = await self.get_table_column_unique_values(
-                        feature_store=feature_store,
-                        table=table,
-                        column_name=column.name,
-                        num_rows=count,
+                    entities[column.entity_id]["sample_value"] = (
+                        await self.get_table_column_unique_values(
+                            feature_store=feature_store,
+                            table=table,
+                            column_name=column.name,
+                            num_rows=count,
+                        )
                     )
 
         return [

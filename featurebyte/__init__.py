@@ -1,15 +1,16 @@
 """Python Library for FeatureOps"""
 
+from typing import Any, List, Optional
+
 import os
 import shutil
 import sys
-from typing import Any, List, Optional
 
 import pandas as pd
 import yaml
 from packaging.version import Version
 
-from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes  # noqa: F401
+from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
@@ -24,7 +25,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup  # noqa: F401
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
@@ -48,9 +49,9 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations, Profile
 from featurebyte.core.distance import haversine
-from featurebyte.core.series import Series  # noqa: F401
+from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
-from featurebyte.datasets.app import import_dataset  # noqa: F401
+from featurebyte.datasets.app import import_dataset
 from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
@@ -63,7 +64,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
     GCSStorageCredential,
-    KerberosKeytabCredential,  # noqa: F401
+    KerberosKeytabCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
@@ -221,7 +222,7 @@ def register_profile(
     >>> fb.register_profile(  # doctest: +SKIP
     ...     profile_name="tutorial",
     ...     api_url="https://tutorials.featurebyte.com/api/v1",
-    ...     api_token="your_api_token",
+    ...     api_token="your_api_token"
     ... )
     """
     # Read configuration file
@@ -240,11 +241,13 @@ def register_profile(
             break
     # Add tutorial profile if it's not already there
     else:
-        profiles.append({
-            "name": profile_name,
-            "api_url": api_url,
-            "api_token": api_token,
-        })
+        profiles.append(
+            {
+                "name": profile_name,
+                "api_url": api_url,
+                "api_token": api_token,
+            }
+        )
         loaded_config["profile"] = profiles
         updated_profile = True
 
@@ -575,7 +578,8 @@ if is_notebook():
     # 1. The exception class and message
     # 2. The line number of the code that invoked the featurebyte api
 
-    import IPython
+    # pylint: disable=import-outside-toplevel
+    import IPython  # pylint: disable=import-error
 
     Shell = IPython.core.interactiveshell.InteractiveShell
     default_showtraceback = Shell.showtraceback

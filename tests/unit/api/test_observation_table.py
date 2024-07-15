@@ -3,6 +3,7 @@ Unit tests for ObservationTable class
 """
 
 from typing import Any, Dict
+
 from unittest.mock import call, patch
 
 import pytest

@@ -4,12 +4,13 @@ Module for unary operations sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Union, cast
+from typing_extensions import Literal
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
-from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType

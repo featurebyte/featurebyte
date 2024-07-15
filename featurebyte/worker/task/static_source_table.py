@@ -25,7 +25,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
 
     payload_class = StaticSourceTableTaskPayload
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         feature_store_service: FeatureStoreService,
         static_source_table_service: StaticSourceTableService,

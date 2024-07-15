@@ -2,8 +2,9 @@
 Deployment API routes
 """
 
-from http import HTTPStatus
 from typing import Literal, Optional, cast
+
+from http import HTTPStatus
 
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse

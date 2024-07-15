@@ -4,9 +4,10 @@ FeatureListService class
 
 from __future__ import annotations
 
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
 
 from bson import ObjectId, json_util
 from redis import Redis
@@ -107,7 +108,7 @@ class FeatureListEntityRelationshipData:
     features_entity_lookup_info: List[FeatureEntityLookupInfo]
 
 
-class FeatureListService(
+class FeatureListService(  # pylint: disable=too-many-instance-attributes
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
     """
@@ -116,7 +117,7 @@ class FeatureListService(
 
     document_class = FeatureListModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -241,7 +242,7 @@ class FeatureListService(
         }
         return derived_output
 
-    async def extract_entity_relationship_data(
+    async def extract_entity_relationship_data(  # pylint: disable=too-many-locals
         self,
         features: List[FeatureModel],
         progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
@@ -444,12 +445,14 @@ class FeatureListService(
         progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
-        document = FeatureListModel(**{
-            **data.dict(by_alias=True),
-            "version": await self._get_feature_list_version(data.name),
-            "user_id": self.user.id,
-            "catalog_id": self.catalog_id,
-        })
+        document = FeatureListModel(
+            **{
+                **data.dict(by_alias=True),
+                "version": await self._get_feature_list_version(data.name),
+                "user_id": self.user.id,
+                "catalog_id": self.catalog_id,
+            }
+        )
         # check any conflict with existing documents
         await self._check_document_unique_constraints(document=document)
 
@@ -470,14 +473,16 @@ class FeatureListService(
         )
 
         # update document with derived output
-        document = FeatureListModel(**{
-            **document.dict(by_alias=True),
-            "features": feature_data["features"],
-            "primary_entity_ids": entity_relationship_data.primary_entity_ids,
-            "relationships_info": entity_relationship_data.relationships_info,
-            "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
-            "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
-        })
+        document = FeatureListModel(
+            **{
+                **document.dict(by_alias=True),
+                "features": feature_data["features"],
+                "primary_entity_ids": entity_relationship_data.primary_entity_ids,
+                "relationships_info": entity_relationship_data.relationships_info,
+                "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
+                "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
+            }
+        )
 
         if progress_callback:
             await progress_callback(70, "Moving feature clusters to storage")
@@ -625,7 +630,7 @@ class FeatureListService(
 
         return await super().delete_document(document_id=feature_list.id)
 
-    async def get_sample_entity_serving_names(
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
         self, feature_list_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:
         """

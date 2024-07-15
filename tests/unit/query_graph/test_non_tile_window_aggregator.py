@@ -2,6 +2,8 @@
 Tests for NonTileWindowAggregator
 """
 
+import textwrap
+
 import pytest
 from sqlglot.expressions import select
 

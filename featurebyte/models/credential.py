@@ -2,15 +2,16 @@
 Document model for stored credentials
 """
 
-import base64
-import json
-import os
 from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
+from typing_extensions import Annotated
+
+import base64  # pylint: disable=wrong-import-order
+import json
+import os  # pylint: disable=wrong-import-order
 
 import pymongo
 from cryptography.fernet import Fernet
 from pydantic import Field, StrictStr, root_validator
-from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
@@ -136,8 +137,8 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     Examples
     --------
     >>> username_password_credential = UsernamePasswordCredential(
-    ...     username="username",
-    ...     password="password",
+    ...   username="username",
+    ...   password="password",
     ... )
     """
 
@@ -180,7 +181,7 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
     Examples
     --------
     >>> kerberos_key_tab_credential = KerberosKeytabCredential.from_file(
-    ...     keytab="/path/to/keytab", principal="user@FEATUREBYTE.COM"
+    ... keytab="/path/to/keytab", principal="user@FEATUREBYTE.COM"
     ... )  # doctest: +SKIP
     """
 
@@ -262,7 +263,8 @@ class S3StorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> s3_storage_credential = S3StorageCredential(
-    ...     s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
+    ...   s3_access_key_id="access_key_id",
+    ...   s3_secret_access_key="s3_secret_access_key"
     ... )
     """
 
@@ -287,7 +289,7 @@ class GCSStorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> gcs_storage_credential = GCSStorageCredential(
-    ...     service_account_info={"type": "service_account", "private_key": "private_key"}
+    ...   service_account_info={"type": "service_account", "private_key": "private_key"}
     ... )
     """
 
@@ -316,8 +318,8 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> azure_blob_storage_credential = AzureBlobStorageCredential(
-    ...     account_name="my_azure_storage",
-    ...     account_key="my_azure_storage_key",
+    ...   account_name="my_azure_storage",
+    ...   account_key="my_azure_storage_key",
     ... )
     """
 

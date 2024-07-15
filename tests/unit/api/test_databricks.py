@@ -6,7 +6,7 @@ import freezegun
 import pandas as pd
 import pytest
 
-from featurebyte import Context, DatabricksDetails, FeatureList, UseCase
+from featurebyte import Context, DatabricksDetails, FeatureList, TargetNamespace, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
@@ -116,7 +116,7 @@ def databricks_deployment_fixture(
                 http_path="sql/protocalv1/some_path",
                 catalog_name="feature_engineering",
                 schema_name="some_schema",
-                storage_path="dbfs:/FileStore/some_storage_path",
+                storage_path=f"dbfs:/FileStore/some_storage_path",
             ),
         )
         mock_get_document.return_value = feature_store

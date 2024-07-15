@@ -2,10 +2,11 @@
 Test gen ref pages docs builder.
 """
 
+from typing import Any, Set
+
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Set
 
 import pytest
 
@@ -115,7 +116,7 @@ def test_get_missing_core_object_file_template():
     Test get missing core object file template.
     """
     content = get_missing_core_object_file_template("hello", "random string")
-    assert content == "Missing hello markdown documentation file.\n\nrandom string"
+    assert content == f"Missing hello markdown documentation file.\n\nrandom string"
 
 
 @pytest.mark.parametrize(

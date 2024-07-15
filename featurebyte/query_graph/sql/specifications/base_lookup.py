@@ -4,9 +4,10 @@ Base lookup spec
 
 from __future__ import annotations
 
+from typing import Any, Optional
+
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Optional
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node

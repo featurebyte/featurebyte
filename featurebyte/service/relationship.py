@@ -4,8 +4,9 @@ RelationshipService class
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import TypeVar, cast
+
+from abc import abstractmethod
 
 from bson import ObjectId
 

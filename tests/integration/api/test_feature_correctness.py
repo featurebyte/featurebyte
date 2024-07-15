@@ -1,7 +1,8 @@
+from typing import Any, Optional
+
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -160,10 +161,12 @@ def scd_observation_set(scd_dataframe):
     ).floor("h")
 
     rng = np.random.RandomState(0)
-    df = pd.DataFrame({
-        "POINT_IN_TIME": point_in_time_values,
-        "User Status": rng.choice(scd_dataframe["User Status"].unique(), num_rows),
-    })
+    df = pd.DataFrame(
+        {
+            "POINT_IN_TIME": point_in_time_values,
+            "User Status": rng.choice(scd_dataframe["User Status"].unique(), num_rows),
+        }
+    )
     # only TZ-naive timestamps in UTC supported for point-in-time
     df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
     return df

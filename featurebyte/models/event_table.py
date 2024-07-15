@@ -4,8 +4,9 @@ This module contains EventTable related models
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, ClassVar, List, Optional, Tuple, Type
+
+from datetime import datetime
 
 from pydantic import Field, root_validator
 
@@ -99,7 +100,7 @@ class EventTableModel(EventTableData, TableModel):
         table_data = EventTableData(**self.dict(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
-        return table_data.construct_event_view_graph_node(
+        return table_data.construct_event_view_graph_node(  # pylint: disable=no-member
             event_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,

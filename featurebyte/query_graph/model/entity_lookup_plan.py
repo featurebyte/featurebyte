@@ -4,10 +4,11 @@ Parent / child entity lookup related models
 
 from __future__ import annotations
 
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+
 import copy
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 from bson import ObjectId
 
@@ -59,9 +60,9 @@ class EntityLookupPlan:
         -------
         Optional[List[EntityRelationshipInfo]]
         """
-        key = sorted_entity_ids([
-            entity_id for entity_id in serving_entity_ids if entity_id in self.descendant_ids
-        ])
+        key = sorted_entity_ids(
+            [entity_id for entity_id in serving_entity_ids if entity_id in self.descendant_ids]
+        )
         return self.lookup_steps_mapping.get(key)
 
 

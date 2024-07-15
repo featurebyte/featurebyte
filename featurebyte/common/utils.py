@@ -4,6 +4,8 @@ Common utility functions
 
 from __future__ import annotations
 
+from typing import Any, Generator, Iterator, List, Optional, Union
+
 import ast
 import functools
 import json
@@ -14,7 +16,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
-from typing import Any, Generator, Iterator, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -283,7 +284,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
         for col_name, dtype in type_conversions.items():
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
             if not col_name:
-                col_name = dataframe.columns[0]
+                col_name = dataframe.columns[0]  # pylint: disable=no-member
 
             if dtype == DBVarType.TIMESTAMP_TZ:
                 dataframe[col_name] = dataframe[col_name].apply(_to_datetime)

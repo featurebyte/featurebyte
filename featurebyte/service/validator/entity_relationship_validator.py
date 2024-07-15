@@ -2,9 +2,10 @@
 Entity Relationship Combiner Service
 """
 
+from typing import Dict, List, Set, Tuple
+
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
 
 from bson import ObjectId
 

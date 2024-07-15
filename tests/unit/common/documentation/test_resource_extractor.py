@@ -388,7 +388,7 @@ def test_resource_details__change_view():
         examples=[
             "Get a ChangeView to track changes in Customer's State.\n",
             '\n```pycon\n>>> scd_table = catalog.get_table("GROCERYCUSTOMER")\n>>> change_view = '
-            'scd_table.get_change_view(\n...     track_changes_column="State",\n...     prefixes=("previous_", '
+            'scd_table.get_change_view(\n...   track_changes_column="State",\n...   prefixes=("previous_", '
             '"next_"),\n... )\n```\n',
         ],
         see_also=None,

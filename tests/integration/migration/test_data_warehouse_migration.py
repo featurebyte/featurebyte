@@ -179,7 +179,7 @@ async def test_data_warehouse_migration_v6(
         return df
 
     async def _get_migration_version():
-        df = await session.execute_query("SELECT * FROM METADATA_SCHEMA")
+        df = await session.execute_query(f"SELECT * FROM METADATA_SCHEMA")
         return df["MIGRATION_VERSION"].iloc[0]
 
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup

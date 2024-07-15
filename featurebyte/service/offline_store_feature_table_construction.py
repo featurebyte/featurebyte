@@ -4,10 +4,11 @@ OfflineStoreFeatureTableConstructionService class
 
 from __future__ import annotations
 
+from typing import Dict, List, Optional, Sequence, Tuple
+
 import os
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import aiofiles
 from bson import ObjectId

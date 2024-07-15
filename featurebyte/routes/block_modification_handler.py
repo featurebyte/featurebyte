@@ -2,8 +2,9 @@
 Block modification handler
 """
 
-from contextlib import contextmanager
 from typing import Iterator
+
+from contextlib import contextmanager
 
 
 class BlockModificationHandler:

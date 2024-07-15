@@ -4,9 +4,10 @@ FeatureMaterializeSyncService class
 
 from __future__ import annotations
 
+from typing import List, Optional
+
 import asyncio
 from datetime import datetime
-from typing import List, Optional
 
 from bson import ObjectId
 

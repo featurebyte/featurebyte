@@ -4,8 +4,9 @@ Module for aggregation related sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional, cast
+
+from dataclasses import dataclass
 
 from sqlglot.expressions import Expression, Select
 

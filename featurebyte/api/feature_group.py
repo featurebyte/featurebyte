@@ -4,10 +4,6 @@ Feature group module.
 
 from __future__ import annotations
 
-import collections
-import time
-from datetime import datetime
-from http import HTTPStatus
 from typing import (
     Any,
     ClassVar,
@@ -21,6 +17,11 @@ from typing import (
     Union,
     cast,
 )
+
+import collections
+import time
+from datetime import datetime
+from http import HTTPStatus
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -137,7 +138,7 @@ class BaseFeatureGroup(AsyncMixin):
                 feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
                 feature_id_to_object[str(feature.id)] = feature
                 progress_bar.text = feature.name
-                progress_bar()
+                progress_bar()  # pylint: disable=not-callable
 
             # preserve the order of features
             items = []
@@ -370,7 +371,7 @@ class BaseFeatureGroup(AsyncMixin):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @property
     def sql(self) -> str:

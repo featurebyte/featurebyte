@@ -184,10 +184,9 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["total"] == 2
         data = response.json()["data"]
-        assert sorted([str(new_ob_table_id_2), str(new_ob_table_id_3)]) == sorted([
-            data[0]["_id"],
-            data[1]["_id"],
-        ])
+        assert sorted([str(new_ob_table_id_2), str(new_ob_table_id_3)]) == sorted(
+            [data[0]["_id"], data[1]["_id"]]
+        )
 
         # test use case info endpoint
         response = test_api_client.get(

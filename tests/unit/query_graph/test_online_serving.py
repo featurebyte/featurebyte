@@ -2,8 +2,9 @@
 Tests for featurebyte.query_graph.sql.online_serving
 """
 
-import textwrap
 from typing import List
+
+import textwrap
 from unittest.mock import patch
 
 import pandas as pd

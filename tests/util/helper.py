@@ -2,7 +2,10 @@
 This module contains utility functions used in tests
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
+
+from typing import Generator
 
 import importlib
 import json
@@ -13,7 +16,6 @@ import tempfile
 import textwrap
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Generator
 from unittest.mock import Mock
 
 import numpy as np
@@ -216,7 +218,7 @@ def _replace_view_mode_to_manual(pruned_graph):
     return QueryGraph(**pruned_graph_dict)
 
 
-def check_sdk_code_generation(
+def check_sdk_code_generation(  # pylint: disable=too-many-locals
     api_object,
     to_use_saved_data=False,
     table_id_to_info=None,
@@ -241,7 +243,7 @@ def check_sdk_code_generation(
         to_use_saved_data=to_use_saved_data,
         table_id_to_info=table_id_to_info,
     )
-    exec(sdk_code, {}, local_vars)
+    exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
     if isinstance(output, AbstractTableData):
         output = output.frame
@@ -884,7 +886,7 @@ async def deploy_feature(
 def undeploy_feature(feature):
     """Helper function to undeploy a single feature"""
     deployment: Deployment = Deployment.get(f"{feature.name}_list")
-    deployment.disable()
+    deployment.disable()  # pylint: disable=no-member
 
 
 async def undeploy_feature_async(feature, app_container):

@@ -26,9 +26,9 @@ def mock_snowflake_session_fixture(mock_snowflake_session, is_output_row_index_v
     """
     Mock query result
     """
-    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "is_row_index_valid": [is_output_row_index_valid]
-    })
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
+        {"is_row_index_valid": [is_output_row_index_valid]}
+    )
     yield mock_snowflake_session
 
 

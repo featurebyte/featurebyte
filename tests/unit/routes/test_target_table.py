@@ -177,10 +177,12 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         ).json_dict()
 
         if not observation_table_id:
-            df = pd.DataFrame({
-                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "cust_id": ["C1"],
-            })
+            df = pd.DataFrame(
+                {
+                    "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+                    "cust_id": ["C1"],
+                }
+            )
             files = {"observation_set": dataframe_to_arrow_bytes(df)}
             response = self.post(test_api_client, payload, files=files)
         else:

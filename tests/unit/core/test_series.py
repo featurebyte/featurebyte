@@ -260,8 +260,8 @@ def test__setitem__value_type_not_correct(int_series, bool_series):
     with pytest.raises(ValueError) as exc:
         int_series[bool_series] = "abc"
     expected_msg = (
-        "Conditionally updating 'Series[INT](name=CUST_ID, node_name=project_1)' with value 'abc' "
-        "is not supported!"
+        f"Conditionally updating 'Series[INT](name=CUST_ID, node_name=project_1)' with value 'abc' "
+        f"is not supported!"
     )
     assert expected_msg == str(exc.value)
 
@@ -364,7 +364,7 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     """
     Test relational operators with other as Series type
     """
-
+    # pylint: disable=comparison-with-itself
     series_bool_eq = bool_series == bool_series
     series_int_ne = int_series != int_series
     series_float_lt = float_series < float_series

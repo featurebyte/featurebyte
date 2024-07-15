@@ -2,8 +2,9 @@
 This module contains descriptor class.
 """
 
-from functools import partial
 from typing import Any, Callable, Optional, Type, TypeVar
+
+from functools import partial
 
 MethodT = Callable[..., Any]
 T = TypeVar("T")

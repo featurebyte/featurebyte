@@ -4,8 +4,9 @@ Migration service for data warehouse working schema
 
 from __future__ import annotations
 
-import textwrap
 from typing import Optional
+
+import textwrap
 
 import pandas as pd
 from snowflake.connector.errors import ProgrammingError
@@ -53,7 +54,7 @@ class TileColumnTypeExtractor:
                 feature_model = ExtendedFeatureModel(**doc)
                 try:
                     tile_specs = feature_model.tile_specs
-                except:  # noqa
+                except:  # pylint: disable=bare-except
                     logger.exception(f"Failed to extract tile_specs for {doc}")
                     # For tile columns with no known type, they will be given a FLOAT type below
                     continue
@@ -172,10 +173,8 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
         if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
             return
 
-        df_tile_registry["VALUE_COLUMN_TYPES"] = (  # type: ignore[index]
-            self.tile_column_type_extractor.get_tile_column_types_from_names(
-                df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
-            )
+        df_tile_registry["VALUE_COLUMN_TYPES"] = self.tile_column_type_extractor.get_tile_column_types_from_names(  # type: ignore[index]
+            df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
         )
         await session.register_table(
             "UPDATED_TILE_REGISTRY",

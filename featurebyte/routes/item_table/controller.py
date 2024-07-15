@@ -41,7 +41,7 @@ class ItemTableController(
         "item_id_column": SemanticType.ITEM_ID,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         item_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,

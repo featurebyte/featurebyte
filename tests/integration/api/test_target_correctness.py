@@ -2,9 +2,10 @@
 Target correctness tests.
 """
 
+from typing import Optional
+
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 import pytest

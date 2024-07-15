@@ -4,9 +4,10 @@ Module with logic related to feature SQL generation
 
 from __future__ import annotations
 
+from typing import Iterable, Optional, Sequence, Set, Type, Union
+
 import sys
 from collections import defaultdict
-from typing import Iterable, Optional, Sequence, Set, Type, Union
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -559,7 +560,7 @@ class FeatureExecutionPlan:
         return post_aggregation_sql
 
 
-class FeatureExecutionPlanner:
+class FeatureExecutionPlanner:  # pylint: disable=too-many-instance-attributes
     """Responsible for constructing a FeatureExecutionPlan given QueryGraphModel and Node
 
     Parameters
@@ -633,7 +634,9 @@ class FeatureExecutionPlanner:
             aggregation_specs[agg_spec.node_name].append(agg_spec)
         self.update_feature_specs(node, dict(aggregation_specs))  # type: ignore[arg-type]
 
-    def get_aggregation_specs(self, node: Node) -> list[AggregationSpecType]:
+    def get_aggregation_specs(  # pylint: disable=too-many-branches
+        self, node: Node
+    ) -> list[AggregationSpecType]:
         """Get list of aggregation specs for a given query graph node
 
         Parameters

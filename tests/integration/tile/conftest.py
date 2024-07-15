@@ -81,20 +81,22 @@ async def mock_feature_fixture(feature_model_dict, feature_store):
     Fixture for a ExtendedFeatureModel object
     """
 
-    feature_model_dict.update({
-        "user_id": None,
-        "tabular_source": {
-            "feature_store_id": feature_store.id,
-            "table_details": TableDetails(table_name="some_random_table"),
-        },
-        "version": "v1",
-        "readiness": FeatureReadiness.DRAFT,
-        "online_enabled": False,
-        "table_ids": [
-            ObjectId("626bccb9697a12204fb22ea3"),
-            ObjectId("726bccb9697a12204fb22ea3"),
-        ],
-    })
+    feature_model_dict.update(
+        {
+            "user_id": None,
+            "tabular_source": {
+                "feature_store_id": feature_store.id,
+                "table_details": TableDetails(table_name="some_random_table"),
+            },
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "online_enabled": False,
+            "table_ids": [
+                ObjectId("626bccb9697a12204fb22ea3"),
+                ObjectId("726bccb9697a12204fb22ea3"),
+            ],
+        }
+    )
     feature = ExtendedFeatureModel(**feature_model_dict)
 
     yield feature

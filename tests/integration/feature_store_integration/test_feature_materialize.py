@@ -2,6 +2,7 @@
 Tests for feature materialization service
 """
 
+# pylint: disable=too-many-lines
 import json
 import os
 import textwrap
@@ -110,7 +111,9 @@ def udf_cos_fixture(catalog):
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
+def features_fixture(
+    event_table, scd_table, source_type, item_table, udf_cos
+):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
@@ -174,7 +177,9 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
         method="sum",
         windows=["24d"],
         feature_names=["amount_sum_across_action_24d"],
-    )["amount_sum_across_action_24d"]
+    )[
+        "amount_sum_across_action_24d"
+    ]
 
     feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
     feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
@@ -1239,11 +1244,13 @@ def test_online_features__non_existing_order_id(
     process_output_features_helper(features[0], source_type)
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
     expected_non_existing_order_id_features = entity_serving_name_non_exist.copy()
-    expected_non_existing_order_id_features.update({
-        feature_name: None
-        for feature_name in expected_features_order_id_T3850
-        if feature_name != "order_id"
-    })
+    expected_non_existing_order_id_features.update(
+        {
+            feature_name: None
+            for feature_name in expected_features_order_id_T3850
+            if feature_name != "order_id"
+        }
+    )
     expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 194
     if source_type != SourceType.DATABRICKS_UNITY:
         expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0

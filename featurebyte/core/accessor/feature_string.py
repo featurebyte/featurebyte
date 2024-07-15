@@ -22,7 +22,7 @@ class FeatureStrAccessorMixin:
     """
 
     @property
-    def str(self: Feature) -> StringAccessor:  # type: ignore
+    def str(self: Feature) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         str accessor object
 

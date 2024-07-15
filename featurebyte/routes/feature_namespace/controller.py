@@ -4,8 +4,9 @@ FeatureNamespace API route controller
 
 from __future__ import annotations
 
-import copy
 from typing import Any, cast
+
+import copy
 
 from bson import ObjectId
 

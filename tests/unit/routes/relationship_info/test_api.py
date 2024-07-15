@@ -84,7 +84,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     @pytest_asyncio.fixture
     async def create_success_response(
         self, test_api_client_persistent, user_id, default_catalog_id
-    ):
+    ):  # pylint: disable=arguments-differ
         """Post a relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -105,7 +105,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     @pytest_asyncio.fixture
     async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id, default_catalog_id
-    ):
+    ):  # pylint: disable=arguments-differ
         """Post multiple relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)

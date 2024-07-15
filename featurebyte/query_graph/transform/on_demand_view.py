@@ -2,8 +2,9 @@
 On demand feature view (for Feast) related classes and functions.
 """
 
-import textwrap
 from typing import Any, Dict, List, Tuple
+
+import textwrap
 
 from pydantic import Field
 

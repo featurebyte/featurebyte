@@ -3,10 +3,10 @@ This module contains Online Store related models
 """
 
 from typing import ClassVar, List, Literal, Optional, Union
+from typing_extensions import Annotated
 
 import pymongo
 from pydantic import Field, StrictStr
-from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import OnlineStoreType, RedisType
@@ -43,13 +43,13 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
     Examples
     --------
     >>> details = fb.RedisOnlineStoreDetails(
-    ...     redis_type="redis",
-    ...     connection_string="localhost:6379",
-    ...     key_ttl_seconds=3600,
-    ...     credential=fb.UsernamePasswordCredential(
-    ...         username="username",
-    ...         password="password",
-    ...     ),
+    ...   redis_type="redis",
+    ...   connection_string="localhost:6379",
+    ...   key_ttl_seconds=3600,
+    ...   credential=fb.UsernamePasswordCredential(
+    ...     username="username",
+    ...     password="password",
+    ...   )
     ... )
     """
 
@@ -85,10 +85,13 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
     Examples
     --------
     >>> details = fb.MySQLOnlineStoreDetails(
-    ...     host="localhost",
-    ...     database="database",
-    ...     port=3306,
-    ...     credential=fb.UsernamePasswordCredential(username="user", password="password"),
+    ...   host="localhost",
+    ...   database="database",
+    ...   port=3306,
+    ...   credential=fb.UsernamePasswordCredential(
+    ...     username="user",
+    ...     password="password"
+    ...   )
     ... )
     """
 

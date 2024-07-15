@@ -4,8 +4,9 @@ EventTable API routes
 
 from __future__ import annotations
 
-from http import HTTPStatus
 from typing import List, Optional
+
+from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
@@ -41,6 +42,8 @@ class EventTableRouter(
     """
     Event table router
     """
+
+    # pylint: disable=arguments-renamed
 
     object_model = EventTableModel
     list_object_model = EventTableList

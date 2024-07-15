@@ -4,8 +4,9 @@ FeatureQuerySet related classes
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional, Union
+
+from dataclasses import dataclass
 
 from sqlglot.expressions import Expression
 

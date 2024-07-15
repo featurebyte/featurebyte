@@ -4,8 +4,9 @@ FeatureManagerService class
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Set
+
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from bson import ObjectId
@@ -230,7 +231,7 @@ class FeatureManagerService:
             session, tile_spec, job_schedule_ts_str, aggregation_result_name
         )
 
-    async def _backfill_tiles(
+    async def _backfill_tiles(  # pylint: disable=too-many-branches
         self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime
     ) -> None:
         """

@@ -2,8 +2,9 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
-from datetime import datetime
 from typing import Any, Dict, Literal, Optional, Sequence, Union
+
+from datetime import datetime
 
 from bson import ObjectId
 from pandas import Timestamp

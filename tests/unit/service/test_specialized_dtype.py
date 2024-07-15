@@ -160,20 +160,22 @@ async def test_add_columns_attributes(
     """Test adding columns attributes"""
     _ = feature_store
 
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
-        "event_id_col": ["a", "b", "c"],
-        "event_timestamp_col": [
-            pd.to_datetime("2023-01-01"),
-            pd.to_datetime("2023-01-02"),
-            pd.to_datetime("2023-01-03"),
-        ],
-        "embedding_col": [np.array([0, 1, 2]), np.array([3, 4, 5]), np.array([6, 7, 8])],
-        "dict_col": [
-            json.dumps({"a": 1, "b": 2}),
-            json.dumps({"c": 3, "d": 4}),
-            json.dumps({"e": 5, "f": 6}),
-        ],
-    })
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "event_id_col": ["a", "b", "c"],
+            "event_timestamp_col": [
+                pd.to_datetime("2023-01-01"),
+                pd.to_datetime("2023-01-02"),
+                pd.to_datetime("2023-01-03"),
+            ],
+            "embedding_col": [np.array([0, 1, 2]), np.array([3, 4, 5]), np.array([6, 7, 8])],
+            "dict_col": [
+                json.dumps({"a": 1, "b": 2}),
+                json.dumps({"c": 3, "d": 4}),
+                json.dumps({"e": 5, "f": 6}),
+            ],
+        }
+    )
 
     svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
     await svc.detect_and_update_column_dtypes(table)
@@ -188,52 +190,58 @@ async def test_add_columns_attributes(
 @pytest.mark.parametrize(
     "sample",
     [
-        pd.DataFrame({
-            "event_id_col": ["a", "b", "c"],
-            "event_timestamp_col": [
-                pd.to_datetime("2023-01-01"),
-                pd.to_datetime("2023-01-02"),
-                pd.to_datetime("2023-01-03"),
-            ],
-            "embedding_col": [np.array([0, 1]), np.array([3, 4, 5]), np.array([6, 7, 8])],
-            "dict_col": [
-                json.dumps({"a": 1, "b": 2}),
-                json.dumps({"c": 3, "d": 4}),
-                json.dumps({"e": 5, "f": 6}),
-            ],
-        }),
-        pd.DataFrame({
-            "event_id_col": ["a", "b", "c"],
-            "event_timestamp_col": [
-                pd.to_datetime("2023-01-01"),
-                pd.to_datetime("2023-01-02"),
-                pd.to_datetime("2023-01-03"),
-            ],
-            "embedding_col": [
-                np.array([0, 1, 2]),
-                np.array([3, 4, 5]),
-                np.array([[6, 7, 8], [9, 10, 11]]),
-            ],
-            "dict_col": [
-                json.dumps({"a": 1, "b": 2}),
-                json.dumps({"c": 3, "d": 4}),
-                json.dumps({"e": 5, "f": 6}),
-            ],
-        }),
-        pd.DataFrame({
-            "event_id_col": ["a", "b", "c"],
-            "event_timestamp_col": [
-                pd.to_datetime("2023-01-01"),
-                pd.to_datetime("2023-01-02"),
-                pd.to_datetime("2023-01-03"),
-            ],
-            "embedding_col": [np.array([0, 1, 2]), np.array([3, "a", 5]), np.array([6, 7, 8])],
-            "dict_col": [
-                json.dumps({"a": 1, "b": 2}),
-                json.dumps({"c": 3, "d": 4}),
-                json.dumps({"e": 5, "f": 6}),
-            ],
-        }),
+        pd.DataFrame(
+            {
+                "event_id_col": ["a", "b", "c"],
+                "event_timestamp_col": [
+                    pd.to_datetime("2023-01-01"),
+                    pd.to_datetime("2023-01-02"),
+                    pd.to_datetime("2023-01-03"),
+                ],
+                "embedding_col": [np.array([0, 1]), np.array([3, 4, 5]), np.array([6, 7, 8])],
+                "dict_col": [
+                    json.dumps({"a": 1, "b": 2}),
+                    json.dumps({"c": 3, "d": 4}),
+                    json.dumps({"e": 5, "f": 6}),
+                ],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "event_id_col": ["a", "b", "c"],
+                "event_timestamp_col": [
+                    pd.to_datetime("2023-01-01"),
+                    pd.to_datetime("2023-01-02"),
+                    pd.to_datetime("2023-01-03"),
+                ],
+                "embedding_col": [
+                    np.array([0, 1, 2]),
+                    np.array([3, 4, 5]),
+                    np.array([[6, 7, 8], [9, 10, 11]]),
+                ],
+                "dict_col": [
+                    json.dumps({"a": 1, "b": 2}),
+                    json.dumps({"c": 3, "d": 4}),
+                    json.dumps({"e": 5, "f": 6}),
+                ],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "event_id_col": ["a", "b", "c"],
+                "event_timestamp_col": [
+                    pd.to_datetime("2023-01-01"),
+                    pd.to_datetime("2023-01-02"),
+                    pd.to_datetime("2023-01-03"),
+                ],
+                "embedding_col": [np.array([0, 1, 2]), np.array([3, "a", 5]), np.array([6, 7, 8])],
+                "dict_col": [
+                    json.dumps({"a": 1, "b": 2}),
+                    json.dumps({"c": 3, "d": 4}),
+                    json.dumps({"e": 5, "f": 6}),
+                ],
+            }
+        ),
     ],
 )
 @pytest.mark.asyncio
@@ -271,20 +279,22 @@ async def test_nested_dict_column(
     """Test dict is not flat"""
     _ = feature_store
 
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
-        "event_id_col": ["a", "b", "c"],
-        "event_timestamp_col": [
-            pd.to_datetime("2023-01-01"),
-            pd.to_datetime("2023-01-02"),
-            pd.to_datetime("2023-01-03"),
-        ],
-        "embedding_col": [np.array([0, 1, 2]), np.array([3, 4, 5]), np.array([6, 7, 8])],
-        "dict_col": [
-            json.dumps({"a": 1, "b": 2}),
-            json.dumps({"c": 3, "d": {"dd": 4}}),
-            json.dumps({"e": 5, "f": 6}),
-        ],
-    })
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "event_id_col": ["a", "b", "c"],
+            "event_timestamp_col": [
+                pd.to_datetime("2023-01-01"),
+                pd.to_datetime("2023-01-02"),
+                pd.to_datetime("2023-01-03"),
+            ],
+            "embedding_col": [np.array([0, 1, 2]), np.array([3, 4, 5]), np.array([6, 7, 8])],
+            "dict_col": [
+                json.dumps({"a": 1, "b": 2}),
+                json.dumps({"c": 3, "d": {"dd": 4}}),
+                json.dumps({"e": 5, "f": 6}),
+            ],
+        }
+    )
 
     svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
     await svc.detect_and_update_column_dtypes(table)

@@ -4,6 +4,8 @@ Unit tests for core/accessor/count_dict.py
 
 import pytest
 
+from featurebyte.api.feature import Feature
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.util.helper import check_sdk_code_generation, get_node

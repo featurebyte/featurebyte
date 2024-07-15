@@ -2,9 +2,10 @@
 Test vector aggregation operations module
 """
 
+from typing import List
+
 import json
 import os
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -398,13 +399,10 @@ def test_vector_cosine_similarity(item_table_with_array_column):
         pd.DataFrame([preview_params])
     )
     assert feature_preview.shape[0] == 1
-    assert (
-        feature_preview.iloc[0].to_dict()
-        == {
-            cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
-            **convert_preview_param_dict_to_feature_preview_resp(preview_params),
-        }
-    )
+    assert feature_preview.iloc[0].to_dict() == {
+        cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -422,10 +420,9 @@ def test_vector_value_column_latest_aggregation(event_table_with_array_column):
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-06-06 00:58:00"] * 2,
-        "vector_user_id": ["2", "4"],
-    })
+    preview_params = pd.DataFrame(
+        {"POINT_IN_TIME": ["2022-06-06 00:58:00"] * 2, "vector_user_id": ["2", "4"]}
+    )
     feature_preview = feature.preview(preview_params)
     expected_results = [[1.0, 3.0, 1.0], [7.0, 2.0, 3.0]]
     assert feature_preview[feature_name].tolist() == expected_results

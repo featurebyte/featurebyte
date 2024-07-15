@@ -4,9 +4,10 @@ This module contains DataBricks accessor class
 
 from __future__ import annotations
 
-import os
 from types import ModuleType
 from typing import Any, List, Optional
+
+import os
 
 import pandas as pd
 
@@ -53,6 +54,7 @@ def _get_feature_engineering_client() -> Any:
     if not _is_databricks_environment():
         raise NotInDataBricksEnvironmentError()
 
+    # pylint: disable=import-outside-toplevel
     try:
         from databricks.feature_engineering import FeatureEngineeringClient
 
@@ -136,7 +138,7 @@ class DataBricksAccessor:
             print(feature_specs_definition)
 
         # exec feature specs definition to generate training set
-        exec(feature_specs_definition, exec_locals)  # nosec
+        exec(feature_specs_definition, exec_locals)  # pylint: disable=exec-used  # nosec
         return exec_locals
 
     def get_feature_specs(
@@ -210,7 +212,7 @@ class DataBricksAccessor:
         )
 
     @classmethod
-    def score_batch(
+    def score_batch(  # pylint: disable=invalid-name
         cls,
         model_uri: str,
         df: PySparkDataFrame,
@@ -242,7 +244,7 @@ class DataBricksAccessor:
         databricks_fe_client = _get_feature_engineering_client()
 
         try:
-            from pyspark.sql.functions import (
+            from pyspark.sql.functions import (  # pylint: disable=import-outside-toplevel
                 current_timestamp,
                 lit,
             )

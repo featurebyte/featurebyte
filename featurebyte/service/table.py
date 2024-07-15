@@ -42,7 +42,7 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
         raise NotImplementedError
 
 
-class AllTableService(TableService):
+class AllTableService(TableService):  # pylint: disable=abstract-method
     """
     TableService class
     """
