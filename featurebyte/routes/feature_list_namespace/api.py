@@ -2,6 +2,7 @@
 FeatureListNamespace API routes
 """
 
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import Optional, cast

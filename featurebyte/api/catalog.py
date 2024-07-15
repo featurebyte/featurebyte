@@ -2,6 +2,7 @@
 Catalog module
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
@@ -64,6 +65,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     simplify management of the data and features.
     """
 
+    # pylint: disable=too-many-public-methods
+
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Catalog")
     _route: ClassVar[str] = "/catalog"
@@ -106,7 +109,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Optional[PydanticObjectId]
         """
         try:
-            return self.cached_model.online_store_id
+            return self.cached_model.online_store_id  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_online_store_id
 
@@ -126,7 +129,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         if not self.online_store_id:
             raise ValueError("Catalog does not have an associated online store.")
-        return OnlineStore.get_by_id(self.online_store_id)
+        return OnlineStore.get_by_id(self.online_store_id)  # pylint: disable=no-member
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.dict(by_alias=True))
@@ -228,9 +231,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create(
-        ...     "new_catalog", "feature_store_name", "mysql_online_store"
-        ... )  # doctest: +SKIP
+        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name", "mysql_online_store")  # doctest: +SKIP
         """
         feature_store = FeatureStore.get(feature_store_name)
         if online_store_name:
@@ -409,7 +410,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().get(name)
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> Catalog:
+    def get_by_id(cls, id: ObjectId) -> Catalog:  # pylint: disable=redefined-builtin,invalid-name
         """
         Returns a Catalog object by its unique identifier (ID).
 
@@ -532,7 +533,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         List all features having grocerycustomer or frenchstate as primary entity.
 
         >>> customer_or_state_features = catalog.list_features(
-        ...     primary_entity=["grocerycustomer", "frenchstate"]
+        ...   primary_entity = ["grocerycustomer", "frenchstate"]
         ... )
         """
         return Feature.list(
@@ -713,13 +714,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         List all relationships.
 
-        >>> catalog.list_relationships()[
-        ...     [
-        ...         "relationship_type",
-        ...         "entity",
-        ...         "related_entity",
-        ...     ]
-        ... ]
+        >>> catalog.list_relationships()[[
+        ...     "relationship_type",
+        ...     "entity",
+        ...     "related_entity",
+        ... ]]
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
@@ -1034,7 +1033,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             len(self.internal_default_feature_store_ids) == 1
         ), "No active catalog in this session. Please activate an existing catalog or create a new one to proceed."
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
-        return feature_store.get_data_source()
+        return feature_store.get_data_source()  # pylint: disable=no-member
 
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:
@@ -1276,9 +1275,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis(
-        ...     "analysis_name"
-        ... )  # doctest: +SKIP
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis("analysis_name")  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get(name=name)
 
@@ -1394,9 +1391,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved observation table.
 
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         """
         return ObservationTable.get(name=name)
 
@@ -1419,9 +1414,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved historical feature table.
 
-        >>> historical_feature_table = catalog.get_historical_feature_table(
-        ...     "historical_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get(name=name)
 
@@ -1444,9 +1437,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch request table.
 
-        >>> batch_request_table = catalog.get_batch_request_table(
-        ...     "batch_request_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
         """
         return BatchRequestTable.get(name=name)
 
@@ -1469,9 +1460,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name") # doctest: +SKIP
         """
         return BatchFeatureTable.get(name=name)
 
@@ -1494,9 +1483,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved static source table.
 
-        >>> static_source_table = catalog.get_static_source_table(
-        ...     "static_source_table_name"
-        ... )  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
         """
         return StaticSourceTable.get(name=name)
 
@@ -1519,8 +1506,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function(
-        ...     "user_defined_function_name"
-        ... )  # doctest: +SKIP
+        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
         """
         return UserDefinedFunction.get(name=name)

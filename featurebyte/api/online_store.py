@@ -97,7 +97,7 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
         ...         user="mysql_user",
         ...         password="mysql_password",
         ...         port=3306,
-        ...     ),
+        ...     )
         ... )
         """
         # Construct object, and save to persistent layer.
@@ -136,7 +136,8 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
         Create a online store housed in a Snowflake database
 
         >>> online_store = fb.OnlineStore.get_or_create(
-        ...     name="online store", details=fb.RedisOnlineStoreDetails()
+        ...     name="online store",
+        ...     details=fb.RedisOnlineStoreDetails()
         ... )
         >>> OnlineStore.list()[["name"]]
                          name
@@ -179,7 +180,9 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
         return super().get(name)
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> OnlineStore:
+    def get_by_id(
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> OnlineStore:
         """
         Returns a OnlineStore object by its unique identifier (ID).
 

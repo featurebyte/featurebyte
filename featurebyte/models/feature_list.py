@@ -4,10 +4,11 @@ This module contains Feature list related models
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Set
+
 import functools
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
 
 import pymongo
 from bson import ObjectId
@@ -324,8 +325,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False,
-        default=None,  # DEV-556
+        allow_mutation=False, default=None  # DEV-556
     )
     features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
         allow_mutation=False, default=None

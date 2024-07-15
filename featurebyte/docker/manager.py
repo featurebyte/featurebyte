@@ -69,7 +69,7 @@ def get_docker_client(krb5_realm: Optional[str] = None,
             f"KRB5_KDC={krb5_kdc}\n",
         ]
         if sys.platform != "win32":
-            import pwd
+            import pwd  # pylint: disable=import-outside-toplevel
             uid = os.getuid()
             user = pwd.getpwuid(uid)
             env_file_lines.extend(

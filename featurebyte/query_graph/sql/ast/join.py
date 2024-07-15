@@ -4,12 +4,13 @@ Module for join operation sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional, cast
+from typing_extensions import Literal
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Select
-from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -75,6 +76,8 @@ class SCDJoin(TableNode):
     """
     SCDJoin joins the latest record per natural key from the right table to the left table
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     left_node: TableNode
     right_node: TableNode

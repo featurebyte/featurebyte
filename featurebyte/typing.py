@@ -3,11 +3,11 @@ Common utilities related to typing
 """
 
 from typing import Any, Callable, Optional, Sequence, Type, Union, cast
+from typing_extensions import Literal
 
 import pandas as pd
 from pandas.api.types import is_scalar as pd_is_scalar
 from pydantic import StrictFloat, StrictInt, StrictStr
-from typing_extensions import Literal
 
 DatetimeSupportedPropertyType = Literal[
     "year",
@@ -129,7 +129,7 @@ def validate_type_is_feature(obj: Any, obj_name: str) -> None:
     obj_name: str
         Name of the object to check
     """
-
+    # pylint: disable=import-outside-toplevel,cyclic-import
     from featurebyte.api.feature import Feature
 
     validate_type_is(obj, obj_name, Feature)

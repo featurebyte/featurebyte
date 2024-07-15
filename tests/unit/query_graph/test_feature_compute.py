@@ -229,7 +229,7 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
     assert plan.get_request_table_name(item_agg_spec) == "REQUEST_TABLE_OID"
     ctes = plan.construct_request_table_ctes(REQUEST_TABLE_NAME)
     assert len(ctes) == 1
-    _name, sql = ctes[0]
+    name, sql = ctes[0]
     expected_sql = """
     SELECT DISTINCT
       "OID"

@@ -261,9 +261,7 @@ async def test_online_store_table_cleanup(
     Test cleaning up of online store tables
     """
 
-    _tile_id, agg_id, feature_store_table_name, feature_name, _entity_col_names = (
-        tile_task_prep_spark
-    )
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep_spark
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     # Populate the online store table multiple times to get different versions

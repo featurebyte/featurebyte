@@ -2,8 +2,9 @@
 Observation table helper
 """
 
-from pathlib import Path
 from typing import Optional, Union
+
+from pathlib import Path
 
 import pandas as pd
 

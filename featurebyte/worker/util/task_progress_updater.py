@@ -3,6 +3,7 @@ Task progress updater
 """
 
 from typing import Any, Optional
+
 from uuid import UUID
 
 from featurebyte.models.task import Task

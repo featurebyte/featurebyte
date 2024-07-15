@@ -4,8 +4,9 @@ Target API payload schema
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, List, Optional
+
+from datetime import datetime
 
 from bson import ObjectId
 from pydantic import Field, StrictStr

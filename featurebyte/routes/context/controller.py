@@ -26,7 +26,9 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class ContextController(BaseDocumentController[ContextModel, ContextService, ContextList]):
+class ContextController(
+    BaseDocumentController[ContextModel, ContextService, ContextList]
+):  # pylint: disable=too-many-instance-attributes
     """
     Context controller
     """

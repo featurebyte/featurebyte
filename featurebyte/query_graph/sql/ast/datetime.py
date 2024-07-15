@@ -4,8 +4,9 @@ Module for datetime operations related sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Union, cast
+
+from dataclasses import dataclass
 
 import pandas as pd
 from sqlglot import expressions
@@ -172,7 +173,9 @@ class TimedeltaExtractNode(ExpressionNode):
         conversion_factor_expr = expressions.Div(
             this=input_unit_microsecond, expression=output_unit_microsecond
         )
-        converted_expr = expressions.Mul(this=input_expr, expression=conversion_factor_expr)  # type: Expression
+        converted_expr = expressions.Mul(
+            this=input_expr, expression=conversion_factor_expr
+        )  # type: Expression
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
 

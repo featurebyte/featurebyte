@@ -4,8 +4,9 @@ This module contains as at aggregator base class
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import List, Optional, Type, cast
+
+from abc import abstractmethod
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView

@@ -256,7 +256,9 @@ def test_disable_block_modification_check(app_container):
         service = app_container.table_facade_service.table_columns_info_service.semantic_service
         assert service.block_modification_handler.block_modification is False
         # level-4 service
-        service = app_container.table_facade_service.table_columns_info_service.entity_relationship_service
+        service = (
+            app_container.table_facade_service.table_columns_info_service.entity_relationship_service
+        )
         assert service.entity_service.block_modification_handler.block_modification is False
 
     # outside the context manager, the check should be enabled

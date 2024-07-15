@@ -4,9 +4,10 @@ ApiObject class
 
 from __future__ import annotations
 
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+
 import operator
 from http import HTTPStatus
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -44,11 +45,11 @@ logger = get_logger(__name__)
 
 
 def _get_cache_collection_name(
-    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]],
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]]
 ) -> str:
     if hasattr(obj, "_get_schema"):
         collection_name = (
-            obj._get_schema.Settings.collection_name  # type: ignore
+            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
         )
     else:
         collection_name = obj.Settings.collection_name
@@ -286,7 +287,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     @classmethod
     def _get_by_id(
         cls: Type[ApiObjectT],
-        id: ObjectId,
+        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
         use_cache: bool = True,
     ) -> ApiObjectT:
         if use_cache:
@@ -298,7 +299,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id_value=id))
 
     @classmethod
-    def get_by_id(cls: Type[ApiObjectT], id: ObjectId) -> ApiObjectT:
+    def get_by_id(
+        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ApiObjectT:
         """
         Retrieve the object from the persistent data store given the object's ID.
 
@@ -449,10 +452,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         else:
             if self._update_schema_class is None:
                 raise NotImplementedError
-            data = self._update_schema_class(**{
-                **self.dict(by_alias=True),
-                **update_payload,
-            }).json_dict()
+            data = self._update_schema_class(  # pylint: disable=not-callable
+                **{**self.dict(by_alias=True), **update_payload}
+            ).json_dict()
 
         url = url or f"{self._route}/{self.id}"
         client = Configurations().get_client()
@@ -479,13 +481,15 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         field_name = "field_name"
         previous = pd.json_normalize(record["previous_values"]).melt(var_name=field_name)
         current = pd.json_normalize(record["current_values"]).melt(var_name=field_name)
-        record_df = pd.DataFrame({
-            "action_at": record["action_at"],
-            "action_type": record["action_type"],
-            "name": record["name"],
-            "old_value": previous.set_index(field_name)["value"],
-            "new_value": current.set_index(field_name)["value"],
-        }).reset_index()
+        record_df = pd.DataFrame(
+            {
+                "action_at": record["action_at"],
+                "action_type": record["action_type"],
+                "name": record["name"],
+                "old_value": previous.set_index(field_name)["value"],
+                "new_value": current.set_index(field_name)["value"],
+            }
+        ).reset_index()
         column_order = [
             "action_at",
             "action_type",
@@ -494,7 +498,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             "old_value",
             "new_value",
         ]
-        return record_df[column_order]
+        return record_df[column_order]  # pylint: disable=unsubscriptable-object
 
     def audit(self) -> pd.DataFrame:
         """

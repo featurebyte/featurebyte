@@ -4,12 +4,13 @@ This module contains models used for sdk code extractor.
 
 from __future__ import annotations
 
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+
 import ast
 import json
 import os
 from collections import defaultdict
 from enum import Enum
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from black import FileMode, format_str
 from bson import ObjectId
@@ -303,7 +304,9 @@ def get_object_class_from_function_call(
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 VarNameExpressionInfo = Union[VariableNameStr, ExpressionStr, InfoDict]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
+StatementT = Union[  # pylint: disable=invalid-name
+    StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]
+]
 
 
 class CodeGenerationContext(FeatureByteBaseModel):
@@ -475,7 +478,7 @@ class UnusedVariableFinder(ast.NodeVisitor):
         self.variables: Set[str] = set()
         self.used_variables: Set[str] = set()
 
-    def visit_Name(self, node: ast.Name) -> None:
+    def visit_Name(self, node: ast.Name) -> None:  # pylint: disable=invalid-name
         """
         Visit the Name node in the ast.
 

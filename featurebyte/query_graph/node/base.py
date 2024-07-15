@@ -3,9 +3,7 @@ Base classes required for constructing query graph nodes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-
-import copy
-from abc import ABC, abstractmethod
+# pylint: disable=too-many-lines
 from typing import (
     Any,
     Callable,
@@ -19,6 +17,9 @@ from typing import (
     TypeVar,
     Union,
 )
+
+import copy
+from abc import ABC, abstractmethod
 
 from pydantic import Field
 

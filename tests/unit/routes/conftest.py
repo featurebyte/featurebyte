@@ -2,6 +2,7 @@
 Fixture for API unit tests
 """
 
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from functools import partial

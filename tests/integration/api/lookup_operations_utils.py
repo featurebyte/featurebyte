@@ -36,34 +36,42 @@ def check_lookup_feature_or_target_is_time_aware(
 
     # Point in time after event time - non-NA
     df = feature_or_target.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": ts_after_event,
-                primary_key_serving_name: primary_key_value,
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": ts_after_event,
+                    primary_key_serving_name: primary_key_value,
+                }
+            ]
+        )
     )
     tz_localize_if_needed(df, source_type)
-    expected = pd.Series({
-        "POINT_IN_TIME": ts_after_event,
-        primary_key_serving_name: primary_key_value,
-        feature_or_target_name: expected_feature_value_if_after_event,
-    })
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_after_event,
+            primary_key_serving_name: primary_key_value,
+            feature_or_target_name: expected_feature_value_if_after_event,
+        }
+    )
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
 
     # Point in time before event time - NA
     df = feature_or_target.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": ts_before_event,
-                primary_key_serving_name: primary_key_value,
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": ts_before_event,
+                    primary_key_serving_name: primary_key_value,
+                }
+            ]
+        )
     )
     tz_localize_if_needed(df, source_type)
-    expected = pd.Series({
-        "POINT_IN_TIME": ts_before_event,
-        primary_key_serving_name: primary_key_value,
-        feature_or_target_name: np.nan,
-    })
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_before_event,
+            primary_key_serving_name: primary_key_value,
+            feature_or_target_name: np.nan,
+        }
+    )
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)

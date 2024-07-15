@@ -4,13 +4,14 @@ Models to construct feast online store config from featurebyte BaseOnlineStoreDe
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Union, cast
+from typing_extensions import Annotated
+
+from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import FeastConfigBaseModel
 from pydantic import Field, parse_obj_as
-from typing_extensions import Annotated
 
 from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 from featurebyte.models.online_store import (

@@ -39,7 +39,7 @@ from featurebyte.service.use_case import UseCaseService
 logger = get_logger(__name__)
 
 
-class ObservationTableController(
+class ObservationTableController(  # pylint: disable=too-many-instance-attributes
     BaseMaterializedTableController[
         ObservationTableModel, ObservationTableService, ObservationTableList
     ],
@@ -50,7 +50,7 @@ class ObservationTableController(
 
     paginated_document_class = ObservationTableList
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         observation_table_service: ObservationTableService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,

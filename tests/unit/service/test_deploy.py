@@ -262,7 +262,7 @@ async def test_update_deployment__deployment_is_disabled_when_exception_raised(
             deployment_id=disabled_deployment_with_production_ready_features.id,
             to_enable_deployment=True,
         )
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         # Capture the traceback information
         exc_traceback = traceback.format_exc()
 

@@ -2,8 +2,9 @@
 Customized smart_open WebHDFS client to support Kerberos authentication
 """
 
-from http import HTTPStatus
 from typing import Any, Dict, List
+
+from http import HTTPStatus
 
 import requests
 import requests_kerberos
@@ -122,7 +123,9 @@ class BufferedInput(BufferedInputBase):
     BufferedInput class for webhdfs with Kerberos authentication
     """
 
-    def __init__(self, uri: str, kerberos: bool = False) -> None:
+    def __init__(  # pylint: disable=super-init-not-called
+        self, uri: str, kerberos: bool = False
+    ) -> None:
         """
         Initialize BufferedInput
 
@@ -151,12 +154,12 @@ class BufferedInput(BufferedInputBase):
         self._buf = b""
 
 
-class BufferedOutput(BufferedOutputBase):
+class BufferedOutput(BufferedOutputBase):  # pylint: disable=too-many-instance-attributes
     """
     BufferedOutput class for webhdfs with Kerberos authentication
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self, uri: str, min_part_size: int = MIN_PART_SIZE, kerberos: bool = False
     ) -> None:
         """

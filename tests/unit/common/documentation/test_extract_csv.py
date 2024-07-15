@@ -2,8 +2,9 @@
 Test extract CSV
 """
 
-from dataclasses import dataclass
 from typing import List
+
+from dataclasses import dataclass
 
 from featurebyte.common.documentation.extract_csv import _generate_items_to_render
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (

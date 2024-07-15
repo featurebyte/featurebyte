@@ -2,10 +2,11 @@
 Webdav storage class (rclone)
 """
 
+from typing import AsyncGenerator
+
 import re
 from http import HTTPStatus
 from pathlib import Path
-from typing import AsyncGenerator
 
 import httpx
 

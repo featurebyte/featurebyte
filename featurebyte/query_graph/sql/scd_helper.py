@@ -4,8 +4,9 @@ Utilities for SCD join / lookup
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal, Optional, cast
+
+from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -248,7 +249,7 @@ def _convert_to_utc_ntz(
     return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
 
 
-def augment_table_with_effective_timestamp(
+def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     left_table: Table,
     right_table: Table,
     adapter: BaseAdapter,

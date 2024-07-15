@@ -4,9 +4,10 @@ Feast registry service
 
 from __future__ import annotations
 
+from typing import Any, List, Optional
+
 import random
 from pathlib import Path
-from typing import Any, List, Optional
 
 from bson import ObjectId
 from redis import Redis
@@ -40,7 +41,7 @@ class FeastRegistryService(
 
     document_class = FeastRegistryModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -171,7 +172,7 @@ class FeastRegistryService(
         )
         return registry
 
-    async def _construct_feast_registry_model(
+    async def _construct_feast_registry_model(  # pylint: disable=too-many-locals
         self,
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],

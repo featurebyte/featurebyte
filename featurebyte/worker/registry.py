@@ -2,8 +2,9 @@
 Task registry
 """
 
-from enum import Enum
 from typing import Dict, Type
+
+from enum import Enum
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.worker.task.base import BaseTask, TaskT

@@ -2,11 +2,12 @@
 This module contains common table related models.
 """
 
-from abc import abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing_extensions import Literal
+
+from abc import abstractmethod
 
 from pydantic import Field, validator
-from typing_extensions import Literal
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType

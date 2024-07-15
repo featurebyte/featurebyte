@@ -4,12 +4,13 @@ Module containing string operations related sql generation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional
+from typing_extensions import Literal
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
-from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions

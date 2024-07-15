@@ -10,7 +10,7 @@ from bson import ObjectId
 from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestOnlineStoreApi(BaseApiTestSuite):
+class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestOnlineStoreApi
     """

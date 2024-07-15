@@ -4,8 +4,9 @@ SQL generation for latest feature without a window
 
 from __future__ import annotations
 
-import sys
 from typing import Any
+
+import sys
 
 from sqlglot.expressions import Select
 

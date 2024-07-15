@@ -4,8 +4,9 @@ DimensionTable API routes
 
 from __future__ import annotations
 
-from http import HTTPStatus
 from typing import Optional
+
+from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
@@ -47,6 +48,8 @@ class DimensionTableRouter(
     """
     Dimension table router
     """
+
+    # pylint: disable=arguments-renamed
 
     object_model = DimensionTableModel
     list_object_model = DimensionTableList

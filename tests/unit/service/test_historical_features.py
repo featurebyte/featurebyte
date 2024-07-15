@@ -149,9 +149,11 @@ async def test_get_historical_features__missing_point_in_time(
     snowflake_feature_store,
 ):
     """Test validation of missing point in time for historical features"""
-    observation_set = pd.DataFrame({
-        "cust_id": ["C1", "C2", "C3"],
-    })
+    observation_set = pd.DataFrame(
+        {
+            "cust_id": ["C1", "C2", "C3"],
+        }
+    )
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
         await get_historical_features(
             session=mock_snowflake_session,
@@ -180,10 +182,12 @@ async def test_get_historical_features__too_recent_point_in_time(
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
     if point_in_time_is_datetime_dtype:
         point_in_time_vals = pd.to_datetime(point_in_time_vals)
-    observation_set = pd.DataFrame({
-        "POINT_IN_TIME": point_in_time_vals,
-        "cust_id": ["C1", "C2"],
-    })
+    observation_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": point_in_time_vals,
+            "cust_id": ["C1", "C2"],
+        }
+    )
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
         await get_historical_features(
             session=mock_snowflake_session,
@@ -214,10 +218,12 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     being registered as a temp table in session
     """
     # Input POINT_IN_TIME is string
-    df_request = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-        "cust_id": ["C1", "C2"],
-    })
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
@@ -253,10 +259,12 @@ async def test_get_historical_features__intermediate_tables_dropped(
     Test intermediate tables are dropped after get historical features
     """
     _ = mocked_compute_tiles_on_demand
-    df_request = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-        "cust_id": ["C1", "C2"],
-    })
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
     await get_historical_features(
         session=mock_snowflake_session,
@@ -305,10 +313,12 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     """
     Test that nodes for tile cache are batched correctly
     """
-    df_request = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-        "cust_id": ["C1", "C2"],
-    })
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
 
     complex_feature = float_feature * agg_per_category_feature.cd.entropy()

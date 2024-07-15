@@ -258,7 +258,7 @@ def test_event_view_groupby__prune(
         )["sum_a_plus_one_24h"]
         * b
     )
-    pruned_graph, _mappped_node = feature.extract_pruned_graph_and_node()
+    pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
         "add_1": ["add_2", "assign_1"],
@@ -462,10 +462,9 @@ def test_get_feature_entity_id(
     assert entity_id == cust_id_entity.id
     comp_feature = non_time_based_feature + float_feature
     comp_feature.name = "comp_feature"
-    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted([
-        cust_id_entity.id,
-        transaction_entity.id,
-    ])
+    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted(
+        [cust_id_entity.id, transaction_entity.id]
+    )
 
     # verify that multiple entity IDs raises error
     with pytest.raises(ValueError) as exc_info:
@@ -771,7 +770,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     feat = feature_group["sum_30m"]
 
     # check pruned graph's nested graph nodes
-    pruned_graph, _node = feat.extract_pruned_graph_and_node()
+    pruned_graph, node = feat.extract_pruned_graph_and_node()
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
 

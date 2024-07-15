@@ -4,8 +4,9 @@ Feature Job Setting Analysis task
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
+
+from pathlib import Path
 
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
@@ -38,7 +39,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
     payload_class = FeatureJobSettingAnalysisTaskPayload
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         storage: Storage,
         event_table_service: EventTableService,

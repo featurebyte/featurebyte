@@ -4,8 +4,9 @@ Test fixtures for persistent tests
 
 from __future__ import annotations
 
-import copy
 from typing import Any, Dict, List
+
+import copy
 
 import pytest
 from bson import ObjectId

@@ -74,7 +74,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
     @pytest_asyncio.fixture()
     async def create_success_response(
         self, test_api_client_persistent, user_id, default_catalog_id, storage
-    ):
+    ):  # pylint: disable=arguments-differ
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         periodic_task_service = PeriodicTaskService(
@@ -93,7 +93,7 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
     @pytest_asyncio.fixture()
     async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id, default_catalog_id, storage
-    ):
+    ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
         _, persistent = test_api_client_persistent
         output = []

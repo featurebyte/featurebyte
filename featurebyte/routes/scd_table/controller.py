@@ -41,7 +41,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         "end_timestamp_column": SemanticType.SCD_END_TIMESTAMP,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         scd_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,

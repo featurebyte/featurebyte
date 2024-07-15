@@ -21,12 +21,14 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
 
     # check preview but provides children id
     df = target.preview(
-        pd.DataFrame([
-            {
-                "POINT_IN_TIME": "2001-10-15 10:00:00",
-                "üser id": 1,
-            }
-        ])
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-15 10:00:00",
+                    "üser id": 1,
+                }
+            ]
+        )
     )
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
@@ -39,10 +41,12 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
 
     # check historical features
     target.save()
-    observations_set = pd.DataFrame({
-        "POINT_IN_TIME": pd.date_range("2001-01-01 10:00:00", periods=10, freq="1d"),
-        "user_status": ["STÀTUS_CODE_47"] * 10,
-    })
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-01 10:00:00", periods=10, freq="1d"),
+            "user_status": ["STÀTUS_CODE_47"] * 10,
+        }
+    )
     expected = observations_set.copy()
     expected["Future Number of Users With This Status"] = [
         1,

@@ -4,8 +4,9 @@ StaticSourceTable API routes
 
 from __future__ import annotations
 
-from http import HTTPStatus
 from typing import Optional, cast
+
+from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
@@ -37,6 +38,8 @@ class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel
     """
     Static source table router
     """
+
+    # pylint: disable=arguments-renamed
 
     table_model = StaticSourceTableModel
     controller = "static_source_table_controller"

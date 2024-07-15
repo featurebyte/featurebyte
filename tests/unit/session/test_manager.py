@@ -35,7 +35,7 @@ def session_manager_fixture(config, credentials, snowflake_connector):
     """
     Session manager fixture
     """
-
+    # pylint: disable=no-member
     _ = snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)

@@ -38,7 +38,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     precompute_queries: List[OnlineStoreComputeQueryModel] = []
 
     @validator("precompute_queries", always=True)
-    def _generate_precompute_queries(
+    def _generate_precompute_queries(  # pylint: disable=no-self-argument
         cls,
         val: List[OnlineStoreComputeQueryModel],
         values: Dict[str, Any],

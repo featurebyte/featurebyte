@@ -2,8 +2,9 @@
 Resource util.
 """
 
-import inspect
 from typing import Any
+
+import inspect
 
 from mkautodoc.extension import import_from_string
 

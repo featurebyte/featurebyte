@@ -2,8 +2,9 @@
 Aggregator utility functions
 """
 
-import warnings
 from typing import Optional
+
+import warnings
 
 from featurebyte.typing import OptionalScalar
 

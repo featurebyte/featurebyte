@@ -104,10 +104,12 @@ def test_feature_list_creation__success(
 def test_feature_list__get_historical_features(single_feat_flist, mocked_compute_tiles_on_demand):
     """Test FeatureList can be created with valid inputs"""
     flist = single_feat_flist
-    dataframe = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
-        "cust_id": ["C1", "C2"],
-    })
+    dataframe = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
     mock_feature_table = Mock(name="TempFeatureTable")
     mock_object_id = ObjectId()
     with patch.object(
@@ -567,19 +569,21 @@ def test_list(saved_feature_list):
     saved_feature_list_namespace = FeatureListNamespace.get(saved_feature_list.name)
     assert_frame_equal(
         feature_lists,
-        pd.DataFrame({
-            "id": [str(saved_feature_list.id)],
-            "name": [saved_feature_list_namespace.name],
-            "num_feature": 1,
-            "status": [saved_feature_list_namespace.status],
-            "deployed": [saved_feature_list.deployed],
-            "readiness_frac": 0.0,
-            "online_frac": 0.0,
-            "tables": [["sf_event_table"]],
-            "entities": [["customer"]],
-            "primary_entity": [["customer"]],
-            "created_at": [saved_feature_list_namespace.created_at.isoformat()],
-        }),
+        pd.DataFrame(
+            {
+                "id": [str(saved_feature_list.id)],
+                "name": [saved_feature_list_namespace.name],
+                "num_feature": 1,
+                "status": [saved_feature_list_namespace.status],
+                "deployed": [saved_feature_list.deployed],
+                "readiness_frac": 0.0,
+                "online_frac": 0.0,
+                "tables": [["sf_event_table"]],
+                "entities": [["customer"]],
+                "primary_entity": [["customer"]],
+                "created_at": [saved_feature_list_namespace.created_at.isoformat()],
+            }
+        ),
     )
 
 
@@ -588,8 +592,8 @@ def test_list_versions(saved_feature_list):
     # save a few more feature list
     feature_group = FeatureGroup(items=[])
     feat = saved_feature_list["sum_1d"]
-    feature_group["new_feat1"] = feat + 1
-    feature_group["new_feat2"] = feat + 2
+    feature_group[f"new_feat1"] = feat + 1
+    feature_group[f"new_feat2"] = feat + 2
     feature_group.save()
     flist_1 = FeatureList([feat, feature_group["new_feat1"]], name="new_flist_1")
     flist_2 = FeatureList([feat, feature_group["new_feat2"]], name="new_flist_2")
@@ -599,37 +603,41 @@ def test_list_versions(saved_feature_list):
     # check feature list class list_version & feature list object list_versions
     assert_frame_equal(
         FeatureList.list_versions(),
-        pd.DataFrame({
-            "id": [str(flist_2.id), str(flist_1.id), str(saved_feature_list.id)],
-            "name": [flist_2.name, flist_1.name, saved_feature_list.name],
-            "version": [
-                flist_2.version,
-                flist_1.version,
-                saved_feature_list.version,
-            ],
-            "num_feature": [2, 2, 1],
-            "online_frac": [0.0] * 3,
-            "deployed": [False, False, saved_feature_list.deployed],
-            "created_at": [
-                flist_2.created_at.isoformat(),
-                flist_1.created_at.isoformat(),
-                saved_feature_list.created_at.isoformat(),
-            ],
-            "is_default": [True] * 3,
-        }),
+        pd.DataFrame(
+            {
+                "id": [str(flist_2.id), str(flist_1.id), str(saved_feature_list.id)],
+                "name": [flist_2.name, flist_1.name, saved_feature_list.name],
+                "version": [
+                    flist_2.version,
+                    flist_1.version,
+                    saved_feature_list.version,
+                ],
+                "num_feature": [2, 2, 1],
+                "online_frac": [0.0] * 3,
+                "deployed": [False, False, saved_feature_list.deployed],
+                "created_at": [
+                    flist_2.created_at.isoformat(),
+                    flist_1.created_at.isoformat(),
+                    saved_feature_list.created_at.isoformat(),
+                ],
+                "is_default": [True] * 3,
+            }
+        ),
     )
 
     assert_frame_equal(
         saved_feature_list.list_versions(),
-        pd.DataFrame({
-            "id": [str(saved_feature_list.id)],
-            "name": [saved_feature_list.name],
-            "version": [saved_feature_list.version],
-            "online_frac": 0.0,
-            "deployed": [saved_feature_list.deployed],
-            "created_at": [saved_feature_list.created_at.isoformat()],
-            "is_default": [True],
-        }),
+        pd.DataFrame(
+            {
+                "id": [str(saved_feature_list.id)],
+                "name": [saved_feature_list.name],
+                "version": [saved_feature_list.version],
+                "online_frac": 0.0,
+                "deployed": [saved_feature_list.deployed],
+                "created_at": [saved_feature_list.created_at.isoformat()],
+                "is_default": [True],
+            }
+        ),
     )
 
     # check documentation of the list_versions
@@ -643,10 +651,9 @@ def test_list_versions(saved_feature_list):
 def test_get_historical_feature_sql(saved_feature_list):
     """Test get_historical_features_sql method (check it can be triggered without any error)"""
     point_in_time = pd.date_range("2001-01-01", "2001-01-02", freq="d")
-    observation_set = pd.DataFrame({
-        "POINT_IN_TIME": point_in_time,
-        "cust_id": [1234] * len(point_in_time),
-    })
+    observation_set = pd.DataFrame(
+        {"POINT_IN_TIME": point_in_time, "cust_id": [1234] * len(point_in_time)}
+    )
     sql = saved_feature_list.get_historical_features_sql(observation_set=observation_set)
     assert 'WITH "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS' in sql
 
@@ -800,15 +807,17 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
         deployments[
             ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
         ],
-        pd.DataFrame([
-            {
-                "name": expected_deployment_name,
-                "catalog_name": "catalog",
-                "feature_list_name": feature_list.name,
-                "feature_list_version": feature_list.version,
-                "num_feature": len(feature_list.feature_names),
-            }
-        ]),
+        pd.DataFrame(
+            [
+                {
+                    "name": expected_deployment_name,
+                    "catalog_name": "catalog",
+                    "feature_list_name": feature_list.name,
+                    "feature_list_version": feature_list.version,
+                    "num_feature": len(feature_list.feature_names),
+                }
+            ]
+        ),
     )
 
     # Deploy again to show that we don't error
@@ -893,10 +902,9 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
         assert feature.online_enabled
         if feature_id in another_feature_list.feature_ids:
             # when the feature appears in both feature lists
-            assert sorted(feature.deployed_feature_list_ids) == sorted([
-                feature_list.id,
-                another_feature_list.id,
-            ])
+            assert sorted(feature.deployed_feature_list_ids) == sorted(
+                [feature_list.id, another_feature_list.id]
+            )
         else:
             # when the feature is in one feature list only
             assert feature.deployed_feature_list_ids == [feature_list.id]
@@ -1030,20 +1038,22 @@ def test_list_features(saved_feature_list, float_feature):
     float_feature.save(conflict_resolution="retrieve")
     assert_frame_equal(
         feature_version_list,
-        pd.DataFrame({
-            "id": [str(float_feature.id)],
-            "name": [float_feature.name],
-            "version": [float_feature.version],
-            "dtype": [float_feature.dtype],
-            "readiness": [float_feature.readiness],
-            "online_enabled": [float_feature.online_enabled],
-            "tables": [["sf_event_table"]],
-            "primary_tables": [["sf_event_table"]],
-            "entities": [["customer"]],
-            "primary_entities": [["customer"]],
-            "created_at": [float_feature.created_at.isoformat()],
-            "is_default": [True],
-        }),
+        pd.DataFrame(
+            {
+                "id": [str(float_feature.id)],
+                "name": [float_feature.name],
+                "version": [float_feature.version],
+                "dtype": [float_feature.dtype],
+                "readiness": [float_feature.readiness],
+                "online_enabled": [float_feature.online_enabled],
+                "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
+                "entities": [["customer"]],
+                "primary_entities": [["customer"]],
+                "created_at": [float_feature.created_at.isoformat()],
+                "is_default": [True],
+            }
+        ),
     )
 
     feature_version_list = saved_feature_list.list_features()
@@ -1069,26 +1079,30 @@ def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fi
     }
 
     # check feature_job_summary content
-    expected_feature_job_summary = pd.DataFrame({
-        "aggregation_hash": {0: "e8c51d7d"},
-        "frequency(min)": {0: 30},
-        "completed_jobs": {0: 23},
-        "max_duration(s)": {0: 1582.072},
-        "95 percentile": {0: 1574.2431},
-        "frac_late": {0: 0.0},
-        "exceed_period": {0: 0},
-        "failed_jobs": {0: 1},
-        "incomplete_jobs": {0: 23},
-        "time_since_last": {0: "29 minutes"},
-    })
+    expected_feature_job_summary = pd.DataFrame(
+        {
+            "aggregation_hash": {0: "e8c51d7d"},
+            "frequency(min)": {0: 30},
+            "completed_jobs": {0: 23},
+            "max_duration(s)": {0: 1582.072},
+            "95 percentile": {0: 1574.2431},
+            "frac_late": {0: 0.0},
+            "exceed_period": {0: 0},
+            "failed_jobs": {0: 1},
+            "incomplete_jobs": {0: 23},
+            "time_since_last": {0: "29 minutes"},
+        }
+    )
     assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary)
 
     # check repr
-    assert repr(job_status_result) == "\n\n".join([
-        str(pd.DataFrame.from_dict([job_status_result.request_parameters])),
-        str(job_status_result.feature_tile_table),
-        str(job_status_result.feature_job_summary),
-    ])
+    assert repr(job_status_result) == "\n\n".join(
+        [
+            str(pd.DataFrame.from_dict([job_status_result.request_parameters])),
+            str(job_status_result.feature_tile_table),
+            str(job_status_result.feature_job_summary),
+        ]
+    )
 
     # check repr html with matplotlib
     fixture_path = "tests/fixtures/feature_job_status/expected_repr.html"
@@ -1193,7 +1207,7 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
     deployment = saved_feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    assert deployment.enabled is True
+    assert deployment.enabled == True
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
     assert saved_feature_list.deployed is True
 

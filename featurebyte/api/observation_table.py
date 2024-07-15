@@ -2,11 +2,13 @@
 ObservationTable class
 """
 
+# pylint: disable=duplicate-code
 from __future__ import annotations
+
+from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import os
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -41,7 +43,9 @@ from featurebyte.schema.observation_table import (
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 
 
-class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
+class ObservationTable(
+    PrimaryEntityMixin, MaterializedTableMixin
+):  # pylint: disable=too-many-public-methods
     """
     ObservationTable class
     """
@@ -85,17 +89,17 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     )
     def primary_entity_ids(
         self,
-    ) -> Sequence[ObjectId]:
+    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self.cached_model.primary_entity_ids
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:
+    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return [Entity.get_by_id(entity_id) for entity_id in self.primary_entity_ids]
 
     @property
@@ -123,7 +127,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         Optional[Any]
             Target of the observation table.
         """
-        from featurebyte.api.target import Target
+        from featurebyte.api.target import Target  # pylint: disable=import-outside-toplevel
 
         if isinstance(self.cached_model.request_input, TargetInput):
             target_id = self.cached_model.request_input.target_id
@@ -237,9 +241,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         >>> observation_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
@@ -272,9 +274,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         >>> observation_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -298,9 +298,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         >>> observation_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -323,9 +321,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         >>> observation_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -352,12 +348,8 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
-        >>> downloaded_path = observation_table.download(
-        ...     output_path="path/to/download"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> downloaded_path = observation_table.download(output_path="path/to/download")  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -374,9 +366,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table(
-        ...     "observation_table_name"
-        ... )  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         >>> observation_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402

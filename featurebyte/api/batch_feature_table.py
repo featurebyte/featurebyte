@@ -4,8 +4,9 @@ BatchFeatureTable class
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, ClassVar, List, Optional, Union
+
+from pathlib import Path
 
 import pandas as pd
 
@@ -57,9 +58,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
         >>> preview_df = batch_feature_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -83,9 +82,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
         >>> sample_df = batch_feature_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -108,9 +105,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
         >>> summary_df = batch_feature_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -137,12 +132,8 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
-        >>> downloaded_path = batch_feature_table.download(
-        ...     output_path="path/to/download"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> downloaded_path = batch_feature_table.download(output_path="path/to/download")  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -159,9 +150,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_feature_table = catalog.get_batch_feature_table(
-        ...     "batch_feature_table_name"
-        ... )  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
         >>> batch_feature_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402

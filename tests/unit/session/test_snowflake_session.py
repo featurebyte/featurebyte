@@ -149,7 +149,7 @@ async def test_snowflake_session__credential_from_config(
         },
         fully_qualified_name='"sf_database"."sf_schema"."sf_table"',
     )
-    assert table_details.description is None
+    assert table_details.description == None
 
 
 @pytest.fixture(name="mock_snowflake_cursor")
@@ -174,11 +174,13 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
                 _description=description,
                 description=description,
             )
-            mock_cursor.fetch_pandas_all.return_value = pd.DataFrame({
-                "col_a": [1, 4, 7],
-                "col_b": [2, 5, 8],
-                "col_c": [3, 6, 9],
-            })
+            mock_cursor.fetch_pandas_all.return_value = pd.DataFrame(
+                {
+                    "col_a": [1, 4, 7],
+                    "col_b": [2, 5, 8],
+                    "col_c": [3, 6, 9],
+                }
+            )
         mock_connection = Mock(name="MockConnection")
         mock_connection.cursor.return_value = mock_cursor
         mock_connector.connect.return_value = mock_connection
@@ -212,11 +214,13 @@ async def test_snowflake_session__fetch_pandas_all(
         assert mock_snowflake_cursor.fetchall.call_count == 0
     else:
         assert mock_snowflake_cursor.fetchall.call_count == 1
-    expected_result = pd.DataFrame({
-        "col_a": [1, 4, 7],
-        "col_b": [2, 5, 8],
-        "col_c": [3, 6, 9],
-    })
+    expected_result = pd.DataFrame(
+        {
+            "col_a": [1, 4, 7],
+            "col_b": [2, 5, 8],
+            "col_c": [3, 6, 9],
+        }
+    )
     pd.testing.assert_frame_equal(result, expected_result)
 
 
@@ -264,23 +268,29 @@ def patched_snowflake_session_cls_fixture(
         schemas_output = pd.DataFrame({"name": ["PUBLIC", "FEATUREBYTE"]})
 
     if is_functions_missing:
-        functions_output = pd.DataFrame({
-            "name": [],
-            "schema_name": [],
-        })
+        functions_output = pd.DataFrame(
+            {
+                "name": [],
+                "schema_name": [],
+            }
+        )
     else:
-        functions_output = pd.DataFrame({
-            "name": EXPECTED_FUNCTIONS,
-            "schema_name": ["FEATUREBYTE"] * len(EXPECTED_FUNCTIONS),
-        })
+        functions_output = pd.DataFrame(
+            {
+                "name": EXPECTED_FUNCTIONS,
+                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_FUNCTIONS),
+            }
+        )
 
     if is_tables_missing:
         tables_output = pd.DataFrame({"name": [], "schema_name": []})
     else:
-        tables_output = pd.DataFrame({
-            "name": EXPECTED_TABLES,
-            "schema_name": ["FEATUREBYTE"] * len(EXPECTED_TABLES),
-        })
+        tables_output = pd.DataFrame(
+            {
+                "name": EXPECTED_TABLES,
+                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_TABLES),
+            }
+        )
 
     def mock_execute_query(query):
         if not query.startswith("SHOW "):
@@ -573,13 +583,15 @@ async def test_schema_initializer__partial_missing(
 
 def test_get_columns_schema_from_dataframe():
     """Test get_columns_schema_from_dataframe"""
-    dataframe = pd.DataFrame({
-        "x_int": [1, 2, 3, 4],
-        "x_float": [1.1, 2.2, 3.3, 4.4],
-        "x_string": ["C1", "C2", "C3", "C4"],
-        "x_array": [[1, 2], [3, 4], [5, 6], [7, 8]],
-        "x_date": pd.date_range("2022-01-01", periods=4),
-    })
+    dataframe = pd.DataFrame(
+        {
+            "x_int": [1, 2, 3, 4],
+            "x_float": [1.1, 2.2, 3.3, 4.4],
+            "x_string": ["C1", "C2", "C3", "C4"],
+            "x_array": [[1, 2], [3, 4], [5, 6], [7, 8]],
+            "x_date": pd.date_range("2022-01-01", periods=4),
+        }
+    )
     dataframe["x_int32"] = dataframe["x_int"].astype(np.int32)
     dataframe["x_int16"] = dataframe["x_int"].astype(np.int16)
     dataframe["x_int8"] = dataframe["x_int"].astype(np.int8)
@@ -622,10 +634,12 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
     """
     Test get_async_query_stream
     """
-    result_data = pd.DataFrame({
-        "col_a": range(10),
-        "col_b": range(20, 30),
-    })
+    result_data = pd.DataFrame(
+        {
+            "col_a": range(10),
+            "col_b": range(20, 30),
+        }
+    )
 
     def mock_fetch_arrow_batches():
         for i in range(result_data.shape[0]):
@@ -821,4 +835,6 @@ def test_convert_to_internal_variable_type(snowflake_var_info, expected):
     """
     Test convert_to_internal_variable_type
     """
-    assert SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected
+    assert (
+        SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected
+    )  # pylint: disable=protected-access

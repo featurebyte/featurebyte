@@ -221,19 +221,21 @@ def test_get_entity(catalog):
 
     # test list entity names - no include_id
     entity_list = Entity.list(include_id=False)
-    expected_entity_list = pd.DataFrame({
-        "name": [region_entity.name, prod_entity.name, cust_entity.name],
-        "serving_names": [
-            region_entity.serving_names,
-            prod_entity.serving_names,
-            cust_entity.serving_names,
-        ],
-        "created_at": [
-            region_entity.created_at.isoformat(),
-            prod_entity.created_at.isoformat(),
-            cust_entity.created_at.isoformat(),
-        ],
-    })
+    expected_entity_list = pd.DataFrame(
+        {
+            "name": [region_entity.name, prod_entity.name, cust_entity.name],
+            "serving_names": [
+                region_entity.serving_names,
+                prod_entity.serving_names,
+                cust_entity.serving_names,
+            ],
+            "created_at": [
+                region_entity.created_at.isoformat(),
+                prod_entity.created_at.isoformat(),
+                cust_entity.created_at.isoformat(),
+            ],
+        }
+    )
     assert_frame_equal(entity_list, expected_entity_list)
 
     # test list with include_id=True

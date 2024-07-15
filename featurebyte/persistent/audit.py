@@ -4,8 +4,9 @@ Audit logging for persistent operations
 
 from __future__ import annotations
 
-from functools import wraps
 from typing import Any, List, Optional, Tuple
+
+from functools import wraps
 
 import numpy as np
 
@@ -110,7 +111,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         Return from function
     """
 
-    async def _execute_transaction(
+    async def _execute_transaction(  # pylint: disable=unused-argument
         persistent: Any,
         collection_name: str,
         async_execution: Any,
@@ -152,7 +153,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         else:
             # retrieve original document(s)
             if mode == AuditTransactionMode.SINGLE:
-                original_doc = await persistent._find_one(
+                original_doc = await persistent._find_one(  # pylint: disable=protected-access
                     collection_name=collection_name,
                     query_filter=query_filter,
                 )
@@ -161,7 +162,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 else:
                     original_docs = [original_doc]
             else:
-                original_docs, _ = await persistent._find(
+                original_docs, _ = await persistent._find(  # pylint: disable=protected-access
                     collection_name=collection_name,
                     query_filter=query_filter,
                 )
@@ -200,7 +201,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             (
                 updated_docs,
                 num_updated_docs,
-            ) = await persistent._find(
+            ) = await persistent._find(  # pylint: disable=protected-access
                 collection_name=collection_name,
                 query_filter={"_id": {"$in": [doc["_id"] for doc in original_docs]}},
             )
@@ -237,7 +238,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 ).dict(by_alias=True)
             )
 
-        await persistent._insert_many(
+        await persistent._insert_many(  # pylint: disable=protected-access
             collection_name=get_audit_collection_name(collection_name), documents=audit_docs
         )
 

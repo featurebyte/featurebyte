@@ -4,8 +4,9 @@ SQL generation for non-tile window aggregation
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple, cast
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -133,10 +134,9 @@ class NonTileRequestTablePlan:
                 request_table_name=request_table_name,
                 aggregation_spec=processed_request_table.aggregation_spec,
             )
-            request_table_ctes.append((
-                quoted_identifier(processed_request_table.name),
-                processed_table_sql,
-            ))
+            request_table_ctes.append(
+                (quoted_identifier(processed_request_table.name), processed_table_sql)
+            )
         return cast(CteStatements, request_table_ctes)
 
     def _construct_processed_request_table_sql(

@@ -4,9 +4,10 @@ Helper functions for asyncio
 
 from __future__ import annotations
 
+from typing import Any, Coroutine, List
+
 import asyncio
 from asyncio import Future
-from typing import Any, Coroutine, List
 
 
 def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -> Future[List[Any]]:
@@ -37,7 +38,7 @@ def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -
     async def _coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with semaphore:
             nonlocal failed, tasks, tasks_canceled
-            if failed:
+            if failed:  # pylint: disable=used-before-assignment
                 # Close unawaited coroutines on failure
                 coro.close()
                 return

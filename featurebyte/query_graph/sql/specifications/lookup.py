@@ -4,8 +4,9 @@ Lookup spec
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional
+
+from dataclasses import dataclass
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node

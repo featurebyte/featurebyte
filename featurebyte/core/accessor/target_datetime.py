@@ -21,7 +21,7 @@ class TargetDtAccessorMixin:
     """
 
     @property
-    def dt(self: Target) -> DatetimeAccessor:  # type: ignore
+    def dt(self: Target) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         dt accessor object
 

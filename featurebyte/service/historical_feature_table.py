@@ -4,8 +4,9 @@ HistoricalFeatureTableService class
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Optional
+
+from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
@@ -35,7 +36,7 @@ class HistoricalFeatureTableService(
     HistoricalFeatureTableService class
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,

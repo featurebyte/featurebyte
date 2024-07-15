@@ -37,12 +37,12 @@ class SnowflakeDetails(BaseDatabaseDetails):
 
     Examples
     --------
-    >>> details = fb.SnowflakeDetails(
-    ...     account="<account>",
-    ...     warehouse="snowflake",
-    ...     database_name="<database_name>",
-    ...     schema_name="<schema_name>",
-    ...     role_name="<role_name>",
+    >>> details= fb.SnowflakeDetails(
+    ...   account="<account>",
+    ...   warehouse="snowflake",
+    ...   database_name="<database_name>",
+    ...   schema_name="<schema_name>",
+    ...   role_name="<role_name>",
     ... )
     """
 
@@ -88,14 +88,14 @@ class SnowflakeDetails(BaseDatabaseDetails):
         return {"warehouse"}
 
 
-class SQLiteDetails(BaseDatabaseDetails):
+class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """Model for SQLite data source information"""
 
     filename: StrictStr
     is_local_source: ClassVar[bool] = True
 
 
-class BaseDatabricksDetails(BaseDatabaseDetails):
+class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """
     Base model for details used to connect to a Databricks data source.
     """
@@ -120,18 +120,18 @@ class BaseDatabricksDetails(BaseDatabaseDetails):
         return {"http_path"}
 
 
-class DatabricksDetails(BaseDatabricksDetails):
+class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Databricks data source.
 
     Examples
     --------
     >>> details = fb.DatabricksDetails(
-    ...     host="<host_name>",
-    ...     http_path="<http_path>",
-    ...     catalog_name="hive_metastore",
-    ...     schema_name="<schema_name>",
-    ...     storage_path="dbfs:/FileStore/<schema_name>",
+    ...   host="<host_name>",
+    ...   http_path="<http_path>",
+    ...   catalog_name="hive_metastore",
+    ...   schema_name="<schema_name>",
+    ...   storage_path="dbfs:/FileStore/<schema_name>",
     ... )
     """
 
@@ -167,18 +167,18 @@ class DatabricksDetails(BaseDatabricksDetails):
         return values
 
 
-class DatabricksUnityDetails(BaseDatabricksDetails):
+class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Databricks Unity data source.
 
     Examples
     --------
     >>> details = fb.DatabricksUnityDetails(
-    ...     host="<host_name>",
-    ...     http_path="<http_path>",
-    ...     catalog_name="hive_metastore",
-    ...     schema_name="<schema_name>",
-    ...     group_name="<group_name>",
+    ...   host="<host_name>",
+    ...   http_path="<http_path>",
+    ...   catalog_name="hive_metastore",
+    ...   schema_name="<schema_name>",
+    ...   group_name="<group_name>",
     ... )
     """
 
@@ -201,20 +201,20 @@ class DatabricksUnityDetails(BaseDatabricksDetails):
     )
 
 
-class SparkDetails(BaseDatabaseDetails):
+class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Spark data source.
 
     Examples
     --------
     >>> details = fb.SparkDetails(
-    ...     host="<host>",
-    ...     port=10003,
-    ...     catalog_name="spark_catalog",
-    ...     schema_name="<schema_name>",
-    ...     storage_type=fb.StorageType.S3,
-    ...     storage_url="<storage_url>",
-    ...     storage_path="gs://dataproc-cluster-staging/{<schema_name>}",
+    ...   host="<host>",
+    ...   port=10003,
+    ...   catalog_name="spark_catalog",
+    ...   schema_name="<schema_name>",
+    ...   storage_type=fb.StorageType.S3,
+    ...   storage_url="<storage_url>",
+    ...   storage_path="gs://dataproc-cluster-staging/{<schema_name>}"
     ... )
     """
 
@@ -267,7 +267,7 @@ class SparkDetails(BaseDatabaseDetails):
         return values
 
 
-class TestDatabaseDetails(BaseDatabaseDetails):
+class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """Model for a no-op mock database details for use in tests"""
 
 

@@ -6,9 +6,10 @@ Note: do not include server only dependencies here
 
 from __future__ import annotations
 
+from typing import Literal
+
 import functools
 from enum import Enum
-from typing import Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 
@@ -270,9 +271,9 @@ class AggFunc(StrEnum):
     >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
     >>> # Get the number of items in each invoice
     >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
-    ...     None,
-    ...     method=fb.AggFunc.COUNT,
-    ...     feature_name="InvoiceItemCount",
+    ...   None,
+    ...   method=fb.AggFunc.COUNT,
+    ...   feature_name="InvoiceItemCount",
     ... )
     """
 

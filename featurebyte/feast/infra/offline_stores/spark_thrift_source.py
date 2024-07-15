@@ -2,8 +2,10 @@
 Spark Thrift Server Data Source
 """
 
-import json
+# pylint: disable=no-name-in-module
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, cast
+
+import json
 
 from feast.data_source import DataSource
 from feast.protos.feast.core.DataSource_pb2 import DataSource as DataSourceProto
@@ -189,10 +191,8 @@ class SparkThriftOptions:
         DataSourceProto.CustomSourceOptions
         """
         spark_thrift_options_proto = DataSourceProto.CustomSourceOptions(
-            configuration=json.dumps({
-                "catalog": self.catalog,
-                "schema": self.schema,
-                "table": self.table,
-            }).encode()
+            configuration=json.dumps(
+                {"catalog": self.catalog, "schema": self.schema, "table": self.table}
+            ).encode()
         )
         return spark_thrift_options_proto

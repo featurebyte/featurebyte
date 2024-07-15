@@ -2,10 +2,11 @@
 Tile Generate Schedule script
 """
 
+from typing import Any, Dict, List, Optional
+
 import time
 import traceback
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 import dateutil.parser
 
@@ -77,7 +78,7 @@ class TileTaskExecutor:
                     status=final_status,
                 )
 
-    async def _execute(
+    async def _execute(  # pylint: disable=too-many-locals,too-many-statements
         self,
         session: BaseSession,
         params: TileScheduledJobParameters,
