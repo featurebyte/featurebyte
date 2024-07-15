@@ -15,6 +15,7 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
+from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
 from featurebyte.models.offline_store_feature_table import (
     OfflineLastMaterializedAtUpdate,
     OnlineStoreLastMaterializedAt,
@@ -283,6 +284,19 @@ def freeze_feature_timestamp_fixture():
         yield
 
 
+@pytest_asyncio.fixture(name="feature_materialize_run")
+async def feature_materialize_run_fixture(app_container):
+    """
+    Fixture for a FeatureMaterializeRun
+    """
+    return await app_container.feature_materialize_run_service.create_document(
+        FeatureMaterializeRun(
+            offline_store_feature_table_id=ObjectId(),
+            scheduled_job_ts=datetime(2022, 1, 1, 0, 0),
+        )
+    )
+
+
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_materialize_features(
@@ -354,12 +368,15 @@ async def test_scheduled_materialize_features(
     offline_store_feature_table,
     mock_materialize_partial,
     is_online_store_registered_for_catalog,
+    feature_materialize_run,
     update_fixtures,
 ):
     """
     Test scheduled_materialize_features
     """
-    await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
+    await feature_materialize_service.scheduled_materialize_features(
+        offline_store_feature_table, feature_materialize_run.id
+    )
 
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
@@ -398,6 +415,13 @@ async def test_scheduled_materialize_features(
         )
     else:
         assert len(updated_feature_table.online_stores_last_materialized_at) == 0
+
+    # Check FeatureMaterializeRun record is updated
+    feature_materialize_run = await app_container.feature_materialize_run_service.get_document(
+        feature_materialize_run.id
+    )
+    assert feature_materialize_run.feature_materialize_ts is not None
+    assert feature_materialize_run.completion_ts is not None
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
