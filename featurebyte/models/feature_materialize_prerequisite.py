@@ -1,5 +1,5 @@
 """
-FeatureMaterializePrequisiteModel
+FeatureMaterializePrerequisiteModel
 """
 
 from __future__ import annotations

@@ -1,0 +1,67 @@
+"""
+FeatureMaterializeRunModel class
+"""
+
+from __future__ import annotations
+
+from typing import List, Literal, Optional
+
+from datetime import datetime
+
+from pydantic import Field
+from pymongo import IndexModel
+
+from featurebyte.models.base import (
+    FeatureByteBaseModel,
+    FeatureByteCatalogBaseDocumentModel,
+    PydanticObjectId,
+)
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+
+IncompleteTileTaskReason = Literal["failure", "timeout"]
+
+
+class IncompleteTileTask(FeatureByteBaseModel):
+    """
+    Represents an incomplete tile task that a feature materialize task depended upon
+    """
+
+    aggregation_id: str
+    reason: IncompleteTileTaskReason
+
+
+class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
+    """
+    Represents a feature materialize job run
+    """
+
+    offline_store_feature_table_id: PydanticObjectId
+    scheduled_job_ts: datetime
+    feature_materialize_ts: Optional[datetime] = Field(default=None)
+    completion_ts: Optional[datetime] = Field(default=None)
+    duration_from_scheduled_seconds: Optional[float] = Field(default=None)
+    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
+
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "feature_materialize_run"
+        unique_constraints = []
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            IndexModel("offline_store_feature_table_id"),
+            IndexModel("scheduled_job_ts"),
+        ]
+        auditable = False
+
+
+class FeatureMaterializeRunUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    FeatureMaterializeRun update schema
+    """
+
+    feature_materialize_ts: Optional[datetime] = Field(default=None)
+    completion_ts: Optional[datetime] = Field(default=None)
+    duration_from_scheduled_seconds: Optional[float] = Field(default=None)
+    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
