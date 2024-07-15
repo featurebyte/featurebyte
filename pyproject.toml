@@ -222,7 +222,7 @@ norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".g
 
 [tool.ruff]
 preview = true
-extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures/"]
+extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures", "docs/notebooks/"]
 line-length = 100
 indent-width = 4
 target-version = "py39"
