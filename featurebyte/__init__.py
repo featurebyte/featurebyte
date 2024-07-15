@@ -9,7 +9,7 @@ import pandas as pd
 import yaml
 from packaging.version import Version
 
-from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
+from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes  # noqa: F401
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
@@ -24,7 +24,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup  # noqa: F401
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
@@ -48,9 +48,9 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations, Profile
 from featurebyte.core.distance import haversine
-from featurebyte.core.series import Series
+from featurebyte.core.series import Series  # noqa: F401
 from featurebyte.core.timedelta import to_timedelta
-from featurebyte.datasets.app import import_dataset
+from featurebyte.datasets.app import import_dataset  # noqa: F401
 from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
@@ -63,7 +63,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
     GCSStorageCredential,
-    KerberosKeytabCredential,
+    KerberosKeytabCredential,  # noqa: F401
     S3StorageCredential,
     UsernamePasswordCredential,
 )
