@@ -225,7 +225,7 @@ def test_isnull_compare_with_bool(event_view):
     """
     Test a special case of using isnull with bool literal
     """
-    filtered_view = event_view[event_view["ÀMOUNT"].isnull() is False]
+    filtered_view = event_view[event_view["ÀMOUNT"].isnull() == False]  # noqa
     df = filtered_view.preview()
     assert df["ÀMOUNT"].notnull().all()
 
