@@ -258,8 +258,10 @@ class FeatureMaterializeSyncService:
                 )
             else:
                 completed_aggregation_ids.append(item.aggregation_id)
-        for item in set(feature_table_aggregation_ids) - set(completed_aggregation_ids):
-            incomplete_tile_tasks.append(IncompleteTileTask(aggregation_id=item, reason="timeout"))
+        for aggregation_id in set(feature_table_aggregation_ids) - set(completed_aggregation_ids):
+            incomplete_tile_tasks.append(
+                IncompleteTileTask(aggregation_id=aggregation_id, reason="timeout")
+            )
         return incomplete_tile_tasks
 
     async def _submit_feature_materialize_task(

@@ -15,6 +15,7 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
+    UniqueValuesConstraint,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
@@ -50,7 +51,7 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature_materialize_run"
-        unique_constraints = []
+        unique_constraints: List[UniqueValuesConstraint] = []
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             IndexModel("offline_store_feature_table_id"),
             IndexModel("scheduled_job_ts"),

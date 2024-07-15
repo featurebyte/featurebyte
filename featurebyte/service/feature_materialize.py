@@ -565,7 +565,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_materialize_run_id: Optional[ObjectId]
             Id of the feature materialize run
 
-        # noqa: DAR401
+        Raises
+        ------
+        Exception
+            If any error occurs during the materialization process
         """
         if feature_materialize_run_id is not None:
             await self.feature_materialize_run_service.update_feature_materialize_ts(
